@@ -72,7 +72,6 @@ export default async function AiScreeningReviewPage({ params, searchParams }: Pr
         credits={credits}
         canCreate={access.canCreate}
         canBuy={access.canBuy}
-        packs={access.packs}
       />
       <ReviewQueue
         slug={slug}

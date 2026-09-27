@@ -11,14 +11,12 @@ import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { canMember } from "@/lib/permissions";
-import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
 
 export type AiAccess = {
   workspace: { id: string; name: string; slug: string };
   userId: string;
   canCreate: boolean;
   canBuy: boolean;
-  packs: { id: string; label: string; credits: number; priceCents: number }[];
 };
 
 export async function loadAiAccess(slug: string, path: string): Promise<AiAccess | { gate: React.ReactNode }> {
@@ -50,7 +48,6 @@ export async function loadAiAccess(slug: string, path: string): Promise<AiAccess
     userId: session.user.id,
     canCreate,
     canBuy,
-    packs: AI_CREDIT_PACKS.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents })),
   };
 }
 
@@ -71,7 +68,7 @@ function PlanGate({ slug }: { slug: string }) {
         </p>
       </div>
       <Link
-        href={`/w/${slug}?section=billing`}
+        href={`/w/${slug}/billing`}
         className="inline-flex items-center h-9 px-4 rounded-lg bg-secondary text-bg text-[13px] font-medium hover:brightness-110"
       >
         See plans

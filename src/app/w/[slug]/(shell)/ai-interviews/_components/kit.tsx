@@ -10,8 +10,8 @@ import { Bot, Coins, Plus } from "lucide-react";
 import type { CreditSummary } from "@/lib/ai-interview/console-server";
 import { statusLabel, statusTone, type Tone } from "@/lib/ai-interview/console";
 import { plural } from "@/lib/workspace/display";
-import { Btn, Dialog, inputCls, useToasts } from "../../candidates/_components/ui";
-import { createCreditPackCheckoutAction } from "../actions";
+import { Btn, Dialog, inputCls } from "../../candidates/_components/ui";
+
 
 export const TONE_CHIP: Record<Tone, string> = {
   success: "bg-success/10 text-success ring-success/25",
@@ -78,7 +78,6 @@ export function AiHeader({
   credits,
   canCreate,
   canBuy,
-  packs,
 }: {
   slug: string;
   active: HeaderTab | null;
@@ -86,7 +85,6 @@ export function AiHeader({
   credits: CreditSummary;
   canCreate: boolean;
   canBuy: boolean;
-  packs: { id: string; label: string; credits: number; priceCents: number }[];
 }) {
   const base = `/w/${slug}/ai-interviews`;
   const tab = (id: HeaderTab, text: string, n: number | null, href: string) => (
@@ -151,7 +149,7 @@ export function AiHeader({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <CreditsChip credits={credits} canBuy={canBuy} packs={packs} slug={slug} />
+            <CreditsChip credits={credits} canBuy={canBuy} slug={slug} />
             {canCreate && (
               <Btn variant="primary" size="md" icon={Plus} href={`${base}/new`}>
                 New screening
@@ -169,32 +167,14 @@ export function AiHeader({
   );
 }
 
-function CreditsChip({
-  credits,
-  canBuy,
-  packs,
-  slug,
-}: {
-  credits: CreditSummary;
-  canBuy: boolean;
-  packs: { id: string; label: string; credits: number; priceCents: number }[];
-  slug: string;
-}) {
+/**
+ * Credit balance with a breakdown. Buying credits happens on Billing and
+ * usage, so the dialog links there.
+ */
+function CreditsChip({ credits, canBuy, slug }: { credits: CreditSummary; canBuy: boolean; slug: string }) {
   const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [toasts, toast] = useToasts();
   const low = credits.available <= 2;
-
-  async function buy(packId: string) {
-    setBusy(packId);
-    const r = await createCreditPackCheckoutAction(slug, packId);
-    if (r.ok) {
-      window.location.href = r.url;
-      return;
-    }
-    setBusy(null);
-    toast(r.error, "error");
-  }
+  const usage = `/w/${slug}/billing?tab=usage`;
 
   return (
     <>
@@ -210,7 +190,21 @@ function CreditsChip({
         {canBuy && <span className="text-secondary-soft">Buy</span>}
       </button>
       {open && (
-        <Dialog title="AI screening credits" onClose={() => setOpen(false)} width={500}>
+        <Dialog
+          title="AI screening credits"
+          onClose={() => setOpen(false)}
+          width={500}
+          footer={
+            <>
+              <Btn href={usage}>See credit history</Btn>
+              {canBuy && (
+                <Btn variant="primary" href={usage}>
+                  Buy credits
+                </Btn>
+              )}
+            </>
+          }
+        >
           <div className="grid grid-cols-3 gap-3">
             {[
               ["Free to use", credits.available],
@@ -227,28 +221,11 @@ function CreditsChip({
             A credit is charged when a candidate starts, not when you send the invite: 1 credit when the interviewer answers
             questions, 2 when it checks in, 3 when it coaches. Invites that expire without being started cost nothing.
           </p>
-          {canBuy ? (
-            <div className="mt-5 flex flex-col gap-2">
-              {packs.map((p) => (
-                <div key={p.id} className="flex items-center gap-3 rounded-xl border border-border px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-fg">
-                      {p.label}, {p.credits} credits
-                    </div>
-                    <div className="text-xs text-subtle">${(p.priceCents / 100).toFixed(0)} one time</div>
-                  </div>
-                  <Btn variant="primary" disabled={!!busy} onClick={() => buy(p.id)}>
-                    {busy === p.id ? "Opening checkout" : "Buy"}
-                  </Btn>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-4 text-[13px] text-subtle">Ask a workspace owner or admin to buy more credits.</p>
-          )}
+          <p className="mt-3 text-[13px] text-muted">
+            {canBuy ? "Credit packs, history and the low-credit email are on Billing and usage." : "Ask a workspace owner or admin to buy more credits."}
+          </p>
         </Dialog>
       )}
-      {toasts}
     </>
   );
 }

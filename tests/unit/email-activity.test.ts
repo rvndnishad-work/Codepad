@@ -70,6 +70,9 @@ describe("resend rules", () => {
     expect(canOfferResend({ template: "ai-screening-invite", status: "delivered" })).toBe(false);
     expect(canOfferResend({ template: "take-home-reminder", status: "bounced" })).toBe(false);
     expect(resendPathFor("take-home-invite")).toBeNull();
+    expect(resendPathFor("interview-invite")).toBe("interview");
+    expect(canOfferResend({ template: "interview-invite", status: "bounced" })).toBe(true);
+    expect(canOfferResend({ template: "interview-cancelled", status: "bounced" })).toBe(false);
   });
 });
 

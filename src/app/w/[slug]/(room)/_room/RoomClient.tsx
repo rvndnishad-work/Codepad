@@ -66,7 +66,7 @@ export default function RoomClient({ data }: { data: RoomData }) {
   const status = (snap?.synced ? snap.room?.status : null) ?? iv.status;
   const startedAt = (snap?.synced ? snap.room?.startedAt : null) ?? iv.startedAt;
   const serverRound = snap?.synced ? (snap.room?.round ?? null) : iv.round;
-  const ended = status === "completed" || status === "abandoned";
+  const ended = status === "completed" || status === "abandoned" || status === "cancelled";
   const live = status === "in_progress";
   const readOnly = !(status === "scheduled" || live);
 
@@ -360,7 +360,7 @@ function TopBar({
           </li>
         ))}
       </ul>
-      {iv.meetingUrl && status !== "completed" && status !== "abandoned" && <MeetingButton url={iv.meetingUrl} size="sm" />}
+      {iv.meetingUrl && status !== "completed" && status !== "abandoned" && status !== "cancelled" && <MeetingButton url={iv.meetingUrl} size="sm" />}
       <ConnectionPill snap={snap} compact />
       {actions}
     </header>

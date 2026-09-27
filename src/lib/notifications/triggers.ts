@@ -269,7 +269,7 @@ export async function notifyAiCreditsLowIfNeeded(args: {
             args.balance === 0
               ? "Workspace is out of AI screening credits. New sessions will be blocked until you top up."
               : `Roughly ${args.balance} session${args.balance === 1 ? "" : "s"} remaining. Top up to avoid interruption.`,
-          href: `/w/${workspace.slug}/ai-interviews`,
+          href: `/w/${workspace.slug}/billing?tab=usage`,
           payload: { workspaceId: args.workspaceId, balance: args.balance },
         }),
       ),

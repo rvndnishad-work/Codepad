@@ -9,11 +9,10 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getAiCreditPack, normalizeEngagementLevel } from "@/lib/ai-interview/credits";
+import { normalizeEngagementLevel } from "@/lib/ai-interview/credits";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
 import { validateStarterFilesJson } from "@/lib/ai-interview/template-resolver";
 import type { RoundSpecInput } from "@/lib/ai-interview/rounds";
-import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { loadCreditSummary } from "@/lib/ai-interview/console-server";
@@ -520,69 +519,6 @@ export async function updateExtensionPolicyAction(
   } catch (err) {
     return fail(err);
   }
-}
-
-/* ── Credits ─────────────────────────────────────────────────────────────── */
-
-/**
- * Stripe Checkout for a one-time credit pack. Owners and admins only; the
- * webhook credits the workspace on `checkout.session.completed`.
- */
-export async function createCreditPackCheckoutAction(slug: string, packId: string): Promise<Result<{ url: string }>> {
-  try {
-    const { workspace, member } = await assertWorkspaceWriter(slug);
-    if (!(await canMember(member, "billing:manage"))) throw new ActionError("Only workspace owners and admins can buy credits.");
-    const pack = getAiCreditPack(packId);
-    if (!pack) throw new ActionError("Unknown credit pack.");
-    if (!process.env.STRIPE_SECRET_KEY) throw new ActionError("Payments are not set up in this environment.");
-
-    const stripe = getStripe();
-    const origin = await resolveOrigin();
-    const returnUrl = `${origin}/w/${slug}/ai-interviews`;
-    const stripeCustomerId = await ensureStripeCustomer(workspace.id, workspace.name, stripe);
-    const checkout = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer: stripeCustomerId,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Interviewpad AI Credits — ${pack.label}`,
-              description: `${pack.credits} AI screening credits for "${workspace.name}".`,
-            },
-            unit_amount: pack.priceCents,
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${returnUrl}?credits_purchase=success`,
-      cancel_url: `${returnUrl}?credits_purchase=cancel`,
-      metadata: {
-        kind: "AI_CREDIT_PACK",
-        workspaceId: workspace.id,
-        workspaceSlug: workspace.slug,
-        packId: pack.id,
-        credits: String(pack.credits),
-      },
-      payment_intent_data: {
-        metadata: { kind: "AI_CREDIT_PACK", workspaceId: workspace.id, packId: pack.id, credits: String(pack.credits) },
-      },
-    });
-    if (!checkout.url) throw new ActionError("Stripe did not return a checkout link.");
-    return { ok: true, url: checkout.url };
-  } catch (err) {
-    return fail(err);
-  }
-}
-
-async function ensureStripeCustomer(workspaceId: string, workspaceName: string, stripe: import("stripe").Stripe): Promise<string> {
-  const row = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { stripeCustomerId: true } });
-  if (row?.stripeCustomerId) return row.stripeCustomerId;
-  const customer = await stripe.customers.create({ name: workspaceName, metadata: { workspaceId } });
-  await prisma.workspace.update({ where: { id: workspaceId }, data: { stripeCustomerId: customer.id } });
-  return customer.id;
 }
 
 /* ── Question sets ───────────────────────────────────────────────────────── */

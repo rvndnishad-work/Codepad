@@ -3,6 +3,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
+import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
+import { ROLE_LABELS } from "@/lib/workspace/members";
 
 /**
  * Accept a workspace invite (IP-73). Creates the WorkspaceMember only here,
@@ -45,6 +47,16 @@ export async function acceptWorkspaceInviteAction(token: string): Promise<{ slug
         data: { acceptedAt: new Date() },
       }),
     ]);
+
+    await writeWorkspaceAuditEntry({
+      workspaceId: invite.workspace.id,
+      actorUserId: session.user.id,
+      actorEmail: session.user.email ?? null,
+      action: WORKSPACE_AUDIT_ACTIONS.MEMBER_JOINED,
+      targetType: "workspaceInvite",
+      targetId: invite.id,
+      meta: { email, name: session.user.name ?? null, role: ROLE_LABELS[invite.role] ?? invite.role, via: "invite" },
+    });
 
     // Scale Stripe seats for a paid workspace (best-effort).
     if (invite.workspace.planName === "GROWTH" && invite.workspace.stripeSubscriptionId) {

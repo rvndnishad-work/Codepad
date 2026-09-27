@@ -178,6 +178,9 @@ export async function consumeCreditIfFirstTurn(
           workspaceId: result.workspaceId,
           balance: result.newBalance,
         });
+        // The email to admins, when the workspace set a threshold on Billing and usage.
+        const { checkLowCredits } = await import("@/lib/billing/credit-alerts");
+        await checkLowCredits(result.workspaceId, result.newBalance);
       }
       return { charged: result.charged };
     });

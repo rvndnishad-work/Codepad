@@ -22,7 +22,6 @@ export default async function AiScreeningsPage({ params }: Props) {
         credits={credits}
         canCreate={access.canCreate}
         canBuy={access.canBuy}
-        packs={access.packs}
       />
       <ScreeningsList slug={slug} rows={screenings} canCreate={access.canCreate} />
     </div>

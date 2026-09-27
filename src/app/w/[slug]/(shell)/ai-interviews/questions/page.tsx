@@ -28,7 +28,6 @@ export default async function AiQuestionSetsPage({ params, searchParams }: Props
         credits={credits}
         canCreate={access.canCreate}
         canBuy={access.canBuy}
-        packs={access.packs}
       />
       <QuestionSets slug={slug} sets={sets} canManage={access.canCreate} initialOpen={q ?? null} />
     </div>

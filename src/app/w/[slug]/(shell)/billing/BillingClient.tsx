@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Billing and plan page. Every number arrives from the server, computed from
+ * Billing and usage page. Every number arrives from the server, computed from
  * effectivePlan and the plan config (src/lib/billing/plans.ts); nothing here
  * hard-codes a price or a seat count.
  */
@@ -12,8 +12,9 @@ import { plural } from "@/lib/workspace/display";
 import type { PlanSummary } from "@/lib/billing/summary";
 import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import type { SeatUsage } from "@/lib/workspace/members";
+import UsageTab, { type UsageData } from "./UsageTab";
 
-export type BillingTab = "plan" | "invoices";
+export type BillingTab = "plan" | "usage" | "invoices";
 
 type Props = {
   slug: string;
@@ -32,6 +33,8 @@ type Props = {
     plans: { key: string; name: string; price: string; seats: string }[];
     rows: { feature: string; cells: string[] }[];
   };
+  /** Loaded only on the Usage and credits tab. */
+  usage: UsageData | null;
 };
 
 export default function BillingClient(props: Props) {
@@ -62,6 +65,7 @@ export default function BillingClient(props: Props) {
     <Link
       key={id}
       href={id === "plan" ? `/w/${slug}/billing` : `/w/${slug}/billing?tab=${id}`}
+      scroll={false}
       aria-current={tab === id ? "page" : undefined}
       className={`relative flex items-center h-10 text-sm whitespace-nowrap transition-colors ${
         tab === id ? "text-fg font-medium" : "text-muted hover:text-fg"
@@ -85,7 +89,7 @@ export default function BillingClient(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Billing and plan</h1>
+      <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Billing and usage</h1>
 
       {notice === "success" && (
         <div role="status" className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-fg">
@@ -99,11 +103,14 @@ export default function BillingClient(props: Props) {
       )}
 
       <nav aria-label="Billing sections" className="flex gap-6 border-b border-border">
-        {tabLink("plan", "Plan and usage")}
+        {tabLink("plan", "Plan")}
+        {tabLink("usage", "Usage and credits")}
         {tabLink("invoices", "Invoices")}
       </nav>
 
-      {tab === "plan" ? (
+      {tab === "usage" && props.usage ? (
+        <UsageTab slug={slug} data={props.usage} canManage={canManage} stripeConfigured={stripeConfigured} notify={toast} />
+      ) : tab === "plan" ? (
         <>
           <section className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-wrap items-center gap-5">
             <div className="flex flex-col gap-1 flex-1 min-w-[260px]">
@@ -142,7 +149,10 @@ export default function BillingClient(props: Props) {
               </span>
               <span className="text-[13px] text-muted">
                 {plural(props.month.takeHomes, "take home")}, {plural(props.month.aiScreenings, "AI screening")},{" "}
-                {plural(props.month.interviews, "interview")}
+                {plural(props.month.interviews, "interview")}.{" "}
+                <Link href={`/w/${slug}/billing?tab=usage`} className="text-secondary-soft hover:underline">
+                  Usage
+                </Link>
               </span>
             </div>
           </div>
@@ -233,7 +243,7 @@ function CreditsCard({ slug, credits, aiScreening }: Props) {
         {aiScreening ? (
           <>
             An AI screening uses 1 to 3 credits when the candidate starts it.{" "}
-            <Link href={`/w/${slug}/ai-interviews`} className="text-secondary-soft hover:underline">
+            <Link href={`/w/${slug}/billing?tab=usage`} className="text-secondary-soft hover:underline">
               Buy credits
             </Link>
           </>

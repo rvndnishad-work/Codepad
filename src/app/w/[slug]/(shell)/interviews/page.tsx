@@ -61,19 +61,20 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
 
   const rows: InterviewRow[] = sessions.map((s) => {
     const done = !!s.finishedAt || s.status === "completed" || s.status === "finished";
+    const cancelled = !done && s.status === "cancelled";
     return {
       id: s.id,
       title: s.title,
       candidateName: s.candidateName,
       candidateId: s.candidateId,
       type: s.type,
-      state: done ? "completed" : s.startedAt ? "live" : "scheduled",
+      state: done ? "completed" : cancelled ? "cancelled" : s.startedAt ? "live" : "scheduled",
       verdict: s.verdict,
       shortCode: s.shortCode,
       // Only the host and panel open the interviewer side. The share token
       // gives the candidate side, so it is only ever copied, never opened here.
       // Interviewers open the workspace lobby; any member can read a report.
-      href: done ? `/w/${slug}/interviews/${s.id}/report` : isInterviewerFor(s, userId) || s.createdById === userId ? `/w/${slug}/interviews/${s.id}/lobby` : null,
+      href: done || cancelled ? `/w/${slug}/interviews/${s.id}/report` : isInterviewerFor(s, userId) || s.createdById === userId ? `/w/${slug}/interviews/${s.id}/lobby` : null,
       // Private, expiring link for the candidate (copied, never opened here).
       candidateLink: s.type === "live" ? candidateRoomPath(s, slug) : `/interview/${s.id}?token=${s.shareToken}`,
       minutes: Math.round(s.totalSec / 60),
@@ -82,7 +83,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       // Emailed interviewers (no account) show by their address.
       panel: [...parsePanel(s.panelJson).map((id) => nameOf.get(id) ?? "Teammate"), ...s.guests.map((g) => g.email)],
       format: formatOf(s.format)?.label ?? null,
-      questions: done
+      questions: done || cancelled
         ? "ready"
         : questionState({
             questionPlan: s.questionPlan,

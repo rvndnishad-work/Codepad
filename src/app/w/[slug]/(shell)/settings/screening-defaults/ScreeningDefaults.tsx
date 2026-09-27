@@ -49,8 +49,8 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start gap-2.5 rounded-xl border border-border bg-surface px-4 py-3 text-[13px] text-muted">
-        <Info className="w-4 h-4 mt-0.5 shrink-0 text-subtle" aria-hidden />
+      <div className="flex items-start gap-2.5 rounded-xl border border-secondary/25 bg-secondary/10 px-4 py-3 text-sm text-secondary-soft">
+        <Info className="w-4 h-4 mt-0.5 shrink-0" aria-hidden />
         <p>
           New take-homes, AI screenings and interviews start with these. Anyone sending one can still change them for that send, and the
           ones already sent keep their own.
@@ -128,19 +128,23 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
             disabled={disabled}
           />
         </SettingRow>
-        <SettingRow
-          label="Remind if not started"
-          help={`One email to candidates who have not started: ${hours(DEFAULT_START_REMINDER_HOURS)} after a take-home invite, ${days(DEFAULT_REMINDER_DAYS)} after an AI screening invite.`}
-          error={errors.remindNotStarted}
-        >
-          <Toggle label="Remind if not started" checked={v.remindNotStarted} onChange={(b) => set("remindNotStarted", b)} disabled={disabled} />
-        </SettingRow>
-        <SettingRow
-          label="Remind before the link closes"
-          help={`One last email ${hours(DEFAULT_LAST_CALL_HOURS)} before a take-home link closes, to anyone who has not submitted.`}
-          error={errors.remindBeforeDeadline}
-        >
-          <Toggle label="Remind before the link closes" checked={v.remindBeforeDeadline} onChange={(b) => set("remindBeforeDeadline", b)} disabled={disabled} />
+        <SettingRow label="Reminder emails" help="Only to candidates who have not submitted yet." error={errors.remindNotStarted ?? errors.remindBeforeDeadline}>
+          <div className="flex flex-col gap-3">
+            <ToggleLine
+              label="Remind if not started"
+              detail={`${hours(DEFAULT_START_REMINDER_HOURS)} after a take-home invite, ${days(DEFAULT_REMINDER_DAYS)} after an AI screening invite. One email.`}
+              checked={v.remindNotStarted}
+              onChange={(b) => set("remindNotStarted", b)}
+              disabled={disabled}
+            />
+            <ToggleLine
+              label="Remind before the link closes"
+              detail={`One last email ${hours(DEFAULT_LAST_CALL_HOURS)} before a take-home link closes.`}
+              checked={v.remindBeforeDeadline}
+              onChange={(b) => set("remindBeforeDeadline", b)}
+              disabled={disabled}
+            />
+          </div>
         </SettingRow>
       </SettingsCard>
 
@@ -159,7 +163,7 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
           help="Keep a recording of spoken answers in theory rounds so your team can replay them. Candidates are told before they start."
           error={errors.keepVoiceAnswers}
         >
-          <Toggle label="Keep voice answers" checked={v.keepVoiceAnswers} onChange={(b) => set("keepVoiceAnswers", b)} disabled={disabled} />
+          <ToggleState label="Keep voice answers" checked={v.keepVoiceAnswers} onChange={(b) => set("keepVoiceAnswers", b)} disabled={disabled} />
         </SettingRow>
         <SettingRow
           label="Interviewer language"
@@ -197,7 +201,7 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
           help="Interviewers see the other scorecards only after submitting their own, so nobody anchors on a colleague's score."
           error={errors.scorecardFirst}
         >
-          <Toggle label="Scorecard before seeing others" checked={v.scorecardFirst} onChange={(b) => set("scorecardFirst", b)} disabled={disabled} />
+          <ToggleState label="Scorecard before seeing others" checked={v.scorecardFirst} onChange={(b) => set("scorecardFirst", b)} disabled={disabled} />
         </SettingRow>
         <SettingRow
           label="Scorecard reminder"
@@ -215,6 +219,31 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
       </SettingsCard>
 
       <SaveBar form={form} />
+    </div>
+  );
+}
+
+type ToggleProps = { label: string; checked: boolean; onChange: (next: boolean) => void; disabled: boolean };
+
+/** A switch with its On or Off state written beside it. */
+function ToggleState(props: ToggleProps) {
+  return (
+    <div className="flex items-center gap-3">
+      <Toggle {...props} />
+      <span className="text-[13px] text-muted">{props.checked ? "On" : "Off"}</span>
+    </div>
+  );
+}
+
+/** A switch with its own name and a one-line detail, for several switches in one row. */
+function ToggleLine({ detail, ...props }: ToggleProps & { detail: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <Toggle {...props} />
+      <div className="flex flex-col min-w-0 pt-0.5">
+        <span className="text-sm text-fg">{props.label}</span>
+        <span className="text-[13px] text-muted">{detail}</span>
+      </div>
     </div>
   );
 }

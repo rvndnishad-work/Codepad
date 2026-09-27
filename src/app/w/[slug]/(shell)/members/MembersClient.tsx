@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, MoreHorizontal, Search, UserPlus } from "lucide-react";
+import { AlertTriangle, Mail, MoreHorizontal, Search, UserPlus } from "lucide-react";
 import { Avatar, Btn, Dialog, Menu, MenuItem, inputCls, useToasts } from "../candidates/_components/ui";
 import { ConfirmDialog } from "../candidates/_components/dialogs";
 import { relativeTime, plural } from "@/lib/workspace/display";
@@ -24,6 +24,7 @@ import {
   type SeatUsage,
 } from "@/lib/workspace/members";
 import { ROLE_EXPLAINER, overrideSummary, EXPLAINED_PERMISSIONS } from "@/lib/workspace/role-explainer";
+import UnderlineTabs from "../_components/UnderlineTabs";
 
 export type MembersTab = "people" | "invites" | "roles";
 
@@ -97,25 +98,11 @@ export default function MembersClient(props: Props) {
       ? `${plural(seats.members, "person", "people")} in this workspace. Seats are billed per person.`
       : `${seats.used} of ${seats.limit} seats are used${seats.pendingInvites ? `, counting ${plural(seats.pendingInvites, "pending invite")}` : ""}.`;
 
-  const tabLink = (id: MembersTab, text: string, count?: number) => (
-    <Link
-      key={id}
-      href={id === "people" ? `/w/${slug}/members` : `/w/${slug}/members?tab=${id}`}
-      aria-current={tab === id ? "page" : undefined}
-      className={`relative flex items-center gap-2 h-10 text-sm whitespace-nowrap transition-colors ${
-        tab === id ? "text-fg font-medium" : "text-muted hover:text-fg"
-      }`}
-    >
-      {text}
-      {count !== undefined && <span className="text-subtle tabular-nums">{count}</span>}
-      {tab === id && <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-secondary" />}
-    </Link>
-  );
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex flex-col gap-1.5 min-w-0">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1 min-w-0">
           <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Members</h1>
           <p className="text-sm text-muted">
             {seatLine}
@@ -135,6 +122,7 @@ export default function MembersClient(props: Props) {
             variant="primary"
             size="md"
             icon={UserPlus}
+            className="mt-0.5"
             disabled={seats.full}
             title={seats.full ? "All seats are used" : undefined}
             onClick={() => setInviteOpen(true)}
@@ -144,11 +132,15 @@ export default function MembersClient(props: Props) {
         )}
       </div>
 
-      <nav aria-label="Members sections" className="flex gap-6 border-b border-border overflow-x-auto">
-        {tabLink("people", "People", members.length)}
-        {tabLink("invites", "Invites", liveInvites)}
-        {tabLink("roles", "Roles")}
-      </nav>
+      <UnderlineTabs
+        label="Members sections"
+        active={tab}
+        tabs={[
+          { id: "people", label: "People", href: `/w/${slug}/members`, count: members.length },
+          { id: "invites", label: "Invites", href: `/w/${slug}/members?tab=invites`, count: liveInvites },
+          { id: "roles", label: "Roles", href: `/w/${slug}/members?tab=roles` },
+        ]}
+      />
 
       {tab === "people" && <PeopleTab {...props} run={run} notify={toast} refresh={refresh} />}
       {tab === "invites" && <InvitesTab {...props} run={run} />}
@@ -266,15 +258,16 @@ function PeopleTab({
         ))}
       </div>
 
-      <div className="rounded-xl border border-border bg-surface overflow-x-auto">
-        <table className="w-full min-w-[760px] border-collapse text-sm">
+      {/* Scrolls sideways on narrow screens; on wide ones it stays visible so the row menus are not clipped. */}
+      <div className="rounded-xl border border-border bg-surface overflow-x-auto xl:overflow-visible">
+        <table className="w-full min-w-[760px] border-collapse text-sm [&_th:first-child]:rounded-tl-xl [&_th:last-child]:rounded-tr-xl [&_tr:last-child>td:first-child]:rounded-bl-xl [&_tr:last-child>td:last-child]:rounded-br-xl">
           <thead>
-            <tr className="bg-panel text-left text-xs font-medium text-muted">
-              <th className="px-4 py-2.5 font-medium">Person</th>
-              <th className="px-4 py-2.5 font-medium w-[190px]">Role</th>
-              <th className="px-4 py-2.5 font-medium w-[140px]">Owns</th>
-              <th className="px-4 py-2.5 font-medium w-[140px]">Last active</th>
-              <th className="px-4 py-2.5 font-medium w-[110px]">Sign-in</th>
+            <tr className="bg-panel text-left text-xs font-semibold text-muted">
+              <th className="px-4 py-2.5 font-semibold">Person</th>
+              <th className="px-4 py-2.5 font-semibold w-[190px]">Role</th>
+              <th className="px-4 py-2.5 font-semibold w-[140px]">Owns</th>
+              <th className="px-4 py-2.5 font-semibold w-[140px]">Last active</th>
+              <th className="px-4 py-2.5 font-semibold w-[110px]">Sign-in</th>
               <th className="px-4 py-2.5 w-[70px]">
                 <span className="sr-only">Actions</span>
               </th>
@@ -289,8 +282,8 @@ function PeopleTab({
               const stale = isInactive(m.lastActiveAt, nowDate);
               const canMakeOwner = iAmOwner && me.canSetRoles && !isMe && m.role !== "OWNER";
               return (
-                <tr key={m.id} className="border-t border-border align-middle">
-                  <td className="px-4 py-3">
+                <tr key={m.id} className="border-t border-border align-middle hover:bg-panel/30 transition-colors">
+                  <td className="px-4 py-2.5">
                     <div className="flex items-center gap-3 min-w-0">
                       {m.image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -298,15 +291,15 @@ function PeopleTab({
                       ) : (
                         <Avatar name={displayName(m)} size={32} />
                       )}
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col min-w-0 leading-tight gap-0.5">
                         <span className="font-medium text-fg truncate">
                           {displayName(m)} {isMe && <span className="font-normal text-muted">(you)</span>}
                         </span>
-                        {m.name && m.email && <span className="text-[13px] text-muted truncate">{m.email}</span>}
+                        {m.name && m.email && <span className="text-xs text-muted truncate">{m.email}</span>}
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">
                     <div className="flex flex-col gap-1 items-start">
                       {canEditRole ? (
                         <label className="contents">
@@ -333,16 +326,21 @@ function PeopleTab({
                       )}
                       {(extra.added > 0 || extra.removed > 0) && (
                         <span className="text-xs text-secondary-soft">
-                          {[extra.added ? `+${extra.added} extra` : "", extra.removed ? `-${extra.removed} removed` : ""].filter(Boolean).join(", ")}
+                          {[
+                            extra.added ? `+${plural(extra.added, "extra permission")}` : "",
+                            extra.removed ? `-${extra.removed} removed` : "",
+                          ]
+                            .filter(Boolean)
+                            .join(", ")}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted tabular-nums">{m.ownedCandidates ? plural(m.ownedCandidates, "candidate") : "None"}</td>
-                  <td className={`px-4 py-3 ${stale ? "text-warning" : "text-muted"}`}>
+                  <td className="px-4 py-2.5 text-fg tabular-nums">{m.ownedCandidates ? plural(m.ownedCandidates, "candidate") : "None"}</td>
+                  <td className={`px-4 py-2.5 ${stale ? "text-warning" : "text-fg"}`}>
                     {m.lastActiveAt ? relativeTime(m.lastActiveAt, nowDate) : <span className="text-subtle">Not seen yet</span>}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2.5">
                     <span
                       className={`inline-flex items-center h-6 px-2 rounded-full text-xs font-medium ${
                         m.twoFactor ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
@@ -351,7 +349,7 @@ function PeopleTab({
                       {m.twoFactor ? "2FA on" : "2FA off"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-2.5 text-right">
                     {(me.canSetRoles || canRemoveThis) && (
                       <Menu
                         align="right"
@@ -361,9 +359,10 @@ function PeopleTab({
                             type="button"
                             {...t}
                             aria-label={`More for ${displayName(m)}`}
-                            className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
+                            className="h-7 px-2.5 rounded-md border border-border bg-surface inline-flex items-center gap-1 text-xs font-medium text-muted hover:text-fg hover:border-border-strong hover:bg-panel transition-colors"
                           >
-                            <MoreHorizontal className="w-4 h-4" />
+                            More
+                            <MoreHorizontal className="w-3.5 h-3.5" aria-hidden />
                           </button>
                         )}
                       >
@@ -420,7 +419,7 @@ function PeopleTab({
             })}
             {visible.length === 0 && (
               <tr className="border-t border-border">
-                <td colSpan={6} className="px-4 py-8 text-center text-muted">
+                <td colSpan={6} className="px-4 py-10 text-center text-muted">
                   No one matches that search.
                 </td>
               </tr>
@@ -430,7 +429,7 @@ function PeopleTab({
       </div>
 
       {inactive && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
           <span className="flex-1 min-w-[240px] text-sm text-fg">
             {displayName(inactive)} has not opened this workspace for{" "}
             {Math.floor((nowDate.getTime() - new Date(inactive.lastActiveAt!).getTime()) / 86_400_000)} days. Removing them frees a
@@ -573,8 +572,12 @@ function InvitesTab({ slug, me, invites, now, run }: Props & { run: RunFn }) {
 
   if (invites.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-muted">
-        No open invites. People you invite show up here until they accept.
+      <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border bg-surface px-6 py-12 text-center">
+        <span className="w-10 h-10 mb-1 rounded-full bg-panel inline-flex items-center justify-center text-muted">
+          <Mail className="w-4 h-4" aria-hidden />
+        </span>
+        <p className="text-sm font-medium text-fg">No open invites</p>
+        <p className="text-[13px] text-muted max-w-sm">People you invite show up here until they accept.</p>
       </div>
     );
   }
@@ -584,11 +587,11 @@ function InvitesTab({ slug, me, invites, now, run }: Props & { run: RunFn }) {
       <div className="rounded-xl border border-border bg-surface overflow-x-auto">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead>
-            <tr className="bg-panel text-left text-xs font-medium text-muted">
-              <th className="px-4 py-2.5 font-medium">Email</th>
-              <th className="px-4 py-2.5 font-medium w-[140px]">Role</th>
-              <th className="px-4 py-2.5 font-medium w-[130px]">Sent</th>
-              <th className="px-4 py-2.5 font-medium w-[150px]">Status</th>
+            <tr className="bg-panel text-left text-xs font-semibold text-muted">
+              <th className="px-4 py-2.5 font-semibold">Email</th>
+              <th className="px-4 py-2.5 font-semibold w-[140px]">Role</th>
+              <th className="px-4 py-2.5 font-semibold w-[130px]">Sent</th>
+              <th className="px-4 py-2.5 font-semibold w-[150px]">Status</th>
               <th className="px-4 py-2.5 w-[190px]">
                 <span className="sr-only">Actions</span>
               </th>
@@ -596,18 +599,18 @@ function InvitesTab({ slug, me, invites, now, run }: Props & { run: RunFn }) {
           </thead>
           <tbody>
             {invites.map((inv) => (
-              <tr key={inv.id} className="border-t border-border">
-                <td className="px-4 py-3 text-fg">{inv.email}</td>
-                <td className="px-4 py-3 text-muted">{roleLabel(inv.role)}</td>
-                <td className="px-4 py-3 text-muted">{relativeTime(inv.createdAt, nowDate)}</td>
-                <td className="px-4 py-3">
+              <tr key={inv.id} className="border-t border-border hover:bg-panel/30 transition-colors">
+                <td className="px-4 py-2.5 text-fg">{inv.email}</td>
+                <td className="px-4 py-2.5 text-fg">{roleLabel(inv.role)}</td>
+                <td className="px-4 py-2.5 text-muted">{relativeTime(inv.createdAt, nowDate)}</td>
+                <td className="px-4 py-2.5">
                   {inv.expired ? (
                     <span className="inline-flex items-center h-6 px-2 rounded-full text-xs font-medium bg-warning/10 text-warning">Expired</span>
                   ) : (
                     <span className="text-muted">Expires {relativeTime(inv.expiresAt, nowDate).toLowerCase()}</span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-2.5">
                   {me.canInvite && (
                     <div className="flex justify-end gap-2">
                       <Btn
@@ -663,10 +666,10 @@ function RolesTab({ roleColumns, roleBasePermissions }: Props) {
       <div className="rounded-xl border border-border bg-surface overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
-            <tr className="bg-panel text-left text-xs font-medium text-muted">
-              <th className="px-4 py-2.5 font-medium">Permission</th>
+            <tr className="bg-panel text-left text-xs font-semibold text-muted">
+              <th className="px-4 py-2.5 font-semibold">Permission</th>
               {roleColumns.map((r) => (
-                <th key={r.key} className="px-3 py-2.5 font-medium text-center w-[110px]" title={r.description ?? undefined}>
+                <th key={r.key} className="px-3 py-2.5 font-semibold text-center w-[110px]" title={r.description ?? undefined}>
                   {r.label}
                 </th>
               ))}
@@ -707,7 +710,7 @@ function RoleGroup({
   return (
     <>
       <tr className="border-t border-border bg-bg/40">
-        <td colSpan={roleColumns.length + 1} className="px-4 py-2 text-xs font-medium text-muted">
+        <td colSpan={roleColumns.length + 1} className="px-4 py-2 text-xs font-semibold text-muted">
           {group.label}
         </td>
       </tr>

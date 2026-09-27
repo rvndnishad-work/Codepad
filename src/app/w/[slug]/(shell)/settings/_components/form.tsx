@@ -38,13 +38,13 @@ export function SettingsCard({
   id?: string;
 }) {
   return (
-    <section id={id} className="rounded-xl border border-border bg-surface">
-      <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          <h2 className="text-base font-semibold text-fg">{title}</h2>
+    <section id={id} className="rounded-xl border border-border bg-surface shadow-sm shadow-black/5">
+      <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3.5">
+        <div className="flex flex-1 flex-col gap-1 min-w-0">
+          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">{title}</h2>
           {description && <p className="text-[13px] text-muted max-w-2xl">{description}</p>}
         </div>
-        {aside}
+        {aside && <div className="shrink-0">{aside}</div>}
       </header>
       <div className="divide-y divide-border border-t border-border">{children}</div>
     </section>
@@ -73,7 +73,7 @@ export function SettingRow({
 }) {
   const Label = htmlFor ? "label" : "div";
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)] gap-x-8 gap-y-2.5 px-5 py-4">
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,260px)_minmax(0,1fr)] gap-x-8 gap-y-2.5 px-5 py-[18px]">
       <div className="flex flex-col gap-1 min-w-0">
         <Label {...(htmlFor ? { htmlFor } : {})} className="flex items-center gap-2 text-sm font-medium text-fg">
           {label}
@@ -126,13 +126,13 @@ export function Toggle({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-10 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 disabled:opacity-50 disabled:pointer-events-none ${
-        checked ? "bg-secondary border-secondary" : "bg-panel border-border-strong"
+        checked ? "bg-secondary border-secondary" : "bg-border-strong border-border-strong hover:brightness-125"
       }`}
     >
       <span
         aria-hidden
         className={`inline-block h-4 w-4 rounded-full shadow transition-transform motion-reduce:transition-none ${
-          checked ? "translate-x-[18px] bg-bg" : "translate-x-[3px] bg-muted"
+          checked ? "translate-x-[18px] bg-bg" : "translate-x-[3px] bg-fg"
         }`}
       />
     </button>

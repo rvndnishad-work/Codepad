@@ -151,9 +151,19 @@ export default function CandidateExperienceClient({ slug, canEdit, growth, works
           {warning && <p className="text-[13px] text-warning">{warning}</p>}
         </SettingRow>
 
-        <SettingRow label="How it looks" help="A sample of the top of a candidate page.">
-          <BrandSample name={workspaceName} logoUrl={logoUrl} color={color} />
-        </SettingRow>
+        <div className="flex flex-col gap-3 px-5 py-[18px]">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-fg">How it looks</span>
+            <p className="text-[13px] text-muted">A sample of the top of a candidate page. It follows your edits before you save.</p>
+          </div>
+          <BrandSample
+            name={workspaceName}
+            logoUrl={logoUrl}
+            color={color}
+            helpEmail={values.helpEmail.trim()}
+            privacyNoticeUrl={values.privacyNoticeUrl.trim()}
+          />
+        </div>
       </SettingsCard>
 
       {/* Sender and reply-to */}
@@ -184,25 +194,40 @@ export default function CandidateExperienceClient({ slug, canEdit, growth, works
         description="Change the subject and opening text of each email. The button, link, deadline, help and unsubscribe lines are always added, so an edit cannot break an invite."
         aside={growth ? undefined : <span className="rounded-full bg-panel border border-border text-xs font-medium text-muted px-2 leading-5">Growth</span>}
       >
-        {emailKeys.map((key) => {
-          const def = CANDIDATE_EMAILS[key];
-          const edited = !!saved[key];
-          return (
-            <div key={key} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3.5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 text-sm font-medium text-fg">
-                  {def.label}
-                  {edited && <span className="rounded-full bg-secondary/15 text-secondary-soft text-xs font-medium px-2 leading-5">Edited</span>}
+        <div role="table" aria-label="Candidate emails">
+          <div role="row" className="grid grid-cols-[minmax(0,1fr)_96px_auto] items-center gap-x-4 px-5 py-2 bg-panel/60 text-xs font-medium text-muted">
+            <span role="columnheader">Email</span>
+            <span role="columnheader">Wording</span>
+            <span role="columnheader" className="w-[92px]">
+              <span className="sr-only">Actions</span>
+            </span>
+          </div>
+          {emailKeys.map((key) => {
+            const def = CANDIDATE_EMAILS[key];
+            const edited = !!saved[key];
+            return (
+              <div
+                key={key}
+                role="row"
+                className={`grid grid-cols-[minmax(0,1fr)_96px_auto] items-center gap-x-4 px-5 py-3 border-t border-border ${editing === key ? "bg-secondary/5" : ""}`}
+              >
+                <div role="cell" className="min-w-0">
+                  <div className="text-sm font-medium text-fg">{def.label}</div>
+                  <p className="text-[13px] text-muted">{def.when}</p>
                 </div>
-                <p className="text-[13px] text-muted">{def.when}</p>
+                <span role="cell" className={`text-[13px] ${edited ? "font-medium text-secondary-soft" : "text-muted"}`}>
+                  {edited ? "Edited" : "Standard"}
+                </span>
+                <div role="cell" className="w-[92px] flex justify-end">
+                  <Btn icon={growth && canEdit ? Pencil : Eye} onClick={() => setEditing(key)} aria-label={`${growth && canEdit ? "Edit" : "Preview"} ${def.label}`}>
+                    {growth && canEdit ? "Edit" : "Preview"}
+                  </Btn>
+                </div>
               </div>
-              <Btn icon={growth && canEdit ? Pencil : Eye} onClick={() => setEditing(key)}>
-                {growth && canEdit ? "Edit" : "Preview"}
-              </Btn>
-            </div>
-          );
-        })}
-        {!growth && <p className="px-5 py-3.5 text-[13px] text-muted">{GROWTH_NOTE} You can still preview how each email looks with your brand.</p>}
+            );
+          })}
+        </div>
+        {!growth && <p className="px-5 py-3.5 text-[13px] text-muted border-t border-border">{GROWTH_NOTE} You can still preview how each email looks with your brand.</p>}
       </SettingsCard>
 
       {/* Privacy and consent */}
@@ -286,27 +311,52 @@ export default function CandidateExperienceClient({ slug, canEdit, growth, works
 
 /* ── Brand sample ───────────────────────────────────────────────────────── */
 
-function BrandSample({ name, logoUrl, color }: { name: string; logoUrl: string | null; color: string | null }) {
+function BrandSample({
+  name,
+  logoUrl,
+  color,
+  helpEmail,
+  privacyNoticeUrl,
+}: {
+  name: string;
+  logoUrl: string | null;
+  color: string | null;
+  helpEmail: string;
+  privacyNoticeUrl: string;
+}) {
+  const initial = name.trim().charAt(0).toUpperCase() || "W";
   return (
-    <div className="w-full max-w-md rounded-xl border border-border bg-bg p-4 flex flex-col gap-3" aria-hidden>
-      <div className="flex items-center gap-2.5">
+    <div className="w-full max-w-xl overflow-hidden rounded-xl border border-border bg-bg" aria-hidden>
+      <div className="flex items-center gap-2.5 border-b border-border bg-panel/60 px-4 py-2.5">
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt="" className="h-7 max-w-[140px] w-auto object-contain" />
         ) : (
-          <span className="w-7 h-7 rounded-md bg-elevated border border-border-strong flex items-center justify-center text-xs font-semibold text-fg">
-            {name.trim().charAt(0).toUpperCase() || "W"}
+          <span
+            className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-semibold ${color ? "" : "bg-secondary text-bg"}`}
+            style={color ? { background: color, color: readableTextOn(color) } : undefined}
+          >
+            {initial}
           </span>
         )}
         <span className="text-sm font-medium text-fg truncate">{name}</span>
       </div>
-      <p className="text-[13px] text-muted">Hi Sam, your take-home is ready when you are.</p>
-      <span
-        className={`self-start inline-flex items-center h-9 px-4 rounded-lg text-[13px] font-medium ${color ? "" : "bg-secondary text-bg"}`}
-        style={color ? { background: color, color: readableTextOn(color) } : undefined}
-      >
-        Start your take-home
-      </span>
+      <div className="flex flex-col gap-3 px-5 py-5">
+        <p className="text-[15px] font-semibold text-fg">Senior Frontend take-home</p>
+        <p className="text-sm text-muted">Hi Sam, your take-home is ready when you are. You work through it in your browser, with nothing to install.</p>
+        <span
+          className={`self-start inline-flex items-center h-9 px-4 rounded-lg text-[13px] font-medium ${color ? "" : "bg-secondary text-bg"}`}
+          style={color ? { background: color, color: readableTextOn(color) } : undefined}
+        >
+          Start your take-home
+        </span>
+      </div>
+      {(helpEmail || privacyNoticeUrl) && (
+        <div className="flex flex-wrap gap-x-3 gap-y-1 border-t border-border px-5 py-3 text-xs text-subtle">
+          {helpEmail && <span>Questions? Write to {helpEmail}</span>}
+          {privacyNoticeUrl && <span className="underline underline-offset-2">Privacy notice</span>}
+        </div>
+      )}
     </div>
   );
 }

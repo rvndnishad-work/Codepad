@@ -6,6 +6,7 @@
  * hard-codes a price or a seat count.
  */
 import Link from "next/link";
+import { Receipt } from "lucide-react";
 import { useState } from "react";
 import { Btn, useToasts } from "../candidates/_components/ui";
 import { plural } from "@/lib/workspace/display";
@@ -13,6 +14,7 @@ import type { PlanSummary } from "@/lib/billing/summary";
 import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import type { SeatUsage } from "@/lib/workspace/members";
 import UsageTab, { type UsageData } from "./UsageTab";
+import UnderlineTabs from "../_components/UnderlineTabs";
 
 export type BillingTab = "plan" | "usage" | "invoices";
 
@@ -61,20 +63,6 @@ export default function BillingClient(props: Props) {
     }
   }
 
-  const tabLink = (id: BillingTab, text: string) => (
-    <Link
-      key={id}
-      href={id === "plan" ? `/w/${slug}/billing` : `/w/${slug}/billing?tab=${id}`}
-      scroll={false}
-      aria-current={tab === id ? "page" : undefined}
-      className={`relative flex items-center h-10 text-sm whitespace-nowrap transition-colors ${
-        tab === id ? "text-fg font-medium" : "text-muted hover:text-fg"
-      }`}
-    >
-      {text}
-      {tab === id && <span aria-hidden className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-secondary" />}
-    </Link>
-  );
 
   let action: React.ReactNode = null;
   if (planName === "ENTERPRISE" && !subscribed) {
@@ -89,7 +77,10 @@ export default function BillingClient(props: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Billing and usage</h1>
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Billing and usage</h1>
+        <p className="text-sm text-muted max-w-2xl">Your plan, seats and AI credits, what the workspace sent each month, and invoices.</p>
+      </header>
 
       {notice === "success" && (
         <div role="status" className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-fg">
@@ -102,11 +93,16 @@ export default function BillingClient(props: Props) {
         </div>
       )}
 
-      <nav aria-label="Billing sections" className="flex gap-6 border-b border-border">
-        {tabLink("plan", "Plan")}
-        {tabLink("usage", "Usage and credits")}
-        {tabLink("invoices", "Invoices")}
-      </nav>
+      <UnderlineTabs
+        label="Billing sections"
+        active={tab}
+        scroll={false}
+        tabs={[
+          { id: "plan", label: "Plan", href: `/w/${slug}/billing` },
+          { id: "usage", label: "Usage and credits", href: `/w/${slug}/billing?tab=usage` },
+          { id: "invoices", label: "Invoices", href: `/w/${slug}/billing?tab=invoices` },
+        ]}
+      />
 
       {tab === "usage" && props.usage ? (
         <UsageTab slug={slug} data={props.usage} canManage={canManage} stripeConfigured={stripeConfigured} notify={toast} />
@@ -124,15 +120,7 @@ export default function BillingClient(props: Props) {
               </div>
               <p className="text-sm text-muted">{summary.body}</p>
             </div>
-            {summary.trialUsed !== null && (
-              <div
-                className="h-2 w-full sm:w-52 rounded-full bg-panel overflow-hidden"
-                role="img"
-                aria-label={`${Math.round(summary.trialUsed * 100)}% of the trial used`}
-              >
-                <div className="h-full bg-warning" style={{ width: `${Math.round(summary.trialUsed * 100)}%` }} />
-              </div>
-            )}
+            {summary.trialUsed !== null && <TrialMeter used={summary.trialUsed} />}
             {action}
           </section>
           {!stripeConfigured && canManage && planName !== "ENTERPRISE" && (
@@ -158,16 +146,16 @@ export default function BillingClient(props: Props) {
           </div>
 
           <section className="flex flex-col gap-2.5">
-            <h2 className="text-[13px] font-medium text-muted">Compare plans</h2>
+            <h2 className="text-base font-semibold text-fg">Compare plans</h2>
             <div className="rounded-xl border border-border bg-surface overflow-x-auto">
               <table className="w-full min-w-[640px] border-collapse text-sm">
                 <thead>
-                  <tr className="bg-panel text-left text-xs font-medium text-muted">
-                    <th className="px-4 py-2.5 font-medium">
+                  <tr className="bg-panel text-left text-[12.5px] font-semibold text-muted">
+                    <th className="px-4 py-2.5 font-semibold">
                       <span className="sr-only">Feature</span>
                     </th>
                     {props.compare.plans.map((p) => (
-                      <th key={p.key} className={`px-4 py-2.5 font-medium w-[200px] ${p.key === summary.compareKey ? "text-fg" : ""}`}>
+                      <th key={p.key} className={`px-4 py-2.5 font-semibold w-[200px] ${p.key === summary.compareKey ? "text-fg" : ""}`}>
                         {p.name}
                         {p.key === summary.compareKey && <span className="ml-1.5 text-secondary-soft">(yours)</span>}
                       </th>
@@ -197,6 +185,22 @@ export default function BillingClient(props: Props) {
   );
 }
 
+/** How much of the trial is left, as a filling bar next to the trial heading. */
+function TrialMeter({ used }: { used: number }) {
+  const left = Math.round((1 - used) * 100);
+  return (
+    <div className="w-full sm:w-56 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between text-xs text-muted">
+        <span>Trial time left</span>
+        <span className="tabular-nums">{left}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-border overflow-hidden" role="img" aria-label={`${left}% of the trial left`}>
+        <div className="h-full rounded-full bg-warning" style={{ width: `${Math.max(left, 3)}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function CompareRow({ feature, cells, current, keys }: { feature: string; cells: string[]; current: string | null; keys: string[] }) {
   return (
     <tr className="border-t border-border">
@@ -219,8 +223,8 @@ function SeatsCard({ slug, seats, summary }: Props) {
         {seats.limit !== null ? `${seats.used} of ${seats.limit}` : plural(seats.used, "seat")}
       </span>
       {pct !== null && (
-        <div className="h-2 rounded-full bg-panel overflow-hidden" role="img" aria-label={`${seats.used} of ${seats.limit} seats used`}>
-          <div className={`h-full ${seats.full ? "bg-warning" : "bg-secondary"}`} style={{ width: `${pct}%` }} />
+        <div className="h-2 rounded-full bg-border overflow-hidden" role="img" aria-label={`${seats.used} of ${seats.limit} seats used`}>
+          <div className={`h-full rounded-full ${seats.full ? "bg-warning" : "bg-secondary"}`} style={{ width: `${pct}%` }} />
         </div>
       )}
       <span className="text-[13px] text-muted">
@@ -273,8 +277,16 @@ function InvoicesTab({
     body = "Invoices, receipts and your payment card are kept in Stripe. Open the billing portal to download them.";
   }
   return (
-    <section className="rounded-xl border border-border bg-surface px-5 py-6 flex flex-wrap items-center gap-4">
-      <p className="flex-1 min-w-[260px] text-sm text-muted">{body}</p>
+    <section className="rounded-xl border border-border bg-surface px-5 py-5 flex flex-wrap items-center gap-4" aria-labelledby="invoices-title">
+      <span aria-hidden className="w-10 h-10 shrink-0 rounded-full bg-panel flex items-center justify-center">
+        <Receipt className="w-[18px] h-[18px] text-muted" />
+      </span>
+      <div className="flex-1 min-w-[240px] flex flex-col gap-0.5">
+        <h2 id="invoices-title" className="text-base font-semibold text-fg">
+          Invoices
+        </h2>
+        <p className="text-sm text-muted">{body}</p>
+      </div>
       {stripeConfigured && subscribed && canManage && (
         <Btn variant="primary" size="md" disabled={loading} onClick={openStripe}>
           {loading ? "Opening" : "Open invoices"}

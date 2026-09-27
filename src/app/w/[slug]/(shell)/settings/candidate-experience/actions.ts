@@ -27,6 +27,7 @@ import {
   CANDIDATE_EMAILS,
   REPLY_TO_LINK_DAYS,
   applyWording,
+  wordingOrStandard,
   candidateBrand,
   isCandidateEmailKey,
   makeReplyToToken,
@@ -259,7 +260,11 @@ async function buildSample(
 
   const origin = await appOrigin();
   const sample = sampleCandidateEmail(key, ctx.ws.name, origin);
-  const custom = ctx.growth ? applyWording({ subject: parsed.subject, body: parsed.body }, placeholderVars(sample.props)) : null;
+  // Mirrors applyCandidateContext: the draft on growth, the standard wording otherwise.
+  const custom = applyWording(
+    wordingOrStandard(key, ctx.growth ? { subject: parsed.subject, body: parsed.body } : null),
+    placeholderVars(sample.props),
+  );
   const props = { ...sample.props, brand, custom, unsubscribeUrl: `${origin}/email/unsubscribe?sample=1` };
   const template = sample.template as TemplateName;
   const def = TEMPLATES[template] as unknown as { subject: (p: unknown) => string };

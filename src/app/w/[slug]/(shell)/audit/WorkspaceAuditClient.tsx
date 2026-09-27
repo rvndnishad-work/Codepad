@@ -89,8 +89,8 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
   return (
     <div className="flex flex-col gap-5">
       {toasts}
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex flex-col gap-1.5 min-w-0">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1 min-w-0">
           <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Audit log</h1>
           <p className="text-sm text-muted max-w-2xl">
             Everything people, keys and connections changed in this workspace, newest first.
@@ -101,8 +101,8 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
         </Btn>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <nav aria-label="Filter by category" className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+        <nav aria-label="Filter by category" className="flex flex-wrap items-center gap-2 min-w-0">
           {AUDIT_CATEGORIES.map((c) => {
             const on = c.id === query.category;
             return (
@@ -119,7 +119,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
             );
           })}
         </nav>
-        <div className="flex-1" />
+        <div className="flex flex-wrap items-center gap-2">
         <label htmlFor="audit-actor" className="text-[13px] text-muted">
           By
         </label>
@@ -127,7 +127,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
           id="audit-actor"
           value={query.actor}
           onChange={(e) => router.push(href({ actor: e.target.value }))}
-          className={selectCls}
+          className={`${selectCls} min-w-[180px]`}
         >
           <option value="">Anyone</option>
           {members.map((m) => (
@@ -137,7 +137,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
           ))}
           <option value={ACTOR_AUTOMATION}>API keys and automation</option>
         </select>
-        <label htmlFor="audit-range" className="text-[13px] text-muted">
+        <label htmlFor="audit-range" className="ml-2 text-[13px] text-muted">
           When
         </label>
         <select
@@ -148,7 +148,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
             if (range === "custom") router.push(href({ range, from, to }));
             else router.push(href({ range, from: "", to: "" }));
           }}
-          className={selectCls}
+          className={`${selectCls} min-w-[140px]`}
         >
           {AUDIT_RANGES.map((r) => (
             <option key={r.id} value={r.id}>
@@ -156,6 +156,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
             </option>
           ))}
         </select>
+        </div>
       </div>
 
       {query.range === "custom" && (
@@ -180,8 +181,10 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
       )}
 
       {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center flex flex-col items-center gap-2">
-          <ScrollText className="w-6 h-6 text-subtle" aria-hidden />
+        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center flex flex-col items-center gap-2">
+          <span aria-hidden className="w-11 h-11 mb-1 rounded-full bg-panel flex items-center justify-center">
+            <ScrollText className="w-5 h-5 text-muted" />
+          </span>
           <p className="text-[15px] font-medium text-fg">{filtered ? "Nothing matches these filters" : "Nothing in this period"}</p>
           <p className="text-[13px] text-muted max-w-sm">
             {filtered
@@ -198,7 +201,7 @@ export default function WorkspaceAuditClient({ slug, query, members, rows, pagin
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           {groups.map((g, gi) => (
             <section key={`${g.day}-${gi}`} aria-label={g.day}>
-              <h2 className={`px-4 py-2.5 text-[13px] font-semibold text-muted bg-panel ${gi > 0 ? "border-t border-border" : ""}`}>{g.day}</h2>
+              <h2 className={`px-4 py-2 text-[12.5px] font-semibold text-muted bg-panel border-b border-border ${gi > 0 ? "border-t" : ""}`}>{g.day}</h2>
               <ul>
                 {g.rows.map((r, i) => (
                   <Event key={r.id} r={r} slug={slug} first={i === 0} local={local} />
@@ -236,13 +239,13 @@ function Event({ r, slug, first, local }: { r: TimelineRow; slug: string; first:
   });
   return (
     <li
-      className={`grid grid-cols-[52px_14px_1fr] sm:grid-cols-[64px_14px_1fr_200px] gap-x-3 gap-y-1 items-start px-4 py-3 ${first ? "" : "border-t border-border"}`}
+      className={`grid grid-cols-[52px_14px_1fr] sm:grid-cols-[64px_14px_1fr_200px] gap-x-3 gap-y-1 items-start px-4 py-2.5 ${first ? "" : "border-t border-border"}`}
     >
-      <time dateTime={r.createdAt} title={local ? new Date(r.createdAt).toLocaleString() : undefined} className="font-mono text-[13px] text-subtle pt-0.5 tabular-nums">
+      <time dateTime={r.createdAt} title={local ? new Date(r.createdAt).toLocaleString() : undefined} className="font-mono text-[13px] text-subtle pt-px tabular-nums">
         {time}
       </time>
-      <span aria-hidden className={`w-2.5 h-2.5 rounded-full mt-1.5 ${DOT[r.tone]}`} />
-      <div className="flex flex-col gap-1 min-w-0">
+      <span aria-hidden className={`w-2 h-2 rounded-full mt-[7px] justify-self-center ${DOT[r.tone]}`} />
+      <div className="flex flex-col gap-0.5 min-w-0">
         <p className="text-sm text-fg">
           <span className="font-semibold">{r.title}</span>
           {r.tag && (
@@ -256,7 +259,7 @@ function Event({ r, slug, first, local }: { r: TimelineRow; slug: string; first:
             {r.detail}
             {r.detail && r.path ? " " : ""}
             {r.path && (
-              <Link href={`/w/${slug}/${r.path}`} className="text-secondary hover:underline underline-offset-2">
+              <Link href={`/w/${slug}/${r.path}`} className="text-secondary-soft hover:underline underline-offset-2">
                 {r.pathLabel ?? "Open"}
               </Link>
             )}
@@ -264,7 +267,7 @@ function Event({ r, slug, first, local }: { r: TimelineRow; slug: string; first:
         )}
         <p className="sm:hidden text-xs text-subtle">{r.actor}</p>
       </div>
-      <span className="hidden sm:block text-[13px] text-muted text-right truncate" title={r.ip ? `${r.actor} from ${r.ip}` : r.actor}>
+      <span className="hidden sm:block text-[13px] text-muted text-right truncate pt-px" title={r.ip ? `${r.actor} from ${r.ip}` : r.actor}>
         {r.actor}
       </span>
     </li>

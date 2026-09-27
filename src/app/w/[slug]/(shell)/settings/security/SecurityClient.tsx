@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Mail, Plus, ShieldCheck, X } from "lucide-react";
+import { KeyRound, Mail, Plus, ShieldAlert, ShieldCheck, X } from "lucide-react";
 import { Avatar, Btn, inputCls, useToasts } from "../../candidates/_components/ui";
 import { ConfirmDialog } from "../../candidates/_components/dialogs";
 import { SaveBar, Segmented, Select, SettingRow, SettingsCard, Toggle, useSettingsForm } from "../_components/form";
@@ -65,6 +65,7 @@ type Props = {
 
 const days = (n: number) => (n === 365 ? "1 year" : `${n} ${n === 1 ? "day" : "days"}`);
 const SHOW_NAMES = 6;
+const SSO_PROVIDERS = ["Okta", "Microsoft Entra ID", "Google Workspace", "Other SAML"];
 
 export default function SecurityClient(props: Props) {
   const { slug, canEdit, owner, paidPlan, myTwoFactorOn, initial, saved, members, flaggedKeys, liveKeyCount, workspaceName } = props;
@@ -196,17 +197,25 @@ export default function SecurityClient(props: Props) {
           }
         >
           {without2fa.length > 0 && (
-            <ul className="flex flex-wrap gap-1.5">
-              {without2fa.slice(0, SHOW_NAMES).map((m) => (
-                <li key={m.id} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel pl-1 pr-2.5 h-7 text-[13px] text-fg">
-                  <Avatar name={m.name} size={20} />
-                  {m.name}
-                </li>
-              ))}
-              {without2fa.length > SHOW_NAMES && (
-                <li className="inline-flex items-center h-7 px-2 text-[13px] text-muted">and {without2fa.length - SHOW_NAMES} more</li>
+            <div className="w-full flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-lg border border-warning/25 bg-warning/10 px-3.5 py-2.5">
+              <ShieldAlert className="w-4 h-4 text-warning shrink-0" aria-hidden />
+              <p className="flex-1 min-w-[200px] text-[13px] text-warning">
+                {plural(without2fa.length, "member")} {without2fa.length === 1 ? "has" : "have"} not set it up:{" "}
+                <span className="text-fg">
+                  {without2fa
+                    .slice(0, SHOW_NAMES)
+                    .map((m) => m.name)
+                    .join(", ")}
+                  {without2fa.length > SHOW_NAMES ? ` and ${without2fa.length - SHOW_NAMES} more` : ""}
+                </span>
+                .
+              </p>
+              {canEdit && (
+                <Btn icon={Mail} onClick={sendReminder} disabled={busy || savedPolicy.state === "off" || reminderWait > 0}>
+                  Email them now
+                </Btn>
               )}
-            </ul>
+            </div>
           )}
           {without2fa.length === 0 && (
             <p className="inline-flex items-center gap-1.5 text-[13px] text-muted">
@@ -214,20 +223,15 @@ export default function SecurityClient(props: Props) {
             </p>
           )}
           {canEdit && without2fa.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 mt-1">
-              <Btn icon={Mail} onClick={sendReminder} disabled={busy || savedPolicy.state === "off" || reminderWait > 0}>
-                Email them now
-              </Btn>
-              <span className="text-[13px] text-muted">
-                {savedPolicy.state === "off"
-                  ? "Save two-factor for everyone first."
-                  : saved.require2faRemindedAt
-                    ? `Last emailed ${relativeTime(saved.require2faRemindedAt, now).toLowerCase()}.`
-                    : savedPolicy.state === "scheduled"
-                      ? `Required from ${fmt(savedPolicy.from.toISOString())}.`
-                      : "Required now."}
-              </span>
-            </div>
+            <span className="text-[13px] text-muted">
+              {savedPolicy.state === "off"
+                ? "Save two-factor for everyone first."
+                : saved.require2faRemindedAt
+                  ? `Last emailed ${relativeTime(saved.require2faRemindedAt, now).toLowerCase()}.`
+                  : savedPolicy.state === "scheduled"
+                    ? `Required from ${fmt(savedPolicy.from.toISOString())}.`
+                    : "Required now."}
+            </span>
           )}
         </SettingRow>
       </SettingsCard>
@@ -266,50 +270,52 @@ export default function SecurityClient(props: Props) {
           help="Invites only go to addresses at these domains. Subdomains count too. Leave it empty to allow any address."
           error={errors.allowedEmailDomains ?? domainError}
         >
-          {values.allowedEmailDomains.length > 0 && (
-            <ul className="flex flex-wrap gap-1.5" aria-label="Allowed domains">
-              {values.allowedEmailDomains.map((d) => (
-                <li key={d} className="inline-flex items-center gap-1 rounded-full border border-border bg-panel pl-2.5 pr-1 h-7 text-[13px] text-fg">
-                  {d}
-                  {!disabled && (
-                    <button
-                      type="button"
-                      onClick={() => removeDomain(d)}
-                      aria-label={`Remove ${d}`}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-muted hover:text-fg hover:bg-surface"
-                    >
-                      <X className="w-3.5 h-3.5" aria-hidden />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          {!disabled && values.allowedEmailDomains.length < MAX_ALLOWED_DOMAINS && (
-            <form
-              className="flex gap-2 w-full max-w-md"
-              onSubmit={(e) => {
-                e.preventDefault();
-                addDomains();
-              }}
-            >
-              <input
-                id="domain-input"
-                value={domainDraft}
-                onChange={(e) => {
-                  setDomainDraft(e.target.value);
-                  setDomainError(null);
+          <div className="flex flex-wrap items-center gap-1.5 w-full">
+            {values.allowedEmailDomains.length > 0 && (
+              <ul className="contents" aria-label="Allowed domains">
+                {values.allowedEmailDomains.map((d) => (
+                  <li key={d} className={`inline-flex items-center gap-1 rounded-full border border-border bg-panel h-8 text-[13px] text-fg ${disabled ? "px-3" : "pl-3 pr-1"}`}>
+                    {d}
+                    {!disabled && (
+                      <button
+                        type="button"
+                        onClick={() => removeDomain(d)}
+                        aria-label={`Remove ${d}`}
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-muted hover:text-fg hover:bg-surface"
+                      >
+                        <X className="w-3.5 h-3.5" aria-hidden />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {!disabled && values.allowedEmailDomains.length < MAX_ALLOWED_DOMAINS && (
+              <form
+                className="flex items-center gap-1.5"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  addDomains();
                 }}
-                placeholder="acme.com"
-                autoCapitalize="none"
-                spellCheck={false}
-                className={inputCls}
-              />
-              <Btn type="submit" icon={Plus} disabled={!domainDraft.trim()}>
-                Add
-              </Btn>
-            </form>
-          )}
+              >
+                <input
+                  id="domain-input"
+                  value={domainDraft}
+                  onChange={(e) => {
+                    setDomainDraft(e.target.value);
+                    setDomainError(null);
+                  }}
+                  placeholder="Add a domain"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  className={inputCls.replace("w-full", "w-44")}
+                />
+                <Btn type="submit" icon={Plus} disabled={!domainDraft.trim()}>
+                  Add
+                </Btn>
+              </form>
+            )}
+          </div>
           {disabled && !values.allowedEmailDomains.length && <p className="text-[13px] text-muted">Any address</p>}
           {outside.length > 0 && (
             <p className="text-[13px] text-muted">
@@ -400,17 +406,34 @@ export default function SecurityClient(props: Props) {
         )}
       </SettingsCard>
 
-      <SettingsCard
-        id="sso"
-        title="Single sign-on and SCIM"
-        description="Sign in through your company identity provider, and add or remove members from it automatically."
-        aside={<span className="rounded-full bg-panel border border-border text-xs font-medium text-muted px-2.5 leading-6">Enterprise</span>}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="text-[13px] text-muted max-w-xl">Available on the Enterprise plan. Tell us which identity provider you use and we will set it up with you.</p>
-          <Btn href={`mailto:sales@interviewpad.dev?subject=${encodeURIComponent(`Single sign-on for ${workspaceName}`)}`}>Talk to us</Btn>
+      <section id="sso" className="rounded-xl border border-dashed border-border-strong bg-surface/60">
+        <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3.5">
+          <div className="flex flex-col gap-1 min-w-0">
+            <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">Single sign-on and provisioning</h2>
+            <p className="text-[13px] text-muted max-w-2xl">Sign in through your company identity provider, and add or remove members from it automatically.</p>
+          </div>
+          <span className="rounded-full bg-fg text-bg text-xs font-semibold px-2.5 leading-6">Enterprise</span>
+        </header>
+        <div className="divide-y divide-dashed divide-border border-t border-dashed border-border">
+          <SettingRow label="Single sign-on" help="Members sign in through your company login. SAML or OpenID Connect.">
+            <ul className="flex flex-wrap gap-2" aria-label="Identity providers">
+              {SSO_PROVIDERS.map((p) => (
+                <li key={p}>
+                  <Btn href={`mailto:sales@interviewpad.dev?subject=${encodeURIComponent(`Single sign-on with ${p} for ${workspaceName}`)}`}>{p}</Btn>
+                </li>
+              ))}
+            </ul>
+          </SettingRow>
+          <SettingRow label="Automatic provisioning" help="People added or removed in your directory join or leave here too (SCIM).">
+            <div className="flex flex-wrap items-center gap-3">
+              <Btn variant="primary" href={`mailto:sales@interviewpad.dev?subject=${encodeURIComponent(`Single sign-on for ${workspaceName}`)}`}>
+                Talk to us
+              </Btn>
+              <span className="text-[13px] text-muted">Part of the Enterprise plan. Tell us which identity provider you use and we will set it up with you.</span>
+            </div>
+          </SettingRow>
         </div>
-      </SettingsCard>
+      </section>
 
       {confirmSignOut && (
         <ConfirmDialog

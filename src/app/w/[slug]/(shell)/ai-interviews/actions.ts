@@ -21,6 +21,8 @@ import { creditCheck, DEFAULT_EXPIRY_DAYS, EXPIRY_CHOICES, expiryDate, REMINDER_
 import { createSessions, loadTheoryQuestions, sanitizeRoundSpec, snapshotStarters } from "@/lib/ai-interview/screening-create";
 import { parseTheorySettings } from "@/lib/ai-interview/theory";
 import { passMarkOf, SCREENING_PASS_THRESHOLD } from "@/lib/ai-interview/verdict";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { normalizeWorkspaceSettings, screeningStartValues } from "@/lib/workspace/settings";
 import { deliverInvite } from "@/lib/ai-interview/invites";
 import { plural } from "@/lib/workspace/display";
 import { parseQuestionnaire, serializeQuestionnaire, validateQuestionnaire } from "@/lib/ai-interview/questionnaire";
@@ -189,7 +191,7 @@ export type NewScreeningInput = {
   engagementLevel: string;
   expiresAfterDays: number;
   reminderAfterDays: number;
-  /** Score a candidate needs to clear this screening. Omitted keeps the default. */
+  /** Score a candidate needs to clear this screening. Omitted uses the workspace default (Settings > Screening defaults). */
   passMark?: number | null;
   maxExtensions: number;
   extensionMinutes: number;
@@ -220,9 +222,11 @@ export async function createScreeningAction(
     await assertChallengesVisible(w.workspace.id, rounds);
 
     const level = normalizeEngagementLevel(input.engagementLevel);
-    const expiresAfterDays = clampChoice(input.expiresAfterDays, EXPIRY_CHOICES, DEFAULT_EXPIRY_DAYS);
-    const reminderAfterDays = clampChoice(input.reminderAfterDays, REMINDER_CHOICES, 0);
-    const passMark = storedPassMark(input.passMark);
+    // Values the caller left out start from the workspace's screening defaults.
+    const start = screeningStartValues((await loadWorkspaceSettings(w.workspace.id)) ?? normalizeWorkspaceSettings({})).ai;
+    const expiresAfterDays = clampChoice(input.expiresAfterDays, EXPIRY_CHOICES, start.expiresAfterDays);
+    const reminderAfterDays = clampChoice(input.reminderAfterDays ?? start.reminderAfterDays, REMINDER_CHOICES, 0);
+    const passMark = storedPassMark(input.passMark === undefined ? start.passMark : input.passMark);
     const maxExtensions = Math.max(0, Math.min(5, Math.floor(Number(input.maxExtensions) || 0)));
     const extensionMinutes = Math.max(1, Math.min(60, Math.floor(Number(input.extensionMinutes) || 5)));
 

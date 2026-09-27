@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { loadTakeHomes } from "@/lib/take-home/list-server";
 import { DEFAULT_QUESTION_MINUTES, parseTemplateItems } from "@/lib/take-home/status";
 import { loadTakeHomeAccess } from "../_lib";
+import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
+import { normalizeWorkspaceSettings, screeningStartValues } from "@/lib/workspace/settings";
 import Composer, { type ComposerCandidate, type ComposerQuestion, type ComposerTemplate } from "../_components/Composer";
 
 export const metadata = { title: "New take home", robots: { index: false, follow: false } };
@@ -19,7 +21,7 @@ export default async function NewTakeHomePage({ params, searchParams }: Props) {
   if (!access.canCreate) redirect(`/w/${slug}/take-homes`);
   const wsId = access.workspace.id;
 
-  const [challenges, candidates, templates, rows] = await Promise.all([
+  const [challenges, candidates, templates, rows, settings] = await Promise.all([
     // Coding challenges only: they run tests, so every answer gets a score.
     prisma.challenge.findMany({
       where: { OR: [{ workspaceId: wsId }, { published: true, workspaceId: null }] },
@@ -38,7 +40,10 @@ export default async function NewTakeHomePage({ params, searchParams }: Props) {
       select: { id: true, name: true, itemsJson: true },
     }),
     loadTakeHomes(wsId),
+    loadWorkspaceSettings(wsId),
   ]);
+  // New take-homes start from Settings > Screening defaults.
+  const start = screeningStartValues(settings ?? normalizeWorkspaceSettings({})).takeHome;
 
   // People who already have an open take home get a note, not a block.
   const open = new Map<string, string>();
@@ -78,6 +83,7 @@ export default async function NewTakeHomePage({ params, searchParams }: Props) {
       candidates={people}
       initialCandidateIds={wanted.filter((id) => byId.has(id)).slice(0, 100)}
       initialTemplateId={tpls.some((t) => t.id === sp.template) ? sp.template! : null}
+      defaults={{ passMark: start.passMark, expiresInDays: start.expiresInDays, reminders: start.reminders }}
     />
   );
 }

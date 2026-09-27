@@ -177,8 +177,21 @@ export function timezoneList(): string[] {
     zones = [];
   }
   if (!zones.length) zones = ["UTC", "Europe/London", "Europe/Berlin", "America/New_York", "America/Los_Angeles", "Asia/Kolkata", "Asia/Singapore", "Asia/Tokyo", "Australia/Sydney"];
-  return ["UTC", ...zones.filter((z) => z !== "UTC")];
+  // Some runtimes list old names (Asia/Calcutta); show the names people know.
+  const named = [...new Set(zones.map((z) => MODERN_ZONE_NAMES[z] ?? z))].filter((z) => z !== "UTC").sort();
+  return ["UTC", ...named];
 }
+
+const MODERN_ZONE_NAMES: Record<string, string> = {
+  "Asia/Calcutta": "Asia/Kolkata",
+  "Asia/Saigon": "Asia/Ho_Chi_Minh",
+  "Asia/Katmandu": "Asia/Kathmandu",
+  "Asia/Rangoon": "Asia/Yangon",
+  "Europe/Kiev": "Europe/Kyiv",
+  "Atlantic/Faeroe": "Atlantic/Faroe",
+  "America/Godthab": "America/Nuuk",
+  "Pacific/Enderbury": "Pacific/Kanton",
+};
 
 /** "GMT+5:30" for a zone at a moment, or "" when the runtime cannot tell. */
 export function timezoneOffset(tz: string, at: Date = new Date()): string {

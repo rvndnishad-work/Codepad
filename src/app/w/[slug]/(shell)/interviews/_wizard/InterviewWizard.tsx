@@ -51,11 +51,13 @@ export type WizardProps = {
   bankCategories: PublicCategory[];
   /** From the URL: candidates, rounds, guide or format to start with. */
   prefill: { candidateIds: string[]; rounds: WizardRound[]; guideId: string | null; format: string | null };
+  /** Interview length from Settings > Screening defaults. */
+  defaultMinutes: number;
 };
 
 const DRAFT_VERSION = 1;
 
-function blankState(meId: string): WizardState {
+function blankState(meId: string, defaultMinutes: number): WizardState {
   return {
     format: null,
     title: "Interview",
@@ -68,7 +70,7 @@ function blankState(meId: string): WizardState {
     guideId: null,
     questionsOwnerId: null,
     questionsNote: "",
-    minutes: 60,
+    minutes: suggestedMinutes(null, [], defaultMinutes),
     times: [],
     brief: "",
     candidateBrief: "",
@@ -76,17 +78,17 @@ function blankState(meId: string): WizardState {
   };
 }
 
-export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, bankCategories, prefill }: WizardProps) {
+export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, bankCategories, prefill, defaultMinutes }: WizardProps) {
   const reduce = useReducedMotion();
   const draftKey = `interview-wizard:${slug}`;
   const hasPrefill = prefill.candidateIds.length > 0 || prefill.rounds.length > 0 || !!prefill.guideId || !!prefill.format;
 
   const [state, setState] = useState<WizardState>(() => {
-    const s = blankState(meId);
+    const s = blankState(meId, defaultMinutes);
     const f = formatOf(prefill.format) ?? (prefill.rounds.length ? formatOf("coding") : prefill.guideId ? formatOf("discussion") : null);
     if (f) {
       s.format = f.id;
-      s.minutes = suggestedMinutes(f, prefill.rounds);
+      s.minutes = suggestedMinutes(f, prefill.rounds, defaultMinutes);
       s.plan = f.plan;
     }
     if (prefill.rounds.length || prefill.guideId) s.plan = "set";
@@ -126,7 +128,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
       const d = JSON.parse(raw) as { v: number; state: WizardState; step: StepId; titleEdited: boolean };
       if (d.v !== DRAFT_VERSION || !d.state?.format) return;
       const memberIds = new Set(members.map((m) => m.userId));
-      setState({ ...blankState(meId), ...d.state, hostId: memberIds.has(d.state.hostId) ? d.state.hostId : meId });
+      setState({ ...blankState(meId, defaultMinutes), ...d.state, hostId: memberIds.has(d.state.hostId) ? d.state.hostId : meId });
       const at = STEPS.some((s) => s.id === d.step) ? d.step : "format";
       setStep(at);
       setFar(STEPS.findIndex((s) => s.id === at));
@@ -135,7 +137,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     } catch {
       // A broken or blocked draft just means a fresh start.
     }
-  }, [draftKey, hasPrefill, meId, members]);
+  }, [draftKey, hasPrefill, meId, members, defaultMinutes]);
 
   useEffect(() => {
     if (!loaded.current || done) return;
@@ -154,7 +156,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
       setState((s) => {
         const next = { ...s, ...p };
         // Length follows the rounds until someone sets it by hand.
-        if (!next.lengthSet && (p.rounds || p.format)) next.minutes = suggestedMinutes(formatOf(next.format), next.plan === "set" ? next.rounds : []);
+        if (!next.lengthSet && (p.rounds || p.format)) next.minutes = suggestedMinutes(formatOf(next.format), next.plan === "set" ? next.rounds : [], defaultMinutes);
         if (!titleEdited) next.title = defaultTitle(formatOf(next.format), next.noCandidate ? [] : next.candidates);
         // Keep one time per room when people are added or removed: each
         // person keeps their time, and someone new gets the next slot.
@@ -172,7 +174,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         }
         return next;
       }),
-    [titleEdited],
+    [titleEdited, defaultMinutes],
   );
 
   const idx = STEPS.findIndex((s) => s.id === step);
@@ -201,7 +203,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
       format: f.id,
       ...(changed
         ? {
-            minutes: suggestedMinutes(f, state.rounds),
+            minutes: suggestedMinutes(f, state.rounds, defaultMinutes),
             plan: plansFor(f).includes(state.plan) && state.format ? state.plan : f.plan,
             rounds: f.coding ? state.rounds : [],
             guideId: f.guide ? state.guideId : null,
@@ -221,7 +223,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     try {
       localStorage.removeItem(draftKey);
     } catch {}
-    setState(blankState(meId));
+    setState(blankState(meId, defaultMinutes));
     setTitleEdited(false);
     setRestored(false);
     setDir(-1);
@@ -363,7 +365,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
           </div>
         ) : null;
       case "schedule":
-        return <ScheduleStep state={state} patch={patch} calendar={<CalendarAvailability slug={slug} state={state} patch={patch} members={members} meId={meId} />} />;
+        return <ScheduleStep state={state} patch={patch} defaultMinutes={defaultMinutes} calendar={<CalendarAvailability slug={slug} state={state} patch={patch} members={members} meId={meId} />} />;
       case "review":
         return (
           <ReviewStep

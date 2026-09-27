@@ -607,15 +607,20 @@ export function defaultPassMarks(s: Pick<S, "defaultTakeHomePassMark" | "default
  * already uses. Existing items keep the values they were sent with.
  */
 export function screeningStartValues(s: S) {
+  const noReminders = !s.remindNotStarted && !s.remindBeforeDeadline;
   return {
     takeHome: {
       passMark: s.defaultTakeHomePassMark,
       expiresInDays: s.inviteExpiryDays,
-      reminders: {
-        startAfterHours: s.remindNotStarted ? DEFAULT_START_REMINDER_HOURS : null,
-        beforeDeadlineHours: s.remindBeforeDeadline ? DEFAULT_LAST_CALL_HOURS : null,
-        off: !s.remindNotStarted && !s.remindBeforeDeadline,
-      } satisfies ReminderPlan,
+      // Both off keeps the usual schedule but switched off, so turning
+      // reminders back on in the composer has something to send.
+      reminders: (noReminders
+        ? { startAfterHours: DEFAULT_START_REMINDER_HOURS, beforeDeadlineHours: DEFAULT_LAST_CALL_HOURS, off: true }
+        : {
+            startAfterHours: s.remindNotStarted ? DEFAULT_START_REMINDER_HOURS : null,
+            beforeDeadlineHours: s.remindBeforeDeadline ? DEFAULT_LAST_CALL_HOURS : null,
+            off: false,
+          }) satisfies ReminderPlan,
     },
     ai: {
       passMark: s.defaultAiPassMark,

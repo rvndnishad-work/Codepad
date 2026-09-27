@@ -73,5 +73,5 @@ export default async function AiScreeningPreviewPage({ params }: Props) {
 
 function theoryInfo(json: string | null | undefined) {
   const s = parseTheorySettings(json);
-  return { answerMode: s.answerMode, recordAudio: s.recordAudio };
+  return { answerMode: s.answerMode, recordAudio: s.recordAudio, language: s.language };
 }

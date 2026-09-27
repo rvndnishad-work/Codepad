@@ -50,6 +50,13 @@ export type CreateInterviewInput = {
     toolsJson?: string | null;
     /** Extra guide questions picked from the public bank (questionnaire JSON). */
     guideJson?: string | null;
+    /**
+     * Scorecard rules this interview keeps, from the workspace's screening
+     * defaults: pass mark (null means the standard one), whether cards stay
+     * hidden until you submit yours, and hours after the interview for the
+     * automatic reminder (null means none). Omitted keeps the column defaults.
+     */
+    scorecard?: { passMark: number | null; first: boolean; reminderHours: number | null };
   };
 };
 
@@ -241,6 +248,13 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
             setupGroupId: w.setupGroupId,
             toolsJson: w.toolsJson ?? null,
             guideJson: w.guideJson ?? null,
+            ...(w.scorecard
+              ? {
+                  scorecardPassMark: w.scorecard.passMark,
+                  scorecardFirst: w.scorecard.first,
+                  scorecardReminderHours: w.scorecard.reminderHours,
+                }
+              : {}),
           }
         : {}),
     },

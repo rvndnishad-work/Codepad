@@ -1,19 +1,22 @@
 "use client";
 
 /**
- * Members page: People, Invites and Roles tabs. Every change goes through
- * /api/w/[slug]/members, which checks permissions, applies the ownership
- * guards and writes the audit entry; this component only refreshes after.
+ * Members page: People, Invites and Roles tabs. Role, permission and
+ * invite changes go through /api/w/[slug]/members; removing with a
+ * handover, owner changes and inviting several people go through
+ * ./actions. Both check permissions, apply the ownership guards and write
+ * the audit entries; this component only refreshes after.
  */
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, Search, UserPlus } from "lucide-react";
-import { Avatar, Btn, Dialog, Field, Menu, MenuItem, inputCls, useToasts } from "../candidates/_components/ui";
+import { AlertTriangle, MoreHorizontal, Search, UserPlus } from "lucide-react";
+import { Avatar, Btn, Dialog, Menu, MenuItem, inputCls, useToasts } from "../candidates/_components/ui";
 import { ConfirmDialog } from "../candidates/_components/dialogs";
 import { relativeTime, plural } from "@/lib/workspace/display";
+import { isSingleOwner } from "@/lib/workspace/ownership";
+import { BulkInviteDialog, OwnerDialog, RemoveMemberDialog } from "./MemberDialogs";
 import {
-  INVITABLE_ROLES,
   ROLE_LABELS,
   checkRemoval,
   checkRoleChange,
@@ -49,6 +52,10 @@ type Props = {
   seats: SeatUsage;
   roleColumns: { key: string; label: string; description: string | null }[];
   roleBasePermissions: Record<string, string[]>;
+  /** Invites are limited to these domains. Empty allows any. */
+  allowedDomains: string[];
+  /** Owners here must use two-factor sign-in (paid plan, or required for everyone). */
+  ownersNeed2fa: boolean;
 };
 
 const roleLabel = (r: string) => ROLE_LABELS[r] ?? r.charAt(0) + r.slice(1).toLowerCase();
@@ -143,18 +150,24 @@ export default function MembersClient(props: Props) {
         {tabLink("roles", "Roles")}
       </nav>
 
-      {tab === "people" && <PeopleTab {...props} run={run} />}
+      {tab === "people" && <PeopleTab {...props} run={run} notify={toast} refresh={refresh} />}
       {tab === "invites" && <InvitesTab {...props} run={run} />}
       {tab === "roles" && <RolesTab {...props} />}
 
       {inviteOpen && (
-        <InviteDialog
+        <BulkInviteDialog
+          slug={slug}
           onClose={() => setInviteOpen(false)}
-          roleColumns={props.roleColumns}
-          onInvite={async (email, role) => {
-            const ok = await run(() => callMembersApi(slug, "POST", { email, role }), `Invite sent to ${email}.`);
-            if (ok) setInviteOpen(false);
+          onDone={() => {
+            setInviteOpen(false);
+            refresh();
           }}
+          notify={toast}
+          roleColumns={props.roleColumns}
+          memberEmails={members.map((m) => m.email ?? "").filter(Boolean)}
+          pendingEmails={invites.filter((i) => !i.expired).map((i) => i.email)}
+          allowedDomains={props.allowedDomains}
+          seatsRemaining={seats.remaining}
         />
       )}
       {toastNode}
@@ -174,10 +187,23 @@ const FILTERS: { id: string; label: string; roles: string[] | null }[] = [
   { id: "viewers", label: "Viewers", roles: ["VIEWER"] },
 ];
 
-function PeopleTab({ slug, me, members, now, roleBasePermissions, run }: Props & { run: RunFn }) {
+function PeopleTab({
+  slug,
+  me,
+  members,
+  now,
+  roleBasePermissions,
+  ownersNeed2fa,
+  run,
+  notify,
+  refresh,
+}: Props & { run: RunFn; notify: (text: string, tone?: "ok" | "error") => void; refresh: () => void }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("all");
   const [removing, setRemoving] = useState<MemberRow | null>(null);
+  const [owning, setOwning] = useState<{ member: MemberRow; mode: "add" | "transfer" } | null>(null);
+  const singleOwner = isSingleOwner(members);
+  const iAmOwner = me.role === "OWNER";
   const [editing, setEditing] = useState<MemberRow | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const nowDate = useMemo(() => new Date(now), [now]);
@@ -205,6 +231,15 @@ function PeopleTab({ slug, me, members, now, roleBasePermissions, run }: Props &
 
   return (
     <div className="flex flex-col gap-4">
+      {singleOwner && iAmOwner && members.length > 1 && (
+        <div role="note" className="flex gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-fg">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-warning" aria-hidden />
+          <span>
+            You are the only owner. If you leave or lose access, nobody can change the plan, the web address or security settings.
+            Use Make owner on a teammate you trust.
+          </span>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2.5">
         <label className="relative flex items-center">
           <span className="sr-only">Search members</span>
@@ -252,6 +287,7 @@ function PeopleTab({ slug, me, members, now, roleBasePermissions, run }: Props &
               const canEditRole = me.canSetRoles && (m.role !== "OWNER" || me.role === "OWNER");
               const canRemoveThis = me.canRemove && !isMe && checkRemoval({ caller, target: m, members }).ok;
               const stale = isInactive(m.lastActiveAt, nowDate);
+              const canMakeOwner = iAmOwner && me.canSetRoles && !isMe && m.role !== "OWNER";
               return (
                 <tr key={m.id} className="border-t border-border align-middle">
                   <td className="px-4 py-3">
@@ -343,6 +379,26 @@ function PeopleTab({ slug, me, members, now, roleBasePermissions, run }: Props &
                                 Extra permissions
                               </MenuItem>
                             )}
+                            {canMakeOwner && (
+                              <>
+                                <MenuItem
+                                  onClick={() => {
+                                    close();
+                                    setOwning({ member: m, mode: "add" });
+                                  }}
+                                >
+                                  Make owner
+                                </MenuItem>
+                                <MenuItem
+                                  onClick={() => {
+                                    close();
+                                    setOwning({ member: m, mode: "transfer" });
+                                  }}
+                                >
+                                  Transfer ownership
+                                </MenuItem>
+                              </>
+                            )}
                             {canRemoveThis && (
                               <MenuItem
                                 danger
@@ -385,17 +441,30 @@ function PeopleTab({ slug, me, members, now, roleBasePermissions, run }: Props &
       )}
 
       {removing && (
-        <ConfirmDialog
-          title={`Remove ${displayName(removing)}?`}
-          body="They lose access to this workspace straight away. Their candidates, interviews and notes stay. You can invite them again later."
-          confirmLabel="Remove"
-          danger
-          onCancel={() => setRemoving(null)}
-          onConfirm={async () => {
-            const target = removing;
+        <RemoveMemberDialog
+          slug={slug}
+          member={removing}
+          onClose={() => setRemoving(null)}
+          onDone={() => {
             setRemoving(null);
-            await run(() => callMembersApi(slug, "DELETE", { memberId: target.id }), `${displayName(target)} was removed.`);
+            refresh();
           }}
+          notify={notify}
+        />
+      )}
+
+      {owning && (
+        <OwnerDialog
+          slug={slug}
+          member={owning.member}
+          mode={owning.mode}
+          ownersNeed2fa={ownersNeed2fa}
+          onClose={() => setOwning(null)}
+          onDone={() => {
+            setOwning(null);
+            refresh();
+          }}
+          notify={notify}
         />
       )}
 
@@ -656,77 +725,5 @@ function RoleGroup({
         </tr>
       ))}
     </>
-  );
-}
-
-/* ───────────────────────────── Invite dialog ───────────────────────────── */
-
-function InviteDialog({
-  onClose,
-  onInvite,
-  roleColumns,
-}: {
-  onClose: () => void;
-  onInvite: (email: string, role: string) => Promise<void>;
-  roleColumns: Props["roleColumns"];
-}) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<string>("INTERVIEWER");
-  const [busy, setBusy] = useState(false);
-  const description = roleColumns.find((r) => r.key === role)?.description;
-
-  const submit = async () => {
-    if (!email.trim()) return;
-    setBusy(true);
-    await onInvite(email.trim(), role);
-    setBusy(false);
-  };
-
-  return (
-    <Dialog
-      title="Invite people"
-      onClose={onClose}
-      width={480}
-      footer={
-        <>
-          <Btn onClick={onClose}>Cancel</Btn>
-          <Btn variant="primary" disabled={busy || !email.trim()} onClick={submit}>
-            {busy ? "Sending" : "Send invite"}
-          </Btn>
-        </>
-      }
-    >
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submit();
-        }}
-      >
-        <Field label="Email">
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="colleague@company.com"
-            className={inputCls}
-          />
-        </Field>
-        <Field label="Role" hint={description ?? undefined}>
-          <select value={role} onChange={(e) => setRole(e.target.value)} className={inputCls}>
-            {INVITABLE_ROLES.map((r) => (
-              <option key={r} value={r}>
-                {roleLabel(r)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <p className="text-[13px] text-muted">
-          They get an email with a link that works for 14 days. To make someone an owner, invite them first and change their role
-          once they join.
-        </p>
-      </form>
-    </Dialog>
   );
 }

@@ -53,6 +53,8 @@ export type SendEmailInput<T extends TemplateName> = {
   sessionId?: string;
   /** Display name for the From header ("Acme via Interviewpad"); the address stays ours. */
   fromName?: string;
+  /** Files to attach. `content` is base64. */
+  attachments?: { filename: string; content: string }[];
 };
 
 function normalizeAddress(addr: string): string {
@@ -214,7 +216,9 @@ export async function sendEmail<T extends TemplateName>(
     // Dev fallback — surface key fields in the log so a localhost flow that
     // emits an email link is debuggable without standing up Resend.
     console.log(
-      `[email:dev-stub] template=${input.template} from=${fromHeader(fromName)} to=${recipients.join(",")}${replyTo ? ` reply-to=${replyTo}` : ""} subject="${subject}"\n${text}`,
+      `[email:dev-stub] template=${input.template} from=${fromHeader(fromName)} to=${recipients.join(",")}${replyTo ? ` reply-to=${replyTo}` : ""} subject="${subject}"` +
+        (input.attachments?.length ? ` attachments=${input.attachments.map((a) => a.filename).join(",")}` : "") +
+        `\n${text}`,
     );
     if (log) await markLogSent(log.id, null);
     return { sent: true, provider: "console" };
@@ -235,6 +239,7 @@ export async function sendEmail<T extends TemplateName>(
       text,
     };
     if (replyTo) body.reply_to = replyTo;
+    if (input.attachments?.length) body.attachments = input.attachments;
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",

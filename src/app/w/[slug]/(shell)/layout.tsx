@@ -4,9 +4,11 @@ import { notFound, redirect } from "next/navigation";
 import { movedPagePath, movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
-import { canJoinWithoutInvite, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
+import { canJoinWithoutInvite, deletionFinalAt, formatWorkspaceDate, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
 import { signedOutPath } from "@/lib/workspace/security";
+import { canMember } from "@/lib/permissions";
 import WorkspaceShell from "./WorkspaceShell";
+import DeletionScheduledScreen from "./DeletionScheduledScreen";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
 
@@ -70,6 +72,21 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   // Settings > Security can extend this to every member from a start date.
   const mustEnroll2fa = twoFactorRequired(settings, myMember, activeWorkspace.planName);
   await ensureTotpEnrolledOrRedirect(userId, mustEnroll2fa);
+
+  // Settings > Data and privacy: a workspace waiting to be deleted is closed
+  // to everyone. Owners get the undo button.
+  const finalAt = deletionFinalAt(settings);
+  if (finalAt) {
+    return (
+      <DeletionScheduledScreen
+        slug={slug}
+        name={activeWorkspace.name}
+        finalAt={formatWorkspaceDate(finalAt, settings)}
+        daysLeft={Math.max(0, Math.ceil((finalAt.getTime() - Date.now()) / 86_400_000))}
+        isOwner={await canMember(myMember, "workspace:manage")}
+      />
+    );
+  }
 
   // Sidebar badges: submitted take-homes waiting on a decision, and live interviews.
   const reviewWhere = { OR: [{ candidateId: null }, { candidate: { stage: { in: [...TAKE_HOME_REVIEW_STAGES] } } }] };

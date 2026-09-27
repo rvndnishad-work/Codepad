@@ -83,6 +83,11 @@ import {
   twoFactorReminderText,
   type TwoFactorReminderProps,
 } from "./TwoFactorReminder";
+import {
+  DataPrivacyNotice,
+  dataPrivacyNoticeText,
+  type DataPrivacyNoticeProps,
+} from "./DataPrivacyNotice";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -198,6 +203,12 @@ export const TEMPLATES = {
     subject: (p) => `Turn on two-factor sign-in for ${p.workspaceName}`,
     text: twoFactorReminderText,
   } satisfies TemplateDef<TwoFactorReminderProps>,
+
+  "data-privacy-notice": {
+    Component: DataPrivacyNotice,
+    subject: (p) => p.subject,
+    text: dataPrivacyNoticeText,
+  } satisfies TemplateDef<DataPrivacyNoticeProps>,
 } as const;
 
 /** Allowed template names. */
@@ -221,4 +232,5 @@ export type TemplateProps = {
   "credits-low": CreditsLowProps;
   "reply-to-confirm": ReplyToConfirmProps;
   "two-factor-reminder": TwoFactorReminderProps;
+  "data-privacy-notice": DataPrivacyNoticeProps;
 };

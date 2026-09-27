@@ -697,6 +697,15 @@ model InterviewSession {
   scorecardPassMark  Float?
   /// Last time someone emailed the interviewers who still owe a scorecard.
   scorecardNudgedAt  DateTime?
+  /// Interviewers see the others' scorecards only after submitting their own.
+  /// New interviews copy the workspace default (Settings > Screening defaults).
+  scorecardFirst     Boolean          @default(true)
+  /// Hours after the interview to email interviewers who still owe a
+  /// scorecard. Null means no automatic reminder. Copied from the workspace
+  /// default when the interview is scheduled.
+  scorecardReminderHours  Int?
+  /// Stamp for that automatic reminder, so the cron sends it once.
+  scorecardAutoRemindedAt DateTime?
   /// When the candidate ticked the consent box before a recorded interview.
   candidateConsentAt DateTime?
   scorecards         InterviewScorecard[]
@@ -720,6 +729,7 @@ model InterviewSession {
   @@index([takeHomeTemplateId])
   @@index([questionsOwnerId])
   @@index([setupGroupId])
+  @@index([scorecardReminderHours, scorecardAutoRemindedAt])
 }
 
 /// Yjs updates for the shared tools in a live interview room (whiteboard,
@@ -1065,6 +1075,7 @@ model Workspace {
   deletionRequestedById String?
 
   slugRedirects           WorkspaceSlugRedirect[]
+  logo                    WorkspaceLogo?
   candidateEmailTemplates CandidateEmailTemplate[]
   retentionRules          RetentionRule[]
   dataRequests            DataRequest[]
@@ -1099,6 +1110,18 @@ model Workspace {
 
 /// Old workspace web address kept after a slug change, so /w/<oldSlug>
 /// links keep working. An old slug cannot be taken by another workspace.
+/// The workspace logo uploaded in Settings > General, served from
+/// /api/workspace-logo/<workspaceId> so candidate pages and emails can load
+/// it. Workspace.logoUrl points at that route (with a version query) or at an
+/// https address someone pasted instead.
+model WorkspaceLogo {
+  workspaceId String    @id
+  mime        String
+  bytes       Bytes
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model WorkspaceSlugRedirect {
   id          String    @id @default(cuid())
   oldSlug     String    @unique

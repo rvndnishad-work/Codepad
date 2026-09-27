@@ -118,6 +118,8 @@ type Props = {
   initialChat: Message[];
   /** The server can turn recorded speech into text, for browsers that cannot. */
   serverTranscribe: boolean;
+  /** Workspace logo and name for the header (Settings > Candidate experience). */
+  brand?: { name: string; logoUrl: string | null } | null;
 };
 
 /** Shape of GET /api/ai-interview/status — the honest health probe. */
@@ -157,7 +159,7 @@ function extractCodeMap(files: Record<string, unknown>): Record<string, string> 
   return codeMap;
 }
 
-export default function AIInterviewWorkspace({ session, rounds, initialChat, serverTranscribe }: Props) {
+export default function AIInterviewWorkspace({ session, rounds, initialChat, serverTranscribe, brand }: Props) {
   const [activeRoundId, setActiveRoundId] = useState(rounds[0]?.roundId ?? "");
   // Per-round file state. The active round's files are what we send to the AI
   // and to grading; the SurfaceBridge keeps this synced as the candidate edits.
@@ -946,14 +948,30 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
           </button>
 
           <span className={`text-muted/30 ${theoryActive ? "hidden" : ""}`}>|</span>
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-sm">
-              C
-            </div>
-            <span className="font-extrabold text-xs tracking-widest text-fg uppercase hidden sm:inline">
-              Interviewpad
+          {brand ? (
+            <span className="flex items-center gap-2 shrink-0 min-w-0">
+              {brand.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={brand.logoUrl} alt={brand.name} className="h-7 w-auto max-w-[140px] object-contain" />
+              ) : (
+                <>
+                  <span aria-hidden className="w-7 h-7 rounded-lg bg-elevated border border-border-strong flex items-center justify-center text-xs font-semibold text-fg">
+                    {brand.name.trim().charAt(0).toUpperCase() || "W"}
+                  </span>
+                  <span className="text-sm font-semibold text-fg truncate max-w-[160px] hidden sm:inline">{brand.name}</span>
+                </>
+              )}
             </span>
-          </Link>
+          ) : (
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-sm">
+                C
+              </div>
+              <span className="font-extrabold text-xs tracking-widest text-fg uppercase hidden sm:inline">
+                Interviewpad
+              </span>
+            </Link>
+          )}
           <span className="text-muted/30 hidden sm:inline">|</span>
           {/* Too tight for the role on a phone; the invite already named it. */}
           <div className="min-w-0 hidden sm:block">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { authorizeTheoryRound } from "@/lib/ai-interview/theory-server";
-import { consumeCreditIfFirstTurn, InsufficientCreditsError } from "@/lib/ai-interview/credits";
+import { consumeCreditIfFirstTurn, ConsentRequiredError, InsufficientCreditsError } from "@/lib/ai-interview/credits";
 import { callGemini, extractText, geminiApiKey } from "@/lib/ai-interview/gemini";
 import { rateLimit } from "@/lib/rate-limit";
 import {
@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof InsufficientCreditsError) {
       return NextResponse.json({ error: "Workspace is out of AI interview credits. Please contact your recruiter." }, { status: 402 });
+    }
+    if (err instanceof ConsentRequiredError) {
+      return NextResponse.json({ error: "Agree to the consent step first. Reload the page to see it." }, { status: 403 });
     }
     throw err;
   }

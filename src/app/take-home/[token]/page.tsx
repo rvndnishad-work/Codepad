@@ -6,6 +6,8 @@ import { Award, Clock, Calendar, CheckCircle2, AlertTriangle, ShieldCheck, Chevr
 import StartButton from "./StartButton";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
+import { loadCandidatePageSettings } from "@/lib/candidate-page-brand";
+import { CandidateBrandMark, CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -53,6 +55,8 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
   }
 
   const wide = assignment.status === "PENDING";
+  // Workspace logo, colour, help contact and privacy notice (Settings > Candidate experience).
+  const page = await loadCandidatePageSettings(assignment.workspaceId);
 
   return (
     <div className="min-h-screen bg-bg text-fg flex flex-col items-center px-4 py-10 relative overflow-hidden font-sans">
@@ -65,10 +69,14 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
       <div className={`w-full ${wide ? "max-w-6xl" : "max-w-xl"} relative z-10 space-y-6`}>
         {/* Brand */}
         <div className="flex justify-center">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
-            <span className="font-extrabold text-sm tracking-widest text-fg uppercase">Interviewpad</span>
-          </Link>
+          {page ? (
+            <CandidateBrandMark brand={page.brand} />
+          ) : (
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
+              <span className="font-extrabold text-sm tracking-widest text-fg uppercase">Interviewpad</span>
+            </Link>
+          )}
         </div>
 
         {/* EXPIRED */}
@@ -211,11 +219,13 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
 
               {/* Primary CTA — full-width, prominent (the page's main action). */}
               <div className="rounded-2xl border border-border bg-surface/70 backdrop-blur-xl p-5 shadow-sm">
-                <StartButton token={token} timeLimitMin={assignment.timeLimitMin} />
+                <StartButton token={token} timeLimitMin={assignment.timeLimitMin} brandColor={page?.brand.color ?? null} />
               </div>
             </div>
           );
         })()}
+
+        {page && <CandidateHelpLine brand={page.brand} />}
       </div>
     </div>
   );

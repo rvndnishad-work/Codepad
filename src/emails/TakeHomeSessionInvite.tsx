@@ -5,6 +5,7 @@
 import { Button, Text } from "@react-email/components";
 import * as React from "react";
 import { BaseLayout, emailStyles } from "./BaseLayout";
+import { BrandHeader, CandidateFooterLines, CustomIntro, candidateFooterText, ctaStyle, type CandidateEmailExtras } from "./candidate-brand";
 import { formatDeadlineUTC } from "./TakeHomeInvite";
 
 export type TakeHomeSessionInviteProps = {
@@ -15,7 +16,7 @@ export type TakeHomeSessionInviteProps = {
   questionCount: number;
   /** ISO deadline (last moment to start). */
   deadlineAt: string;
-};
+} & CandidateEmailExtras;
 
 export function TakeHomeSessionInvite({
   candidateName,
@@ -24,22 +25,33 @@ export function TakeHomeSessionInvite({
   takeHomeUrl,
   questionCount,
   deadlineAt,
+  brand,
+  custom,
+  unsubscribeUrl,
 }: TakeHomeSessionInviteProps) {
   return (
     <BaseLayout
       preview={`Your take-home from ${workspaceName}: ${title}`}
       footer={`This take-home was sent on behalf of ${workspaceName}. If you didn't expect it, you can safely ignore this email.`}
+      header={<BrandHeader brand={brand} />}
+      footerExtra={<CandidateFooterLines brand={brand} unsubscribeUrl={unsubscribeUrl} />}
     >
       <Text style={emailStyles.badge("#a78bfa")}>Take-Home Assessment</Text>
-      <Text style={emailStyles.h1}>
-        Hi {candidateName} — you&apos;ve got a take-home to complete.
-      </Text>
-      <Text style={emailStyles.body}>
-        {workspaceName} has assigned you{" "}
-        <span style={emailStyles.emphasis}>{title}</span> —{" "}
-        {questionCount} question{questionCount === 1 ? "" : "s"} you&apos;ll work
-        through in your browser, each with its own timer. No setup required.
-      </Text>
+      {custom?.paragraphs ? (
+        <CustomIntro paragraphs={custom.paragraphs} />
+      ) : (
+        <>
+          <Text style={emailStyles.h1}>
+            Hi {candidateName} — you&apos;ve got a take-home to complete.
+          </Text>
+          <Text style={emailStyles.body}>
+            {workspaceName} has assigned you{" "}
+            <span style={emailStyles.emphasis}>{title}</span> —{" "}
+            {questionCount} question{questionCount === 1 ? "" : "s"} you&apos;ll work
+            through in your browser, each with its own timer. No setup required.
+          </Text>
+        </>
+      )}
       <div style={emailStyles.scoreCardOuter}>
         <Text style={emailStyles.scoreLabel}>Questions</Text>
         <Text style={{ ...emailStyles.scoreValue("#F3F4F6"), fontSize: 20 }}>
@@ -50,7 +62,7 @@ export function TakeHomeSessionInvite({
           {formatDeadlineUTC(deadlineAt)}
         </Text>
       </div>
-      <Button href={takeHomeUrl} style={emailStyles.cta}>
+      <Button href={takeHomeUrl} style={ctaStyle(brand)}>
         Start your take-home →
       </Button>
       <Text style={emailStyles.linkFallback}>
@@ -70,9 +82,9 @@ export function TakeHomeSessionInvite({
 
 export function takeHomeSessionInviteText(p: TakeHomeSessionInviteProps): string {
   return [
-    `Hi ${p.candidateName},`,
-    "",
-    `${p.workspaceName} has assigned you a take-home: ${p.title} (${p.questionCount} question${p.questionCount === 1 ? "" : "s"}, each separately timed).`,
+    ...(p.custom?.paragraphs
+      ? [...p.custom.paragraphs.flatMap((x) => [x, ""]), `Questions: ${p.questionCount}, each separately timed.`]
+      : [`Hi ${p.candidateName},`, "", `${p.workspaceName} has assigned you a take-home: ${p.title} (${p.questionCount} question${p.questionCount === 1 ? "" : "s"}, each separately timed).`]),
     "",
     `Start by: ${formatDeadlineUTC(p.deadlineAt)}.`,
     "",
@@ -80,5 +92,6 @@ export function takeHomeSessionInviteText(p: TakeHomeSessionInviteProps): string
     p.takeHomeUrl,
     "",
     "Each question's timer starts when you open it. Times shown in UTC.",
+    ...candidateFooterText(p),
   ].join("\n");
 }

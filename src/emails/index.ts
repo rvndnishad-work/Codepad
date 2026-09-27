@@ -62,6 +62,11 @@ import {
   type InterviewerInviteProps,
 } from "./InterviewerInvite";
 import {
+  ScorecardReminder,
+  scorecardReminderText,
+  type ScorecardReminderProps,
+} from "./ScorecardReminder";
+import {
   WorkspaceInviteEmail,
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
@@ -145,6 +150,12 @@ export const TEMPLATES = {
     text: interviewerInviteText,
   } satisfies TemplateDef<InterviewerInviteProps>,
 
+  "scorecard-reminder": {
+    Component: ScorecardReminder,
+    subject: (p) => `Your scorecard for ${p.candidateName} is still open`,
+    text: scorecardReminderText,
+  } satisfies TemplateDef<ScorecardReminderProps>,
+
   "workspace-invite": {
     Component: WorkspaceInviteEmail,
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
@@ -168,4 +179,5 @@ export type TemplateProps = {
   "interview-invite": InterviewInviteProps;
   "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
+  "scorecard-reminder": ScorecardReminderProps;
 };

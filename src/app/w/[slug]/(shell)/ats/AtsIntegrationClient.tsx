@@ -26,6 +26,9 @@ import { humanize } from "@/lib/workspace/display";
 
 type Props = {
   slug: string;
+  /** Base of the URL the ATS posts candidates to (needs the signing secret). */
+  inboundBase: string;
+  workspaceId: string;
   workspaceName: string;
   planName: string;
   planAllowed: boolean;
@@ -41,6 +44,8 @@ const PROVIDERS: { id: AtsProvider; label: string; sampleUrl: string; brand: str
 
 export default function AtsIntegrationClient({
   slug,
+  inboundBase,
+  workspaceId,
   workspaceName,
   planName,
   planAllowed,
@@ -160,8 +165,9 @@ export default function AtsIntegrationClient({
         </div>
         <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">ATS sync</h1>
         <p className="text-sm text-muted max-w-2xl leading-relaxed">
-          Push graded candidate verdicts from <span className="text-fg font-medium">{workspaceName}</span> into
-          your ATS automatically. One integration per workspace; credentials are encrypted at rest.
+          Connect the ATS that <span className="text-fg font-medium">{workspaceName}</span> uses. Your ATS can
+          post candidates to the inbound URL, and a test event checks your outbound endpoint. Automatic result
+          sync is not built yet. One integration per workspace; credentials are encrypted at rest.
         </p>
       </header>
 
@@ -187,6 +193,10 @@ export default function AtsIntegrationClient({
                 Connected to <span className="capitalize">{view.provider}</span>
               </div>
               <div className="text-xs text-muted truncate font-mono">{view.webhookUrl}</div>
+              <div className="text-xs text-muted mt-1">
+                Inbound URL{view.hasWebhookSecret ? "" : " (set a signing secret to turn it on)"}:{" "}
+                <span className="font-mono text-fg select-all break-all">{`${inboundBase}/${view.provider}?workspaceId=${workspaceId}`}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -366,7 +376,7 @@ export default function AtsIntegrationClient({
           <label className="text-xs font-semibold text-muted/70 flex items-center gap-1.5">
             <Lock className="w-3 h-3" /> Webhook Signing Secret
             <span className="text-muted/50 font-normal normal-case tracking-normal ml-1">
-              (optional · for verifying inbound webhooks from your ATS)
+              (required for inbound webhooks from your ATS)
             </span>
           </label>
           {secretMode === "replace" ? (

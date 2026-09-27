@@ -48,6 +48,7 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
     select: {
       id: true, title: true, candidateName: true, status: true, deadlineAt: true,
       challengeIds: true, playgroundIds: true, promptScenarioIds: true, questionTimeLimitsJson: true,
+      workspaceId: true, candidateId: true,
       workspace: { select: { name: true } },
     },
   });
@@ -66,7 +67,7 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
     challengeIds.length
       ? prisma.challenge.findMany({ where: { id: { in: challengeIds } }, select: { id: true, slug: true, title: true, difficulty: true } })
       : Promise.resolve([]),
-    prisma.challengeAttempt.findMany({ where: { sessionId: session.id }, select: { challengeId: true, status: true, score: true } }),
+    prisma.challengeAttempt.findMany({ where: { sessionId: session.id }, select: { id: true, challengeId: true, status: true, score: true, startedAt: true, finishedAt: true } }),
     prisma.promptAttempt.findMany({ where: { sessionId: session.id }, select: { scenarioId: true } }),
   ]);
   const challengeById = new Map(challengeRows.map((c) => [c.id, c]));
@@ -80,11 +81,28 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
   // candidate execution lands in a follow-up — see IP-88 notes.) Idempotent.
   const allChallengesDone = challengeIds.length > 0 && challengeIds.every((id) => doneChallengeIds.has(id));
   if (allChallengesDone && (session.status === "scheduled" || session.status === "in_progress")) {
-    await prisma.interviewSession.updateMany({
+    const closed = await prisma.interviewSession.updateMany({
       where: { id: session.id, status: { in: ["scheduled", "in_progress"] } },
       data: { status: "completed", finishedAt: new Date() },
     }).catch(() => null);
     session.status = "completed";
+    // Only when this fallback is the one that closed it (the grade hook
+    // emits in the usual case).
+    if (closed?.count && session.workspaceId) {
+      const { takeHomeScore, countedAttempts } = await import("@/lib/take-home/status");
+      const { emitWorkspaceEvent } = await import("@/lib/events");
+      const counted = countedAttempts(attempts, challengeIds);
+      void emitWorkspaceEvent(session.workspaceId, "takehome.submitted", {
+        candidate: { id: session.candidateId, name: session.candidateName },
+        takeHome: {
+          id: session.id,
+          title: session.title || "Take-home assessment",
+          score: takeHomeScore(challengeIds.map((id) => counted.get(id)?.score)),
+          submittedAt: new Date().toISOString(),
+        },
+        reportPath: `take-homes/${session.id}`,
+      });
+    }
   }
 
   const wsName = session.workspace?.name ?? "the team";

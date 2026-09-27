@@ -1,35 +1,38 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  KeyRound,
-  Plus,
-  Copy,
-  Trash2,
-  X,
-  CheckCircle2,
-  ShieldAlert,
-  Terminal,
-  Clock,
-  Activity,
-  BookOpen,
-  RefreshCw,
-} from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { BookOpen, CheckCircle2, Copy, MoreHorizontal, Plus, ShieldAlert, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import {
+  DEFAULT_EXPIRY_DAYS,
+  EXPIRY_CHOICES,
+  STALE_AFTER_DAYS,
+  accessLabel,
+  expiryLabel,
+  keyHealth,
+} from "@/lib/mcp/keys";
+import { relativeTime } from "@/lib/workspace/display";
+import { Btn, Dialog, Field, Menu, MenuItem, inputCls } from "../candidates/_components/ui";
+import {
   createMcpApiKeyAction,
+  renameMcpApiKeyAction,
   revokeMcpApiKeyAction,
   rotateMcpApiKeyAction,
 } from "./actions";
+
+export type ConsoleTab = "keys" | "activity" | "connect";
 
 interface KeyRow {
   id: string;
   label: string;
   keyPreview: string;
   scopes: string[];
+  createdBy: string | null;
   lastUsedAt: string | null;
   revokedAt: string | null;
+  expiresAt: string | null;
   createdAt: string;
 }
 
@@ -42,14 +45,9 @@ interface AuditEntry {
   errorCode: string | null;
   durationMs: number;
   createdAt: string;
+  keyId: string | null;
   keyLabel: string | null;
   keyPreview: string | null;
-}
-
-interface Stats {
-  activeKeyCount: number;
-  callsLast24h: number;
-  lastCallAt: string | null;
 }
 
 interface AuditPagination {
@@ -59,364 +57,209 @@ interface AuditPagination {
   pageSize: number;
   kind: "ALL" | "tool" | "resource";
   errorsOnly: boolean;
+  keyId: string | null;
 }
 
 interface ConsoleProps {
   workspaceSlug: string;
   workspaceName: string;
+  mcpUrl: string;
   canManage: boolean;
-  stats: Stats;
+  tab: ConsoleTab;
+  now: string;
   keys: KeyRow[];
   auditLog: AuditEntry[];
+  recent: AuditEntry[];
   auditPagination: AuditPagination;
 }
+
+type Revealed = { plaintext: string; label: string; scopes: string[] };
 
 export default function ApiKeysConsole({
   workspaceSlug,
   workspaceName,
+  mcpUrl,
   canManage,
-  stats,
-  keys: initialKeys,
+  tab,
+  now,
+  keys,
   auditLog,
+  recent,
   auditPagination,
 }: ConsoleProps) {
-  const [keys, setKeys] = useState<KeyRow[]>(initialKeys);
+  const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
-  const [justCreated, setJustCreated] = useState<{
-    plaintext: string;
-    label: string;
-    scopes: string[];
-  } | null>(null);
+  const [renaming, setRenaming] = useState<KeyRow | null>(null);
+  const [justCreated, setJustCreated] = useState<Revealed | null>(null);
+  const at = new Date(now);
+  const base = `/w/${workspaceSlug}/api-keys`;
 
-  const activeKeys = keys.filter((k) => !k.revokedAt);
+  const liveKeys = keys.filter((k) => !k.revokedAt);
   const revokedKeys = keys.filter((k) => k.revokedAt);
 
-  const handleRevoke = async (id: string, label: string) => {
-    if (
-      !confirm(
-        `Revoke "${label}"? Any client using this key will immediately stop working. This cannot be undone.`
-      )
-    ) {
-      return;
-    }
+  const handleRevoke = async (k: KeyRow) => {
+    if (!confirm(`Revoke "${k.label}"? Anything using this key stops working straight away. This cannot be undone.`)) return;
     try {
-      await revokeMcpApiKeyAction(workspaceSlug, id);
-      setKeys((prev) =>
-        prev.map((k) =>
-          k.id === id ? { ...k, revokedAt: new Date().toISOString() } : k
-        )
-      );
-      toast.success(`Revoked "${label}".`);
+      await revokeMcpApiKeyAction(workspaceSlug, k.id);
+      toast.success(`Revoked "${k.label}".`);
+      router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Revoke failed.");
+      toast.error(err instanceof Error ? err.message : "Could not revoke the key.");
     }
   };
 
   const handleRotate = async (k: KeyRow) => {
     if (
       !confirm(
-        `Rotate "${k.label}"? A new key will be generated; any client still using the old one will stop working immediately. You'll see the new plaintext once — copy it before closing.`
+        `Rotate "${k.label}"? You get a new key with the same name, access and expiry. Anything still using the old one stops working straight away.`,
       )
     ) {
       return;
     }
     try {
       const res = await rotateMcpApiKeyAction(workspaceSlug, k.id);
-      if (!res.success) return;
-      // Mark old row as revoked and append " (rotated)" so the table mirrors
-      // the server state without a round-trip.
-      const taggedLabel = k.label.endsWith(" (rotated)") ? k.label : `${k.label} (rotated)`;
-      setKeys((prev) => [
-        {
-          id: `tmp-${Date.now()}`,
-          label: res.label,
-          keyPreview: res.preview,
-          scopes: res.scopes,
-          lastUsedAt: null,
-          revokedAt: null,
-          createdAt: new Date().toISOString(),
-        },
-        ...prev.map((row) =>
-          row.id === k.id
-            ? { ...row, label: taggedLabel, revokedAt: new Date().toISOString() }
-            : row
-        ),
-      ]);
       setJustCreated({ plaintext: res.plaintext, label: res.label, scopes: res.scopes });
-      toast.success(`Rotated "${k.label}". Copy the new key — shown once.`);
+      router.refresh();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Rotate failed.");
+      toast.error(err instanceof Error ? err.message : "Could not rotate the key.");
     }
   };
 
+  const tabs: { id: ConsoleTab; label: string }[] = [
+    { id: "keys", label: "Keys" },
+    { id: "activity", label: "Activity" },
+    { id: "connect", label: "Connect a client" },
+  ];
+
   return (
-    <div className="space-y-8 font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">API keys</h1>
-          <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
-            Connect Claude, Cursor, Goose — any MCP-compatible client — to this workspace. Mint <strong className="text-fg">read</strong> keys for analytics access, or <strong className="text-fg">read + write</strong> keys to create screenings, refund credits, and update candidates from inside your assistant.{" "}
-            <Link href="/docs/mcp" target="_blank" className="text-secondary underline underline-offset-2 inline-flex items-center gap-0.5">
-              <BookOpen className="w-3 h-3" /> Docs
+    <div className="flex flex-col gap-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">API and MCP</h1>
+          <p className="text-sm text-muted max-w-2xl">
+            Keys let Claude, Cursor or your own scripts list candidates, read results and add notes. No key can pass a candidate.{" "}
+            <Link href="/docs/mcp" target="_blank" className="text-secondary hover:underline underline-offset-2 inline-flex items-center gap-1">
+              <BookOpen className="w-3.5 h-3.5" aria-hidden /> Docs
             </Link>
           </p>
         </div>
         {canManage && (
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-5 py-3 rounded-xl bg-secondary hover:brightness-110 text-bg text-xs font-semibold transition-all cursor-pointer shadow-md shrink-0 text-center justify-center"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Generate API key</span>
-          </button>
+          <Btn variant="primary" size="md" icon={Plus} onClick={() => setShowCreate(true)}>
+            Create key
+          </Btn>
         )}
-      </div>
+      </header>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatTile
-          icon={<KeyRound className="w-5 h-5" />}
-          label="Active keys"
-          value={`${stats.activeKeyCount}`}
-          tone="accent"
-        />
-        <StatTile
-          icon={<Activity className="w-5 h-5" />}
-          label="Calls (last 24h)"
-          value={stats.callsLast24h.toLocaleString()}
-          tone="emerald"
-        />
-        <StatTile
-          icon={<Clock className="w-5 h-5" />}
-          label="Last call"
-          value={
-            stats.lastCallAt
-              ? new Date(stats.lastCallAt).toLocaleString()
-              : "—"
-          }
-          tone="indigo"
-          monoValue
-        />
-      </div>
+      <nav aria-label="API and MCP sections" className="flex gap-6 border-b border-border overflow-x-auto">
+        {tabs.map((t) => {
+          const on = t.id === tab;
+          return (
+            <Link
+              key={t.id}
+              href={t.id === "keys" ? base : `${base}?tab=${t.id}`}
+              aria-current={on ? "page" : undefined}
+              className={`h-10 -mb-px inline-flex items-center text-sm whitespace-nowrap border-b-2 transition ${
+                on ? "text-fg font-medium border-secondary" : "text-muted hover:text-fg border-transparent"
+              }`}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
+      </nav>
 
-      {/* Active keys */}
-      <section className="rounded-2xl border border-border bg-surface overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-semibold text-fg">
-            Active keys ({activeKeys.length})
-          </h2>
-          <p className="text-xs text-muted/70 mt-0.5">
-            Treat these like passwords. Only the workspace owner can see them on
-            generation — and even then, only once.
-          </p>
-        </div>
+      {tab === "keys" && (
+        <>
+          <KeysTable
+            keys={liveKeys}
+            now={at}
+            canManage={canManage}
+            base={base}
+            onRename={setRenaming}
+            onRotate={handleRotate}
+            onRevoke={handleRevoke}
+          />
 
-        {activeKeys.length === 0 ? (
-          <div className="p-10 text-center text-xs text-muted">
-            No active keys.{" "}
-            {canManage ? "Generate one above to connect an MCP client." : "Ask a workspace owner or admin to mint one."}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-bg/50">
-                <tr className="text-left text-muted ">
-                  <th className="px-4 py-3 font-bold">Label</th>
-                  <th className="px-4 py-3 font-bold">Preview</th>
-                  <th className="px-4 py-3 font-bold">Scopes</th>
-                  <th className="px-4 py-3 font-bold">Last used</th>
-                  <th className="px-4 py-3 font-bold">Created</th>
-                  {canManage && <th className="px-4 py-3 font-bold text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {activeKeys.map((k) => (
-                  <tr key={k.id} className="border-t border-border/40 hover:bg-surface/30">
-                    <td className="px-4 py-3 font-bold text-fg">{k.label}</td>
-                    <td className="px-4 py-3 font-mono text-muted text-xs">
-                      {k.keyPreview}…
-                    </td>
-                    <td className="px-4 py-3">
-                      {k.scopes.map((s) => (
-                        <span
-                          key={s}
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold mr-1 ${
-                            s === "write"
-                              ? "border-warning/40 bg-warning/15 text-warning"
-                              : "border-success/30 bg-success/10 text-success"
-                          }`}
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </td>
-                    <td className="px-4 py-3 text-muted/80 text-xs">
-                      {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : <span className="italic">never</span>}
-                    </td>
-                    <td className="px-4 py-3 text-muted/70 text-xs">
-                      {new Date(k.createdAt).toLocaleDateString()}
-                    </td>
-                    {canManage && (
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => handleRotate(k)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-warning/30 text-warning hover:bg-warning/10 text-xs font-bold transition"
-                            title="Generate a new key and revoke this one in one step"
-                          >
-                            <RefreshCw className="w-3 h-3" /> Rotate
-                          </button>
-                          <button
-                            onClick={() => handleRevoke(k.id, k.label)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-danger/30 text-danger hover:bg-danger/10 text-xs font-bold transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Revoke
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Revoked keys (collapsed by default for context) */}
-      {revokedKeys.length > 0 && (
-        <details className="rounded-2xl border border-border bg-surface overflow-hidden">
-          <summary className="px-4 py-3 cursor-pointer flex items-center justify-between list-none">
-            <span className="text-xs font-semibold text-muted">
-              Revoked ({revokedKeys.length})
-            </span>
-            <span className="text-xs text-muted/60">audit history preserved</span>
-          </summary>
-          <div className="overflow-x-auto border-t border-border/60">
-            <table className="w-full text-xs">
-              <tbody>
+          {revokedKeys.length > 0 && (
+            <details className="rounded-xl border border-border bg-surface overflow-hidden">
+              <summary className="px-4 py-3 cursor-pointer text-[13px] text-muted hover:text-fg">
+                Revoked keys ({revokedKeys.length})
+              </summary>
+              <ul className="border-t border-border">
                 {revokedKeys.map((k) => (
-                  <tr key={k.id} className="border-b border-border/30 opacity-60">
-                    <td className="px-4 py-2 text-fg/70">{k.label}</td>
-                    <td className="px-4 py-2 font-mono text-muted text-xs">{k.keyPreview}…</td>
-                    <td className="px-4 py-2 text-muted/60 text-xs">
-                      revoked {k.revokedAt ? new Date(k.revokedAt).toLocaleString() : ""}
-                    </td>
-                  </tr>
+                  <li key={k.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 border-t border-border first:border-t-0 text-[13px]">
+                    <span className="text-muted">{k.label}</span>
+                    <span className="font-mono text-subtle">{k.keyPreview}…</span>
+                    <span className="text-subtle">Revoked {k.revokedAt ? relativeTime(k.revokedAt, at).toLowerCase() : ""}</span>
+                    <Link href={`${base}?tab=activity&key=${k.id}`} className="ml-auto text-secondary hover:underline underline-offset-2">
+                      Activity
+                    </Link>
+                  </li>
                 ))}
-              </tbody>
-            </table>
+              </ul>
+            </details>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <section className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-2.5">
+              <h2 className="text-[13px] font-semibold text-muted">Recent activity</h2>
+              {recent.length === 0 ? (
+                <p className="text-sm text-muted">No calls yet. Once a client uses a key, its calls show up here.</p>
+              ) : (
+                <ul className="flex flex-col gap-2">
+                  {recent.map((e) => (
+                    <li key={e.id} className={`flex items-baseline justify-between gap-3 text-sm ${e.errorCode ? "text-danger" : "text-fg"}`}>
+                      <span className="min-w-0 truncate">
+                        <span className="font-mono text-[13px]">{e.name}</span>
+                        {e.resultSummary ? `, ${e.errorCode ? "refused" : e.resultSummary}` : ""}
+                      </span>
+                      <span className={`shrink-0 text-[13px] ${e.errorCode ? "" : "text-muted"}`}>{e.keyLabel ?? "Deleted key"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="text-[13px] text-muted mt-auto">
+                Calls that change data are also in the{" "}
+                <Link href={`/w/${workspaceSlug}/audit?category=connections`} className="text-secondary hover:underline underline-offset-2">
+                  audit log
+                </Link>
+                .{" "}
+                <Link href={`${base}?tab=activity`} className="text-secondary hover:underline underline-offset-2">
+                  See all activity
+                </Link>
+              </p>
+            </section>
+            <ConnectCard mcpUrl={mcpUrl} workspaceName={workspaceName} base={base} />
           </div>
-        </details>
+        </>
       )}
 
-      {/* Audit log */}
-      <section className="rounded-2xl border border-border bg-surface overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-semibold text-fg">
-              Recent activity
-            </h2>
-            <p className="text-xs text-muted/70 mt-0.5">
-              Every MCP call writes a row here. {auditPagination.totalEntries.toLocaleString()} total.
-            </p>
-          </div>
-          <AuditFilterChips
-            workspaceSlug={workspaceSlug}
-            pagination={auditPagination}
-          />
-        </div>
+      {tab === "activity" && (
+        <ActivityTab keys={keys} entries={auditLog} pagination={auditPagination} base={base} now={at} />
+      )}
 
-        {auditLog.length === 0 ? (
-          <div className="p-10 text-center text-xs text-muted">
-            {auditPagination.totalEntries === 0
-              ? "No activity yet. After you install a key in Claude/Cursor and run a tool, calls will appear here within seconds."
-              : "No entries match the current filter."}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-bg/50">
-                <tr className="text-left text-muted ">
-                  <th className="px-4 py-3 font-bold">When</th>
-                  <th className="px-4 py-3 font-bold">Key</th>
-                  <th className="px-4 py-3 font-bold">Kind</th>
-                  <th className="px-4 py-3 font-bold">Name</th>
-                  <th className="px-4 py-3 font-bold">Result</th>
-                  <th className="px-4 py-3 font-bold text-right">ms</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditLog.map((e) => (
-                  <tr key={e.id} className="border-t border-border/40">
-                    <td className="px-4 py-2 text-muted/70 text-xs whitespace-nowrap">
-                      {new Date(e.createdAt).toLocaleTimeString()}
-                    </td>
-                    <td className="px-4 py-2 text-fg/80">
-                      {e.keyLabel ? (
-                        <span className="font-bold">{e.keyLabel}</span>
-                      ) : (
-                        <span className="italic text-muted/50">(revoked)</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${
-                          e.kind === "tool"
-                            ? "border-secondary/30 bg-secondary/10 text-secondary"
-                            : "border-secondary/30 bg-secondary/10 text-secondary"
-                        }`}
-                      >
-                        {e.kind}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 font-mono text-fg/80 text-xs">{e.name}</td>
-                    <td className="px-4 py-2 text-muted">
-                      {e.errorCode ? (
-                        <span className="text-danger">
-                          <ShieldAlert className="w-3 h-3 inline mr-1" />
-                          {e.errorCode}: {e.resultSummary}
-                        </span>
-                      ) : (
-                        e.resultSummary || "—"
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-right tabular-nums text-muted/70">
-                      {e.durationMs}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        {auditPagination.totalPages > 1 && (
-          <AuditPaginationFooter
-            workspaceSlug={workspaceSlug}
-            pagination={auditPagination}
-          />
-        )}
-      </section>
+      {tab === "connect" && <ConnectTab mcpUrl={mcpUrl} workspaceName={workspaceName} />}
 
       {showCreate && (
-        <CreateKeyModal
+        <CreateKeyDialog
           workspaceSlug={workspaceSlug}
           onClose={() => setShowCreate(false)}
-          onCreated={(plaintext, label, preview, scopes) => {
-            setKeys((prev) => [
-              {
-                id: `tmp-${Date.now()}`,
-                label,
-                keyPreview: preview,
-                scopes,
-                lastUsedAt: null,
-                revokedAt: null,
-                createdAt: new Date().toISOString(),
-              },
-              ...prev,
-            ]);
-            setJustCreated({ plaintext, label, scopes });
+          onCreated={(r) => {
             setShowCreate(false);
+            setJustCreated(r);
+            router.refresh();
+          }}
+        />
+      )}
+
+      {renaming && (
+        <RenameDialog
+          workspaceSlug={workspaceSlug}
+          k={renaming}
+          onClose={() => setRenaming(null)}
+          onDone={() => {
+            setRenaming(null);
+            router.refresh();
           }}
         />
       )}
@@ -427,6 +270,7 @@ export default function ApiKeysConsole({
           label={justCreated.label}
           scopes={justCreated.scopes}
           workspaceName={workspaceName}
+          url={mcpUrl}
           onClose={() => setJustCreated(null)}
         />
       )}
@@ -434,299 +278,523 @@ export default function ApiKeysConsole({
   );
 }
 
-/**
- * Build a /w/[slug]/api-keys URL with the given audit-filter params. Used by
- * both the filter chips and the pagination footer so they share encoding.
- */
-function buildAuditUrl(
-  workspaceSlug: string,
-  params: { page?: number; kind?: "ALL" | "tool" | "resource"; errorsOnly?: boolean }
-): string {
-  const q = new URLSearchParams();
-  if (params.page && params.page > 1) q.set("page", String(params.page));
-  if (params.kind && params.kind !== "ALL") q.set("kind", params.kind);
-  if (params.errorsOnly) q.set("errorsOnly", "1");
-  const qs = q.toString();
-  return qs ? `/w/${workspaceSlug}/api-keys?${qs}` : `/w/${workspaceSlug}/api-keys`;
-}
+/* ── Keys ───────────────────────────────────────────────────────────────── */
 
-function AuditFilterChips({
-  workspaceSlug,
-  pagination,
+function KeysTable({
+  keys,
+  now,
+  canManage,
+  base,
+  onRename,
+  onRotate,
+  onRevoke,
 }: {
-  workspaceSlug: string;
-  pagination: AuditPagination;
+  keys: KeyRow[];
+  now: Date;
+  canManage: boolean;
+  base: string;
+  onRename: (k: KeyRow) => void;
+  onRotate: (k: KeyRow) => void;
+  onRevoke: (k: KeyRow) => void;
 }) {
-  // Changing a filter resets page to 1; otherwise you'd land on an empty page
-  // when narrowing the result set.
-  const linkFor = (next: Partial<AuditPagination>) =>
-    buildAuditUrl(workspaceSlug, {
-      page: 1,
-      kind: next.kind ?? pagination.kind,
-      errorsOnly:
-        next.errorsOnly !== undefined ? next.errorsOnly : pagination.errorsOnly,
-    });
-
+  if (keys.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-12 text-center flex flex-col items-center gap-2">
+        <p className="text-[15px] font-medium text-fg">No keys yet</p>
+        <p className="text-[13px] text-muted max-w-sm">
+          {canManage ? "Create a key to connect Claude, Cursor or a script to this workspace." : "Ask a workspace owner or admin to create one."}
+        </p>
+      </div>
+    );
+  }
   return (
-    <div className="flex gap-1.5 flex-wrap">
-      {(["ALL", "tool", "resource"] as const).map((k) => (
-        <Link
-          key={k}
-          href={linkFor({ kind: k })}
-          className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition ${
-            pagination.kind === k
-              ? "bg-secondary/15 border-secondary/30 text-secondary"
-              : "bg-bg border-border/40 text-muted hover:text-fg"
-          }`}
-        >
-          {k === "ALL" ? "all" : k}
-        </Link>
-      ))}
-      <Link
-        href={linkFor({ errorsOnly: !pagination.errorsOnly })}
-        className={`px-2.5 py-1 rounded-md text-xs font-semibold border transition ${
-          pagination.errorsOnly
-            ? "bg-danger/15 border-danger/35 text-danger"
-            : "bg-bg border-border/40 text-muted hover:text-fg"
-        }`}
-      >
-        errors only
-      </Link>
+    <div className="rounded-xl border border-border bg-surface overflow-x-auto">
+      <table className="w-full min-w-[760px] border-collapse text-sm">
+        <thead>
+          <tr className="text-left text-[13px] text-muted bg-panel">
+            <th className="px-4 py-2.5 font-semibold">Name</th>
+            <th className="px-4 py-2.5 font-semibold w-[150px]">Access</th>
+            <th className="px-4 py-2.5 font-semibold w-[160px]">Created by</th>
+            <th className="px-4 py-2.5 font-semibold w-[160px]">Last used</th>
+            <th className="px-4 py-2.5 font-semibold w-[120px]">Expires</th>
+            <th className="px-4 py-2.5 w-[150px]">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {keys.map((k) => {
+            const h = keyHealth(k, now);
+            const expired = h.state === "expired";
+            const soon = !expired && h.expiresInDays !== null && h.expiresInDays < 7;
+            return (
+              <tr key={k.id} className={`border-t border-border ${h.stale ? "bg-warning/[0.06]" : ""} ${expired ? "bg-danger/[0.04]" : ""}`}>
+                <td className="px-4 py-3">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-fg">{k.label}</span>
+                    <span className="font-mono text-[13px] text-subtle">{k.keyPreview}…</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={`inline-flex items-center h-6 px-2 rounded-full text-[13px] font-medium whitespace-nowrap ${
+                      k.scopes.includes("write") ? "bg-secondary/15 text-secondary" : "bg-panel text-muted"
+                    }`}
+                  >
+                    {accessLabel(k.scopes)}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-fg">{k.createdBy ?? <span className="text-subtle">Unknown</span>}</td>
+                <td className={`px-4 py-3 ${h.stale ? "text-warning" : "text-muted"}`}>
+                  <div className="flex flex-col">
+                    <span>{k.lastUsedAt ? relativeTime(k.lastUsedAt, now) : "Never"}</span>
+                    {h.stale && (
+                      <span className="text-xs" title={`No calls for ${STALE_AFTER_DAYS} days or more. Revoke it if nothing needs it.`}>
+                        Unused for {h.idleDays} days
+                      </span>
+                    )}
+                  </div>
+                </td>
+                <td className={`px-4 py-3 ${expired ? "text-danger" : soon ? "text-warning" : "text-muted"}`}>{expiryLabel(k, now)}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center justify-end gap-1.5">
+                    {canManage && (
+                      <Btn variant={h.stale || expired ? "danger" : "ghost"} onClick={() => onRevoke(k)}>
+                        Revoke
+                      </Btn>
+                    )}
+                    <Menu
+                      align="right"
+                      width={180}
+                      label={`More for ${k.label}`}
+                      trigger={(p) => (
+                        <button
+                          type="button"
+                          {...p}
+                          aria-label={`More for ${k.label}`}
+                          className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      )}
+                    >
+                      {(close) => (
+                        <>
+                          <MenuItem href={`${base}?tab=activity&key=${k.id}`}>View activity</MenuItem>
+                          {canManage && (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                onRename(k);
+                              }}
+                            >
+                              Rename
+                            </MenuItem>
+                          )}
+                          {canManage && !expired && (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                onRotate(k);
+                              }}
+                            >
+                              Rotate
+                            </MenuItem>
+                          )}
+                        </>
+                      )}
+                    </Menu>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function AuditPaginationFooter({
-  workspaceSlug,
+/* ── Activity ───────────────────────────────────────────────────────────── */
+
+function activityHref(base: string, p: Partial<AuditPagination>): string {
+  const q = new URLSearchParams({ tab: "activity" });
+  if (p.keyId) q.set("key", p.keyId);
+  if (p.kind && p.kind !== "ALL") q.set("kind", p.kind);
+  if (p.errorsOnly) q.set("errorsOnly", "1");
+  if (p.page && p.page > 1) q.set("page", String(p.page));
+  return `${base}?${q.toString()}`;
+}
+
+function ActivityTab({
+  keys,
+  entries,
   pagination,
+  base,
+  now,
 }: {
-  workspaceSlug: string;
+  keys: KeyRow[];
+  entries: AuditEntry[];
   pagination: AuditPagination;
+  base: string;
+  now: Date;
 }) {
-  const first = (pagination.page - 1) * pagination.pageSize + 1;
+  const router = useRouter();
+  const link = (patch: Partial<AuditPagination>) => activityHref(base, { ...pagination, page: 1, ...patch });
+  const selectedKey = keys.find((k) => k.id === pagination.keyId) ?? null;
+  const first = pagination.totalEntries === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
   const last = Math.min(pagination.page * pagination.pageSize, pagination.totalEntries);
-  const prevHref = buildAuditUrl(workspaceSlug, {
-    page: pagination.page - 1,
-    kind: pagination.kind,
-    errorsOnly: pagination.errorsOnly,
-  });
-  const nextHref = buildAuditUrl(workspaceSlug, {
-    page: pagination.page + 1,
-    kind: pagination.kind,
-    errorsOnly: pagination.errorsOnly,
-  });
-  return (
-    <div className="p-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
-      <span className="tabular-nums">
-        Showing {first}–{last} of {pagination.totalEntries.toLocaleString()}
-      </span>
-      <div className="flex items-center gap-1.5">
-        {pagination.page > 1 ? (
-          <Link
-            href={prevHref}
-            className="px-2 py-1 rounded-md border border-border hover:bg-elevated text-fg font-bold"
-          >
-            ← Prev
-          </Link>
-        ) : (
-          <span className="px-2 py-1 rounded-md border border-border/40 text-muted/40">
-            ← Prev
-          </span>
-        )}
-        <span className="px-2 tabular-nums">
-          {pagination.page} / {pagination.totalPages}
-        </span>
-        {pagination.page < pagination.totalPages ? (
-          <Link
-            href={nextHref}
-            className="px-2 py-1 rounded-md border border-border hover:bg-elevated text-fg font-bold"
-          >
-            Next →
-          </Link>
-        ) : (
-          <span className="px-2 py-1 rounded-md border border-border/40 text-muted/40">
-            Next →
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
+  const chip = (on: boolean) =>
+    `inline-flex items-center h-8 px-3 rounded-full text-[13px] font-medium whitespace-nowrap transition ${
+      on ? "bg-ink text-ink-fg" : "bg-panel text-fg hover:bg-elevated"
+    }`;
 
-function StatTile({
-  icon,
-  label,
-  value,
-  tone,
-  monoValue,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tone: "accent" | "emerald" | "indigo";
-  monoValue?: boolean;
-}) {
-  const toneCls = {
-    accent: "bg-secondary/10 border-secondary/20 text-secondary",
-    emerald: "bg-success/10 border-success/20 text-success",
-    indigo: "bg-secondary/10 border-secondary/20 text-secondary",
-  }[tone];
   return (
-    <div className="rounded-2xl border border-border bg-surface p-5 flex items-center gap-3">
-      <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border ${toneCls}`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <span className="text-xs font-semibold text-muted">{label}</span>
-        <div
-          className={`mt-0.5 ${
-            monoValue
-              ? "text-sm font-bold text-fg font-mono"
-              : "text-2xl font-semibold text-fg tabular-nums"
-          }`}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="activity-key" className="text-[13px] text-muted">
+          Key
+        </label>
+        <select
+          id="activity-key"
+          value={pagination.keyId ?? ""}
+          onChange={(e) => router.push(link({ keyId: e.target.value || null }))}
+          className="h-9 rounded-lg border border-border bg-surface px-2.5 text-[13px] text-fg focus:outline-none focus:border-secondary/60"
         >
-          {value}
-        </div>
+          <option value="">All keys</option>
+          {keys.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.label}
+              {k.revokedAt ? " (revoked)" : ""}
+            </option>
+          ))}
+        </select>
+        <div className="flex-1" />
+        <Link href={link({ kind: "ALL" })} className={chip(pagination.kind === "ALL")}>
+          All calls
+        </Link>
+        <Link href={link({ kind: "tool" })} className={chip(pagination.kind === "tool")}>
+          Tools
+        </Link>
+        <Link href={link({ kind: "resource" })} className={chip(pagination.kind === "resource")}>
+          Resources
+        </Link>
+        <Link href={link({ errorsOnly: !pagination.errorsOnly })} className={chip(pagination.errorsOnly)} aria-pressed={pagination.errorsOnly}>
+          Errors only
+        </Link>
       </div>
+
+      {selectedKey && (
+        <p className="text-[13px] text-muted">
+          Calls made with <span className="font-medium text-fg">{selectedKey.label}</span>. Created{" "}
+          {relativeTime(selectedKey.createdAt, now).toLowerCase()}, last used{" "}
+          {selectedKey.lastUsedAt ? relativeTime(selectedKey.lastUsedAt, now).toLowerCase() : "never"}.
+        </p>
+      )}
+
+      {entries.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-12 text-center">
+          <p className="text-[15px] font-medium text-fg">No calls to show</p>
+          <p className="text-[13px] text-muted mt-1">
+            {pagination.errorsOnly || pagination.kind !== "ALL" || pagination.keyId
+              ? "Try another key or filter."
+              : "After you add a key to Claude or Cursor and run a tool, its calls show up here."}
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-border bg-surface overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
+            <thead>
+              <tr className="text-left text-[13px] text-muted bg-panel">
+                <th className="px-4 py-2.5 font-semibold w-[150px]">When</th>
+                <th className="px-4 py-2.5 font-semibold w-[190px]">Key</th>
+                <th className="px-4 py-2.5 font-semibold w-[200px]">Call</th>
+                <th className="px-4 py-2.5 font-semibold">Result</th>
+                <th className="px-4 py-2.5 font-semibold w-[70px] text-right">ms</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.id} className="border-t border-border align-top">
+                  <td className="px-4 py-2.5 text-muted whitespace-nowrap" title={new Date(e.createdAt).toISOString()}>
+                    {relativeTime(e.createdAt, now)}
+                  </td>
+                  <td className="px-4 py-2.5 text-fg">{e.keyLabel ?? <span className="text-subtle">Deleted key</span>}</td>
+                  <td className="px-4 py-2.5">
+                    <span className="font-mono text-[13px] text-fg">{e.name}</span>
+                    {e.kind === "resource" && <span className="ml-1.5 text-xs text-subtle">resource</span>}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted">
+                    {e.errorCode ? (
+                      <span className="text-danger inline-flex items-start gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden />
+                        {e.resultSummary || e.errorCode}
+                      </span>
+                    ) : (
+                      e.resultSummary || "Done"
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-subtle">{e.durationMs}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {pagination.totalEntries > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[13px] text-muted">
+          <span>
+            Showing {first} to {last} of {pagination.totalEntries.toLocaleString()}
+          </span>
+          <div className="flex gap-2">
+            <Btn
+              href={pagination.page > 1 ? activityHref(base, { ...pagination, page: pagination.page - 1 }) : undefined}
+              disabled={pagination.page <= 1}
+            >
+              Previous
+            </Btn>
+            <Btn
+              href={pagination.page < pagination.totalPages ? activityHref(base, { ...pagination, page: pagination.page + 1 }) : undefined}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              Next
+            </Btn>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function CreateKeyModal({
+/* ── Connect ────────────────────────────────────────────────────────────── */
+
+function slugify(s: string): string {
+  return (
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "interviewpad"
+  );
+}
+
+function snippets(url: string, workspaceName: string, key: string) {
+  const name = slugify(workspaceName);
+  return {
+    claude: JSON.stringify(
+      { mcpServers: { [name]: { command: "npx", args: ["-y", "mcp-remote", url, "--header", `Authorization:Bearer ${key}`] } } },
+      null,
+      2,
+    ),
+    cursor: JSON.stringify({ mcpServers: { [name]: { url, headers: { Authorization: `Bearer ${key}` } } } }, null, 2),
+    curl: [
+      `curl -X POST '${url}' \\`,
+      `  -H 'Authorization: Bearer ${key}' \\`,
+      `  -H 'Content-Type: application/json' \\`,
+      `  -H 'Accept: application/json, text/event-stream' \\`,
+      `  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'`,
+    ].join("\n"),
+  };
+}
+
+function ConnectCard({ mcpUrl, workspaceName, base }: { mcpUrl: string; workspaceName: string; base: string }) {
+  const s = snippets(mcpUrl, workspaceName, "ip_live_...");
+  return (
+    <section className="rounded-xl border border-border bg-ink text-ink-fg p-4 flex flex-col gap-2 min-w-0">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[13px] font-medium opacity-70">Connect Cursor or any MCP client</h2>
+        <Link href={`${base}?tab=connect`} className="text-[13px] underline underline-offset-2 opacity-80 hover:opacity-100">
+          More clients
+        </Link>
+      </div>
+      <pre className="m-0 font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-all">{s.cursor}</pre>
+    </section>
+  );
+}
+
+function ConnectTab({ mcpUrl, workspaceName }: { mcpUrl: string; workspaceName: string }) {
+  const s = snippets(mcpUrl, workspaceName, "ip_live_YOUR_KEY");
+  const copy = (text: string, what: string) => {
+    void navigator.clipboard.writeText(text);
+    toast.success(`Copied the ${what}.`);
+  };
+  return (
+    <div className="flex flex-col gap-5 max-w-3xl">
+      <p className="text-sm text-muted">
+        Replace <span className="font-mono text-fg">ip_live_YOUR_KEY</span> with a key from the Keys tab. The full key is only shown once, when it is
+        created. The server address is <span className="font-mono text-fg break-all">{mcpUrl}</span>.
+      </p>
+      <SnippetBlock
+        title="Claude desktop"
+        subtitle="Add this to claude_desktop_config.json, then restart Claude desktop."
+        code={s.claude}
+        onCopy={() => copy(s.claude, "Claude desktop config")}
+      />
+      <SnippetBlock
+        title="Cursor, Goose and other clients that take a URL"
+        subtitle="For clients that speak the MCP Streamable HTTP transport directly."
+        code={s.cursor}
+        onCopy={() => copy(s.cursor, "config")}
+      />
+      <SnippetBlock
+        title="curl"
+        subtitle="Lists the available tools, a quick way to check that a key works."
+        code={s.curl}
+        onCopy={() => copy(s.curl, "curl command")}
+      />
+      <p className="text-[13px] text-muted">
+        Write tools can move a candidate between New, Screening and Not passed, add notes and send screenings. They never pass anyone: passing is a
+        recruiter decision made in the app.
+      </p>
+    </div>
+  );
+}
+
+function SnippetBlock({ title, subtitle, code, onCopy }: { title: string; subtitle: string; code: string; onCopy: () => void }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[13px] font-semibold text-fg flex items-center gap-1.5">
+            <Terminal className="w-3.5 h-3.5 text-muted" aria-hidden /> {title}
+          </div>
+          <div className="text-xs text-muted mt-0.5">{subtitle}</div>
+        </div>
+        <Btn icon={Copy} onClick={onCopy}>
+          Copy
+        </Btn>
+      </div>
+      <pre className="text-xs font-mono text-fg bg-bg p-3 rounded-xl border border-border overflow-x-auto whitespace-pre">{code}</pre>
+    </div>
+  );
+}
+
+/* ── Dialogs ────────────────────────────────────────────────────────────── */
+
+function CreateKeyDialog({
   workspaceSlug,
   onClose,
   onCreated,
 }: {
   workspaceSlug: string;
   onClose: () => void;
-  onCreated: (plaintext: string, label: string, preview: string, scopes: string[]) => void;
+  onCreated: (r: Revealed) => void;
 }) {
   const [label, setLabel] = useState("");
   const [scope, setScope] = useState<"read" | "read-write">("read");
-  const [isPending, startTransition] = useTransition();
+  const [expiry, setExpiry] = useState<number>(DEFAULT_EXPIRY_DAYS);
+  const [pending, start] = useTransition();
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = () => {
     if (!label.trim()) return;
-    startTransition(async () => {
+    start(async () => {
       try {
-        const res = await createMcpApiKeyAction(workspaceSlug, label, scope);
-        if (res.success) {
-          onCreated(res.plaintext, res.label, res.preview, res.scopes);
-        }
+        const res = await createMcpApiKeyAction(workspaceSlug, label, scope, expiry);
+        onCreated({ plaintext: res.plaintext, label: res.label, scopes: res.scopes });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Create failed.");
+        toast.error(err instanceof Error ? err.message : "Could not create the key.");
       }
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+    <Dialog
+      title="Create key"
+      onClose={onClose}
+      footer={
+        <>
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn variant="primary" onClick={submit} disabled={pending || !label.trim()}>
+            {pending ? "Creating…" : "Create key"}
+          </Btn>
+        </>
+      }
+    >
       <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-        className="w-full max-w-md bg-surface border border-border rounded-3xl p-6 space-y-5 shadow-2xl"
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
       >
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-secondary" /> Generate API key
-          </h3>
-          <button type="button" onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="rounded-xl border border-warning/30 bg-warning/[0.06] p-3 text-xs text-warning/90 leading-relaxed">
-          <ShieldAlert className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
-          The full key will be shown <strong>once</strong>. Copy it before
-          closing the next dialog — we only store a hash and can&apos;t recover it.
-        </div>
-
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-muted block">
-            Label (which client / what for)
-          </label>
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            required
-            maxLength={60}
-            placeholder="e.g. Claude Desktop — Alice"
-            className="w-full px-3 py-2 rounded-xl border border-border bg-bg text-xs text-fg focus:outline-none focus:border-secondary"
-            autoFocus
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-xs font-semibold text-muted block">
-            Scope
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setScope("read")}
-              className={`text-left rounded-xl border p-3 transition ${
-                scope === "read"
-                  ? "border-success/50 bg-success/10"
-                  : "border-border bg-bg hover:bg-elevated"
+        <Field label="Name" hint="Who uses it and where, such as Priya, Claude desktop.">
+          <input value={label} onChange={(e) => setLabel(e.target.value)} maxLength={60} className={inputCls} placeholder="Priya, Claude desktop" />
+        </Field>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-xs font-medium text-subtle mb-1.5">Access</legend>
+          {(
+            [
+              ["read", "Read only", "List candidates and screenings, read results and transcripts."],
+              ["read-write", "Read and write", "Also add notes, move candidates between New, Screening and Not passed, and send screenings. Never passes anyone."],
+            ] as const
+          ).map(([value, title, desc]) => (
+            <label
+              key={value}
+              className={`flex gap-3 rounded-xl border p-3 cursor-pointer transition ${
+                scope === value ? "border-secondary/60 bg-secondary/[0.06]" : "border-border hover:bg-panel"
               }`}
             >
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-semibold text-success">read</span>
-                {scope === "read" && (
-                  <span className="text-xs text-success">● selected</span>
-                )}
-              </div>
-              <div className="text-xs text-muted leading-snug">
-                List + inspect candidates, screenings, credits, transcripts. Safe default.
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setScope("read-write")}
-              className={`text-left rounded-xl border p-3 transition ${
-                scope === "read-write"
-                  ? "border-warning/50 bg-warning/10"
-                  : "border-border bg-bg hover:bg-elevated"
-              }`}
-            >
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-xs font-semibold text-success">read</span>
-                <span className="text-xs font-semibold text-warning">+ write</span>
-                {scope === "read-write" && (
-                  <span className="text-xs text-warning">● selected</span>
-                )}
-              </div>
-              <div className="text-xs text-muted leading-snug">
-                Plus: create screenings, update candidate status, add notes, refund credits.
-              </div>
-            </button>
-          </div>
-          {scope === "read-write" && (
-            <div className="rounded-lg border border-warning/25 bg-warning/[0.05] p-2 text-xs text-warning/80 leading-snug">
-              Write-scoped keys can spend workspace data (create screenings, refund credits). Treat them like service accounts.
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2 justify-end pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-border text-xs font-bold text-muted hover:text-fg transition"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isPending || !label.trim()}
-            className="px-5 py-2 rounded-xl bg-secondary text-bg text-xs font-semibold hover:brightness-110 transition disabled:opacity-50"
-          >
-            {isPending ? "Generating..." : "Generate key"}
-          </button>
-        </div>
+              <input type="radio" name="scope" value={value} checked={scope === value} onChange={() => setScope(value)} className="mt-1 accent-secondary" />
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-fg">{title}</span>
+                <span className="text-[13px] text-muted">{desc}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+        <Field label="Expires" hint="After this the key stops working. You can create a new one at any time.">
+          <select value={expiry} onChange={(e) => setExpiry(Number(e.target.value))} className={inputCls}>
+            {EXPIRY_CHOICES.map((c) => (
+              <option key={c.days} value={c.days}>
+                {c.days === 0 ? "Never" : `In ${c.label}`}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <p className="text-[13px] text-muted">The full key is shown once. We only keep a hash, so copy it before you close the next window.</p>
       </form>
-    </div>
+    </Dialog>
+  );
+}
+
+function RenameDialog({ workspaceSlug, k, onClose, onDone }: { workspaceSlug: string; k: KeyRow; onClose: () => void; onDone: () => void }) {
+  const [name, setName] = useState(k.label);
+  const [pending, start] = useTransition();
+  const submit = () =>
+    start(async () => {
+      try {
+        await renameMcpApiKeyAction(workspaceSlug, k.id, name);
+        toast.success("Key renamed.");
+        onDone();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not rename the key.");
+      }
+    });
+  return (
+    <Dialog
+      title="Rename key"
+      onClose={onClose}
+      width={440}
+      footer={
+        <>
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn variant="primary" onClick={submit} disabled={pending || !name.trim()}>
+            {pending ? "Saving…" : "Save"}
+          </Btn>
+        </>
+      }
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <Field label="Name" hint="The key itself does not change, so nothing needs updating.">
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className={inputCls} />
+        </Field>
+      </form>
+    </Dialog>
   );
 }
 
@@ -735,191 +803,72 @@ function KeyRevealModal({
   label,
   scopes,
   workspaceName,
+  url,
   onClose,
 }: {
   plaintext: string;
   label: string;
   scopes: string[];
   workspaceName: string;
+  url: string;
   onClose: () => void;
 }) {
   const [confirmed, setConfirmed] = useState(false);
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const url = `${origin}/api/mcp`;
-
+  const s = snippets(url, workspaceName, plaintext);
   const copy = (text: string, what: string) => {
     void navigator.clipboard.writeText(text);
-    toast.success(`Copied ${what} to clipboard.`);
+    toast.success(`Copied the ${what}.`);
   };
 
-  const claudeDesktopSnippet = JSON.stringify(
-    {
-      mcpServers: {
-        [slugify(workspaceName)]: {
-          command: "npx",
-          args: [
-            "-y",
-            "mcp-remote",
-            url,
-            "--header",
-            `Authorization:Bearer ${plaintext}`,
-          ],
-        },
-      },
-    },
-    null,
-    2
-  );
-
-  const cursorSnippet = JSON.stringify(
-    {
-      mcpServers: {
-        [slugify(workspaceName)]: {
-          url,
-          headers: { Authorization: `Bearer ${plaintext}` },
-        },
-      },
-    },
-    null,
-    2
-  );
-
-  const curlSnippet = [
-    `curl -X POST '${url}' \\`,
-    `  -H 'Authorization: Bearer ${plaintext}' \\`,
-    `  -H 'Content-Type: application/json' \\`,
-    `  -H 'Accept: application/json, text/event-stream' \\`,
-    `  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'`,
-  ].join("\n");
-
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto bg-surface border border-secondary/30 rounded-3xl p-6 space-y-5 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-success" /> Key generated — copy now
-          </h3>
-        </div>
-
-        <div className="rounded-xl border border-danger/30 bg-danger/[0.06] p-3 text-xs text-danger/90 leading-relaxed">
-          <ShieldAlert className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
-          This is the only time you&apos;ll see the full key. Copy it before
-          closing — we store only the hash. If you lose it, revoke and re-issue.
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-muted ">
-              {label}
-            </label>
-            <div className="flex gap-1">
-              {scopes.map((s) => (
-                <span
-                  key={s}
-                  className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${
-                    s === "write"
-                      ? "border-warning/40 bg-warning/15 text-warning"
-                      : "border-success/30 bg-success/10 text-success"
-                  }`}
-                >
-                  {s}
-                </span>
-              ))}
-            </div>
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-[6vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-bg/80 backdrop-blur-[2px]" aria-hidden />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="key-reveal-title"
+        className="relative w-full max-w-2xl rounded-2xl border border-border-strong bg-surface shadow-2xl shadow-black/40 p-6 flex flex-col gap-5"
+      >
+        <h2 id="key-reveal-title" className="text-lg font-semibold text-fg flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5 text-success" aria-hidden /> Copy your new key
+        </h2>
+        <p className="rounded-xl border border-danger/30 bg-danger/[0.06] p-3 text-[13px] text-danger">
+          This is the only time the full key is shown. We keep only a hash, so if you lose it, revoke it and create another.
+        </p>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3 text-[13px]">
+            <span className="font-medium text-fg">{label}</span>
+            <span className="text-muted">{accessLabel(scopes)}</span>
           </div>
-          <div className="flex items-center gap-2 p-3 rounded-xl border border-border bg-bg font-mono text-[12px] break-all">
+          <div className="flex items-center gap-2 p-3 rounded-xl border border-border bg-bg font-mono text-[13px] break-all">
             <span className="flex-1 text-fg select-all">{plaintext}</span>
-            <button
-              onClick={() => copy(plaintext, "key")}
-              className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-secondary text-bg text-xs font-bold hover:brightness-110 transition"
-            >
-              <Copy className="w-3 h-3" /> Copy
-            </button>
+            <Btn variant="primary" icon={Copy} onClick={() => copy(plaintext, "key")}>
+              Copy
+            </Btn>
           </div>
         </div>
-
         <SnippetBlock
-          title="Claude Desktop"
-          subtitle="Edit %APPDATA%\Claude\claude_desktop_config.json on Windows, or ~/Library/Application Support/Claude/claude_desktop_config.json on macOS. Restart Claude Desktop after saving."
-          code={claudeDesktopSnippet}
-          onCopy={() => copy(claudeDesktopSnippet, "Claude Desktop config")}
+          title="Claude desktop"
+          subtitle="Add this to claude_desktop_config.json, then restart Claude desktop."
+          code={s.claude}
+          onCopy={() => copy(s.claude, "Claude desktop config")}
         />
-
         <SnippetBlock
-          title="Cursor / Goose (native URL)"
+          title="Cursor, Goose and other clients that take a URL"
           subtitle="For clients that speak the MCP Streamable HTTP transport directly."
-          code={cursorSnippet}
-          onCopy={() => copy(cursorSnippet, "Cursor config")}
+          code={s.cursor}
+          onCopy={() => copy(s.cursor, "config")}
         />
-
-        <SnippetBlock
-          title="Raw curl (smoke test)"
-          subtitle="Lists the available tools — handy for verifying the key works."
-          code={curlSnippet}
-          onCopy={() => copy(curlSnippet, "curl command")}
-        />
-
-        <label className="flex items-start gap-2 text-xs text-muted cursor-pointer">
-          <input
-            type="checkbox"
-            checked={confirmed}
-            onChange={(e) => setConfirmed(e.target.checked)}
-            className="mt-0.5 accent-secondary"
-          />
-          <span>I&apos;ve copied the key and stored it somewhere safe.</span>
+        <label className="flex items-start gap-2 text-[13px] text-muted cursor-pointer">
+          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 accent-secondary" />
+          <span>I have copied the key and stored it somewhere safe.</span>
         </label>
-
-        <div className="flex justify-end pt-1">
-          <button
-            disabled={!confirmed}
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-fg text-bg text-xs font-semibold hover:bg-fg/90 transition disabled:opacity-30 disabled:cursor-not-allowed"
-          >
+        <div className="flex justify-end">
+          <Btn variant="primary" size="md" disabled={!confirmed} onClick={onClose}>
             Done
-          </button>
+          </Btn>
         </div>
       </div>
     </div>
   );
-}
-
-function SnippetBlock({
-  title,
-  subtitle,
-  code,
-  onCopy,
-}: {
-  title: string;
-  subtitle: string;
-  code: string;
-  onCopy: () => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-xs font-semibold text-fg flex items-center gap-1.5">
-            <Terminal className="w-3.5 h-3.5 text-muted" /> {title}
-          </div>
-          <div className="text-xs text-muted/70 mt-0.5 leading-snug">{subtitle}</div>
-        </div>
-        <button
-          onClick={onCopy}
-          className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border hover:bg-elevated text-fg text-xs font-bold transition"
-        >
-          <Copy className="w-3 h-3" /> Copy
-        </button>
-      </div>
-      <pre className="text-xs font-mono text-fg/90 bg-bg p-3 rounded-xl border border-border/50 overflow-x-auto whitespace-pre">
-        {code}
-      </pre>
-    </div>
-  );
-}
-
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }

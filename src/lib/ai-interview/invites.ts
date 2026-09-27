@@ -39,6 +39,7 @@ export async function deliverInvite(
       workspaceName: workspace.name,
       inviteUrl: inviteUrlFor(origin, session.inviteToken),
       workspaceId: workspace.id,
+      sessionId: session.id,
       reminder: opts.reminder,
       expiresAt: session.expiresAt,
       minutes,

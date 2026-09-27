@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 
 /**
  * Key format: `ip_live_<32 random hex chars>`.
@@ -55,14 +56,33 @@ export type AuthedKey = {
   workspaceSlug: string;
   workspaceName: string;
   workspacePlanName: string;
+  /** Growth plan, Enterprise plan or an unexpired trial. */
+  growthTools: boolean;
   scopes: string[];
   label: string;
 };
 
+/** Why a stored key can no longer be used, or null when it is usable. */
+export type KeyRefusal = "revoked" | "expired";
+
+/**
+ * Pure usability check for a stored key row. A key is refused once it has
+ * been revoked, or once its optional expiry has passed (the expiry instant
+ * itself counts as expired).
+ */
+export function keyRefusal(
+  row: { revokedAt: Date | null; expiresAt?: Date | null },
+  now: Date = new Date()
+): KeyRefusal | null {
+  if (row.revokedAt) return "revoked";
+  if (row.expiresAt && row.expiresAt.getTime() <= now.getTime()) return "expired";
+  return null;
+}
+
 /**
  * Validate a bearer token and return the associated workspace + scopes.
- * Returns null if the token is missing, doesn't match a key, or has been
- * revoked. Touch `lastUsedAt` on the key (fire-and-forget) so recruiters
+ * Returns null if the token is missing, doesn't match a key, has been
+ * revoked, or has passed its expiry. Touch `lastUsedAt` on the key (fire-and-forget) so recruiters
  * can see which keys are still in use vs. dead.
  */
 export async function authenticateRequest(
@@ -76,11 +96,11 @@ export async function authenticateRequest(
     where: { keyHash },
     include: {
       workspace: {
-        select: { id: true, slug: true, name: true, planName: true },
+        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true },
       },
     },
   });
-  if (!row || row.revokedAt) return null;
+  if (!row || keyRefusal(row) !== null) return null;
 
   // Bump lastUsedAt asynchronously — don't block the request on the write.
   void prisma.mcpApiKey
@@ -101,6 +121,7 @@ export async function authenticateRequest(
     workspaceSlug: row.workspace.slug,
     workspaceName: row.workspace.name,
     workspacePlanName: row.workspace.planName,
+    growthTools: growthToolsEnabled(row.workspace),
     scopes,
     label: row.label,
   };

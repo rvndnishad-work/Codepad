@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, ExternalLink, LayoutTemplate, MonitorSmartphone, Network, Search, Server, Users, X } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -265,6 +266,7 @@ export default function PublicBrowser({
               ? view.rows.map((r) => (
                   <ChallengeRowItem
                     key={r.id}
+                    slug={slug}
                     row={r as ChallengeRow}
                     checked={challengeSelected?.has(r.id) ?? false}
                     onToggle={onToggleChallenge ? () => onToggleChallenge(r as ChallengeRow) : undefined}
@@ -341,7 +343,7 @@ function Pager({ page, pages, loading, onPage }: { page: number; pages: number; 
   );
 }
 
-function ChallengeRowItem({ row, checked, onToggle }: { row: ChallengeRow; checked: boolean; onToggle?: () => void }) {
+function ChallengeRowItem({ slug, row, checked, onToggle }: { slug: string; row: ChallengeRow; checked: boolean; onToggle?: () => void }) {
   return (
     <li className={`relative transition-colors ${checked ? "bg-secondary/[0.07]" : "hover:bg-panel/40"}`}>
       {checked && <span aria-hidden className="absolute left-0 inset-y-0 w-0.5 bg-secondary" />}
@@ -365,9 +367,14 @@ function ChallengeRowItem({ row, checked, onToggle }: { row: ChallengeRow; check
             {row.draft && <span className="inline-flex items-center h-5 px-1.5 rounded border border-border text-[12px] text-subtle">Draft</span>}
           </span>
         </div>
-        <a href={`/challenges/${row.slug}`} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs text-secondary-soft hover:bg-panel">
-          Preview <ExternalLink className="w-3 h-3" aria-hidden />
-        </a>
+        <span className="shrink-0 flex items-center gap-1">
+          <Link href={`/w/${slug}/library/q/challenge/${row.id}`} className="inline-flex items-center h-7 px-2 rounded-md text-xs text-secondary-soft hover:bg-panel">
+            {row.mine ? "Stats" : "Stats and variants"}
+          </Link>
+          <a href={`/challenges/${row.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-xs text-secondary-soft hover:bg-panel">
+            Preview <ExternalLink className="w-3 h-3" aria-hidden />
+          </a>
+        </span>
       </div>
     </li>
   );
@@ -445,9 +452,14 @@ function PublicRowItem({ slug, row, checked, already, onToggle }: { slug: string
               <span className="text-[13px] text-subtle">This question has no written answer.</span>
             )}
           </div>
-          <a href={`/interview-question/${row.slug}`} target="_blank" rel="noopener noreferrer" className="self-start inline-flex items-center gap-1 text-xs text-secondary-soft hover:underline">
-            Open the public page <ExternalLink className="w-3 h-3" aria-hidden />
-          </a>
+          <span className="flex flex-wrap items-center gap-4">
+            <Link href={`/w/${slug}/library/q/bank/${row.id}`} className="inline-flex items-center gap-1 text-xs text-secondary-soft hover:underline">
+              Usage stats and private variants
+            </Link>
+            <a href={`/interview-question/${row.slug}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-secondary-soft hover:underline">
+              Open the public page <ExternalLink className="w-3 h-3" aria-hidden />
+            </a>
+          </span>
         </div>
       )}
     </li>

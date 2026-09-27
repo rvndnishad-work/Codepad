@@ -56,6 +56,7 @@ model User {
   permissionOverrides  Json?
 
   accounts             Account[]
+  calendarConnections  CalendarConnection[]
   roles                UserRole[]
   blogBookmarks        BlogBookmark[]
   blogComments         BlogComment[]
@@ -677,9 +678,30 @@ model InterviewSession {
   meetingUrl         String?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
+  /// Take-home only: score (0-100) results need to read as a good match.
+  /// Null = the default (60). Only labels results: passing is always a
+  /// recruiter's decision. Shared by every session in one send (setupGroupId).
+  takeHomePassMark   Int?
+  /// Take-home only: automatic reminder schedule. Hours after the invite to
+  /// nudge anyone who has not started (null = no nudge), hours before the
+  /// deadline for the last call (null = no last call), and a switch that
+  /// stops both. Sent by the take-home-reminders cron.
+  reminderStartAfterHours     Int?
+  reminderBeforeDeadlineHours Int?     @default(24)
+  remindersOff       Boolean          @default(false)
+  /// Idempotency stamp for the "not started" nudge (reminderSentAt is the last call's).
+  startReminderSentAt DateTime?
+  /// Interview pass mark on the 1 to 4 scorecard scale. Null means the
+  /// default (see src/lib/interview/scorecard.ts). It only labels the panel
+  /// average; a recruiter still decides who passes.
+  scorecardPassMark  Float?
+  /// Last time someone emailed the interviewers who still owe a scorecard.
+  scorecardNudgedAt  DateTime?
+  scorecards         InterviewScorecard[]
   toolUpdates        InterviewToolUpdate[]
   presence           InterviewPresence[]
   guests             InterviewGuest[]
+  calendarEvent      InterviewCalendarEvent?
   createdAt          DateTime         @default(now())
   takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
@@ -752,6 +774,56 @@ model InterviewGuest {
   session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, email])
+}
+
+/// One interviewer's structured scorecard for one live interview. Workspace
+/// interviewers are keyed "u:<userId>", emailed guests "g:<guestId>".
+/// Drafts are private to their author. Once submitted the card is locked:
+/// the author can only amend it with a reason, and every amendment is kept
+/// in InterviewScorecardEdit.
+model InterviewScorecard {
+  id             String                   @id @default(cuid())
+  sessionId      String
+  reviewerKey    String
+  userId         String?
+  guestId        String?
+  /// Name shown to the panel, snapshotted so the card stays readable.
+  reviewerName   String
+  /// Criteria as they were when the card was started, JSON
+  /// [{ id, label, hint, kind }].
+  criteriaJson   String
+  /// JSON { [criterionId]: { r: 1..4 | null, n: string } }.
+  ratingsJson    String                   @default("{}")
+  /// Overall evidence written by the interviewer.
+  notes          String?
+  /// "no" | "unsure" | "yes". Null until picked.
+  recommendation String?
+  /// "draft" | "submitted".
+  status         String                   @default("draft")
+  submittedAt    DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  session        InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  edits          InterviewScorecardEdit[]
+
+  @@unique([sessionId, reviewerKey])
+  @@index([sessionId, status])
+}
+
+/// A change to a scorecard after it was submitted: who, why, and the card
+/// before and after.
+model InterviewScorecardEdit {
+  id          String             @id @default(cuid())
+  scorecardId String
+  actorKey    String
+  actorName   String
+  reason      String
+  beforeJson  String
+  afterJson   String
+  createdAt   DateTime           @default(now())
+  scorecard   InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+
+  @@index([scorecardId, createdAt])
 }
 
 /// A saved take-home question set ("Senior frontend take home") that a
@@ -912,6 +984,7 @@ model Workspace {
   candidateBatches     CandidateBatch[]
   challenges           Challenge[]
   sessions             InterviewSession[]
+  calendarConnections  CalendarConnection[]
   mcpApiKeys           McpApiKey[]
   mcpAuditLogs         McpAuditLog[]
   externalMcpServers   ExternalMcpServer[]
@@ -921,6 +994,12 @@ model Workspace {
   invites              WorkspaceInvite[]
   auditLogs            WorkspaceAuditLog[]
   agentConfigs         AgentConfig[]
+  webhookEndpoints     WebhookEndpoint[]
+  questionVariants     QuestionVariant[]
+  atsJobMappings       AtsJobMapping[]
+  atsTestRequests      AtsTestRequest[]
+  atsSyncEvents        AtsSyncEvent[]
+  alertChannels        AlertChannel[]
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -983,9 +1062,15 @@ model Candidate {
   batchId             String?
   /// Workspace member responsible for moving this candidate along.
   ownerId             String?
+  /// Set when the candidate came from a connected ATS: "<provider>:<id>",
+  /// e.g. "greenhouse:4417". Used to link re-sent requests to the same person.
+  atsRef              String?
+  /// The candidate's profile in the ATS (Greenhouse sends it with each request).
+  atsProfileUrl       String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
+  atsTestRequests     AtsTestRequest[]
   workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   batch               CandidateBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
   owner               User?                @relation("CandidateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
@@ -1049,6 +1134,10 @@ model WorkspaceMember {
   /// `{ "<permission>": boolean }` — true grants, false revokes. null = pure
   /// role defaults. Resolved by src/lib/permissions (resolveEffective).
   permissions Json?
+  /// Last time this member opened a workspace page. Written at most once an
+  /// hour (see src/lib/workspace/members.ts) so page loads stay cheap. Null
+  /// until the member's first visit after the column was added.
+  lastActiveAt DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -1166,8 +1255,181 @@ model AtsIntegration {
   apiKey        String
   webhookSecret String?
   settings      String    @default("{}")
+  /// sha256 (hex) of the key Greenhouse sends as its Basic auth user name on
+  /// the Assessment Partner endpoints. The key itself is kept encrypted in
+  /// `apiKey` so an admin can copy it again.
+  partnerKeyHash String?  @unique
+  connectedById  String?
   createdAt     DateTime  @default(now())
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// "This ATS job gets this screening." For Greenhouse each mapping is one
+/// test in list_tests (partner_test_id = id), so a recruiter picks it on the
+/// job's interview plan in Greenhouse.
+model AtsJobMapping {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  provider      String
+  /// Job name as it reads in the ATS. Also names the candidate batch.
+  jobName       String
+  /// Optional second line, e.g. "Berlin, req 2231".
+  jobDetail     String?
+  /// "ai" (AIScreeningBatch) | "takehome" (TakeHomeTemplate) | "none".
+  screeningKind String    @default("none")
+  screeningId   String?
+  /// "auto" sends the invite at once, "review" waits for a recruiter.
+  sendMode      String    @default("auto")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requests      AtsTestRequest[]
+
+  @@unique([workspaceId, provider, jobName])
+  @@index([workspaceId])
+}
+
+/// One request from the ATS to screen one candidate for one job. Its id is
+/// the partner_interview_id Greenhouse polls with.
+/// status: waiting (for a recruiter to send) | sent | failed | reported
+model AtsTestRequest {
+  id                    String         @id @default(cuid())
+  workspaceId           String
+  provider              String
+  mappingId             String?
+  candidateId           String
+  externalCandidateId   String?
+  externalApplicationId String?
+  jobName               String?
+  /// Greenhouse's "url" from send_test: we PATCH it once a result is ready.
+  callbackUrl           String?
+  /// "ai" | "takehome", copied from the mapping at request time.
+  screeningKind         String
+  screeningId           String?
+  /// The AIInterviewSession or take-home InterviewSession we sent.
+  sessionId             String?
+  status                String         @default("waiting")
+  sentAt                DateTime?
+  /// When the decided + finished result was reported back.
+  reportedAt            DateTime?
+  reportedDecision      String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  workspace             Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  candidate             Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  mapping               AtsJobMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, provider, externalApplicationId, mappingId])
+  @@index([workspaceId, createdAt])
+  @@index([candidateId])
+  @@index([sessionId])
+}
+
+/// The sync log: everything that came in from or went out to the ATS.
+/// direction: "in" | "out". status: imported | linked | waiting | sent |
+/// failed | info
+model AtsSyncEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  provider    String
+  direction   String
+  status      String
+  summary     String
+  detail      String?
+  httpStatus  Int?
+  candidateId String?
+  requestId   String?
+  /// Set on a failed write that a person retried, so it leaves "needs attention".
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([candidateId, createdAt])
+  @@index([requestId])
+}
+
+/// Outbound webhook target. We POST signed JSON here when a subscribed
+/// workspace event happens (see src/lib/events). `secret` is the signing
+/// secret, encrypted at rest like AtsIntegration.apiKey.
+model WebhookEndpoint {
+  id           String            @id @default(cuid())
+  workspaceId  String
+  url          String
+  secret       String
+  /// Subscribed event names, e.g. ["candidate.decided"].
+  events       String[]          @default([])
+  /// False while paused (by a person, or automatically after repeated failures).
+  active       Boolean           @default(true)
+  pausedAt     DateTime?
+  /// "manual" | "failures". Null while active.
+  pausedReason String?
+  /// Consecutive failed delivery attempts. Reset on any success.
+  failureCount Int               @default(0)
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([workspaceId])
+}
+
+/// One event sent (or queued) to one endpoint, with its retry state.
+model WebhookDelivery {
+  id            String          @id @default(cuid())
+  endpointId    String
+  /// Shared by every endpoint that received the same event.
+  eventId       String
+  event         String
+  payload       Json
+  /// pending | sending | succeeded | failed
+  status        String          @default("pending")
+  attempts      Int             @default(0)
+  responseCode  Int?
+  nextAttemptAt DateTime?       @default(now())
+  lastError     String?
+  deliveredAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt])
+  @@index([status, nextAttemptAt])
+}
+
+/// A Slack or Microsoft Teams destination for short workspace alerts
+/// (see src/lib/alerts). Fed by the same event bus as webhooks. Messages carry
+/// a name, what happened and a link; never answers, transcripts or code.
+model AlertChannel {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  /// "slack" | "teams"
+  provider     String
+  /// "webhook" (pasted incoming webhook or workflow URL) | "oauth" (Slack app install)
+  mode         String    @default("webhook")
+  /// Human label for the destination, e.g. "#hiring-screens".
+  target       String
+  /// Incoming webhook or workflow URL, encrypted at rest.
+  url          String
+  /// Slack bot token from an app install, encrypted at rest. Null in webhook mode.
+  token        String?
+  /// Slack workspace name from an app install.
+  teamName     String?
+  /// Event names that post here, e.g. ["candidate.decided"].
+  events       String[]  @default([])
+  /// Adds the score as a percentage to screening and take home alerts.
+  includeScore Boolean   @default(false)
+  active       Boolean   @default(true)
+  lastSentAt   DateTime?
+  lastError    String?
+  lastErrorAt  DateTime?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 model AIInterviewSession {
@@ -1252,6 +1514,7 @@ model AIInterviewSession {
   batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
   rounds           AIInterviewRound[]
   audioClips       AIInterviewAudio[]
+  shareLinks       AIReportShareLink[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
@@ -1384,6 +1647,10 @@ model AIInterviewRound {
   answersJson      String?
   /// "PENDING" | "ACTIVE" | "COMPLETED".
   status           String  @default("PENDING")
+  /// Last test run of the candidate's final code, from the report's Tests
+  /// pane: JSON `{ passed, total, compileError, stderr, tests: [{ name, status, error }] }`.
+  testResultsJson  String?
+  testsRunAt       DateTime?
   startedAt        DateTime?
   finishedAt       DateTime?
   createdAt        DateTime @default(now())
@@ -1391,6 +1658,58 @@ model AIInterviewRound {
   session          AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, order])
+}
+
+/// A read-only link to one AI screening report, for a hiring manager who is
+/// not in the workspace. The URL carries a signed token naming this row and
+/// its expiry; revoking sets revokedAt, which the page checks on every view.
+/// The shared page never shows reference answers or team notes.
+model AIReportShareLink {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  sessionId       String
+  createdByUserId String
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  viewCount       Int                @default(0)
+  lastViewedAt    DateTime?
+  createdAt       DateTime           @default(now())
+  session         AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([workspaceId])
+}
+
+/// A workspace-private rewrite of a public question, so candidates cannot look
+/// the answer up. Made by AI from a bank question (PrepQuestion) or a public
+/// coding challenge. Coding variants also get their own private Challenge row
+/// (challengeId); bank variants are used by adding them to a questionnaire.
+model QuestionVariant {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  /// "bank" (PrepQuestion) | "challenge" (Challenge).
+  originKind       String
+  /// Id of the public question the variant was made from.
+  originQuestionId String
+  title            String
+  /// The rewritten question (bank) or challenge description (challenge).
+  prompt           String
+  /// Regenerated reference answer: markdown for bank questions, the reference
+  /// solution for coding variants. Never shown to candidates.
+  answer           String?
+  /// The private Challenge made for a coding variant.
+  challengeId      String?   @unique
+  /// "passed" when its tests ran and all passed before saving, "none" when the
+  /// question has no tests to run.
+  checkStatus      String    @default("none")
+  testsPassed      Int?
+  testsTotal       Int?
+  createdByUserId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, originKind, originQuestionId])
 }
 
 /// Workspace-scoped custom screening templates. The default `scaffolds.ts`
@@ -1457,6 +1776,9 @@ model McpApiKey {
   createdByUserId String?
   lastUsedAt      DateTime?
   revokedAt       DateTime?
+  /// Optional expiry. Null means the key never expires. The MCP endpoint
+  /// refuses a key once this time has passed.
+  expiresAt       DateTime?
   createdAt       DateTime      @default(now())
   workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   auditLogs       McpAuditLog[]
@@ -2419,4 +2741,49 @@ model AgentConfig {
   updatedAt       DateTime  @updatedAt
 
   @@index([workspaceId, role])
+}
+
+/// A member's Google or Microsoft calendar, connected per workspace. Used for
+/// free and busy times in the interview wizard and for creating the interview
+/// event on the organiser's calendar. Tokens are encrypted at rest
+/// (src/lib/crypto/at-rest.ts). One connection per member per workspace.
+model CalendarConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  workspaceId     String
+  /// "google" | "microsoft"
+  provider        String
+  /// The calendar account's address, which may differ from the login email.
+  email           String
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  /// Space-separated scopes granted.
+  scopes          String    @default("")
+  /// "active" | "expired" (refresh failed, needs reconnecting)
+  status          String    @default("active")
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  events          InterviewCalendarEvent[]
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+/// The calendar event created for a live interview on the organiser's
+/// calendar, so it can be moved or cancelled when the interview changes.
+model InterviewCalendarEvent {
+  id           String             @id @default(cuid())
+  sessionId    String             @unique
+  connectionId String
+  externalId   String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  session      InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
 }

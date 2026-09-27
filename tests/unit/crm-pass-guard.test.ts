@@ -173,7 +173,7 @@ describe("moving a candidate to Passed", () => {
     ).resolves.toEqual({ changed: 3 });
     const metas = audit.mock.calls.map((c) => c[0].meta);
     expect(metas.find((m) => m.candidateName === "Cleo Park")).not.toHaveProperty("manualOverride");
-    expect(metas.find((m) => m.candidateName === "Ben Ito")).toMatchObject({ manualOverride: "Take-home 40, Below bar" });
+    expect(metas.find((m) => m.candidateName === "Ben Ito")).toMatchObject({ manualOverride: "Take-home 40, Below the mark" });
   });
 
   it("does not re-check someone already Passed", async () => {
@@ -269,6 +269,7 @@ describe("MCP update_candidate_status", () => {
       workspaceSlug: "acme",
       workspaceName: "Acme",
       workspacePlanName: "Pro",
+      growthTools: true,
       scopes: ["read", "write"],
       label: "Claude",
     });
@@ -288,6 +289,35 @@ describe("MCP update_candidate_status", () => {
       expect(out.content[0].text).toContain("Passing a candidate is a recruiter decision");
     }
     expect(db.candidate.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses the passed stage too, and never undoes a recruiter's pass", async () => {
+    db.candidate.findFirst.mockResolvedValue(candidate());
+    const pass = await callTool({ candidate_id: "c1", stage: "passed" });
+    expect(pass.isError).toBe(true);
+    expect(pass.content[0].text).toContain("Passing a candidate is a recruiter decision");
+
+    db.candidate.findFirst.mockResolvedValue(candidate({ stage: "PASSED", status: "passed" }));
+    const undo = await callTool({ candidate_id: "c1", stage: "not_passed" });
+    expect(undo.isError).toBe(true);
+    expect(undo.content[0].text).toContain("passed by a recruiter");
+    expect(db.candidate.update).not.toHaveBeenCalled();
+  });
+
+  it("moves a candidate to Not passed by stage and logs it in the audit log", async () => {
+    db.candidate.findFirst.mockResolvedValue(candidate());
+    const out = await callTool({ candidate_id: "c1", stage: "not_passed", reject_reason: "SKILL_GAP" });
+    expect(out.isError).toBeFalsy();
+    expect(db.candidate.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "rejected", stage: "REJECTED", rejectReason: "SKILL_GAP" }) }),
+    );
+    expect(audit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "PIPELINE_STAGE_CHANGED",
+        actorUserId: null,
+        meta: expect.objectContaining({ toStage: "REJECTED", apiKeyLabel: "Claude", tool: "update_candidate_status" }),
+      }),
+    );
   });
 
   it("keeps the stage in step when it marks someone rejected", async () => {

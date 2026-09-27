@@ -337,8 +337,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         const updated = await prisma.takeHomeAssignment.update({
           where: { token },
           data: { status: "SUBMITTED", submittedAt: new Date() },
-          select: { id: true, workspaceId: true, candidateId: true },
+          select: {
+            id: true,
+            workspaceId: true,
+            candidateId: true,
+            candidateName: true,
+            candidateEmail: true,
+            submittedAt: true,
+            challenge: { select: { title: true } },
+          },
         });
+        if (updated.workspaceId) {
+          const { emitWorkspaceEvent } = await import("@/lib/events");
+          void emitWorkspaceEvent(updated.workspaceId, "takehome.submitted", {
+            candidate: { id: updated.candidateId, name: updated.candidateName, email: updated.candidateEmail },
+            takeHome: {
+              id: updated.id,
+              title: updated.challenge.title,
+              score: graded.score,
+              submittedAt: (updated.submittedAt ?? new Date()).toISOString(),
+            },
+            reportPath: `take-homes/${updated.id}`,
+          });
+        }
         // IP-69: forward-advance the candidate to TAKE_HOME on submission.
         if (updated.workspaceId && updated.candidateId) {
           const { advanceCandidateStage } = await import("@/lib/crm/advance");
@@ -418,6 +439,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
               source: "auto:take-home-session-completed",
             });
           }
+          const { emitWorkspaceEvent } = await import("@/lib/events");
+          void emitWorkspaceEvent(th.workspaceId, "takehome.submitted", {
+            candidate: { id: th.candidateId, name: th.candidateName },
+            takeHome: {
+              id: th.id,
+              title: th.title || "Take-home assessment",
+              score: avgScore,
+              submittedAt: new Date().toISOString(),
+            },
+            reportPath: `take-homes/${th.id}`,
+          });
           const { sendTakeHomeSessionSubmissionEmails } = await import("@/lib/take-home/emails");
           await sendTakeHomeSessionSubmissionEmails({ sessionId, score: avgScore });
           if (th.workspace?.slug) {

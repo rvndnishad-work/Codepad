@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   Plug,
@@ -142,9 +143,12 @@ export default function ExternalMcpConsole({
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">External MCP servers</h1>
+          <Link href={`/w/${workspaceSlug}/ai-interviews/questions`} className="text-xs text-muted hover:text-fg">
+            AI screening · Question sets
+          </Link>
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">External tools</h1>
           <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
-            Connect external MCP servers (your internal docs, ATS, repo context) to this workspace. The AI interviewer can call into them mid-screening to ground its questions in customer-specific context — but only when the workspace kill-switch below is on AND a server is bound to the candidate&apos;s template.
+            An advanced setting for AI screening, off by default. Connect MCP servers (your internal docs or repo context) to this workspace. The AI interviewer can call into them mid-screening to ground its questions in customer-specific context — but only when the workspace kill-switch below is on AND a server is bound to the candidate&apos;s template.
           </p>
         </div>
         {canManage && (

@@ -49,6 +49,8 @@ import {
   updateCandidateAction,
 } from "../manage-actions";
 import { ConfirmDialog, PassOverrideDialog, RejectDialog } from "../_components/dialogs";
+import type { CandidateAtsCard } from "@/lib/ats/connection-server";
+import AtsSourceCard, { atsName } from "./AtsSourceCard";
 import { ChecklistRow } from "../_components/Checklist";
 import type { Perms } from "../_components/CandidatesView";
 import { Avatar, Btn, Field, fmtDate, inputCls, Menu, MenuItem, MenuLabel, StageChip, StageDot, stageLabel, useToasts } from "../_components/ui";
@@ -77,6 +79,8 @@ export default function CandidateProfileClient({
   batches,
   members,
   perms,
+  ats = null,
+  canSendAtsInvite = false,
 }: {
   slug: string;
   meId: string;
@@ -89,6 +93,9 @@ export default function CandidateProfileClient({
   batches: RosterBatch[];
   members: RosterMember[];
   perms: Perms;
+  /** Set when the candidate came in from an ATS. */
+  ats?: CandidateAtsCard | null;
+  canSendAtsInvite?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"overview" | "activity" | "notes">("overview");
@@ -203,6 +210,9 @@ export default function CandidateProfileClient({
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-[26px] font-semibold tracking-tight text-fg">{row.name}</h1>
               <StageChip stage={row.stage} />
+              {ats && (
+                <span className="inline-flex items-center h-[22px] px-2 rounded-full text-xs font-medium bg-success/10 text-success">From {atsName(ats.provider)}</span>
+              )}
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 text-[13px] text-muted">
               {row.email && (
@@ -470,6 +480,7 @@ export default function CandidateProfileClient({
           </div>
 
           <div className="flex flex-col gap-5">
+            {ats && <AtsSourceCard slug={slug} candidateName={row.name} card={ats} canSend={canSendAtsInvite} />}
             <NotesCard slug={slug} candidateId={row.id} notes={notes.slice(0, 3)} canWrite={perms.canWrite} meId={meId} isManager={perms.isManager} compact onAll={() => setTab("notes")} total={notes.length} />
             <DetailsCard
               slug={slug}

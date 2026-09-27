@@ -12,6 +12,7 @@
  * results-server.ts.
  */
 import { getScreeningVerdict } from "@/lib/ai-interview/verdict";
+import { takeHomeVerdict } from "@/lib/take-home/pass-mark";
 import { normalizeStage, type PipelineStage } from "@/lib/crm/stages";
 
 export type ResultKind = "take_home" | "ai_screening" | "interview";
@@ -38,7 +39,7 @@ export type CandidateResult = {
   /** Short verdict label ("Strong fit", "Passed", "4.5 of 5"). */
   verdict: string | null;
   passed: boolean | null;
-  /** AI screenings: the screening's own pass mark (0 to 100). Other kinds use their fixed bar. */
+  /** AI screenings and take-homes: their own pass mark (0 to 100). Interviews use their fixed bar. */
   passMark?: number;
   sentAt: string;
   startedAt: string | null;
@@ -66,7 +67,7 @@ export const RESULT_KIND_LABELS: Record<ResultKind, string> = {
   interview: "Interview",
 };
 
-/** Take-homes pass at the same bar as AI screenings. */
+/** The default take-home pass mark. Each take-home can set its own (see take-home/pass-mark.ts). */
 export const TAKE_HOME_PASS = 60;
 
 /** Average a rubric JSON (`{ criterion: 1..5 }`). Null when empty or unreadable. */
@@ -116,7 +117,9 @@ export function describeScore(kind: ResultKind, score: number, rating?: number |
     if (flagged) return { verdict: `${r.toFixed(1)} of 5, ${flagged}`, passed: false };
     return { verdict: `${r.toFixed(1)} of 5`, passed: r >= INTERVIEW_PASS_RATING };
   }
-  return { verdict: score >= TAKE_HOME_PASS ? "Passed" : "Below bar", passed: score >= TAKE_HOME_PASS };
+  // Take-homes: Good match, Borderline or Below the mark against the take-home's own mark.
+  const v = takeHomeVerdict(score, passMark);
+  return { verdict: v?.label ?? null, passed: v?.atMark ?? null };
 }
 
 const ts = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);

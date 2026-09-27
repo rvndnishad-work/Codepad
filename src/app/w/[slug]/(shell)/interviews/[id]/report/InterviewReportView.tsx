@@ -30,6 +30,9 @@ import {
   X,
 } from "lucide-react";
 import type { InterviewReport, ReportRound, ReportTone } from "@/lib/interview/report-server";
+import type { ReportScorecards } from "@/lib/interview/scorecard-server";
+import { bandLabel, fmtScore, SCORE_MAX } from "@/lib/interview/scorecard";
+import PanelScorecards from "./PanelScorecards";
 import { Avatar, Btn } from "../../../candidates/_components/ui";
 import { deleteInterviewAction } from "../../actions";
 
@@ -99,17 +102,30 @@ export default function InterviewReportView({
   slug,
   canDelete,
   standalone = false,
+  scorecards = null,
+  scorecardHref = null,
+  canEditPassMark = false,
+  canNudge = false,
 }: {
   report: InterviewReport;
   slug: string | null;
   canDelete: boolean;
   standalone?: boolean;
+  /** Per-interviewer scorecards; null for interviews outside a workspace. */
+  scorecards?: ReportScorecards | null;
+  /** The viewer's own scorecard, when they are on the panel. */
+  scorecardHref?: string | null;
+  canEditPassMark?: boolean;
+  canNudge?: boolean;
 }) {
   const [deleting, setDeleting] = useState(false);
   const status = statusOf(r);
   const withCode = r.rounds.filter((x) => x.attempt?.files.length).length;
   const flags = r.integrity.pasteCount + r.integrity.blurCount;
   const interviewers = [r.host, ...r.panel, ...r.guests];
+  const legacyRated = r.scorecard.criteria.some((c) => c.value != null);
+  const panel = scorecards?.summary;
+  const showPanelStat = !!scorecards && (scorecards.blind || !!panel?.submitted || !legacyRated);
 
   return (
     <div className={`flex flex-col gap-5 print:gap-4 ${standalone ? "max-w-[1120px] mx-auto w-full px-4 py-6 md:px-8 md:py-8" : ""}`}>
@@ -167,12 +183,21 @@ export default function InterviewReportView({
         </div>
 
         <div className="relative mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Stat
-            label="Scorecard"
-            value={r.scorecard.average != null ? `${r.scorecard.average.toFixed(1)} / 5` : "Not scored"}
-            sub={r.scorecard.average != null ? (r.scorecard.average >= r.scorecard.bar ? `At or above the bar of ${r.scorecard.bar}` : `Below the bar of ${r.scorecard.bar}`) : "No ratings saved"}
-            tone={r.scorecard.average == null ? "neutral" : r.scorecard.average >= r.scorecard.bar ? "success" : "warning"}
-          />
+          {showPanelStat && scorecards ? (
+            <Stat
+              label="Scorecards"
+              value={scorecards.blind ? "Hidden" : panel?.average != null ? `${fmtScore(panel.average)} / ${SCORE_MAX}` : "Not scored"}
+              sub={scorecards.blind ? "Submit yours to see them" : `${panel?.submitted ?? 0} of ${scorecards.panel.length} in. ${bandLabel(panel ?? { band: null, passMark: scorecards.passMark })}`}
+              tone={panel?.band === "at_or_above" ? "success" : panel?.band === "below" ? "warning" : "neutral"}
+            />
+          ) : (
+            <Stat
+              label="Scorecard"
+              value={r.scorecard.average != null ? `${r.scorecard.average.toFixed(1)} / 5` : "Not scored"}
+              sub={r.scorecard.average != null ? (r.scorecard.average >= r.scorecard.bar ? `At or above the bar of ${r.scorecard.bar}` : `Below the bar of ${r.scorecard.bar}`) : "No ratings saved"}
+              tone={r.scorecard.average == null ? "neutral" : r.scorecard.average >= r.scorecard.bar ? "success" : "warning"}
+            />
+          )}
           <Stat label="Interviewer's take" value={r.take?.label ?? "None given"} sub="The team decides who passes" tone={r.take?.tone ?? "neutral"} />
           <Stat label="Rounds" value={r.rounds.length ? plural(r.rounds.length, "round") : "No rounds"} sub={r.rounds.length ? `${withCode} with saved code` : "Conversation only"} />
           <Stat
@@ -186,7 +211,10 @@ export default function InterviewReportView({
 
       <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-5 items-start print:block">
         <div className="flex flex-col gap-5 min-w-0 print:gap-4">
-          <Scorecard r={r} />
+          {scorecards && (
+            <PanelScorecards data={scorecards} slug={standalone ? null : slug} sessionId={r.id} scorecardHref={scorecardHref} canEditPassMark={canEditPassMark} canNudge={canNudge} />
+          )}
+          {(!scorecards || legacyRated) && <Scorecard r={r} title={scorecards ? "Room ratings" : "Scorecard"} />}
           <Rounds rounds={r.rounds} />
           {r.guide.items.length > 0 && <Guide r={r} />}
         </div>
@@ -251,11 +279,11 @@ export default function InterviewReportView({
   );
 }
 
-function Scorecard({ r }: { r: InterviewReport }) {
+function Scorecard({ r, title }: { r: InterviewReport; title: string }) {
   const any = r.scorecard.criteria.some((c) => c.value != null);
   return (
     <Card
-      title="Scorecard"
+      title={title}
       icon={Star}
       aside={r.scorecard.average != null && <span className="text-[13px] text-muted tabular-nums">Average {r.scorecard.average.toFixed(1)} of 5</span>}
     >

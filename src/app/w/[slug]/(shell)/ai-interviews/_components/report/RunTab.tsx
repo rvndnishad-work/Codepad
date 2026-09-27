@@ -304,7 +304,7 @@ function BackendRun({
         </div>
       </IdeFrame>
       <p className="text-xs text-subtle">
-        Run executes the code as submitted, with the same runner candidates use. Test results per round are not recorded yet, so there is no Tests pane.
+        Run executes the code as submitted, with the same runner candidates use. Test results are on the Tests tab.
       </p>
     </div>
   );

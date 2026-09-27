@@ -5,11 +5,7 @@ import { validatePageAccess } from "@/lib/settings";
 import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { effectivePlan } from "@/lib/billing/trial";
 import { planDisplay } from "@/lib/workspace/display";
-import {
-  loadRolePermissions,
-  expandRolePermissions,
-  WORKSPACE_PERMISSIONS,
-} from "@/lib/permissions";
+import { loadOverviewExtras } from "@/lib/workspace/overview-server";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -38,6 +34,17 @@ function legacyAssessmentsUrl(slug: string, view: string | string[] | undefined)
   return `/w/${slug}/take-homes`;
 }
 
+/** The old Billing tab, plus Stripe return URLs created before the move. */
+function legacyBillingUrl(slug: string, sp: Record<string, string | string[] | undefined>): string {
+  const q = new URLSearchParams();
+  for (const k of ["billing_success", "billing_cancel", "session_id"]) {
+    const v = sp[k];
+    if (typeof v === "string") q.set(k, v);
+  }
+  const qs = q.toString();
+  return `/w/${slug}/billing${qs ? `?${qs}` : ""}`;
+}
+
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const workspace = await prisma.workspace.findUnique({
@@ -54,7 +61,12 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   const sp = (await searchParams) ?? {};
   if (sp.section === "candidates") redirect(legacyCandidatesUrl(slug, sp));
   if (sp.section === "library") redirect(`/w/${slug}/library`);
+  // The Integrations tab only repeated the ATS form; ATS sync is its home.
+  if (sp.section === "integrations") redirect(`/w/${slug}/connections`);
   if (sp.section === "assessments") redirect(legacyAssessmentsUrl(slug, sp.view));
+  // Members and Billing moved to their own routes.
+  if (sp.section === "members") redirect(`/w/${slug}/members`);
+  if (sp.section === "billing" || sp.billing_success || sp.billing_cancel) redirect(legacyBillingUrl(slug, sp));
 
   // Gate workspace access based on admin visibility settings
   const session = await auth().catch(() => null);
@@ -63,14 +75,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
     include: {
-      members: {
-        include: {
-          user: {
-            select: { name: true, image: true, email: true },
-          },
-        },
-        orderBy: { role: "asc" },
-      },
+      _count: { select: { members: true } },
       challenges: {
         select: {
           id: true,
@@ -124,13 +129,11 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
 
   if (!workspace) notFound();
 
-  const pendingInvites = await prisma.workspaceInvite.findMany({
+  const pendingInviteCount = await prisma.workspaceInvite.count({
     where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: new Date() } },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, role: true, expiresAt: true, createdAt: true },
   });
 
-  const [takeHomeSessionRows, aiInterviewRows] = await Promise.all([
+  const [takeHomeSessionRows, aiInterviewRows, overviewExtras] = await Promise.all([
     // Session-backed take-homes (IP-88/89) — the new multi-question model.
     prisma.interviewSession.findMany({
       where: { workspaceId: workspace.id, type: "take-home" },
@@ -171,6 +174,12 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
       },
       orderBy: { createdAt: "desc" },
       take: 200,
+    }),
+    // Overview filters and the wider "Needs your attention" list. The Overview
+    // still works without them, so a failure here never breaks the page.
+    loadOverviewExtras(workspace.id, slug).catch((err) => {
+      console.error("[overview] extras failed", err);
+      return undefined;
     }),
   ]);
 
@@ -229,34 +238,6 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     candidateId: th.candidate?.id ?? null,
     candidateStage: th.candidate?.stage ?? null,
   }));
-
-  // Map workspace members
-  const formattedMembers = workspace.members.map((m) => ({
-    id: m.id,
-    userId: m.userId,
-    role: m.role,
-    permissions: m.permissions ?? null,
-    user: {
-      name: m.user.name,
-      email: m.user.email,
-      image: m.user.image,
-    },
-  }));
-
-  // Role → concrete workspace-permission base map, so the members UI can resolve
-  // effective permissions (role base ± per-member overrides) client-side. Each
-  // role's stored grants are expanded (wildcards) and filtered to workspace
-  // permissions — global permissions never apply inside a workspace.
-  const roleMap = await loadRolePermissions();
-  const workspacePermSet = new Set<string>(WORKSPACE_PERMISSIONS);
-  const roleBasePermissions: Record<string, string[]> = {};
-  for (const [key, perms] of roleMap) {
-    roleBasePermissions[key] = [...expandRolePermissions(perms)].filter((p) =>
-      workspacePermSet.has(p),
-    );
-  }
-
-  const currentUserId = session?.user?.id ?? null;
 
   // Map workspace interview sessions
   const formattedSessions = workspace.sessions.map((s) => ({
@@ -321,18 +302,11 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
         takeHomes={formattedTakeHomes}
         takeHomeSessions={takeHomeSessions}
         aiInterviewSessions={aiInterviewSessions}
-        members={formattedMembers}
-        currentUserId={currentUserId}
-        roleBasePermissions={roleBasePermissions}
+        memberCount={workspace._count.members}
         sessions={formattedSessions}
         candidates={formattedCandidates}
-        pendingInvites={pendingInvites.map((i) => ({
-          id: i.id,
-          email: i.email,
-          role: i.role,
-          expiresAt: i.expiresAt.toISOString(),
-          createdAt: i.createdAt.toISOString(),
-        }))}
+        pendingInviteCount={pendingInviteCount}
+        overviewExtras={overviewExtras}
       />
     </div>
   );

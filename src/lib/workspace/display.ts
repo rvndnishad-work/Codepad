@@ -61,7 +61,7 @@ export function humanize(value: string | null | undefined): string {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-const SOURCE_LABELS: Record<string, string> = { linkedin: "LinkedIn", ats: "ATS", csv: "CSV import", api: "API" };
+const SOURCE_LABELS: Record<string, string> = { linkedin: "LinkedIn", ats: "ATS", csv: "CSV import", api: "API", greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby" };
 
 /** Candidate source for display: "linkedin" -> "LinkedIn", missing -> "Not set". */
 export function sourceLabel(source: string | null | undefined): string {

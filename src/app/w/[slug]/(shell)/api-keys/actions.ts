@@ -3,9 +3,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
+import { growthToolsEnabled } from "@/lib/billing/trial";
 import { generateApiKey } from "@/lib/mcp/auth";
+import { cleanKeyName, expiryFromDays } from "@/lib/mcp/keys";
 import { canMember } from "@/lib/permissions";
+import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 
 type Member = { userId: string; role: string; permissions?: unknown };
 
@@ -25,6 +27,8 @@ async function assertWorkspaceKeyAdmin(slug: string) {
       slug: true,
       name: true,
       planName: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -33,28 +37,52 @@ async function assertWorkspaceKeyAdmin(slug: string) {
   const member = workspace.members.find((m: Member) => m.userId === session.user.id);
   if (!member) throw new Error("Not a member of this workspace");
 
-  if (!workspacePlanAllowsAiScreening(workspace.planName)) {
+  if (!growthToolsEnabled(workspace)) {
     throw new Error("This workspace plan does not include the MCP API.");
   }
   if (!(await canMember(member, "integration:manage"))) {
     throw new Error("Only workspace owners/admins can manage API keys.");
   }
 
-  return { workspace, userId: session.user.id };
+  return { workspace, userId: session.user.id, email: session.user.email ?? null };
 }
+
+type KeyAdmin = Awaited<ReturnType<typeof assertWorkspaceKeyAdmin>>;
+
+function auditKey(
+  a: KeyAdmin,
+  action: string,
+  keyId: string,
+  meta: Record<string, unknown>,
+) {
+  void writeWorkspaceAuditEntry({
+    workspaceId: a.workspace.id,
+    actorUserId: a.userId,
+    actorEmail: a.email,
+    action,
+    targetType: "mcpApiKey",
+    targetId: keyId,
+    meta,
+  });
+}
+
+const DAY_MS = 86_400_000;
+const daysLeft = (d: Date | null) => (d ? Math.round((d.getTime() - Date.now()) / DAY_MS) : null);
 
 export type CreateKeyScope = "read" | "read-write";
 
 export async function createMcpApiKeyAction(
   slug: string,
   label: string,
-  scope: CreateKeyScope = "read"
+  scope: CreateKeyScope = "read",
+  /** One of EXPIRY_CHOICES (0 = never). Omitted means never, for old callers. */
+  expiresInDays: number = 0
 ) {
-  const { workspace, userId } = await assertWorkspaceKeyAdmin(slug);
+  const admin = await assertWorkspaceKeyAdmin(slug);
+  const { workspace, userId } = admin;
 
-  const trimmed = label?.trim() ?? "";
-  if (!trimmed) throw new Error("Label is required.");
-  if (trimmed.length > 60) throw new Error("Label must be 60 characters or fewer.");
+  const trimmed = cleanKeyName(label);
+  const expiresAt = expiryFromDays(expiresInDays);
 
   // Resolve the requested scope to the canonical persisted form. Phase 2
   // ships two tiers; future phases may add `admin` or per-tool scopes here.
@@ -63,7 +91,7 @@ export async function createMcpApiKeyAction(
 
   const generated = generateApiKey();
 
-  await prisma.mcpApiKey.create({
+  const created = await prisma.mcpApiKey.create({
     data: {
       workspaceId: workspace.id,
       label: trimmed,
@@ -71,7 +99,15 @@ export async function createMcpApiKeyAction(
       keyPreview: generated.preview,
       scopes: JSON.stringify(scopes),
       createdByUserId: userId,
+      expiresAt,
     },
+    select: { id: true },
+  });
+  auditKey(admin, WORKSPACE_AUDIT_ACTIONS.API_KEY_CREATED, created.id, {
+    label: trimmed,
+    preview: generated.preview,
+    scopes,
+    expiresInDays: daysLeft(expiresAt),
   });
 
   revalidatePath(`/w/${slug}/api-keys`);
@@ -80,10 +116,12 @@ export async function createMcpApiKeyAction(
   // memory. The caller surfaces it once and we never store/log it.
   return {
     success: true,
+    id: created.id,
     plaintext: generated.plaintext,
     preview: generated.preview,
     label: trimmed,
     scopes,
+    expiresAt: expiresAt?.toISOString() ?? null,
   };
 }
 
@@ -97,12 +135,13 @@ export async function createMcpApiKeyAction(
  * so clients pasting the new key see what they expect.
  */
 export async function rotateMcpApiKeyAction(slug: string, id: string) {
-  const { workspace, userId } = await assertWorkspaceKeyAdmin(slug);
+  const admin = await assertWorkspaceKeyAdmin(slug);
+  const { workspace, userId } = admin;
 
   const result = await prisma.$transaction(async (tx) => {
     const old = await tx.mcpApiKey.findFirst({
       where: { id, workspaceId: workspace.id, revokedAt: null },
-      select: { id: true, label: true, scopes: true },
+      select: { id: true, label: true, scopes: true, expiresAt: true },
     });
     if (!old) {
       throw new Error("Key not found or already revoked.");
@@ -121,8 +160,9 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
       data: { revokedAt: new Date(), label: taggedLabel },
     });
 
-    // 2. Create the new key with the original label + same scopes.
-    await tx.mcpApiKey.create({
+    // 2. Create the new key with the original label + same scopes. It keeps
+    //    the old key's expiry: rotating is not a way to extend a key.
+    const fresh = await tx.mcpApiKey.create({
       data: {
         workspaceId: workspace.id,
         label: old.label,
@@ -130,10 +170,15 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
         keyPreview: generated.preview,
         scopes: old.scopes,
         createdByUserId: userId,
+        expiresAt: old.expiresAt,
       },
+      select: { id: true },
     });
 
     return {
+      id: fresh.id,
+      oldId: old.id,
+      expiresAt: old.expiresAt?.toISOString() ?? null,
       plaintext: generated.plaintext,
       preview: generated.preview,
       label: old.label,
@@ -141,6 +186,13 @@ export async function rotateMcpApiKeyAction(slug: string, id: string) {
     };
   });
 
+  auditKey(admin, WORKSPACE_AUDIT_ACTIONS.API_KEY_ROTATED, result.id, {
+    label: result.label,
+    preview: result.preview,
+    previousKeyId: result.oldId,
+    scopes: result.scopes,
+    expiresInDays: daysLeft(result.expiresAt ? new Date(result.expiresAt) : null),
+  });
   revalidatePath(`/w/${slug}/api-keys`);
   return { success: true, ...result };
 }
@@ -160,7 +212,12 @@ function safeParseScopes(raw: string): string[] {
 }
 
 export async function revokeMcpApiKeyAction(slug: string, id: string) {
-  const { workspace } = await assertWorkspaceKeyAdmin(slug);
+  const admin = await assertWorkspaceKeyAdmin(slug);
+  const { workspace } = admin;
+  const key = await prisma.mcpApiKey.findFirst({
+    where: { id, workspaceId: workspace.id },
+    select: { label: true, keyPreview: true },
+  });
 
   // Soft revoke — keep the row so historical audit log entries still link
   // back to a recognizable label. The auth lookup rejects revokedAt != null.
@@ -171,7 +228,28 @@ export async function revokeMcpApiKeyAction(slug: string, id: string) {
   if (res.count === 0) {
     throw new Error("Key not found or already revoked.");
   }
+  auditKey(admin, WORKSPACE_AUDIT_ACTIONS.API_KEY_REVOKED, id, {
+    label: key?.label ?? null,
+    preview: key?.keyPreview ?? null,
+  });
 
   revalidatePath(`/w/${slug}/api-keys`);
   return { success: true };
+}
+
+/** Rename a key. The secret, scopes and expiry stay as they are. */
+export async function renameMcpApiKeyAction(slug: string, id: string, name: string) {
+  const admin = await assertWorkspaceKeyAdmin(slug);
+  const label = cleanKeyName(name);
+  const key = await prisma.mcpApiKey.findFirst({
+    where: { id, workspaceId: admin.workspace.id },
+    select: { id: true, label: true, revokedAt: true },
+  });
+  if (!key) throw new Error("Key not found.");
+  if (key.revokedAt) throw new Error("Revoked keys cannot be renamed.");
+  if (key.label === label) return { success: true, label };
+  await prisma.mcpApiKey.update({ where: { id: key.id }, data: { label } });
+  auditKey(admin, WORKSPACE_AUDIT_ACTIONS.API_KEY_RENAMED, key.id, { label, previousLabel: key.label });
+  revalidatePath(`/w/${slug}/api-keys`);
+  return { success: true, label };
 }

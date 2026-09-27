@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
-  Blocks,
+  BellRing,
   BookOpen,
   Bot,
+  CalendarDays,
   ClipboardList,
   CreditCard,
   Home,
@@ -18,6 +19,7 @@ import {
   Users,
   UsersRound,
   Video,
+  Webhook,
 } from "lucide-react";
 
 export type SidebarCounts = {
@@ -117,7 +119,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   // Growth tools stay visible on Free so teams can find them; they open the
   // plans page instead of the tool.
   const growth = (item: NavItem): NavItem =>
-    growthFeatures ? item : { ...item, href: sectionHref("billing"), isActive: false, locked: true };
+    growthFeatures ? item : { ...item, href: `/w/${slug}/billing`, isActive: false, locked: true };
 
   const hiring: NavItem[] = [
     {
@@ -135,20 +137,36 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
       count: counts.takeHomeReview || undefined,
     },
     { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
-    growth({ label: "AI screening", icon: Bot, ...route("ai-interviews") }),
+    growth({
+      label: "AI screening",
+      icon: Bot,
+      href: `/w/${slug}/ai-interviews`,
+      // External tools settings live under AI screening question sets.
+      isActive: pathname.startsWith(`/w/${slug}/ai-interviews`) || pathname.startsWith(`/w/${slug}/external-mcp`),
+    }),
     { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
   ];
 
   const connections: NavItem[] = [
-    { label: "Integrations", icon: Blocks, href: sectionHref("integrations"), isActive: sectionActive("integrations") },
+    // The catalog is open to everyone (it shows status); each Growth tool
+    // inside it carries its own plan check.
+    {
+      label: "Connections",
+      icon: Plug,
+      href: `/w/${slug}/connections`,
+      isActive: pathname.startsWith(`/w/${slug}/connections`),
+    },
     growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
-    growth({ label: "API keys", icon: KeyRound, ...route("api-keys") }),
-    growth({ label: "External MCP", icon: Plug, ...route("external-mcp") }),
+    growth({ label: "API and MCP", icon: KeyRound, ...route("api-keys") }),
+    growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
+    // Per-member calendars: useful on every plan.
+    { label: "Calendar", icon: CalendarDays, ...route("calendar") },
+    growth({ label: "Slack and Teams", icon: BellRing, ...route("alerts") }),
   ];
 
   const admin: NavItem[] = [
-    { label: "Members", icon: UsersRound, href: sectionHref("members"), isActive: sectionActive("members"), count: counts.members },
-    { label: "Billing and plan", icon: CreditCard, href: sectionHref("billing"), isActive: sectionActive("billing") },
+    { label: "Members", icon: UsersRound, ...route("members"), count: counts.members },
+    { label: "Billing and plan", icon: CreditCard, ...route("billing") },
     { label: "Audit log", icon: ScrollText, ...route("audit") },
     { label: "Email activity", icon: Mail, ...route("emails") },
   ];

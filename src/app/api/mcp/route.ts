@@ -2,7 +2,6 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { authenticateRequest } from "@/lib/mcp/auth";
 import { buildMcpServer } from "@/lib/mcp/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { workspacePlanAllowsAiScreening } from "@/lib/ai-interview/credits";
 
 /**
  * Production MCP endpoint.
@@ -57,7 +56,7 @@ async function handle(req: Request): Promise<Response> {
 
   // 2. Plan gate — match the AI Screening feature gate. A workspace that's
   //    been downgraded keeps its keys in the DB but they stop working.
-  if (!workspacePlanAllowsAiScreening(auth.workspacePlanName)) {
+  if (!auth.growthTools) {
     return new Response(
       JSON.stringify({
         jsonrpc: "2.0",

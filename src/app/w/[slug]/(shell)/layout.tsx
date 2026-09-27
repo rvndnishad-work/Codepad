@@ -9,6 +9,7 @@ import {
 } from "@/lib/totp-gate";
 import WorkspaceShell from "./WorkspaceShell";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
+import { touchMemberActivity } from "@/lib/workspace/activity";
 
 type Props = {
   children: React.ReactNode;
@@ -42,8 +43,11 @@ export default async function WorkspaceLayout({ children, params }: Props) {
 
   if (!activeWorkspace) notFound();
 
-  const myRole = activeWorkspace.members.find((m) => m.userId === userId)?.role;
-  if (!myRole) redirect("/dashboard");
+  const myMember = activeWorkspace.members.find((m) => m.userId === userId);
+  const myRole = myMember?.role;
+  if (!myMember || !myRole) redirect("/dashboard");
+  // "Last active" on the Members page; written at most once an hour.
+  await touchMemberActivity(myMember);
 
   // IP-42 AC #6: owners/admins of a paid-plan workspace must carry a second
   // factor before reaching workspace surfaces (candidate data, integrations).

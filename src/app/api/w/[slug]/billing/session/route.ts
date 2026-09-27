@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
+import { checkoutSeatPriceCents } from "@/lib/billing/plans";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -46,7 +47,7 @@ export async function POST(
     if (workspace.stripeCustomerId && workspace.stripeSubscriptionId) {
       const portalSession = await stripe.billingPortal.sessions.create({
         customer: workspace.stripeCustomerId,
-        return_url: `${origin}/w/${slug}`,
+        return_url: `${origin}/w/${slug}/billing`,
       });
       return NextResponse.json({ url: portalSession.url });
     }
@@ -73,9 +74,8 @@ export async function POST(
     const seatCount = workspace.members.length;
 
     const isStarter = plan === "STARTER";
-    const priceAmount = isStarter
-      ? (cadence === "monthly" ? 1900 : 1500)
-      : (cadence === "monthly" ? 4900 : 3900);
+    // Seat price comes from the plan config so the billing page and Stripe agree.
+    const priceAmount = checkoutSeatPriceCents(isStarter ? "STARTER" : "GROWTH", cadence);
 
     const productName = isStarter
       ? "Interviewpad Starter Workspace Seats"
@@ -107,8 +107,8 @@ export async function POST(
           quantity: seatCount,
         },
       ],
-      success_url: `${origin}/w/${slug}?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/w/${slug}?billing_cancel=true`,
+      success_url: `${origin}/w/${slug}/billing?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/w/${slug}/billing?billing_cancel=true`,
       subscription_data: {
         metadata: {
           workspaceId: workspace.id,

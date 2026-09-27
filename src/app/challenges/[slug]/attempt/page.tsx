@@ -139,6 +139,18 @@ export default async function ChallengeAttemptPage({
         data: { status: "SUBMITTED", submittedAt: now },
       });
       takeHomeAssignment.status = "SUBMITTED";
+      if (takeHomeAssignment.workspaceId) {
+        const { emitWorkspaceEvent } = await import("@/lib/events");
+        void emitWorkspaceEvent(takeHomeAssignment.workspaceId, "takehome.submitted", {
+          candidate: {
+            id: takeHomeAssignment.candidateId,
+            name: takeHomeAssignment.candidateName,
+            email: takeHomeAssignment.candidateEmail,
+          },
+          takeHome: { id: takeHomeAssignment.id, title: challenge.title, score: null, submittedAt: now.toISOString() },
+          reportPath: `take-homes/${takeHomeAssignment.id}`,
+        });
+      }
     }
 
     if (takeHomeAssignment.status !== "ACTIVE") {

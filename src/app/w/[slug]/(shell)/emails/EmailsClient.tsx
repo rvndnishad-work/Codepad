@@ -79,20 +79,20 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
   const filtered = query.status !== "all" || !!query.template || !!query.q;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       {toasts}
-      <header className="flex flex-col gap-1.5">
+      <header className="flex flex-col gap-1">
         <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Email activity</h1>
         <p className="text-sm text-muted max-w-2xl">Every invite, reminder and result email this workspace sent, and whether it arrived.</p>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
-        <label className="relative w-full sm:w-64">
+        <label className="relative w-full sm:w-52 shrink-0 sm:mr-1">
           <span className="sr-only">Search by recipient</span>
           <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by recipient" className={`${inputCls} pl-8 bg-surface`} />
         </label>
-        <nav aria-label="Filter by status" className="flex flex-wrap gap-2">
+        <nav aria-label="Filter by status" className="flex flex-wrap items-center gap-2 min-w-0">
           {EMAIL_STATUS_GROUPS.map((g) => {
             const on = g.id === query.status;
             const alarm = g.id === "bounced" && counts.bounced > 0 && !on;
@@ -106,12 +106,12 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
                 }`}
               >
                 {g.label}
-                <span className="tabular-nums opacity-80">{counts[g.id].toLocaleString()}</span>
+                <span className={`tabular-nums ${on ? "opacity-70" : alarm ? "" : "text-muted"}`}>{counts[g.id].toLocaleString()}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="flex-1" />
+        <div className="flex items-center gap-2 ml-auto">
         <label htmlFor="email-type" className="text-[13px] text-muted">
           Type
         </label>
@@ -119,7 +119,7 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
           id="email-type"
           value={query.template}
           onChange={(e) => router.push(href({ template: e.target.value }))}
-          className="h-9 rounded-lg border border-border bg-surface px-2.5 text-[13px] text-fg focus:outline-none focus:border-secondary/60"
+          className="h-9 min-w-[140px] rounded-lg border border-border bg-surface px-2.5 text-[13px] text-fg focus:outline-none focus:border-secondary/60 focus:ring-2 focus:ring-secondary/20"
         >
           <option value="">All types</option>
           {templates.map((t) => (
@@ -128,11 +128,14 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
             </option>
           ))}
         </select>
+        </div>
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center flex flex-col items-center gap-2">
-          <Mail className="w-6 h-6 text-subtle" aria-hidden />
+        <div className="rounded-xl border border-border bg-surface px-6 py-14 text-center flex flex-col items-center gap-2">
+          <span aria-hidden className="w-11 h-11 mb-1 rounded-full bg-panel flex items-center justify-center">
+            <Mail className="w-5 h-5 text-muted" />
+          </span>
           <p className="text-[15px] font-medium text-fg">{filtered ? "No emails match" : "No emails sent yet"}</p>
           <p className="text-[13px] text-muted max-w-sm">
             {filtered ? "Try another search, status or type." : "Send a take-home or an AI screening and its emails show up here."}
@@ -142,7 +145,7 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
         <div className="rounded-xl border border-border bg-surface overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
             <thead>
-              <tr className="text-left text-[13px] text-muted bg-panel">
+              <tr className="text-left text-[12.5px] text-muted bg-panel">
                 <th className="px-4 py-2.5 font-semibold w-[110px]">Sent</th>
                 <th className="px-4 py-2.5 font-semibold">Recipient</th>
                 <th className="px-4 py-2.5 font-semibold w-[210px]">Email</th>
@@ -161,16 +164,16 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
                     onClick={() => setOpen(r)}
                     className={`border-t border-border cursor-pointer hover:bg-panel/60 ${problem ? "bg-danger/[0.04]" : ""}`}
                   >
-                    <td className="px-4 py-3 text-muted whitespace-nowrap" suppressHydrationWarning>
+                    <td className="px-4 py-2.5 text-muted whitespace-nowrap" suppressHydrationWarning>
                       {sentLabel(r.createdAt, at)}
                     </td>
-                    <td className="px-4 py-3 min-w-0">
+                    <td className="px-4 py-2.5 min-w-0">
                       <div className="flex flex-col min-w-0">
                         {r.candidateName && r.candidateId ? (
                           <Link
                             href={`/w/${slug}/candidates/${r.candidateId}`}
                             onClick={(e) => e.stopPropagation()}
-                            className="font-medium text-secondary hover:underline underline-offset-2 truncate"
+                            className="font-medium text-secondary-soft hover:underline underline-offset-2 truncate"
                           >
                             {r.candidateName}
                           </Link>
@@ -178,8 +181,8 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
                         <span className={`truncate ${r.candidateName ? "text-[13px] text-muted" : "text-fg"}`}>{r.recipientEmail}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-fg">{r.templateLabel}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-2.5 text-fg">{r.templateLabel}</td>
+                    <td className="px-4 py-2.5">
                       <div className="flex flex-col gap-1">
                         <StatusChip status={r.status} />
                         {problem && (
@@ -189,14 +192,14 @@ export default function EmailsClient({ slug, query, rows, counts, templates, pag
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-2.5 text-right">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpen(r);
                         }}
-                        className="inline-flex items-center h-8 px-3 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel whitespace-nowrap"
+                        className="inline-flex items-center h-8 px-3 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel hover:border-border-strong whitespace-nowrap"
                       >
                         {r.canResend ? "Resend" : "Details"}
                       </button>

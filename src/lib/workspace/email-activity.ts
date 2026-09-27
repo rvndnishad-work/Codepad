@@ -95,6 +95,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "interviewer-invite": "Interview details, guest",
   "workspace-invite": "Workspace invite",
   "otp-verification": "Sign-in code",
+  "reply-to-confirm": "Reply-to confirmation",
 };
 
 export function templateLabel(t: string): string {

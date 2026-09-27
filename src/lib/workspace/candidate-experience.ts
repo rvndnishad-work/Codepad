@@ -210,7 +210,7 @@ export const CANDIDATE_EMAILS: Record<CandidateEmailKey, CandidateEmailDef> = {
     key: "take-home-received",
     label: "Take-home received",
     when: "Sent to the candidate after they submit a take-home.",
-    alwaysAdded: "The help, privacy and unsubscribe lines.",
+    alwaysAdded: "No button or link, since the candidate has nothing left to do.",
     subject: "We received your take-home: {title}",
     body: "Thanks, {candidate}. Your take-home {title} has reached {workspace}. There is nothing more you need to do.\n\nThe team will review your work and get back to you.",
   },

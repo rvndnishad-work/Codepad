@@ -11,6 +11,7 @@ const tx = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: { $transaction: (fn: (t: typeof tx) => unknown) => fn(tx) } }));
 vi.mock("@/lib/notifications/triggers", () => ({ notifyAiCreditsLowIfNeeded: vi.fn(async () => {}) }));
+vi.mock("@/lib/billing/credit-alerts", () => ({ checkLowCredits: vi.fn(async () => {}) }));
 
 import { ConsentRequiredError, consumeCreditIfFirstTurn } from "@/lib/ai-interview/credits";
 

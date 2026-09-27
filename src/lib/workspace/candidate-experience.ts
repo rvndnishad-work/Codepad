@@ -248,6 +248,7 @@ export const CANDIDATE_TEMPLATE_NAMES = [
   "take-home-submitted-candidate",
   "ai-screening-invite",
   "interview-invite",
+  "interview-cancelled",
 ] as const;
 
 export function isCandidateTemplate(template: string): boolean {

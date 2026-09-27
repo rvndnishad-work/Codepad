@@ -204,8 +204,13 @@ export async function consumeCreditIfFirstTurn(
           balance: result.newBalance,
         });
         // The email to admins, when the workspace set a threshold on Billing and usage.
-        const { checkLowCredits } = await import("@/lib/billing/credit-alerts");
-        await checkLowCredits(result.workspaceId, result.newBalance);
+        // Never let it fail the turn: the credit is already charged.
+        try {
+          const { checkLowCredits } = await import("@/lib/billing/credit-alerts");
+          await checkLowCredits(result.workspaceId, result.newBalance);
+        } catch (err) {
+          console.error("[credits] low-credit email check failed:", err);
+        }
       }
       return { charged: result.charged };
     });

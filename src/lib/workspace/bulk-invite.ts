@@ -5,6 +5,7 @@
  * server will decide.
  */
 import { INVITABLE_ROLES } from "./members";
+import { isEmailDomainAllowed } from "./settings";
 
 export const INVITE_TTL_DAYS = 14;
 export const INVITE_TTL_MS = INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
@@ -81,11 +82,9 @@ export type InviteContext = {
   seatsRemaining: number | null;
 };
 
+/** Same rule as the single invite API (Settings > Security). */
 function domainAllowed(email: string, allowed: string[]): boolean {
-  if (!allowed.length) return true;
-  const at = email.lastIndexOf("@");
-  const d = at > 0 ? email.slice(at + 1) : "";
-  return !!d && allowed.some((a) => d === a || d.endsWith(`.${a}`));
+  return isEmailDomainAllowed({ allowedEmailDomains: allowed }, email);
 }
 
 /**

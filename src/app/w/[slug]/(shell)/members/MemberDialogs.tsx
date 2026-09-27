@@ -4,12 +4,12 @@
  * Members dialogs that do more than one thing: remove with a handover,
  * make an owner or hand ownership over, and invite several people.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { AlertTriangle, X } from "lucide-react";
-import { Btn, Dialog, Field, inputCls } from "../candidates/_components/ui";
+import { Btn, Dialog, inputCls } from "../candidates/_components/ui";
 import { plural } from "@/lib/workspace/display";
 import { INVITABLE_ROLES, ROLE_LABELS } from "@/lib/workspace/members";
-import { checkHandover, handoverSummary, type HandoverChoices, type HandoverCounts, type InterviewHandoverMode } from "@/lib/workspace/handover";
+import { checkHandover, type HandoverChoices, type HandoverCounts } from "@/lib/workspace/handover";
 import {
   classifyInvites,
   INVITE_ISSUE_LABELS,
@@ -19,6 +19,9 @@ import {
   sendableInvites,
 } from "@/lib/workspace/bulk-invite";
 import { bulkInviteAction, changeOwnerAction, loadHandoverAction, removeMemberAction, type HandoverPreviewResult } from "./actions";
+
+/** The shared input style without its full width, for selects that sit inline. */
+const fixedInputCls = inputCls.replace("w-full", "");
 
 const roleLabel = (r: string) => ROLE_LABELS[r] ?? r.charAt(0) + r.slice(1).toLowerCase();
 
@@ -112,7 +115,6 @@ export function RemoveMemberDialog({
 
   const counts: HandoverCounts | null = data?.counts ?? null;
   const nothing = counts && !counts.candidates && !counts.batches && !counts.hostedInterviews && !counts.panelInterviews && !counts.reviews && !counts.apiKeys && !counts.calendar;
-  const lines = counts ? handoverSummary(counts, choices.interviewMode) : [];
 
   const submit = async () => {
     if (!data) return;
@@ -135,14 +137,23 @@ export function RemoveMemberDialog({
 
   const first = displayName(member).split(" ")[0];
   const noPeople = data && data.people.length === 0;
+  const ownedLabel = counts
+    ? [counts.candidates ? plural(counts.candidates, "candidate") : "", counts.batches ? plural(counts.batches, "hiring batch", "hiring batches") : ""]
+        .filter(Boolean)
+        .join(" and ")
+    : "";
+  const goes = counts
+    ? [counts.apiKeys ? plural(counts.apiKeys, "API key") : "", counts.calendar ? "calendar" : ""].filter(Boolean).join(" and ")
+    : "";
 
   return (
     <Dialog
       title={`Remove ${displayName(member)}?`}
       onClose={onClose}
-      width={560}
+      width={600}
       footer={
         <>
+          <span className="mr-auto text-[13px] text-muted">Frees a seat. Logged in the audit log.</span>
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="danger" disabled={!data || busy || (!!noPeople && !nothing)} onClick={submit}>
             {busy ? "Removing" : nothing ? "Remove" : "Hand over and remove"}
@@ -150,9 +161,10 @@ export function RemoveMemberDialog({
         </>
       }
     >
-      <div className="flex flex-col gap-5 text-sm">
+      <div className="flex flex-col gap-4 text-sm">
         <p className="text-muted leading-relaxed">
-          They lose access straight away. Notes, scorecards and past interviews keep their name. You can invite them again later.
+          {first} loses access straight away.
+          {data && !nothing && !noPeople ? " Choose who takes over their work so nothing is left without an owner." : " You can invite them again later."}
         </p>
 
         {loadError && <p className="text-danger">{loadError}</p>}
@@ -165,74 +177,72 @@ export function RemoveMemberDialog({
         )}
 
         {data && counts && !nothing && !noPeople && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col divide-y divide-border border-y border-border">
             {counts.candidates + counts.batches > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="handover-owner" className="text-xs font-medium text-subtle">
-                  New owner for {[counts.candidates ? plural(counts.candidates, "candidate") : "", counts.batches ? plural(counts.batches, "hiring batch", "hiring batches") : ""].filter(Boolean).join(" and ")}
-                </label>
+              <HandoverRow title={ownedLabel} hint="Pick who owns them from now on." labelFor="handover-owner">
                 <PersonSelect id="handover-owner" value={choices.ownerUserId} onChange={(v) => set("ownerUserId", v)} people={data.people} placeholder="Pick a person" error={errors.owner} />
-              </div>
+              </HandoverRow>
             )}
 
             {counts.hostedInterviews > 0 && (
-              <fieldset className="flex flex-col gap-2">
-                <legend className="text-xs font-medium text-subtle mb-1">{plural(counts.hostedInterviews, "upcoming interview")} they host</legend>
-                {data.hosted.length > 0 && (
-                  <ul className="rounded-lg border border-border bg-bg divide-y divide-border">
-                    {data.hosted.map((h) => (
-                      <li key={h.id} className="flex items-center justify-between gap-3 px-3 py-2 text-[13px]">
-                        <span className="text-fg truncate">
-                          {h.candidateName ?? "No candidate yet"}
-                          <span className="text-muted">, {h.title}</span>
-                        </span>
-                        <span className="text-muted whitespace-nowrap">
-                          {h.scheduledAt ? new Date(h.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "No time"}
-                        </span>
-                      </li>
-                    ))}
-                    {counts.hostedInterviews > data.hosted.length && (
-                      <li className="px-3 py-2 text-[13px] text-muted">and {counts.hostedInterviews - data.hosted.length} more</li>
-                    )}
-                  </ul>
-                )}
-                {(["reassign", "cancel"] as InterviewHandoverMode[]).map((mode) => (
-                  <label key={mode} className="flex items-start gap-2.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="interview-mode"
-                      checked={choices.interviewMode === mode}
-                      onChange={() => set("interviewMode", mode)}
-                      className="accent-secondary w-4 h-4 mt-0.5"
-                    />
-                    <span className="flex flex-col">
-                      <span className="text-fg">{mode === "reassign" ? "Give them to another interviewer" : "Cancel them and tell the candidates"}</span>
-                      <span className="text-[13px] text-muted">
-                        {mode === "reassign"
-                          ? "Candidates keep the same link and time. Calendar events move to the new host when they have a calendar connected."
-                          : "Candidates get an email saying the interview is cancelled."}
+              <HandoverRow
+                title={`${plural(counts.hostedInterviews, "upcoming interview")} they host`}
+                labelFor="handover-interviewer"
+                hint={
+                  <>
+                    {data.hosted.length > 0 && (
+                      <span className="block">
+                        {data.hosted
+                          .map(
+                            (h) =>
+                              `${h.candidateName ?? "No candidate yet"}, ${
+                                h.scheduledAt ? new Date(h.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : "no time"
+                              }`,
+                          )
+                          .join("; ")}
+                        {counts.hostedInterviews > data.hosted.length && ` and ${counts.hostedInterviews - data.hosted.length} more`}.
                       </span>
+                    )}
+                    <span className="block mt-1">
+                      {choices.interviewMode === "reassign"
+                        ? "Candidates keep the same link and time. Calendar events move to the new host when they have a calendar connected."
+                        : "Candidates get an email saying the interview is cancelled."}
                     </span>
-                  </label>
-                ))}
-                {choices.interviewMode === "reassign" && (
-                  <PersonSelect
-                    id="handover-interviewer"
-                    value={choices.interviewerUserId}
-                    onChange={(v) => set("interviewerUserId", v)}
-                    people={data.people}
-                    placeholder="Pick the new interviewer"
-                    error={errors.interviewer}
-                  />
-                )}
-              </fieldset>
+                  </>
+                }
+              >
+                <select
+                  id="handover-interviewer"
+                  value={choices.interviewMode === "cancel" ? CANCEL : (choices.interviewerUserId ?? "")}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setChoices((c) =>
+                      v === CANCEL ? { ...c, interviewMode: "cancel" } : { ...c, interviewMode: "reassign", interviewerUserId: v || null },
+                    );
+                    setErrors({});
+                  }}
+                  aria-invalid={errors.interviewer ? true : undefined}
+                  className={`${inputCls} ${errors.interviewer ? "border-danger/60" : ""}`}
+                >
+                  <option value="">Pick the new interviewer</option>
+                  {data.people.map((p) => (
+                    <option key={p.userId} value={p.userId}>
+                      Give to {p.name}
+                      {p.isMe ? " (you)" : ""}
+                    </option>
+                  ))}
+                  <option value={CANCEL}>Cancel them and tell the candidates</option>
+                </select>
+                {errors.interviewer && <span className="text-xs text-danger">{errors.interviewer}</span>}
+              </HandoverRow>
             )}
 
             {counts.hostedInterviews === 0 && counts.panelInterviews > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="handover-panel" className="text-xs font-medium text-subtle">
-                  Their seat on {plural(counts.panelInterviews, "interview panel")}
-                </label>
+              <HandoverRow
+                title={`Their seat on ${plural(counts.panelInterviews, "interview panel")}`}
+                hint="Pick who takes the seat, or leave it empty."
+                labelFor="handover-panel"
+              >
                 <PersonSelect
                   id="handover-panel"
                   value={choices.interviewerUserId}
@@ -241,33 +251,60 @@ export function RemoveMemberDialog({
                   placeholder="Leave the seat empty"
                   error={errors.interviewer}
                 />
-              </div>
+              </HandoverRow>
+            )}
+
+            {counts.hostedInterviews > 0 && counts.panelInterviews > 0 && (
+              <HandoverRow title={`${plural(counts.panelInterviews, "other interview")} they join`} hint="They come off the panel.">
+                <Chip tone="warning">Happens on remove</Chip>
+              </HandoverRow>
             )}
 
             {counts.reviews > 0 && (
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="handover-reviewer" className="text-xs font-medium text-subtle">
-                  New reviewer for {plural(counts.reviews, "open take-home")}
-                </label>
+              <HandoverRow title={plural(counts.reviews, "open take-home") + " to review"} hint="Pick who makes the decision." labelFor="handover-reviewer">
                 <PersonSelect id="handover-reviewer" value={choices.reviewerUserId} onChange={(v) => set("reviewerUserId", v)} people={data.people} placeholder="Pick a person" error={errors.reviewer} />
-              </div>
+              </HandoverRow>
             )}
 
-            {lines.length > 0 && (
-              <div className="rounded-lg border border-border bg-panel/50 px-3.5 py-3">
-                <p className="text-xs font-medium text-subtle mb-1.5">What happens</p>
-                <ul className="flex flex-col gap-1 text-[13px] text-fg list-disc pl-4">
-                  {lines.map((l) => (
-                    <li key={l}>{l}</li>
-                  ))}
-                </ul>
-              </div>
+            {goes && (
+              <HandoverRow
+                title={`Their ${goes}`}
+                hint={[counts.apiKeys ? `${counts.apiKeys === 1 ? "The key" : "Keys"} ${first} made ${counts.apiKeys === 1 ? "is" : "are"} revoked.` : "", counts.calendar ? "Their calendar is disconnected." : ""].filter(Boolean).join(" ")}
+              >
+                <Chip tone="warning">Happens on remove</Chip>
+              </HandoverRow>
             )}
+
+            <HandoverRow title="Their notes and scorecards" hint="Stay on each candidate, signed with their name. Past interviews keep their name too.">
+              <Chip tone="success">Kept</Chip>
+            </HandoverRow>
           </div>
         )}
       </div>
     </Dialog>
   );
+}
+
+const CANCEL = "__cancel";
+
+function HandoverRow({ title, hint, labelFor, children }: { title: string; hint?: ReactNode; labelFor?: string; children: ReactNode }) {
+  const Title = labelFor ? "label" : "span";
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 py-3.5">
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <Title htmlFor={labelFor} className="text-fg font-medium">
+          {title}
+        </Title>
+        {hint && <span className="text-[13px] text-muted leading-snug">{hint}</span>}
+      </div>
+      <div className="sm:w-56 shrink-0 flex flex-col gap-1 items-start">{children}</div>
+    </div>
+  );
+}
+
+function Chip({ tone, children }: { tone: "success" | "warning" | "neutral"; children: ReactNode }) {
+  const cls = { success: "bg-success/10 text-success", warning: "bg-warning/10 text-warning", neutral: "bg-panel text-muted" }[tone];
+  return <span className={`inline-flex items-center h-6 px-2 rounded-full text-xs font-medium whitespace-nowrap ${cls}`}>{children}</span>;
 }
 
 /* ───────────────────────────── Owners ───────────────────────────── */
@@ -414,7 +451,7 @@ export function BulkInviteDialog({
     <Dialog
       title="Invite people"
       onClose={onClose}
-      width={620}
+      width={660}
       footer={
         <>
           <span className="mr-auto text-[13px] text-muted">
@@ -428,8 +465,12 @@ export function BulkInviteDialog({
       }
     >
       <div className="flex flex-col gap-4">
-        <Field label="Emails" hint="Paste one or many, separated by commas or new lines. Addresses copied from your mail app work too.">
+        <div className="flex flex-col gap-2">
+          <label htmlFor="bulk-invite-emails" className="text-sm text-muted">
+            Paste one address or a whole list from a spreadsheet or email. Commas and new lines both work.
+          </label>
           <textarea
+            id="bulk-invite-emails"
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -440,66 +481,81 @@ export function BulkInviteDialog({
             }}
             rows={3}
             placeholder="ana@company.com, bo@company.com"
-            className={`${inputCls} h-auto py-2 resize-y`}
+            className={`${inputCls} h-auto py-2.5 resize-y font-mono leading-relaxed`}
           />
-        </Field>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <Field label="Role" hint={description ?? undefined}>
-              <select value={defaultRole} onChange={(e) => setDefaultRole(e.target.value)} className={inputCls}>
-                {INVITABLE_ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {roleLabel(r)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-2">
+            <label htmlFor="bulk-invite-role" className="text-[13px] text-muted">
+              Invite as
+            </label>
+            <select
+              id="bulk-invite-role"
+              value={defaultRole}
+              onChange={(e) => setDefaultRole(e.target.value)}
+              className={`${fixedInputCls} w-40`}
+            >
+              {INVITABLE_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {roleLabel(r)}
+                </option>
+              ))}
+            </select>
+            <span className="text-[13px] text-muted whitespace-nowrap">or change one at a time below.</span>
+            <Btn size="md" disabled={!pendingText} onClick={addFromText} className="ml-auto">
+              {pendingText > 1 ? `Add ${pendingText} people` : "Add to list"}
+            </Btn>
           </div>
-          <Btn size="md" disabled={!pendingText} onClick={addFromText} className={description ? "mb-[22px]" : ""}>
-            {pendingText > 1 ? `Add ${pendingText} people` : "Add to list"}
-          </Btn>
+          {description && <p className="text-xs text-subtle">{description}</p>}
         </div>
 
         {classified.length > 0 && (
-          <div className="rounded-xl border border-border overflow-hidden">
-            <ul className="divide-y divide-border max-h-72 overflow-y-auto">
-              {classified.map((r, i) => (
-                <li key={`${r.email}-${i}`} className="flex flex-wrap items-center gap-2.5 px-3 py-2">
-                  <span className="flex-1 min-w-[180px] flex flex-col">
-                    <span className={`text-[13px] truncate ${r.issue ? "text-muted" : "text-fg"}`}>{r.email}</span>
+          <ul className="divide-y divide-border border-y border-border max-h-72 overflow-y-auto">
+            {classified.map((r, i) => {
+              const locked = !!r.issue && r.issue !== "seats";
+              return (
+                <li key={`${r.email}-${i}`} className="flex items-center gap-3 py-2.5">
+                  <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <span title={r.email} className={`text-sm truncate ${r.issue ? "text-muted" : "text-fg"}`}>{r.email}</span>
+                    {!r.issue && r.reinvite && <span className="text-xs text-subtle">Has an open invite. Sending replaces it.</span>}
+                  </span>
+                  {locked ? (
+                    <span className="w-36 shrink-0 px-3 text-[13px] text-muted">{roleLabel(rows[i].role)}</span>
+                  ) : (
+                    <label className="contents">
+                      <span className="sr-only">Role for {r.email}</span>
+                      <select
+                        value={rows[i].role}
+                        onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}
+                        className={`${fixedInputCls} w-36 shrink-0`}
+                      >
+                        {INVITABLE_ROLES.map((role) => (
+                          <option key={role} value={role}>
+                            {roleLabel(role)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <span className="w-36 shrink-0 flex">
                     {r.issue ? (
-                      <span className="text-xs text-warning">{INVITE_ISSUE_LABELS[r.issue]}</span>
+                      <Chip tone={r.issue === "member" || r.issue === "duplicate" ? "neutral" : "warning"}>{INVITE_ISSUE_LABELS[r.issue]}</Chip>
                     ) : (
-                      r.reinvite && <span className="text-xs text-subtle">Has an open invite. Sending replaces it.</span>
+                      <Chip tone="success">Ready</Chip>
                     )}
                   </span>
-                  <label className="contents">
-                    <span className="sr-only">Role for {r.email}</span>
-                    <select
-                      value={rows[i].role}
-                      onChange={(e) => setRows((all) => all.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}
-                      disabled={!!r.issue && r.issue !== "seats"}
-                      className="h-8 rounded-lg border border-border bg-bg px-2 text-[13px] text-fg focus:outline-none focus:border-secondary/60 disabled:opacity-50"
-                    >
-                      {INVITABLE_ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {roleLabel(role)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
                   <button
                     type="button"
                     onClick={() => setRows((all) => all.filter((_, j) => j !== i))}
                     aria-label={`Remove ${r.email} from the list`}
-                    className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
+                    className="shrink-0 w-8 h-8 rounded-lg inline-flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </li>
-              ))}
-            </ul>
-          </div>
+              );
+            })}
+          </ul>
         )}
 
         <p className="text-[13px] text-muted">

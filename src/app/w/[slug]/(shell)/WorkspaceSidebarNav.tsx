@@ -15,6 +15,7 @@ import {
   Plug,
   RefreshCw,
   ScrollText,
+  Settings,
   Lock,
   Users,
   UsersRound,
@@ -48,6 +49,8 @@ type NavItem = {
   count?: number | null;
   /** Needs a Growth plan: shown with a lock and linked to billing. */
   locked?: boolean;
+  /** Small "New" badge after the label. */
+  isNew?: boolean;
 };
 
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
@@ -81,6 +84,9 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
       )}
       <Icon className={`w-4 h-4 shrink-0 ${item.isActive ? "text-secondary" : "text-subtle"}`} aria-hidden />
       <span className="flex-1 truncate">{item.label}</span>
+      {item.isNew && (
+        <span className="rounded-full bg-secondary/15 text-secondary text-xs font-medium px-1.5 leading-5">New</span>
+      )}
       {item.locked && <Lock className="w-3.5 h-3.5 text-subtle" aria-label="Growth plan" />}
       {item.count !== null && item.count !== undefined && (
         <span className={`text-xs tabular-nums ${item.isActive ? "text-fg" : "text-subtle"}`}>{item.count}</span>
@@ -166,7 +172,8 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
 
   const admin: NavItem[] = [
     { label: "Members", icon: UsersRound, ...route("members"), count: counts.members },
-    { label: "Billing and plan", icon: CreditCard, ...route("billing") },
+    { label: "Settings", icon: Settings, ...route("settings"), isNew: true },
+    { label: "Billing and usage", icon: CreditCard, ...route("billing") },
     { label: "Audit log", icon: ScrollText, ...route("audit") },
     { label: "Email activity", icon: Mail, ...route("emails") },
   ];

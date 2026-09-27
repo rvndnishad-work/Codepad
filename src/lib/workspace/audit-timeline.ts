@@ -19,6 +19,7 @@ export const AUDIT_CATEGORIES = [
   { id: "people", label: "People" },
   { id: "connections", label: "Connections and keys" },
   { id: "billing", label: "Billing" },
+  { id: "settings", label: "Settings" },
 ] as const;
 
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number]["id"];
@@ -37,13 +38,18 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
     exact: ["BULK_TAKE_HOME_DISPATCHED"],
     prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "QUESTION_VARIANT_", "TAKE_HOME_", "INTERVIEW"],
   },
-  { id: "people", exact: [], prefixes: ["MEMBER_", "ROLE_"] },
+  { id: "people", exact: ["MEMBERS_BULK_INVITED"], prefixes: ["MEMBER_", "ROLE_"] },
   {
     id: "connections",
     exact: [],
     prefixes: ["ATS_", "WEBHOOK_", "API_KEY_", "MCP_", "EXTERNAL_MCP_", "CALENDAR_", "ALERT_", "SLACK_", "TEAMS_", "INTEGRATION_"],
   },
   { id: "billing", exact: [], prefixes: ["BILLING_", "PLAN_", "SUBSCRIPTION_", "CREDIT", "TRIAL_"] },
+  {
+    id: "settings",
+    exact: ["MEMBERS_SIGNED_OUT", "EMAIL_TEMPLATE_CHANGED"],
+    prefixes: ["WORKSPACE_", "SECURITY_", "RETENTION_", "DATA_REQUEST_", "REPLY_TO_"],
+  },
 ];
 
 export function isAuditCategory(v: unknown): v is AuditCategory {
@@ -289,9 +295,46 @@ const LABELS: Record<string, string> = {
   ALERT_CHANNEL_UPDATED: "Edited an alert channel",
   ALERT_CHANNEL_REMOVED: "Removed an alert channel",
   ALERT_TEST_SENT: "Sent a test alert",
+  WORKSPACE_SETTINGS_CHANGED: "Changed a setting",
+  SECURITY_POLICY_CHANGED: "Changed a security setting",
+  SECURITY_2FA_REMINDER_SENT: "Emailed members about two-factor sign-in",
+  MEMBERS_SIGNED_OUT: "Signed out every member",
+  MEMBER_JOINED: "A member joined",
+  MEMBER_WORK_HANDED_OVER: "Handed over the work of",
+  MEMBER_OWNERSHIP_TRANSFERRED: "Transferred ownership to",
+  MEMBER_OWNER_ADDED: "Made a member an owner",
+  MEMBERS_BULK_INVITED: "Invited people",
+  PLAN_CHANGED: "Changed the plan",
+  SUBSCRIPTION_STARTED: "Started the subscription",
+  SUBSCRIPTION_CANCELLED: "Cancelled the subscription",
+  SUBSCRIPTION_PAYMENT_FAILED: "A subscription payment failed",
+  CREDITS_PURCHASED: "Bought AI screening credits",
+  CREDITS_LOW_ALERT_SENT: "Emailed admins about low credits",
+  TRIAL_ENDED: "The free trial ended",
+  INTERVIEW_INVITE_RESENT: "Resent the interview invite to",
+  INTERVIEW_CANCELLED: "Cancelled the interview with",
+  EMAIL_TEMPLATE_CHANGED: "Changed candidate email wording",
+  REPLY_TO_CONFIRMATION_SENT: "Sent a reply-to confirmation to",
+  REPLY_TO_CONFIRMED: "Confirmed the reply-to address",
+  RETENTION_ITEMS_ERASED: "A retention rule erased data",
+  RETENTION_NOTICE_SENT: "Emailed admins about an upcoming erase",
+  RETENTION_RULE_CHANGED: "Changed a retention rule",
+  DATA_REQUEST_CREATED: "Logged a data request for",
+  DATA_REQUEST_COMPLETED: "Completed a data request for",
+  WORKSPACE_EXPORT_REQUESTED: "Asked for an export of everything",
+  WORKSPACE_DELETION_SCHEDULED: "Scheduled the workspace for deletion",
+  WORKSPACE_DELETION_CANCELLED: "Cancelled the workspace deletion",
 };
 
 const DANGER = /(_DELETED|_ERASED|_REMOVED|_REVOKED|_DISCONNECTED|_AUTO_PAUSED)$/;
+const DANGER_EXACT = new Set([
+  "MEMBERS_SIGNED_OUT",
+  "SUBSCRIPTION_CANCELLED",
+  "SUBSCRIPTION_PAYMENT_FAILED",
+  "WORKSPACE_DELETION_SCHEDULED",
+  "INTERVIEW_CANCELLED",
+]);
+const isDanger = (action: string) => DANGER.test(action) || DANGER_EXACT.has(action);
 
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -449,9 +492,16 @@ export function describeAuditRow(row: AuditRowInput, names: Record<string, strin
       ...base,
       title: `${actionLabel(row.action)}${where ? `: ${where}` : ""}`,
       detail: failed ? "The test did not go through." : null,
-      tone: DANGER.test(row.action) || failed ? "danger" : "accent",
+      tone: isDanger(row.action) || failed ? "danger" : "accent",
       tag: null,
     };
+  }
+
+  const admin = adminSentence(row.action, meta);
+  if (admin) {
+    const tab = str(meta.tab);
+    const settingsPath = tab && tab !== "billing" ? { path: `settings/${tab}`, pathLabel: "Open settings" } : {};
+    return { ...base, ...settingsPath, tag: null, ...admin, tone: admin.tone ?? (isDanger(row.action) ? "danger" : "accent") };
   }
 
   // Generic: label plus the most useful name in the meta.
@@ -469,9 +519,139 @@ export function describeAuditRow(row: AuditRowInput, names: Record<string, strin
     ...base,
     title: subject ? `${label} ${subject}` : withoutSubject(row.action, label),
     detail: str(meta.reason) ? `Reason: ${str(meta.reason)}` : null,
-    tone: DANGER.test(row.action) ? "danger" : known ? "accent" : "neutral",
+    tone: isDanger(row.action) ? "danger" : known ? "accent" : "neutral",
     tag: null,
   };
+}
+
+/** Settings, security, billing and data sentences. Null lets the generic sentence handle the action. */
+function adminSentence(
+  action: string,
+  meta: Record<string, unknown>,
+): { title: string; detail: string | null; tone?: AuditTone } | null {
+  const who = str(meta.name) ?? str(meta.email) ?? "a member";
+  const count = num(meta.count);
+  const lower = (t: string) => t.charAt(0).toLowerCase() + t.slice(1);
+  const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+  const fromTo = () => {
+    const from = str(meta.from);
+    const to = str(meta.to);
+    return from && to ? `From ${from} to ${to}.` : to ? `Now ${to}.` : null;
+  };
+  switch (action) {
+    case "WORKSPACE_SETTINGS_CHANGED":
+    case "SECURITY_POLICY_CHANGED": {
+      const label = str(meta.label);
+      return { title: label ? `Changed ${lower(label)}` : actionLabel(action), detail: fromTo() };
+    }
+    case "SECURITY_2FA_REMINDER_SENT":
+      return { title: count ? `Emailed ${plural(count, "member")} about two-factor sign-in` : actionLabel(action), detail: null };
+    case "MEMBERS_SIGNED_OUT":
+      return { title: actionLabel(action), detail: "Everyone has to sign in again." };
+    case "MEMBER_JOINED": {
+      const role = str(meta.role);
+      const how = meta.via === "domain" ? "Joined without an invite" : "Accepted the invite";
+      return { title: `${who} joined the workspace`, detail: role ? `${how} as ${lower(role)}.` : `${how}.` };
+    }
+    case "MEMBER_WORK_HANDED_OVER": {
+      const parts: string[] = [];
+      const to = str(meta.toName);
+      const c = num(meta.candidates);
+      if (c) parts.push(`${plural(c, "candidate")}${to ? ` to ${to}` : ""}`);
+      const moved = num(meta.interviewsReassigned);
+      if (moved) parts.push(`${plural(moved, "interview")} reassigned`);
+      const cancelled = num(meta.interviewsCancelled);
+      if (cancelled) parts.push(`${plural(cancelled, "interview")} cancelled`);
+      const reviews = num(meta.reviews);
+      if (reviews) parts.push(`${plural(reviews, "take-home review")} moved`);
+      const keys = num(meta.apiKeysRevoked);
+      if (keys) parts.push(`${plural(keys, "API key")} revoked`);
+      if (meta.calendarDisconnected === true) parts.push("calendar disconnected");
+      const detail = parts.length ? `${parts.join(", ")}.` : null;
+      return { title: `Handed over the work of ${who}`, detail: detail && detail.charAt(0).toUpperCase() + detail.slice(1) };
+    }
+    case "MEMBER_OWNERSHIP_TRANSFERRED":
+      return { title: `Transferred ownership to ${who}`, detail: str(meta.fromName) ? `Was ${str(meta.fromName)}.` : null };
+    case "MEMBER_OWNER_ADDED":
+      return { title: `Made ${who} an owner`, detail: null };
+    case "MEMBERS_BULK_INVITED": {
+      const emails = Array.isArray(meta.emails) ? (meta.emails as unknown[]).filter((e): e is string => typeof e === "string") : [];
+      const n = count ?? emails.length;
+      const extra = n > emails.length && emails.length ? ` and ${n - emails.length} more` : "";
+      return { title: n ? `Invited ${plural(n, "person", "people")}` : actionLabel(action), detail: emails.length ? `${emails.join(", ")}${extra}.` : null };
+    }
+    case "PLAN_CHANGED": {
+      const to = str(meta.to);
+      return { title: to ? `Changed the plan to ${to}` : actionLabel(action), detail: str(meta.from) ? `Was ${str(meta.from)}.` : null };
+    }
+    case "SUBSCRIPTION_STARTED":
+      return { title: str(meta.plan) ? `Started the ${str(meta.plan)} subscription` : actionLabel(action), detail: null };
+    case "SUBSCRIPTION_CANCELLED":
+      return { title: actionLabel(action), detail: meta.atPeriodEnd === true ? "It ends at the end of the billing period." : null };
+    case "SUBSCRIPTION_PAYMENT_FAILED":
+      return { title: actionLabel(action), detail: "Stripe will try again. Check the card on file." };
+    case "CREDITS_PURCHASED": {
+      const credits = num(meta.credits);
+      return { title: credits ? `Bought ${plural(credits, "AI screening credit")}` : actionLabel(action), detail: null };
+    }
+    case "CREDITS_LOW_ALERT_SENT": {
+      const balance = num(meta.balance);
+      const threshold = num(meta.threshold);
+      return {
+        title: actionLabel(action),
+        detail: balance !== null && threshold !== null ? `${plural(balance, "credit")} left, below ${threshold}.` : null,
+        tone: "neutral",
+      };
+    }
+    case "TRIAL_ENDED":
+      return { title: actionLabel(action), detail: str(meta.plan) ? `Now on ${str(meta.plan)}.` : null, tone: "neutral" };
+    case "EMAIL_TEMPLATE_CHANGED": {
+      const label = str(meta.label) ?? str(meta.key);
+      const verb = meta.reset === true ? "Reset" : "Changed";
+      return { title: label ? `${verb} the wording of the ${lower(label)} email` : actionLabel(action), detail: null };
+    }
+    case "REPLY_TO_CONFIRMED":
+      return { title: str(meta.email) ? `Confirmed the reply-to address ${str(meta.email)}` : actionLabel(action), detail: null };
+    case "RETENTION_ITEMS_ERASED":
+      return {
+        title: count !== null ? `A retention rule erased ${plural(count, "item")}` : actionLabel(action),
+        detail: str(meta.label) ? `${str(meta.label)}.` : null,
+        tone: "danger",
+      };
+    case "RETENTION_NOTICE_SENT": {
+      const label = str(meta.label);
+      const due = str(meta.dueAt);
+      const bits = [label, count !== null ? plural(count, "item") : null, due ? `on ${due.slice(0, 10)}` : null].filter(Boolean);
+      return { title: actionLabel(action), detail: bits.length ? `${bits.join(", ")}.` : null, tone: "neutral" };
+    }
+    case "RETENTION_RULE_CHANGED": {
+      const label = str(meta.label);
+      return { title: label ? `Changed the retention rule: ${lower(label)}` : actionLabel(action), detail: fromTo() };
+    }
+    case "DATA_REQUEST_CREATED": {
+      const email = str(meta.email) ?? "a candidate";
+      const due = str(meta.dueAt);
+      return {
+        title: meta.kind === "ERASE" ? `Logged a request to erase the data of ${email}` : `Logged a request for a copy of the data of ${email}`,
+        detail: due ? `Due ${due.slice(0, 10)}.` : null,
+      };
+    }
+    case "DATA_REQUEST_COMPLETED": {
+      const email = str(meta.email) ?? "a candidate";
+      const items = num(meta.itemCount);
+      return {
+        title: meta.kind === "ERASE" ? `Erased the data of ${email}` : `Sent ${email} a copy of their data`,
+        detail: items !== null ? `${plural(items, "record")}.` : null,
+        tone: meta.kind === "ERASE" ? "danger" : "accent",
+      };
+    }
+    case "WORKSPACE_DELETION_SCHEDULED": {
+      const final = str(meta.finalAt);
+      return { title: actionLabel(action), detail: final ? `It can be undone until ${final.slice(0, 10)}.` : null };
+    }
+    default:
+      return null;
+  }
 }
 
 /* ── Day grouping ───────────────────────────────────────────────────────── */

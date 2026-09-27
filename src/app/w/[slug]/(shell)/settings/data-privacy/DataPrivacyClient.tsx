@@ -1,16 +1,19 @@
 "use client";
 
 /**
- * Settings > Data and privacy. Five cards: retention rules (saved with the
- * sticky save bar), candidate data requests, export everything, who
- * processes the data, and delete the workspace (owners only).
+ * Settings > Data and privacy. Main column: retention rules (saved with the
+ * sticky save bar), candidate data requests, export everything, and delete
+ * the workspace (owners only). Side column: who processes the data, and a
+ * pointer to where candidates see the privacy notice.
  */
-import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Download, ExternalLink, Search } from "lucide-react";
 import { Btn, useToasts } from "../../candidates/_components/ui";
 import { ConfirmDialog } from "../../candidates/_components/dialogs";
-import { SaveBar, SettingRow, SettingsCard, TextInput, Toggle, inputCls, type SettingsForm } from "../_components/form";
+import { PrivacyCard } from "./PrivacyCard";
+import { SaveBar, SettingsCard, TextInput, Toggle, inputCls, type SettingsForm } from "../_components/form";
 import {
   COUNT_LABELS,
   DPA_REQUEST_URL,
@@ -89,12 +92,17 @@ type Props = {
 export default function DataPrivacyClient(props: Props) {
   const retention = useRetentionForm({ slug: props.slug, rules: props.rules, canEdit: props.canEdit });
   return (
-    <div className="flex flex-col gap-5">
-      <RetentionCard rules={props.rules} canEdit={props.canEdit} retention={retention} />
-      <RequestsCard slug={props.slug} requests={props.requests} canEdit={props.canEdit} now={props.now} />
-      <ExportCard slug={props.slug} exports={props.exports} canEdit={props.canEdit} />
-      <SubprocessorsCard />
-      <DeleteCard slug={props.slug} workspaceName={props.workspaceName} owner={props.owner} />
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-5 xl:gap-6 items-start">
+      <div className="flex flex-col gap-5 min-w-0">
+        <RetentionCard rules={props.rules} canEdit={props.canEdit} retention={retention} />
+        <RequestsCard slug={props.slug} requests={props.requests} canEdit={props.canEdit} now={props.now} />
+        <ExportCard slug={props.slug} exports={props.exports} canEdit={props.canEdit} />
+        <DeleteCard slug={props.slug} workspaceName={props.workspaceName} owner={props.owner} />
+      </div>
+      <aside aria-label="Where data goes" className="flex flex-col gap-5 min-w-0 xl:sticky xl:top-6">
+        <SubprocessorsCard />
+        <CandidatesSeeCard slug={props.slug} />
+      </aside>
       <SaveBar form={retention.form} />
     </div>
   );
@@ -199,70 +207,83 @@ function RetentionCard({ rules, canEdit, retention }: { rules: RuleRow[]; canEdi
   return (
     <SettingsCard
       id="retention"
-      title="Data retention"
-      description={`Erase data you no longer need, automatically. Rules are off until you turn them on. Owners and admins get an email ${RETENTION_NOTICE_DAYS} days before anything is erased, and every erase is written to the audit log.`}
+      title="How long we keep candidate data"
+      description={`Rules are off until you turn them on. Owners and admins get an email ${RETENTION_NOTICE_DAYS} days before anything is erased, and every erase is written to the audit log.`}
     >
       {rules.map((r) => {
         const v = values[r.kind];
         const copy = RETENTION_COPY[r.kind];
         const { min, max } = RETENTION_LIMITS[r.unit];
         const inputId = `retention-${r.kind}`;
+        const error = errors[r.kind];
         return (
-          <SettingRow
-            key={r.kind}
-            label={copy.title}
-            htmlFor={inputId}
-            error={errors[r.kind]}
-            help={
-              <>
-                {copy.help}
-                <RuleStatus rule={r} />
-              </>
-            }
-          >
-            <div className="flex flex-wrap items-center gap-3">
+          <div key={r.kind} className="px-5 py-3.5">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] md:grid-cols-[auto_minmax(0,1fr)_auto_128px] items-center gap-x-4 gap-y-2">
               <Toggle checked={v.enabled} onChange={(on) => setRule(r.kind, { enabled: on })} label={copy.title} disabled={!canEdit} />
-              <span className="text-[13px] text-muted">after</span>
-              <input
-                id={inputId}
-                type="number"
-                inputMode="numeric"
-                min={min}
-                max={max}
-                step={1}
-                value={v.amount}
-                disabled={!canEdit}
-                aria-invalid={!!errors[r.kind]}
-                onChange={(e) => setRule(r.kind, { amount: e.target.value })}
-                className={`${inputCls} !w-20 tabular-nums disabled:opacity-50`}
-              />
-              <span className="text-[13px] text-muted">{r.unit === "DAYS" ? "days" : "months"}</span>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium text-fg">{copy.title}</span>
+                <span className="text-[13px] text-muted">{shortHelp(copy.help)}</span>
+              </div>
+              <label htmlFor={inputId} className="col-start-2 md:col-start-auto flex items-center gap-2 text-[13px] text-muted">
+                <span>After</span>
+                <input
+                  id={inputId}
+                  type="number"
+                  inputMode="numeric"
+                  min={min}
+                  max={max}
+                  step={1}
+                  value={v.amount}
+                  disabled={!canEdit}
+                  aria-invalid={!!error}
+                  aria-label={`${copy.title}, after how many ${r.unit === "DAYS" ? "days" : "months"}`}
+                  onChange={(e) => setRule(r.kind, { amount: e.target.value })}
+                  className={`${inputCls} !w-20 tabular-nums disabled:opacity-50`}
+                />
+                <span>{r.unit === "DAYS" ? "days" : "months"}</span>
+              </label>
+              <div className="col-start-2 md:col-start-auto min-w-0 md:text-right">
+                <RuleStatus rule={r} enabled={v.enabled} amountChanged={v.amount.trim() !== String(r.amount)} />
+              </div>
             </div>
-          </SettingRow>
+            {error && (
+              <p role="alert" className="mt-2 pl-14 text-[13px] text-danger">
+                {error}
+              </p>
+            )}
+          </div>
         );
       })}
+      <p className="px-5 py-3 rounded-b-xl bg-secondary/10 text-[13px] text-secondary-soft">
+        Candidates marked passed are never erased by a rule, however long ago they were active.
+      </p>
     </SettingsCard>
   );
 }
 
-function RuleStatus({ rule }: { rule: RuleRow }) {
+/** The band under the rules says passed candidates are never erased, so each rule need not repeat it. */
+const shortHelp = (help: string) => help.replace(/\s*Passed candidates are never erased\.\s*/, " ").trim();
+
+/** The short count at the right of a rule, with the last erase under it. */
+function RuleStatus({ rule, enabled, amountChanged }: { rule: RuleRow; enabled: boolean; amountChanged: boolean }) {
   const noun = (n: number) => RETENTION_COPY[rule.kind].noun[n === 1 ? 0 : 1];
-  const lines: string[] = [];
-  if (rule.enabled && rule.nextEraseAt) lines.push(`Admins were emailed. Next erase on ${rule.nextEraseAt}.`);
-  if (rule.coversNow !== null) {
-    lines.push(
-      rule.coversNow === 0
-        ? `After ${periodLabel(rule.amount, rule.unit)}, nothing is covered today.`
-        : `After ${periodLabel(rule.amount, rule.unit)}, this covers ${rule.coversNow} ${noun(rule.coversNow)} today.`,
-    );
+  let main: string;
+  let title: string | undefined;
+  if (!enabled) main = "Off";
+  else if (rule.enabled && rule.nextEraseAt) {
+    main = `Next erase ${rule.nextEraseAt}`;
+    title = `Admins were emailed. Next erase on ${rule.nextEraseAt}.`;
+  } else if (amountChanged) main = "Counted after saving";
+  else if (rule.coversNow === null) main = "On";
+  else {
+    main = rule.coversNow === 0 ? "Nothing to erase today" : `${rule.coversNow} ${noun(rule.coversNow)} today`;
+    title = `After ${periodLabel(rule.amount, rule.unit)}, this covers ${rule.coversNow} ${noun(rule.coversNow)} today.`;
   }
-  if (rule.lastRunAt && rule.lastErasedCount) lines.push(`Last erase: ${rule.lastErasedCount} ${noun(rule.lastErasedCount)}, checked ${rule.lastRunAt}.`);
-  if (!lines.length) return null;
+  const last = rule.lastRunAt && rule.lastErasedCount ? `Last: ${rule.lastErasedCount} on ${rule.lastRunAt}` : null;
   return (
-    <span className="mt-1.5 flex flex-col gap-0.5 text-xs text-subtle">
-      {lines.map((l) => (
-        <span key={l}>{l}</span>
-      ))}
+    <span className="flex flex-col gap-0.5" title={title}>
+      <span className={`text-[13px] tabular-nums ${enabled ? "text-fg" : "text-subtle"}`}>{main}</span>
+      {last && <span className="text-xs text-subtle">{last}</span>}
     </span>
   );
 }
@@ -290,9 +311,9 @@ function RequestsCard({ slug, requests, canEdit, now }: { slug: string; requests
   const [busy, start] = useTransition();
   const [confirmErase, setConfirmErase] = useState(false);
   const [toastNode, toast] = useToasts();
+  const [finding, setFinding] = useState(false);
 
   const open = requests.filter((r) => r.status === "OPEN");
-  const done = requests.filter((r) => r.status !== "OPEN");
   const openFor = (kind: DataRequestKind) => (found ? open.find((r) => r.email === found.email && r.kind === kind) : undefined);
 
   const find = (value: string) =>
@@ -306,6 +327,11 @@ function RequestsCard({ slug, requests, canEdit, now }: { slug: string; requests
       }
       setFound({ email: res.email, counts: res.counts, total: res.total });
     });
+
+  const startNew = () => {
+    setFinding(true);
+    requestAnimationFrame(() => document.getElementById("request-email")?.focus());
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -332,149 +358,154 @@ function RequestsCard({ slug, requests, canEdit, now }: { slug: string; requests
 
   return (
     <>
-      <SettingsCard
+      <PrivacyCard
         id="requests"
-        title="Candidate data requests"
-        description="When a candidate asks for a copy of their data or for it to be erased, find everything for their email here. Requests are due within 30 days."
+        title="Candidate requests"
+        description="When a candidate asks for a copy of their data or for it to be erased. Requests are due within 30 days."
+        aside={
+          canEdit ? (
+            <Btn variant="primary" onClick={startNew} disabled={busy}>
+              New request
+            </Btn>
+          ) : undefined
+        }
       >
-        <SettingRow
-          label="Find a candidate's data"
-          htmlFor="request-email"
-          help="Searches candidates, notes, take homes, AI screenings with voice recordings, interviews, scorecards and emails."
-          error={error}
-        >
-          <form onSubmit={onSubmit} className="flex flex-wrap items-center gap-2 w-full">
-            <TextInput
-              id="request-email"
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={!canEdit}
-              autoComplete="off"
-              className="flex-1 min-w-[220px]"
-            />
-            <button
-              type="submit"
-              disabled={!canEdit || busy || !email.trim()}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel disabled:opacity-50"
-            >
-              <Search className="w-3.5 h-3.5 text-muted" aria-hidden />
-              Find
-            </button>
-          </form>
-          {found && (
-            <div className="w-full rounded-lg border border-border bg-panel px-4 py-3 flex flex-col gap-3" aria-live="polite">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium text-fg">{found.total ? `Found for ${found.email}` : `Nothing found for ${found.email}`}</p>
-                {found.total > 0 && (
-                  <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
-                    {(Object.keys(COUNT_LABELS) as (keyof CandidateDataCounts)[])
-                      .filter((k) => found.counts[k] > 0)
-                      .map((k) => (
-                        <li key={k}>
-                          <span className="text-fg tabular-nums">{found.counts[k]}</span> {COUNT_LABELS[k][found.counts[k] === 1 ? 0 : 1]}
-                        </li>
-                      ))}
-                  </ul>
-                )}
+        {(finding || found || error) && canEdit && (
+          <div className="flex flex-col gap-3 px-5 py-4 bg-panel/40">
+            <form onSubmit={onSubmit} className="flex flex-col gap-1.5">
+              <label htmlFor="request-email" className="text-sm font-medium text-fg">
+                Find a candidate&apos;s data
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <TextInput
+                  id="request-email"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={!canEdit}
+                  autoComplete="off"
+                  className="flex-1 min-w-[220px]"
+                />
+                <button
+                  type="submit"
+                  disabled={!canEdit || busy || !email.trim()}
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel disabled:opacity-50"
+                >
+                  <Search className="w-3.5 h-3.5 text-muted" aria-hidden />
+                  Find
+                </button>
               </div>
-              {found.total > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Btn
-                    variant="primary"
-                    disabled={busy || !canEdit}
-                    onClick={() => run(() => sendCandidateCopyAction(slug, found.email), `Sent a copy to ${found.email}`)}
-                  >
-                    Send them a copy
-                  </Btn>
-                  <Btn icon={Download} disabled={busy || !canEdit} onClick={download}>
-                    Download copy
-                  </Btn>
-                  <Btn variant="danger" disabled={busy || !canEdit} onClick={() => setConfirmErase(true)}>
-                    Erase everything
-                  </Btn>
-                </div>
+              <p className="text-[13px] text-muted">Searches candidates, notes, take homes, AI screenings with voice recordings, interviews, scorecards and emails.</p>
+              {error && (
+                <p role="alert" className="text-[13px] text-danger">
+                  {error}
+                </p>
               )}
-              <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
-                <span>Handling it later?</span>
-                {(["COPY", "ERASE"] as const).map((kind) =>
-                  openFor(kind) ? (
-                    <span key={kind} className="text-subtle">
-                      {kind === "COPY" ? "Copy" : "Erase"} request open, due {openFor(kind)!.dueLabel}.
-                    </span>
-                  ) : (
+            </form>
+            {found && (
+              <div className="w-full rounded-lg border border-border bg-surface px-4 py-3 flex flex-col gap-3" aria-live="polite">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium text-fg">{found.total ? `Found for ${found.email}` : `Nothing found for ${found.email}`}</p>
+                  {found.total > 0 && (
+                    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
+                      {(Object.keys(COUNT_LABELS) as (keyof CandidateDataCounts)[])
+                        .filter((k) => found.counts[k] > 0)
+                        .map((k) => (
+                          <li key={k}>
+                            <span className="text-fg tabular-nums">{found.counts[k]}</span> {COUNT_LABELS[k][found.counts[k] === 1 ? 0 : 1]}
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
+                {found.total > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
                     <Btn
-                      key={kind}
-                      variant="quiet"
+                      variant="primary"
                       disabled={busy || !canEdit}
-                      onClick={() => run(() => logDataRequestAction(slug, found.email, kind), "Request logged")}
+                      onClick={() => run(() => sendCandidateCopyAction(slug, found.email), `Sent a copy to ${found.email}`)}
                     >
-                      {kind === "COPY" ? "Log a copy request" : "Log an erase request"}
+                      Send them a copy
                     </Btn>
-                  ),
+                    <Btn icon={Download} disabled={busy || !canEdit} onClick={download}>
+                      Download copy
+                    </Btn>
+                    <Btn variant="danger" disabled={busy || !canEdit} onClick={() => setConfirmErase(true)}>
+                      Erase everything
+                    </Btn>
+                  </div>
                 )}
-              </div>
-            </div>
-          )}
-        </SettingRow>
-
-        <SettingRow label="Open requests" help="Logged requests that still need an answer, soonest due first.">
-          {open.length ? (
-            <ul className="w-full flex flex-col divide-y divide-border rounded-lg border border-border">
-              {open.map((r) => {
-                const days = daysUntil(new Date(r.dueAt), new Date(now));
-                const tone = days < 0 ? "text-danger" : days <= 7 ? "text-warning" : "text-muted";
-                return (
-                  <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[13px] text-fg truncate">{r.email}</span>
-                      <span className="text-xs text-subtle">
-                        {r.kind === "COPY" ? "Wants a copy" : "Wants their data erased"}, logged {r.createdLabel}
-                        {r.by ? ` by ${r.by}` : ""}
+                <div className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+                  <span>Handling it later?</span>
+                  {(["COPY", "ERASE"] as const).map((kind) =>
+                    openFor(kind) ? (
+                      <span key={kind} className="text-subtle">
+                        {kind === "COPY" ? "Copy" : "Erase"} request open, due {openFor(kind)!.dueLabel}.
                       </span>
-                    </div>
-                    <span className={`text-xs ${tone}`}>{days < 0 ? `Overdue since ${r.dueLabel}` : days === 0 ? "Due today" : `Due ${r.dueLabel}`}</span>
-                    <div className="flex items-center gap-1">
+                    ) : (
                       <Btn
+                        key={kind}
+                        variant="quiet"
                         disabled={busy || !canEdit}
-                        onClick={() => {
-                          setEmail(r.email);
-                          find(r.email);
-                        }}
+                        onClick={() => run(() => logDataRequestAction(slug, found.email, kind), "Request logged")}
                       >
-                        Open
+                        {kind === "COPY" ? "Log a copy request" : "Log an erase request"}
                       </Btn>
-                      <Btn variant="quiet" disabled={busy || !canEdit} onClick={() => run(() => cancelDataRequestAction(slug, r.id), "Request cancelled")}>
-                        Cancel
-                      </Btn>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-[13px] text-muted">{canEdit ? "No open requests." : "Only owners and admins can see requests."}</p>
-          )}
-        </SettingRow>
+                    ),
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-        {done.length > 0 && (
-          <SettingRow label="Handled lately" help="The last 90 days.">
-            <ul className="w-full flex flex-col gap-1.5">
-              {done.map((r) => (
-                <li key={r.id} className="text-[13px] text-muted">
-                  <span className="text-fg">{r.email}</span>{" "}
-                  {r.status === "CANCELLED"
-                    ? "request cancelled"
-                    : r.kind === "ERASE"
-                      ? `data erased${r.itemCount !== null ? `, ${r.itemCount} ${r.itemCount === 1 ? "record" : "records"}` : ""}`
-                      : `copy sent${r.itemCount !== null ? `, ${r.itemCount} ${r.itemCount === 1 ? "record" : "records"}` : ""}`}
-                  {r.completedLabel ? ` on ${r.completedLabel}` : ""}
-                  {r.by ? ` by ${r.by}` : ""}
-                </li>
-              ))}
-            </ul>
-          </SettingRow>
+        {requests.length ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-[13px]">
+              <thead className="bg-panel/60">
+                <tr className="text-xs text-muted">
+                  <th scope="col" className="font-medium px-5 py-2">
+                    Candidate
+                  </th>
+                  <th scope="col" className="font-medium px-3 py-2 w-[110px]">
+                    Asked for
+                  </th>
+                  <th scope="col" className="font-medium px-3 py-2 w-[150px]">
+                    Due
+                  </th>
+                  <th scope="col" className="font-medium px-3 py-2 w-[110px]">
+                    Status
+                  </th>
+                  <th scope="col" className="px-5 py-2 w-[150px]">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border border-t border-border">
+                {requests.map((r) => (
+                  <RequestTableRow
+                    key={r.id}
+                    r={r}
+                    now={now}
+                    busy={busy || !canEdit}
+                    onOpen={() => {
+                      setFinding(true);
+                      setEmail(r.email);
+                      find(r.email);
+                    }}
+                    onCancel={() => run(() => cancelDataRequestAction(slug, r.id), "Request cancelled")}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="px-5 py-4 text-[13px] text-muted">
+            {canEdit
+              ? "No requests in the last 90 days. Use New request when a candidate asks for a copy of their data or to be erased."
+              : "Only owners and admins can see requests."}
+          </p>
         )}
 
         {confirmErase && found && (
@@ -504,9 +535,68 @@ function RequestsCard({ slug, requests, canEdit, now }: { slug: string; requests
             }
           />
         )}
-      </SettingsCard>
+      </PrivacyCard>
       {toastNode}
     </>
+  );
+}
+
+const chip = "inline-flex items-center rounded-full px-2 leading-5 text-xs font-medium whitespace-nowrap";
+
+/** One logged request: open ones show when they are due, handled ones when they were done. */
+function RequestTableRow({ r, now, busy, onOpen, onCancel }: { r: RequestRow; now: string; busy: boolean; onOpen: () => void; onCancel: () => void }) {
+  const isOpen = r.status === "OPEN";
+  const days = daysUntil(new Date(r.dueAt), new Date(now));
+  const records = r.itemCount !== null ? `${r.itemCount} ${r.itemCount === 1 ? "record" : "records"}` : null;
+  const sub = isOpen
+    ? `Logged ${r.createdLabel}${r.by ? ` by ${r.by}` : ""}`
+    : [r.status === "CANCELLED" ? "Request cancelled" : records, r.by ? `by ${r.by}` : null].filter(Boolean).join(" ");
+
+  let due: { text: string; tone: string };
+  let status: { text: string; cls: string };
+  if (isOpen) {
+    due =
+      days < 0
+        ? { text: `Overdue since ${r.dueLabel}`, tone: "text-danger" }
+        : days === 0
+          ? { text: "Due today", tone: "text-warning" }
+          : { text: `In ${days} ${days === 1 ? "day" : "days"}`, tone: days <= 7 ? "text-warning" : "text-fg" };
+    status = days < 0 ? { text: "Overdue", cls: "bg-danger/15 text-danger" } : { text: "Waiting", cls: "bg-warning/15 text-warning" };
+  } else {
+    due = { text: r.completedLabel ? `${r.status === "CANCELLED" ? "Cancelled" : "Done"} ${r.completedLabel}` : "Handled", tone: "text-muted" };
+    status =
+      r.status === "CANCELLED"
+        ? { text: "Cancelled", cls: "bg-panel border border-border text-muted" }
+        : { text: r.kind === "ERASE" ? "Erased" : "Sent", cls: "bg-success/15 text-success" };
+  }
+
+  return (
+    <tr>
+      <td className="px-5 py-2.5">
+        <span className="block text-fg truncate max-w-[320px]">{r.email}</span>
+        {sub && <span className="block text-xs text-subtle">{sub}</span>}
+      </td>
+      <td className="px-3 py-2.5 text-fg">{r.kind === "COPY" ? "Copy" : "Erase"}</td>
+      <td className="px-3 py-2.5">
+        <span className={`block ${due.tone}`}>{due.text}</span>
+        {isOpen && days > 0 && <span className="block text-xs text-subtle">{r.dueLabel}</span>}
+      </td>
+      <td className="px-3 py-2.5">
+        <span className={`${chip} ${status.cls}`}>{status.text}</span>
+      </td>
+      <td className="px-5 py-2.5">
+        {isOpen && (
+          <div className="flex items-center justify-end gap-1">
+            <Btn disabled={busy} onClick={onOpen}>
+              Open
+            </Btn>
+            <Btn variant="quiet" disabled={busy} onClick={onCancel}>
+              Cancel
+            </Btn>
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }
 
@@ -543,7 +633,7 @@ function ExportCard({ slug, exports, canEdit }: { slug: string; exports: ExportR
 
   return (
     <>
-      <SettingsCard
+      <PrivacyCard
         id="export"
         title="Export everything"
         description="A zip of CSV and JSON files with every candidate, note, take home, AI screening, interview, scorecard, member, audit entry and email. Voice recordings are not included."
@@ -592,7 +682,7 @@ function ExportCard({ slug, exports, canEdit }: { slug: string; exports: ExportR
               : "Only owners and admins can export the workspace."}
           </p>
         )}
-      </SettingsCard>
+      </PrivacyCard>
       {toastNode}
     </>
   );
@@ -600,54 +690,55 @@ function ExportCard({ slug, exports, canEdit }: { slug: string; exports: ExportR
 
 /* ── Subprocessors ──────────────────────────────────────────────────────── */
 
+/** A compact card for the side column. */
+function AsideCard({ id, title, description, children }: { id?: string; title: string; description: string; children: ReactNode }) {
+  return (
+    <section id={id} className="rounded-xl border border-border bg-surface shadow-sm shadow-black/5 px-[18px] py-4 flex flex-col gap-2.5">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">{title}</h2>
+        <p className="text-[13px] text-muted">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function SubprocessorsCard() {
   return (
-    <SettingsCard
+    <AsideCard
       id="subprocessors"
-      title="Who processes your data"
+      title="Services that process candidate data"
       description="Services Interviewpad uses to run this workspace. Each one only gets what it needs for its job."
-      aside={
-        <a
-          href={DPA_REQUEST_URL}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel"
-        >
-          Ask for our data processing agreement
-        </a>
-      }
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-[13px]">
-          <thead>
-            <tr className="text-xs text-subtle">
-              <th scope="col" className="font-medium px-5 py-2">
-                Service
-              </th>
-              <th scope="col" className="font-medium px-5 py-2">
-                What for
-              </th>
-              <th scope="col" className="font-medium px-5 py-2">
-                Where
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border border-t border-border">
-            {SUBPROCESSORS.map((s) => (
-              <tr key={s.name}>
-                <td className="px-5 py-2.5 whitespace-nowrap">
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-fg hover:underline">
-                    {s.name}
-                    <ExternalLink className="w-3 h-3 text-subtle" aria-hidden />
-                    <span className="sr-only">(opens in a new tab)</span>
-                  </a>
-                </td>
-                <td className="px-5 py-2.5 text-muted">{s.purpose}</td>
-                <td className="px-5 py-2.5 text-muted whitespace-nowrap">{s.location}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </SettingsCard>
+      <ul className="flex flex-col divide-y divide-border">
+        {SUBPROCESSORS.map((s) => (
+          <li key={s.name} className="flex flex-col gap-0.5 py-2.5 first:pt-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[13px] font-medium text-fg hover:underline">
+                {s.name}
+                <ExternalLink className="w-3 h-3 text-subtle" aria-hidden />
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+              <span className="text-xs text-subtle text-right">{s.location}</span>
+            </div>
+            <span className="text-[13px] text-muted">{s.purpose}</span>
+          </li>
+        ))}
+      </ul>
+      <a href={DPA_REQUEST_URL} className="self-start text-[13px] font-medium text-secondary-soft hover:underline">
+        Ask for our data processing agreement
+      </a>
+    </AsideCard>
+  );
+}
+
+function CandidatesSeeCard({ slug }: { slug: string }) {
+  return (
+    <AsideCard title="Where candidates see this" description="Your privacy notice, consent box and help contact are set in Candidate experience.">
+      <Link href={`/w/${slug}/settings/candidate-experience`} className="self-start text-[13px] font-medium text-secondary-soft hover:underline">
+        Open Candidate experience
+      </Link>
+    </AsideCard>
   );
 }
 
@@ -669,17 +760,20 @@ function DeleteCard({ slug, workspaceName, owner }: { slug: string; workspaceNam
 
   return (
     <>
-      <SettingsCard id="delete" title="Delete workspace">
-        <SettingRow
-          label="Delete this workspace"
-          badge="Owners only"
-          help={`Everyone loses access straight away. For ${DELETION_GRACE_DAYS} days an owner can undo it; after that, candidates, screenings, interviews and settings are erased for good and the subscription is cancelled. Export everything first if you want to keep a copy.`}
-        >
-          <Btn variant="danger" disabled={!owner || busy} onClick={() => setConfirm(true)}>
-            Delete workspace
-          </Btn>
-          {!owner && <p className="text-[13px] text-muted">Only owners can delete the workspace.</p>}
-        </SettingRow>
+      <PrivacyCard
+        id="delete"
+        title="Delete workspace"
+        description={`Everyone loses access straight away. For ${DELETION_GRACE_DAYS} days an owner can undo it; after that, candidates, screenings, interviews and settings are erased for good and the subscription is cancelled. Export everything first if you want to keep a copy.`}
+        aside={
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-panel border border-border text-xs font-medium text-muted px-2 leading-5">Owners only</span>
+            <Btn variant="danger" disabled={!owner || busy} onClick={() => setConfirm(true)}>
+              Delete workspace
+            </Btn>
+          </div>
+        }
+      >
+        {!owner && <p className="px-5 py-3 text-[13px] text-muted">Only owners can delete the workspace.</p>}
         {confirm && (
           <ConfirmDialog
             title={`Delete ${workspaceName}?`}
@@ -697,7 +791,7 @@ function DeleteCard({ slug, workspaceName, owner }: { slug: string; workspaceNam
             }
           />
         )}
-      </SettingsCard>
+      </PrivacyCard>
       {toastNode}
     </>
   );

@@ -40,11 +40,11 @@ export function SettingsCard({
   return (
     <section id={id} className="rounded-xl border border-border bg-surface shadow-sm shadow-black/5">
       <header className="flex flex-wrap items-start justify-between gap-3 px-5 pt-4 pb-3.5">
-        <div className="flex flex-col gap-1 min-w-0">
+        <div className="flex flex-1 flex-col gap-1 min-w-0">
           <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-fg">{title}</h2>
           {description && <p className="text-[13px] text-muted max-w-2xl">{description}</p>}
         </div>
-        {aside}
+        {aside && <div className="shrink-0">{aside}</div>}
       </header>
       <div className="divide-y divide-border border-t border-border">{children}</div>
     </section>

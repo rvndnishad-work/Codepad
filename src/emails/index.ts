@@ -71,6 +71,11 @@ import {
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
 } from "./WorkspaceInviteEmail";
+import {
+  TwoFactorReminder,
+  twoFactorReminderText,
+  type TwoFactorReminderProps,
+} from "./TwoFactorReminder";
 
 /**
  * Registry shape: each entry describes how to subject-line, render, and
@@ -161,6 +166,12 @@ export const TEMPLATES = {
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
     text: workspaceInviteEmailText,
   } satisfies TemplateDef<WorkspaceInviteEmailProps>,
+
+  "two-factor-reminder": {
+    Component: TwoFactorReminder,
+    subject: (p) => `Turn on two-factor sign-in for ${p.workspaceName}`,
+    text: twoFactorReminderText,
+  } satisfies TemplateDef<TwoFactorReminderProps>,
 } as const;
 
 /** Allowed template names. */
@@ -180,4 +191,5 @@ export type TemplateProps = {
   "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
   "scorecard-reminder": ScorecardReminderProps;
+  "two-factor-reminder": TwoFactorReminderProps;
 };

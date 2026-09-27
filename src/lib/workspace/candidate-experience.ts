@@ -372,6 +372,19 @@ export function applyWording(saved: { subject: string | null; body: string | nul
   return { subject, paragraphs: paragraphs && paragraphs.length ? paragraphs : null };
 }
 
+/**
+ * The wording an email is sent with: the workspace edit where there is one,
+ * field by field, else the standard wording from CANDIDATE_EMAILS. Keeps the
+ * editor, its preview and the real email on the same text.
+ */
+export function wordingOrStandard(
+  key: CandidateEmailKey,
+  saved: { subject: string | null; body: string | null } | null | undefined,
+): { subject: string; body: string } {
+  const def = CANDIDATE_EMAILS[key];
+  return { subject: saved?.subject || def.subject, body: saved?.body || def.body };
+}
+
 /* ── What a candidate email gets from the workspace ────────────────────── */
 
 /** Extra props every candidate template accepts (see src/emails/candidate-brand.tsx). */
@@ -407,10 +420,12 @@ export function applyCandidateContext<P extends Record<string, unknown>>(
   const extras: CandidateEmailExtras = { unsubscribeUrl };
   if (!ctx) return { props: { ...props, ...extras }, fromName: null, replyTo: null };
   extras.brand = ctx.brand;
-  if (ctx.growth) {
-    const key = wordingKeyFor(template, props as { reminder?: boolean });
-    const saved = key ? ctx.wording[key] : null;
-    if (saved) extras.custom = applyWording(saved, placeholderVars(props));
+  const key = wordingKeyFor(template, props as { reminder?: boolean });
+  if (key) {
+    // Edited wording needs growth tools; everyone else gets the standard
+    // wording, the same text the editor shows as the starting point.
+    const saved = ctx.growth ? ctx.wording[key] : null;
+    extras.custom = applyWording(wordingOrStandard(key, saved), placeholderVars(props));
   }
   return {
     props: { ...props, ...extras },

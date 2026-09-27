@@ -179,7 +179,11 @@ describe("applyCandidateContext", () => {
   it("applies brand on every plan, the rest only with growth tools", () => {
     const free = applyCandidateContext(ctx(false), "interview-invite", props, "https://u");
     expect(free.props.brand?.color).toBe("#1d4ed8");
-    expect(free.props.custom).toBeUndefined();
+    // Free workspaces get the standard wording, the same text the editor shows.
+    expect(free.props.custom).toEqual({
+      subject: "Live interview with Acme: Pairing",
+      paragraphs: ["Hi Priya,", "Acme has invited you to a live interview: Pairing. It happens in your browser, with nothing to install."],
+    });
     expect(free.props.unsubscribeUrl).toBe("https://u");
     expect(free.fromName).toBeNull();
     expect(free.replyTo).toBeNull();
@@ -188,6 +192,13 @@ describe("applyCandidateContext", () => {
     expect(paid.props.custom).toEqual({ subject: "Interview for Priya", paragraphs: ["Hello Priya"] });
     expect(paid.fromName).toBe("Acme via Interviewpad");
     expect(paid.replyTo).toBe("jobs@acme.io");
+  });
+
+  it("fills an unedited field with the standard wording", () => {
+    const c = { ...ctx(true), wording: { "interview-invite": { subject: "Interview for {candidate}", body: null } } };
+    const r = applyCandidateContext(c, "interview-invite", props, null);
+    expect(r.props.custom?.subject).toBe("Interview for Priya");
+    expect(r.props.custom?.paragraphs?.[0]).toBe("Hi Priya,");
   });
 
   it("still adds the unsubscribe link without a workspace", () => {

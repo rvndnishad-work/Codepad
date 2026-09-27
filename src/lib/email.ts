@@ -25,6 +25,14 @@ import { render } from "@react-email/render";
 import * as React from "react";
 import { TEMPLATES, type TemplateName, type TemplateProps } from "@/emails";
 import { prisma } from "@/lib/prisma";
+import { loadCandidateEmailContext } from "@/lib/candidate-email";
+import { unsubscribeUrl } from "@/lib/email-unsubscribe";
+import {
+  applyCandidateContext,
+  formatFrom,
+  isCandidateTemplate,
+  type CandidateEmailContext,
+} from "@/lib/workspace/candidate-experience";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const RESEND_BATCH_ENDPOINT = "https://api.resend.com/emails/batch";
@@ -43,6 +51,8 @@ export type SendEmailInput<T extends TemplateName> = {
   workspaceId?: string;
   /** Optional session id (interview / take-home / generic) for traceability. */
   sessionId?: string;
+  /** Display name for the From header ("Acme via Interviewpad"); the address stays ours. */
+  fromName?: string;
 };
 
 function normalizeAddress(addr: string): string {
@@ -77,6 +87,41 @@ function resolveFrom(): string {
     return "Interviewpad (dev) <onboarding@resend.dev>";
   }
   return "Interviewpad <noreply@interviewpad.in>";
+}
+
+/**
+ * Candidate emails carry the workspace's branding, sender name, reply-to,
+ * wording and an unsubscribe link (Settings > Candidate experience). Other
+ * templates pass through untouched. Props that already carry `brand` (a
+ * test send from the settings page) are not looked up again.
+ */
+async function withCandidateContext(
+  template: string,
+  props: Record<string, unknown>,
+  recipient: string,
+  workspaceId: string | undefined,
+  cache?: Map<string, Promise<CandidateEmailContext | null>>,
+): Promise<{ props: Record<string, unknown>; fromName: string | null; replyTo: string | null }> {
+  if (!isCandidateTemplate(template)) return { props, fromName: null, replyTo: null };
+  let ctx: CandidateEmailContext | null = null;
+  if (workspaceId && !("brand" in props)) {
+    let pending = cache?.get(workspaceId);
+    if (!pending) {
+      pending = loadCandidateEmailContext(workspaceId).catch((err) => {
+        console.error("[email] candidate branding lookup failed:", err);
+        return null;
+      });
+      cache?.set(workspaceId, pending);
+    }
+    ctx = await pending;
+  }
+  const unsub = typeof props.unsubscribeUrl === "string" ? props.unsubscribeUrl : unsubscribeUrl(recipient);
+  return applyCandidateContext(ctx, template, props, unsub);
+}
+
+/** The From header, with a workspace display name when there is one. */
+function fromHeader(fromName: string | null | undefined): string {
+  return fromName ? formatFrom(fromName, resolveFrom()) : resolveFrom();
 }
 
 export async function sendEmail<T extends TemplateName>(
@@ -144,7 +189,15 @@ export async function sendEmail<T extends TemplateName>(
       return null;
     });
 
-  const props = input.props as unknown;
+  const branded = await withCandidateContext(
+    input.template,
+    input.props as unknown as Record<string, unknown>,
+    recipients[0],
+    input.workspaceId,
+  );
+  const props = branded.props as unknown;
+  const fromName = input.fromName ?? branded.fromName;
+  const replyTo = input.replyTo ?? branded.replyTo;
   let html: string;
   try {
     html = await render(React.createElement(def.Component, props as object));
@@ -161,7 +214,7 @@ export async function sendEmail<T extends TemplateName>(
     // Dev fallback — surface key fields in the log so a localhost flow that
     // emits an email link is debuggable without standing up Resend.
     console.log(
-      `[email:dev-stub] template=${input.template} to=${recipients.join(",")} subject="${subject}"\n${text}`,
+      `[email:dev-stub] template=${input.template} from=${fromHeader(fromName)} to=${recipients.join(",")}${replyTo ? ` reply-to=${replyTo}` : ""} subject="${subject}"\n${text}`,
     );
     if (log) await markLogSent(log.id, null);
     return { sent: true, provider: "console" };
@@ -175,13 +228,13 @@ export async function sendEmail<T extends TemplateName>(
     if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey;
 
     const body: Record<string, unknown> = {
-      from: resolveFrom(),
+      from: fromHeader(fromName),
       to: recipients,
       subject,
       html,
       text,
     };
-    if (input.replyTo) body.reply_to = input.replyTo;
+    if (replyTo) body.reply_to = replyTo;
 
     const res = await fetch(RESEND_ENDPOINT, {
       method: "POST",
@@ -286,8 +339,8 @@ export async function sendTemplatedBatch<T extends TemplateName>(
     console.error("[email:batch] suppression query failed:", e);
   }
 
-  const from = resolveFrom();
   const apiKey = process.env.RESEND_API_KEY;
+  const contexts = new Map<string, Promise<CandidateEmailContext | null>>();
   let sent = 0;
   let suppressed = 0;
   let failed = 0;
@@ -295,7 +348,7 @@ export async function sendTemplatedBatch<T extends TemplateName>(
   type Prepared = {
     index: number;
     logId: string | null;
-    payload: { from: string; to: string[]; subject: string; html: string; text: string };
+    payload: { from: string; to: string[]; subject: string; html: string; text: string; reply_to?: string };
   };
   const prepared: Prepared[] = [];
 
@@ -318,9 +371,10 @@ export async function sendTemplatedBatch<T extends TemplateName>(
         .catch(() => null);
       continue;
     }
+    const branded = await withCandidateContext(template, item.props as unknown as Record<string, unknown>, item.to, item.workspaceId, contexts);
     let html: string;
     try {
-      html = await render(React.createElement(def.Component, item.props as object));
+      html = await render(React.createElement(def.Component, branded.props as object));
     } catch {
       failed++;
       outcomes[index] = { status: "failed", reason: "The email template failed to render." };
@@ -353,7 +407,14 @@ export async function sendTemplatedBatch<T extends TemplateName>(
     prepared.push({
       index,
       logId: log?.id ?? null,
-      payload: { from, to: [item.to], subject: def.subject(item.props), html, text: def.text(item.props) },
+      payload: {
+        from: fromHeader(branded.fromName),
+        to: [item.to],
+        subject: def.subject(branded.props),
+        html,
+        text: def.text(branded.props),
+        ...(branded.replyTo ? { reply_to: branded.replyTo } : {}),
+      },
     });
   }
 

@@ -67,6 +67,12 @@ import {
   type ScorecardReminderProps,
 } from "./ScorecardReminder";
 import {
+  InterviewCancelled,
+  interviewCancelledText,
+  type InterviewCancelledProps,
+} from "./InterviewCancelled";
+import { CreditsLow, creditsLowText, type CreditsLowProps } from "./CreditsLow";
+import {
   WorkspaceInviteEmail,
   workspaceInviteEmailText,
   type WorkspaceInviteEmailProps,
@@ -161,6 +167,18 @@ export const TEMPLATES = {
     subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
     text: workspaceInviteEmailText,
   } satisfies TemplateDef<WorkspaceInviteEmailProps>,
+
+  "interview-cancelled": {
+    Component: InterviewCancelled,
+    subject: (p) => `Your interview with ${p.workspaceName} is cancelled`,
+    text: interviewCancelledText,
+  } satisfies TemplateDef<InterviewCancelledProps>,
+
+  "credits-low": {
+    Component: CreditsLow,
+    subject: (p) => `${p.workspaceName} has ${p.balance} AI screening ${p.balance === 1 ? "credit" : "credits"} left`,
+    text: creditsLowText,
+  } satisfies TemplateDef<CreditsLowProps>,
 } as const;
 
 /** Allowed template names. */
@@ -180,4 +198,6 @@ export type TemplateProps = {
   "interviewer-invite": InterviewerInviteProps;
   "workspace-invite": WorkspaceInviteEmailProps;
   "scorecard-reminder": ScorecardReminderProps;
+  "interview-cancelled": InterviewCancelledProps;
+  "credits-low": CreditsLowProps;
 };

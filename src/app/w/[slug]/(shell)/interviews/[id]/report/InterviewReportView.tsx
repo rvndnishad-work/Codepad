@@ -66,6 +66,7 @@ function plural(n: number, word: string): string {
 
 function statusOf(r: InterviewReport): { label: string; tone: ReportTone } {
   if (r.finishedAt || r.status === "completed" || r.status === "finished") return { label: "Completed", tone: "success" };
+  if (r.status === "cancelled") return { label: "Cancelled", tone: "neutral" };
   if (r.startedAt) return { label: "In progress", tone: "warning" };
   return { label: "Not started", tone: "neutral" };
 }

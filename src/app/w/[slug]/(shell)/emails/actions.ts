@@ -13,10 +13,11 @@ export type ResendResult = { ok: true; message: string } | { ok: false; error: s
 /**
  * Resend an invite that bounced or was not sent, from Email activity.
  *
- * Only invites have a resend path today: AI screening invites and take-home
- * invites. This finds the invite the email belonged to and hands it to the
- * same resend action the AI screening and take-home pages use, which check
- * permissions, reopen expired invites and write the audit entry.
+ * Only invites have a resend path: AI screening, take-home and live
+ * interview invites. This finds the invite the email belonged to and hands
+ * it to the same resend action the AI screening and take-home pages use
+ * (they check permissions, reopen expired invites and write the audit
+ * entry), or sends a fresh copy of the interview invite.
  */
 export async function resendEmailAction(slug: string, emailLogId: string): Promise<ResendResult> {
   try {
@@ -69,6 +70,23 @@ export async function resendEmailAction(slug: string, emailLogId: string): Promi
       if (!s) return { ok: false, error: "The take-home for this email no longer exists." };
       to = s.candidate?.email ?? null;
       run = () => resendTakeHomeAction(slug, s.id);
+    } else if (path === "interview" && log.sessionId) {
+      const s = await prisma.interviewSession.findFirst({
+        where: { id: log.sessionId, workspaceId: workspace.id, type: { not: "take-home" } },
+        select: { id: true, userId: true, candidate: { select: { email: true } } },
+      });
+      if (!s) return { ok: false, error: "The interview for this email no longer exists." };
+      // The host may resend their own interview's invite; others need to run interviews.
+      if (s.userId !== session.user.id && !(await canMember(member, "interview:conduct"))) {
+        return { ok: false, error: "You do not have permission to resend interview invites." };
+      }
+      to = s.candidate?.email ?? log.recipientEmail;
+      const actor = { userId: session.user.id, email: session.user.email ?? null };
+      run = async () => {
+        const { resendInterviewInvite } = await import("@/lib/interview/invite-server");
+        const res = await resendInterviewInvite({ workspaceId: workspace.id, sessionId: s.id, actor, fallbackEmail: log.recipientEmail });
+        return res.ok ? { ok: true, sent: res.sent, reason: res.reason } : res;
+      };
     } else {
       return { ok: false, error: "This email cannot be resent from here." };
     }
@@ -84,8 +102,8 @@ export async function resendEmailAction(slug: string, emailLogId: string): Promi
         return {
           ok: false,
           error:
-            path === "take-home"
-              ? `${to} bounced before, so we no longer send to it. Fix the email on the candidate, then resend.`
+            path === "take-home" || path === "interview"
+              ?`${to} bounced before, so we no longer send to it. Fix the email on the candidate, then resend.`
               : `${to} bounced before, so we no longer send to it. Add the person to the screening again with the right address.`,
         };
       }
@@ -94,7 +112,8 @@ export async function resendEmailAction(slug: string, emailLogId: string): Promi
     const res = await run();
     if (!res.ok) return { ok: false, error: res.error };
     if (res.sent === false) {
-      return { ok: false, error: `The invite is open again, but the email did not go out${res.reason ? `: ${res.reason}` : "."}` };
+      const lead = path === "interview" ? "The email did not go out" : "The invite is open again, but the email did not go out";
+      return { ok: false, error: `${lead}${res.reason ? `: ${res.reason}` : "."}` };
     }
     revalidatePath(`/w/${slug}/emails`);
     return { ok: true, message: to ? `Invite sent again to ${to}.` : "Invite sent again." };

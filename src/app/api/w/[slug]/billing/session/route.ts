@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
-import { checkoutSeatPriceCents } from "@/lib/billing/plans";
+import { checkoutSeatChargeCents } from "@/lib/billing/plans";
 import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
 import { NextResponse } from "next/server";
 
@@ -76,7 +76,8 @@ export async function POST(
 
     const isStarter = plan === "STARTER";
     // Seat price comes from the plan config so the billing page and Stripe agree.
-    const priceAmount = checkoutSeatPriceCents(isStarter ? "STARTER" : "GROWTH", cadence);
+    // Annual plans bill once a year, so the amount is twelve discounted months.
+    const priceAmount = checkoutSeatChargeCents(isStarter ? "STARTER" : "GROWTH", cadence);
 
     const productName = isStarter
       ? "Interviewpad Starter Workspace Seats"

@@ -103,7 +103,7 @@ export function planConfig(planName: string | null | undefined): WorkspacePlan {
   return WORKSPACE_PLANS[(planName ?? "FREE") as WorkspacePlanKey] ?? WORKSPACE_PLANS.FREE;
 }
 
-/** Per-seat price in cents for a checkout, from this config. */
+/** Per-seat price in cents a month for a checkout (annual is the discounted monthly rate), from this config. */
 export function checkoutSeatPriceCents(plan: "STARTER" | "GROWTH", cadence: "monthly" | "annual"): number {
   if (plan === "STARTER") {
     return cadence === "monthly" ? STARTER_SEAT_PRICE.monthlyCents : STARTER_SEAT_PRICE.annualMonthlyCents;
@@ -111,4 +111,13 @@ export function checkoutSeatPriceCents(plan: "STARTER" | "GROWTH", cadence: "mon
   const price = WORKSPACE_PLANS.GROWTH.price;
   if (price.kind !== "per_seat") throw new Error("Growth must be priced per seat");
   return cadence === "monthly" ? price.monthlyCents : price.annualMonthlyCents;
+}
+
+/**
+ * What Stripe charges per seat for one billing period: the monthly price on
+ * monthly plans, twelve discounted months on annual plans.
+ */
+export function checkoutSeatChargeCents(plan: "STARTER" | "GROWTH", cadence: "monthly" | "annual"): number {
+  const perMonth = checkoutSeatPriceCents(plan, cadence);
+  return cadence === "annual" ? perMonth * 12 : perMonth;
 }

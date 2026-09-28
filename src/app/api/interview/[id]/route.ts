@@ -3,6 +3,7 @@ import { z } from "zod";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
 import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 
@@ -297,6 +298,9 @@ export async function DELETE(
     const { cancelInterviewEvent } = await import("@/lib/calendar/server");
     await cancelInterviewEvent(id);
   }
+  // Recording rows cascade with the session, so read their keys first.
+  const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [id] });
   await prisma.interviewSession.delete({ where: { id } });
+  await deleteRecordingKeys(recordingKeys);
   return NextResponse.json({ success: true });
 }

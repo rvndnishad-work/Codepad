@@ -1,10 +1,11 @@
 /**
  * Live room toolbox: the tools an interviewer can switch on mid interview
- * (whiteboard, code pad, notes, question card, ranking board, timer), which
+ * (whiteboard, code editor, notes, question card, ranking board, timer), which
  * one is presented, and who may change what. Pure, shared by the relay
  * route and the room UI.
  */
 import { parsePanel } from "./wizard";
+import { isCodeStack } from "./code-stacks";
 
 /**
  * Adding a tool: add its id here and its entry in TOOL_DEFS below, then
@@ -38,8 +39,8 @@ const TOOL_DEFS: { [K in ToolId]: Omit<ToolDef, "id"> } = {
     defaultFor: ["coding", "discussion", "mixed", "legacy"],
   },
   code: {
-    label: "Code pad",
-    blurb: "A light shared editor for a snippet, a query or pseudo code.",
+    label: "Code editor",
+    blurb: "Pick a stack and code together, with its output or console.",
     goodFor: ["Technical"],
     stage: true,
     defaultFor: ["mixed", "legacy"],
@@ -95,6 +96,8 @@ export type ToolsState = {
   presented: ToolId | null;
   question: { text: string; at: number } | null;
   timer: TimerState | null;
+  /** The code editor's stack (a template id from code-stacks.ts); null until the interviewer picks one. */
+  codeStack: string | null;
   rev: number;
 };
 
@@ -102,6 +105,7 @@ export type ToolsAction =
   | { type: "enable"; tool: ToolId; on: boolean }
   | { type: "present"; tool: ToolId | null }
   | { type: "question"; text: string | null }
+  | { type: "code"; stack: string | null }
   | { type: "timer"; op: "set"; seconds: number }
   | { type: "timer"; op: "start" | "pause" | "reset" | "clear" };
 
@@ -125,7 +129,7 @@ function sortTools(ids: ToolId[]): ToolId[] {
 }
 
 export function initialTools(enabled: ToolId[]): ToolsState {
-  return { enabled: sortTools(enabled), presented: null, question: null, timer: null, rev: 0 };
+  return { enabled: sortTools(enabled), presented: null, question: null, timer: null, codeStack: null, rev: 0 };
 }
 
 export function parseTools(raw: string | null | undefined, format: string | null | undefined): ToolsState {
@@ -145,7 +149,7 @@ export function parseTools(raw: string | null | undefined, format: string | null
             remainingSec: clampTimer(Number(t.remainingSec) || 0),
           }
         : null;
-    return { enabled, presented, question: q, timer, rev: Number(j.rev) || 0 };
+    return { enabled, presented, question: q, timer, codeStack: isCodeStack(j.codeStack) ? j.codeStack : null, rev: Number(j.rev) || 0 };
   } catch {
     return fallback;
   }
@@ -191,6 +195,11 @@ export function applyToolsAction(s: ToolsState, a: ToolsAction, now: number): To
         presented: "question",
         enabled: sortTools([...new Set<ToolId>([...s.enabled, "question"])]),
       });
+    }
+    case "code": {
+      if (a.stack !== null && !isCodeStack(a.stack)) return null;
+      if (a.stack === s.codeStack) return null;
+      return next({ codeStack: a.stack });
     }
     case "timer": {
       const t = s.timer;

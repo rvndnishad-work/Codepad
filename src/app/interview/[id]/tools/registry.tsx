@@ -10,7 +10,7 @@ import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 import type { ToolId } from "@/lib/interview/tools";
 import type { ToolPlugin, ToolProps } from "./types";
-import CodePad, { CodeLangPicker } from "./stages/CodePad";
+import CodePad, { CodeStackHeader } from "./stages/CodePad";
 import Notes from "./stages/Notes";
 import QuestionCard from "./stages/QuestionCard";
 import RankingBoard from "./RankingBoard";
@@ -30,7 +30,7 @@ export const TOOL_PLUGINS: Record<ToolId, ToolPlugin> = {
     Stage: ({ room, dark, readOnly, caption }: ToolProps) => <Whiteboard doc={room.doc} awareness={room.awareness} dark={dark} readOnly={readOnly} caption={caption} />,
     titleInside: true,
   },
-  code: { Stage: CodePad, HeaderActions: CodeLangPicker },
+  code: { Stage: CodePad, HeaderActions: CodeStackHeader },
   notes: { Stage: Notes },
   question: { Stage: QuestionCard },
   ranking: {

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * CodeMirror bound to a Y.Text, used by the code pad and shared notes.
+ * CodeMirror bound to a Y.Text, used by shared notes and the rounds.
  * Remote cursors show when the direct peer link is up.
  */
 import { useEffect, useRef } from "react";

@@ -299,6 +299,7 @@ const actionSchema = z.union([
   z.object({ type: z.literal("enable"), tool: z.enum(TOOL_IDS), on: z.boolean() }),
   z.object({ type: z.literal("present"), tool: z.enum(TOOL_IDS).nullable() }),
   z.object({ type: z.literal("question"), text: z.string().max(MAX_QUESTION).nullable() }),
+  z.object({ type: z.literal("code"), stack: z.string().max(40).nullable() }),
   z.object({ type: z.literal("timer"), op: z.literal("set"), seconds: z.number().int().min(1).max(MAX_TIMER_SEC) }),
   z.object({ type: z.literal("timer"), op: z.enum(["start", "pause", "reset", "clear"]) }),
 ]);

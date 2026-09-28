@@ -81,6 +81,9 @@ async function checkStart(s: SessionRow) {
 
 export type StartResult = { ok: true; recordingId: string } | { ok: false; code: RecordingRefusalCode | "missing" | "egress_failed"; error: string };
 
+/** Stored on a recording that LiveKit never started. */
+const START_FAILED = "The recording did not start.";
+
 export async function startLiveRecording({ sessionId, actorUserId, actorEmail = null }: { sessionId: string } & Actor): Promise<StartResult> {
   const s = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: SESSION_SELECT });
   if (!s || s.type !== "live" || !s.workspaceId) return { ok: false, code: "missing", error: "This interview no longer exists." };
@@ -128,7 +131,8 @@ export async function startLiveRecording({ sessionId, actorUserId, actorEmail = 
     console.error("[recording] egress start failed:", err);
     await prisma.interviewRecording.update({
       where: { id },
-      data: { status: "failed", endedAt: new Date(), error: shortError(err instanceof Error ? err.message : String(err), "Could not start the recording.") },
+      // The raw egress error is logged above; the report shows plain words.
+      data: { status: "failed", endedAt: new Date(), error: START_FAILED },
     });
     return { ok: false, code: "egress_failed", error: "Recording did not start. Make sure someone is on the call, then try again." };
   }
@@ -330,7 +334,10 @@ export async function roomRecordingState(sessionId: string, interviewer: boolean
   });
   const synced = await Promise.all(pending.map((r) => syncLiveRecording(r)));
   const active = synced.find((r) => r.status === "recording") ?? null;
-  const base: RoomRecording = { recording: !!active, startedAt: active?.startedAt.toISOString() ?? null };
+  // A row without an egress id is still starting (and may fail): nobody is
+  // told the call is recorded until LiveKit has accepted it.
+  const live = active?.egressId ? active : null;
+  const base: RoomRecording = { recording: !!live, startedAt: live?.startedAt.toISOString() ?? null };
   if (!interviewer) return base;
   const refusal = active ? null : await checkStart(s);
   return { ...base, canStart: !active && !refusal, reason: refusal?.message ?? null, code: refusal?.code ?? null };

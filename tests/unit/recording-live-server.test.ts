@@ -197,11 +197,11 @@ describe("startLiveRecording", () => {
     expect(db.recordings).toHaveLength(1);
   });
 
-  it("marks the row failed with a short error when LiveKit refuses", async () => {
+  it("marks the row failed with a plain error when LiveKit refuses", async () => {
     egress.startRoomCompositeEgress.mockRejectedValueOnce(new Error("requested room does not exist"));
     const res = await startLiveRecording({ sessionId: "s1", actorUserId: "u1" });
     expect(res).toMatchObject({ ok: false, code: "egress_failed" });
-    expect(db.recordings[0]).toMatchObject({ status: "failed", error: "requested room does not exist" });
+    expect(db.recordings[0]).toMatchObject({ status: "failed", error: "The recording did not start." });
     expect(db.audits).toHaveLength(0);
   });
 });

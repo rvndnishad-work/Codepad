@@ -344,7 +344,9 @@ function RecordingItem({ item, part }: { item: ReportRecording; part: number | n
           ? "Deleted after 7 days."
           : item.state === "not_set_up" || item.state === "ready"
             ? "Recording is not set up on this server, so it cannot be played here."
-            : `The recording did not finish.${item.error ? ` ${item.error}` : ""}`;
+            : item.error?.startsWith("The recording")
+              ? item.error
+              : `The recording did not finish.${item.error ? ` ${item.error}` : ""}`;
   const tone: ReportTone = item.state === "failed" ? "danger" : item.state === "recording" || item.state === "processing" ? "warning" : "neutral";
   return (
     <div className="rounded-xl bg-bg/40 ring-1 ring-inset ring-border px-4 py-3.5 flex items-start gap-3">

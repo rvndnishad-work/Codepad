@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   EGRESS,
+  candidateFirstName,
+  consentAskOpen,
+  consentAskText,
+  declinedLabel,
+  recordControl,
   egressOutcome,
   recordingCredits,
   recordingDownloadName,
@@ -123,5 +128,62 @@ describe("wizard call fields with recording", () => {
     expect(callFields({ call: "builtin" }, true)).toEqual({ builtinVideo: true });
     expect(callFields({ call: "link", recordVideo: true, meetingUrl: "https://zoom.us/j/1" }, true)).toEqual({ builtinVideo: false, meetingUrl: "https://zoom.us/j/1" });
     expect(callFields({ recordVideo: true }, false)).toEqual({ meetingUrl: undefined });
+  });
+});
+
+describe("recordControl", () => {
+  const ok = { configured: true, builtinVideo: true, recordVideo: true, status: "in_progress", candidateConsented: true, credits: 3, active: false, declined: false };
+
+  it("starts when the candidate agreed, and stops while recording", () => {
+    expect(recordControl(ok).control).toBe("start");
+    expect(recordControl({ ...ok, active: true }).control).toBe("recording");
+  });
+
+  it("asks the candidate when the interview was not set up to be recorded", () => {
+    expect(recordControl({ ...ok, recordVideo: false, candidateConsented: false })).toEqual({ control: "ask", code: null, message: null });
+    // An agreement to an unrecorded call does not count either.
+    expect(recordControl({ ...ok, recordVideo: false }).control).toBe("ask");
+    expect(recordControl({ ...ok, status: "scheduled", recordVideo: false }).control).toBe("ask");
+  });
+
+  it("waits for an answer, and after a no does not ask again", () => {
+    expect(recordControl({ ...ok, candidateConsented: false })).toMatchObject({ control: "waiting", code: "no_consent" });
+    expect(recordControl({ ...ok, recordVideo: false, candidateConsented: false, declined: true })).toMatchObject({ control: "declined" });
+    // A no only counts while recording is off: a later agreement in the lobby wins.
+    expect(recordControl({ ...ok, declined: true }).control).toBe("start");
+  });
+
+  it("stays visible but blocked, with the reason, when recording cannot work", () => {
+    for (const [over, code] of [
+      [{ configured: false }, "not_set_up"],
+      [{ builtinVideo: false }, "no_builtin_video"],
+      [{ status: "completed" }, "closed"],
+      [{ credits: 0 }, "no_credits"],
+    ] as const) {
+      const r = recordControl({ ...ok, recordVideo: false, candidateConsented: false, ...over });
+      expect(r.control).toBe("blocked");
+      expect(r.code).toBe(code);
+      expect(r.message).toBeTruthy();
+    }
+  });
+});
+
+describe("consent in the room", () => {
+  it("opens for the candidate while recording is wanted and not agreed", () => {
+    const a = { recordVideo: true, builtinVideo: true, status: "in_progress", candidateConsented: false };
+    expect(consentAskOpen(a)).toBe(true);
+    expect(consentAskOpen({ ...a, status: "scheduled" })).toBe(true);
+    expect(consentAskOpen({ ...a, candidateConsented: true })).toBe(false);
+    expect(consentAskOpen({ ...a, recordVideo: false })).toBe(false);
+    expect(consentAskOpen({ ...a, builtinVideo: false })).toBe(false);
+    expect(consentAskOpen({ ...a, status: "completed" })).toBe(false);
+  });
+
+  it("words", () => {
+    expect(consentAskText("Alex Morgan")).toBe("Alex Morgan would like to record this call. The recording is kept for 7 days, then deleted.");
+    expect(consentAskText(null)).toMatch(/^Your interviewer would like/);
+    expect(declinedLabel("Tomasz Nowak")).toBe("Tomasz chose not to be recorded");
+    expect(declinedLabel("  ")).toBe("The candidate chose not to be recorded");
+    expect(candidateFirstName(null)).toBe("The candidate");
   });
 });

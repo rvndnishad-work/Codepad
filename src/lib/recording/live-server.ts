@@ -4,8 +4,8 @@
  * a row in InterviewRecording that follows the egress from recording to
  * processing to ready (or failed), and is deleted 7 days after it is made.
  *
- * Nothing records until the host presses Record, the interview was set up
- * to be recorded, and the candidate agreed in the lobby. A ready recording
+ * Nothing records until the host presses Record and the candidate agreed,
+ * in the lobby or when asked in the room. A ready recording
  * is charged once, in chargeRecordingCredits.
  *
  * Server only.
@@ -21,6 +21,9 @@ import { includedPart } from "@/lib/billing/included-credits";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { liveRecordingKey, recordingExpiresAt, recordingExpiryLabel } from "./retention";
 import {
+  consentAskOpen,
+  declinedLabel,
+  recordControl,
   egressOutcome,
   recordingCredits,
   recordingDownloadName,
@@ -56,6 +59,7 @@ const SESSION_SELECT = {
   candidateConsentAt: true,
   candidateName: true,
   workspace: { select: { planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true } },
+  user: { select: { name: true } },
 } as const;
 
 type SessionRow = Prisma.InterviewSessionGetPayload<{ select: typeof SESSION_SELECT }>;
@@ -65,18 +69,140 @@ async function creditBalance(tx: Prisma.TransactionClient | typeof prisma, works
   return agg._sum.amount ?? 0;
 }
 
-async function checkStart(s: SessionRow) {
-  const active = await prisma.interviewRecording.findFirst({ where: { interviewSessionId: s.id, status: "recording" }, select: { id: true } });
+function builtinOn(s: SessionRow): boolean {
+  return !!s.workspace && videoCallsOn(s.workspace) && s.builtinVideo;
+}
+
+async function startInputs(s: SessionRow, active?: boolean) {
+  const running = active ?? !!(await prisma.interviewRecording.findFirst({ where: { interviewSessionId: s.id, status: "recording" }, select: { id: true } }));
   const credits = s.workspaceId ? await creditBalance(prisma, s.workspaceId) : 0;
-  return recordingRefusal({
+  return {
     configured: recordingConfigured(),
-    builtinVideo: !!s.workspace && videoCallsOn(s.workspace) && s.builtinVideo,
+    builtinVideo: builtinOn(s),
     recordVideo: s.recordVideo,
     status: s.status,
     candidateConsented: !!s.candidateConsentAt,
     credits,
-    active: !!active,
+    active: running,
+  };
+}
+
+async function checkStart(s: SessionRow) {
+  return recordingRefusal(await startInputs(s));
+}
+
+/* ── Asking the candidate in the room ───────────────────────────────────
+ * An interview not set up to be recorded can still be recorded when the
+ * candidate agrees in the room. Asking switches recordVideo on and clears
+ * candidateConsentAt (an agreement to an unrecorded call does not count,
+ * as when recording is switched on before the interview), so the
+ * candidate's side sees an open question. Their answer either sets
+ * candidateConsentAt and starts the recording, or switches recordVideo
+ * back off. The request and the answer are audit entries; the request
+ * carries who asked and the earlier agreement, and a no is read back so
+ * the candidate is not asked again in this interview.
+ */
+
+type ConsentLog = {
+  request: { actorUserId: string | null; actorEmail: string | null; askedBy: string | null; prevConsentAt: Date | null } | null;
+  declined: boolean;
+};
+
+async function consentLog(s: { id: string }): Promise<ConsentLog> {
+  const row = await prisma.interviewSession.findUnique({
+    where: { id: s.id },
+    select: { recordAskedAt: true, recordAskedById: true, recordAskedByName: true, recordAskPrevConsentAt: true, recordDeclinedAt: true },
   });
+  if (!row) return { request: null, declined: false };
+  return {
+    request: row.recordAskedAt
+      ? { actorUserId: row.recordAskedById, actorEmail: null, askedBy: row.recordAskedByName, prevConsentAt: row.recordAskPrevConsentAt }
+      : null,
+    declined: !!row.recordDeclinedAt,
+  };
+}
+
+/**
+ * A host asked in the room and the candidate has not answered yet. The
+ * room then asks in place, so a candidate who reloads is not sent back to
+ * the lobby to agree (they could not say no there), and any agreement the
+ * request cleared still counts for the workspace's own consent.
+ */
+export async function pendingRoomAsk(s: { id: string; workspaceId: string | null; recordVideo: boolean; candidateConsentAt: Date | null }): Promise<{ prevConsentAt: Date | null } | null> {
+  if (!s.recordVideo || s.candidateConsentAt) return null;
+  const log = await consentLog(s);
+  return log.request ? { prevConsentAt: log.request.prevConsentAt } : null;
+}
+
+export type ConsentResult = { ok: true; started?: boolean } | { ok: false; code: RecordingRefusalCode | "missing" | "declined"; error: string };
+
+/** The host asks the candidate, in the room, to record a call that was not set up to be recorded. */
+export async function askRecordingConsent({ sessionId, actorUserId, actorEmail = null, askedBy }: { sessionId: string; askedBy: string } & Actor): Promise<ConsentResult> {
+  const s = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: SESSION_SELECT });
+  if (!s || s.type !== "live" || !s.workspaceId) return { ok: false, code: "missing", error: "This interview no longer exists." };
+  const log = await consentLog(s);
+  const c = recordControl({ ...(await startInputs(s)), declined: log.declined });
+  // Already agreed, already asked, or already recording: nothing to ask.
+  if (c.control === "start" || c.control === "waiting" || c.control === "recording") return { ok: true };
+  if (c.control === "declined") return { ok: false, code: "declined", error: `${declinedLabel(s.candidateName)}. They are not asked again in this interview.` };
+  if (c.control !== "ask") return { ok: false, code: c.code ?? "not_set_up", error: c.message ?? "Recording cannot start here." };
+
+  const res = await prisma.interviewSession.updateMany({
+    where: { id: s.id, recordVideo: false },
+    data: {
+      recordVideo: true,
+      candidateConsentAt: null,
+      recordAskedAt: new Date(),
+      recordAskedById: actorUserId,
+      recordAskedByName: askedBy,
+      recordAskPrevConsentAt: s.candidateConsentAt,
+    },
+  });
+  if (res.count) {
+    await writeWorkspaceAuditEntry({
+      workspaceId: s.workspaceId,
+      actorUserId,
+      actorEmail,
+      action: WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_REQUESTED,
+      targetType: "interviewSession",
+      targetId: s.id,
+      meta: { candidateName: s.candidateName, askedBy, prevConsentAt: s.candidateConsentAt?.toISOString() ?? null },
+    });
+  }
+  return { ok: true };
+}
+
+/**
+ * The candidate answers in the room. Yes stores the agreement and, when a
+ * host asked in the room, starts the recording right away, so it does not
+ * depend on the host's tab. No switches recording back off for this
+ * interview and gives back any earlier agreement the request cleared.
+ */
+export async function answerRecordingConsent({ sessionId, allow }: { sessionId: string; allow: boolean }): Promise<ConsentResult> {
+  const s = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: SESSION_SELECT });
+  if (!s || s.type !== "live" || !s.workspaceId) return { ok: false, code: "missing", error: "This interview no longer exists." };
+  const open = consentAskOpen({ recordVideo: s.recordVideo, builtinVideo: builtinOn(s), status: s.status, candidateConsented: !!s.candidateConsentAt });
+  if (!open) return { ok: true };
+  const log = await consentLog(s);
+  const who = { candidateName: s.candidateName, source: "candidate" };
+
+  if (!allow) {
+    const res = await prisma.interviewSession.updateMany({
+      where: { id: s.id, recordVideo: true, candidateConsentAt: null },
+      data: { recordVideo: false, candidateConsentAt: log.request?.prevConsentAt ?? null, recordDeclinedAt: new Date() },
+    });
+    if (res.count) {
+      await writeWorkspaceAuditEntry({ workspaceId: s.workspaceId, action: WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_DECLINED, targetType: "interviewSession", targetId: s.id, meta: who });
+    }
+    return { ok: true };
+  }
+
+  const res = await prisma.interviewSession.updateMany({ where: { id: s.id, recordVideo: true, candidateConsentAt: null }, data: { candidateConsentAt: new Date() } });
+  if (!res.count) return { ok: true };
+  await writeWorkspaceAuditEntry({ workspaceId: s.workspaceId, action: WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_GIVEN, targetType: "interviewSession", targetId: s.id, meta: who });
+  if (!log.request) return { ok: true, started: false };
+  const started = await startLiveRecording({ sessionId: s.id, actorUserId: log.request.actorUserId, actorEmail: log.request.actorEmail });
+  return { ok: true, started: started.ok };
 }
 
 export type StartResult = { ok: true; recordingId: string } | { ok: false; code: RecordingRefusalCode | "missing" | "egress_failed"; error: string };
@@ -338,9 +464,23 @@ export async function roomRecordingState(sessionId: string, interviewer: boolean
   // told the call is recorded until LiveKit has accepted it.
   const live = active?.egressId ? active : null;
   const base: RoomRecording = { recording: !!live, startedAt: live?.startedAt.toISOString() ?? null };
-  if (!interviewer) return base;
-  const refusal = active ? null : await checkStart(s);
-  return { ...base, canStart: !active && !refusal, reason: refusal?.message ?? null, code: refusal?.code ?? null };
+  if (!interviewer) {
+    const open = !active && consentAskOpen({ recordVideo: s.recordVideo, builtinVideo: builtinOn(s), status: s.status, candidateConsented: !!s.candidateConsentAt });
+    if (!open) return base;
+    const log = await consentLog(s);
+    return { ...base, ask: { by: log.request?.askedBy ?? s.user?.name ?? null } };
+  }
+  // A no only matters while recording is off again; skip the read otherwise.
+  const declined = !active && !s.recordVideo ? (await consentLog(s)).declined : false;
+  const c = recordControl({ ...(await startInputs(s, !!active)), declined });
+  return {
+    ...base,
+    canStart: c.control === "start",
+    reason: c.message,
+    code: c.code,
+    control: c.control,
+    candidateName: s.candidateName,
+  };
 }
 
 /**

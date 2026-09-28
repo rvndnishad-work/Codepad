@@ -131,7 +131,12 @@ export default function LobbyClient({ data }: { data: RoomData }) {
         <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-3">
           <Brand workspace={workspace} href={viewer.via === "member" ? `/w/${workspace.slug}` : undefined} trail="Interview lobby" />
           <div className="ml-auto flex items-center gap-2">
-            <ConnectionPill snap={snap} />
+            <span className="sm:hidden">
+              <ConnectionPill snap={snap} compact />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <ConnectionPill snap={snap} />
+            </span>
             {viewer.via === "member" && (
               <Link href={`/w/${workspace.slug}/interviews`} className="hidden sm:inline-flex h-8 px-3 rounded-lg border border-border text-[13px] font-medium items-center hover:bg-panel">
                 All interviews
@@ -145,7 +150,8 @@ export default function LobbyClient({ data }: { data: RoomData }) {
         {/* Hero: the invite and the one action that matters. */}
         <motion.section {...rise(0)} className="relative overflow-hidden rounded-2xl border border-border bg-surface" style={GLOW}>
           <DotGrid />
-          <div className="relative grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 p-5 sm:p-7 md:p-9">
+          {/* Phones: the title, then the one action, then the details. Wide screens: the action on the right. */}
+          <div className="relative grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] gap-x-6 gap-y-5 lg:gap-y-6 p-5 sm:p-7 md:p-9">
             <div className="min-w-0">
               <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-secondary/15 ring-1 ring-inset ring-secondary/30 text-[12px] font-medium text-secondary-soft">
                 <FormatIcon format={iv.formatLabel} /> {iv.formatLabel}
@@ -162,15 +168,16 @@ export default function LobbyClient({ data }: { data: RoomData }) {
                   </>
                 )}
               </p>
-
-              <dl className="mt-6 flex flex-wrap gap-2">
-                <Chip icon={CalendarClock} label="When" value={whenLabel(iv.scheduledAt)} />
-                <Chip icon={Clock3} label="Length" value={`${Math.round(iv.totalSec / 60)} min`} />
-                <Chip icon={Users} label="Interviewers" value={[iv.hostName, ...iv.panel].join(", ")} />
-                <Chip icon={Globe2} label="Time zone" value={Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ")} />
-              </dl>
             </div>
 
+            <dl className="max-lg:order-last lg:col-start-1 lg:row-start-2 min-w-0 flex flex-wrap content-start gap-2">
+              <Chip icon={CalendarClock} label="When" value={whenLabel(iv.scheduledAt)} />
+              <Chip icon={Clock3} label="Length" value={`${Math.round(iv.totalSec / 60)} min`} />
+              <Chip icon={Users} label="Interviewers" value={[iv.hostName, ...iv.panel].join(", ")} />
+              <Chip icon={Globe2} label="Time zone" value={Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ")} />
+            </dl>
+
+            <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0">
             <StatusCard
               ended={ended}
               live={live}
@@ -191,6 +198,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
                   : null
               }
             />
+            </div>
           </div>
         </motion.section>
 

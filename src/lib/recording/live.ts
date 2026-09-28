@@ -4,6 +4,7 @@
  * database, no env. Safe to import from client components.
  */
 import { VIDEO_JOIN_STATUSES } from "@/lib/video/room-video";
+import { RECORDING_RETENTION_DAYS } from "./retention";
 
 export type RecordingStatus = "recording" | "processing" | "ready" | "failed" | "deleted";
 
@@ -62,6 +63,66 @@ export function recordingRefusal(a: {
   if (!a.candidateConsented) return { code: "no_consent", message: "The candidate has not agreed to be recorded yet. They agree in the lobby before joining." };
   if (a.credits < RECORDING_CREDITS_PER_HOUR) return { code: "no_credits", message: "No AI credits left. Each recorded hour uses 1 AI credit." };
   return null;
+}
+
+/**
+ * What the host's Record button does right now.
+ *
+ * - recording: the call is recorded; the button stops it.
+ * - start: the candidate agreed; Record starts after a confirm.
+ * - ask: the interview was not set up to be recorded; Record asks the
+ *   candidate in the room first, and recording starts when they agree.
+ * - waiting: the candidate was asked and has not answered.
+ * - declined: the candidate said no. They are not asked again in this interview.
+ * - blocked: recording cannot work here (setup, credits, interview over);
+ *   the button stays visible and says why when pressed.
+ */
+export type RecordControl = "recording" | "start" | "ask" | "waiting" | "declined" | "blocked";
+
+export function recordControl(a: {
+  configured: boolean;
+  builtinVideo: boolean;
+  recordVideo: boolean;
+  status: string;
+  candidateConsented: boolean;
+  credits: number;
+  active: boolean;
+  /** The candidate turned down a recording request in this interview. */
+  declined: boolean;
+}): { control: RecordControl; code: RecordingRefusalCode | null; message: string | null } {
+  if (a.active) return { control: "recording", code: null, message: null };
+  // Setup, video, interview status and credits: asking would be pointless.
+  const hard = recordingRefusal({ ...a, recordVideo: true, candidateConsented: true });
+  if (hard) return { control: "blocked", code: hard.code, message: hard.message };
+  if (a.recordVideo && a.candidateConsented) return { control: "start", code: null, message: null };
+  if (a.recordVideo) return { control: "waiting", code: "no_consent", message: "The candidate has been asked to agree to the recording. It starts once they say yes." };
+  if (a.declined) return { control: "declined", code: "no_consent", message: "The candidate chose not to be recorded, so this call is not recorded." };
+  return { control: "ask", code: null, message: null };
+}
+
+/**
+ * The candidate is asked in the room: recording is wanted for this call and
+ * they have not agreed yet. Also true when an interview set up to be
+ * recorded reaches the room without the lobby agreement.
+ */
+export function consentAskOpen(a: { recordVideo: boolean; builtinVideo: boolean; status: string; candidateConsented: boolean }): boolean {
+  return a.recordVideo && a.builtinVideo && (VIDEO_JOIN_STATUSES as readonly string[]).includes(a.status) && !a.candidateConsented;
+}
+
+/** "Tomasz" from "Tomasz Nowak"; "The candidate" when there is no name. */
+export function candidateFirstName(name: string | null | undefined): string {
+  return name?.trim().split(/\s+/)[0] || "The candidate";
+}
+
+/** Plain words for the host after a no. */
+export function declinedLabel(candidateName: string | null | undefined): string {
+  return `${candidateFirstName(candidateName)} chose not to be recorded`;
+}
+
+/** What the candidate reads when asked in the room. */
+export function consentAskText(askedBy: string | null | undefined): string {
+  const who = askedBy?.trim() || "Your interviewer";
+  return `${who} would like to record this call. The recording is kept for ${RECORDING_RETENTION_DAYS} days, then deleted.`;
 }
 
 /** LiveKit EgressStatus values (livekit_egress.proto). */
@@ -160,6 +221,12 @@ export type RoomRecording = {
   canStart?: boolean;
   reason?: string | null;
   code?: RecordingRefusalCode | null;
+  /** Interviewers only: what the Record button does now. */
+  control?: RecordControl;
+  /** Interviewers only: for "Tomasz chose not to be recorded". */
+  candidateName?: string | null;
+  /** Candidates only: someone asked to record and waits for an answer. */
+  ask?: { by: string | null } | null;
 };
 
 /** One recording on the interview report. Links are signed per page load. */

@@ -8,7 +8,7 @@ const db = vi.hoisted(() => ({
   ledger: [] as { workspaceId: string; kind: string; amount: number; note?: string }[],
   balance: 10,
   includedLeft: 0,
-  audits: [] as { action: string; meta: Record<string, unknown> }[],
+  audits: [] as { action: string; meta: Record<string, unknown>; targetId?: string; actorUserId?: string | null }[],
   workspaceUpdates: [] as unknown[],
 }));
 
@@ -21,7 +21,23 @@ function matches(r: Rec, where: Record<string, unknown>): boolean {
 
 vi.mock("@/lib/prisma", () => {
   const prisma = {
-    interviewSession: { findUnique: vi.fn(async () => db.session) },
+    interviewSession: {
+      findUnique: vi.fn(async () => (db.session ? { ...db.session } : null)),
+      updateMany: vi.fn(async ({ where, data }: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+        const s = db.session;
+        if (!s || !Object.entries(where).every(([k, v]) => (k === "candidateConsentAt" ? (s[k] ?? null) === v : s[k] === v))) return { count: 0 };
+        Object.assign(s, data);
+        return { count: 1 };
+      }),
+    },
+    workspaceAuditLog: {
+      findMany: vi.fn(async ({ where }: { where: { targetId: string; action: { in: string[] } } }) =>
+        db.audits
+          .filter((a) => a.targetId === where.targetId && where.action.in.includes(a.action))
+          .reverse()
+          .map((a) => ({ action: a.action, actorUserId: a.actorUserId ?? null, actorEmail: null, meta: JSON.stringify(a.meta ?? {}) })),
+      ),
+    },
     interviewRecording: {
       findFirst: vi.fn(async ({ where }: { where: Record<string, unknown> }) => db.recordings.find((r) => matches(r, where)) ?? null),
       findMany: vi.fn(async ({ where }: { where: Record<string, unknown> }) => db.recordings.filter((r) => matches(r, where))),
@@ -66,9 +82,15 @@ vi.mock("@/lib/prisma", () => {
 });
 
 vi.mock("@/lib/workspace-audit", () => ({
-  WORKSPACE_AUDIT_ACTIONS: { RECORDING_STARTED: "RECORDING_STARTED", RECORDING_STOPPED: "RECORDING_STOPPED" },
-  writeWorkspaceAuditEntry: vi.fn(async (e: { action: string; meta: Record<string, unknown> }) => {
-    db.audits.push({ action: e.action, meta: e.meta });
+  WORKSPACE_AUDIT_ACTIONS: {
+    RECORDING_STARTED: "RECORDING_STARTED",
+    RECORDING_STOPPED: "RECORDING_STOPPED",
+    RECORDING_CONSENT_REQUESTED: "RECORDING_CONSENT_REQUESTED",
+    RECORDING_CONSENT_GIVEN: "RECORDING_CONSENT_GIVEN",
+    RECORDING_CONSENT_DECLINED: "RECORDING_CONSENT_DECLINED",
+  },
+  writeWorkspaceAuditEntry: vi.fn(async (e: { action: string; meta: Record<string, unknown>; targetId?: string; actorUserId?: string | null }) => {
+    db.audits.push({ action: e.action, meta: e.meta, targetId: e.targetId, actorUserId: e.actorUserId });
   }),
 }));
 vi.mock("@/lib/notifications/triggers", () => ({ notifyAiCreditsLowIfNeeded: vi.fn(async () => undefined) }));
@@ -93,7 +115,7 @@ vi.mock("livekit-server-sdk", async (orig) => {
   return { ...real, EgressClient };
 });
 
-import { chargeRecordingCredits, roomRecordingState, startLiveRecording, stopLiveRecording, stopRoomRecordings, syncLiveRecording } from "@/lib/recording/live-server";
+import { answerRecordingConsent, askRecordingConsent, pendingRoomAsk, chargeRecordingCredits, roomRecordingState, startLiveRecording, stopLiveRecording, stopRoomRecordings, syncLiveRecording } from "@/lib/recording/live-server";
 import { EGRESS } from "@/lib/recording/live";
 
 const growth = { planName: "GROWTH", trialEndsAt: null, stripeSubscriptionId: "sub_1", videoEnabled: true };
@@ -170,7 +192,7 @@ describe("startLiveRecording", () => {
       region: "auto",
       forcePathStyle: true,
     });
-    expect(db.audits).toEqual([{ action: "RECORDING_STARTED", meta: { candidateName: "Priya Shah", recordingId: rec.id } }]);
+    expect(db.audits).toEqual([{ action: "RECORDING_STARTED", meta: { candidateName: "Priya Shah", recordingId: rec.id }, targetId: "s1", actorUserId: "u1" }]);
   });
 
   it("refuses without the candidate's agreement, credits, or setup, and records nothing", async () => {
@@ -288,11 +310,20 @@ describe("syncLiveRecording and charging", () => {
 
 describe("roomRecordingState", () => {
   it("tells everyone whether the call is recorded, and only interviewers why they cannot start", async () => {
-    db.session = session({ candidateConsentAt: null });
+    db.session = session({ candidateConsentAt: null, recordVideo: false });
     expect(await roomRecordingState("s1", false)).toEqual({ recording: false, startedAt: null });
+    db.session = session({ candidateConsentAt: null, recordVideo: false, workspace: { ...growth, videoEnabled: false } });
     const host = await roomRecordingState("s1", true);
-    expect(host).toMatchObject({ recording: false, canStart: false, code: "no_consent" });
-    expect(host.reason).toMatch(/has not agreed/);
+    expect(host).toMatchObject({ recording: false, canStart: false, control: "blocked", code: "no_builtin_video" });
+    expect(host.reason).toMatch(/built-in video/);
+    expect(host.ask).toBeUndefined();
+  });
+
+  it("offers Record to the host even when the interview was not set up to be recorded", async () => {
+    db.session = session({ candidateConsentAt: null, recordVideo: false });
+    expect(await roomRecordingState("s1", true)).toMatchObject({ canStart: false, control: "ask", reason: null, candidateName: "Priya Shah" });
+    db.session = session();
+    expect(await roomRecordingState("s1", true)).toMatchObject({ canStart: true, control: "start" });
   });
 
   it("reports an active recording", async () => {
@@ -300,5 +331,74 @@ describe("roomRecordingState", () => {
     egress.listEgress.mockResolvedValue([{ status: EGRESS.ACTIVE }]);
     const s = await roomRecordingState("s1", true);
     expect(s).toMatchObject({ recording: true, canStart: false, reason: null });
+  });
+});
+
+describe("asking the candidate in the room", () => {
+  const earlier = new Date("2026-09-28T09:00:00Z");
+
+  it("asks, the candidate agrees, and the server starts the recording", async () => {
+    db.session = session({ recordVideo: false, candidateConsentAt: earlier, user: { name: "Alex Morgan" } });
+    expect(await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex Morgan" })).toEqual({ ok: true });
+    expect(db.session).toMatchObject({ recordVideo: true, candidateConsentAt: null });
+    expect(db.audits.at(-1)).toMatchObject({ action: "RECORDING_CONSENT_REQUESTED", meta: { askedBy: "Alex Morgan", prevConsentAt: earlier.toISOString() } });
+
+    // Both sides see the open question.
+    expect(await roomRecordingState("s1", false)).toMatchObject({ recording: false, ask: { by: "Alex Morgan" } });
+    expect(await roomRecordingState("s1", true)).toMatchObject({ control: "waiting", canStart: false });
+    // Asking twice does nothing new.
+    await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex Morgan" });
+    expect(db.audits.filter((a) => a.action === "RECORDING_CONSENT_REQUESTED")).toHaveLength(1);
+
+    expect(await answerRecordingConsent({ sessionId: "s1", allow: true })).toEqual({ ok: true, started: true });
+    expect(db.session!.candidateConsentAt).toBeInstanceOf(Date);
+    expect(egress.startRoomCompositeEgress).toHaveBeenCalledTimes(1);
+    expect(db.recordings[0]).toMatchObject({ status: "recording", startedById: "u1", egressId: "EG_1" });
+    expect(db.audits.map((a) => a.action)).toEqual(["RECORDING_CONSENT_REQUESTED", "RECORDING_CONSENT_GIVEN", "RECORDING_STARTED"]);
+    expect(db.audits[1].meta).toMatchObject({ source: "candidate", candidateName: "Priya Shah" });
+    // A second answer is a no-op.
+    expect(await answerRecordingConsent({ sessionId: "s1", allow: true })).toEqual({ ok: true });
+    expect(egress.startRoomCompositeEgress).toHaveBeenCalledTimes(1);
+  });
+
+  it("a no switches recording back off, gives back the earlier agreement, and blocks asking again", async () => {
+    db.session = session({ recordVideo: false, candidateConsentAt: earlier });
+    await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex Morgan" });
+    expect(await answerRecordingConsent({ sessionId: "s1", allow: false })).toEqual({ ok: true });
+    expect(db.session).toMatchObject({ recordVideo: false, candidateConsentAt: earlier });
+    expect(egress.startRoomCompositeEgress).not.toHaveBeenCalled();
+    expect(db.audits.at(-1)?.action).toBe("RECORDING_CONSENT_DECLINED");
+
+    expect(await roomRecordingState("s1", true)).toMatchObject({ control: "declined", canStart: false, candidateName: "Priya Shah" });
+    expect(await roomRecordingState("s1", false)).toEqual({ recording: false, startedAt: null });
+    const again = await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex Morgan" });
+    expect(again).toMatchObject({ ok: false, code: "declined" });
+    expect(!again.ok && again.error).toMatch(/Priya chose not to be recorded/);
+    expect(db.session!.recordVideo).toBe(false);
+  });
+
+  it("knows when a request made in the room is still open, so a reload does not send the candidate to the lobby", async () => {
+    db.session = session({ recordVideo: false, candidateConsentAt: earlier });
+    expect(await pendingRoomAsk(db.session as never)).toBeNull();
+    await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex Morgan" });
+    expect(await pendingRoomAsk(db.session as never)).toEqual({ prevConsentAt: earlier });
+    await answerRecordingConsent({ sessionId: "s1", allow: true });
+    expect(await pendingRoomAsk(db.session as never)).toBeNull();
+    // Set up to be recorded before the interview: the lobby asks as before.
+    db.audits = [];
+    db.session = session({ candidateConsentAt: null });
+    expect(await pendingRoomAsk(db.session as never)).toBeNull();
+  });
+
+  it("does not ask when recording could not work anyway, and does not start on an agreement nobody asked for in the room", async () => {
+    db.session = session({ recordVideo: false, candidateConsentAt: null });
+    db.balance = 0;
+    expect(await askRecordingConsent({ sessionId: "s1", actorUserId: "u1", askedBy: "Alex" })).toMatchObject({ ok: false, code: "no_credits" });
+    expect(db.session!.recordVideo).toBe(false);
+
+    db.balance = 10;
+    db.session = session({ candidateConsentAt: null });
+    expect(await answerRecordingConsent({ sessionId: "s1", allow: true })).toEqual({ ok: true, started: false });
+    expect(egress.startRoomCompositeEgress).not.toHaveBeenCalled();
   });
 });

@@ -142,6 +142,12 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   RECORDING_STARTED: "RECORDING_STARTED",
   // meta { candidateName, reason? } recording stopped by the host, or when the interview ended.
   RECORDING_STOPPED: "RECORDING_STOPPED",
+  // meta { candidateName, askedBy, prevConsentAt } host asked the candidate, in the room, to record the call.
+  RECORDING_CONSENT_REQUESTED: "RECORDING_CONSENT_REQUESTED",
+  // meta { candidateName } candidate agreed to the recording in the room.
+  RECORDING_CONSENT_GIVEN: "RECORDING_CONSENT_GIVEN",
+  // meta { candidateName } candidate chose not to be recorded. Also read back so they are not asked again.
+  RECORDING_CONSENT_DECLINED: "RECORDING_CONSENT_DECLINED",
   // meta { key, label, reset?: boolean } candidate email wording saved or reset.
   EMAIL_TEMPLATE_CHANGED: "EMAIL_TEMPLATE_CHANGED",
   // meta { email } confirmation link sent / address confirmed.

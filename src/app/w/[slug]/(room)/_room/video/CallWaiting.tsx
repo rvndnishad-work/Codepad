@@ -23,12 +23,15 @@ export function CallWaiting({
   lead,
   others,
   action,
+  onLeave,
 }: {
   myRole: "interviewer" | "candidate";
   title: string;
   lead: string;
   others: string;
   action?: ReactNode;
+  /** Candidates: hang up leaves the interview (with a confirm). */
+  onLeave?: () => void;
 }) {
   const call = useCall();
   const connected = call?.status === "connected" && !!call.room;
@@ -41,7 +44,7 @@ export function CallWaiting({
           <p className="text-[13.5px] sm:text-[14.5px] text-muted leading-relaxed">{lead}</p>
         </div>
         {connected ? (
-          <Stage myRole={myRole} others={others} action={action} />
+          <Stage myRole={myRole} others={others} action={action} onLeave={onLeave} />
         ) : (
           <>
             <div className="w-full max-w-[1040px] min-h-[200px] sm:min-h-[240px] rounded-[18px] border border-border bg-surface flex items-center justify-center p-6">
@@ -55,7 +58,7 @@ export function CallWaiting({
   );
 }
 
-function Stage({ myRole, others, action }: { myRole: "interviewer" | "candidate"; others: string; action?: ReactNode }) {
+function Stage({ myRole, others, action, onLeave }: { myRole: "interviewer" | "candidate"; others: string; action?: ReactNode; onLeave?: () => void }) {
   const { local, main } = useCallPeople(myRole);
   const { isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const role = main ? roleOf(main) : null;
@@ -74,7 +77,7 @@ function Stage({ myRole, others, action }: { myRole: "interviewer" | "candidate"
       </div>
       <div className="flex flex-col items-center gap-3">
         <div className="flex gap-2.5">
-          <CallControls size="lg" leave={false} settings />
+          <CallControls size="lg" settings onLeave={onLeave} />
         </div>
         {!isMicrophoneEnabled && !isCameraEnabled && <p className="text-[13px] text-muted text-center">Your camera and mic are off. Turn them on with the buttons above.</p>}
         <MediaNote className="max-w-md" />

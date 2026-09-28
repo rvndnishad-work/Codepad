@@ -50,7 +50,11 @@ const config: Config = {
            legible on the dark ground only. */
         success: "rgb(var(--c-success) / <alpha-value>)",
         warning: "rgb(var(--c-warning) / <alpha-value>)",
-        danger: "rgb(var(--c-danger) / <alpha-value>)",
+        danger: {
+          DEFAULT: "rgb(var(--c-danger) / <alpha-value>)",
+          /* Solid fill under white text: hang up and End interview. */
+          solid: "rgb(var(--c-danger-solid) / <alpha-value>)",
+        },
         /* Ink is the structural primary (see globals.css "Runtime" notes):
            near-black on paper, paper on near-black. `ink-fg` is the only
            colour that belongs on top of it. */

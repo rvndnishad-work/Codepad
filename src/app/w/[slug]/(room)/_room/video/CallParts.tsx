@@ -20,7 +20,7 @@ import {
   useTracks,
 } from "@livekit/components-react";
 import { Loader2, Mic, MicOff, MonitorUp, PhoneOff, RotateCcw, Settings2, Video, VideoOff, X } from "lucide-react";
-import { RoleAvatar } from "../parts";
+import { BTN_DANGER, BTN_OFF, BTN_SOLID, RoleAvatar } from "../parts";
 import { useCall } from "./VideoCall";
 import { savePrefs } from "./prefs";
 
@@ -101,13 +101,17 @@ export function Tile({
       )}
       {showName && (
         <span className="absolute left-2 bottom-2 max-w-[calc(100%-1rem)] h-6 px-2 rounded-md bg-bg/75 text-[12px] text-fg inline-flex items-center gap-1.5 truncate">
-          {micMuted && <MicOff className="w-3.5 h-3.5 text-danger shrink-0" aria-label="Muted" />}
+          {micMuted && (
+            <span className="w-4 h-4 rounded-full bg-fg text-bg inline-flex items-center justify-center shrink-0">
+              <MicOff className="w-2.5 h-2.5" strokeWidth={2.6} aria-label="Muted" />
+            </span>
+          )}
           <span className="truncate">{name}</span>
         </span>
       )}
       {!showName && micMuted && (
-        <span className="absolute right-1.5 bottom-1.5 w-5 h-5 rounded-full bg-bg/80 flex items-center justify-center">
-          <MicOff className="w-3 h-3 text-danger" aria-label="Muted" />
+        <span className="absolute right-1.5 bottom-1.5 w-5 h-5 rounded-full bg-fg text-bg flex items-center justify-center">
+          <MicOff className="w-3 h-3" strokeWidth={2.6} aria-label="Muted" />
         </span>
       )}
     </div>
@@ -115,7 +119,9 @@ export function Tile({
 }
 
 type CtlSize = "sm" | "md" | "lg";
-const CTL: Record<CtlSize, string> = { sm: "w-10 h-10 rounded-full", md: "w-11 h-11 rounded-xl", lg: "w-12 h-12 rounded-full" };
+const CTL: Record<CtlSize, string> = { sm: "w-10 h-10 rounded-full", md: "w-11 h-11 rounded-full", lg: "w-[52px] h-[52px] rounded-full" };
+/** Hang up is wider than the rest, so it is never pressed by mistake for mute. */
+const CTL_WIDE: Record<CtlSize, string> = { sm: "w-12 h-10 rounded-full", md: "w-14 h-11 rounded-full", lg: "w-[68px] h-[52px] rounded-full" };
 
 function Ctl({
   size,
@@ -134,7 +140,7 @@ function Ctl({
   children: React.ReactNode;
   pressed?: boolean;
 }) {
-  const tone = danger || !on ? "bg-danger/15 text-danger hover:bg-danger/25" : "bg-elevated text-fg hover:bg-border-strong/60";
+  const tone = danger ? BTN_DANGER : !on ? BTN_OFF : BTN_SOLID;
   return (
     <button
       type="button"
@@ -142,7 +148,7 @@ function Ctl({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      className={`${CTL[size]} inline-flex items-center justify-center shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 ${tone}`}
+      className={`${danger ? CTL_WIDE[size] : CTL[size]} inline-flex items-center justify-center shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface ${tone}`}
     >
       {children}
     </button>
@@ -151,8 +157,9 @@ function Ctl({
 
 /**
  * Mute, camera, share screen, and optionally leave and device settings.
- * `onLeave` replaces the plain "leave the call" (candidates get a confirm
- * that takes them out of the interview).
+ * The red hang up shows only with `onLeave` (candidates: a confirm that
+ * takes them out of the interview). Interviewers leave with End interview,
+ * so there is no separate "leave the call".
  */
 export function CallControls({
   size = "md",
@@ -169,7 +176,7 @@ export function CallControls({
 }) {
   const call = useCall()!;
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
-  const icon = size === "sm" ? "w-4 h-4" : "w-[18px] h-[18px]";
+  const icon = size === "sm" ? "w-4 h-4" : size === "lg" ? "w-5 h-5" : "w-[18px] h-[18px]";
   return (
     <>
       <Ctl size={size} on={isMicrophoneEnabled} label={isMicrophoneEnabled ? "Mute" : "Unmute"} pressed={!isMicrophoneEnabled} onClick={() => void call.toggleMic()}>
@@ -184,8 +191,8 @@ export function CallControls({
         </Ctl>
       )}
       {settings && <DeviceMenu size={size} />}
-      {leave && (
-        <Ctl size={size} danger label={onLeave ? "Leave the interview" : "Leave the call"} onClick={onLeave ?? call.leave}>
+      {leave && onLeave && (
+        <Ctl size={size} danger label="Leave the interview" onClick={onLeave}>
           <PhoneOff className={icon} aria-hidden />
         </Ctl>
       )}

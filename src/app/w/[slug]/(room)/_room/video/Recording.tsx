@@ -23,6 +23,7 @@ import { Circle, Loader2, Square, X } from "lucide-react";
 import { RoomEvent } from "livekit-client";
 import { REFUSAL_SHORT, candidateFirstName, consentAskText, declinedLabel, type RecordControl, type RoomRecording } from "@/lib/recording/live";
 import { useCall } from "./VideoCall";
+import { BTN_SOLID } from "../parts";
 
 /** Interviewers, normally. */
 const POLL_MS = 15_000;
@@ -162,8 +163,7 @@ export function RecordingPill() {
   );
 }
 
-const BTN =
-  "h-10 sm:h-8 min-w-10 px-2.5 rounded-lg ring-1 ring-inset ring-border text-[13px] font-medium inline-flex items-center justify-center gap-1.5 hover:bg-panel whitespace-nowrap";
+const BTN = `h-10 md:h-9 min-w-10 px-3 rounded-lg ${BTN_SOLID} text-[13px] font-medium inline-flex items-center justify-center gap-1.5 whitespace-nowrap`;
 /** On phones the panels sit under the top bar across the screen; from sm up they hang off the button. */
 const PANEL = "fixed left-4 right-4 top-16 sm:absolute sm:left-auto sm:right-0 sm:top-10 sm:w-[300px] z-50 rounded-xl border border-border-strong bg-surface p-4 shadow-2xl shadow-black/50";
 

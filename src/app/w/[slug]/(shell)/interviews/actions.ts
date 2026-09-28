@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { createInterviewSession, resolveRounds, sendCandidateInvites, sourceTypeOf } from "@/lib/interview/create-server";
@@ -446,11 +447,13 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
     // Cancel the calendar event first; the row goes with the session.
     await cancelInterviewEvent(s.id);
     closeVideoRoomAfter(s.id);
+    const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [s.id] });
     // Attempts point at the session by id only, so they go first; the rest cascades.
     await prisma.$transaction([
       prisma.challengeAttempt.deleteMany({ where: { sessionId: s.id } }),
       prisma.interviewSession.delete({ where: { id: s.id } }),
     ]);
+    await deleteRecordingKeys(recordingKeys);
     void writeWorkspaceAuditEntry({
       workspaceId: a.workspace.id,
       actorUserId: a.userId,

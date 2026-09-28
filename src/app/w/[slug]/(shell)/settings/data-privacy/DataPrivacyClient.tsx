@@ -255,7 +255,7 @@ function RetentionCard({ rules, canEdit, retention }: { rules: RuleRow[]; canEdi
         );
       })}
       <p className="px-5 py-3 rounded-b-xl bg-secondary/10 text-[13px] text-secondary-soft">
-        Candidates marked passed are never erased by a rule, however long ago they were active.
+        Candidates marked passed are never erased by a rule, however long ago they were active. Interview and screening recordings are always deleted 7 days after they are made.
       </p>
     </SettingsCard>
   );

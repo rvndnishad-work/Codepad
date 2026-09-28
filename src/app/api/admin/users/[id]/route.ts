@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -77,7 +78,11 @@ export async function DELETE(_req: Request, { params }: Params) {
     // For now, I'll allow deleting other users (including admins if they are in the list)
     // but the UI currently hides the delete button for admins.
 
+    // Their interviews cascade with them, and so do the interview videos.
+    const hosted = await prisma.interviewSession.findMany({ where: { userId: id }, select: { id: true } });
+    const recordingKeys = await collectRecordingKeys({ interviewSessionIds: hosted.map((s) => s.id) });
     await prisma.user.delete({ where: { id } });
+    await deleteRecordingKeys(recordingKeys);
     
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
+import { r2Config, signedGetUrl } from "@/lib/storage/r2";
+import { clipDeletesAt } from "@/lib/recording/cleanup";
 
 /**
  * Plays back one recorded theory answer. Workspace members only, the same
@@ -20,13 +22,23 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   const clip = await prisma.aIInterviewAudio.findFirst({
     where: { id: clipId, sessionId, session: { workspaceId: workspace.id } },
-    select: { bytes: true, mime: true },
+    select: { bytes: true, storageKey: true, mime: true, createdAt: true, expiresAt: true },
   });
-  if (!clip) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Past its 7 days the clip counts as deleted even before the cleanup runs.
+  if (!clip || clipDeletesAt(clip).getTime() <= Date.now()) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const contentType = clip.mime.split(";")[0] || "audio/webm";
+
+  if (clip.storageKey) {
+    const cfg = r2Config();
+    if (!cfg) return NextResponse.json({ error: "Recording is not set up." }, { status: 404 });
+    const url = await signedGetUrl(cfg, clip.storageKey, { seconds: 300, contentType });
+    return new Response(null, { status: 302, headers: { Location: url, "Cache-Control": "private, no-store" } });
+  }
+  if (!clip.bytes) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const bytes = new Uint8Array(clip.bytes);
   const headers = {
-    "Content-Type": clip.mime.split(";")[0] || "audio/webm",
+    "Content-Type": contentType,
     "Accept-Ranges": "bytes",
     "Cache-Control": "private, max-age=3600",
     "X-Content-Type-Options": "nosniff",

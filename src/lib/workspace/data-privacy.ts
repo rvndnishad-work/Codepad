@@ -75,7 +75,7 @@ export const RETENTION_COPY: Record<RetentionKind, { title: string; help: string
   },
   VOICE_RECORDINGS: {
     title: "Delete voice recordings",
-    help: "Recorded spoken answers from AI screenings, counted from the day they were recorded. Scores and written answers stay.",
+    help: "Recorded spoken answers from AI screenings. Recordings are always deleted 7 days after they are made, whatever this rule says. Scores and written answers stay.",
     noun: ["recording", "recordings"],
   },
   CODE_REPLAYS: {

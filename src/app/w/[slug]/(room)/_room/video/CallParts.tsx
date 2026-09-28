@@ -127,7 +127,6 @@ function Ctl({
   size,
   on = true,
   danger = false,
-  soft = false,
   label,
   onClick,
   children,
@@ -136,14 +135,12 @@ function Ctl({
   size: CtlSize;
   on?: boolean;
   danger?: boolean;
-  /** Destructive but not final (leave the call, stay in the room): dark with a red icon. */
-  soft?: boolean;
   label: string;
   onClick: () => void;
   children: React.ReactNode;
   pressed?: boolean;
 }) {
-  const tone = danger ? (soft ? BTN_SOLID.replace("text-fg", "text-danger") : BTN_DANGER) : !on ? BTN_OFF : BTN_SOLID;
+  const tone = danger ? BTN_DANGER : !on ? BTN_OFF : BTN_SOLID;
   return (
     <button
       type="button"
@@ -160,8 +157,9 @@ function Ctl({
 
 /**
  * Mute, camera, share screen, and optionally leave and device settings.
- * `onLeave` replaces the plain "leave the call" (candidates get a confirm
- * that takes them out of the interview).
+ * The red hang up shows only with `onLeave` (candidates: a confirm that
+ * takes them out of the interview). Interviewers leave with End interview,
+ * so there is no separate "leave the call".
  */
 export function CallControls({
   size = "md",
@@ -193,9 +191,8 @@ export function CallControls({
         </Ctl>
       )}
       {settings && <DeviceMenu size={size} />}
-      {leave && (
-        // Only leaving the interview is solid red; leaving the call keeps you in the room.
-        <Ctl size={size} danger soft={!onLeave} label={onLeave ? "Leave the interview" : "Leave call (the interview keeps running)"} onClick={onLeave ?? call.leave}>
+      {leave && onLeave && (
+        <Ctl size={size} danger label="Leave the interview" onClick={onLeave}>
           <PhoneOff className={icon} aria-hidden />
         </Ctl>
       )}

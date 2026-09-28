@@ -21,6 +21,8 @@ export type InterviewInviteProps = {
   durationMin: number;
   /** The team's video call link (Zoom, Meet, Teams...), if set. */
   meetingUrl?: string | null;
+  /** The built-in video call will be recorded. */
+  recorded?: boolean;
 } & CandidateEmailExtras;
 
 export function InterviewInvite({
@@ -32,6 +34,7 @@ export function InterviewInvite({
   scheduledAt,
   durationMin,
   meetingUrl,
+  recorded,
   brand,
   custom,
   unsubscribeUrl,
@@ -90,6 +93,11 @@ export function InterviewInvite({
           </>
         )}
       </div>
+      {recorded && (
+        <Text style={emailStyles.body}>
+          The video call will be recorded. You will be asked to agree before you join, and the recording is deleted after 7 days.
+        </Text>
+      )}
       <Button href={joinUrl} style={ctaStyle(brand)}>
         Join your interview →
       </Button>
@@ -119,6 +127,7 @@ export function interviewInviteText(p: InterviewInviteProps): string {
       ? `When: ${formatDeadlineUTC(p.scheduledAt)} (UTC).`
       : "Your recruiter will confirm the time.",
     ...(p.meetingUrl ? ["", `Video call: ${p.meetingUrl}`] : []),
+    ...(p.recorded ? ["", "The video call will be recorded. You will be asked to agree before you join, and the recording is deleted after 7 days."] : []),
     ...(p.shortCode ? ["", `Access code: ${p.shortCode}`] : []),
     "",
     "Join here:",

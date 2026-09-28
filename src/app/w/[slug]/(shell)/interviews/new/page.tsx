@@ -9,6 +9,7 @@ import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
 import { SETTINGS_DEFAULTS } from "@/lib/workspace/settings";
 import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
 import { videoOffer } from "@/lib/video/room-video";
+import { recordingConfigured } from "@/lib/recording/live-server";
 
 export const metadata = { title: "New interview", robots: { index: false, follow: false } };
 
@@ -56,7 +57,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
       roundOptions={data.rounds}
       guides={data.guides}
       bankCategories={data.bankCategories}
-      video={{ on: videoOn, canOffer: offer.canOffer, offerUpgrade: offer.offerUpgrade, billingHref: `/w/${slug}/billing` }}
+      video={{ on: videoOn, canOffer: offer.canOffer, offerUpgrade: offer.offerUpgrade, billingHref: `/w/${slug}/billing`, recordingReady: videoOn && recordingConfigured() }}
       defaultMinutes={settings?.interviewDefaultMinutes ?? SETTINGS_DEFAULTS.interviewDefaultMinutes}
       prefill={{
         candidateIds: [...list(sp.candidates), ...list(sp.candidateId)].slice(0, 20),

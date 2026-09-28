@@ -38,7 +38,7 @@ import { readableTextOn } from "@/lib/workspace/candidate-experience";
 import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 import { giveInterviewConsentAction } from "./actions";
 import { LobbyVideo } from "./video/LobbyVideo";
-import { saveBuiltinVideo, saveMeetingLink } from "./video/api";
+import { saveBuiltinVideo, saveMeetingLink, saveRecordVideo } from "./video/api";
 import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
 import type { RoomVideo } from "@/lib/video/room-video";
 
@@ -104,7 +104,8 @@ export default function LobbyClient({ data }: { data: RoomData }) {
   const rise = (i: number) =>
     reduce ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.06 * i, duration: 0.4, ease: [0.2, 0.7, 0.2, 1] as const } };
 
-  // Consent before a recorded interview (Settings > Candidate experience).
+  // Consent before a recorded interview (Settings > Candidate experience),
+  // and always before a recorded video call.
   const [agreed, setAgreed] = useState(false);
   const [consenting, setConsenting] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -186,7 +187,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               brandColor={isInterviewer ? null : workspace.brand.color}
               consent={
                 consentNeeded
-                  ? { agreed, onChange: setAgreed, workspaceName: workspace.name, privacyUrl: workspace.brand.privacyNoticeUrl, error: consentError }
+                  ? { agreed, onChange: setAgreed, workspaceName: workspace.name, privacyUrl: workspace.brand.privacyNoticeUrl, error: consentError, recorded: iv.recorded }
                   : null
               }
             />
@@ -356,8 +357,8 @@ function StatusCard({
   meetingUrl: string | null;
   /** Workspace brand colour for the candidate's main button. */
   brandColor: string | null;
-  /** The consent box, when the workspace asks candidates for consent. */
-  consent: { agreed: boolean; onChange: (v: boolean) => void; workspaceName: string; privacyUrl: string | null; error: string | null } | null;
+  /** The consent box, when the workspace asks candidates for consent or the call is recorded. */
+  consent: { agreed: boolean; onChange: (v: boolean) => void; workspaceName: string; privacyUrl: string | null; error: string | null; recorded: boolean } | null;
 }) {
   const here = seats.filter((s) => s.here);
   const soon = startsIn != null && startsIn > 0;
@@ -411,7 +412,13 @@ function StatusCard({
               className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-secondary"
             />
             <span className="text-[13px] text-fg leading-relaxed">
-              I agree that {consent.workspaceName} can keep the code, notes and chat from this interview and use them to review my application.
+              {consent.recorded ? (
+                <>
+                  I agree that {consent.workspaceName} can record the video call and keep the recording, code, notes and chat from this interview to review my application. The recording is deleted after 7 days.
+                </>
+              ) : (
+                <>I agree that {consent.workspaceName} can keep the code, notes and chat from this interview and use them to review my application.</>
+              )}
               {consent.privacyUrl && (
                 <>
                   {" "}
@@ -532,7 +539,7 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
         </div>
       )}
 
-      <CallEditor id={data.interview.id} initial={data.interview.meetingUrl} video={data.video} />
+      <CallEditor id={data.interview.id} initial={data.interview.meetingUrl} video={data.video} canChangeRecording={data.interview.status === "scheduled"} />
 
       <div className="mt-5">
         <p className="text-[13px] text-subtle">Candidate link</p>
@@ -551,7 +558,7 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
 }
 
 /** How people talk: built-in video or a meeting link (with the add-on), else the link box and a one-line offer. */
-function CallEditor({ id, initial, video }: { id: string; initial: string | null; video: RoomVideo }) {
+function CallEditor({ id, initial, video, canChangeRecording }: { id: string; initial: string | null; video: RoomVideo; canChangeRecording: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -616,11 +623,61 @@ function CallEditor({ id, initial, video }: { id: string; initial: string | null
         </p>
       )}
       {video.builtinVideo ? (
-        <p className="mt-1.5 text-[12.5px] text-muted">
-          {video.configured ? "You and the candidate talk inside the room, next to the code. No link needed." : "Video is not set up yet on this server. Use a meeting link for now."}
-        </p>
+        <>
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            {video.configured ? "You and the candidate talk inside the room, next to the code. No link needed." : "Video is not set up yet on this server. Use a meeting link for now."}
+          </p>
+          <RecordEditor id={id} video={video} canChange={canChangeRecording} />
+        </>
       ) : (
         <MeetingEditor id={id} initial={initial} nested />
+      )}
+    </div>
+  );
+}
+
+/** Hosts switch recording of the built-in call on or off before the interview starts. */
+function RecordEditor({ id, video, canChange }: { id: string; video: RoomVideo; canChange: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const toggle = async (on: boolean) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await saveRecordVideo(id, on);
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not change recording.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const note = !canChange
+    ? video.recordVideo
+      ? "You can start and stop recording from the room."
+      : "Recording can only be switched on before the interview starts."
+    : !video.recordingReady
+      ? "Recording is not set up yet on this server."
+      : "Recordings are deleted after 7 days. Each recorded hour uses 1 AI credit. The candidate is asked to agree first.";
+  return (
+    <div className="mt-3">
+      <label className={`flex items-start gap-2.5 ${canChange && !busy ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}>
+        <input
+          type="checkbox"
+          checked={video.recordVideo}
+          disabled={!canChange || busy}
+          onChange={(e) => void toggle(e.target.checked)}
+          className="mt-0.5 w-4 h-4 shrink-0 accent-secondary"
+        />
+        <span className="text-[13px] font-medium text-fg">Record the call</span>
+      </label>
+      {err ? (
+        <p role="alert" className="mt-1 ml-[26px] text-[12.5px] text-danger">
+          {err}
+        </p>
+      ) : (
+        <p className="mt-1 ml-[26px] text-[12.5px] text-muted">{note}</p>
       )}
     </div>
   );

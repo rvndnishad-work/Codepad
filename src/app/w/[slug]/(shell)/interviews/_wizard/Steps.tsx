@@ -624,6 +624,23 @@ function CallField({ state, patch, video }: { state: WizardState; patch: Patch; 
         })}
       </div>
       {choice === "link" && <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />}
+      {choice === "builtin" && (
+        <div>
+          <label className={`flex items-start gap-2.5 ${video.recordingReady ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}>
+            <input
+              type="checkbox"
+              checked={!!state.recordVideo && !!video.recordingReady}
+              disabled={!video.recordingReady}
+              onChange={(e) => patch({ recordVideo: e.target.checked })}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-secondary"
+            />
+            <span className="text-[14px] font-medium text-fg">Record the call</span>
+          </label>
+          <p className="mt-1 ml-[26px] text-[13px] text-muted">
+            {video.recordingReady ? "Recordings are deleted after 7 days. Each recorded hour uses 1 AI credit." : "Recording is not set up yet on this server."}
+          </p>
+        </div>
+      )}
     </fieldset>
   );
 }

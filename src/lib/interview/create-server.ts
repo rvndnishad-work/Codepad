@@ -32,6 +32,8 @@ export type CreateInterviewInput = {
   meetingUrl?: string | null;
   /** Workspace rooms: built-in video (the column default) or the meeting link. */
   builtinVideo?: boolean;
+  /** Record the built-in call. Only with built-in video. */
+  recordVideo?: boolean;
   totalSec: number;
   stackJson?: string | null;
   scheduledAt?: Date | null;
@@ -229,6 +231,7 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
       scenario: input.scenario ?? null,
       meetingUrl: input.meetingUrl ?? null,
       ...(input.builtinVideo !== undefined ? { builtinVideo: input.builtinVideo } : {}),
+      ...(input.recordVideo ? { recordVideo: true } : {}),
       totalSec: input.totalSec,
       shareToken: nanoid(24),
       shortCode: await uniqueShortCode(),
@@ -270,7 +273,7 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
   // invites in one batch (sendInvite: false).
   if (workspaceId && input.type === "live" && inviteEmail && input.sendInvite !== false) {
     const origin = await appOrigin();
-    const invite = { workspaceId, session: created, email: inviteEmail, candidateName, title: input.title, scheduledAt: input.scheduledAt ?? null, totalSec: input.totalSec, actorId: input.actor.id, origin };
+    const invite = { workspaceId, session: created, email: inviteEmail, candidateName, title: input.title, scheduledAt: input.scheduledAt ?? null, totalSec: input.totalSec, actorId: input.actor.id, origin, recorded: !!input.recordVideo };
     after(() => sendInvite(invite));
   }
 
@@ -287,6 +290,7 @@ async function sendInvite(a: {
   totalSec: number;
   actorId: string;
   origin: string;
+  recorded?: boolean;
 }) {
   try {
     const ws = await prisma.workspace.findUnique({ where: { id: a.workspaceId }, select: { name: true, slug: true } });
@@ -306,6 +310,7 @@ async function sendInvite(a: {
         shortCode: roomUrl ? null : a.session.shortCode,
         scheduledAt: a.scheduledAt ? a.scheduledAt.toISOString() : null,
         durationMin: Math.round(a.totalSec / 60),
+        recorded: a.recorded ?? false,
       },
       workspaceId: a.workspaceId,
       sessionId: a.session.id,
@@ -338,6 +343,8 @@ export async function sendCandidateInvites(a: {
   actorId: string;
   origin: string;
   meetingUrl?: string | null;
+  /** The built-in call will be recorded; the invite says so. */
+  recorded?: boolean;
   rooms: { session: { id: string; shareToken: string; shortCode: string | null }; email: string; candidateName: string | null; scheduledAt: Date | null }[];
 }): Promise<DeliveryStatus[]> {
   if (!a.rooms.length) return [];
@@ -362,6 +369,7 @@ export async function sendCandidateInvites(a: {
           scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
           durationMin: Math.round(a.totalSec / 60),
           meetingUrl: a.meetingUrl ?? null,
+          recorded: a.recorded ?? false,
         },
         workspaceId: a.workspaceId,
         sessionId: r.session.id,

@@ -30,6 +30,7 @@ import { VideoCall } from "./video/VideoCall";
 import { CallDock } from "./video/CallDock";
 import { CallWaiting } from "./video/CallWaiting";
 import { CallChip } from "./video/CallParts";
+import { RecordingControl } from "./video/Recording";
 import { NoCallCard, NoCallNote, VideoNotSetUpChip, VideoOfferChip } from "./video/NoCall";
 
 const spring = { type: "spring" as const, stiffness: 520, damping: 38, mass: 0.7 };
@@ -361,6 +362,9 @@ function TopBar({
       </ul>
       {!ended && video.mode === "link" && iv.meetingUrl && <MeetingButton url={iv.meetingUrl} size="sm" />}
       {!ended && video.mode === "link" && <VideoOfferChip video={video} meetingUrl={iv.meetingUrl} />}
+      {!ended && video.mode === "builtin" && (
+        <RecordingControl sessionId={iv.id} active={status === "scheduled" || live} interviewer={data.viewer.role === "interviewer"} recordVideo={video.recordVideo} />
+      )}
       {!ended && video.mode === "builtin" && <CallChip />}
       {!ended && !video.configured && <VideoNotSetUpChip />}
       <ConnectionPill snap={snap} compact />

@@ -138,6 +138,10 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   INTERVIEW_INVITE_RESENT: "INTERVIEW_INVITE_RESENT",
   // meta { candidateName?, reason? } upcoming interview cancelled (for example, on member removal).
   INTERVIEW_CANCELLED: "INTERVIEW_CANCELLED",
+  // meta { candidateName, recordingId } host started recording the built-in call.
+  RECORDING_STARTED: "RECORDING_STARTED",
+  // meta { candidateName, reason? } recording stopped by the host, or when the interview ended.
+  RECORDING_STOPPED: "RECORDING_STOPPED",
   // meta { key, label, reset?: boolean } candidate email wording saved or reset.
   EMAIL_TEMPLATE_CHANGED: "EMAIL_TEMPLATE_CHANGED",
   // meta { email } confirmation link sent / address confirmed.

@@ -16,6 +16,7 @@ import { canMember } from "@/lib/permissions";
 import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
 import { liveKitConfig } from "@/lib/video/livekit-server";
 import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
+import { recordingConfigured } from "@/lib/recording/live-server";
 
 export function baseUrl(): string {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -69,6 +70,8 @@ export type RoomData = {
   interview: {
     /** The candidate must tick the consent box before entering the room. Always false for interviewers. */
     consentNeeded: boolean;
+    /** The built-in call may be recorded, so the consent box says so and is always asked. */
+    recorded: boolean;
     id: string;
     title: string;
     status: string;
@@ -157,6 +160,7 @@ export async function loadRoom(
       roomRound: true,
       meetingUrl: true,
       builtinVideo: true,
+      recordVideo: true,
       verdict: true,
       notes: true,
       scenario: true,
@@ -342,8 +346,13 @@ export async function loadRoom(
     ...offer,
     addonOn: interviewer ? addonOn : false,
     builtinVideo: s.builtinVideo,
+    recordVideo: s.recordVideo && s.builtinVideo,
+    recordingReady: interviewer ? recordingConfigured() : false,
     billingHref: `/w/${slug}/billing`,
   };
+  // A recorded call always needs the candidate's agreement first, even when
+  // the workspace does not ask for consent otherwise.
+  const recorded = video.recordVideo && mode === "builtin";
 
   return {
     ok: true,
@@ -352,7 +361,11 @@ export async function loadRoom(
       video,
       workspace: { name: s.workspace.name, slug: s.workspace.slug, brand: page.brand },
       interview: {
-        consentNeeded: !interviewer && !["completed", "abandoned", "cancelled"].includes(s.status) && consentOutstanding(page, s.candidateConsentAt),
+        consentNeeded:
+          !interviewer &&
+          !["completed", "abandoned", "cancelled"].includes(s.status) &&
+          consentOutstanding({ consentRequired: page.consentRequired || recorded }, s.candidateConsentAt),
+        recorded,
         id: s.id,
         title: s.title,
         status: s.status,

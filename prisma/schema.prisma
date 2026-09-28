@@ -676,6 +676,9 @@ model InterviewSession {
   roomRound          String?
   /// Link to the video call (Zoom, Meet, Teams...) for a live interview. https only.
   meetingUrl         String?
+  /// Use the workspace's built-in video call in the lobby and room (when the
+  /// workspace has the video add-on). False: the meeting link, if any, only.
+  builtinVideo       Boolean          @default(true)
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
   /// Take-home only: score (0-100) results need to read as a good match.
@@ -997,6 +1000,15 @@ model Workspace {
   includedCreditsLastGrant Int       @default(0)
   /// When the latest monthly grant ran. Null = never.
   includedCreditsGrantedAt DateTime?
+
+  // ── Built-in video add-on ─────────────────────────────────────────────
+  /// Admins switch built-in video calls (LiveKit) on in Billing. Off by
+  /// default; while on, a paid workspace carries the add-on on its Stripe
+  /// subscription.
+  videoEnabled     Boolean   @default(false)
+  videoEnabledAt   DateTime?
+  /// The add-on's Stripe subscription item, while it is billed.
+  videoAddonItemId String?
 
   // ── Settings > General ────────────────────────────────────────────────
   /// Public URL of the workspace logo. Shown in the app and, via Candidate

@@ -49,7 +49,7 @@ import RoundStage from "./RoundStage";
 import InterviewerPanel from "./InterviewerPanel";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
 import { BTN_DANGER, BTN_SOLID, COMPACT_CALL, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, roleLabel, useMedia, useNow, useRoster, type Person } from "./parts";
-import { VideoCall } from "./video/VideoCall";
+import { VideoCall, useCall } from "./video/VideoCall";
 import { CallDock } from "./video/CallDock";
 import { CallWaiting } from "./video/CallWaiting";
 import { CallChip } from "./video/CallParts";
@@ -263,13 +263,7 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                 </button>
               )
             ) : !ended ? (
-              <button
-                type="button"
-                onClick={() => setLeaving(true)}
-                className={`h-10 md:h-9 px-3 rounded-lg ${BTN_SOLID} text-[13px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0`}
-              >
-                <LogOut className="w-4 h-4" aria-hidden /> Leave
-              </button>
+              <CandidateLeave builtin={builtin && !readOnly} onLeave={() => setLeaving(true)} />
             ) : null
           }
           toggles={
@@ -406,7 +400,7 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                     <Ended data={data} />
                   ) : !live ? (
                     builtin ? (
-                      <VideoWaiting data={data} people={people} others={others} action={isInterviewer ? startButton : null} />
+                      <VideoWaiting data={data} people={people} others={others} action={isInterviewer ? startButton : null} onLeave={hangUp} />
                     ) : (
                       <Waiting data={data} people={people} onStart={isInterviewer ? () => void start() : null} starting={starting} ready={!!snap?.synced} />
                     )
@@ -668,6 +662,25 @@ function MoreMenu({ candidate, children }: { candidate: boolean; children: (clos
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+/**
+ * The candidate's Leave in the top bar. On a connected built-in call the
+ * call's hang up is their only exit, so this shows only without one (a
+ * meeting link, no video) or while the call is connecting or has failed.
+ */
+function CandidateLeave({ builtin, onLeave }: { builtin: boolean; onLeave: () => void }) {
+  const call = useCall();
+  if (builtin && call?.status === "connected") return null;
+  return (
+    <button
+      type="button"
+      onClick={onLeave}
+      className={`h-10 md:h-9 px-3 rounded-lg ${BTN_SOLID} text-[13px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0`}
+    >
+      <LogOut className="w-4 h-4" aria-hidden /> Leave
+    </button>
   );
 }
 
@@ -1160,7 +1173,7 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
 }
 
 /** Before the start, with built-in video: faces first, the room behind. */
-function VideoWaiting({ data, people, others, action }: { data: RoomData; people: Person[]; others: string; action: React.ReactNode }) {
+function VideoWaiting({ data, people, others, action, onLeave }: { data: RoomData; people: Person[]; others: string; action: React.ReactNode; onLeave?: () => void }) {
   const { interview: iv, viewer } = data;
   const isInterviewer = viewer.role === "interviewer";
   const candidate = people.find((p) => p.role === "candidate");
@@ -1177,7 +1190,7 @@ function VideoWaiting({ data, people, others, action }: { data: RoomData; people
   const lead = isInterviewer
     ? "Start the interview when you are ready. The call keeps going."
     : "You are on the call. When the interview starts, the call moves aside and keeps going.";
-  return <CallWaiting myRole={viewer.role} title={title} lead={lead} others={others} action={action} />;
+  return <CallWaiting myRole={viewer.role} title={title} lead={lead} others={others} action={action} onLeave={onLeave} />;
 }
 
 function Ended({ data }: { data: RoomData }) {

@@ -42,13 +42,13 @@ import { TOOLS, TOOL_BY_ID, type ToolId, type ToolsAction } from "@/lib/intervie
 import { clock, parseRound, roundKey } from "@/lib/interview/room";
 import { useRelayProvider, useToolsRoomOn, type ToolsRoom } from "@/app/interview/[id]/tools/useToolsRoom";
 import { TOOL_PLUGINS } from "@/app/interview/[id]/tools/registry";
-import { TOOL_ICON } from "@/app/interview/[id]/tools/icons";
+import { TOOL_ICON, TOOL_TONE } from "@/app/interview/[id]/tools/icons";
 import { TimerPanel, TimerPill } from "@/app/interview/[id]/tools/Timer";
 import type { ToolProps } from "@/app/interview/[id]/tools/types";
 import RoundStage from "./RoundStage";
 import InterviewerPanel from "./InterviewerPanel";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
-import { COMPACT_CALL, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, roleLabel, useMedia, useNow, useRoster, type Person } from "./parts";
+import { BTN_DANGER, BTN_SOLID, COMPACT_CALL, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, roleLabel, useMedia, useNow, useRoster, type Person } from "./parts";
 import { VideoCall } from "./video/VideoCall";
 import { CallDock } from "./video/CallDock";
 import { CallWaiting } from "./video/CallWaiting";
@@ -254,18 +254,21 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                   type="button"
                   onClick={() => setEnding(true)}
                   title="End the interview for everyone"
-                  className="h-10 md:h-9 px-3 rounded-lg border border-danger/40 text-danger text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-danger/10 whitespace-nowrap shrink-0"
+                  className={`h-10 md:h-9 px-3.5 rounded-lg ${BTN_DANGER} text-[13px] font-semibold inline-flex items-center gap-1.5 whitespace-nowrap shrink-0`}
                 >
-                  <CircleStop className="w-3.5 h-3.5" aria-hidden /> End
+                  <CircleStop className="w-4 h-4" aria-hidden />
+                  <span>
+                    End<span className="hidden lg:inline"> interview</span>
+                  </span>
                 </button>
               )
             ) : !ended ? (
               <button
                 type="button"
                 onClick={() => setLeaving(true)}
-                className="h-10 md:h-9 px-3 rounded-lg border border-border text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-panel whitespace-nowrap shrink-0"
+                className={`h-10 md:h-9 px-3 rounded-lg ${BTN_SOLID} text-[13px] font-medium inline-flex items-center gap-1.5 whitespace-nowrap shrink-0`}
               >
-                <LogOut className="w-3.5 h-3.5" aria-hidden /> Leave
+                <LogOut className="w-4 h-4" aria-hidden /> Leave
               </button>
             ) : null
           }
@@ -278,9 +281,9 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                   aria-pressed={panelOpen}
                   aria-label={panelOpen ? "Hide guide, notes and scorecard" : "Show guide, notes and scorecard"}
                   title={panelOpen ? "Hide guide, notes and scorecard" : "Guide, notes and scorecard"}
-                  className="hidden xl:inline-flex w-9 h-9 rounded-lg items-center justify-center text-muted hover:text-fg hover:bg-panel shrink-0"
+                  className={`hidden xl:inline-flex h-9 px-3 rounded-lg items-center gap-1.5 text-[13px] font-medium shrink-0 ${panelOpen ? BTN_SOLID : "text-fg hover:bg-panel"}`}
                 >
-                  {panelOpen ? <PanelRightClose className="w-4 h-4" aria-hidden /> : <PanelRightOpen className="w-4 h-4" aria-hidden />}
+                  {panelOpen ? <PanelRightClose className="w-4 h-4" aria-hidden /> : <PanelRightOpen className="w-4 h-4" aria-hidden />} Notes
                 </button>
                 <button
                   type="button"
@@ -288,7 +291,7 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                   aria-pressed={sheetOpen}
                   aria-label={sheetOpen ? "Hide guide, notes and scorecard" : "Show guide, notes and scorecard"}
                   title="Guide, notes and scorecard"
-                  className={`hidden md:inline-flex xl:hidden h-9 px-2.5 rounded-lg items-center gap-1.5 text-[13px] font-medium shrink-0 ${sheetOpen ? "bg-panel text-fg ring-1 ring-inset ring-border-strong" : "text-muted hover:text-fg hover:bg-panel"}`}
+                  className={`hidden md:inline-flex xl:hidden h-9 px-3 rounded-lg items-center gap-1.5 text-[13px] font-medium shrink-0 ${sheetOpen ? BTN_SOLID : "text-fg hover:bg-panel"}`}
                 >
                   <NotebookPen className="w-4 h-4" aria-hidden /> Notes
                 </button>
@@ -647,7 +650,7 @@ function MoreMenu({ candidate, children }: { candidate: boolean; children: (clos
         aria-haspopup="true"
         aria-label="More"
         title="More"
-        className={`w-10 h-10 md:w-9 md:h-9 rounded-lg inline-flex items-center justify-center ${open ? "bg-panel text-fg" : "text-muted hover:text-fg hover:bg-panel"}`}
+        className={`w-10 h-10 md:w-9 md:h-9 rounded-lg inline-flex items-center justify-center ${open ? BTN_SOLID : "text-fg hover:bg-panel"}`}
       >
         <MoreHorizontal className="w-4 h-4" aria-hidden />
       </button>
@@ -768,7 +771,7 @@ function Rail({
                       className={`relative w-full text-left rounded-xl px-2.5 py-2.5 flex items-start gap-2.5 transition-colors disabled:opacity-60 ${on ? "bg-secondary/10 ring-1 ring-inset ring-secondary/35" : "hover:bg-panel/70"}`}
                     >
                       {on && <motion.span layoutId="rail-on" className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-secondary" transition={spring} />}
-                      <span className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-semibold shrink-0 ${on ? "bg-secondary text-bg" : "bg-panel text-muted"}`}>
+                      <span className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center text-[12px] font-semibold shrink-0 ${on ? "bg-secondary text-bg" : "bg-secondary/15 text-secondary"}`}>
                         {r.kind === "prompt" ? <FileText className="w-3.5 h-3.5" aria-hidden /> : r.kind === "playground" ? <Code2 className="w-3.5 h-3.5" aria-hidden /> : i + 1}
                       </span>
                       <span className="min-w-0 flex-1">
@@ -810,6 +813,7 @@ function Rail({
           <ul className="mt-2 grid grid-cols-1 gap-1 min-w-0">
             {stageTools.map((t) => {
               const Icon = TOOL_ICON[t.id];
+              const tone = TOOL_TONE[t.id];
               const on = presented === t.id;
               return (
                 <li key={t.id}>
@@ -818,10 +822,10 @@ function Rail({
                     disabled={props.readOnly}
                     onClick={() => onTool(on ? null : t.id)}
                     title={on ? "Take it off the stage" : `${t.blurb} Shows to the candidate.`}
-                    className={`w-full text-left rounded-xl px-2.5 h-10 flex items-center gap-2.5 text-[13px] transition-colors ${on ? "bg-secondary/10 ring-1 ring-inset ring-secondary/35 text-fg" : "text-muted hover:text-fg hover:bg-panel/70"}`}
+                    className={`w-full text-left rounded-xl px-2 h-11 flex items-center gap-2.5 text-[13.5px] transition-colors ${on ? `${tone.row} ring-1 ring-inset text-fg font-semibold` : "text-fg hover:bg-panel/70"}`}
                   >
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${on ? "bg-secondary text-bg" : "bg-panel"}`}>
-                      <Icon className="w-3.5 h-3.5" aria-hidden />
+                    <span className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center shrink-0 ${on ? tone.solid : tone.tile}`}>
+                      <Icon className="w-4 h-4 [stroke-width:2.4]" aria-hidden />
                     </span>
                     <span className="flex-1 truncate">{t.label}</span>
                     {on && (
@@ -899,7 +903,7 @@ function NarrowRail({
             aria-pressed={on}
             aria-label={`${r.title}${on ? ", on the stage" : ""}`}
             title={live ? (on ? `${r.title}: take it off the stage` : `${r.title}: show to the candidate`) : "Start the interview first"}
-            className={item(on)}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[13px] font-semibold transition disabled:opacity-50 ${on ? "bg-secondary text-bg" : "bg-secondary/15 text-secondary hover:brightness-125"}`}
           >
             {r.kind === "prompt" ? <FileText className="w-4 h-4" aria-hidden /> : r.kind === "playground" ? <Code2 className="w-4 h-4" aria-hidden /> : i + 1}
           </button>
@@ -908,6 +912,7 @@ function NarrowRail({
       <span className="w-7 h-px bg-border my-1 shrink-0" aria-hidden />
       {stageTools.map((t) => {
         const Icon = TOOL_ICON[t.id];
+        const tone = TOOL_TONE[t.id];
         const on = presented === t.id;
         return (
           <button
@@ -918,7 +923,7 @@ function NarrowRail({
             aria-pressed={on}
             aria-label={`${t.label}${on ? ", on the stage" : ""}`}
             title={on ? `${t.label}: take it off the stage` : `${t.label}: show to the candidate`}
-            className={item(on)}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition disabled:opacity-50 ${on ? tone.solid : `${tone.tile} hover:brightness-125`}`}
           >
             <Icon className="w-4 h-4" aria-hidden />
           </button>
@@ -947,7 +952,9 @@ function ToolStage({ tool, props }: { tool: ToolId; props: ToolProps }) {
   return (
     <section aria-label={TOOL_BY_ID[tool].label} className="h-full flex flex-col">
       <header className="h-11 shrink-0 flex items-center gap-2.5 px-3 sm:px-4 border-b border-border">
-        <Icon className="w-4 h-4 text-secondary-soft shrink-0" aria-hidden />
+        <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${TOOL_TONE[tool].tile}`}>
+          <Icon className="w-4 h-4" aria-hidden />
+        </span>
         <h2 className="text-[14px] font-semibold truncate">{TOOL_BY_ID[tool].label}</h2>
         <span className="hidden sm:inline text-[12px] text-muted truncate">{caption}</span>
         <div className="ml-auto">{Actions && <Actions {...props} />}</div>
@@ -1025,8 +1032,8 @@ function Home({ data, isInterviewer, onRound, onTool }: { data: RoomData; isInte
                       onClick={() => onTool(t.id)}
                       className="w-full h-full text-left rounded-2xl border border-border bg-surface p-4 transition hover:border-secondary/50 hover:bg-secondary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60"
                     >
-                      <span className="w-9 h-9 rounded-xl bg-panel text-muted flex items-center justify-center">
-                        <Icon className="w-4 h-4" aria-hidden />
+                      <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${TOOL_TONE[t.id].tile}`}>
+                        <Icon className="w-4 h-4 [stroke-width:2.4]" aria-hidden />
                       </span>
                       <span className="mt-3 block text-[14px] font-medium">{t.label}</span>
                       <span className="mt-0.5 block text-[12.5px] text-muted leading-snug line-clamp-2">{t.blurb}</span>

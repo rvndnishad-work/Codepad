@@ -114,6 +114,7 @@
     --danger: #be123c;
     --danger-rgb: 190, 18, 60;
     --c-danger: 190 18 60;
+    --c-danger-solid: 190 18 60; /* solid fill under white text, 6.3:1 */
 
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
@@ -205,6 +206,7 @@
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
@@ -1972,6 +1974,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   /* THE INVERTED BAND.
@@ -2018,6 +2021,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   .dark .ip-invert {
@@ -2056,6 +2060,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #be123c;
     --danger-rgb: 190, 18, 60;
     --c-danger: 190 18 60;
+    --c-danger-solid: 190 18 60; /* solid fill under white text, 6.3:1 */
   }
 
   /* ── MICRO-INTERACTION ─────────────────────────────────────────────────

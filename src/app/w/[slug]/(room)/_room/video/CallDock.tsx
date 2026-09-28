@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { useIsSpeaking, useIsMuted } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
 import { ChevronDown, ChevronUp, Maximize2, Minus, MoveDiagonal } from "lucide-react";
-import { COMPACT_CALL, RoleAvatar, useMedia } from "../parts";
+import { BTN_SOLID, COMPACT_CALL, RoleAvatar, useMedia } from "../parts";
 import { useCall } from "./VideoCall";
 import { CallControls, CallState, MediaNote, Tile, nameOf, roleOf, useCallPeople } from "./CallParts";
 
@@ -139,7 +139,7 @@ export function CallDock({
             onClick={() => update({ small: false })}
             aria-label="Show the call"
             title="Show the call"
-            className="w-9 h-9 rounded-full bg-elevated text-fg hover:bg-border-strong/60 inline-flex items-center justify-center"
+            className={`w-9 h-9 rounded-full ${BTN_SOLID} inline-flex items-center justify-center`}
           >
             <Maximize2 className="w-4 h-4" aria-hidden />
           </button>

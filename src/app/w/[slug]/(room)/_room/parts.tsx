@@ -275,3 +275,14 @@ export function MeetingButton({ url, size = "lg" }: { url: string; size?: "lg" |
     </a>
   );
 }
+
+/**
+ * Room buttons. Solid, with a thin top highlight and a short drop shadow so
+ * they read as pressable on the dark stage. Only the destructive one is red.
+ */
+export const BTN_SOLID =
+  "bg-elevated text-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.07),0_1px_2px_rgb(0_0_0/0.35)] hover:bg-border-strong/70 transition-colors";
+export const BTN_DANGER =
+  "bg-danger-solid text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_1px_2px_rgb(0_0_0/0.35)] hover:brightness-110 transition";
+/** A control that is switched off (muted mic, camera off): flips to the text colour so it stands out. */
+export const BTN_OFF = "bg-fg text-bg shadow-[0_2px_6px_rgb(0_0_0/0.35)] hover:bg-fg/90 transition-colors";

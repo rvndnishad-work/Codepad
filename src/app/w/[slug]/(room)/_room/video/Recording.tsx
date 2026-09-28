@@ -17,6 +17,7 @@
  * seeing it.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Circle, Loader2, Square, X } from "lucide-react";
 import { RoomEvent } from "livekit-client";
@@ -26,9 +27,9 @@ import { useCall } from "./VideoCall";
 /** Interviewers, normally. */
 const POLL_MS = 15_000;
 /** Interviewers waiting on the candidate's answer. */
-const POLL_WAITING_MS = 4_000;
+const POLL_WAITING_MS = 3_000;
 /** Candidates, so a request to record reaches them within seconds. */
-const POLL_CANDIDATE_MS = 6_000;
+const POLL_CANDIDATE_MS = 3_000;
 const spring = { type: "spring" as const, stiffness: 520, damping: 38, mass: 0.7 };
 
 const base = (sessionId: string) => `/api/interview/${encodeURIComponent(sessionId)}/recording`;
@@ -332,7 +333,9 @@ function ConsentPrompt({ by, busy, error, onAnswer }: { by: string | null; busy:
     setAnswered(allow);
     if (!(await onAnswer(allow))) setAnswered(null);
   };
-  return (
+  // Portalled: the top bar can contain fixed children (backdrop blur), which
+  // would pin this to the bar instead of the screen.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/50 p-4">
       <motion.div
         role="dialog"
@@ -368,6 +371,7 @@ function ConsentPrompt({ by, busy, error, onAnswer }: { by: string | null; busy:
           </p>
         )}
       </motion.div>
-    </div>
+    </div>,
+    document.body,
   );
 }

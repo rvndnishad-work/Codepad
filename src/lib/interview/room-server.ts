@@ -16,7 +16,7 @@ import { canMember } from "@/lib/permissions";
 import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
 import { liveKitConfig } from "@/lib/video/livekit-server";
 import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
-import { recordingConfigured } from "@/lib/recording/live-server";
+import { pendingRoomAsk, recordingConfigured } from "@/lib/recording/live-server";
 
 export function baseUrl(): string {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -353,6 +353,9 @@ export async function loadRoom(
   // A recorded call always needs the candidate's agreement first, even when
   // the workspace does not ask for consent otherwise.
   const recorded = video.recordVideo && mode === "builtin";
+  // Asked in the room and not answered yet: the room asks in place (where
+  // the candidate can also say no), so the lobby does not ask again.
+  const roomAsk = !interviewer && recorded ? await pendingRoomAsk(s) : null;
 
   return {
     ok: true,
@@ -364,8 +367,8 @@ export async function loadRoom(
         consentNeeded:
           !interviewer &&
           !["completed", "abandoned", "cancelled"].includes(s.status) &&
-          consentOutstanding({ consentRequired: page.consentRequired || recorded }, s.candidateConsentAt),
-        recorded,
+          consentOutstanding({ consentRequired: page.consentRequired || (recorded && !roomAsk) }, s.candidateConsentAt ?? roomAsk?.prevConsentAt),
+        recorded: recorded && !roomAsk,
         id: s.id,
         title: s.title,
         status: s.status,

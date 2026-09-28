@@ -16,6 +16,8 @@ function useCodeLang(room: ToolsRoom): [CodeLang, (l: CodeLang) => void] {
   const [lang, setLang] = useState<CodeLang>(read);
   useEffect(() => {
     const on = () => setLang(read());
+    // Catch a change that landed between the first render and this effect.
+    on();
     meta.observe(on);
     return () => meta.unobserve(on);
     // eslint-disable-next-line react-hooks/exhaustive-deps

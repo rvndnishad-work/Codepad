@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
 import { growthToolsEnabled, trialActive } from "@/lib/billing/trial";
 import { videoAddonAvailable } from "@/lib/video/addon";
+import { subscriptionInterval } from "@/lib/video/addon-server";
 import { planSummary } from "@/lib/billing/summary";
 import { PLAN_COMPARISON, PLAN_ORDER, WORKSPACE_PLANS, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
@@ -58,7 +59,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews, videoCalls] = await Promise.all([
+  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews, videoCalls, interval] = await Promise.all([
     canMember(me, "billing:manage"),
     prisma.workspaceInvite.count({ where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: now } } }),
     getWorkspaceCredits(workspace.id),
@@ -76,6 +77,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
         startedAt: { gte: monthStart },
       },
     }),
+    subscriptionInterval(workspace.stripeSubscriptionId),
   ]);
 
   const summary = planSummary(workspace, now);
@@ -146,6 +148,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
         onSince: workspace.videoEnabledAt ? workspace.videoEnabledAt.toISOString() : null,
         billed: Boolean(workspace.videoAddonItemId),
         callsThisMonth: videoCalls,
+        interval,
       }}
       stripeConfigured={Boolean(process.env.STRIPE_SECRET_KEY)}
       compare={{

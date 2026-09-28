@@ -56,6 +56,20 @@ function intervalOf(item: Item | undefined): "month" | "year" {
   return item?.price?.recurring?.interval === "year" ? "year" : "month";
 }
 
+/**
+ * How the workspace subscription bills, for the add-on price label. Falls back
+ * to monthly when there is no subscription, no Stripe key, or Stripe fails.
+ */
+export async function subscriptionInterval(subscriptionId: string | null): Promise<"month" | "year"> {
+  if (!subscriptionId || !process.env.STRIPE_SECRET_KEY) return "month";
+  try {
+    const sub = await getStripe().subscriptions.retrieve(subscriptionId);
+    return intervalOf(seatItem(sub.items.data));
+  } catch {
+    return "month";
+  }
+}
+
 export async function setVideoAddon({
   workspaceId,
   on,

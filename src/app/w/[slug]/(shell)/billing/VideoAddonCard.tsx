@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Video } from "lucide-react";
 import { useState, useTransition } from "react";
 import { setVideoAddonAction } from "./actions";
+import { videoAddonCents } from "@/lib/video/addon";
 
 export type VideoAddonData = {
   /** Growth, Enterprise or an active trial. */
@@ -19,9 +20,10 @@ export type VideoAddonData = {
   /** A Stripe subscription item carries the charge. */
   billed: boolean;
   callsThisMonth: number;
+  /** How the subscription bills: annual plans pay $180 a year. */
+  interval: "month" | "year";
 };
 
-const PRICE_LINE = "$15 a month for the workspace";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function VideoAddonCard({
@@ -92,7 +94,10 @@ export default function VideoAddonCard({
     footer = "Added to your next invoice, charged for the days it is on. Switch it off any time.";
   }
 
-  const nextCharge = data.onTrial ? "Free during your trial" : "$15";
+  const yearly = data.interval === "year";
+  const amount = `$${videoAddonCents(data.interval) / 100}`;
+  const per = yearly ? "a year" : "a month";
+  const nextCharge = data.onTrial ? "Free during your trial" : amount;
 
   return (
     <section
@@ -113,7 +118,7 @@ export default function VideoAddonCard({
             Built-in video
           </h3>
           <p className={`text-[13px] ${on ? "text-success" : "text-muted"}`}>
-            {on ? (since ? `On since ${since} · $15 a month` : "On · $15 a month") : PRICE_LINE}
+            {on ? (since ? `On since ${since} · ${amount} ${per}` : `On · ${amount} ${per}`) : `${amount} ${per} for the workspace`}
           </p>
         </div>
         <label className="inline-flex items-center gap-2 text-[13px] text-muted">

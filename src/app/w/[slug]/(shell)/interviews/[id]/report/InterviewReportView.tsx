@@ -26,12 +26,15 @@ import {
   ScanEye,
   ShieldCheck,
   Star,
+  Download,
   Trash2,
+  Video,
   X,
 } from "lucide-react";
 import type { InterviewReport, ReportRound, ReportTone } from "@/lib/interview/report-server";
 import type { ReportScorecards } from "@/lib/interview/scorecard-server";
 import { bandLabel, fmtScore, SCORE_MAX } from "@/lib/interview/scorecard";
+import type { ReportRecording, ReportRecordings } from "@/lib/recording/live";
 import PanelScorecards from "./PanelScorecards";
 import { Avatar, Btn } from "../../../candidates/_components/ui";
 import { deleteInterviewAction } from "../../actions";
@@ -107,6 +110,7 @@ export default function InterviewReportView({
   scorecardHref = null,
   canEditPassMark = false,
   canNudge = false,
+  recordings = null,
 }: {
   report: InterviewReport;
   slug: string | null;
@@ -118,6 +122,8 @@ export default function InterviewReportView({
   scorecardHref?: string | null;
   canEditPassMark?: boolean;
   canNudge?: boolean;
+  /** The call recording, for members; null when the call was not set up to be recorded. */
+  recordings?: ReportRecordings | null;
 }) {
   const [deleting, setDeleting] = useState(false);
   const status = statusOf(r);
@@ -216,6 +222,7 @@ export default function InterviewReportView({
             <PanelScorecards data={scorecards} slug={standalone ? null : slug} sessionId={r.id} scorecardHref={scorecardHref} canEditPassMark={canEditPassMark} canNudge={canNudge} />
           )}
           {(!scorecards || legacyRated) && <Scorecard r={r} title={scorecards ? "Room ratings" : "Scorecard"} />}
+          {recordings && <Recordings data={recordings} />}
           <Rounds rounds={r.rounds} />
           {r.guide.items.length > 0 && <Guide r={r} />}
         </div>
@@ -276,6 +283,82 @@ export default function InterviewReportView({
       </p>
 
       {deleting && slug && <DeleteDialog r={r} slug={slug} onClose={() => setDeleting(false)} />}
+    </div>
+  );
+}
+
+function Recordings({ data }: { data: ReportRecordings }) {
+  const items = data.items;
+  return (
+    <Card title="Recording" icon={Video} aside={items.length > 1 && <span className="text-[13px] text-muted">{items.length} parts</span>} className="print:hidden">
+      {items.length === 0 ? (
+        <p className="text-[13px] text-muted">
+          {data.configured
+            ? "The call was set up to be recorded, but nobody pressed Record."
+            : "Recording is not set up on this server, so the call was not recorded."}
+        </p>
+      ) : (
+        <ul className="grid gap-5">
+          {items.map((item, i) => (
+            <li key={item.id} className={i > 0 ? "pt-5 border-t border-border" : undefined}>
+              <RecordingItem item={item} part={items.length > 1 ? items.length - i : null} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-4 text-xs text-subtle">Recordings are deleted after 7 days. Only workspace members can watch them.</p>
+    </Card>
+  );
+}
+
+function RecordingItem({ item, part }: { item: ReportRecording; part: number | null }) {
+  const started = new Date(item.startedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const meta = [part ? `Part ${part}` : null, `Started ${started}`, item.duration].filter(Boolean).join(", ");
+  if (item.state === "ready" && item.playUrl) {
+    return (
+      <div className="flex flex-col gap-3">
+        <video controls preload="metadata" src={item.playUrl} className="w-full rounded-xl bg-bg ring-1 ring-inset ring-border aspect-video">
+          Your browser cannot play this video. Use Download instead.
+        </video>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="text-[13px] text-muted">{meta}</p>
+          {item.expiry && <Chip tone="neutral">{item.expiry}</Chip>}
+          {item.downloadUrl && (
+            <a
+              href={item.downloadUrl}
+              className="ml-auto h-8 px-3 rounded-lg border border-border text-[13px] font-medium inline-flex items-center gap-1.5 text-fg hover:bg-panel"
+            >
+              <Download className="w-3.5 h-3.5" aria-hidden /> Download
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  }
+  const text =
+    item.state === "recording"
+      ? "Recording now."
+      : item.state === "processing"
+        ? "Processing, usually a few minutes after the call."
+        : item.state === "deleted"
+          ? "Deleted after 7 days."
+          : item.state === "not_set_up" || item.state === "ready"
+            ? "Recording is not set up on this server, so it cannot be played here."
+            : `The recording did not finish.${item.error ? ` ${item.error}` : ""}`;
+  const tone: ReportTone = item.state === "failed" ? "danger" : item.state === "recording" || item.state === "processing" ? "warning" : "neutral";
+  return (
+    <div className="rounded-xl bg-bg/40 ring-1 ring-inset ring-border px-4 py-3.5 flex items-start gap-3">
+      {item.state === "processing" || item.state === "recording" ? (
+        <Loader2 className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-warning motion-reduce:animate-none" aria-hidden />
+      ) : item.state === "failed" ? (
+        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-danger" aria-hidden />
+      ) : (
+        <Video className="w-4 h-4 mt-0.5 shrink-0 text-subtle" aria-hidden />
+      )}
+      <div className="min-w-0">
+        <p className={`text-[13.5px] ${TONE_TEXT[tone] === "text-muted" ? "text-fg" : TONE_TEXT[tone]}`}>{text}</p>
+        <p className="mt-0.5 text-xs text-subtle">{meta}</p>
+      </div>
     </div>
   );
 }

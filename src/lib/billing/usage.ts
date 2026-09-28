@@ -40,7 +40,8 @@ export type LedgerView = LedgerRow & { label: string; detail: string; balanceAft
 export function ledgerDetail(row: LedgerRow): string {
   switch (row.kind) {
     case "CONSUMPTION":
-      return row.candidateName ? `AI screening with ${row.candidateName}` : "AI screening";
+      // Screenings name the candidate; other uses (interview recordings) carry their own note.
+      return row.candidateName ? `AI screening with ${row.candidateName}` : cleanNote(row.note) ?? "AI screening";
     case "REFUND":
       return row.candidateName ? `Screening with ${row.candidateName} refunded` : cleanNote(row.note) ?? "Screening refunded";
     case "PURCHASE": {

@@ -36,7 +36,7 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
   {
     id: "screenings",
     exact: ["BULK_TAKE_HOME_DISPATCHED"],
-    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "QUESTION_VARIANT_", "TAKE_HOME_", "INTERVIEW"],
+    prefixes: ["AI_SCREENING_", "AI_QUESTION_", "AI_REPORT_", "QUESTION_VARIANT_", "TAKE_HOME_", "INTERVIEW", "RECORDING_"],
   },
   { id: "people", exact: ["MEMBERS_BULK_INVITED"], prefixes: ["MEMBER_", "ROLE_"] },
   {
@@ -315,6 +315,8 @@ const LABELS: Record<string, string> = {
   TRIAL_ENDED: "The free trial ended",
   INTERVIEW_INVITE_RESENT: "Resent the interview invite to",
   INTERVIEW_CANCELLED: "Cancelled the interview with",
+  RECORDING_STARTED: "Started recording the interview with",
+  RECORDING_STOPPED: "Stopped recording the interview with",
   EMAIL_TEMPLATE_CHANGED: "Changed candidate email wording",
   REPLY_TO_CONFIRMATION_SENT: "Sent a reply-to confirmation to",
   REPLY_TO_CONFIRMED: "Confirmed the reply-to address",
@@ -374,7 +376,7 @@ function targetPath(row: AuditRowInput): { path: string | null; label: string | 
       return { path: `ai-interviews/screenings/${row.targetId}`, label: "Open screening" };
     case "interviewSession":
       if (row.action.startsWith("TAKE_HOME_")) return { path: `take-homes/${row.targetId}`, label: "Open take-home" };
-      if (row.action.startsWith("INTERVIEW_SCORECARD") || row.action === "INTERVIEW_PASS_MARK_CHANGED") {
+      if (row.action.startsWith("INTERVIEW_SCORECARD") || row.action === "INTERVIEW_PASS_MARK_CHANGED" || row.action.startsWith("RECORDING_")) {
         return { path: `interviews/${row.targetId}/report`, label: "Open report" };
       }
       return { path: null, label: null };
@@ -417,7 +419,7 @@ function stageSentence(meta: Record<string, unknown>): Pick<AuditSentence, "titl
 
 /** Finish a sentence whose meta carries no name: "Added" -> "Added a candidate". */
 function withoutSubject(action: string, label: string): string {
-  if (/\s(to|for|of|on)$/.test(label)) {
+  if (/\s(to|for|of|on|with)$/.test(label)) {
     const who = action.startsWith("MEMBER_") ? "a member" : "a candidate";
     return `${label} ${who}`;
   }

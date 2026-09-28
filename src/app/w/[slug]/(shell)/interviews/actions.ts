@@ -21,6 +21,7 @@ import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 import { cancelInterviewEvent, syncInterviewEvent } from "@/lib/calendar/server";
 import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
+import { recordingConfigured } from "@/lib/recording/live-server";
 import {
   formatOf,
   isEmail,
@@ -116,6 +117,8 @@ const scheduleSchema = z.object({
   meetingUrl: z.string().trim().max(MAX_MEETING_URL).optional(),
   /** Talk with built-in video (workspaces with the add-on) instead of the link. */
   builtinVideo: z.boolean().optional(),
+  /** Record the built-in call (the candidate agrees in the lobby first). */
+  recordVideo: z.boolean().optional(),
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
@@ -204,6 +207,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     const videoOn = !!ws && videoCallsOn(ws);
     const builtinVideo = videoOn ? d.builtinVideo !== false : !meeting.url;
     const meetingUrl = videoOn && builtinVideo ? null : meeting.url;
+    const recordVideo = videoOn && builtinVideo && d.recordVideo === true && recordingConfigured();
     const setupGroupId = people.length > 1 ? randomUUID() : null;
     // New interviews keep the workspace's scorecard defaults (Settings > Screening defaults).
     const start = screeningStartValues((await loadWorkspaceSettings(a.workspace.id)) ?? normalizeWorkspaceSettings({})).interview;
@@ -223,6 +227,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         scenario: d.candidateBrief || null,
         meetingUrl,
         builtinVideo,
+        recordVideo,
         totalSec: d.minutes * 60,
         scheduledAt: p.time ? new Date(p.time) : null,
         workspaceId: a.workspace.id,
@@ -269,7 +274,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     }
 
     const origin = await appOrigin();
-    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, meetingUrl, rooms: toInvite });
+    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, meetingUrl, recorded: recordVideo, rooms: toInvite });
     for (const [i, r] of toInvite.entries()) {
       const c = created.find((x) => x.id === r.session.id);
       if (c) c.invite = invites[i];

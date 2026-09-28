@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
 import { loadInterviewReport } from "@/lib/interview/report-server";
 import { loadReportScorecards } from "@/lib/interview/scorecard-server";
+import { reportRecordings } from "@/lib/recording/live-server";
 import InterviewReportView from "./InterviewReportView";
 
 export const metadata = { title: "Interview report", robots: { index: false, follow: false } };
@@ -32,10 +33,12 @@ export default async function InterviewReportPage({ params }: Props) {
   const report = await loadInterviewReport(s.id);
   if (!report) notFound();
 
-  const [canManage, canConduct, scorecards] = await Promise.all([
+  const [canManage, canConduct, scorecards, recordings] = await Promise.all([
     canMember(member, "interview:manage"),
     canMember(member, "interview:conduct"),
     loadReportScorecards(s.id, { userId: session.user.id }),
+    // Members only: signed links to the call recording, fresh on each load.
+    reportRecordings(s.id),
   ]);
   const isHost = s.userId === session.user.id;
   return (
@@ -47,6 +50,7 @@ export default async function InterviewReportPage({ params }: Props) {
       scorecardHref={scorecards?.viewer.state ? `/w/${slug}/interviews/${s.id}/scorecard` : null}
       canEditPassMark={isHost || canManage}
       canNudge={isHost || s.createdById === session.user.id || canConduct}
+      recordings={recordings}
     />
   );
 }

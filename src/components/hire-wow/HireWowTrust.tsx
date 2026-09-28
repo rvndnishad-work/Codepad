@@ -1,6 +1,5 @@
 import { ShieldCheck, Lock, KeyRound, ScrollText, Network, History } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
-import type { PricingPlanDef } from "@/lib/pricing-plans";
 import PricingTeaser from "@/app/hire/PricingTeaser";
 import { CreditsDemo } from "./HireWowFeatures";
 import RevealLines from "@/components/wow/RevealLines";
@@ -51,7 +50,7 @@ const ITEMS = [
   },
 ];
 
-export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
+export default function HireWowTrust() {
   return (
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
@@ -82,7 +81,7 @@ export default function HireWowTrust({ plans }: { plans: PricingPlanDef[] }) {
         </div>
 
         <div className="mt-24">
-          <PricingTeaser plans={plans} />
+          <PricingTeaser />
         </div>
 
         <div className="mt-10 grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">

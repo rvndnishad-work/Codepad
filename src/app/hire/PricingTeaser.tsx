@@ -2,24 +2,16 @@ import Link from "next/link";
 import { ArrowRight, Tag } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
 
-import type { PricingPlanDef } from "@/lib/pricing-plans";
 import RevealLines from "@/components/wow/RevealLines";
+import { LOWEST_CREDIT_PRICE, PUBLIC_PLANS } from "@/lib/billing/public-pricing";
 
 /**
- * Compact pricing teaser for the recruiter page. Renders the business tiers
- * from the same config /pricing reads (admin-editable `pricing_plans`, else
- * DEFAULT_PRICING), priced on annual billing because that is the cadence
- * /pricing opens on.
+ * Compact pricing teaser for the recruiter page. Reads the same plan data as
+ * /pricing (src/lib/billing/public-pricing.ts), priced on yearly billing
+ * because that is the cadence /pricing opens on.
  */
-function priceOf(plan: PricingPlanDef) {
-  if (plan.monthly === null) return { price: "Custom", per: "/ tailored", note: "Talk to sales" };
-  if (plan.monthly === 0) return { price: "$0", per: "free forever", note: null };
-  const amount = plan.annual ?? plan.monthly;
-  return { price: `$${amount}`, per: plan.seatBased ? "/ seat / mo" : "/ mo", note: "Billed annually" };
-}
-
-export default function PricingTeaser({ plans }: { plans: PricingPlanDef[] }) {
-  if (plans.length === 0) return null;
+export default function PricingTeaser() {
+  const plans = PUBLIC_PLANS;
   return (
     <div>
       <WowReveal>
@@ -29,7 +21,7 @@ export default function PricingTeaser({ plans }: { plans: PricingPlanDef[] }) {
             <RevealLines as="h3" className="wow-font-display mt-3 text-4xl md:text-6xl" lines={[<span key="l0">Per-seat plans.</span>, <span key="l1" className="wow-gradient-boss">Per-screening credits.</span>]} />
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
               Seats cover the workspace and everyone in it. AI screenings are
-              credits on top, charged only when a candidate actually starts.
+              credits on top, from {LOWEST_CREDIT_PRICE} each, charged only when a candidate starts.
             </p>
           </div>
           <Link href="/pricing" className="ip-link text-[13px] text-secondary">
@@ -43,10 +35,12 @@ export default function PricingTeaser({ plans }: { plans: PricingPlanDef[] }) {
           marked by an ink header band — a change of surface, not a badge. */}
       <WowReveal className="ip-frame mt-10 grid grid-cols-1 gap-px bg-border md:grid-cols-3">
         {plans.map((plan) => {
-          const highlight = plan.spotlight === "best";
-          const { price, per, note } = priceOf(plan);
+          const highlight = plan.recommended;
+          const price = plan.price.annual;
+          const per = plan.unit.annual;
+          const note = plan.note.annual;
           return (
-          <div key={plan.id} className="flex flex-col bg-surface">
+          <div key={plan.key} className="flex flex-col bg-surface">
             <div
               className={`flex items-center justify-between border-b border-border px-6 py-3 ${
                 highlight ? "bg-secondary text-secondary-ink" : ""
@@ -71,10 +65,10 @@ export default function PricingTeaser({ plans }: { plans: PricingPlanDef[] }) {
                 <span className="ip-label">{per}</span>
               </div>
               {note && <p className="ip-label mt-1">{note}</p>}
-              <p className="mt-4 text-[12.5px] leading-relaxed text-muted">{plan.blurb}</p>
+              <p className="mt-4 text-[12.5px] leading-relaxed text-muted">{plan.audience}</p>
 
               <ul className="mt-5 divide-y divide-border border-t border-border">
-                {plan.features.slice(0, 3).map((point) => (
+                {plan.includes.slice(0, 3).map((point) => (
                   <li key={point} className="flex items-start gap-2.5 py-2.5">
                     <span
                       aria-hidden

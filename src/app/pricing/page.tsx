@@ -2,14 +2,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
-import { getPricingConfig } from "@/lib/pricing-plans";
-import "@/components/wow/wow.css";
-import "@/components/home-wow/home-wow.css";
 import PricingClient from "./PricingClient";
 
 export const metadata = {
-  title: "Pricing — Interviewpad Recruitment SaaS",
-  description: "Deploy per-seat team workspaces, structured evaluation rubrics, AI proctoring, and automated Greenhouse/Lever/Ashby webhooks.",
+  title: "Pricing | Interviewpad",
+  description: "Free, Growth and Enterprise plans for technical screening. Pay per seat, and pay for AI screening with credits only when a candidate starts.",
 };
 
 export default async function PricingPage() {
@@ -17,34 +14,15 @@ export default async function PricingPage() {
   await validatePageAccess("/pricing", session);
   const userId = session?.user?.id;
 
-  // Fetch workspaces where the current user is an OWNER or ADMIN
-  const [workspaces, pricing] = await Promise.all([
-    userId
-      ? prisma.workspace.findMany({
-          where: {
-            members: {
-              some: {
-                userId,
-                role: { in: [...MANAGER_ROLES] },
-              },
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            planName: true,
-          },
-        })
-      : Promise.resolve([]),
-    getPricingConfig(),
-  ]);
+  // Workspaces the signed-in user can upgrade (owners and admins).
+  const workspaces = userId
+    ? await prisma.workspace.findMany({
+        where: { members: { some: { userId, role: { in: [...MANAGER_ROLES] } } } },
+        select: { id: true, name: true, slug: true, planName: true },
+      })
+    : [];
 
   return (
-    <PricingClient 
-      workspaces={workspaces} 
-      isSignedIn={!!userId}
-      config={pricing}
-    />
+    <PricingClient workspaces={workspaces} isSignedIn={!!userId} />
   );
 }

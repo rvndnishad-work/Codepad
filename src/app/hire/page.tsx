@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getPricingConfig } from "@/lib/pricing-plans";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
 import HireWowHero, { type HeroStat } from "@/components/hire-wow/HireWowHero";
@@ -29,11 +28,10 @@ export const metadata: Metadata = {
 
 export default async function HirePage() {
   const session = await auth().catch(() => null);
-  const [challengeCount, sessionCount, workspaceCount, pricing] = await Promise.all([
+  const [challengeCount, sessionCount, workspaceCount] = await Promise.all([
     prisma.challenge.count({ where: { published: true } }).catch(() => 0),
     prisma.interviewSession.count().catch(() => 0),
     prisma.workspace.count().catch(() => 0),
-    getPricingConfig(),
   ]);
 
   const heroStats = buildStats({ sessionCount, challengeCount, workspaceCount });
@@ -64,7 +62,7 @@ export default async function HirePage() {
 
       <HireWowEvidence />
 
-      <HireWowTrust plans={pricing.business} />
+      <HireWowTrust />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>

@@ -14,6 +14,7 @@ import type { PlanSummary } from "@/lib/billing/summary";
 import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import type { SeatUsage } from "@/lib/workspace/members";
 import UsageTab, { type UsageData } from "./UsageTab";
+import VideoAddonCard, { type VideoAddonData } from "./VideoAddonCard";
 import UnderlineTabs from "../_components/UnderlineTabs";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 
@@ -32,6 +33,7 @@ type Props = {
   canManage: boolean;
   subscribed: boolean;
   stripeConfigured: boolean;
+  video: VideoAddonData;
   compare: {
     plans: { key: string; name: string; price: string; seats: string }[];
     rows: { feature: string; cells: string[] }[];
@@ -145,6 +147,24 @@ export default function BillingClient(props: Props) {
               </span>
             </div>
           </div>
+
+          <section className="flex flex-col gap-3" aria-labelledby="addons-title">
+            <div className="flex flex-col gap-1">
+              <h2 id="addons-title" className="text-base font-semibold text-fg">
+                Add-ons
+              </h2>
+              <p className="text-sm text-muted">Pay only for what the team turns on.</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <VideoAddonCard
+                slug={slug}
+                data={props.video}
+                canManage={canManage}
+                chooseGrowth={canManage && stripeConfigured && !subscribed && planName !== "ENTERPRISE" ? openStripe : null}
+                notify={toast}
+              />
+            </div>
+          </section>
 
           <section className="flex flex-col gap-2.5">
             <h2 className="text-base font-semibold text-fg">Compare plans</h2>

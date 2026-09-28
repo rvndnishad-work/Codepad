@@ -13,6 +13,7 @@ import { cancelUpcomingInterview } from "@/lib/interview/invite-server";
 import { decisionOf } from "@/lib/take-home/status";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { planInterviewChange, type HandoverChoices, type HandoverCounts, type InterviewChange } from "./handover";
+import { seatItem } from "@/lib/video/addon";
 
 /** Take-home statuses that no longer need anyone to review them. */
 const CLOSED_TAKE_HOME = ["cancelled", "expired", "abandoned"];
@@ -229,7 +230,7 @@ export async function scaleStripeSeats(subscriptionId: string | null, members: n
   try {
     const stripe = getStripe();
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const itemId = subscription.items.data[0]?.id;
+    const itemId = seatItem(subscription.items.data)?.id;
     if (itemId) await stripe.subscriptionItems.update(itemId, { quantity: Math.max(1, members) });
   } catch (err) {
     console.error("[members] Stripe seat update failed:", err);

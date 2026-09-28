@@ -127,6 +127,9 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   SUBSCRIPTION_PAYMENT_FAILED: "SUBSCRIPTION_PAYMENT_FAILED",
   // meta { credits, amount?, currency? }.
   CREDITS_PURCHASED: "CREDITS_PURCHASED",
+  // meta { billed: boolean, interval? } built-in video add-on switched on or off.
+  VIDEO_ADDON_ENABLED: "VIDEO_ADDON_ENABLED",
+  VIDEO_ADDON_DISABLED: "VIDEO_ADDON_DISABLED",
   // meta { balance, threshold, recipients }.
   CREDITS_LOW_ALERT_SENT: "CREDITS_LOW_ALERT_SENT",
   // meta { plan } the plan the workspace fell back to.

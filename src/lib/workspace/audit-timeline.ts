@@ -44,7 +44,7 @@ const CATEGORY_RULES: { id: RealCategory; exact: string[]; prefixes: string[] }[
     exact: [],
     prefixes: ["ATS_", "WEBHOOK_", "API_KEY_", "MCP_", "EXTERNAL_MCP_", "CALENDAR_", "ALERT_", "SLACK_", "TEAMS_", "INTEGRATION_"],
   },
-  { id: "billing", exact: [], prefixes: ["BILLING_", "PLAN_", "SUBSCRIPTION_", "CREDIT", "TRIAL_"] },
+  { id: "billing", exact: [], prefixes: ["BILLING_", "PLAN_", "SUBSCRIPTION_", "CREDIT", "TRIAL_", "VIDEO_ADDON_"] },
   {
     id: "settings",
     exact: ["MEMBERS_SIGNED_OUT", "EMAIL_TEMPLATE_CHANGED"],
@@ -309,6 +309,8 @@ const LABELS: Record<string, string> = {
   SUBSCRIPTION_CANCELLED: "Cancelled the subscription",
   SUBSCRIPTION_PAYMENT_FAILED: "A subscription payment failed",
   CREDITS_PURCHASED: "Bought AI screening credits",
+  VIDEO_ADDON_ENABLED: "Switched on built-in video",
+  VIDEO_ADDON_DISABLED: "Switched off built-in video",
   CREDITS_LOW_ALERT_SENT: "Emailed admins about low credits",
   TRIAL_ENDED: "The free trial ended",
   INTERVIEW_INVITE_RESENT: "Resent the interview invite to",
@@ -594,6 +596,15 @@ function adminSentence(
       const credits = num(meta.credits);
       return { title: credits ? `Bought ${plural(credits, "AI screening credit")}` : actionLabel(action), detail: null };
     }
+    case "VIDEO_ADDON_ENABLED":
+      return {
+        title: actionLabel(action),
+        detail: meta.billed === true
+          ? `Added to the subscription at ${meta.interval === "year" ? "$180 a year" : "$15 a month"}.`
+          : "No charge for now.",
+      };
+    case "VIDEO_ADDON_DISABLED":
+      return { title: actionLabel(action), detail: meta.billed === true ? "Removed from the subscription. Stripe credits the unused days." : null };
     case "CREDITS_LOW_ALERT_SENT": {
       const balance = num(meta.balance);
       const threshold = num(meta.threshold);

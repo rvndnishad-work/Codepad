@@ -18,6 +18,7 @@ import {
 } from "@/lib/workspace/members";
 import { normalizeWorkspaceSettings } from "@/lib/workspace/settings";
 import { inviteDomainError } from "@/lib/workspace/security";
+import { seatItem } from "@/lib/video/addon";
 
 
 const inviteSchema = z.object({
@@ -242,7 +243,7 @@ export async function DELETE(req: Request, { params }: Params) {
       try {
         const stripe = getStripe();
         const subscription = await stripe.subscriptions.retrieve(workspace.stripeSubscriptionId);
-        const subItemId = subscription.items.data[0]?.id;
+        const subItemId = seatItem(subscription.items.data)?.id;
         if (subItemId) {
           await stripe.subscriptionItems.update(subItemId, {
             quantity: Math.max(1, workspace.members.length - 1),

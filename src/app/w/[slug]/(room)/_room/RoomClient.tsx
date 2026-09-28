@@ -13,7 +13,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, CircleStop, Code2, FileText, Loader2, PanelRightClose, PanelRightOpen, Play, Radio, Sparkles, Timer as TimerIcon, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CircleStop,
+  Code2,
+  FileText,
+  LayoutList,
+  Loader2,
+  LogOut,
+  MoreHorizontal,
+  NotebookPen,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+  Play,
+  Radio,
+  RotateCcw,
+  Sparkles,
+  Timer as TimerIcon,
+  VideoOff,
+  X,
+} from "lucide-react";
 import type { RoomData } from "@/lib/interview/room-server";
 import { TOOLS, TOOL_BY_ID, type ToolId, type ToolsAction } from "@/lib/interview/tools";
 import { clock, parseRound, roundKey } from "@/lib/interview/room";
@@ -33,6 +55,14 @@ import { CallChip } from "./video/CallParts";
 import { RecordingControl } from "./video/Recording";
 import { NoCallCard, NoCallNote, VideoNotSetUpChip, VideoOfferChip } from "./video/NoCall";
 
+/*
+ * Layout by width. Phones (below md): the stage full width, the call in a
+ * strip under it, "On the stage" and the private panel behind the More menu.
+ * Tablets (md to xl): a narrow icon rail that opens the full list as a
+ * drawer, and the private panel as a sheet from the top bar. Desktops (xl):
+ * the list and the panel docked on both sides.
+ */
+
 const spring = { type: "spring" as const, stiffness: 520, damping: 38, mass: 0.7 };
 
 const VERDICTS = [
@@ -43,7 +73,15 @@ const VERDICTS = [
 ] as const;
 
 export default function RoomClient({ data }: { data: RoomData }) {
-  const { interview: iv, viewer, workspace } = data;
+  // Leaving unmounts the room: the call disconnects and the others see this
+  // person go straight away (the relay says goodbye when it closes).
+  const [gone, setGone] = useState(false);
+  if (gone) return <LeftRoom data={data} />;
+  return <Room data={data} onLeave={() => setGone(true)} />;
+}
+
+function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
+  const { interview: iv, viewer } = data;
   const router = useRouter();
   const reduce = useReducedMotion();
   const isInterviewer = viewer.role === "interviewer";
@@ -126,8 +164,31 @@ export default function RoomClient({ data }: { data: RoomData }) {
     if (serverRound) await control({ type: "round", round: null });
   };
 
+  // Docked panel on desktops (open unless closed); a sheet below xl (closed unless opened).
   const [panelOpen, setPanelOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // The full "On the stage" list as a drawer below xl.
+  const [stageOpen, setStageOpen] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!sheetOpen && !stageOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setSheetOpen(false);
+      setStageOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sheetOpen, stageOpen]);
+  const openStage = () => {
+    setSheetOpen(false);
+    setStageOpen(true);
+  };
+  const openSheet = () => {
+    setStageOpen(false);
+    setSheetOpen(true);
+  };
 
   const elapsed = startedAt ? Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000)) : 0;
   const left = iv.totalSec - elapsed;
@@ -141,6 +202,22 @@ export default function RoomClient({ data }: { data: RoomData }) {
   const others = isInterviewer ? iv.candidateName : iv.hostName;
 
   const toolProps: ToolProps | null = room && room.state ? { room, state: room.state, isInterviewer, readOnly, dark, guideQuestions: data.private?.guide.map((g) => g.q) ?? [], run: act } : null;
+
+  // The waiting screens carry the one Start button; the top bar keeps End for later.
+  const startButton = (
+    <button
+      type="button"
+      onClick={() => void start()}
+      disabled={starting || !snap?.synced}
+      className="w-full max-w-xs h-12 rounded-xl bg-secondary text-bg text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.6)] hover:brightness-110 disabled:opacity-50 disabled:shadow-none"
+    >
+      {starting ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <Play className="w-4 h-4" aria-hidden />}
+      Start the interview
+    </button>
+  );
+
+  const panel = isInterviewer && !!data.private;
+  const staging = isInterviewer && !ended && !!room && !!toolProps;
 
   return (
     <VideoCall sessionId={iv.id} enabled={builtin && !readOnly}>
@@ -158,88 +235,192 @@ export default function RoomClient({ data }: { data: RoomData }) {
             ) : null
           }
           actions={
-            isInterviewer && !ended ? (
+            isInterviewer ? (
+              ended || !live ? null : (
+                <button
+                  type="button"
+                  onClick={() => setEnding(true)}
+                  title="End the interview for everyone"
+                  className="h-10 md:h-9 px-3 rounded-lg border border-danger/40 text-danger text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-danger/10 whitespace-nowrap shrink-0"
+                >
+                  <CircleStop className="w-3.5 h-3.5" aria-hidden /> End
+                </button>
+              )
+            ) : !ended ? (
+              <button
+                type="button"
+                onClick={() => setLeaving(true)}
+                className="h-10 md:h-9 px-3 rounded-lg border border-border text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-panel whitespace-nowrap shrink-0"
+              >
+                <LogOut className="w-3.5 h-3.5" aria-hidden /> Leave
+              </button>
+            ) : null
+          }
+          toggles={
+            panel ? (
               <>
-                {!live ? (
-                  <button
-                    type="button"
-                    onClick={() => void start()}
-                    disabled={starting || !snap?.synced}
-                    className="h-8 px-3.5 rounded-lg bg-secondary text-bg text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-50"
-                  >
-                    {starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Play className="w-3.5 h-3.5" aria-hidden />}
-                    Start interview
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setEnding(true)}
-                    className="h-8 px-3 rounded-lg border border-danger/40 text-danger text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-danger/10"
-                  >
-                    <CircleStop className="w-3.5 h-3.5" aria-hidden /> End
-                  </button>
-                )}
-                {data.private && (
-                  <button
-                    type="button"
-                    onClick={() => setPanelOpen((o) => !o)}
-                    aria-pressed={panelOpen}
-                    aria-label={panelOpen ? "Hide interviewer panel" : "Show interviewer panel"}
-                    className="hidden lg:inline-flex w-8 h-8 rounded-lg items-center justify-center text-muted hover:text-fg hover:bg-panel"
-                  >
-                    {panelOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setPanelOpen((o) => !o)}
+                  aria-pressed={panelOpen}
+                  aria-label={panelOpen ? "Hide guide, notes and scorecard" : "Show guide, notes and scorecard"}
+                  title={panelOpen ? "Hide guide, notes and scorecard" : "Guide, notes and scorecard"}
+                  className="hidden xl:inline-flex w-9 h-9 rounded-lg items-center justify-center text-muted hover:text-fg hover:bg-panel shrink-0"
+                >
+                  {panelOpen ? <PanelRightClose className="w-4 h-4" aria-hidden /> : <PanelRightOpen className="w-4 h-4" aria-hidden />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (sheetOpen ? setSheetOpen(false) : openSheet())}
+                  aria-pressed={sheetOpen}
+                  aria-label={sheetOpen ? "Hide guide, notes and scorecard" : "Show guide, notes and scorecard"}
+                  title="Guide, notes and scorecard"
+                  className={`hidden md:inline-flex xl:hidden h-9 px-2.5 rounded-lg items-center gap-1.5 text-[13px] font-medium shrink-0 ${sheetOpen ? "bg-panel text-fg ring-1 ring-inset ring-border-strong" : "text-muted hover:text-fg hover:bg-panel"}`}
+                >
+                  <NotebookPen className="w-4 h-4" aria-hidden /> Notes
+                </button>
               </>
             ) : null
           }
+          menu={
+            ended ? null : (
+              <MoreMenu candidate={!isInterviewer}>
+                {(close) => (
+                  <>
+                    {staging && (
+                      <MenuButton
+                        className="md:hidden"
+                        icon={LayoutList}
+                        label="On the stage"
+                        sub="Pick what the candidate sees"
+                        onClick={() => {
+                          close();
+                          openStage();
+                        }}
+                      />
+                    )}
+                    {panel && (
+                      <MenuButton
+                        className="md:hidden"
+                        icon={NotebookPen}
+                        label="Guide, notes and scorecard"
+                        sub="Only you see these"
+                        onClick={() => {
+                          close();
+                          openSheet();
+                        }}
+                      />
+                    )}
+                    <MenuPeople people={people} snap={snap ?? EMPTY_SNAP} builtin={builtin} />
+                    {isInterviewer && !data.video.configured && (
+                      <p className="xl:hidden px-3 py-2 text-[12.5px] text-muted flex items-start gap-2">
+                        <VideoOff className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden /> Video is not set up yet, so there is no built-in call.
+                      </p>
+                    )}
+                    {isInterviewer && (
+                      <Link
+                        href={`/w/${data.workspace.slug}/interviews/${iv.id}/lobby`}
+                        className="mx-1 mb-1 rounded-lg px-2.5 py-2 min-h-10 flex items-start gap-2.5 hover:bg-panel text-left"
+                      >
+                        <LogOut className="w-4 h-4 mt-0.5 text-muted shrink-0" aria-hidden />
+                        <span className="min-w-0">
+                          <span className="block text-[13.5px] font-medium">Leave the room</span>
+                          <span className="block text-[12px] text-muted">{live ? "The interview keeps running. Use End to finish it." : "Back to the lobby."}</span>
+                        </span>
+                      </Link>
+                    )}
+                  </>
+                )}
+              </MoreMenu>
+            )
+          }
         />
 
-        <div className="flex-1 min-h-0 flex">
-          {isInterviewer && !ended && room && toolProps && (
-            <Rail data={data} live={live} serverRound={serverRound} presented={presented} props={toolProps} onRound={(k) => void showRound(k)} onTool={(t) => void showTool(t)} />
+        <div className="relative flex-1 min-h-0 flex">
+          {staging && (
+            <>
+              <NarrowRail
+                data={data}
+                live={live}
+                serverRound={serverRound}
+                presented={presented}
+                props={toolProps!}
+                onExpand={openStage}
+                onRound={(k) => void showRound(k)}
+                onTool={(t) => void showTool(t)}
+              />
+              {stageOpen && <button type="button" aria-label="Close the list" tabIndex={-1} onClick={() => setStageOpen(false)} className="xl:hidden absolute inset-0 z-30 bg-bg/60" />}
+              <Rail
+                className={
+                  stageOpen
+                    ? "absolute inset-y-0 left-0 z-40 flex w-[min(300px,88vw)] shadow-2xl shadow-black/50 xl:static xl:z-auto xl:w-[264px] xl:shadow-none"
+                    : "hidden xl:flex xl:w-[264px]"
+                }
+                onClose={() => setStageOpen(false)}
+                data={data}
+                live={live}
+                serverRound={serverRound}
+                presented={presented}
+                props={toolProps!}
+                onRound={(k) => {
+                  setStageOpen(false);
+                  void showRound(k);
+                }}
+                onTool={(t) => {
+                  setStageOpen(false);
+                  void showTool(t);
+                }}
+              />
+            </>
           )}
 
-          <main className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
-            {/* Stages are absolutely placed, so they cross-fade; "wait" mode can stall when the stage changes twice in quick succession. */}
-            <AnimatePresence initial={false}>
-              <motion.div
-                key={ended ? "ended" : !live ? "waiting" : stageRound ? stageRound.key : presented ? `tool:${presented}` : serverRound ? "loading" : "home"}
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -6 }}
-                transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-                className="absolute inset-0"
-              >
-                {ended ? (
-                  <Ended data={data} />
-                ) : !live ? (
-                  builtin ? (
-                    <VideoWaiting data={data} people={people} others={others} />
+          <main className="flex-1 min-w-0 min-h-0 relative flex flex-col">
+            <div className="flex-1 min-h-0 relative overflow-hidden">
+              {/* Stages are absolutely placed, so they cross-fade; "wait" mode can stall when the stage changes twice in quick succession. */}
+              <AnimatePresence initial={false}>
+                <motion.div
+                  key={ended ? "ended" : !live ? "waiting" : stageRound ? stageRound.key : presented ? `tool:${presented}` : serverRound ? "loading" : "home"}
+                  initial={reduce ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -6 }}
+                  transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+                  className="absolute inset-0"
+                >
+                  {ended ? (
+                    <Ended data={data} />
+                  ) : !live ? (
+                    builtin ? (
+                      <VideoWaiting data={data} people={people} others={others} action={isInterviewer ? startButton : null} />
+                    ) : (
+                      <Waiting data={data} people={people} onStart={isInterviewer ? () => void start() : null} starting={starting} ready={!!snap?.synced} />
+                    )
+                  ) : stageRound && room ? (
+                    <RoundStage round={stageRound} room={room} sessionId={iv.id} isInterviewer={isInterviewer} readOnly={readOnly} dark={dark} startedAt={startedAt} />
+                  ) : presented && toolProps ? (
+                    <ToolStage tool={presented} props={toolProps} />
+                  ) : serverRound ? (
+                    <Center>
+                      <Loader2 className="w-5 h-5 animate-spin text-muted" aria-hidden />
+                      <p className="text-[14px] text-muted">Opening the next round</p>
+                    </Center>
                   ) : (
-                    <Waiting data={data} people={people} onStart={isInterviewer ? () => void start() : null} starting={starting} ready={!!snap?.synced} />
-                  )
-                ) : stageRound && room ? (
-                  <RoundStage round={stageRound} room={room} sessionId={iv.id} isInterviewer={isInterviewer} readOnly={readOnly} dark={dark} startedAt={startedAt} />
-                ) : presented && toolProps ? (
-                  <ToolStage tool={presented} props={toolProps} />
-                ) : serverRound ? (
-                  <Center>
-                    <Loader2 className="w-5 h-5 animate-spin text-muted" aria-hidden />
-                    <p className="text-[14px] text-muted">Opening the next round</p>
-                  </Center>
-                ) : (
-                  <Home data={data} isInterviewer={isInterviewer} onRound={(k) => void showRound(k)} onTool={toolProps && !readOnly ? (t) => void showTool(t) : null} />
-                )}
-              </motion.div>
-            </AnimatePresence>
-            {builtin && live && <CallDock myRole={viewer.role} others={others} />}
+                    <Home data={data} isInterviewer={isInterviewer} onRound={(k) => void showRound(k)} onTool={toolProps && !readOnly ? (t) => void showTool(t) : null} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+            {builtin && live && <CallDock myRole={viewer.role} others={others} onHangUp={isInterviewer ? undefined : () => setLeaving(true)} />}
           </main>
 
-          {isInterviewer && data.private && panelOpen && (
-            <div className="hidden lg:block w-[340px] shrink-0 min-h-0">
-              <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} />
-            </div>
+          {panel && (
+            <>
+              {sheetOpen && <button type="button" aria-label="Close the panel" tabIndex={-1} onClick={() => setSheetOpen(false)} className="xl:hidden absolute inset-0 z-30 bg-bg/60" />}
+              <div
+                className={`min-h-0 ${sheetOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-[380px] shadow-2xl shadow-black/50" : "hidden"} ${panelOpen ? "xl:block xl:static xl:z-auto xl:w-[340px] xl:shrink-0 xl:shadow-none" : "xl:hidden"}`}
+              >
+                <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} onClose={() => setSheetOpen(false)} />
+              </div>
+            </>
           )}
         </div>
 
@@ -258,6 +439,7 @@ export default function RoomClient({ data }: { data: RoomData }) {
         </AnimatePresence>
 
         <AnimatePresence>{ending && <EndDialog data={data} onClose={() => setEnding(false)} onEnded={() => provider?.refresh()} />}</AnimatePresence>
+        <AnimatePresence>{leaving && <LeaveDialog onClose={() => setLeaving(false)} onLeave={onLeave} />}</AnimatePresence>
       </div>
     </VideoCall>
   );
@@ -267,6 +449,10 @@ const EMPTY_SNAP = { connection: "connecting", synced: false, role: null, myName
   ToolsRoom["relay"]
 >;
 
+/**
+ * One line at every width. Phones: the mark, a short title, a compact clock
+ * and two or three buttons; everything else sits in the More menu.
+ */
 function TopBar({
   data,
   status,
@@ -276,6 +462,8 @@ function TopBar({
   snap,
   timer,
   actions,
+  toggles,
+  menu,
 }: {
   data: RoomData;
   status: string;
@@ -285,91 +473,208 @@ function TopBar({
   snap: ToolsRoom["relay"];
   timer: React.ReactNode;
   actions: React.ReactNode;
+  toggles: React.ReactNode;
+  menu: React.ReactNode;
 }) {
-  const { interview: iv, workspace, video } = data;
+  const { interview: iv, workspace, video, viewer } = data;
   const live = status === "in_progress";
   const ended = status === "completed" || status === "abandoned" || status === "cancelled";
   const over = live && left < 0;
+  const sub = viewer.role === "interviewer" ? `${iv.candidateName} · ${iv.formatLabel}` : `${workspace.name} · with ${iv.hostName}`;
   return (
-    <header className="relative h-14 shrink-0 flex items-center gap-3 px-3 md:px-4 border-b border-border bg-surface">
+    <header className="relative h-14 shrink-0 flex items-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 md:px-4 border-b border-border bg-surface">
       <Link
         href={`/w/${workspace.slug}/interviews/${iv.id}/lobby`}
         aria-label="Back to the lobby"
         title="Back to the lobby"
-        className="group relative w-9 h-9 rounded-lg flex items-center justify-center hover:bg-panel shrink-0"
+        className="group relative w-9 h-10 md:w-9 md:h-9 rounded-lg flex items-center justify-center hover:bg-panel shrink-0"
       >
         <LogoDynamicMark className="w-7 h-7 transition-opacity group-hover:opacity-0" />
         <ArrowLeft className="absolute w-4 h-4 text-fg opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
       </Link>
-      <span className="hidden sm:block w-px h-6 bg-border" aria-hidden />
-      <div className="min-w-0 flex flex-col leading-tight">
-        <span className="text-[14px] font-semibold truncate">{iv.title}</span>
-        <span className="text-[12px] text-muted truncate">
-          {workspace.name} · {iv.formatLabel} · with {iv.candidateName}
+      <span className="hidden md:block w-px h-6 bg-border shrink-0" aria-hidden />
+      <div className="flex-1 min-w-[64px] flex flex-col leading-tight">
+        <span className="text-[14px] font-semibold truncate" title={iv.title}>
+          {iv.title}
         </span>
+        <span className="hidden sm:block text-[12px] text-muted truncate">{sub}</span>
       </div>
       {live && (
         <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-transparent">
           <span
+            suppressHydrationWarning
             className={`block h-full transition-[width] duration-1000 ease-linear ${over ? "bg-warning" : "bg-secondary"}`}
             style={{ width: `${Math.min(100, (elapsed / Math.max(1, iv.totalSec)) * 100)}%` }}
           />
         </span>
       )}
 
-      <div className="mx-auto flex items-center gap-2">
+      <div className="shrink-0 flex items-center gap-2">
         {live ? (
           <span
             role="timer"
             suppressHydrationWarning
             aria-label={over ? `${clock(-left)} over time` : `${clock(left)} left`}
-            className={`h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-[14px] font-semibold tabular-nums ring-1 ring-inset ${over ? "bg-warning/10 text-warning ring-warning/25" : "bg-bg ring-border"}`}
+            className={`h-9 px-2.5 sm:px-3.5 rounded-xl inline-flex items-center gap-2 text-[14px] font-semibold tabular-nums whitespace-nowrap ring-1 ring-inset ${over ? "bg-warning/10 text-warning ring-warning/25" : "bg-bg ring-border"}`}
           >
             <span className="relative flex w-2 h-2" aria-hidden>
               <span className="absolute inset-0 rounded-full bg-danger/60 animate-ping motion-reduce:animate-none" />
               <span className="relative w-2 h-2 rounded-full bg-danger" />
             </span>
-            <span suppressHydrationWarning>{over ? `+${clock(-left)} over` : `${clock(left)} left`}</span>
-            <span suppressHydrationWarning className="hidden md:inline text-subtle font-normal">
+            <span suppressHydrationWarning>
+              {over ? `+${clock(-left)}` : clock(left)}
+              <span className="hidden sm:inline font-normal text-muted">{over ? " over" : " left"}</span>
+            </span>
+            <span suppressHydrationWarning className="hidden lg:inline text-subtle font-normal">
               · {clock(elapsed)} in
             </span>
           </span>
         ) : status === "scheduled" ? (
-          <span className="h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-[13px] text-muted bg-bg ring-1 ring-inset ring-border">
-            <TimerIcon className="w-3.5 h-3.5" aria-hidden /> Not started · {Math.round(iv.totalSec / 60)} min
+          <span className="h-9 px-2.5 sm:px-3.5 rounded-xl inline-flex items-center gap-2 text-[13px] text-muted bg-bg ring-1 ring-inset ring-border whitespace-nowrap">
+            <TimerIcon className="w-3.5 h-3.5" aria-hidden />
+            <span>
+              <span className="hidden sm:inline">Not started · </span>
+              {Math.round(iv.totalSec / 60)} min
+            </span>
           </span>
         ) : (
-          <span className="h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-[13px] text-muted bg-bg ring-1 ring-inset ring-border">
+          <span className="h-9 px-2.5 sm:px-3.5 rounded-xl inline-flex items-center gap-2 text-[13px] text-muted bg-bg ring-1 ring-inset ring-border whitespace-nowrap">
             <Check className="w-3.5 h-3.5 text-success" aria-hidden /> Ended
           </span>
         )}
         {timer}
       </div>
 
-      <ul className="hidden sm:flex items-center gap-1" aria-label="In the room">
+      <div className="shrink-0 md:flex-1 flex items-center justify-end gap-1.5 md:gap-2">
+        <ul className="hidden lg:flex items-center gap-1" aria-label="In the room">
+          {people.map((p) => (
+            <li key={p.key} className="relative" title={`${p.name}${p.me ? " (you)" : ""}, ${roleLabel(p.role).toLowerCase()}${p.place === "lobby" ? ", in the lobby" : ""}`}>
+              <span className="block rounded-full ring-2 ring-surface">
+                <Avatar name={p.name} size={28} />
+              </span>
+              <PresenceDot on={p.place === "room"} className="absolute -bottom-0.5 -right-0.5 scale-75" />
+              <span className="sr-only">
+                {p.name}, {roleLabel(p.role)}
+                {p.place === "lobby" ? ", in the lobby" : ""}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {!ended && video.mode === "link" && iv.meetingUrl && <MeetingButton url={iv.meetingUrl} size="sm" />}
+        {!ended && video.mode === "link" && (
+          <div className="hidden xl:block">
+            <VideoOfferChip video={video} meetingUrl={iv.meetingUrl} />
+          </div>
+        )}
+        {!ended && video.mode === "builtin" && (
+          // Below md the wrapper is the anchor for the record confirm, so it opens under the whole bar, not off the left edge.
+          <div className="flex items-center max-md:[&>div]:static">
+            <RecordingControl sessionId={iv.id} active={status === "scheduled" || live} interviewer={viewer.role === "interviewer"} recordVideo={video.recordVideo} />
+          </div>
+        )}
+        {!ended && !video.configured && (
+          <div className="hidden xl:block">
+            <VideoNotSetUpChip />
+          </div>
+        )}
+        {/* The connection shows on phones only while it is not fine; the More menu always has it. */}
+        <span className={snap.connection === "live" ? "hidden md:inline-flex" : "inline-flex"}>
+          <ConnectionPill snap={snap} compact />
+        </span>
+        {toggles}
+        {actions}
+        {menu}
+      </div>
+    </header>
+  );
+}
+
+/** The top bar overflow: who is here, the connection, and whatever did not fit. */
+function MoreMenu({ candidate, children }: { candidate: boolean; children: (close: () => void) => React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+  return (
+    <div ref={box} className={`relative shrink-0 ${candidate ? "lg:hidden" : ""}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="More"
+        title="More"
+        className={`w-10 h-10 md:w-9 md:h-9 rounded-lg inline-flex items-center justify-center ${open ? "bg-panel text-fg" : "text-muted hover:text-fg hover:bg-panel"}`}
+      >
+        <MoreHorizontal className="w-4 h-4" aria-hidden />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={reduce ? false : { opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? undefined : { opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute right-0 top-full mt-2 z-50 w-[300px] max-w-[calc(100vw-1rem)] rounded-xl border border-border-strong bg-surface py-1 shadow-2xl shadow-black/50 flex flex-col"
+          >
+            {children(() => setOpen(false))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function MenuButton({ icon: Icon, label, sub, onClick, className = "" }: { icon: typeof LogOut; label: string; sub?: string; onClick: () => void; className?: string }) {
+  return (
+    <button type="button" onClick={onClick} className={`mx-1 rounded-lg px-2.5 py-2 min-h-10 flex items-start gap-2.5 hover:bg-panel text-left ${className}`}>
+      <Icon className="w-4 h-4 mt-0.5 text-muted shrink-0" aria-hidden />
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-medium">{label}</span>
+        {sub && <span className="block text-[12px] text-muted">{sub}</span>}
+      </span>
+    </button>
+  );
+}
+
+function MenuPeople({ people, snap, builtin }: { people: Person[]; snap: ToolsRoom["relay"]; builtin: boolean }) {
+  return (
+    <div className="mt-1 pt-2 pb-2 border-t border-border first:mt-0 first:border-t-0">
+      <p className="px-3.5 text-[12px] text-subtle">In the room</p>
+      <ul className="mt-1.5 px-3.5 grid gap-2">
         {people.map((p) => (
-          <li key={p.key} className="relative" title={`${p.name}${p.me ? " (you)" : ""}, ${roleLabel(p.role).toLowerCase()}${p.place === "lobby" ? ", in the lobby" : ""}`}>
-            <span className="block rounded-full ring-2 ring-surface">
-              <Avatar name={p.name} size={28} />
+          <li key={p.key} className="flex items-center gap-2.5 min-w-0">
+            <span className="relative shrink-0">
+              <Avatar name={p.name} size={26} />
+              <PresenceDot on={p.place === "room"} className="absolute -bottom-0.5 -right-0.5 scale-75" />
             </span>
-            <PresenceDot on={p.place === "room"} className="absolute -bottom-0.5 -right-0.5 scale-75" />
-            <span className="sr-only">
-              {p.name}, {roleLabel(p.role)}
-              {p.place === "lobby" ? ", in the lobby" : ""}
+            <span className="min-w-0 text-[13px] truncate">
+              {p.name}
+              {p.me && <span className="text-subtle"> (you)</span>}
+              <span className="text-muted">
+                {" "}
+                · {roleLabel(p.role)}
+                {p.place === "lobby" ? ", in the lobby" : ""}
+              </span>
             </span>
           </li>
         ))}
       </ul>
-      {!ended && video.mode === "link" && iv.meetingUrl && <MeetingButton url={iv.meetingUrl} size="sm" />}
-      {!ended && video.mode === "link" && <VideoOfferChip video={video} meetingUrl={iv.meetingUrl} />}
-      {!ended && video.mode === "builtin" && (
-        <RecordingControl sessionId={iv.id} active={status === "scheduled" || live} interviewer={data.viewer.role === "interviewer"} recordVideo={video.recordVideo} />
-      )}
-      {!ended && video.mode === "builtin" && <CallChip />}
-      {!ended && !video.configured && <VideoNotSetUpChip />}
-      <ConnectionPill snap={snap} compact />
-      {actions}
-    </header>
+      <div className="mt-3 px-3.5 flex flex-wrap items-center gap-2">
+        <ConnectionPill snap={snap} />
+        {builtin && <CallChip />}
+      </div>
+    </div>
   );
 }
 
@@ -381,6 +686,8 @@ function Rail({
   props,
   onRound,
   onTool,
+  className,
+  onClose,
 }: {
   data: RoomData;
   live: boolean;
@@ -389,6 +696,9 @@ function Rail({
   props: ToolProps;
   onRound: (k: string | null) => void;
   onTool: (t: ToolId | null) => void;
+  /** Where it sits: docked (xl) or a drawer over the stage. */
+  className: string;
+  onClose: () => void;
 }) {
   const [timerOpen, setTimerOpen] = useState(false);
   const cur = parseRound(serverRound);
@@ -396,10 +706,15 @@ function Rail({
   const state = props.state;
   const hasTimer = state.enabled.includes("timer") && !!state.timer;
   return (
-    <nav aria-label="Stage" className="hidden md:flex w-[264px] shrink-0 min-h-0 flex-col border-r border-border bg-surface">
-      <div className="px-4 pt-4 pb-1">
-        <p className="text-[13px] font-semibold">On the stage</p>
-        <p className="text-[12.5px] text-muted">{live ? "Pick what the candidate sees." : "Start the interview to show rounds."}</p>
+    <nav aria-label="Stage" className={`shrink-0 min-h-0 flex-col border-r border-border bg-surface ${className}`}>
+      <div className="px-4 pt-4 pb-1 flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-semibold">On the stage</p>
+          <p className="text-[12.5px] text-muted">{live ? "Pick what the candidate sees." : "Start the interview to show rounds."}</p>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close the list" className="xl:hidden -mt-2 -mr-2 w-10 h-10 rounded-lg text-muted hover:text-fg hover:bg-panel inline-flex items-center justify-center shrink-0">
+          <X className="w-4 h-4" aria-hidden />
+        </button>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 grid grid-cols-[minmax(0,1fr)] content-start gap-5">
         <section className="min-w-0">
@@ -507,16 +822,92 @@ function Rail({
   );
 }
 
+/**
+ * Tablets: the stage list as a column of icons, one tap to switch. The first
+ * button opens the full list (steps, the shared timer) as a drawer.
+ */
+function NarrowRail({
+  data,
+  live,
+  serverRound,
+  presented,
+  props,
+  onExpand,
+  onRound,
+  onTool,
+}: {
+  data: RoomData;
+  live: boolean;
+  serverRound: string | null;
+  presented: ToolId | null;
+  props: ToolProps;
+  onExpand: () => void;
+  onRound: (k: string | null) => void;
+  onTool: (t: ToolId | null) => void;
+}) {
+  const cur = parseRound(serverRound);
+  const stageTools = TOOLS.filter((t) => t.stage && TOOL_PLUGINS[t.id].Stage);
+  const item = (on: boolean) =>
+    `w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-[13px] font-semibold transition-colors disabled:opacity-50 ${on ? "bg-secondary text-bg" : "text-muted hover:text-fg hover:bg-panel"}`;
+  return (
+    <nav aria-label="Stage" className="hidden md:flex xl:hidden w-14 shrink-0 min-h-0 flex-col items-center gap-1 py-2 border-r border-border bg-surface overflow-y-auto">
+      <button type="button" onClick={onExpand} aria-label="Open the stage list" title="On the stage" className={item(false)}>
+        <PanelLeftOpen className="w-4 h-4" aria-hidden />
+      </button>
+      {data.rounds.length > 0 && <span className="w-7 h-px bg-border my-1 shrink-0" aria-hidden />}
+      {data.rounds.map((r, i) => {
+        const on = !!cur && roundKey({ ...cur, step: 0 }) === r.key;
+        return (
+          <button
+            key={r.key}
+            type="button"
+            disabled={!live}
+            onClick={() => onRound(on ? null : r.key)}
+            aria-pressed={on}
+            aria-label={`${r.title}${on ? ", on the stage" : ""}`}
+            title={live ? (on ? `${r.title}: take it off the stage` : `${r.title}: show to the candidate`) : "Start the interview first"}
+            className={item(on)}
+          >
+            {r.kind === "prompt" ? <FileText className="w-4 h-4" aria-hidden /> : r.kind === "playground" ? <Code2 className="w-4 h-4" aria-hidden /> : i + 1}
+          </button>
+        );
+      })}
+      <span className="w-7 h-px bg-border my-1 shrink-0" aria-hidden />
+      {stageTools.map((t) => {
+        const Icon = TOOL_ICON[t.id];
+        const on = presented === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            disabled={props.readOnly}
+            onClick={() => onTool(on ? null : t.id)}
+            aria-pressed={on}
+            aria-label={`${t.label}${on ? ", on the stage" : ""}`}
+            title={on ? `${t.label}: take it off the stage` : `${t.label}: show to the candidate`}
+            className={item(on)}
+          >
+            <Icon className="w-4 h-4" aria-hidden />
+          </button>
+        );
+      })}
+      <button type="button" onClick={onExpand} aria-label="Shared timer" title="Shared timer" className={`mt-auto ${item(false)}`}>
+        <TimerIcon className="w-4 h-4" aria-hidden />
+      </button>
+    </nav>
+  );
+}
+
 function ToolStage({ tool, props }: { tool: ToolId; props: ToolProps }) {
   const Stage = TOOL_PLUGINS[tool].Stage;
   const Actions = TOOL_PLUGINS[tool].HeaderActions;
   const Icon = TOOL_ICON[tool];
   return (
     <section aria-label={TOOL_BY_ID[tool].label} className="h-full flex flex-col">
-      <header className="h-11 shrink-0 flex items-center gap-2.5 px-4 border-b border-border">
-        <Icon className="w-4 h-4 text-secondary-soft" aria-hidden />
-        <h2 className="text-[14px] font-semibold">{TOOL_BY_ID[tool].label}</h2>
-        <span className="text-[12px] text-muted">{props.isInterviewer ? "The candidate sees this" : "Shared by your interviewer"}</span>
+      <header className="h-11 shrink-0 flex items-center gap-2.5 px-3 sm:px-4 border-b border-border">
+        <Icon className="w-4 h-4 text-secondary-soft shrink-0" aria-hidden />
+        <h2 className="text-[14px] font-semibold truncate">{TOOL_BY_ID[tool].label}</h2>
+        <span className="hidden sm:inline text-[12px] text-muted truncate">{props.isInterviewer ? "The candidate sees this" : "Shared by your interviewer"}</span>
         <div className="ml-auto">{Actions && <Actions {...props} />}</div>
       </header>
       <div className="flex-1 min-h-0 relative">{Stage && <Stage {...props} />}</div>
@@ -547,7 +938,7 @@ function Home({ data, isInterviewer, onRound, onTool }: { data: RoomData; isInte
       <div className="max-w-3xl mx-auto px-6 py-10 md:py-14">
         <p className="text-[13px] text-secondary-soft font-medium">The interview is running</p>
         <h2 className="mt-1 text-[26px] font-semibold tracking-[-0.02em]">What should {iv.candidateName} see first?</h2>
-        <p className="mt-1.5 text-[14.5px] text-muted">Whatever you pick shows on their screen straight away. You can switch at any time from the left.</p>
+        <p className="mt-1.5 text-[14.5px] text-muted">Whatever you pick shows on their screen straight away. You can switch at any time.</p>
 
         {data.rounds.length > 0 && (
           <section className="mt-8">
@@ -604,7 +995,7 @@ function Home({ data, isInterviewer, onRound, onTool }: { data: RoomData; isInte
             </ul>
           </section>
         )}
-        {data.private?.guide.length ? <p className="mt-8 text-[13px] text-muted">Or show a question from your guide on the right.</p> : null}
+        {data.private?.guide.length ? <p className="mt-8 text-[13px] text-muted">Or show a question from your interview guide.</p> : null}
       </div>
     </div>
   );
@@ -665,14 +1056,12 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
       ? `${lead!.name} is here and will start shortly`
       : `You are in. ${iv.hostName} will start the interview.`;
   return (
-    <div className="h-full overflow-y-auto flex items-center justify-center p-4 sm:p-6">
+    <div className="h-full overflow-y-auto">
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
       <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-border bg-surface" style={GLOW}>
         <DotGrid />
         <div className="relative px-6 py-9 sm:px-10 sm:py-11 text-center">
-          <span className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-secondary/15 ring-1 ring-inset ring-secondary/30 text-[12.5px] font-medium text-secondary-soft">
-            <TimerIcon className="w-3.5 h-3.5" aria-hidden /> Waiting room · {Math.round(iv.totalSec / 60)} min interview
-          </span>
-          <h2 className="mt-4 text-[24px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-snug text-balance">{title}</h2>
+          <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-snug text-balance">{title}</h2>
 
           <div className="mt-8 flex items-start justify-center gap-2 sm:gap-4">
             <Seat name={lead?.name ?? iv.hostName} sub={lead ? (lead.place === "room" ? "Interviewer" : "Interviewer, in the lobby") : "Interviewer, not here yet"} here={!!lead} me={lead?.me} />
@@ -715,12 +1104,13 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
           )}
         </div>
       </div>
+      </div>
     </div>
   );
 }
 
 /** Before the start, with built-in video: faces first, the room behind. */
-function VideoWaiting({ data, people, others }: { data: RoomData; people: Person[]; others: string }) {
+function VideoWaiting({ data, people, others, action }: { data: RoomData; people: Person[]; others: string; action: React.ReactNode }) {
   const { interview: iv, viewer } = data;
   const isInterviewer = viewer.role === "interviewer";
   const candidate = people.find((p) => p.role === "candidate");
@@ -735,9 +1125,9 @@ function VideoWaiting({ data, people, others }: { data: RoomData; people: Person
       ? "Say hello while you wait"
       : `${iv.hostName} will start the interview soon`;
   const lead = isInterviewer
-    ? "You are both on the call once they arrive. Start the interview when you are ready; the call keeps going."
-    : "You are on the call. When the interview starts, the call moves to a small panel and keeps going.";
-  return <CallWaiting myRole={viewer.role} title={title} lead={lead} others={others} />;
+    ? "Start the interview when you are ready. The call keeps going."
+    : "You are on the call. When the interview starts, the call moves aside and keeps going.";
+  return <CallWaiting myRole={viewer.role} title={title} lead={lead} others={others} action={action} />;
 }
 
 function Ended({ data }: { data: RoomData }) {
@@ -870,5 +1260,82 @@ function EndDialog({ data, onClose, onEnded }: { data: RoomData; onClose: () => 
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+/** Candidates: the Leave button and the call's hang-up both ask first. */
+function LeaveDialog({ onClose, onLeave }: { onClose: () => void; onLeave: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-bg/70 backdrop-blur-[2px] flex items-center justify-center p-4" onClick={onClose}>
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="leave-title"
+        aria-describedby="leave-body"
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.98 }}
+        transition={spring}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl border border-border-strong bg-surface p-6 shadow-2xl shadow-black/50"
+      >
+        <h2 id="leave-title" className="text-[17px] font-semibold">
+          Leave the interview?
+        </h2>
+        <p id="leave-body" className="mt-1.5 text-[14px] text-muted leading-relaxed">
+          You can come back with the same link while it is running.
+        </p>
+        <div className="mt-6 flex justify-end gap-2">
+          <button type="button" onClick={onClose} autoFocus className="h-10 px-4 rounded-lg border border-border text-[13.5px] font-medium hover:bg-panel">
+            Stay
+          </button>
+          <button type="button" onClick={onLeave} className="h-10 px-4 rounded-lg bg-danger text-bg text-[13.5px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110">
+            <LogOut className="w-4 h-4" aria-hidden /> Leave
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** After Leave: off the call and out of the room. Rejoin loads the room again. */
+function LeftRoom({ data }: { data: RoomData }) {
+  const { interview: iv, workspace } = data;
+  return (
+    <div className="h-[100dvh] flex flex-col overflow-hidden">
+      <header className="h-14 shrink-0 flex items-center gap-2.5 px-3 md:px-4 border-b border-border bg-surface">
+        <LogoDynamicMark className="w-7 h-7 shrink-0" />
+        <span className="min-w-0 flex flex-col leading-tight">
+          <span className="text-[14px] font-semibold truncate">{iv.title}</span>
+          <span className="text-[12px] text-muted truncate">{workspace.name}</span>
+        </span>
+      </header>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="min-h-full flex items-center justify-center p-4 sm:p-6">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-border bg-surface text-center" style={GLOW}>
+            <DotGrid />
+            <div className="relative px-6 py-10 sm:px-10 flex flex-col items-center">
+              <span className="w-14 h-14 rounded-2xl bg-panel ring-1 ring-inset ring-border text-muted flex items-center justify-center">
+                <LogOut className="w-6 h-6" aria-hidden />
+              </span>
+              <h2 className="mt-4 text-[24px] font-semibold tracking-[-0.02em]">You left the interview</h2>
+              <p className="mt-2 text-[14.5px] text-muted max-w-sm leading-relaxed">You can come back with the same link while it is running.</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-7 h-11 px-5 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center gap-2 hover:brightness-110"
+              >
+                <RotateCcw className="w-4 h-4" aria-hidden /> Rejoin
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

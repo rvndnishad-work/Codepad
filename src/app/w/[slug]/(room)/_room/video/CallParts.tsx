@@ -115,7 +115,7 @@ export function Tile({
 }
 
 type CtlSize = "sm" | "md" | "lg";
-const CTL: Record<CtlSize, string> = { sm: "w-9 h-9 rounded-full", md: "w-11 h-11 rounded-xl", lg: "w-12 h-12 rounded-full" };
+const CTL: Record<CtlSize, string> = { sm: "w-10 h-10 rounded-full", md: "w-11 h-11 rounded-xl", lg: "w-12 h-12 rounded-full" };
 
 function Ctl({
   size,
@@ -149,8 +149,24 @@ function Ctl({
   );
 }
 
-/** Mute, camera, share screen, and optionally leave and device settings. */
-export function CallControls({ size = "md", leave = true, share = true, settings = false }: { size?: CtlSize; leave?: boolean; share?: boolean; settings?: boolean }) {
+/**
+ * Mute, camera, share screen, and optionally leave and device settings.
+ * `onLeave` replaces the plain "leave the call" (candidates get a confirm
+ * that takes them out of the interview).
+ */
+export function CallControls({
+  size = "md",
+  leave = true,
+  share = true,
+  settings = false,
+  onLeave,
+}: {
+  size?: CtlSize;
+  leave?: boolean;
+  share?: boolean;
+  settings?: boolean;
+  onLeave?: () => void;
+}) {
   const call = useCall()!;
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } = useLocalParticipant();
   const icon = size === "sm" ? "w-4 h-4" : "w-[18px] h-[18px]";
@@ -169,7 +185,7 @@ export function CallControls({ size = "md", leave = true, share = true, settings
       )}
       {settings && <DeviceMenu size={size} />}
       {leave && (
-        <Ctl size={size} danger label="Leave the call" onClick={call.leave}>
+        <Ctl size={size} danger label={onLeave ? "Leave the interview" : "Leave the call"} onClick={onLeave ?? call.leave}>
           <PhoneOff className={icon} aria-hidden />
         </Ctl>
       )}

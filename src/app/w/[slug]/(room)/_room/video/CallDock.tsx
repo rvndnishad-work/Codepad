@@ -1,26 +1,29 @@
 "use client";
 
 /**
- * The call panel over the stage while the interview runs. It floats in a
- * corner (drag it, or use the corner button, to move it), shrinks to a pill
- * that still shows who is talking, and on screens below md becomes a strip
- * across the top. Leaving only takes this person off the call.
+ * The call while the interview runs. On desktops it floats over the stage in
+ * a corner (drag it, or use the corner button, to move it) and shrinks to a
+ * pill that still shows who is talking. On phones and touch tablets it is a
+ * strip under the stage instead, with small tiles and the call buttons in
+ * one row, so it never covers the stage or its tool bars; it folds to a
+ * single line. Leaving only takes this person off the call, except for a
+ * candidate, whose hang-up asks to leave the interview (`onHangUp`).
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useIsSpeaking, useIsMuted } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
-import { Maximize2, Minus, MoveDiagonal } from "lucide-react";
-import { Avatar } from "../parts";
+import { ChevronDown, ChevronUp, Maximize2, Minus, MoveDiagonal } from "lucide-react";
+import { Avatar, COMPACT_CALL, useMedia } from "../parts";
 import { useCall } from "./VideoCall";
 import { CallControls, CallState, MediaNote, Tile, nameOf, useCallPeople } from "./CallParts";
 
 type Corner = "tl" | "tr" | "bl" | "br";
 const CORNERS: Corner[] = ["br", "bl", "tl", "tr"];
 const CORNER_CLS: Record<Corner, string> = {
-  tl: "md:left-5 md:top-5",
-  tr: "md:right-5 md:top-5",
-  bl: "md:left-5 md:bottom-5",
-  br: "md:right-5 md:bottom-5",
+  tl: "left-5 top-5",
+  tr: "right-5 top-5",
+  bl: "left-5 bottom-20",
+  br: "right-5 bottom-20",
 };
 const DOCK_KEY = "interview-video-dock:v1";
 
@@ -44,8 +47,9 @@ function mmss(sec: number): string {
   return `${m}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
+export function CallDock({ myRole, others, onHangUp }: { myRole: "interviewer" | "candidate"; others: string; onHangUp?: () => void }) {
   const call = useCall();
+  const compact = useMedia(COMPACT_CALL);
   const [dock, setDock] = useState<{ corner: Corner; small: boolean }>({ corner: "br", small: false });
   useEffect(() => setDock(loadDock()), []);
   const update = (v: Partial<{ corner: Corner; small: boolean }>) =>
@@ -60,7 +64,7 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
   const onDown = (e: ReactPointerEvent) => {
-    if ((e.target as HTMLElement).closest("button") || window.matchMedia("(max-width: 767px)").matches) return;
+    if ((e.target as HTMLElement).closest("button")) return;
     start.current = { x: e.clientX, y: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -84,14 +88,15 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
   };
 
   if (!call || call.status === "off" || call.status === "ended") return null;
-  const place = `absolute z-30 max-md:left-2 max-md:right-2 max-md:top-2 ${CORNER_CLS[dock.corner]}`;
+  if (compact) return <Strip myRole={myRole} others={others} onHangUp={onHangUp} small={dock.small} onSmall={(small) => update({ small })} />;
+  const place = `absolute z-30 ${CORNER_CLS[dock.corner]}`;
   const shell = "rounded-2xl bg-surface border border-border-strong shadow-2xl shadow-black/40";
   const style = drag ? { transform: `translate(${drag.x}px, ${drag.y}px)` } : undefined;
   const nextCorner = () => update({ corner: CORNERS[(CORNERS.indexOf(dock.corner) + 1) % CORNERS.length] });
 
   if (call.status !== "connected" || !call.room) {
     return (
-      <section aria-label="Video call" className={`${place} md:w-[328px] ${shell} p-3.5`}>
+      <section aria-label="Video call" className={`${place} w-[328px] ${shell} p-3.5`}>
         <CallState compact />
       </section>
     );
@@ -106,7 +111,7 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
-        className={`${place} md:w-auto rounded-full bg-surface border border-border-strong shadow-2xl shadow-black/40 p-1.5 flex items-center gap-2.5 touch-none`}
+        className={`${place} w-auto rounded-full bg-surface border border-border-strong shadow-2xl shadow-black/40 p-1.5 flex items-center gap-2.5 touch-none`}
       >
         <Pill myRole={myRole} others={others} />
         <div className="flex items-center gap-1.5">
@@ -126,12 +131,12 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
   }
 
   return (
-    <section ref={box} aria-label="Video call" style={style} className={`${place} md:w-[328px] ${shell} overflow-hidden`}>
+    <section ref={box} aria-label="Video call" style={style} className={`${place} w-[328px] ${shell} overflow-hidden`}>
       <div
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
-        className="h-[38px] flex items-center gap-2 pl-3 pr-1.5 text-[12.5px] text-muted md:cursor-grab md:active:cursor-grabbing touch-none select-none"
+        className="h-[38px] flex items-center gap-2 pl-3 pr-1.5 text-[12.5px] text-muted cursor-grab active:cursor-grabbing touch-none select-none"
       >
         <span className="w-[7px] h-[7px] rounded-full bg-success" aria-hidden />
         <CallClock />
@@ -141,7 +146,7 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
           onClick={nextCorner}
           aria-label="Move the call to the next corner"
           title="Move to another corner"
-          className="hidden md:inline-flex w-7 h-7 rounded-lg text-muted hover:text-fg hover:bg-panel items-center justify-center"
+          className="inline-flex w-7 h-7 rounded-lg text-muted hover:text-fg hover:bg-panel items-center justify-center"
         >
           <MoveDiagonal className="w-3.5 h-3.5" aria-hidden />
         </button>
@@ -157,7 +162,7 @@ export function CallDock({ myRole, others }: { myRole: "interviewer" | "candidat
       </div>
       <Faces myRole={myRole} others={others} />
       <div className="flex justify-center gap-2 px-2 pt-2.5 pb-3">
-        <CallControls size="md" />
+        <CallControls size="md" onLeave={onHangUp} />
       </div>
       <MediaNote className="px-3 pb-3 -mt-1" />
     </section>
@@ -174,27 +179,108 @@ function CallClock() {
   return <span className="tabular-nums">Call · {mmss(sec)}</span>;
 }
 
-/** The other person large, yourself small in the corner. On phones, side by side in a strip. */
+/** The other person large, yourself small in the corner. */
 function Faces({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
   const { local, main } = useCallPeople(myRole);
   return (
-    <div className="relative mx-2 max-md:flex max-md:gap-2">
+    <div className="relative mx-2">
       {main ? (
-        <Tile participant={main} preferScreen avatar={64} className="h-[180px] max-md:h-24 max-md:flex-1" />
+        <Tile participant={main} preferScreen avatar={64} className="h-[180px]" />
       ) : (
-        <div className="h-[180px] max-md:h-24 max-md:flex-1 rounded-xl bg-panel flex flex-col items-center justify-center gap-2 text-center px-4">
-          <span className="w-14 h-14 max-md:w-10 max-md:h-10 rounded-full border-2 border-dashed border-border-strong" aria-hidden />
+        <div className="h-[180px] rounded-xl bg-panel flex flex-col items-center justify-center gap-2 text-center px-4">
+          <span className="w-14 h-14 rounded-full border-2 border-dashed border-border-strong" aria-hidden />
           <span className="text-[12.5px] text-muted">Waiting for {others} to join the call</span>
         </div>
       )}
-      <Tile
-        participant={local}
-        label="You"
-        avatar={28}
-        showName={false}
-        rounded="rounded-lg"
-        className="md:absolute md:right-2 md:bottom-2 w-24 h-[60px] max-md:h-24 max-md:w-24 border border-border-strong"
-      />
+      <Tile participant={local} label="You" avatar={28} showName={false} rounded="rounded-lg" className="!absolute right-2 bottom-2 w-24 h-[60px] border border-border-strong" />
+    </div>
+  );
+}
+
+/**
+ * Phones and touch tablets: a strip in the page flow under the stage (it
+ * takes its own room, so the stage and its tool bars stay uncovered). Small
+ * tiles and mic, camera and hang-up in one row; folds to one line.
+ */
+function Strip({
+  myRole,
+  others,
+  onHangUp,
+  small,
+  onSmall,
+}: {
+  myRole: "interviewer" | "candidate";
+  others: string;
+  onHangUp?: () => void;
+  small: boolean;
+  onSmall: (small: boolean) => void;
+}) {
+  const call = useCall()!;
+  const shell = "shrink-0 border-t border-border bg-surface px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]";
+  if (call.status !== "connected" || !call.room) {
+    return (
+      <section aria-label="Video call" className={`${shell} px-3`}>
+        <div className="min-h-10 flex items-center">
+          <div className="flex-1 min-w-0">
+            <CallState compact />
+          </div>
+        </div>
+      </section>
+    );
+  }
+  const fold = (
+    <button
+      type="button"
+      onClick={() => onSmall(!small)}
+      aria-label={small ? "Show the video" : "Hide the video"}
+      title={small ? "Show the video" : "Hide the video"}
+      className="w-10 h-10 rounded-full text-muted hover:text-fg hover:bg-panel inline-flex items-center justify-center shrink-0"
+    >
+      {small ? <ChevronUp className="w-4 h-4" aria-hidden /> : <ChevronDown className="w-4 h-4" aria-hidden />}
+    </button>
+  );
+  if (small) {
+    return (
+      <section aria-label="Video call, folded" className={shell}>
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 min-w-0 pl-1">
+            <Pill myRole={myRole} others={others} />
+          </div>
+          <CallControls size="sm" share={false} onLeave={onHangUp} />
+          {fold}
+        </div>
+        <MediaNote className="px-1 pt-2" />
+      </section>
+    );
+  }
+  return (
+    <section aria-label="Video call" className={shell}>
+      <div className="flex items-center gap-1.5 sm:gap-2">
+        <StripFaces myRole={myRole} others={others} />
+        <div className="ml-auto flex items-center gap-1.5">
+          <CallControls size="sm" share={false} onLeave={onHangUp} />
+          {fold}
+        </div>
+      </div>
+      <MediaNote className="px-1 pt-2" />
+    </section>
+  );
+}
+
+function StripFaces({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
+  const { local, main } = useCallPeople(myRole);
+  // A phone tile is too small for a name label over the initials.
+  const narrow = useMedia("(max-width: 639px)");
+  return (
+    <div className="flex-1 min-w-0 flex items-center gap-1.5 sm:gap-2">
+      {main ? (
+        <Tile participant={main} preferScreen avatar={36} showName={!narrow} rounded="rounded-lg" className="flex-1 min-w-0 sm:flex-none sm:w-[152px] h-[76px] sm:h-[88px]" />
+      ) : (
+        <div className="flex-1 min-w-0 sm:flex-none sm:w-[152px] h-[76px] sm:h-[88px] rounded-lg bg-panel flex items-center justify-center px-2 text-center">
+          <span className="text-[12px] text-muted leading-snug line-clamp-3">Waiting for {others}</span>
+        </div>
+      )}
+      <Tile participant={local} label="You" avatar={28} showName={false} rounded="rounded-lg" className="shrink-0 w-[60px] sm:w-[88px] h-[76px] sm:h-[88px] border border-border-strong" />
     </div>
   );
 }
@@ -203,7 +289,7 @@ function Faces({ myRole, others }: { myRole: "interviewer" | "candidate"; others
 function Pill({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
   const { main } = useCallPeople(myRole);
   if (!main) {
-    return <span className="pl-2 pr-1 text-[13px] text-muted whitespace-nowrap">Waiting for {others}</span>;
+    return <span className="block pl-2 pr-1 text-[13px] text-muted truncate">Waiting for {others}</span>;
   }
   return <PillPerson p={main} />;
 }

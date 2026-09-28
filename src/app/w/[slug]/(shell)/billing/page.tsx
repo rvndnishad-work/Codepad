@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
-import { growthToolsEnabled } from "@/lib/billing/trial";
+import { growthToolsEnabled, trialActive } from "@/lib/billing/trial";
+import { videoAddonAvailable } from "@/lib/video/addon";
+import { subscriptionInterval } from "@/lib/video/addon-server";
 import { planSummary } from "@/lib/billing/summary";
 import { PLAN_COMPARISON, PLAN_ORDER, WORKSPACE_PLANS, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
@@ -44,6 +46,9 @@ export default async function BillingPage({ params, searchParams }: Props) {
       lowCreditThreshold: true,
       includedCreditsLeft: true,
       includedCreditsGrantedAt: true,
+      videoEnabled: true,
+      videoEnabledAt: true,
+      videoAddonItemId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -54,7 +59,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews] = await Promise.all([
+  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews, videoCalls, interval] = await Promise.all([
     canMember(me, "billing:manage"),
     prisma.workspaceInvite.count({ where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: now } } }),
     getWorkspaceCredits(workspace.id),
@@ -62,6 +67,17 @@ export default async function BillingPage({ params, searchParams }: Props) {
     prisma.takeHomeAssignment.count({ where: { workspaceId: workspace.id, createdAt: { gte: monthStart } } }),
     prisma.aIInterviewSession.count({ where: { workspaceId: workspace.id, practice: false, createdAt: { gte: monthStart } } }),
     prisma.interviewSession.count({ where: { workspaceId: workspace.id, type: { not: "take-home" }, createdAt: { gte: monthStart } } }),
+    // Live interviews that ran on built-in video this month.
+    prisma.interviewSession.count({
+      where: {
+        workspaceId: workspace.id,
+        builtinVideo: true,
+        type: { not: "take-home" },
+        status: { in: ["in_progress", "completed"] },
+        startedAt: { gte: monthStart },
+      },
+    }),
+    subscriptionInterval(workspace.stripeSubscriptionId),
   ]);
 
   const summary = planSummary(workspace, now);
@@ -125,6 +141,15 @@ export default async function BillingPage({ params, searchParams }: Props) {
       }}
       canManage={canManage}
       subscribed={subscribed}
+      video={{
+        available: videoAddonAvailable(workspace, now),
+        onTrial: trialActive(workspace, now),
+        on: workspace.videoEnabled,
+        onSince: workspace.videoEnabledAt ? workspace.videoEnabledAt.toISOString() : null,
+        billed: Boolean(workspace.videoAddonItemId),
+        callsThisMonth: videoCalls,
+        interval,
+      }}
       stripeConfigured={Boolean(process.env.STRIPE_SECRET_KEY)}
       compare={{
         plans: PLAN_ORDER.map((k) => ({

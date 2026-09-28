@@ -182,6 +182,8 @@ describe("administration audit actions", () => {
       SUBSCRIPTION_CANCELLED: "billing",
       SUBSCRIPTION_PAYMENT_FAILED: "billing",
       CREDITS_PURCHASED: "billing",
+      VIDEO_ADDON_ENABLED: "billing",
+      VIDEO_ADDON_DISABLED: "billing",
       CREDITS_LOW_ALERT_SENT: "billing",
       TRIAL_ENDED: "billing",
       INTERVIEW_INVITE_RESENT: "screenings",

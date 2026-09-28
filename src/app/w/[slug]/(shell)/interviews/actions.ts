@@ -19,6 +19,8 @@ import { inviteGuests, type DeliveryStatus } from "@/lib/interview/guests";
 import { candidateRoomPath } from "@/lib/interview/room-server";
 import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 import { cancelInterviewEvent, syncInterviewEvent } from "@/lib/calendar/server";
+import { videoCallsOn } from "@/lib/video/addon";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import {
   formatOf,
   isEmail,
@@ -112,6 +114,8 @@ const scheduleSchema = z.object({
   minutes: z.number().int().min(MIN_MINUTES).max(MAX_MINUTES),
   /** Zoom, Meet, Teams... link for the call. https only. */
   meetingUrl: z.string().trim().max(MAX_MEETING_URL).optional(),
+  /** Talk with built-in video (workspaces with the add-on) instead of the link. */
+  builtinVideo: z.boolean().optional(),
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
@@ -190,7 +194,16 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
 
     const meeting = cleanMeetingUrl(d.meetingUrl);
     if (!meeting.ok) throw new ActionError(`Video call link: ${meeting.error}`);
-    const meetingUrl = meeting.url;
+    // With the video add-on on, built-in video is the default and the link is
+    // dropped; without it, an interview with a link keeps using that link if
+    // the add-on is switched on later.
+    const ws = await prisma.workspace.findUnique({
+      where: { id: a.workspace.id },
+      select: { planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true },
+    });
+    const videoOn = !!ws && videoCallsOn(ws);
+    const builtinVideo = videoOn ? d.builtinVideo !== false : !meeting.url;
+    const meetingUrl = videoOn && builtinVideo ? null : meeting.url;
     const setupGroupId = people.length > 1 ? randomUUID() : null;
     // New interviews keep the workspace's scorecard defaults (Settings > Screening defaults).
     const start = screeningStartValues((await loadWorkspaceSettings(a.workspace.id)) ?? normalizeWorkspaceSettings({})).interview;
@@ -209,6 +222,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         freshPlaygrounds: true,
         scenario: d.candidateBrief || null,
         meetingUrl,
+        builtinVideo,
         totalSec: d.minutes * 60,
         scheduledAt: p.time ? new Date(p.time) : null,
         workspaceId: a.workspace.id,
@@ -431,6 +445,7 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
     }
     // Cancel the calendar event first; the row goes with the session.
     await cancelInterviewEvent(s.id);
+    closeVideoRoomAfter(s.id);
     // Attempts point at the session by id only, so they go first; the rest cascades.
     await prisma.$transaction([
       prisma.challengeAttempt.deleteMany({ where: { sessionId: s.id } }),

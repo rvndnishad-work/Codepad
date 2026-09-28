@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
 import { checkoutSeatChargeCents } from "@/lib/billing/plans";
+import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -107,6 +108,21 @@ export async function POST(
           },
           quantity: seatCount,
         },
+        // Built-in video switched on during the trial carries over as its own
+        // line. The webhook tags this item so seat changes never touch it.
+        ...(workspace.videoEnabled && !isStarter
+          ? [
+              {
+                price_data: {
+                  currency: "usd",
+                  product_data: { name: "Built-in video", metadata: { kind: VIDEO_ADDON_KIND } },
+                  unit_amount: videoAddonCents(interval),
+                  recurring: { interval },
+                },
+                quantity: 1,
+              },
+            ]
+          : []),
       ],
       success_url: `${origin}/w/${slug}/billing?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/w/${slug}/billing?billing_cancel=true`,

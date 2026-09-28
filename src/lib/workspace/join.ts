@@ -15,6 +15,7 @@ import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspa
 import { seatUsage } from "@/lib/workspace/members";
 import { canJoinWithoutInvite, normalizeWorkspaceSettings } from "./settings";
 import { domainSuffixes } from "./security";
+import { seatItem } from "@/lib/video/addon";
 
 export type JoinableWorkspace = { name: string; slug: string; role: string; members: number };
 
@@ -109,7 +110,7 @@ export async function joinWorkspaceWithoutInvite(
       const count = await prisma.workspaceMember.count({ where: { workspaceId: ws.id } });
       const stripe = getStripe();
       const sub = await stripe.subscriptions.retrieve(ws.stripeSubscriptionId);
-      const itemId = sub.items.data[0]?.id;
+      const itemId = seatItem(sub.items.data)?.id;
       if (itemId) await stripe.subscriptionItems.update(itemId, { quantity: count });
     } catch (err) {
       console.error("[join] Stripe seat update failed:", err);

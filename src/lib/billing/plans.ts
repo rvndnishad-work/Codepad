@@ -10,6 +10,8 @@
  *   - growthToolsEnabled / effectivePlanAllowsAiScreening (src/lib/billing/trial.ts)
  *     for AI screening, ATS sync, API keys and External MCP
  *   - effectivePlan().seatLimit for the invite seat cap
+ *   - videoAddonAvailable (src/lib/video/addon.ts) for built-in video calls,
+ *     a flat per-workspace add-on an admin switches on in Billing
  * Take homes, live interviews, the question library and candidates are not
  * plan-gated.
  *
@@ -72,6 +74,7 @@ export const PLAN_COMPARISON: { feature: string; cells: [string, string, string]
   { feature: "Question library and candidates", cells: ["Yes", "Yes", "Yes"] },
   { feature: "AI screening", cells: ["No", "10 credits per seat a month", "10 credits per seat a month"] },
   { feature: "ATS sync, API keys and external tools", cells: ["No", "Yes", "Yes"] },
+  { feature: "Built-in video calls", cells: ["No", "Add-on, $15 a month", "Add-on, $15 a month"] },
 ];
 
 /** Features Growth adds over Free, for the short list on the plan card. */

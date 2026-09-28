@@ -14,6 +14,7 @@ import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS, type WorkspaceAuditA
 import { planDisplayName, subscriptionUpdateAudits } from "@/lib/billing/usage";
 import { checkLowCredits } from "@/lib/billing/credit-alerts";
 import { runIncludedCreditsIfDue } from "@/lib/billing/included-credits-server";
+import { linkVideoAddonAfterCheckout } from "@/lib/video/addon-server";
 
 /** Billing events in the workspace audit log. Stripe is the actor. */
 function audit(workspaceId: string, action: WorkspaceAuditAction, meta: Record<string, unknown>) {
@@ -133,6 +134,12 @@ export async function POST(req: Request) {
           } catch (err) {
             console.error(`Included credits for workspace ${workspaceId} failed:`, err);
           }
+          // Video switched on during the trial came through as its own line.
+          try {
+            await linkVideoAddonAfterCheckout(workspaceId, stripeSubscriptionId);
+          } catch (err) {
+            console.error(`Video add-on link for workspace ${workspaceId} failed:`, err);
+          }
         }
         break;
       }
@@ -151,6 +158,7 @@ export async function POST(req: Request) {
           data: {
             stripeSubscriptionId: null,
             planName: "FREE",
+            videoAddonItemId: null,
           },
         });
         // Mirror onto space memberships (no-op for workspace subs).

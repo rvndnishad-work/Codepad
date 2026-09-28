@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { ROLE_LABELS } from "@/lib/workspace/members";
+import { seatItem } from "@/lib/video/addon";
 
 /**
  * Accept a workspace invite (IP-73). Creates the WorkspaceMember only here,
@@ -69,7 +70,7 @@ export async function acceptWorkspaceInviteAction(token: string): Promise<{ slug
         const count = await prisma.workspaceMember.count({ where: { workspaceId: invite.workspace.id } });
         const stripe = getStripe();
         const sub = await stripe.subscriptions.retrieve(invite.workspace.stripeSubscriptionId);
-        const itemId = sub.items.data[0]?.id;
+        const itemId = seatItem(sub.items.data)?.id;
         if (itemId) await stripe.subscriptionItems.update(itemId, { quantity: count });
       } catch (err) {
         console.error("[ws-invite-accept] Stripe seat scale failed:", err);

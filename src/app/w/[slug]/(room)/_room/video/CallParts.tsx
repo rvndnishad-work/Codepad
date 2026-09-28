@@ -20,7 +20,7 @@ import {
   useTracks,
 } from "@livekit/components-react";
 import { Loader2, Mic, MicOff, MonitorUp, PhoneOff, RotateCcw, Settings2, Video, VideoOff, X } from "lucide-react";
-import { Avatar } from "../parts";
+import { RoleAvatar } from "../parts";
 import { useCall } from "./VideoCall";
 import { savePrefs } from "./prefs";
 
@@ -97,7 +97,7 @@ export function Tile({
           className={`absolute inset-0 w-full h-full ${showScreen ? "object-contain bg-bg" : "object-cover"} ${participant.isLocal && !showScreen ? "[transform:scaleX(-1)]" : ""}`}
         />
       ) : (
-        <Avatar name={nameOf(participant)} size={avatar} />
+        <RoleAvatar name={nameOf(participant)} role={roleOf(participant)} size={avatar} />
       )}
       {showName && (
         <span className="absolute left-2 bottom-2 max-w-[calc(100%-1rem)] h-6 px-2 rounded-md bg-bg/75 text-[12px] text-fg inline-flex items-center gap-1.5 truncate">

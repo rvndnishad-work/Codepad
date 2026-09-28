@@ -33,7 +33,7 @@ import {
 import type { RoomData } from "@/lib/interview/room-server";
 import { useRelayProvider, useRelaySnapshot } from "@/app/interview/[id]/tools/useToolsRoom";
 import { meetingProvider } from "@/lib/interview/meeting";
-import { Avatar, Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
+import { Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
 import { readableTextOn } from "@/lib/workspace/candidate-experience";
 import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 import { giveInterviewConsentAction } from "./actions";
@@ -260,7 +260,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
                 {seats.map((s) => (
                   <li key={s.key} className={`flex items-center gap-3 rounded-xl px-2 py-2 -mx-2 transition-colors ${s.here ? "" : "opacity-60"}`}>
                     <span className="relative">
-                      {s.here ? <Avatar name={s.name} size={36} /> : <span className="block w-9 h-9 rounded-full border border-dashed border-border-strong" aria-hidden />}
+                      {s.here ? <RoleAvatar name={s.name} role={s.role} size={36} /> : <span className="block w-9 h-9 rounded-full border border-dashed border-border-strong" aria-hidden />}
                       {s.here && <PresenceDot on className="absolute -bottom-0.5 -right-0.5" />}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -392,7 +392,7 @@ function StatusCard({
         <div className="flex gap-1">
           {here.slice(0, 4).map((s) => (
             <span key={s.key} className="rounded-full" title={s.name}>
-              <Avatar name={s.name} size={30} />
+              <RoleAvatar name={s.name} role={s.role} size={30} />
             </span>
           ))}
         </div>

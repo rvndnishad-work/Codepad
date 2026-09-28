@@ -8,7 +8,7 @@ import { render, renderHook, screen, waitFor } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), prefetch: vi.fn() }) }));
 
-import { COMPACT_CALL, useMedia, withoutTitle } from "@/app/w/[slug]/(room)/_room/parts";
+import { COMPACT_CALL, ROLE_TONE, RoleAvatar, useMedia, withoutTitle } from "@/app/w/[slug]/(room)/_room/parts";
 import { VideoCall } from "@/app/w/[slug]/(room)/_room/video/VideoCall";
 import { CallDock } from "@/app/w/[slug]/(room)/_room/video/CallDock";
 
@@ -62,5 +62,19 @@ describe("CallDock on a phone", () => {
     const dock = screen.getByRole("region", { name: "Video call" });
     expect(dock.className).not.toMatch(/\babsolute\b/);
     expect(screen.getByRole("button", { name: /Rejoin/ })).toBeTruthy();
+  });
+});
+
+describe("RoleAvatar", () => {
+  it("tints by role, not by name, so the two sides of the table differ", () => {
+    const { container } = render(
+      <>
+        <RoleAvatar name="Alex Morgan" role="interviewer" />
+        <RoleAvatar name="Alex Morgan" role="candidate" />
+      </>,
+    );
+    const [a, b] = [...container.querySelectorAll("span")];
+    for (const cls of ROLE_TONE.interviewer.split(" ")) expect(a.className).toContain(cls);
+    for (const cls of ROLE_TONE.candidate.split(" ")) expect(b.className).toContain(cls);
   });
 });

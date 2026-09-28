@@ -206,6 +206,17 @@ export function withoutTitle(md: string, title: string): string {
   return md.slice(m[0].length).replace(/^\s+/, "");
 }
 
+/** One colour per side of the table: indigo for interviewers (the hiring accent), amber for candidates. */
+export const ROLE_TONE = {
+  interviewer: "bg-secondary/20 text-secondary-soft",
+  candidate: "bg-warning/15 text-warning",
+} as const;
+
+/** Initials tinted by role, so people are easy to tell apart with cameras off. */
+export function RoleAvatar({ name, role, size }: { name: string; role: "interviewer" | "candidate" | null | undefined; size?: number }) {
+  return <Avatar name={name} size={size} tone={role ? ROLE_TONE[role] : undefined} />;
+}
+
 export function roleLabel(r: "interviewer" | "candidate"): string {
   return r === "interviewer" ? "Interviewer" : "Candidate";
 }

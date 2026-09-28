@@ -45,13 +45,14 @@ const AVATAR_TONES = [
   "bg-elevated text-fg",
 ];
 
-export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+/** Initials in a tinted circle; the tint comes from the name unless `tone` sets it. */
+export function Avatar({ name, size = 32, tone }: { name: string; size?: number; tone?: string }) {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return (
     <span
       aria-hidden
-      className={`inline-flex items-center justify-center rounded-full shrink-0 font-semibold ${AVATAR_TONES[h % AVATAR_TONES.length]}`}
+      className={`inline-flex items-center justify-center rounded-full shrink-0 font-semibold ${tone ?? AVATAR_TONES[h % AVATAR_TONES.length]}`}
       style={{ width: size, height: size, fontSize: size >= 48 ? 16 : size <= 28 ? 12 : 13 }}
     >
       {initials(name)}

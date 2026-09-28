@@ -1,76 +1,49 @@
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { requireAdminAccess } from "@/lib/permissions/staff";
-import { PUBLIC_CREDIT_PACKS, PUBLIC_PLANS } from "@/lib/billing/public-pricing";
+import { getPricingSettings } from "@/lib/billing/pricing-copy-store";
+import PricingCopyForm from "./PricingCopyForm";
 
 export const metadata = {
   title: "Pricing — Admin",
 };
 
 /**
- * Read-only. Public prices come from the plan config in code
- * (src/lib/billing/plans.ts and src/lib/ai-interview/credits.ts), the same
- * config the workspace billing page and the Stripe checkout use, so the page
- * can never advertise a price Stripe does not charge.
+ * Edits /pricing and the /hire teaser: the wording, and the prices Stripe
+ * checkout charges (Growth seat, credit packs, video add-on). Everything is
+ * stored in one SiteSetting row and read by getEffectivePricing(), which the
+ * checkouts and every price label use, so the page and Stripe always agree.
  */
 export default async function AdminPricingPage() {
   await requireAdminAccess();
+  const { copy, prices } = await getPricingSettings();
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Pricing page</h2>
-        <p className="mt-1 max-w-2xl text-sm text-muted">
-          What <Link href="/pricing" className="underline">/pricing</Link> shows. Prices come from the plan config in{" "}
-          <code>src/lib/billing/plans.ts</code> and <code>src/lib/ai-interview/credits.ts</code>, which Stripe checkout
-          also reads. Change them there and deploy.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight">Pricing</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Edit what <Link href="/pricing" className="underline">/pricing</Link> and the pricing section of{" "}
+            <Link href="/hire" className="underline">/hire</Link> say, and the prices Stripe checkout charges: the
+            Growth seat, AI credit packs and the built-in video add-on. The public pages, the workspace billing page
+            and checkout all read the same prices, so what people see is what they pay.
+          </p>
+          <p className="mt-2 text-[11px] text-muted">
+            Empty fields use the defaults in <code>src/lib/billing/plans.ts</code>,{" "}
+            <code>src/lib/ai-interview/credit-packs.ts</code> and <code>src/lib/video/addon.ts</code>.
+          </p>
+        </div>
+        <Link
+          href="/pricing"
+          target="_blank"
+          className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-bold text-fg transition hover:bg-bg"
+        >
+          View /pricing <ExternalLink className="h-3.5 w-3.5" />
+        </Link>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[560px] text-left text-sm">
-          <thead className="bg-surface text-xs text-muted">
-            <tr>
-              <th className="px-4 py-2 font-medium">Plan</th>
-              <th className="px-4 py-2 font-medium">Monthly</th>
-              <th className="px-4 py-2 font-medium">Yearly</th>
-              <th className="px-4 py-2 font-medium">Seats</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {PUBLIC_PLANS.map((p) => (
-              <tr key={p.key}>
-                <td className="px-4 py-2 font-medium">{p.name}</td>
-                <td className="px-4 py-2 tabular-nums">{p.price.monthly} {p.unit.monthly}</td>
-                <td className="px-4 py-2 tabular-nums">{p.price.annual} {p.unit.annual}</td>
-                <td className="px-4 py-2">{p.seats}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <table className="w-full min-w-[480px] text-left text-sm">
-          <thead className="bg-surface text-xs text-muted">
-            <tr>
-              <th className="px-4 py-2 font-medium">AI credit pack</th>
-              <th className="px-4 py-2 font-medium">Credits</th>
-              <th className="px-4 py-2 font-medium">Price</th>
-              <th className="px-4 py-2 font-medium">Per credit</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {PUBLIC_CREDIT_PACKS.map((p) => (
-              <tr key={p.id}>
-                <td className="px-4 py-2 font-medium">{p.label}</td>
-                <td className="px-4 py-2 tabular-nums">{p.credits}</td>
-                <td className="px-4 py-2 tabular-nums">{p.price}</td>
-                <td className="px-4 py-2 tabular-nums">{p.perCredit}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <PricingCopyForm initialCopy={copy} initialPrices={prices} />
     </div>
   );
 }

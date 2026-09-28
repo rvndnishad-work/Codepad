@@ -26,6 +26,7 @@ const video = (over: Partial<RoomVideo> = {}): RoomVideo => ({
   recordVideo: false,
   recordingReady: false,
   billingHref: "/w/acme/billing",
+  offerPrice: "$15",
   ...over,
 });
 

@@ -24,6 +24,8 @@ export type RoomVideo = {
   /** Interviewers only: the recordings bucket and LiveKit are set up, so Record can work. */
   recordingReady: boolean;
   billingHref: string;
+  /** The add-on price for the offer text, e.g. "$15" (a month). Empty when there is no offer. */
+  offerPrice: string;
 };
 
 /**

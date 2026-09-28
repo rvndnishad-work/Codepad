@@ -67,15 +67,19 @@ export const PLAN_ORDER: WorkspacePlanKey[] = ["FREE", "GROWTH", "ENTERPRISE"];
 
 /**
  * What each plan includes, row by row, in PLAN_ORDER. Every row maps to a
- * gate listed in the header comment.
+ * gate listed in the header comment. The video add-on price is passed in so
+ * the table shows the effective price (see ./prices).
  */
-export const PLAN_COMPARISON: { feature: string; cells: [string, string, string] }[] = [
-  { feature: "Take homes and live interviews", cells: ["Yes", "Yes", "Yes"] },
-  { feature: "Question library and candidates", cells: ["Yes", "Yes", "Yes"] },
-  { feature: "AI screening", cells: ["No", "10 credits per seat a month", "10 credits per seat a month"] },
-  { feature: "ATS sync, API keys and external tools", cells: ["No", "Yes", "Yes"] },
-  { feature: "Built-in video calls", cells: ["No", "Add-on, $15 a month", "Add-on, $15 a month"] },
-];
+export function planComparison(videoMonthlyCents: number): { feature: string; cells: [string, string, string] }[] {
+  const video = `Add-on, ${formatUsd(videoMonthlyCents)} a month`;
+  return [
+    { feature: "Take homes and live interviews", cells: ["Yes", "Yes", "Yes"] },
+    { feature: "Question library and candidates", cells: ["Yes", "Yes", "Yes"] },
+    { feature: "AI screening", cells: ["No", "10 credits per seat a month", "10 credits per seat a month"] },
+    { feature: "ATS sync, API keys and external tools", cells: ["No", "Yes", "Yes"] },
+    { feature: "Built-in video calls", cells: ["No", video, video] },
+  ];
+}
 
 /** Features Growth adds over Free, for the short list on the plan card. */
 export const GROWTH_ADDS = ["AI screening, 10 credits per seat a month", "ATS sync", "API keys", "External tools for AI screening"];
@@ -86,15 +90,28 @@ export function formatUsd(cents: number): string {
   return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(dollars) ? 0 : 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Short price text for the comparison table. */
-export function priceLabel(plan: WorkspacePlan): string {
+/** Per-seat price of a plan: monthly and the discounted monthly rate on annual billing, in cents. */
+export type SeatPrice = { monthlyCents: number; annualMonthlyCents: number };
+
+/** Growth seat price from this config. The effective price may be overridden by an admin (see ./prices). */
+export function defaultGrowthSeatPrice(): SeatPrice {
+  const price = WORKSPACE_PLANS.GROWTH.price;
+  if (price.kind !== "per_seat") throw new Error("Growth must be priced per seat");
+  return { monthlyCents: price.monthlyCents, annualMonthlyCents: price.annualMonthlyCents };
+}
+
+/**
+ * Short price text for the comparison table. Pass the effective Growth seat
+ * price so an admin override shows; defaults to the config above.
+ */
+export function priceLabel(plan: WorkspacePlan, growth: SeatPrice = defaultGrowthSeatPrice()): string {
   switch (plan.price.kind) {
     case "free":
       return "$0";
     case "sales":
       return "Talk to us";
     case "per_seat":
-      return `${formatUsd(plan.price.monthlyCents)} per seat a month`;
+      return `${formatUsd(plan.key === "GROWTH" ? growth.monthlyCents : plan.price.monthlyCents)} per seat a month`;
   }
 }
 
@@ -103,21 +120,32 @@ export function planConfig(planName: string | null | undefined): WorkspacePlan {
   return WORKSPACE_PLANS[(planName ?? "FREE") as WorkspacePlanKey] ?? WORKSPACE_PLANS.FREE;
 }
 
-/** Per-seat price in cents a month for a checkout (annual is the discounted monthly rate), from this config. */
-export function checkoutSeatPriceCents(plan: "STARTER" | "GROWTH", cadence: "monthly" | "annual"): number {
+/**
+ * Per-seat price in cents a month for a checkout (annual is the discounted
+ * monthly rate). Growth uses `growth`, which checkout passes as the effective
+ * price (admin override or this config; see ./prices). Starter is legacy and
+ * always priced from this config.
+ */
+export function checkoutSeatPriceCents(
+  plan: "STARTER" | "GROWTH",
+  cadence: "monthly" | "annual",
+  growth: SeatPrice = defaultGrowthSeatPrice(),
+): number {
   if (plan === "STARTER") {
     return cadence === "monthly" ? STARTER_SEAT_PRICE.monthlyCents : STARTER_SEAT_PRICE.annualMonthlyCents;
   }
-  const price = WORKSPACE_PLANS.GROWTH.price;
-  if (price.kind !== "per_seat") throw new Error("Growth must be priced per seat");
-  return cadence === "monthly" ? price.monthlyCents : price.annualMonthlyCents;
+  return cadence === "monthly" ? growth.monthlyCents : growth.annualMonthlyCents;
 }
 
 /**
  * What Stripe charges per seat for one billing period: the monthly price on
  * monthly plans, twelve discounted months on annual plans.
  */
-export function checkoutSeatChargeCents(plan: "STARTER" | "GROWTH", cadence: "monthly" | "annual"): number {
-  const perMonth = checkoutSeatPriceCents(plan, cadence);
+export function checkoutSeatChargeCents(
+  plan: "STARTER" | "GROWTH",
+  cadence: "monthly" | "annual",
+  growth: SeatPrice = defaultGrowthSeatPrice(),
+): number {
+  const perMonth = checkoutSeatPriceCents(plan, cadence, growth);
   return cadence === "annual" ? perMonth * 12 : perMonth;
 }

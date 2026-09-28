@@ -16,7 +16,7 @@ import {
   MCP_PUBLIC_TOOLS,
   type ToolCatalogEntry,
 } from "@/lib/mcp/catalog";
-import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import CopyButton from "./CopyButton";
 
 export const metadata = {
@@ -38,7 +38,7 @@ async function resolveOrigin(): Promise<string> {
 }
 
 export default async function McpDocsPage() {
-  const origin = await resolveOrigin();
+  const [origin, pricing] = await Promise.all([resolveOrigin(), getEffectivePricing()]);
   const url = `${origin}/api/mcp`;
   const publicUrl = `${origin}/api/mcp/public`;
 
@@ -280,7 +280,7 @@ export default async function McpDocsPage() {
             Starter workspaces can browse this page but can&apos;t mint keys.
           </p>
           <p className="text-sm text-muted leading-relaxed">
-            Credits: {AI_CREDIT_PACKS.map((p) => `${p.credits} for $${p.priceCents / 100}`).join(" · ")}.{" "}
+            Credits: {pricing.packs.map((p) => `${p.credits} for $${p.priceCents / 100}`).join(" · ")}.{" "}
             <Link href="/pricing" className="text-accent underline underline-offset-2">
               See plans
             </Link>{" "}

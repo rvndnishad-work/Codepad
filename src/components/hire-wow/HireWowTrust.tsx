@@ -3,6 +3,7 @@ import WowReveal from "@/components/wow/WowReveal";
 import PricingTeaser from "@/app/hire/PricingTeaser";
 import { CreditsDemo } from "./HireWowFeatures";
 import RevealLines from "@/components/wow/RevealLines";
+import type { PublicPlan } from "@/lib/billing/public-pricing";
 
 /** Copy beside the live billing demo. Kept here: a client module cannot export data to a server component. */
 const BILLING_COPY = {
@@ -50,7 +51,7 @@ const ITEMS = [
   },
 ];
 
-export default function HireWowTrust() {
+export default function HireWowTrust({ pricingPlans, lowestCreditPrice }: { pricingPlans: PublicPlan[]; lowestCreditPrice: string }) {
   return (
     <section className="relative bg-bg px-4 py-24 text-fg transition-colors md:py-32">
       <div className="mx-auto max-w-6xl">
@@ -81,7 +82,7 @@ export default function HireWowTrust() {
         </div>
 
         <div className="mt-24">
-          <PricingTeaser />
+          <PricingTeaser plans={pricingPlans} lowestCreditPrice={lowestCreditPrice} />
         </div>
 
         <div className="mt-10 grid grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-12">

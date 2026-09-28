@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
 import { checkoutSeatChargeCents } from "@/lib/billing/plans";
 import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -75,9 +76,12 @@ export async function POST(
     const seatCount = workspace.members.length;
 
     const isStarter = plan === "STARTER";
-    // Seat price comes from the plan config so the billing page and Stripe agree.
-    // Annual plans bill once a year, so the amount is twelve discounted months.
-    const priceAmount = checkoutSeatChargeCents(isStarter ? "STARTER" : "GROWTH", cadence);
+    // Seat price comes from the effective pricing (plan config with any admin
+    // override), the same source the pricing and billing pages show, so the
+    // page and Stripe agree. Annual plans bill once a year, so the amount is
+    // twelve discounted months.
+    const pricing = await getEffectivePricing();
+    const priceAmount = checkoutSeatChargeCents(isStarter ? "STARTER" : "GROWTH", cadence, pricing.growth);
 
     const productName = isStarter
       ? "Interviewpad Starter Workspace Seats"
@@ -116,7 +120,7 @@ export async function POST(
                 price_data: {
                   currency: "usd",
                   product_data: { name: "Built-in video", metadata: { kind: VIDEO_ADDON_KIND } },
-                  unit_amount: videoAddonCents(interval),
+                  unit_amount: videoAddonCents(interval, pricing.videoAddon),
                   recurring: { interval },
                 },
                 quantity: 1,

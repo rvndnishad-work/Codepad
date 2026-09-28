@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
 import { growthToolsEnabled, trialActive } from "@/lib/billing/trial";
 import { videoAddonAvailable } from "@/lib/video/addon";
-import { subscriptionInterval } from "@/lib/video/addon-server";
+import { subscriptionBilling } from "@/lib/video/addon-server";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { planSummary } from "@/lib/billing/summary";
-import { PLAN_COMPARISON, PLAN_ORDER, WORKSPACE_PLANS, priceLabel } from "@/lib/billing/plans";
+import { PLAN_ORDER, WORKSPACE_PLANS, planComparison, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
-import { AI_CREDIT_PACKS, getWorkspaceCredits } from "@/lib/ai-interview/credits";
+import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
 import { loadCreditSummary } from "@/lib/ai-interview/console-server";
 import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
 import { settingsAccess } from "@/lib/workspace/settings-server";
@@ -59,7 +60,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
 
   const now = new Date();
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews, videoCalls, interval] = await Promise.all([
+  const [canManage, pendingInvites, credits, takeHomeSessions, takeHomeLegacy, aiScreenings, interviews, videoCalls, stripeBilling, pricing] = await Promise.all([
     canMember(me, "billing:manage"),
     prisma.workspaceInvite.count({ where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: now } } }),
     getWorkspaceCredits(workspace.id),
@@ -77,10 +78,16 @@ export default async function BillingPage({ params, searchParams }: Props) {
         startedAt: { gte: monthStart },
       },
     }),
-    subscriptionInterval(workspace.stripeSubscriptionId),
+    subscriptionBilling(workspace.stripeSubscriptionId, workspace.videoAddonItemId),
+    getEffectivePricing(),
   ]);
+  const interval = stripeBilling.interval;
 
-  const summary = planSummary(workspace, now);
+  // A subscribed workspace keeps the seat price it signed up at, so the hint
+  // shows that; otherwise the current Growth price.
+  const billedSeatMonthly =
+    stripeBilling.seatCents === null ? null : Math.round(stripeBilling.interval === "year" ? stripeBilling.seatCents / 12 : stripeBilling.seatCents);
+  const summary = planSummary(workspace, now, undefined, billedSeatMonthly === null ? pricing.growth : { ...pricing.growth, monthlyCents: billedSeatMonthly });
   const seats = seatUsage(workspace, { members: workspace.members.length, pendingInvites }, now);
   const subscribed = Boolean(workspace.stripeCustomerId && workspace.stripeSubscriptionId);
   const aiScreening = growthToolsEnabled(workspace, now);
@@ -100,7 +107,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
         perMonth: planIncludesCredits(workspace.planName) ? workspace.members.length * INCLUDED_CREDITS_PER_SEAT : 0,
         nextAt: workspace.includedCreditsGrantedAt ? addOneMonth(workspace.includedCreditsGrantedAt).toISOString() : null,
       },
-      packs: AI_CREDIT_PACKS.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: "badge" in p ? p.badge : null })),
+      packs: pricing.packs.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.badge })),
       months,
       ledger: {
         rows: ledger.rows.map((r) => ({
@@ -149,16 +156,18 @@ export default async function BillingPage({ params, searchParams }: Props) {
         billed: Boolean(workspace.videoAddonItemId),
         callsThisMonth: videoCalls,
         interval,
+        // A billed add-on keeps the price it was added at; otherwise the current price.
+        priceCents: stripeBilling.addonCents ?? (interval === "year" ? pricing.videoAddon.annualCents : pricing.videoAddon.monthlyCents),
       }}
       stripeConfigured={Boolean(process.env.STRIPE_SECRET_KEY)}
       compare={{
         plans: PLAN_ORDER.map((k) => ({
           key: k,
           name: WORKSPACE_PLANS[k].name,
-          price: priceLabel(WORKSPACE_PLANS[k]),
+          price: priceLabel(WORKSPACE_PLANS[k], pricing.growth),
           seats: WORKSPACE_PLANS[k].seatsLabel,
         })),
-        rows: PLAN_COMPARISON,
+        rows: planComparison(pricing.videoAddon.monthlyCents),
       }}
     />
   );

@@ -5,16 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, Loader2, Minus } from "lucide-react";
 import {
-  ANNUAL_SAVING_PERCENT,
-  LOWEST_CREDIT_PRICE,
   PUBLIC_COMPARISON,
-  PUBLIC_CREDIT_PACKS,
-  PUBLIC_PLANS,
   PUBLIC_PRICING_FAQ,
   SCREENING_CREDIT_COSTS,
   INCLUDED_CREDITS_PER_SEAT,
   TRIAL_CREDITS,
   type Cadence,
+  type PublicCreditPack,
   type PublicPlan,
 } from "@/lib/billing/public-pricing";
 
@@ -31,14 +28,23 @@ const planLabel = (planName: string) =>
 /**
  * Public pricing. Every number comes from src/lib/billing/public-pricing.ts,
  * which reads the same plan config the workspace billing page and the Stripe
- * checkout use.
+ * checkout use, with any admin price overrides. `plans` and `packs` carry the
+ * admin wording from /admin/pricing (names, audience, includes, badges).
  */
 export default function PricingClient({
   workspaces,
   isSignedIn,
+  plans,
+  packs,
+  annualSavingPercent,
+  lowestCreditPrice,
 }: {
   workspaces: WorkspaceInfo[];
   isSignedIn: boolean;
+  plans: PublicPlan[];
+  packs: PublicCreditPack[];
+  annualSavingPercent: number;
+  lowestCreditPrice: string;
 }) {
   const [cadence, setCadence] = useState<Cadence>("annual");
   const [workspaceSlug, setWorkspaceSlug] = useState(workspaces[0]?.slug ?? "");
@@ -91,7 +97,7 @@ export default function PricingClient({
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted">
             Take-homes and live interviews on every plan. Each paid seat adds {INCLUDED_CREDITS_PER_SEAT} AI screening
             credits a month to your team pool, and new workspaces start with {TRIAL_CREDITS} free credits. Need more?
-            Packs from {LOWEST_CREDIT_PRICE} a credit. Candidates never take a seat.
+            Packs from {lowestCreditPrice} a credit. Candidates never take a seat.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -107,7 +113,7 @@ export default function PricingClient({
                     cadence === c ? "bg-ink text-ink-fg" : "text-muted hover:text-fg"
                   }`}
                 >
-                  {c === "monthly" ? "Monthly" : `Yearly, save ${ANNUAL_SAVING_PERCENT}%`}
+                  {c === "monthly" ? "Monthly" : annualSavingPercent > 0 ? `Yearly, save ${annualSavingPercent}%` : "Yearly"}
                 </button>
               ))}
             </div>
@@ -137,7 +143,7 @@ export default function PricingClient({
       <section className="px-4 py-12 md:py-16">
         <div className="mx-auto max-w-6xl">
           <div className="ip-frame grid grid-cols-1 gap-px bg-border md:grid-cols-3">
-            {PUBLIC_PLANS.map((plan) => (
+            {plans.map((plan) => (
               <PlanColumn
                 key={plan.key}
                 plan={plan}
@@ -194,7 +200,7 @@ export default function PricingClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {PUBLIC_CREDIT_PACKS.map((p) => (
+                {packs.map((p) => (
                   <tr key={p.id}>
                     <td className="py-4 pr-4">
                       <span className="font-medium">{p.label}</span>
@@ -224,7 +230,7 @@ export default function PricingClient({
               <thead>
                 <tr className="border-b border-border-strong">
                   <th scope="col" className="ip-label py-3 pr-4 font-medium">Feature</th>
-                  {PUBLIC_PLANS.map((p) => (
+                  {plans.map((p) => (
                     <th key={p.key} scope="col" className={`ip-label py-3 pr-4 font-medium ${p.recommended ? "ip-label-fg" : ""}`}>
                       {p.name}
                     </th>

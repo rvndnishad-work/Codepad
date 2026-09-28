@@ -33,6 +33,13 @@ const stripe = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/stripe", () => ({ getStripe: () => stripe }));
 
+// Effective prices: defaults unless a test sets an admin override.
+const pricing = vi.hoisted(() => ({ overrides: {} as Record<string, unknown> }));
+vi.mock("@/lib/billing/pricing-copy-store", async () => {
+  const { resolvePrices } = await import("@/lib/billing/prices");
+  return { getEffectivePricing: vi.fn(async () => resolvePrices(pricing.overrides)) };
+});
+
 import { findCheckoutAddonItem, setVideoAddon, VIDEO_ADDON_PRODUCT_ID } from "@/lib/video/addon-server";
 import { seatItem, VIDEO_ADDON_KIND } from "@/lib/video/addon";
 
@@ -63,6 +70,7 @@ function subWith(items: unknown[]) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  pricing.overrides = {};
   db.updates = [];
   db.audits = [];
   process.env.STRIPE_SECRET_KEY = "sk_test_x";
@@ -97,6 +105,14 @@ describe("setVideoAddon on", () => {
     await setVideoAddon({ workspaceId: "ws1", on: true, actorUserId: "u1" });
     expect(stripe.products.create).toHaveBeenCalledWith(expect.objectContaining({ id: VIDEO_ADDON_PRODUCT_ID, name: "Built-in video" }));
     expect(stripe.subscriptionItems.create.mock.calls[0][0].price_data.unit_amount).toBe(1500);
+  });
+
+  it("prices a newly added line at the admin override", async () => {
+    pricing.overrides = { videoAddon: { monthlyCents: 2500, annualCents: 24000 } };
+    db.ws = growth();
+    subWith([seat("year")]);
+    await setVideoAddon({ workspaceId: "ws1", on: true, actorUserId: "u1" });
+    expect(stripe.subscriptionItems.create.mock.calls[0][0].price_data.unit_amount).toBe(24000);
   });
 
   it("is idempotent: reuses an add-on item already on the subscription", async () => {
@@ -205,9 +221,16 @@ describe("findCheckoutAddonItem", () => {
     const item = { ...untaggedAddon(1500, "month"), price: { ...untaggedAddon(1500, "month").price, product: { id: "prod_x", name: "Built-in video" } } };
     expect(findCheckoutAddonItem([seat(), item])?.id).toBe("si_checkout");
   });
-  it("falls back to the add-on price for the interval", () => {
-    expect(findCheckoutAddonItem([untaggedAddon(18000, "year"), seat("year")])?.id).toBe("si_checkout");
-    expect(findCheckoutAddonItem([seat(), untaggedAddon(1200, "month")])).toBeUndefined();
+  it("finds the line by product metadata or the add-on product id, whatever it costs", () => {
+    const tagged = { ...untaggedAddon(2500, "month"), price: { ...untaggedAddon(2500, "month").price, product: { id: "prod_y", metadata: { kind: VIDEO_ADDON_KIND } } } };
+    expect(findCheckoutAddonItem([seat(), tagged])?.id).toBe("si_checkout");
+    const byId = { ...untaggedAddon(9900, "year"), price: { ...untaggedAddon(9900, "year").price, product: VIDEO_ADDON_PRODUCT_ID } };
+    expect(findCheckoutAddonItem([byId, seat("year")])?.id).toBe("si_checkout");
+  });
+  it("never identifies the add-on by amount", () => {
+    // Priced exactly like the default add-on, but nothing marks it as one.
+    expect(findCheckoutAddonItem([untaggedAddon(18000, "year"), seat("year")])).toBeUndefined();
+    expect(findCheckoutAddonItem([seat(), untaggedAddon(1500, "month")])).toBeUndefined();
   });
   it("never picks the only item on a seat-only subscription", () => {
     expect(findCheckoutAddonItem([seat()])).toBeUndefined();

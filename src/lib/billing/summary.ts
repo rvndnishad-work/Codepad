@@ -3,7 +3,7 @@
  * rules are unit-tested instead of living as ternaries in a component.
  */
 import { effectivePlan, trialActive, type PlanFields, TRIAL_SEAT_LIMIT, FREE_SEAT_LIMIT, TRIAL_DURATION_DAYS } from "./trial";
-import { WORKSPACE_PLANS, formatUsd, planConfig } from "./plans";
+import { defaultGrowthSeatPrice, formatUsd, planConfig, type SeatPrice } from "./plans";
 
 const DAY_MS = 86_400_000;
 
@@ -23,10 +23,15 @@ export type PlanSummary = {
 
 const fmtDay = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
 
-export function planSummary(ws: PlanFields, now: Date = new Date(), trialDays = TRIAL_DURATION_DAYS): PlanSummary {
+/** `growth` is the effective Growth seat price (admin override or default). */
+export function planSummary(
+  ws: PlanFields,
+  now: Date = new Date(),
+  trialDays = TRIAL_DURATION_DAYS,
+  growth: SeatPrice = defaultGrowthSeatPrice(),
+): PlanSummary {
   const eff = effectivePlan(ws, now);
-  const growth = WORKSPACE_PLANS.GROWTH.price;
-  const growthPrice = growth.kind === "per_seat" ? formatUsd(growth.monthlyCents) : null;
+  const growthPrice = formatUsd(growth.monthlyCents);
 
   if (trialActive(ws, now) && eff.trialEndsAt) {
     const days = Math.max(1, Math.ceil((eff.trialEndsAt.getTime() - now.getTime()) / DAY_MS));

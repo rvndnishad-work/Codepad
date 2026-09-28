@@ -3,15 +3,15 @@ import { ArrowRight, Tag } from "lucide-react";
 import WowReveal from "@/components/wow/WowReveal";
 
 import RevealLines from "@/components/wow/RevealLines";
-import { INCLUDED_CREDITS_PER_SEAT, LOWEST_CREDIT_PRICE, PUBLIC_PLANS } from "@/lib/billing/public-pricing";
+import { INCLUDED_CREDITS_PER_SEAT, type PublicPlan } from "@/lib/billing/public-pricing";
 
 /**
  * Compact pricing teaser for the recruiter page. Reads the same plan data as
  * /pricing (src/lib/billing/public-pricing.ts), priced on yearly billing
- * because that is the cadence /pricing opens on.
+ * because that is the cadence /pricing opens on. `plans` carries the admin
+ * wording from /admin/pricing over the effective prices (what checkout charges).
  */
-export default function PricingTeaser() {
-  const plans = PUBLIC_PLANS;
+export default function PricingTeaser({ plans, lowestCreditPrice }: { plans: PublicPlan[]; lowestCreditPrice: string }) {
   return (
     <div>
       <WowReveal>
@@ -21,7 +21,7 @@ export default function PricingTeaser() {
             <RevealLines as="h3" className="wow-font-display mt-3 text-4xl md:text-6xl" lines={[<span key="l0">Per-seat plans.</span>, <span key="l1" className="wow-gradient-boss">AI screening included.</span>]} />
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
               Seats cover the workspace and everyone in it. Each paid seat adds{" "}
-              {INCLUDED_CREDITS_PER_SEAT} AI screening credits a month, and packs from {LOWEST_CREDIT_PRICE} a
+              {INCLUDED_CREDITS_PER_SEAT} AI screening credits a month, and packs from {lowestCreditPrice} a
               credit top up the pool. Credits are charged only when a candidate starts.
             </p>
           </div>

@@ -30,7 +30,6 @@ import {
   X,
 } from "lucide-react";
 import { cleanMeetingUrl, meetingProvider } from "@/lib/interview/meeting";
-import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
 import type { WizardVideo } from "./InterviewWizard";
 import type { GuideOption, MemberOption, PersonOption } from "@/lib/interview/wizard-server";
 import {
@@ -578,7 +577,7 @@ export function VideoOfferLine({ video, className = "" }: { video: WizardVideo; 
     <p className={`text-[13px] text-muted ${className}`}>
       {video.offerUpgrade
         ? "Or talk inside the room with built-in video, which comes with the Growth plan. "
-        : `Or talk inside the room with built-in video, $${VIDEO_ADDON_PRICE.monthlyCents / 100} a month. `}
+        : `Or talk inside the room with built-in video, ${video.offerPrice} a month. `}
       <Link href={video.billingHref} className="text-secondary-soft font-medium hover:underline">
         See Billing
       </Link>

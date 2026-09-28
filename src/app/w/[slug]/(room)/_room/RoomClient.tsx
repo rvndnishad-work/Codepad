@@ -13,22 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  CircleStop,
-  Code2,
-  FileText,
-  Loader2,
-  PanelRightClose,
-  PanelRightOpen,
-  Play,
-  Radio,
-  Sparkles,
-  Timer as TimerIcon,
-  X,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleStop, Code2, FileText, Loader2, PanelRightClose, PanelRightOpen, Play, Radio, Sparkles, Timer as TimerIcon, X } from "lucide-react";
 import type { RoomData } from "@/lib/interview/room-server";
 import { TOOLS, TOOL_BY_ID, type ToolId, type ToolsAction } from "@/lib/interview/tools";
 import { clock, parseRound, roundKey } from "@/lib/interview/room";
@@ -41,6 +26,11 @@ import RoundStage from "./RoundStage";
 import InterviewerPanel from "./InterviewerPanel";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
 import { Avatar, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, roleLabel, useNow, useRoster, type Person } from "./parts";
+import { VideoCall } from "./video/VideoCall";
+import { CallDock } from "./video/CallDock";
+import { CallWaiting } from "./video/CallWaiting";
+import { CallChip } from "./video/CallParts";
+import { NoCallCard, NoCallNote, VideoNotSetUpChip, VideoOfferChip } from "./video/NoCall";
 
 const spring = { type: "spring" as const, stiffness: 520, damping: 38, mass: 0.7 };
 
@@ -145,130 +135,136 @@ export default function RoomClient({ data }: { data: RoomData }) {
   const presented = !serverRound ? (room?.state?.presented ?? null) : null;
   const dark = true;
 
-  const toolProps: ToolProps | null =
-    room && room.state
-      ? { room, state: room.state, isInterviewer, readOnly, dark, guideQuestions: data.private?.guide.map((g) => g.q) ?? [], run: act }
-      : null;
+  // Built-in video: joined while the interview can still run, left when it ends.
+  const builtin = data.video.mode === "builtin";
+  const others = isInterviewer ? iv.candidateName : iv.hostName;
+
+  const toolProps: ToolProps | null = room && room.state ? { room, state: room.state, isInterviewer, readOnly, dark, guideQuestions: data.private?.guide.map((g) => g.q) ?? [], run: act } : null;
 
   return (
-    <div className="h-[100dvh] flex flex-col overflow-hidden">
-      <TopBar
-        data={data}
-        status={status}
-        left={left}
-        elapsed={elapsed}
-        people={people}
-        snap={snap ?? EMPTY_SNAP}
-        timer={!isInterviewer && toolProps?.state.timer && toolProps.state.enabled.includes("timer") ? <TimerPill state={toolProps.state} offset={snap?.offset ?? 0} isInterviewer={false} readOnly open={false} onToggle={() => {}} /> : null}
-        actions={
-          isInterviewer && !ended ? (
-            <>
-              {!live ? (
-                <button
-                  type="button"
-                  onClick={() => void start()}
-                  disabled={starting || !snap?.synced}
-                  className="h-8 px-3.5 rounded-lg bg-secondary text-bg text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-50"
-                >
-                  {starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Play className="w-3.5 h-3.5" aria-hidden />}
-                  Start interview
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setEnding(true)}
-                  className="h-8 px-3 rounded-lg border border-danger/40 text-danger text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-danger/10"
-                >
-                  <CircleStop className="w-3.5 h-3.5" aria-hidden /> End
-                </button>
-              )}
-              {data.private && (
-                <button
-                  type="button"
-                  onClick={() => setPanelOpen((o) => !o)}
-                  aria-pressed={panelOpen}
-                  aria-label={panelOpen ? "Hide interviewer panel" : "Show interviewer panel"}
-                  className="hidden lg:inline-flex w-8 h-8 rounded-lg items-center justify-center text-muted hover:text-fg hover:bg-panel"
-                >
-                  {panelOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-                </button>
-              )}
-            </>
-          ) : null
-        }
-      />
+    <VideoCall sessionId={iv.id} enabled={builtin && !readOnly}>
+      <div className="h-[100dvh] flex flex-col overflow-hidden">
+        <TopBar
+          data={data}
+          status={status}
+          left={left}
+          elapsed={elapsed}
+          people={people}
+          snap={snap ?? EMPTY_SNAP}
+          timer={
+            !isInterviewer && toolProps?.state.timer && toolProps.state.enabled.includes("timer") ? (
+              <TimerPill state={toolProps.state} offset={snap?.offset ?? 0} isInterviewer={false} readOnly open={false} onToggle={() => {}} />
+            ) : null
+          }
+          actions={
+            isInterviewer && !ended ? (
+              <>
+                {!live ? (
+                  <button
+                    type="button"
+                    onClick={() => void start()}
+                    disabled={starting || !snap?.synced}
+                    className="h-8 px-3.5 rounded-lg bg-secondary text-bg text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-50"
+                  >
+                    {starting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Play className="w-3.5 h-3.5" aria-hidden />}
+                    Start interview
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEnding(true)}
+                    className="h-8 px-3 rounded-lg border border-danger/40 text-danger text-[13px] font-medium inline-flex items-center gap-1.5 hover:bg-danger/10"
+                  >
+                    <CircleStop className="w-3.5 h-3.5" aria-hidden /> End
+                  </button>
+                )}
+                {data.private && (
+                  <button
+                    type="button"
+                    onClick={() => setPanelOpen((o) => !o)}
+                    aria-pressed={panelOpen}
+                    aria-label={panelOpen ? "Hide interviewer panel" : "Show interviewer panel"}
+                    className="hidden lg:inline-flex w-8 h-8 rounded-lg items-center justify-center text-muted hover:text-fg hover:bg-panel"
+                  >
+                    {panelOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+                  </button>
+                )}
+              </>
+            ) : null
+          }
+        />
 
-      <div className="flex-1 min-h-0 flex">
-        {isInterviewer && !ended && room && toolProps && (
-          <Rail
-            data={data}
-            live={live}
-            serverRound={serverRound}
-            presented={presented}
-            props={toolProps}
-            onRound={(k) => void showRound(k)}
-            onTool={(t) => void showTool(t)}
-          />
-        )}
+        <div className="flex-1 min-h-0 flex">
+          {isInterviewer && !ended && room && toolProps && (
+            <Rail data={data} live={live} serverRound={serverRound} presented={presented} props={toolProps} onRound={(k) => void showRound(k)} onTool={(t) => void showTool(t)} />
+          )}
 
-        <main className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
-          {/* Stages are absolutely placed, so they cross-fade; "wait" mode can stall when the stage changes twice in quick succession. */}
-          <AnimatePresence initial={false}>
-            <motion.div
-              key={ended ? "ended" : !live ? "waiting" : stageRound ? stageRound.key : presented ? `tool:${presented}` : serverRound ? "loading" : "home"}
-              initial={reduce ? false : { opacity: 0, y: 8 }}
+          <main className="flex-1 min-w-0 min-h-0 relative overflow-hidden">
+            {/* Stages are absolutely placed, so they cross-fade; "wait" mode can stall when the stage changes twice in quick succession. */}
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={ended ? "ended" : !live ? "waiting" : stageRound ? stageRound.key : presented ? `tool:${presented}` : serverRound ? "loading" : "home"}
+                initial={reduce ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduce ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+                className="absolute inset-0"
+              >
+                {ended ? (
+                  <Ended data={data} />
+                ) : !live ? (
+                  builtin ? (
+                    <VideoWaiting data={data} people={people} others={others} />
+                  ) : (
+                    <Waiting data={data} people={people} onStart={isInterviewer ? () => void start() : null} starting={starting} ready={!!snap?.synced} />
+                  )
+                ) : stageRound && room ? (
+                  <RoundStage round={stageRound} room={room} sessionId={iv.id} isInterviewer={isInterviewer} readOnly={readOnly} dark={dark} startedAt={startedAt} />
+                ) : presented && toolProps ? (
+                  <ToolStage tool={presented} props={toolProps} />
+                ) : serverRound ? (
+                  <Center>
+                    <Loader2 className="w-5 h-5 animate-spin text-muted" aria-hidden />
+                    <p className="text-[14px] text-muted">Opening the next round</p>
+                  </Center>
+                ) : (
+                  <Home data={data} isInterviewer={isInterviewer} onRound={(k) => void showRound(k)} onTool={toolProps && !readOnly ? (t) => void showTool(t) : null} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+            {builtin && live && <CallDock myRole={viewer.role} others={others} />}
+          </main>
+
+          {isInterviewer && data.private && panelOpen && (
+            <div className="hidden lg:block w-[340px] shrink-0 min-h-0">
+              <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} />
+            </div>
+          )}
+        </div>
+
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              role="alert"
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -6 }}
-              transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-              className="absolute inset-0"
+              exit={{ opacity: 0 }}
+              className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-surface ring-1 ring-danger/40 text-danger px-4 py-2 text-[13px] shadow-xl shadow-black/40"
             >
-              {ended ? (
-                <Ended data={data} />
-              ) : !live ? (
-                <Waiting data={data} people={people} onStart={isInterviewer ? () => void start() : null} starting={starting} ready={!!snap?.synced} />
-              ) : stageRound && room ? (
-                <RoundStage round={stageRound} room={room} sessionId={iv.id} isInterviewer={isInterviewer} readOnly={readOnly} dark={dark} startedAt={startedAt} />
-              ) : presented && toolProps ? (
-                <ToolStage tool={presented} props={toolProps} />
-              ) : serverRound ? (
-                <Center>
-                  <Loader2 className="w-5 h-5 animate-spin text-muted" aria-hidden />
-                  <p className="text-[14px] text-muted">Opening the next round</p>
-                </Center>
-              ) : (
-                <Home data={data} isInterviewer={isInterviewer} onRound={(k) => void showRound(k)} onTool={toolProps && !readOnly ? (t) => void showTool(t) : null} />
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </main>
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
-        {isInterviewer && data.private && panelOpen && (
-          <div className="hidden lg:block w-[340px] shrink-0 min-h-0">
-            <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} />
-          </div>
-        )}
+        <AnimatePresence>{ending && <EndDialog data={data} onClose={() => setEnding(false)} onEnded={() => provider?.refresh()} />}</AnimatePresence>
       </div>
-
-      <AnimatePresence>
-        {error && (
-          <motion.p
-            role="alert"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 rounded-lg bg-surface ring-1 ring-danger/40 text-danger px-4 py-2 text-[13px] shadow-xl shadow-black/40"
-          >
-            {error}
-          </motion.p>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>{ending && <EndDialog data={data} onClose={() => setEnding(false)} onEnded={() => provider?.refresh()} />}</AnimatePresence>
-    </div>
+    </VideoCall>
   );
 }
 
-const EMPTY_SNAP = { connection: "connecting", synced: false, role: null, myName: null, live: true, peers: [], room: null, state: null, offset: 0, rttMs: null, unsaved: 0 } as NonNullable<ToolsRoom["relay"]>;
+const EMPTY_SNAP = { connection: "connecting", synced: false, role: null, myName: null, live: true, peers: [], room: null, state: null, offset: 0, rttMs: null, unsaved: 0 } as NonNullable<
+  ToolsRoom["relay"]
+>;
 
 function TopBar({
   data,
@@ -289,8 +285,9 @@ function TopBar({
   timer: React.ReactNode;
   actions: React.ReactNode;
 }) {
-  const { interview: iv, workspace } = data;
+  const { interview: iv, workspace, video } = data;
   const live = status === "in_progress";
+  const ended = status === "completed" || status === "abandoned" || status === "cancelled";
   const over = live && left < 0;
   return (
     <header className="relative h-14 shrink-0 flex items-center gap-3 px-3 md:px-4 border-b border-border bg-surface">
@@ -332,7 +329,9 @@ function TopBar({
               <span className="relative w-2 h-2 rounded-full bg-danger" />
             </span>
             <span suppressHydrationWarning>{over ? `+${clock(-left)} over` : `${clock(left)} left`}</span>
-            <span suppressHydrationWarning className="hidden md:inline text-subtle font-normal">· {clock(elapsed)} in</span>
+            <span suppressHydrationWarning className="hidden md:inline text-subtle font-normal">
+              · {clock(elapsed)} in
+            </span>
           </span>
         ) : status === "scheduled" ? (
           <span className="h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-[13px] text-muted bg-bg ring-1 ring-inset ring-border">
@@ -360,7 +359,10 @@ function TopBar({
           </li>
         ))}
       </ul>
-      {iv.meetingUrl && status !== "completed" && status !== "abandoned" && status !== "cancelled" && <MeetingButton url={iv.meetingUrl} size="sm" />}
+      {!ended && video.mode === "link" && iv.meetingUrl && <MeetingButton url={iv.meetingUrl} size="sm" />}
+      {!ended && video.mode === "link" && <VideoOfferChip video={video} meetingUrl={iv.meetingUrl} />}
+      {!ended && video.mode === "builtin" && <CallChip />}
+      {!ended && !video.configured && <VideoNotSetUpChip />}
       <ConnectionPill snap={snap} compact />
       {actions}
     </header>
@@ -419,7 +421,9 @@ function Rail({
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[13px] font-medium truncate">{r.title}</span>
-                        <span className="block text-[12px] text-muted truncate capitalize">{[r.kind === "challenge" ? "Coding" : r.kind === "playground" ? "Playground" : "Prompt", r.meta].filter(Boolean).join(" · ")}</span>
+                        <span className="block text-[12px] text-muted truncate capitalize">
+                          {[r.kind === "challenge" ? "Coding" : r.kind === "playground" ? "Playground" : "Prompt", r.meta].filter(Boolean).join(" · ")}
+                        </span>
                       </span>
                       {on && (
                         <span className="shrink-0 mt-1 h-5 px-1.5 rounded bg-success/15 text-success text-[12px] font-medium inline-flex items-center gap-1">
@@ -557,7 +561,9 @@ function Home({ data, isInterviewer, onRound, onTool }: { data: RoomData; isInte
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[14.5px] font-medium leading-snug">{r.title}</span>
-                      <span className="block mt-0.5 text-[12.5px] text-muted capitalize">{[r.kind === "challenge" ? "Coding" : r.kind === "playground" ? "Playground" : "Prompt", r.meta, r.steps > 1 ? `${r.steps} steps` : null].filter(Boolean).join(" · ")}</span>
+                      <span className="block mt-0.5 text-[12.5px] text-muted capitalize">
+                        {[r.kind === "challenge" ? "Coding" : r.kind === "playground" ? "Playground" : "Prompt", r.meta, r.steps > 1 ? `${r.steps} steps` : null].filter(Boolean).join(" · ")}
+                      </span>
                     </span>
                     <span className="self-center text-[12.5px] font-medium text-secondary-soft inline-flex items-center gap-1 opacity-0 -translate-x-1 transition group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100">
                       Show <ArrowRight className="w-3.5 h-3.5" aria-hidden />
@@ -644,6 +650,7 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
   const candidateIn = candidate?.place === "room";
   const interviewerIn = !!lead && lead.place === "room";
   const both = candidateIn && interviewerIn;
+  const noCall = data.video.mode === "none";
   const title = onStart
     ? candidateIn
       ? `${iv.candidateName} is here. Start when you are ready.`
@@ -669,10 +676,25 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
               <span className={`absolute inset-0 ${both ? "bg-success/60" : "border-t-2 border-dashed border-border-strong"}`} />
               {both && <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-success ring-4 ring-surface" />}
             </div>
-            <Seat name={candidate?.name ?? iv.candidateName} sub={candidate ? (candidateIn ? "Candidate" : "Candidate, in the lobby") : "Candidate, not here yet"} here={!!candidate} me={candidate?.me} />
+            <Seat
+              name={candidate?.name ?? iv.candidateName}
+              sub={candidate ? (candidateIn ? "Candidate" : "Candidate, in the lobby") : "Candidate, not here yet"}
+              here={!!candidate}
+              me={candidate?.me}
+            />
           </div>
 
-          {interviewers.length > 1 && <p className="mt-4 text-[12.5px] text-muted">Also here: {interviewers.filter((p) => p !== lead).map((p) => p.name).join(", ")}</p>}
+          {interviewers.length > 1 && (
+            <p className="mt-4 text-[12.5px] text-muted">
+              Also here:{" "}
+              {interviewers
+                .filter((p) => p !== lead)
+                .map((p) => p.name)
+                .join(", ")}
+            </p>
+          )}
+
+          {noCall && <div className="mt-7 flex justify-center">{onStart ? <NoCallCard id={iv.id} video={data.video} candidateName={iv.candidateName} /> : <NoCallNote />}</div>}
 
           {onStart ? (
             <button
@@ -693,6 +715,27 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
   );
 }
 
+/** Before the start, with built-in video: faces first, the room behind. */
+function VideoWaiting({ data, people, others }: { data: RoomData; people: Person[]; others: string }) {
+  const { interview: iv, viewer } = data;
+  const isInterviewer = viewer.role === "interviewer";
+  const candidate = people.find((p) => p.role === "candidate");
+  const host = people.find((p) => p.role === "interviewer" && !p.me) ?? people.find((p) => p.role === "interviewer");
+  const title = isInterviewer
+    ? candidate?.place === "room"
+      ? "Say hello before you start"
+      : candidate
+        ? `${iv.candidateName} is in the lobby`
+        : `Waiting for ${iv.candidateName}`
+    : host && host.place === "room" && !host.me
+      ? "Say hello while you wait"
+      : `${iv.hostName} will start the interview soon`;
+  const lead = isInterviewer
+    ? "You are both on the call once they arrive. Start the interview when you are ready; the call keeps going."
+    : "You are on the call. When the interview starts, the call moves to a small panel and keeps going.";
+  return <CallWaiting myRole={viewer.role} title={title} lead={lead} others={others} />;
+}
+
 function Ended({ data }: { data: RoomData }) {
   const { interview: iv, viewer, workspace } = data;
   const isInterviewer = viewer.role === "interviewer";
@@ -710,7 +753,10 @@ function Ended({ data }: { data: RoomData }) {
           </p>
           {isInterviewer && (
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
-              <Link href={viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`} className="h-11 px-5 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center gap-2 hover:brightness-110">
+              <Link
+                href={viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`}
+                className="h-11 px-5 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center gap-2 hover:brightness-110"
+              >
                 Open the report <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>
               {viewer.userId && (
@@ -755,7 +801,13 @@ function EndDialog({ data, onClose, onEnded }: { data: RoomData; onClose: () => 
     }
   };
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-bg/70 backdrop-blur-[2px] flex items-center justify-center p-4" onClick={() => !busy && onClose()}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-bg/70 backdrop-blur-[2px] flex items-center justify-center p-4"
+      onClick={() => !busy && onClose()}
+    >
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -780,7 +832,10 @@ function EndDialog({ data, onClose, onEnded }: { data: RoomData; onClose: () => 
           <legend className="text-[13px] font-medium">Your take (optional, the team decides who passes)</legend>
           <div className="mt-2 grid gap-1.5">
             {VERDICTS.map((v) => (
-              <label key={v.id} className={`flex items-start gap-3 rounded-xl px-3 py-2.5 cursor-pointer ring-1 ring-inset transition-colors ${verdict === v.id ? "bg-secondary/10 ring-secondary/40" : "ring-border hover:bg-panel/60"}`}>
+              <label
+                key={v.id}
+                className={`flex items-start gap-3 rounded-xl px-3 py-2.5 cursor-pointer ring-1 ring-inset transition-colors ${verdict === v.id ? "bg-secondary/10 ring-secondary/40" : "ring-border hover:bg-panel/60"}`}
+              >
                 <input type="radio" name="verdict" className="mt-1 accent-[rgb(var(--c-accent-2))]" checked={verdict === v.id} onChange={() => setVerdict(v.id)} />
                 <span>
                   <span className="block text-[13.5px] font-medium">{v.label}</span>
@@ -799,7 +854,12 @@ function EndDialog({ data, onClose, onEnded }: { data: RoomData; onClose: () => 
           <button type="button" onClick={onClose} disabled={busy} className="h-9 px-4 rounded-lg border border-border text-[13px] font-medium hover:bg-panel">
             Keep going
           </button>
-          <button type="button" onClick={() => void end()} disabled={busy} className="h-9 px-4 rounded-lg bg-danger text-bg text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-60">
+          <button
+            type="button"
+            onClick={() => void end()}
+            disabled={busy}
+            className="h-9 px-4 rounded-lg bg-danger text-bg text-[13px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-60"
+          >
             {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />}
             End interview
           </button>

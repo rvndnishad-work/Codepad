@@ -30,6 +30,8 @@ export type CreateInterviewInput = {
   scenario?: string | null;
   /** Video call link (already cleaned with cleanMeetingUrl). */
   meetingUrl?: string | null;
+  /** Workspace rooms: built-in video (the column default) or the meeting link. */
+  builtinVideo?: boolean;
   totalSec: number;
   stackJson?: string | null;
   scheduledAt?: Date | null;
@@ -226,6 +228,7 @@ export async function createInterviewSession(input: CreateInterviewInput): Promi
       promptScenarioIds: JSON.stringify(rounds.promptScenarioIds),
       scenario: input.scenario ?? null,
       meetingUrl: input.meetingUrl ?? null,
+      ...(input.builtinVideo !== undefined ? { builtinVideo: input.builtinVideo } : {}),
       totalSec: input.totalSec,
       shareToken: nanoid(24),
       shortCode: await uniqueShortCode(),

@@ -37,6 +37,10 @@ import { Avatar, Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDo
 import { readableTextOn } from "@/lib/workspace/candidate-experience";
 import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 import { giveInterviewConsentAction } from "./actions";
+import { LobbyVideo } from "./video/LobbyVideo";
+import { saveBuiltinVideo, saveMeetingLink } from "./video/api";
+import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
+import type { RoomVideo } from "@/lib/video/room-video";
 
 type CheckState = "checking" | "ok" | "warn" | "fail";
 type CheckRow = { id: string; label: string; state: CheckState; detail: string };
@@ -178,7 +182,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               disabled={blocking || snap.connection === "denied" || consenting || (consentNeeded && !agreed)}
               blocked={blocking || snap.connection === "denied"}
               onEnter={() => void enter()}
-              meetingUrl={iv.meetingUrl}
+              meetingUrl={data.video.mode === "link" ? iv.meetingUrl : null}
               brandColor={isInterviewer ? null : workspace.brand.color}
               consent={
                 consentNeeded
@@ -188,6 +192,12 @@ export default function LobbyClient({ data }: { data: RoomData }) {
             />
           </div>
         </motion.section>
+
+        {data.video.mode === "builtin" && !ended && (
+          <motion.div {...rise(1)} className="mt-6 rounded-2xl border border-border bg-surface p-5 sm:p-7">
+            <LobbyVideo />
+          </motion.div>
+        )}
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
           <div className="flex flex-col gap-6 min-w-0">
@@ -522,7 +532,7 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
         </div>
       )}
 
-      <MeetingEditor id={data.interview.id} initial={data.interview.meetingUrl} />
+      <CallEditor id={data.interview.id} initial={data.interview.meetingUrl} video={data.video} />
 
       <div className="mt-5">
         <p className="text-[13px] text-subtle">Candidate link</p>
@@ -540,7 +550,83 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
   );
 }
 
-function MeetingEditor({ id, initial }: { id: string; initial: string | null }) {
+/** How people talk: built-in video or a meeting link (with the add-on), else the link box and a one-line offer. */
+function CallEditor({ id, initial, video }: { id: string; initial: string | null; video: RoomVideo }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const price = `$${VIDEO_ADDON_PRICE.monthlyCents / 100}`;
+  if (!video.addonOn) {
+    return (
+      <>
+        <MeetingEditor id={id} initial={initial} />
+        {video.canOffer && (
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            {video.offerUpgrade ? "Or talk inside the room with built-in video, which comes with the Growth plan. " : `Or talk inside the room with built-in video, ${price} a month. `}
+            <Link href={video.billingHref} className="font-medium text-secondary-soft hover:underline">
+              See Billing
+            </Link>
+          </p>
+        )}
+      </>
+    );
+  }
+  const pick = async (on: boolean) => {
+    if (on === video.builtinVideo) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await saveBuiltinVideo(id, on);
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not change how you talk.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-5">
+      <p className="text-[13px] text-subtle" id="call-choice">
+        Call
+      </p>
+      <div role="radiogroup" aria-labelledby="call-choice" className="mt-1.5 grid grid-cols-2 gap-1 rounded-xl bg-bg ring-1 ring-inset ring-border p-1">
+        {[
+          { on: true, label: "Built-in video" },
+          { on: false, label: "Meeting link" },
+        ].map((o) => {
+          const active = video.builtinVideo === o.on;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={busy}
+              onClick={() => void pick(o.on)}
+              className={`h-8 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-60 ${active ? "bg-secondary/15 text-fg ring-1 ring-inset ring-secondary/40" : "text-muted hover:text-fg"}`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      {err && (
+        <p role="alert" className="mt-1.5 text-[12.5px] text-danger">
+          {err}
+        </p>
+      )}
+      {video.builtinVideo ? (
+        <p className="mt-1.5 text-[12.5px] text-muted">
+          {video.configured ? "You and the candidate talk inside the room, next to the code. No link needed." : "Video is not set up yet on this server. Use a meeting link for now."}
+        </p>
+      ) : (
+        <MeetingEditor id={id} initial={initial} nested />
+      )}
+    </div>
+  );
+}
+
+function MeetingEditor({ id, initial, nested = false }: { id: string; initial: string | null; nested?: boolean }) {
   const router = useRouter();
   const [value, setValue] = useState(initial ?? "");
   const [editing, setEditing] = useState(!initial);
@@ -550,9 +636,7 @@ function MeetingEditor({ id, initial }: { id: string; initial: string | null }) 
     setBusy(true);
     setErr(null);
     try {
-      const r = await fetch(`/api/interview/${encodeURIComponent(id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ meetingUrl: v.trim() || null }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(typeof j.error === "string" ? j.error : "Could not save the link.");
+      await saveMeetingLink(id, v);
       setEditing(!v.trim());
       router.refresh();
     } catch (e) {
@@ -563,8 +647,8 @@ function MeetingEditor({ id, initial }: { id: string; initial: string | null }) 
   };
   const provider = meetingProvider(initial);
   return (
-    <div className="mt-5">
-      <p className="text-[13px] text-subtle">Video call</p>
+    <div className={nested ? "mt-2" : "mt-5"}>
+      {!nested && <p className="text-[13px] text-subtle">Video call</p>}
       {!editing && initial ? (
         <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-bg ring-1 ring-inset ring-border p-1.5 pl-3">
           <Video className="w-4 h-4 text-success shrink-0" aria-hidden />

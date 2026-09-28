@@ -5,6 +5,7 @@
  * schedule and review. Each takes the wizard state and a patch function.
  */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -29,6 +30,8 @@ import {
   X,
 } from "lucide-react";
 import { cleanMeetingUrl, meetingProvider } from "@/lib/interview/meeting";
+import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
+import type { WizardVideo } from "./InterviewWizard";
 import type { GuideOption, MemberOption, PersonOption } from "@/lib/interview/wizard-server";
 import {
   DURATION_CHOICES,
@@ -37,6 +40,7 @@ import {
   MAX_GUESTS,
   MAX_PANEL,
   STEPS,
+  callChoice,
   clampMinutes,
   defaultStart,
   firstName,
@@ -567,7 +571,64 @@ function MeetingField({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
-export function ScheduleStep({ state, patch, calendar, defaultMinutes }: { state: WizardState; patch: Patch; calendar?: ReactNode; defaultMinutes?: number }) {
+/** One quiet line for people who manage billing, when the workspace has no built-in video. */
+export function VideoOfferLine({ video, className = "" }: { video: WizardVideo; className?: string }) {
+  if (video.on || !video.canOffer) return null;
+  return (
+    <p className={`text-[13px] text-muted ${className}`}>
+      {video.offerUpgrade
+        ? "Or talk inside the room with built-in video, which comes with the Growth plan. "
+        : `Or talk inside the room with built-in video, $${VIDEO_ADDON_PRICE.monthlyCents / 100} a month. `}
+      <Link href={video.billingHref} className="text-secondary-soft font-medium hover:underline">
+        See Billing
+      </Link>
+    </p>
+  );
+}
+
+/** Built-in video or a meeting link, when the workspace has the video add-on. */
+function CallField({ state, patch, video }: { state: WizardState; patch: Patch; video: WizardVideo }) {
+  const choice = callChoice(state, true);
+  const options = [
+    { id: "builtin" as const, title: "Built-in video", body: "Talk inside the room, next to the code. The candidate needs only a browser.", badge: "Recommended" },
+    { id: "link" as const, title: "Meeting link", body: "Zoom, Meet or Teams. The link goes in the invite and on a Join call button.", badge: null },
+  ];
+  // Make the default explicit so the step checks match what is shown.
+  useEffect(() => {
+    if (video.on && !state.call) patch({ call: "builtin" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <fieldset className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
+      <legend className="sr-only">Call</legend>
+      <div>
+        <h3 className="text-[15px] font-semibold text-fg">Call</h3>
+        <p className="text-[13px] text-muted">How you and the candidate talk during the interview.</p>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {options.map((o) => {
+          const on = choice === o.id;
+          return (
+            <label
+              key={o.id}
+              className={`rounded-xl border p-4 flex flex-col gap-1.5 cursor-pointer transition-colors ${on ? "border-secondary bg-secondary/10" : "border-border bg-bg hover:border-border-strong"}`}
+            >
+              <span className="flex items-center gap-2">
+                <input type="radio" name="call" checked={on} onChange={() => patch({ call: o.id })} className="accent-[rgb(var(--c-accent-2))]" />
+                <span className="text-[15px] font-semibold text-fg">{o.title}</span>
+                {o.badge && <span className="ml-auto h-5 px-2 rounded-full bg-success/15 text-success text-[12px] font-medium inline-flex items-center">{o.badge}</span>}
+              </span>
+              <span className="text-[13px] text-muted leading-relaxed">{o.body}</span>
+            </label>
+          );
+        })}
+      </div>
+      {choice === "link" && <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />}
+    </fieldset>
+  );
+}
+
+export function ScheduleStep({ state, patch, calendar, defaultMinutes, video }: { state: WizardState; patch: Patch; calendar?: ReactNode; defaultMinutes?: number; video?: WizardVideo }) {
   const format = formatOf(state.format);
   const rows: { key: string; name: string; email: string | null }[] = state.noCandidate || state.candidates.length === 0
     ? [{ key: "open", name: "Open link", email: null }]
@@ -731,8 +792,15 @@ export function ScheduleStep({ state, patch, calendar, defaultMinutes }: { state
       {/* Busy times from connected calendars */}
       {calendar}
 
-      {/* Video call */}
-      <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />
+      {/* Call: built-in video or a meeting link */}
+      {video?.on ? (
+        <CallField state={state} patch={patch} video={video} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          <MeetingField value={state.meetingUrl ?? ""} onChange={(v) => patch({ meetingUrl: v })} />
+          {video && <VideoOfferLine video={video} className="px-1" />}
+        </div>
+      )}
 
       {/* Briefs and invite */}
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">

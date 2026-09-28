@@ -11,12 +11,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileCode2, Loader2, Play } from "lucide-react";
-import { SandpackPreview, useSandpack, type SandpackFiles } from "@codesandbox/sandpack-react";
+import { SandpackPreview, type SandpackFiles } from "@codesandbox/sandpack-react";
 import type * as Y from "yjs";
-import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
+import SharedSandpack from "@/components/SharedSandpack";
 import { BackendConsole, JsConsole } from "@/components/playground/Consoles";
 import type { BackendLog } from "@/components/playground/useRunner";
-import { templatesById, supportsV2Bundler, V2_BUNDLER_URL, type TemplateDef } from "@/lib/templates";
+import { templatesById, type TemplateDef } from "@/lib/templates";
 import { extColorFor } from "@/lib/monaco-langs";
 import { seedDoc } from "@/lib/interview/relay-seed";
 import { codeOutputFor, codeRunKey, codeText } from "@/lib/interview/code-stacks";
@@ -258,23 +258,6 @@ function RunPane({ shared, busy, file }: { shared: SharedRun | null; busy: boole
   );
 }
 
-/** Pushes shared edits into the bundler after a short pause in typing. */
-function FilesSync({ files }: { files: Record<string, string> }) {
-  const { sandpack } = useSandpack();
-  const last = useRef<Record<string, string>>({});
-  useEffect(() => {
-    const id = setTimeout(() => {
-      for (const [path, code] of Object.entries(files)) {
-        if (last.current[path] === code) continue;
-        last.current[path] = code;
-        if (sandpack.files[path]?.code !== code) sandpack.updateFile(path, code);
-      }
-    }, 450);
-    return () => clearTimeout(id);
-  }, [files, sandpack]);
-  return null;
-}
-
 function BrowserPane({
   t,
   fixed,
@@ -292,10 +275,7 @@ function BrowserPane({
 }) {
   const [tab, setTab] = useState<"preview" | "console">(output === "console" ? "console" : "preview");
   const resetRef = useRef<(() => void) | null>(null);
-  // The first ready render seeds the bundler; later edits go through FilesSync.
-  const initial = useRef<SandpackFiles | null>(null);
-  if (ready && !initial.current) initial.current = { ...fixed, ...files };
-  if (!initial.current) {
+  if (!ready) {
     return (
       <div className="h-full flex items-center justify-center gap-2 text-[13px] text-muted">
         <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> Getting the {output === "console" ? "console" : "preview"} ready
@@ -303,22 +283,7 @@ function BrowserPane({
     );
   }
   return (
-    <ShimmedSandpackProvider
-      template={t.base}
-      theme={dark ? "dark" : "light"}
-      files={initial.current}
-      customSetup={t.dependencies ? { dependencies: t.dependencies } : undefined}
-      options={{
-        ...(supportsV2Bundler(t.base) ? { bundlerURL: V2_BUNDLER_URL } : {}),
-        autorun: true,
-        autoReload: true,
-        initMode: "immediate",
-        recompileMode: "delayed",
-        recompileDelay: 300,
-        externalResources: ["data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css"],
-      }}
-    >
-      <FilesSync files={files} />
+    <SharedSandpack template={t.base} dependencies={t.dependencies} fixed={fixed} files={files} dark={dark}>
       <div className="h-full flex flex-col">
         <PaneHead>
           <div role="tablist" aria-label="Output" className="flex items-center gap-1">
@@ -342,6 +307,6 @@ function BrowserPane({
           <JsConsole resetRef={resetRef} />
         </div>
       </div>
-    </ShimmedSandpackProvider>
+    </SharedSandpack>
   );
 }

@@ -679,6 +679,9 @@ model InterviewSession {
   /// Use the workspace's built-in video call in the lobby and room (when the
   /// workspace has the video add-on). False: the meeting link, if any, only.
   builtinVideo       Boolean          @default(true)
+  /// Record the built-in video call. Candidates are told in the lobby and
+  /// must agree first; the host starts and stops the recording in the room.
+  recordVideo        Boolean          @default(false)
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
   /// Take-home only: score (0-100) results need to read as a good match.
@@ -724,6 +727,7 @@ model InterviewSession {
   workspace          Workspace?       @relation(fields: [workspaceId], references: [id])
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  recordings         InterviewRecording[]
   @@index([userId, status])
   @@index([candidateId])
   @@index([workspaceId])
@@ -1129,6 +1133,7 @@ model Workspace {
   atsTestRequests      AtsTestRequest[]
   atsSyncEvents        AtsSyncEvent[]
   alertChannels        AlertChannel[]
+  interviewRecordings InterviewRecording[]
 }
 
 /// Old workspace web address kept after a slug change, so /w/<oldSlug>
@@ -1854,13 +1859,50 @@ model AIInterviewAudio {
   /// Clip order within one answer (the mic can be paused and resumed).
   seq       Int      @default(0)
   mime      String
-  bytes     Bytes
+  /// Legacy clips kept in the database. New clips live in R2 (storageKey).
+  bytes     Bytes?
+  /// Object key in the recordings bucket. Null for legacy database clips.
+  storageKey String?
   seconds   Int      @default(0)
   createdAt DateTime @default(now())
+  /// When the clip is deleted (7 days after it was kept). Null = legacy.
+  expiresAt DateTime?
   session   AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([roundId, question])
   @@index([sessionId])
+  @@index([expiresAt])
+}
+
+/// A recording of a live interview video call, made by LiveKit egress and
+/// stored in the R2 recordings bucket. Deleted 7 days after it was made.
+model InterviewRecording {
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  interviewSessionId String
+  /// LiveKit egress id while recording and processing.
+  egressId           String?   @unique
+  /// Object key in the recordings bucket.
+  storageKey         String
+  /// recording | processing | ready | failed | deleted
+  status             String    @default("recording")
+  mime               String    @default("video/mp4")
+  sizeBytes          BigInt?
+  seconds            Int?
+  startedById        String?
+  startedAt          DateTime  @default(now())
+  endedAt            DateTime?
+  expiresAt          DateTime
+  deletedAt          DateTime?
+  /// AI credits charged for this recording (1 per started hour).
+  creditsCharged     Int       @default(0)
+  error              String?
+  workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+
+  @@index([interviewSessionId])
+  @@index([workspaceId, startedAt])
+  @@index([status, expiresAt])
 }
 
 model AIInterviewRound {

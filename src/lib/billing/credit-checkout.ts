@@ -1,12 +1,16 @@
 /**
- * Stripe Checkout for a one-time AI screening credit pack. The webhook
- * credits the workspace on checkout.session.completed (kind AI_CREDIT_PACK).
+ * Stripe Checkout for a one-time AI screening credit pack. The pack's price
+ * and credit count are the effective ones (code defaults with any admin
+ * override). The webhook credits the workspace on checkout.session.completed
+ * (kind AI_CREDIT_PACK) with the `credits` stored in this session's metadata,
+ * so it grants exactly what was charged for, even if the pack changes later.
  * Callers check billing:manage first.
  */
 import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
-import { getAiCreditPack } from "@/lib/ai-interview/credits";
+import { getEffectivePricing } from "./pricing-copy-store";
+import { findCreditPack } from "./prices";
 
 export class CreditCheckoutError extends Error {}
 
@@ -15,7 +19,7 @@ export async function createCreditPackCheckout(a: {
   packId: string;
   origin: string;
 }): Promise<string> {
-  const pack = getAiCreditPack(a.packId);
+  const pack = findCreditPack(await getEffectivePricing(), a.packId);
   if (!pack) throw new CreditCheckoutError("Unknown credit pack.");
   if (!process.env.STRIPE_SECRET_KEY) throw new CreditCheckoutError("Online payments are not set up on this server yet.");
 

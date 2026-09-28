@@ -11,11 +11,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CircleAlert, MessageCircle, VideoOff } from "lucide-react";
 import type { RoomVideo } from "@/lib/video/room-video";
-import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
 import { meetingProvider } from "@/lib/interview/meeting";
 import { saveMeetingLink } from "./api";
-
-const PRICE = `$${VIDEO_ADDON_PRICE.monthlyCents / 100}`;
 
 /** "Built-in video" chip beside Join call, with a short explanation. */
 export function VideoOfferChip({ video, meetingUrl }: { video: RoomVideo; meetingUrl: string | null }) {
@@ -53,8 +50,8 @@ export function VideoOfferChip({ video, meetingUrl }: { video: RoomVideo; meetin
           <p className="text-[16px] font-semibold">Talk here instead of {tool}</p>
           <p className="text-[14px] leading-relaxed text-muted">
             {video.offerUpgrade
-              ? `With built-in video, you and the candidate see each other next to the code, with nothing to install. It comes with the Growth plan, for ${PRICE} a month for the whole workspace.`
-              : `With built-in video, you and the candidate see each other next to the code, with nothing to install. It is ${PRICE} a month for the whole workspace, and you can switch it off any time.`}
+              ? `With built-in video, you and the candidate see each other next to the code, with nothing to install. It comes with the Growth plan, for ${video.offerPrice} a month for the whole workspace.`
+              : `With built-in video, you and the candidate see each other next to the code, with nothing to install. It is ${video.offerPrice} a month for the whole workspace, and you can switch it off any time.`}
           </p>
           <div className="flex flex-wrap gap-2">
             <Link href={video.billingHref} className="h-8 px-3 rounded-lg bg-secondary text-bg text-[13px] font-semibold inline-flex items-center hover:brightness-110">
@@ -146,7 +143,7 @@ export function NoCallCard({ id, video, candidateName }: { id: string; video: Ro
       {video.canOffer && (
         <div className="flex items-center gap-2.5 pt-3 border-t border-border">
           <span className="flex-1 text-[13px] text-muted">
-            {video.offerUpgrade ? `Built-in video comes with the Growth plan, ${PRICE} a month for the workspace.` : `Built-in video: ${PRICE} a month for the workspace.`}
+            {video.offerUpgrade ? `Built-in video comes with the Growth plan, ${video.offerPrice} a month for the workspace.` : `Built-in video: ${video.offerPrice} a month for the workspace.`}
           </span>
           <Link href={video.billingHref} className="h-8 px-3 rounded-lg border border-secondary/40 text-secondary-soft text-[13px] font-medium inline-flex items-center hover:bg-secondary/10 shrink-0">
             See in Billing

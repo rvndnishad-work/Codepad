@@ -13,6 +13,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { VIDEO_ADDON_KIND, isVideoAddonItem, seatItem, videoAddonAvailable, videoAddonCents } from "./addon";
 
 /** Fixed Stripe product for the add-on, created on first use. */
@@ -56,17 +57,32 @@ function intervalOf(item: Item | undefined): "month" | "year" {
   return item?.price?.recurring?.interval === "year" ? "year" : "month";
 }
 
+export type SubscriptionBilling = {
+  interval: "month" | "year";
+  /** What the seat item charges per seat per interval, or null when unknown. */
+  seatCents: number | null;
+  /** What the add-on item charges per interval, or null when it is not on the subscription. */
+  addonCents: number | null;
+};
+
 /**
- * How the workspace subscription bills, for the add-on price label. Falls back
- * to monthly when there is no subscription, no Stripe key, or Stripe fails.
+ * How the workspace subscription bills: its interval and what the seat and
+ * add-on items are charged. Existing items keep the price they were created
+ * with when an admin changes prices, so labels for a subscribed workspace
+ * read these. Falls back to monthly and nulls when there is no subscription,
+ * no Stripe key, or Stripe fails.
  */
-export async function subscriptionInterval(subscriptionId: string | null): Promise<"month" | "year"> {
-  if (!subscriptionId || !process.env.STRIPE_SECRET_KEY) return "month";
+export async function subscriptionBilling(subscriptionId: string | null, addonItemId: string | null): Promise<SubscriptionBilling> {
+  const none: SubscriptionBilling = { interval: "month", seatCents: null, addonCents: null };
+  if (!subscriptionId || !process.env.STRIPE_SECRET_KEY) return none;
   try {
     const sub = await getStripe().subscriptions.retrieve(subscriptionId);
-    return intervalOf(seatItem(sub.items.data));
+    const items = sub.items.data;
+    const seat = seatItem(items);
+    const addon = addonItems(items, addonItemId)[0];
+    return { interval: intervalOf(seat), seatCents: seat?.price?.unit_amount ?? null, addonCents: addon?.price?.unit_amount ?? null };
   } catch {
-    return "month";
+    return none;
   }
 }
 
@@ -118,9 +134,12 @@ export async function setVideoAddon({
             itemId = existing.id;
           } else {
             const product = await ensureAddonProduct(stripe);
+            // A newly added line takes the current effective price (admin
+            // override or default). Lines already on a subscription keep theirs.
+            const price = (await getEffectivePricing()).videoAddon;
             const item = await stripe.subscriptionItems.create({
               subscription: sub.id,
-              price_data: { currency: "usd", product, unit_amount: videoAddonCents(interval), recurring: { interval } },
+              price_data: { currency: "usd", product, unit_amount: videoAddonCents(interval, price), recurring: { interval } },
               quantity: 1,
               metadata: { kind: VIDEO_ADDON_KIND },
               proration_behavior: "create_prorations",
@@ -182,7 +201,9 @@ export async function setVideoAddon({
  * After a Growth checkout completes: find the "Built-in video" line the
  * checkout added, tag it with the add-on metadata and remember its id.
  * Checkout line items cannot carry item metadata, so the line is found by its
- * product (name or metadata) and, failing that, by its price.
+ * product (the add-on product id, product metadata or name). Never by amount:
+ * the add-on price can be changed by an admin, and a seat line could cost the
+ * same.
  */
 export async function linkVideoAddonAfterCheckout(workspaceId: string, subscriptionId: string): Promise<void> {
   const ws = await prisma.workspace.findUnique({
@@ -221,14 +242,9 @@ export function findCheckoutAddonItem<T extends CheckoutItemLike>(items: T[]): T
   if (tagged) return tagged;
   const byProduct = items.find((i) => {
     const p = i.price?.product;
-    if (!p || typeof p === "string") return false;
-    return p.metadata?.kind === VIDEO_ADDON_KIND || p.name === "Built-in video";
+    if (!p) return false;
+    if (typeof p === "string") return p === VIDEO_ADDON_PRODUCT_ID;
+    return p.id === VIDEO_ADDON_PRODUCT_ID || p.metadata?.kind === VIDEO_ADDON_KIND || p.name === "Built-in video";
   });
-  if (byProduct) return byProduct;
-  // Fallback: the single-quantity line priced like the add-on.
-  const candidates = items.filter((i) => {
-    const interval = i.price?.recurring?.interval === "year" ? "year" : "month";
-    return (i.quantity ?? 1) === 1 && i.price?.unit_amount === videoAddonCents(interval);
-  });
-  return candidates.length === 1 ? candidates[0] : undefined;
+  return byProduct;
 }

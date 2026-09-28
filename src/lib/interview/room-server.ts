@@ -15,6 +15,8 @@ import { consentOutstanding, type CandidateBrand } from "@/lib/workspace/candida
 import { canMember } from "@/lib/permissions";
 import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
 import { liveKitConfig } from "@/lib/video/livekit-server";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
+import { formatUsd } from "@/lib/billing/plans";
 import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
 import { pendingRoomAsk, recordingConfigured } from "@/lib/recording/live-server";
 
@@ -349,6 +351,8 @@ export async function loadRoom(
     recordVideo: s.recordVideo && s.builtinVideo,
     recordingReady: interviewer ? recordingConfigured() : false,
     billingHref: `/w/${slug}/billing`,
+    // Only people shown the offer see a price; read it only then.
+    offerPrice: offer.canOffer ? formatUsd((await getEffectivePricing()).videoAddon.monthlyCents) : "",
   };
   // A recorded call always needs the candidate's agreement first, even when
   // the workspace does not ask for consent otherwise.

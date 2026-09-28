@@ -13,6 +13,8 @@ import HireWowTrust from "@/components/hire-wow/HireWowTrust";
 import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
 import SpotlightScope from "@/components/wow/SpotlightScope";
+import { applyPricingCopy } from "@/lib/billing/pricing-copy";
+import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 
 export const metadata: Metadata = {
   title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
@@ -28,11 +30,13 @@ export const metadata: Metadata = {
 
 export default async function HirePage() {
   const session = await auth().catch(() => null);
-  const [challengeCount, sessionCount, workspaceCount] = await Promise.all([
+  const [challengeCount, sessionCount, workspaceCount, pricing] = await Promise.all([
     prisma.challenge.count({ where: { published: true } }).catch(() => 0),
     prisma.interviewSession.count().catch(() => 0),
     prisma.workspace.count().catch(() => 0),
+    getPublicPricingInputs(),
   ]);
+  const { plans: pricingPlans, lowestCreditPrice } = applyPricingCopy(pricing.copy, pricing.prices);
 
   const heroStats = buildStats({ sessionCount, challengeCount, workspaceCount });
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
@@ -62,7 +66,7 @@ export default async function HirePage() {
 
       <HireWowEvidence />
 
-      <HireWowTrust />
+      <HireWowTrust pricingPlans={pricingPlans} lowestCreditPrice={lowestCreditPrice} />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>

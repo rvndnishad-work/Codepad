@@ -39,7 +39,6 @@ import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 import { giveInterviewConsentAction } from "./actions";
 import { LobbyVideo } from "./video/LobbyVideo";
 import { saveBuiltinVideo, saveMeetingLink, saveRecordVideo } from "./video/api";
-import { VIDEO_ADDON_PRICE } from "@/lib/video/addon";
 import type { RoomVideo } from "@/lib/video/room-video";
 
 type CheckState = "checking" | "ok" | "warn" | "fail";
@@ -570,7 +569,7 @@ function CallEditor({ id, initial, video, canChangeRecording }: { id: string; in
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const price = `$${VIDEO_ADDON_PRICE.monthlyCents / 100}`;
+  const price = video.offerPrice;
   if (!video.addonOn) {
     return (
       <>

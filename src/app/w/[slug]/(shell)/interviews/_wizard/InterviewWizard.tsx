@@ -63,6 +63,8 @@ export type WizardVideo = {
   canOffer: boolean;
   offerUpgrade: boolean;
   billingHref: string;
+  /** The add-on price for the offer line, e.g. "$15" (a month). */
+  offerPrice: string;
   /** The recordings bucket and LiveKit are set up, so calls can be recorded. */
   recordingReady?: boolean;
 };

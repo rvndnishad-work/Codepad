@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Video } from "lucide-react";
 import { useState, useTransition } from "react";
 import { setVideoAddonAction } from "./actions";
-import { videoAddonCents } from "@/lib/video/addon";
+import { formatUsd } from "@/lib/billing/plans";
 
 export type VideoAddonData = {
   /** Growth, Enterprise or an active trial. */
@@ -20,8 +20,10 @@ export type VideoAddonData = {
   /** A Stripe subscription item carries the charge. */
   billed: boolean;
   callsThisMonth: number;
-  /** How the subscription bills: annual plans pay $180 a year. */
+  /** How the subscription bills: annual plans pay for a year at once. */
   interval: "month" | "year";
+  /** What the add-on costs per interval: the billed item amount, or the current price. */
+  priceCents: number;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -95,7 +97,7 @@ export default function VideoAddonCard({
   }
 
   const yearly = data.interval === "year";
-  const amount = `$${videoAddonCents(data.interval) / 100}`;
+  const amount = formatUsd(data.priceCents);
   const per = yearly ? "a year" : "a month";
   const nextCharge = data.onTrial ? "Free during your trial" : amount;
 

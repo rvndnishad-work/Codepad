@@ -10,6 +10,8 @@ import { SETTINGS_DEFAULTS } from "@/lib/workspace/settings";
 import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
 import { videoOffer } from "@/lib/video/room-video";
 import { recordingConfigured } from "@/lib/recording/live-server";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
+import { formatUsd } from "@/lib/billing/plans";
 
 export const metadata = { title: "New interview", robots: { index: false, follow: false } };
 
@@ -38,6 +40,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
   // Built-in video add-on: the Call choice, or the one-line offer for people who manage billing.
   const videoOn = videoCallsOn(workspace);
   const offer = videoOffer({ interviewer: true, canManageBilling: canBill, addonOn: videoOn, planAllows: videoAddonAvailable(workspace), planName: workspace.planName });
+  const offerPrice = offer.canOffer ? formatUsd((await getEffectivePricing()).videoAddon.monthlyCents) : "";
   // Links from the Question library and candidate pages start part-way in.
   const challengeIds = list(sp.challenges);
   const rounds = challengeIds.flatMap((id) => {
@@ -57,7 +60,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
       roundOptions={data.rounds}
       guides={data.guides}
       bankCategories={data.bankCategories}
-      video={{ on: videoOn, canOffer: offer.canOffer, offerUpgrade: offer.offerUpgrade, billingHref: `/w/${slug}/billing`, recordingReady: videoOn && recordingConfigured() }}
+      video={{ on: videoOn, canOffer: offer.canOffer, offerUpgrade: offer.offerUpgrade, billingHref: `/w/${slug}/billing`, offerPrice, recordingReady: videoOn && recordingConfigured() }}
       defaultMinutes={settings?.interviewDefaultMinutes ?? SETTINGS_DEFAULTS.interviewDefaultMinutes}
       prefill={{
         candidateIds: [...list(sp.candidates), ...list(sp.candidateId)].slice(0, 20),

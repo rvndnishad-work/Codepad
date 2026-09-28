@@ -10,7 +10,7 @@
  */
 import { growthToolsEnabled, type PlanFields } from "@/lib/billing/trial";
 
-/** Flat add-on price per workspace. Annual subscriptions pay twelve months. */
+/** Default flat add-on price per workspace. Annual subscriptions pay twelve months. Admins can override it (src/lib/billing/prices.ts). */
 export const VIDEO_ADDON_PRICE = { monthlyCents: 1500, annualCents: 18000 } as const;
 
 /** Stripe metadata marking the add-on's subscription item. */
@@ -40,7 +40,13 @@ export function seatItem<T extends ItemLike>(items: T[]): T | undefined {
   return items.find((i) => !isVideoAddonItem(i));
 }
 
-/** The add-on price for a subscription billed every `interval`. */
-export function videoAddonCents(interval: "month" | "year"): number {
-  return interval === "year" ? VIDEO_ADDON_PRICE.annualCents : VIDEO_ADDON_PRICE.monthlyCents;
+export type VideoAddonPrice = { monthlyCents: number; annualCents: number };
+
+/**
+ * The add-on price for a subscription billed every `interval`. Callers that
+ * charge or show a price pass the effective price (admin override or the
+ * default above; see src/lib/billing/prices.ts).
+ */
+export function videoAddonCents(interval: "month" | "year", price: VideoAddonPrice = VIDEO_ADDON_PRICE): number {
+  return interval === "year" ? price.annualCents : price.monthlyCents;
 }

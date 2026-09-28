@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { canMember } from "@/lib/permissions";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { createInterviewSession, resolveRounds, sendCandidateInvites, sourceTypeOf } from "@/lib/interview/create-server";
@@ -21,6 +22,7 @@ import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 import { cancelInterviewEvent, syncInterviewEvent } from "@/lib/calendar/server";
 import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
+import { recordingConfigured } from "@/lib/recording/live-server";
 import {
   formatOf,
   isEmail,
@@ -116,6 +118,8 @@ const scheduleSchema = z.object({
   meetingUrl: z.string().trim().max(MAX_MEETING_URL).optional(),
   /** Talk with built-in video (workspaces with the add-on) instead of the link. */
   builtinVideo: z.boolean().optional(),
+  /** Record the built-in call (the candidate agrees in the lobby first). */
+  recordVideo: z.boolean().optional(),
   brief: z.string().trim().max(2000),
   candidateBrief: z.string().trim().max(2000),
   sendInvites: z.boolean(),
@@ -204,6 +208,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     const videoOn = !!ws && videoCallsOn(ws);
     const builtinVideo = videoOn ? d.builtinVideo !== false : !meeting.url;
     const meetingUrl = videoOn && builtinVideo ? null : meeting.url;
+    const recordVideo = videoOn && builtinVideo && d.recordVideo === true && recordingConfigured();
     const setupGroupId = people.length > 1 ? randomUUID() : null;
     // New interviews keep the workspace's scorecard defaults (Settings > Screening defaults).
     const start = screeningStartValues((await loadWorkspaceSettings(a.workspace.id)) ?? normalizeWorkspaceSettings({})).interview;
@@ -223,6 +228,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         scenario: d.candidateBrief || null,
         meetingUrl,
         builtinVideo,
+        recordVideo,
         totalSec: d.minutes * 60,
         scheduledAt: p.time ? new Date(p.time) : null,
         workspaceId: a.workspace.id,
@@ -269,7 +275,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     }
 
     const origin = await appOrigin();
-    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, meetingUrl, rooms: toInvite });
+    const invites = await sendCandidateInvites({ workspaceId: a.workspace.id, title: d.title, totalSec: d.minutes * 60, actorId: a.userId, origin, meetingUrl, recorded: recordVideo, rooms: toInvite });
     for (const [i, r] of toInvite.entries()) {
       const c = created.find((x) => x.id === r.session.id);
       if (c) c.invite = invites[i];
@@ -446,11 +452,13 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
     // Cancel the calendar event first; the row goes with the session.
     await cancelInterviewEvent(s.id);
     closeVideoRoomAfter(s.id);
+    const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [s.id] });
     // Attempts point at the session by id only, so they go first; the rest cascades.
     await prisma.$transaction([
       prisma.challengeAttempt.deleteMany({ where: { sessionId: s.id } }),
       prisma.interviewSession.delete({ where: { id: s.id } }),
     ]);
+    await deleteRecordingKeys(recordingKeys);
     void writeWorkspaceAuditEntry({
       workspaceId: a.workspace.id,
       actorUserId: a.userId,

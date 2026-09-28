@@ -23,6 +23,8 @@ const video = (over: Partial<RoomVideo> = {}): RoomVideo => ({
   offerUpgrade: false,
   addonOn: false,
   builtinVideo: true,
+  recordVideo: false,
+  recordingReady: false,
   billingHref: "/w/acme/billing",
   ...over,
 });

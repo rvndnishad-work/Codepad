@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -71,7 +72,9 @@ export async function DELETE(
   }
 
   try {
+    const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [id] });
     await prisma.interviewSession.delete({ where: { id } });
+    await deleteRecordingKeys(recordingKeys);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "not found" }, { status: 404 });

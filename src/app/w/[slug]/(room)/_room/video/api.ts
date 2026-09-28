@@ -15,3 +15,8 @@ export function saveMeetingLink(id: string, url: string): Promise<void> {
 export function saveBuiltinVideo(id: string, on: boolean): Promise<void> {
   return patchInterview(id, { builtinVideo: on }, "Could not change how you talk.");
 }
+
+/** Record the built-in call (before the interview starts only). */
+export function saveRecordVideo(id: string, on: boolean): Promise<void> {
+  return patchInterview(id, { recordVideo: on }, "Could not change recording.");
+}

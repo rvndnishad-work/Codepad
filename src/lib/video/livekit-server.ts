@@ -14,6 +14,11 @@ export function liveKitConfig(): LiveKitConfig | null {
   return url && apiKey && apiSecret ? { url, apiKey, apiSecret } : null;
 }
 
+/** The HTTP(S) address the server APIs use, from the wss:// client URL. */
+export function liveKitApiHost(cfg: LiveKitConfig): string {
+  return cfg.url.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+}
+
 /** One LiveKit room per interview. */
 export function videoRoomName(sessionId: string): string {
   return `interview-${sessionId}`;
@@ -35,9 +40,8 @@ export async function videoJoinToken(
 export async function closeVideoRoom(sessionId: string): Promise<void> {
   const cfg = liveKitConfig();
   if (!cfg) return;
-  const host = cfg.url.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
   try {
-    await new RoomServiceClient(host, cfg.apiKey, cfg.apiSecret).deleteRoom(videoRoomName(sessionId));
+    await new RoomServiceClient(liveKitApiHost(cfg), cfg.apiKey, cfg.apiSecret).deleteRoom(videoRoomName(sessionId));
   } catch {
     // No one joined, or the room already closed.
   }

@@ -31,6 +31,8 @@ import { parseAnswers, parseTheoryRound, parseTheorySettings, type TheoryAnswer,
 import { classifyChallenge, type CuratableChallenge } from "@/lib/interview/stack";
 import { parseTestRun, type TestRun } from "./report-extras";
 import { loadChallengeTestFiles } from "./round-tests";
+import { recordingExpiryLabel } from "@/lib/recording/retention";
+import { clipDeletesAt, recordingsWouldBeGone } from "@/lib/recording/cleanup";
 
 export const QUEUE_PAGE_SIZE = 25;
 
@@ -318,8 +320,10 @@ export type ReportTheory = {
     difficulty: string | null;
     answer: TheoryAnswer | null;
     /** Recordings of the spoken answer (follow-up 0 is the main answer), when replay was on. */
-    clips: { id: string; followUp: number; seconds: number }[];
+    clips: { id: string; followUp: number; seconds: number; expiryLabel: string }[];
   }[];
+  /** Replay was on but the recordings are gone: they are deleted 7 days after they are made. */
+  recordingsDeleted: boolean;
 };
 
 /** `at` is when the message was stored; older messages have none. */
@@ -391,7 +395,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
     prisma.aIInterviewAudio.findMany({
       where: { sessionId: s.id },
       orderBy: [{ question: "asc" }, { followUp: "asc" }, { seq: "asc" }, { createdAt: "asc" }],
-      select: { id: true, roundId: true, question: true, followUp: true, seconds: true },
+      select: { id: true, roundId: true, question: true, followUp: true, seconds: true, createdAt: true, expiresAt: true },
     }),
     loadChallengeTestFiles(challengeIds).catch(() => new Map<string, Record<string, string>>()),
   ]);
@@ -425,7 +429,7 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
       diffs,
       stats: diffs ? diffStats(diffs) : null,
       linesWritten: diffs ? meaningfulAdded(diffs) : null,
-      theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id), clipRows.filter((c) => c.roundId === r.id)) : null,
+      theory: r.paradigm === "theory" ? reportTheory(rawRounds.get(r.id), clipRows.filter((c) => c.roundId === r.id), s.finishedAt ?? s.startedAt) : null,
       testable: !r.legacy && r.sourceKind === "challenge" && !!r.sourceId && testFiles.has(r.sourceId),
       tests: parseTestRun(rawRounds.get(r.id)?.testResultsJson, rawRounds.get(r.id)?.testsRunAt ?? null),
     });
@@ -502,12 +506,21 @@ export async function loadReport(workspaceId: string, sessionId: string, viewerI
 
 function reportTheory(
   raw: { theoryJson: string | null; answersJson: string | null } | undefined,
-  clips: { id: string; question: number; followUp: number; seconds: number }[],
+  clipRows: { id: string; question: number; followUp: number; seconds: number; createdAt: Date; expiresAt: Date | null }[],
+  answeredAt: Date | null,
 ): ReportTheory | null {
   const data = parseTheoryRound(raw?.theoryJson);
   if (!data) return null;
   const answers = parseAnswers(raw?.answersJson).items;
+  const now = new Date();
+  // Expired clips count as deleted even before the hourly cleanup removes them.
+  const clips = clipRows
+    .map((c) => ({ ...c, deletesAt: clipDeletesAt(c) }))
+    .filter((c) => c.deletesAt.getTime() > now.getTime())
+    .map((c) => ({ id: c.id, question: c.question, followUp: c.followUp, seconds: c.seconds, expiryLabel: recordingExpiryLabel(c.deletesAt, now) }));
+  const spoke = answers.some((a) => a.mode === "voice" && !a.skipped);
   return {
+    recordingsDeleted: data.settings.recordAudio && spoke && !clips.length && recordingsWouldBeGone(answeredAt, now),
     settings: data.settings,
     questions: data.items.map((it, i) => ({
       q: it.q,
@@ -515,7 +528,7 @@ function reportTheory(
       tech: it.tech ?? null,
       difficulty: it.difficulty ?? null,
       answer: answers[i] ?? null,
-      clips: clips.filter((c) => c.question === i).map((c) => ({ id: c.id, followUp: c.followUp, seconds: c.seconds })),
+      clips: clips.filter((c) => c.question === i).map((c) => ({ id: c.id, followUp: c.followUp, seconds: c.seconds, expiryLabel: c.expiryLabel })),
     })),
   };
 }

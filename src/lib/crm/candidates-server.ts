@@ -13,6 +13,7 @@
  * Server-only.
  */
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDeleted } from "@/lib/recording/objects-server";
 import { auth } from "@/lib/auth";
 import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
@@ -637,6 +638,13 @@ export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
   const rows = await scopedCandidates(actor, ids);
   if (!rows.length) return { erased: 0 };
   const cids = rows.map((r) => r.id);
+  // Recordings identify the person too: collect their bucket objects before the rows go.
+  const [aiSessions, liveSessions] = await Promise.all([
+    prisma.aIInterviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
+    prisma.interviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
+  ]);
+  const liveIds = liveSessions.map((s) => s.id);
+  const recordingKeys = await collectRecordingKeys({ aiSessionIds: aiSessions.map((s) => s.id), interviewSessionIds: liveIds });
   await prisma.$transaction([
     prisma.takeHomeAssignment.updateMany({
       where: { candidateId: { in: cids } },
@@ -651,6 +659,8 @@ export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
     prisma.aIInterviewAudio.deleteMany({ where: { session: { candidateId: { in: cids } } } }),
     prisma.candidate.deleteMany({ where: { id: { in: cids }, workspaceId: actor.workspaceId } }),
   ]);
+  await markInterviewRecordingsDeleted(liveIds).catch((err) => console.error("[recordings] could not mark videos deleted", err));
+  await deleteRecordingKeys(recordingKeys);
   // No names in the audit row: the point of erasing is that they are gone.
   void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_ERASED, "workspace", actor.workspaceId, {
     count: cids.length,

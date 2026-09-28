@@ -8,6 +8,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { revalidatePath } from "next/cache";
 import { normalizeEngagementLevel } from "@/lib/ai-interview/credits";
 import { effectivePlanAllowsAiScreening } from "@/lib/billing/trial";
@@ -484,7 +485,9 @@ export async function deleteSessionAction(slug: string, sessionId: string): Prom
       select: { id: true, candidateName: true, candidateEmail: true, positionTitle: true, status: true, score: true, finishedAt: true, batchId: true },
     });
     if (!s) throw new ActionError("That screening no longer exists.");
+    const recordingKeys = await collectRecordingKeys({ aiSessionIds: [s.id] });
     await prisma.aIInterviewSession.delete({ where: { id: s.id } });
+    await deleteRecordingKeys(recordingKeys);
     audit(w, WORKSPACE_AUDIT_ACTIONS.AI_SCREENING_DELETED, "aiInterviewSession", s.id, {
       candidateName: s.candidateName,
       candidateEmail: s.candidateEmail,

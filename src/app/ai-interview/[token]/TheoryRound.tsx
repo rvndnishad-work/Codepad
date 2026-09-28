@@ -598,7 +598,7 @@ export default function TheoryRound({
               <fieldset className="rounded-xl border border-border bg-surface p-4 flex flex-col gap-3">
                 <legend className="px-1 text-[14px] font-medium text-fg">Recording</legend>
                 <p className="text-[13px] leading-relaxed text-muted">
-                  The hiring team asked to keep a recording of your spoken answers so they can listen back. Only they can play it, and it is deleted with your screening.
+                  The hiring team asked to keep a recording of your spoken answers so they can listen back. Only they can play it, and it is deleted after 7 days.
                   {mode === "voice" ? " If you would rather not be recorded, you can type your answers instead." : ""}
                 </p>
                 <label className="flex items-start gap-2.5 text-[14px] text-fg">

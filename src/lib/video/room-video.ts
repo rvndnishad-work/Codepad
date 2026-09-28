@@ -19,6 +19,10 @@ export type RoomVideo = {
   addonOn: boolean;
   /** This interview is set to built-in video (the default), whatever the workspace has. */
   builtinVideo: boolean;
+  /** This interview is set up to record the built-in call (the candidate is told in the lobby). */
+  recordVideo: boolean;
+  /** Interviewers only: the recordings bucket and LiveKit are set up, so Record can work. */
+  recordingReady: boolean;
   billingHref: string;
 };
 

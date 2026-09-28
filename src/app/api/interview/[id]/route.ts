@@ -3,6 +3,7 @@ import { z } from "zod";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
 import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 
@@ -25,6 +26,8 @@ const patchSchema = z.object({
   meetingUrl: z.string().max(MAX_MEETING_URL).nullable().optional(),
   // Workspace rooms: talk with built-in video (true) or the meeting link.
   builtinVideo: z.boolean().optional(),
+  // Workspace rooms: record the built-in call. Only before the interview starts.
+  recordVideo: z.boolean().optional(),
   // Rubric support
   rubric: z.object({
     ratings: z.record(z.string(), z.number().min(1).max(5)),
@@ -80,6 +83,7 @@ export async function PATCH(
       // pre-update verdict to detect first-time verdicts.
       verdict: true,
       candidateId: true,
+      recordVideo: true,
     },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -134,6 +138,14 @@ export async function PATCH(
   if (parsed.data.builtinVideo !== undefined) {
     if (!existing.workspaceId) return NextResponse.json({ error: "Built-in video is only for workspace interviews." }, { status: 400 });
     data.builtinVideo = parsed.data.builtinVideo;
+  }
+  if (parsed.data.recordVideo !== undefined) {
+    if (!existing.workspaceId) return NextResponse.json({ error: "Recording is only for workspace interviews." }, { status: 400 });
+    if (existing.status !== "scheduled") return NextResponse.json({ error: "Recording can only be switched on or off before the interview starts." }, { status: 400 });
+    data.recordVideo = parsed.data.recordVideo;
+    // The candidate agrees to a recorded call, so an earlier agreement to an
+    // unrecorded one does not count.
+    if (parsed.data.recordVideo && !existing.recordVideo) data.candidateConsentAt = null;
   }
 
   if (parsed.data.rubric !== undefined) {
@@ -286,6 +298,9 @@ export async function DELETE(
     const { cancelInterviewEvent } = await import("@/lib/calendar/server");
     await cancelInterviewEvent(id);
   }
+  // Recording rows cascade with the session, so read their keys first.
+  const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [id] });
   await prisma.interviewSession.delete({ where: { id } });
+  await deleteRecordingKeys(recordingKeys);
   return NextResponse.json({ success: true });
 }

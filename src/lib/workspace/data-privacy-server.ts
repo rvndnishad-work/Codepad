@@ -7,6 +7,7 @@
 import "server-only";
 import JSZip from "jszip";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDeleted, readRecordingObject } from "@/lib/recording/objects-server";
 import { sendEmail } from "@/lib/email";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
@@ -234,7 +235,7 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
         createdAt: true,
         rounds: { select: { order: true, paradigm: true, status: true, score: true, filesJson: true, answersJson: true }, orderBy: { order: "asc" } },
         audioClips: {
-          select: { question: true, followUp: true, seq: true, mime: true, seconds: true, createdAt: true, bytes: true },
+          select: { question: true, followUp: true, seq: true, mime: true, seconds: true, createdAt: true, bytes: true, storageKey: true },
           orderBy: [{ question: "asc" }, { followUp: "asc" }, { seq: "asc" }],
         },
       },
@@ -252,6 +253,22 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
         select: { sessionId: true, files: true, testResults: true, score: true, durationSec: true, finishedAt: true },
       })
     : [];
+
+  // Clips in the recordings bucket are fetched while there is room under the cap.
+  const bucketBytes = new Map<string, Uint8Array>();
+  let fetched = 0;
+  for (const a of aiSessions.flatMap((s) => s.audioClips)) {
+    if (a.bytes) {
+      fetched += a.bytes.length;
+      continue;
+    }
+    if (!a.storageKey || fetched >= COPY_AUDIO_MAX_BYTES) continue;
+    const data = await readRecordingObject(a.storageKey, COPY_AUDIO_MAX_BYTES - fetched);
+    if (data) {
+      bucketBytes.set(a.storageKey, data);
+      fetched += data.length;
+    }
+  }
 
   let audioBytes = 0;
   const copy = {
@@ -315,8 +332,9 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
         answers: parseJson(r.answersJson),
       })),
       voiceRecordings: s.audioClips.map((a) => {
-        const size = a.bytes.length;
-        const include = audioBytes + size <= COPY_AUDIO_MAX_BYTES;
+        const data = a.bytes ?? (a.storageKey ? bucketBytes.get(a.storageKey) : undefined) ?? null;
+        const size = data?.length ?? 0;
+        const include = !!data && audioBytes + size <= COPY_AUDIO_MAX_BYTES;
         if (include) audioBytes += size;
         return {
           question: a.question + 1,
@@ -325,7 +343,9 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
           seconds: a.seconds,
           recordedAt: a.createdAt,
           mime: a.mime,
-          ...(include ? { base64: Buffer.from(a.bytes).toString("base64") } : { note: "Too large to attach. Reply to this email to get it another way." }),
+          ...(include && data
+            ? { base64: Buffer.from(data).toString("base64") }
+            : { note: data ? "Too large to attach. Reply to this email to get it another way." : "Could not attach this recording. Reply to this email to get it another way." }),
         };
       }),
     })),
@@ -360,6 +380,7 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
  */
 export async function eraseCandidateScope(workspaceId: string, scope: CandidateScope): Promise<number> {
   const { candidateIds, takeHomeIds, interviewSessionIds, aiSessionIds, attemptIds, emails } = scope;
+  const recordingKeys = await collectRecordingKeys({ aiSessionIds, interviewSessionIds });
   await prisma.$transaction([
     prisma.sessionEventLog.deleteMany({ where: { attemptId: { in: attemptIds } } }),
     prisma.takeHomeAssignment.updateMany({
@@ -378,6 +399,9 @@ export async function eraseCandidateScope(workspaceId: string, scope: CandidateS
     prisma.atsSyncEvent.deleteMany({ where: { workspaceId, candidateId: { in: candidateIds } } }),
     prisma.candidate.deleteMany({ where: { id: { in: candidateIds }, workspaceId } }),
   ]);
+  // Interview videos go too; their rows stay, marked deleted.
+  await markInterviewRecordingsDeleted(interviewSessionIds).catch((err) => console.error("[recordings] could not mark videos deleted", err));
+  await deleteRecordingKeys(recordingKeys);
 
   // Take their name and email out of audit entries about them. The entries
   // themselves stay, so the log still shows what happened.
@@ -492,7 +516,10 @@ export async function countForRule(workspaceId: string, kind: RetentionKind, cut
 /** Erase what a rule covers at `cutoff`. Returns how many items went and whether more remain. */
 export async function eraseForRule(workspaceId: string, kind: RetentionKind, cutoff: Date): Promise<{ erased: number; more: boolean }> {
   if (kind === "VOICE_RECORDINGS") {
-    const r = await prisma.aIInterviewAudio.deleteMany({ where: { createdAt: { lt: cutoff }, session: { workspaceId } } });
+    const where = { createdAt: { lt: cutoff }, session: { workspaceId } };
+    const keyed = await prisma.aIInterviewAudio.findMany({ where: { ...where, storageKey: { not: null } }, select: { storageKey: true } });
+    const r = await prisma.aIInterviewAudio.deleteMany({ where });
+    await deleteRecordingKeys(keyed.map((k) => k.storageKey).filter((k): k is string => !!k));
     return { erased: r.count, more: false };
   }
   if (kind === "CODE_REPLAYS") {
@@ -873,6 +900,7 @@ export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } 
   }
 
   const recipients = await managerEmails(workspaceId);
+  const recordingKeys = await collectRecordingKeys({ workspaceId });
   const sessions = await prisma.interviewSession.findMany({ where: { workspaceId }, select: { id: true } });
   const legacy = await prisma.takeHomeAssignment.findMany({ where: { workspaceId, attemptId: { not: null } }, select: { attemptId: true } });
   const sessionIds = sessions.map((s) => s.id);
@@ -888,6 +916,7 @@ export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } 
   await prisma.challenge.deleteMany({ where: { workspaceId } });
   await prisma.emailLog.deleteMany({ where: { workspaceId } });
   await prisma.workspace.delete({ where: { id: workspaceId } });
+  await deleteRecordingKeys(recordingKeys);
 
   for (const email of recipients) {
     await sendEmail({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Clock, EyeOff, Keyboard, Mic } from "lucide-react";
+import { ChevronDown, Clock, EyeOff, Keyboard, Mic, MicOff } from "lucide-react";
 import type { ReportData, ReportTheory } from "@/lib/ai-interview/console-server";
 import type { TheoryVerdict } from "@/lib/ai-interview/theory";
 import type { Tone } from "@/lib/ai-interview/console";
@@ -164,7 +164,7 @@ function TheoryRoundReport({
       ) : (
         <ol className="flex flex-col gap-3">
           {shown.map(({ q, n }) => (
-            <QuestionCard key={n} n={n} q={q} firstName={firstName} audioBase={audioBase} />
+            <QuestionCard key={n} n={n} q={q} firstName={firstName} audioBase={audioBase} recordingsDeleted={theory.recordingsDeleted} />
           ))}
         </ol>
       )}
@@ -172,7 +172,7 @@ function TheoryRoundReport({
   );
 }
 
-function QuestionCard({ n, q, firstName, audioBase }: { n: number; q: Q; firstName: string; audioBase: string }) {
+function QuestionCard({ n, q, firstName, audioBase, recordingsDeleted }: { n: number; q: Q; firstName: string; audioBase: string; recordingsDeleted: boolean }) {
   const clipsFor = (followUp: number) => q.clips.filter((c) => c.followUp === followUp);
   const v = verdictOf(q);
   const a = q.answer;
@@ -193,11 +193,11 @@ function QuestionCard({ n, q, firstName, audioBase }: { n: number; q: Q; firstNa
 
       {a && !a.skipped && (
         <div className="flex flex-col gap-2.5 pl-10">
-          <Said who={firstName} text={a.a} mode={a.mode} clips={clipsFor(0)} audioBase={audioBase} />
+          <Said who={firstName} text={a.a} mode={a.mode} clips={clipsFor(0)} audioBase={audioBase} recordingDeleted={recordingsDeleted} />
           {a.followUps.map((f, i) => (
             <div key={i} className="flex flex-col gap-2 border-l-2 border-secondary/30 pl-3">
               <p className="text-[13px] text-secondary-soft">Follow-up: {f.q}</p>
-              {f.a ? <Said who={firstName} text={f.a} mode={f.mode} clips={clipsFor(i + 1)} audioBase={audioBase} /> : <p className="text-[13px] text-subtle">No answer to the follow-up.</p>}
+              {f.a ? <Said who={firstName} text={f.a} mode={f.mode} clips={clipsFor(i + 1)} audioBase={audioBase} recordingDeleted={recordingsDeleted} /> : <p className="text-[13px] text-subtle">No answer to the follow-up.</p>}
             </div>
           ))}
         </div>
@@ -248,7 +248,21 @@ function QuestionCard({ n, q, firstName, audioBase }: { n: number; q: Q; firstNa
   );
 }
 
-function Said({ who, text, mode, clips, audioBase }: { who: string; text: string; mode: "voice" | "typed"; clips: Q["clips"]; audioBase: string }) {
+function Said({
+  who,
+  text,
+  mode,
+  clips,
+  audioBase,
+  recordingDeleted,
+}: {
+  who: string;
+  text: string;
+  mode: "voice" | "typed";
+  clips: Q["clips"];
+  audioBase: string;
+  recordingDeleted: boolean;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs text-subtle inline-flex items-center gap-1.5">
@@ -263,6 +277,13 @@ function Said({ who, text, mode, clips, audioBase }: { who: string; text: string
           <span className="text-xs text-subtle tabular-nums shrink-0">{clips.length > 1 ? `Part ${i + 1}, ` : ""}{fmtSec(c.seconds)}</span>
         </div>
       ))}
+      {clips.length > 0 && <span className="text-xs text-subtle">{clips[0].expiryLabel}</span>}
+      {clips.length === 0 && mode === "voice" && recordingDeleted && (
+        <span className="text-xs text-subtle inline-flex items-center gap-1.5">
+          <MicOff className="w-3 h-3" aria-hidden />
+          Recording deleted after 7 days
+        </span>
+      )}
     </div>
   );
 }

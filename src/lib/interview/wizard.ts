@@ -144,6 +144,8 @@ export type WizardState = {
   meetingUrl?: string;
   /** How people talk, when the workspace has built-in video. Unset means built-in video. */
   call?: CallChoice;
+  /** Record the built-in call. Only with built-in video. */
+  recordVideo?: boolean;
   brief: string;
   candidateBrief: string;
   sendInvites: boolean;
@@ -165,10 +167,14 @@ export function callChoice(s: Pick<WizardState, "call">, videoOn: boolean): Call
 }
 
 /** What the wizard sends for the call: built-in video drops the link. */
-export function callFields(s: Pick<WizardState, "call" | "meetingUrl">, videoOn: boolean): { builtinVideo?: boolean; meetingUrl?: string } {
+export function callFields(
+  s: Pick<WizardState, "call" | "meetingUrl" | "recordVideo">,
+  videoOn: boolean,
+): { builtinVideo?: boolean; meetingUrl?: string; recordVideo?: boolean } {
   const link = s.meetingUrl?.trim() || undefined;
   if (!videoOn) return { meetingUrl: link };
-  return callChoice(s, true) === "builtin" ? { builtinVideo: true } : { builtinVideo: false, meetingUrl: link };
+  if (callChoice(s, true) !== "builtin") return { builtinVideo: false, meetingUrl: link };
+  return s.recordVideo ? { builtinVideo: true, recordVideo: true } : { builtinVideo: true };
 }
 
 export type StepId ="format" | "candidates" | "panel" | "questions" | "schedule" | "review";

@@ -58,7 +58,14 @@ export type WizardProps = {
   video?: WizardVideo;
 };
 
-export type WizardVideo = { on: boolean; canOffer: boolean; offerUpgrade: boolean; billingHref: string };
+export type WizardVideo = {
+  on: boolean;
+  canOffer: boolean;
+  offerUpgrade: boolean;
+  billingHref: string;
+  /** The recordings bucket and LiveKit are set up, so calls can be recorded. */
+  recordingReady?: boolean;
+};
 
 const DRAFT_VERSION = 1;
 

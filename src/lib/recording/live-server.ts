@@ -108,47 +108,18 @@ type ConsentLog = {
   declined: boolean;
 };
 
-function metaOf(raw: string | null): Record<string, unknown> {
-  try {
-    const v = raw ? JSON.parse(raw) : null;
-    return v && typeof v === "object" ? (v as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
-async function consentLog(s: { id: string; workspaceId: string | null }): Promise<ConsentLog> {
-  if (!s.workspaceId) return { request: null, declined: false };
-  try {
-    const rows = await prisma.workspaceAuditLog.findMany({
-      where: {
-        workspaceId: s.workspaceId,
-        targetType: "interviewSession",
-        targetId: s.id,
-        action: { in: [WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_REQUESTED, WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_DECLINED] },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-      select: { action: true, actorUserId: true, actorEmail: true, meta: true },
-    });
-    const req = rows.find((r) => r.action === WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_REQUESTED);
-    const meta = metaOf(req?.meta ?? null);
-    const prev = typeof meta.prevConsentAt === "string" ? new Date(meta.prevConsentAt) : null;
-    return {
-      request: req
-        ? {
-            actorUserId: req.actorUserId,
-            actorEmail: req.actorEmail,
-            askedBy: typeof meta.askedBy === "string" ? meta.askedBy : null,
-            prevConsentAt: prev && !Number.isNaN(prev.getTime()) ? prev : null,
-          }
-        : null,
-      declined: rows.some((r) => r.action === WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_DECLINED),
-    };
-  } catch (err) {
-    console.error("[recording] consent log read failed:", err);
-    return { request: null, declined: false };
-  }
+async function consentLog(s: { id: string }): Promise<ConsentLog> {
+  const row = await prisma.interviewSession.findUnique({
+    where: { id: s.id },
+    select: { recordAskedAt: true, recordAskedById: true, recordAskedByName: true, recordAskPrevConsentAt: true, recordDeclinedAt: true },
+  });
+  if (!row) return { request: null, declined: false };
+  return {
+    request: row.recordAskedAt
+      ? { actorUserId: row.recordAskedById, actorEmail: null, askedBy: row.recordAskedByName, prevConsentAt: row.recordAskPrevConsentAt }
+      : null,
+    declined: !!row.recordDeclinedAt,
+  };
 }
 
 /**
@@ -176,7 +147,17 @@ export async function askRecordingConsent({ sessionId, actorUserId, actorEmail =
   if (c.control === "declined") return { ok: false, code: "declined", error: `${declinedLabel(s.candidateName)}. They are not asked again in this interview.` };
   if (c.control !== "ask") return { ok: false, code: c.code ?? "not_set_up", error: c.message ?? "Recording cannot start here." };
 
-  const res = await prisma.interviewSession.updateMany({ where: { id: s.id, recordVideo: false }, data: { recordVideo: true, candidateConsentAt: null } });
+  const res = await prisma.interviewSession.updateMany({
+    where: { id: s.id, recordVideo: false },
+    data: {
+      recordVideo: true,
+      candidateConsentAt: null,
+      recordAskedAt: new Date(),
+      recordAskedById: actorUserId,
+      recordAskedByName: askedBy,
+      recordAskPrevConsentAt: s.candidateConsentAt,
+    },
+  });
   if (res.count) {
     await writeWorkspaceAuditEntry({
       workspaceId: s.workspaceId,
@@ -208,7 +189,7 @@ export async function answerRecordingConsent({ sessionId, allow }: { sessionId: 
   if (!allow) {
     const res = await prisma.interviewSession.updateMany({
       where: { id: s.id, recordVideo: true, candidateConsentAt: null },
-      data: { recordVideo: false, candidateConsentAt: log.request?.prevConsentAt ?? null },
+      data: { recordVideo: false, candidateConsentAt: log.request?.prevConsentAt ?? null, recordDeclinedAt: new Date() },
     });
     if (res.count) {
       await writeWorkspaceAuditEntry({ workspaceId: s.workspaceId, action: WORKSPACE_AUDIT_ACTIONS.RECORDING_CONSENT_DECLINED, targetType: "interviewSession", targetId: s.id, meta: who });

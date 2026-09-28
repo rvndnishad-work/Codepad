@@ -682,6 +682,14 @@ model InterviewSession {
   /// Record the built-in video call. Candidates are told in the lobby and
   /// must agree first; the host starts and stops the recording in the room.
   recordVideo        Boolean          @default(false)
+  /// An interviewer asked in the room to record a call not set up for it.
+  /// Kept until the candidate answers; the earlier lobby consent is given
+  /// back if they decline. recordDeclinedAt stops a second ask.
+  recordAskedAt          DateTime?
+  recordAskedById        String?
+  recordAskedByName      String?
+  recordAskPrevConsentAt DateTime?
+  recordDeclinedAt       DateTime?
   /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
   guideJson          String?
   /// Take-home only: score (0-100) results need to read as a good match.

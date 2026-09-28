@@ -17,11 +17,13 @@
  * the coding rounds). "code:<challengeId>" is the classic attempt page's
  * editor for one challenge.
  */
-import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { NextResponse, after } from "next/server";
 import { z } from "zod";
 import * as Y from "yjs";
 import { Awareness, applyAwarenessUpdate } from "y-protocols/awareness";
 import { auth } from "@/lib/auth";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { roomViewerFromRequest, ROOM_SELECT, type RoomViewer } from "@/lib/interview/room-access";
 import { MAX_QUESTION, MAX_TIMER_SEC, TOOL_IDS, applyToolsAction, parseTools, type ToolsAction } from "@/lib/interview/tools";
@@ -33,7 +35,8 @@ const MAX_UPDATE_BYTES = 768 * 1024;
 const MAX_AWARENESS_BYTES = 16 * 1024;
 const COMPACT_AFTER = 200;
 const MAX_WAIT_MS = 8000;
-const WAIT_STEP_MS = 350;
+/** How often a held poll re-checks the room, measured from the start of each check. */
+const WAIT_STEP_MS = 200;
 const LIVE = new Set(["scheduled", "in_progress"]);
 
 async function load(req: Request, id: string) {
@@ -57,46 +60,90 @@ function clientOf(v: string | number | null | undefined): number | null {
 /** Yjs client ids are unsigned 32-bit; the column is a signed INT4, so store the same bits signed. */
 const dbClient = (c: number) => c | 0;
 
+/** Postgres TIMESTAMP(3) columns hold UTC wall time, as Prisma writes them. */
+const utc = (d: Date) => Prisma.sql`(${d.toISOString()}::timestamptz AT TIME ZONE 'UTC')`;
+
+/**
+ * Marks a tab present, in one round trip. `changedAt` moves only when what
+ * the others see (cursor, place, name, role) changed, so a plain heartbeat
+ * does not wake everyone's long poll.
+ */
 async function touch(sessionId: string, channel: string, client: number, viewer: RoomViewer, place: string, awareness?: Uint8Array<ArrayBuffer>) {
   const clientId = dbClient(client);
   const now = new Date();
-  const existing = await prisma.interviewPresence.findUnique({
-    where: { sessionId_channel_clientId: { sessionId, channel, clientId } },
-    select: { id: true, place: true, role: true, name: true },
-  });
-  if (!existing) {
-    await prisma.interviewPresence
-      .create({ data: { sessionId, channel, clientId, role: viewer.role, name: viewer.name, place, awareness: awareness ?? null, lastSeenAt: now, changedAt: now } })
-      .catch(() => {});
-    // Now and then, clear rows from tabs that closed long ago.
-    if (Math.random() < 0.1) {
-      await prisma.interviewPresence.deleteMany({ where: { sessionId, lastSeenAt: { lt: new Date(now.getTime() - 60 * 60 * 1000) } } }).catch(() => {});
-    }
-    return;
+  const rows = await prisma.$queryRaw<{ inserted: boolean }[]>`
+    INSERT INTO "InterviewPresence" ("id", "sessionId", "channel", "clientId", "role", "name", "place", "awareness", "joinedAt", "lastSeenAt", "changedAt")
+    VALUES (${randomUUID()}, ${sessionId}, ${channel}, ${clientId}, ${viewer.role}, ${viewer.name}, ${place}, ${awareness ? Buffer.from(awareness) : null}::bytea, ${utc(now)}, ${utc(now)}, ${utc(now)})
+    ON CONFLICT ("sessionId", "channel", "clientId") DO UPDATE SET
+      "lastSeenAt" = EXCLUDED."lastSeenAt",
+      "place" = EXCLUDED."place",
+      "role" = EXCLUDED."role",
+      "name" = EXCLUDED."name",
+      "awareness" = COALESCE(EXCLUDED."awareness", "InterviewPresence"."awareness"),
+      "changedAt" = CASE
+        WHEN EXCLUDED."awareness" IS NOT NULL
+          OR "InterviewPresence"."place" IS DISTINCT FROM EXCLUDED."place"
+          OR "InterviewPresence"."role" IS DISTINCT FROM EXCLUDED."role"
+          OR "InterviewPresence"."name" IS DISTINCT FROM EXCLUDED."name"
+        THEN EXCLUDED."changedAt" ELSE "InterviewPresence"."changedAt" END
+    RETURNING (xmax = 0) AS inserted`;
+  // Now and then, clear rows from tabs that closed long ago. Off the request path.
+  if (rows[0]?.inserted && Math.random() < 0.1) {
+    after(() => prisma.interviewPresence.deleteMany({ where: { sessionId, lastSeenAt: { lt: new Date(now.getTime() - 60 * 60 * 1000) } } }).catch(() => {}));
   }
-  const changed = !!awareness || existing.place !== place || existing.role !== viewer.role || existing.name !== viewer.name;
-  await prisma.interviewPresence.update({
-    where: { id: existing.id },
-    data: { lastSeenAt: now, place, role: viewer.role, name: viewer.name, ...(awareness ? { awareness } : {}), ...(changed ? { changedAt: now } : {}) },
-  });
 }
 
-type Fingerprint = { maxid: number; pchanged: Date | null; fp: string };
+type PeerRow = { clientId: number; role: string; name: string; place: string; awareness: string | null; joinedAt: string };
+type Snapshot = {
+  /** Updates after the cursor, oldest first, base64. */
+  updates: { id: number; update: string }[];
+  pchanged: Date | null;
+  fp: string;
+  room: { status: string; roomRound: string | null; toolsJson: string | null; startedAt: Date | null; totalSec: number };
+  peers: PeerRow[];
+};
 
-async function fingerprint(sessionId: string, channel: string, clientId: number): Promise<Fingerprint | null> {
-  const rows = await prisma.$queryRaw<{ maxid: number | bigint | null; pchanged: Date | null; status: string; roomRound: string | null; toolsJson: string | null; startedAt: Date | null }[]>`
+const PAGE = 500;
+
+/**
+ * Everything a poll answers with, as one consistent read in one round trip:
+ * updates after the cursor, when anyone else last changed their presence,
+ * the room status and tools, and who is here with their cursors. The long
+ * poll re-reads it to notice a change and replies with the read that saw it,
+ * so the other person waits for as few database trips as possible.
+ */
+async function snapshot(sessionId: string, channel: string, clientId: number, since: number): Promise<Snapshot | null> {
+  const rows = await prisma.$queryRaw<
+    { updates: { id: number; update: string }[] | null; pchanged: Date | null; status: string; roomRound: string | null; toolsJson: string | null; startedAt: Date | null; totalSec: number; peers: PeerRow[] | null }[]
+  >`
     SELECT
-      (SELECT MAX(u."id") FROM "InterviewToolUpdate" u WHERE u."sessionId" = s."id" AND u."channel" = ${channel}) AS maxid,
+      (SELECT json_agg(json_build_object('id', u."id", 'update', translate(encode(u."update", 'base64'), E'\n', '')) ORDER BY u."id")
+        FROM (SELECT "id", "update" FROM "InterviewToolUpdate"
+              WHERE "sessionId" = s."id" AND "channel" = ${channel} AND "id" > ${since}
+              ORDER BY "id" LIMIT ${PAGE}) u) AS updates,
       (SELECT MAX(p."changedAt") FROM "InterviewPresence" p WHERE p."sessionId" = s."id" AND p."channel" = ${channel} AND p."clientId" <> ${dbClient(clientId)}) AS pchanged,
-      s."status", s."roomRound", s."toolsJson", s."startedAt"
+      s."status", s."roomRound", s."toolsJson", s."startedAt", s."totalSec",
+      (SELECT json_agg(json_build_object(
+          'clientId', p."clientId", 'role', p."role", 'name', p."name", 'place', p."place",
+          'awareness', translate(encode(p."awareness", 'base64'), E'\n', ''),
+          'joinedAt', to_char(p."joinedAt", 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+        ) ORDER BY p."joinedAt")
+        FROM "InterviewPresence" p
+        WHERE p."sessionId" = s."id" AND p."channel" = ${channel} AND p."lastSeenAt" > ${utc(new Date(Date.now() - PRESENCE_TTL_MS))}) AS peers
     FROM "InterviewSession" s WHERE s."id" = ${sessionId}`;
   const r = rows[0];
   if (!r) return null;
-  return { maxid: Number(r.maxid ?? 0), pchanged: r.pchanged, fp: `${r.status}|${r.roomRound ?? ""}|${r.startedAt?.getTime() ?? ""}|${r.toolsJson ?? ""}` };
+  return {
+    updates: r.updates ?? [],
+    pchanged: r.pchanged,
+    fp: `${r.status}|${r.roomRound ?? ""}|${r.startedAt?.getTime() ?? ""}|${r.toolsJson ?? ""}`,
+    room: { status: r.status, roomRound: r.roomRound, toolsJson: r.toolsJson, startedAt: r.startedAt, totalSec: r.totalSec },
+    peers: r.peers ?? [],
+  };
 }
 
 /** What the client last saw of the room; sent back as `fp` so a change that lands between two polls is not missed. */
-const fpKey = (f: Fingerprint) => `${f.fp}|${f.pchanged?.getTime() ?? 0}`;
+const fpKey = (f: Snapshot) => `${f.fp}|${f.pchanged?.getTime() ?? 0}`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -113,52 +160,31 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const clientId = clientOf(sp.get("client"));
   const place = sp.get("place") === "lobby" ? "lobby" : "room";
   const wait = Math.min(MAX_WAIT_MS, Math.max(0, parseInt(sp.get("wait") ?? "0", 10) || 0));
+  const known = sp.get("fp");
 
-  if (clientId !== null) await touch(id, channel, clientId, viewer, place);
-
-  let rows = await prisma.interviewToolUpdate.findMany({
-    where: { sessionId: id, channel, id: { gt: since } },
-    orderBy: { id: "asc" },
-    take: 500,
-    select: { id: true, update: true },
-  });
+  // Marking this tab present and the first read run side by side.
+  const [, first] = await Promise.all([clientId !== null ? touch(id, channel, clientId, viewer, place) : null, snapshot(id, channel, clientId ?? -1, since)]);
+  let seen = first;
 
   // Long poll: hold the request until an edit, a cursor, a join or leave, or
-  // a room change lands, or the wait runs out.
-  const known = sp.get("fp");
-  if (!rows.length && wait > 0 && clientId !== null) {
-    const start = await fingerprint(id, channel, clientId);
+  // a room change lands, or the wait runs out. Reply at once when there is
+  // news already, or the room moved on since the client's last answer.
+  if (seen && !seen.updates.length && wait > 0 && clientId !== null && (!known || fpKey(seen) === known)) {
+    const base = fpKey(seen);
     const deadline = Date.now() + wait;
-    // Something changed since the client's last answer: reply at once.
-    while (start && (!known || fpKey(start) === known) && Date.now() < deadline && !req.signal.aborted) {
-      await sleep(WAIT_STEP_MS);
-      const cur = await fingerprint(id, channel, clientId);
+    let t = Date.now();
+    while (Date.now() < deadline && !req.signal.aborted) {
+      await sleep(Math.max(0, WAIT_STEP_MS - (Date.now() - t)));
+      t = Date.now();
+      const cur = await snapshot(id, channel, clientId, since);
       if (!cur) break;
-      if (cur.maxid > since || cur.fp !== start.fp || (cur.pchanged?.getTime() ?? 0) !== (start.pchanged?.getTime() ?? 0)) {
-        if (cur.maxid > since) {
-          rows = await prisma.interviewToolUpdate.findMany({
-            where: { sessionId: id, channel, id: { gt: since } },
-            orderBy: { id: "asc" },
-            take: 500,
-            select: { id: true, update: true },
-          });
-        }
-        break;
-      }
+      seen = cur;
+      if (cur.updates.length || fpKey(cur) !== base) break;
     }
   }
 
-  // Read before the state below, so anything that lands after it shows up as a mismatch next time.
-  const seen = clientId !== null ? await fingerprint(id, channel, clientId) : null;
-  const [fresh, peers] = await Promise.all([
-    prisma.interviewSession.findUnique({ where: { id }, select: { status: true, startedAt: true, roomRound: true, toolsJson: true, totalSec: true } }),
-    prisma.interviewPresence.findMany({
-      where: { sessionId: id, channel, lastSeenAt: { gt: new Date(Date.now() - PRESENCE_TTL_MS) } },
-      orderBy: { joinedAt: "asc" },
-      select: { clientId: true, role: true, name: true, place: true, awareness: true, joinedAt: true },
-    }),
-  ]);
-  const room = fresh ?? interview;
+  const room = seen?.room ?? interview;
+  const updates = seen?.updates ?? [];
 
   return NextResponse.json(
     {
@@ -172,18 +198,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         round: room.roomRound ?? null,
         totalSec: room.totalSec,
       },
-      peers: peers.map((p) => ({
+      peers: (seen?.peers ?? []).map((p) => ({
         clientId: p.clientId >>> 0,
         role: p.role,
         name: p.name,
         place: p.place,
-        awareness: p.awareness ? Buffer.from(p.awareness).toString("base64") : null,
-        joinedAt: p.joinedAt.toISOString(),
+        awareness: p.awareness || null,
+        joinedAt: p.joinedAt,
       })),
-      updates: rows.map((r) => Buffer.from(r.update).toString("base64")),
-      cursor: rows.length ? rows[rows.length - 1].id : since,
-      more: rows.length === 500,
-      fp: seen ? fpKey(seen) : null,
+      updates: updates.map((u) => u.update),
+      cursor: updates.length ? updates[updates.length - 1].id : since,
+      more: updates.length === PAGE,
+      fp: seen && clientId !== null ? fpKey(seen) : null,
       now: Date.now(),
     },
     { headers: { "Cache-Control": "no-store" } },
@@ -217,7 +243,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ ok: true });
   }
 
-  let rowId: number | null = null;
   if (update) {
     if (!LIVE.has(interview.status)) return NextResponse.json({ error: "This interview has ended." }, { status: 409 });
     const bytes = Buffer.from(update, "base64");
@@ -228,12 +253,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     } catch {
       return NextResponse.json({ error: "bad update" }, { status: 400 });
     }
-    const row = await prisma.interviewToolUpdate.create({ data: { sessionId: id, channel, update: bytes }, select: { id: true } });
-    rowId = row.id;
-    const count = await prisma.interviewToolUpdate.count({ where: { sessionId: id, channel } });
-    if (count > COMPACT_AFTER) await compact(id, channel).catch(() => {});
   }
 
+  let awarenessBytes: Buffer | null = null;
   if (awareness && client !== undefined) {
     const bytes = Buffer.from(awareness, "base64");
     if (bytes.length === 0 || bytes.length > MAX_AWARENESS_BYTES) return NextResponse.json({ error: "bad awareness" }, { status: 400 });
@@ -242,10 +264,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     } catch {
       return NextResponse.json({ error: "bad awareness" }, { status: 400 });
     }
-    await touch(id, channel, client, viewer, place ?? "room", bytes);
+    awarenessBytes = bytes;
   }
 
-  return NextResponse.json({ id: rowId });
+  // Store the edit and the cursor together; the other side is waiting on both.
+  const [row] = await Promise.all([
+    update ? prisma.interviewToolUpdate.create({ data: { sessionId: id, channel, update: Buffer.from(update, "base64") }, select: { id: true } }) : null,
+    awarenessBytes && client !== undefined ? touch(id, channel, client, viewer, place ?? "room", new Uint8Array(awarenessBytes)) : null,
+  ]);
+  if (row) {
+    // Folding old updates is housekeeping: do it after the reply.
+    after(async () => {
+      const count = await prisma.interviewToolUpdate.count({ where: { sessionId: id, channel } });
+      if (count > COMPACT_AFTER) await compact(id, channel).catch(() => {});
+    });
+  }
+
+  return NextResponse.json({ id: row?.id ?? null });
 }
 
 /** Folds every stored update of a channel into one row. Clients may receive

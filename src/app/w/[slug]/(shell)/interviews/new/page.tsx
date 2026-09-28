@@ -7,6 +7,8 @@ import InterviewWizard from "../_wizard/InterviewWizard";
 import { toWizardRound } from "@/lib/interview/wizard";
 import { loadWorkspaceSettings } from "@/lib/workspace/settings-server";
 import { SETTINGS_DEFAULTS } from "@/lib/workspace/settings";
+import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
+import { videoOffer } from "@/lib/video/room-video";
 
 export const metadata = { title: "New interview", robots: { index: false, follow: false } };
 
@@ -24,14 +26,17 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
   if (!session?.user?.id) redirect(`/login?next=${encodeURIComponent(`/w/${slug}/interviews/new`)}`);
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
-    select: { id: true, members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } } },
+    select: { id: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true, members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } } },
   });
   if (!workspace) notFound();
   const member = workspace.members[0];
   if (!member) redirect("/dashboard");
   if (!(await canMember(member, "interview:conduct"))) redirect(`/w/${slug}/interviews`);
 
-  const [data, settings] = await Promise.all([loadWizardData(workspace.id, session.user.id), loadWorkspaceSettings(workspace.id)]);
+  const [data, settings, canBill] = await Promise.all([loadWizardData(workspace.id, session.user.id), loadWorkspaceSettings(workspace.id), canMember(member, "billing:manage")]);
+  // Built-in video add-on: the Call choice, or the one-line offer for people who manage billing.
+  const videoOn = videoCallsOn(workspace);
+  const offer = videoOffer({ interviewer: true, canManageBilling: canBill, addonOn: videoOn, planAllows: videoAddonAvailable(workspace), planName: workspace.planName });
   // Links from the Question library and candidate pages start part-way in.
   const challengeIds = list(sp.challenges);
   const rounds = challengeIds.flatMap((id) => {
@@ -51,6 +56,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
       roundOptions={data.rounds}
       guides={data.guides}
       bankCategories={data.bankCategories}
+      video={{ on: videoOn, canOffer: offer.canOffer, offerUpgrade: offer.offerUpgrade, billingHref: `/w/${slug}/billing` }}
       defaultMinutes={settings?.interviewDefaultMinutes ?? SETTINGS_DEFAULTS.interviewDefaultMinutes}
       prefill={{
         candidateIds: [...list(sp.candidates), ...list(sp.candidateId)].slice(0, 20),

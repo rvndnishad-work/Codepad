@@ -8,6 +8,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { appOrigin, candidateJoinUrl } from "./links";
 import { cancelInterviewEvent } from "@/lib/calendar/server";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 
 type Actor = { userId: string | null; email: string | null };
@@ -116,6 +117,7 @@ export async function cancelUpcomingInterview(a: {
   });
   if (!claimed.count) return false;
   await cancelInterviewEvent(s.id);
+  closeVideoRoomAfter(s.id);
 
   const email = s.candidate?.email;
   if (a.notifyCandidate && email) {

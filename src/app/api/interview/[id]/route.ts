@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
@@ -22,6 +23,8 @@ const patchSchema = z.object({
   totalSec: z.number().int().positive().optional(),
   // Video call link for workspace rooms (https only, checked below).
   meetingUrl: z.string().max(MAX_MEETING_URL).nullable().optional(),
+  // Workspace rooms: talk with built-in video (true) or the meeting link.
+  builtinVideo: z.boolean().optional(),
   // Rubric support
   rubric: z.object({
     ratings: z.record(z.string(), z.number().min(1).max(5)),
@@ -127,6 +130,10 @@ export async function PATCH(
     const m = cleanMeetingUrl(parsed.data.meetingUrl);
     if (!m.ok) return NextResponse.json({ error: m.error }, { status: 400 });
     data.meetingUrl = m.url;
+  }
+  if (parsed.data.builtinVideo !== undefined) {
+    if (!existing.workspaceId) return NextResponse.json({ error: "Built-in video is only for workspace interviews." }, { status: 400 });
+    data.builtinVideo = parsed.data.builtinVideo;
   }
 
   if (parsed.data.rubric !== undefined) {
@@ -242,6 +249,11 @@ export async function PATCH(
         type: existing.type,
       });
     }
+  }
+
+  // The built-in call ends with the interview, for everyone still on it.
+  if (existing.workspaceId && (parsed.data.status === "completed" || parsed.data.status === "abandoned") && existing.status !== parsed.data.status) {
+    closeVideoRoomAfter(id);
   }
 
   // Keep the organiser's calendar event in step: new length or call link

@@ -12,6 +12,10 @@ import { roomViewer, ROOM_SELECT, type RoomViewer } from "./room-access";
 import { parseRound, roundKey, type RoundKind } from "./room";
 import { CANDIDATE_PAGE_SELECT, candidatePageSettings } from "@/lib/candidate-page-brand";
 import { consentOutstanding, type CandidateBrand } from "@/lib/workspace/candidate-experience";
+import { canMember } from "@/lib/permissions";
+import { videoAddonAvailable, videoCallsOn } from "@/lib/video/addon";
+import { liveKitConfig } from "@/lib/video/livekit-server";
+import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
 
 export function baseUrl(): string {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -85,6 +89,8 @@ export type RoomData = {
     /** The team's video call link, if one was set. */
     meetingUrl: string | null;
   };
+  /** How people talk: built-in video, the meeting link, or nothing set up. */
+  video: RoomVideo;
   /** Interviewers see every round; candidates only the one on the stage. */
   rounds: RoundSummary[];
   roundCount: number;
@@ -150,6 +156,7 @@ export async function loadRoom(
       toolsJson: true,
       roomRound: true,
       meetingUrl: true,
+      builtinVideo: true,
       verdict: true,
       notes: true,
       scenario: true,
@@ -163,7 +170,7 @@ export async function loadRoom(
       rubric: { select: { ratings: true, notes: true } },
       candidateConsentAt: true,
       user: { select: { name: true, email: true } },
-      workspace: { select: { slug: true, ...CANDIDATE_PAGE_SELECT } },
+      workspace: { select: { id: true, slug: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true, ...CANDIDATE_PAGE_SELECT } },
       guests: { select: { email: true }, orderBy: { createdAt: "asc" } },
     },
   });
@@ -318,10 +325,31 @@ export async function loadRoom(
     };
   }
 
+  // Built-in video, the team's link, or nothing. Only interviewers who
+  // manage billing are offered the add-on; candidates never see prices.
+  const addonOn = videoCallsOn(s.workspace);
+  const { mode, configured } = roomVideoMode({ addonOn, builtinVideo: s.builtinVideo, meetingUrl: s.meetingUrl, liveKitReady: !!liveKitConfig() });
+  let canManageBilling = false;
+  if (interviewer && viewer.userId && !addonOn) {
+    const m = await prisma.workspaceMember.findFirst({ where: { workspaceId: s.workspace.id, userId: viewer.userId }, select: { role: true, permissions: true } });
+    canManageBilling = !!m && (await canMember(m, "billing:manage").catch(() => false));
+  }
+  const offer = videoOffer({ interviewer, canManageBilling, addonOn, planAllows: videoAddonAvailable(s.workspace), planName: s.workspace.planName });
+  const video: RoomVideo = {
+    mode,
+    // Candidates are never told about server setup.
+    configured: interviewer ? configured : true,
+    ...offer,
+    addonOn: interviewer ? addonOn : false,
+    builtinVideo: s.builtinVideo,
+    billingHref: `/w/${slug}/billing`,
+  };
+
   return {
     ok: true,
     data: {
       viewer,
+      video,
       workspace: { name: s.workspace.name, slug: s.workspace.slug, brand: page.brand },
       interview: {
         consentNeeded: !interviewer && !["completed", "abandoned", "cancelled"].includes(s.status) && consentOutstanding(page, s.candidateConsentAt),

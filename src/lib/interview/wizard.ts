@@ -142,6 +142,8 @@ export type WizardState = {
   times: string[];
   /** Optional video call link (Zoom, Meet, Teams...). */
   meetingUrl?: string;
+  /** How people talk, when the workspace has built-in video. Unset means built-in video. */
+  call?: CallChoice;
   brief: string;
   candidateBrief: string;
   sendInvites: boolean;
@@ -155,7 +157,21 @@ export type WizardState = {
   calendarEvent?: boolean;
 };
 
-export type StepId = "format" | "candidates" | "panel" | "questions" | "schedule" | "review";
+export type CallChoice = "builtin" | "link";
+
+/** The call choice in effect: always the meeting link without the video add-on. */
+export function callChoice(s: Pick<WizardState, "call">, videoOn: boolean): CallChoice {
+  return videoOn ? (s.call ?? "builtin") : "link";
+}
+
+/** What the wizard sends for the call: built-in video drops the link. */
+export function callFields(s: Pick<WizardState, "call" | "meetingUrl">, videoOn: boolean): { builtinVideo?: boolean; meetingUrl?: string } {
+  const link = s.meetingUrl?.trim() || undefined;
+  if (!videoOn) return { meetingUrl: link };
+  return callChoice(s, true) === "builtin" ? { builtinVideo: true } : { builtinVideo: false, meetingUrl: link };
+}
+
+export type StepId ="format" | "candidates" | "panel" | "questions" | "schedule" | "review";
 
 export const STEPS: { id: StepId; label: string; hint: string }[] = [
   { id: "format", label: "Format", hint: "What kind of interview" },
@@ -196,7 +212,8 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
     }
     case "schedule": {
       if (s.minutes < MIN_MINUTES || s.minutes > MAX_MINUTES) return [`Length must be between ${MIN_MINUTES} and ${MAX_MINUTES} minutes.`];
-      const m = cleanMeetingUrl(s.meetingUrl);
+      // Built-in video needs no link (the choice is only offered with the add-on on).
+      const m = s.call === "builtin" ? ({ ok: true } as const) : cleanMeetingUrl(s.meetingUrl);
       if (!m.ok) return [`Video call link: ${m.error}`];
       return [];
     }

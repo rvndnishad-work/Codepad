@@ -13,6 +13,7 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Librar
 import type { GuideOption, MemberOption, PersonOption, PublicCategory, RoundOption } from "@/lib/interview/wizard-server";
 import {
   STEPS,
+  callFields,
   defaultTitle,
   formatOf,
   plansFor,
@@ -53,7 +54,11 @@ export type WizardProps = {
   prefill: { candidateIds: string[]; rounds: WizardRound[]; guideId: string | null; format: string | null };
   /** Interview length from Settings > Screening defaults. */
   defaultMinutes: number;
+  /** Built-in video add-on: on gives the Call choice; off, billing managers see a one-line offer. */
+  video?: WizardVideo;
 };
+
+export type WizardVideo = { on: boolean; canOffer: boolean; offerUpgrade: boolean; billingHref: string };
 
 const DRAFT_VERSION = 1;
 
@@ -78,7 +83,7 @@ function blankState(meId: string, defaultMinutes: number): WizardState {
   };
 }
 
-export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, bankCategories, prefill, defaultMinutes }: WizardProps) {
+export default function InterviewWizard({ slug, meId, people, members, roundOptions, guides, bankCategories, prefill, defaultMinutes, video }: WizardProps) {
   const reduce = useReducedMotion();
   const draftKey = `interview-wizard:${slug}`;
   const hasPrefill = prefill.candidateIds.length > 0 || prefill.rounds.length > 0 || !!prefill.guideId || !!prefill.format;
@@ -253,7 +258,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         questionsOwnerId: state.questionsOwnerId,
         questionsNote: state.questionsNote,
         minutes: state.minutes,
-        meetingUrl: state.meetingUrl?.trim() || undefined,
+        ...callFields(state, !!video?.on),
         brief: state.brief,
         candidateBrief: state.candidateBrief,
         sendInvites: state.sendInvites,
@@ -365,7 +370,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
           </div>
         ) : null;
       case "schedule":
-        return <ScheduleStep state={state} patch={patch} defaultMinutes={defaultMinutes} calendar={<CalendarAvailability slug={slug} state={state} patch={patch} members={members} meId={meId} />} />;
+        return <ScheduleStep state={state} patch={patch} defaultMinutes={defaultMinutes} video={video} calendar={<CalendarAvailability slug={slug} state={state} patch={patch} members={members} meId={meId} />} />;
       case "review":
         return (
           <ReviewStep

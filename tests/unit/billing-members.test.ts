@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { effectivePlan, FREE_SEAT_LIMIT, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import { planSummary } from "@/lib/billing/summary";
-import { WORKSPACE_PLANS, checkoutSeatPriceCents, priceLabel, planConfig } from "@/lib/billing/plans";
+import { WORKSPACE_PLANS, checkoutSeatChargeCents, checkoutSeatPriceCents, priceLabel, planConfig } from "@/lib/billing/plans";
 import {
   checkRemoval,
   checkRoleChange,
@@ -87,6 +87,12 @@ describe("pricing config", () => {
     expect(checkoutSeatPriceCents("GROWTH", "monthly")).toBe(4900);
     expect(checkoutSeatPriceCents("GROWTH", "annual")).toBe(3900);
     expect(checkoutSeatPriceCents("STARTER", "monthly")).toBe(1900);
+  });
+
+  it("charges annual plans for twelve discounted months once a year", () => {
+    expect(checkoutSeatChargeCents("GROWTH", "monthly")).toBe(4900);
+    expect(checkoutSeatChargeCents("GROWTH", "annual")).toBe(46800);
+    expect(checkoutSeatChargeCents("STARTER", "annual")).toBe(18000);
   });
 
   it("falls back to Free for unknown plan names", () => {

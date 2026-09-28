@@ -74,6 +74,8 @@ export type RelayOptions = {
 };
 
 const LONG_POLL_MS = 8000;
+/** Edits made within this window go out as one post. */
+const FLUSH_MS = 60;
 
 export class RelayProvider {
   readonly doc: Y.Doc;
@@ -188,7 +190,7 @@ export class RelayProvider {
     if (origin === RELAY_ORIGIN || this.opts.readOnly) return;
     this.queue.push(u);
     this.set({ unsaved: this.queue.length });
-    if (!this.flushTimer) this.flushTimer = setTimeout(() => void this.send(), 120);
+    if (!this.flushTimer) this.flushTimer = setTimeout(() => void this.send(), FLUSH_MS);
   };
 
   private async send() {
@@ -219,7 +221,7 @@ export class RelayProvider {
     } finally {
       this.flushing = false;
       this.set({ unsaved: this.queue.length });
-      if (this.queue.length && !this.flushTimer) this.flushTimer = setTimeout(() => void this.send(), 120);
+      if (this.queue.length && !this.flushTimer) this.flushTimer = setTimeout(() => void this.send(), FLUSH_MS);
     }
   }
 

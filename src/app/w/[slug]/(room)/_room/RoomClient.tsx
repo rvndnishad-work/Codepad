@@ -34,6 +34,7 @@ import {
   Sparkles,
   Timer as TimerIcon,
   VideoOff,
+  Wifi,
   X,
 } from "lucide-react";
 import type { RoomData } from "@/lib/interview/room-server";
@@ -47,7 +48,7 @@ import type { ToolProps } from "@/app/interview/[id]/tools/types";
 import RoundStage from "./RoundStage";
 import InterviewerPanel from "./InterviewerPanel";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
-import { Avatar, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, roleLabel, useNow, useRoster, type Person } from "./parts";
+import { COMPACT_CALL, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, roleLabel, useMedia, useNow, useRoster, type Person } from "./parts";
 import { VideoCall } from "./video/VideoCall";
 import { CallDock } from "./video/CallDock";
 import { CallWaiting } from "./video/CallWaiting";
@@ -218,6 +219,18 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
 
   const panel = isInterviewer && !!data.private;
   const staging = isInterviewer && !ended && !!room && !!toolProps;
+
+  // Where the running call sits: a column beside the stage on desktops from
+  // 1024px (on top of the interviewer panel when that is docked), so it
+  // never covers the stage; floating on narrower desktops; a strip on
+  // phones and touch tablets.
+  const compactCall = useMedia(COMPACT_CALL);
+  const wide = useMedia("(min-width: 1024px)");
+  const xl = useMedia("(min-width: 1280px)");
+  const callOn = builtin && live;
+  const callColumn = callOn && !compactCall && wide;
+  const callInPanel = callColumn && panel && panelOpen && xl;
+  const hangUp = isInterviewer ? undefined : () => setLeaving(true);
 
   return (
     <VideoCall sessionId={iv.id} enabled={builtin && !readOnly}>
@@ -409,16 +422,29 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                 </motion.div>
               </AnimatePresence>
             </div>
-            {builtin && live && <CallDock myRole={viewer.role} others={others} onHangUp={isInterviewer ? undefined : () => setLeaving(true)} />}
+            {callOn && !callColumn && <CallDock myRole={viewer.role} others={others} onHangUp={hangUp} />}
           </main>
+
+          {callColumn && !callInPanel && (
+            <aside aria-label="Call" className="w-[300px] shrink-0 min-h-0 overflow-y-auto border-l border-border bg-surface">
+              <CallDock column="side" myRole={viewer.role} others={others} onHangUp={hangUp} />
+            </aside>
+          )}
 
           {panel && (
             <>
               {sheetOpen && <button type="button" aria-label="Close the panel" tabIndex={-1} onClick={() => setSheetOpen(false)} className="xl:hidden absolute inset-0 z-30 bg-bg/60" />}
               <div
-                className={`min-h-0 ${sheetOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-[380px] shadow-2xl shadow-black/50" : "hidden"} ${panelOpen ? "xl:block xl:static xl:z-auto xl:w-[340px] xl:shrink-0 xl:shadow-none" : "xl:hidden"}`}
+                className={`min-h-0 ${sheetOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-[380px] shadow-2xl shadow-black/50 flex flex-col" : "hidden"} ${panelOpen ? "xl:flex xl:flex-col xl:static xl:z-auto xl:w-[340px] xl:shrink-0 xl:shadow-none" : "xl:hidden"}`}
               >
-                <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} onClose={() => setSheetOpen(false)} />
+                {callInPanel && (
+                  <div className="border-l border-border">
+                    <CallDock column="panel" myRole={viewer.role} others={others} onHangUp={hangUp} />
+                  </div>
+                )}
+                <div className="flex-1 min-h-0">
+                  <InterviewerPanel data={data} readOnly={ended} onShowQuestion={(q) => void showQuestion(q)} onClose={() => setSheetOpen(false)} />
+                </div>
               </div>
             </>
           )}
@@ -517,9 +543,10 @@ function TopBar({
             aria-label={over ? `${clock(-left)} over time` : `${clock(left)} left`}
             className={`h-9 px-2.5 sm:px-3.5 rounded-xl inline-flex items-center gap-2 text-[14px] font-semibold tabular-nums whitespace-nowrap ring-1 ring-inset ${over ? "bg-warning/10 text-warning ring-warning/25" : "bg-bg ring-border"}`}
           >
+            {/* Green for "live": red is kept for recording, so the two never look alike. */}
             <span className="relative flex w-2 h-2" aria-hidden>
-              <span className="absolute inset-0 rounded-full bg-danger/60 animate-ping motion-reduce:animate-none" />
-              <span className="relative w-2 h-2 rounded-full bg-danger" />
+              <span className={`absolute inset-0 rounded-full animate-ping motion-reduce:animate-none ${over ? "bg-warning/50" : "bg-success/50"}`} />
+              <span className={`relative w-2 h-2 rounded-full ${over ? "bg-warning" : "bg-success"}`} />
             </span>
             <span suppressHydrationWarning>
               {over ? `+${clock(-left)}` : clock(left)}
@@ -546,20 +573,28 @@ function TopBar({
       </div>
 
       <div className="shrink-0 md:flex-1 flex items-center justify-end gap-1.5 md:gap-2">
-        <ul className="hidden lg:flex items-center gap-1" aria-label="In the room">
-          {people.map((p) => (
-            <li key={p.key} className="relative" title={`${p.name}${p.me ? " (you)" : ""}, ${roleLabel(p.role).toLowerCase()}${p.place === "lobby" ? ", in the lobby" : ""}`}>
-              <span className="block rounded-full ring-2 ring-surface">
-                <Avatar name={p.name} size={28} />
-              </span>
-              <PresenceDot on={p.place === "room"} className="absolute -bottom-0.5 -right-0.5 scale-75" />
-              <span className="sr-only">
-                {p.name}, {roleLabel(p.role)}
-                {p.place === "lobby" ? ", in the lobby" : ""}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {/* One chip for who is here and the connection; the connection gets its own pill only when something is wrong. */}
+        <div className="hidden md:inline-flex h-9 items-center gap-2 pl-1.5 pr-2 rounded-xl bg-bg ring-1 ring-inset ring-border">
+          <ul className="hidden lg:flex items-center gap-1" aria-label="In the room">
+            {people.map((p) => (
+              <li key={p.key} className="relative" title={`${p.name}${p.me ? " (you)" : ""}, ${roleLabel(p.role).toLowerCase()}${p.place === "lobby" ? ", in the lobby" : ""}`}>
+                <span className={`block rounded-full ${p.place === "lobby" ? "opacity-50" : ""}`}>
+                  <RoleAvatar name={p.name} role={p.role} size={26} />
+                </span>
+                <span className="sr-only">
+                  {p.name}, {roleLabel(p.role)}
+                  {p.place === "lobby" ? ", in the lobby" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {snap.connection === "live" && (
+            <span role="status" title={snap.rttMs != null ? `Connected · ${snap.rttMs} ms` : "Connected"} className="w-6 h-6 inline-flex items-center justify-center text-success">
+              <Wifi className="w-4 h-4" aria-hidden />
+              <span className="sr-only">Connected</span>
+            </span>
+          )}
+        </div>
         {!ended && video.mode === "link" && iv.meetingUrl && <MeetingButton url={iv.meetingUrl} size="sm" />}
         {!ended && video.mode === "link" && (
           <div className="hidden xl:block">
@@ -577,10 +612,8 @@ function TopBar({
             <VideoNotSetUpChip />
           </div>
         )}
-        {/* The connection shows on phones only while it is not fine; the More menu always has it. */}
-        <span className={snap.connection === "live" ? "hidden md:inline-flex" : "inline-flex"}>
-          <ConnectionPill snap={snap} compact />
-        </span>
+        {/* A pill only while the connection is not fine; the More menu always has it. */}
+        {snap.connection !== "live" && <ConnectionPill snap={snap} compact />}
         {toggles}
         {actions}
         {menu}
@@ -655,7 +688,7 @@ function MenuPeople({ people, snap, builtin }: { people: Person[]; snap: ToolsRo
         {people.map((p) => (
           <li key={p.key} className="flex items-center gap-2.5 min-w-0">
             <span className="relative shrink-0">
-              <Avatar name={p.name} size={26} />
+              <RoleAvatar name={p.name} role={p.role} size={26} />
               <PresenceDot on={p.place === "room"} className="absolute -bottom-0.5 -right-0.5 scale-75" />
             </span>
             <span className="min-w-0 text-[13px] truncate">
@@ -902,12 +935,21 @@ function ToolStage({ tool, props }: { tool: ToolId; props: ToolProps }) {
   const Stage = TOOL_PLUGINS[tool].Stage;
   const Actions = TOOL_PLUGINS[tool].HeaderActions;
   const Icon = TOOL_ICON[tool];
+  const caption = props.isInterviewer ? "The candidate sees this" : "Shared by your interviewer";
+  // Tools that title themselves get the full height.
+  if (TOOL_PLUGINS[tool].titleInside && Stage) {
+    return (
+      <section aria-label={TOOL_BY_ID[tool].label} className="h-full relative">
+        <Stage {...props} caption={caption} />
+      </section>
+    );
+  }
   return (
     <section aria-label={TOOL_BY_ID[tool].label} className="h-full flex flex-col">
       <header className="h-11 shrink-0 flex items-center gap-2.5 px-3 sm:px-4 border-b border-border">
         <Icon className="w-4 h-4 text-secondary-soft shrink-0" aria-hidden />
         <h2 className="text-[14px] font-semibold truncate">{TOOL_BY_ID[tool].label}</h2>
-        <span className="hidden sm:inline text-[12px] text-muted truncate">{props.isInterviewer ? "The candidate sees this" : "Shared by your interviewer"}</span>
+        <span className="hidden sm:inline text-[12px] text-muted truncate">{caption}</span>
         <div className="ml-auto">{Actions && <Actions {...props} />}</div>
       </header>
       <div className="flex-1 min-h-0 relative">{Stage && <Stage {...props} />}</div>
@@ -1013,13 +1055,13 @@ function Pulse({ children, tone = "secondary" }: { children: React.ReactNode; to
   );
 }
 
-function Seat({ name, sub, here, me }: { name: string; sub: string; here: boolean; me?: boolean }) {
+function Seat({ name, sub, here, me, role }: { name: string; sub: string; here: boolean; me?: boolean; role: "interviewer" | "candidate" }) {
   return (
     <div className="flex flex-col items-center text-center gap-2 w-40">
       <span className="relative">
         {here ? (
           <span className="block rounded-full ring-4 ring-success/20">
-            <Avatar name={name} size={64} />
+            <RoleAvatar name={name} role={role} size={64} />
           </span>
         ) : (
           <span className="block w-16 h-16 rounded-full border-2 border-dashed border-border-strong" aria-hidden />
@@ -1064,7 +1106,7 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
           <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-snug text-balance">{title}</h2>
 
           <div className="mt-8 flex items-start justify-center gap-2 sm:gap-4">
-            <Seat name={lead?.name ?? iv.hostName} sub={lead ? (lead.place === "room" ? "Interviewer" : "Interviewer, in the lobby") : "Interviewer, not here yet"} here={!!lead} me={lead?.me} />
+            <Seat name={lead?.name ?? iv.hostName} sub={lead ? (lead.place === "room" ? "Interviewer" : "Interviewer, in the lobby") : "Interviewer, not here yet"} here={!!lead} me={lead?.me} role="interviewer" />
             <div className="mt-8 flex-1 max-w-[120px] h-px relative" aria-hidden>
               <span className={`absolute inset-0 ${both ? "bg-success/60" : "border-t-2 border-dashed border-border-strong"}`} />
               {both && <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-success ring-4 ring-surface" />}
@@ -1074,6 +1116,7 @@ function Waiting({ data, people, onStart, starting, ready }: { data: RoomData; p
               sub={candidate ? (candidateIn ? "Candidate" : "Candidate, in the lobby") : "Candidate, not here yet"}
               here={!!candidate}
               me={candidate?.me}
+              role="candidate"
             />
           </div>
 

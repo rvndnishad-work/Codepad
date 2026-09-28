@@ -13,7 +13,7 @@
  */
 import "@excalidraw/excalidraw/index.css";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { CaptureUpdateAction, Excalidraw, getCommonBounds } from "@excalidraw/excalidraw";
+import { CaptureUpdateAction, Excalidraw, Footer, MainMenu, getCommonBounds } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type * as Y from "yjs";
 import type { Awareness } from "y-protocols/awareness";
@@ -44,7 +44,12 @@ function fitAll(api: Api, { animate, maxZoom = 1 }: { animate: boolean; maxZoom?
   api.scrollToContent(els as never, { fitToViewport: true, viewportZoomFactor: FIT_PADDING, maxZoom, animate, duration: 300 });
 }
 
-export default function Whiteboard({ doc, awareness, dark, readOnly }: { doc: Y.Doc; awareness: Awareness | null; dark: boolean; readOnly: boolean }) {
+/**
+ * `caption` is set in the interview room, which drops its header above the
+ * board: the title and caption then sit in the board footer (desktop), and
+ * phones get the whole height.
+ */
+export default function Whiteboard({ doc, awareness, dark, readOnly, caption }: { doc: Y.Doc; awareness: Awareness | null; dark: boolean; readOnly: boolean; caption?: string }) {
   const ymap = useMemo(() => doc.getMap<El>("whiteboard"), [doc]);
   const api = useRef<Api | null>(null);
   /** Excalidraw has loaded initialData; before that, updateScene would be overwritten. */
@@ -166,11 +171,30 @@ export default function Whiteboard({ doc, awareness, dark, readOnly }: { doc: Y.
     return () => awareness.off("change", render);
   }, [awareness]);
 
+  // Excalidraw measures itself on window resizes only; the room also
+  // resizes the stage when the call column or a panel opens or closes.
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => api.current?.refresh());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const showAll = () => {
+    if (api.current) fitAll(api.current, { animate: !reduceMotion.current });
+  };
+
   return (
     // Capture-phase listeners only note that this person is using the
     // board; they never stop or prevent anything, so touch, pinch and
     // pen input reach Excalidraw untouched.
-    <div className="absolute inset-0" onPointerDownCapture={touched} onWheelCapture={touched} onKeyDownCapture={touched}>
+    // Hidden: the canvas hint ("To move canvas, hold mouse wheel...") repeats
+    // what the hand tool shows and costs a line under the toolbar; the shape
+    // Library button does not fit beside the toolbar on tablets (it was cut
+    // off at the edge) and an interview board does not need it.
+    <div ref={box} className="absolute inset-0 [&_.HintViewer]:!hidden [&_.sidebar-trigger]:!hidden" onPointerDownCapture={touched} onWheelCapture={touched} onKeyDownCapture={touched}>
       <Excalidraw
         excalidrawAPI={(a) => {
           api.current = a;
@@ -183,17 +207,6 @@ export default function Whiteboard({ doc, awareness, dark, readOnly }: { doc: Y.
           canvasActions: { loadScene: false, saveToActiveFile: false, export: false, toggleTheme: false, changeViewBackgroundColor: false, clearCanvas: true, saveAsImage: true },
           tools: { image: false },
         }}
-        renderTopRightUI={(isMobile) => (
-          <button
-            type="button"
-            onClick={() => api.current && fitAll(api.current, { animate: !reduceMotion.current })}
-            title="Show everything"
-            aria-label="Show everything on the board"
-            className={`${isMobile ? "w-10 h-10" : "w-9 h-9"} rounded-lg bg-surface ring-1 ring-inset ring-border text-muted hover:text-fg hover:bg-panel flex items-center justify-center`}
-          >
-            <Scan className="w-4 h-4" aria-hidden />
-          </button>
-        )}
         onPointerUpdate={
           awareness
             ? ({ pointer }) => {
@@ -218,7 +231,38 @@ export default function Whiteboard({ doc, awareness, dark, readOnly }: { doc: Y.
             for (const e of changed) ymap.set(e.id, JSON.parse(JSON.stringify(e)));
           });
         }}
-      />
+      >
+        {/* "Show everything" lives in the menu on every screen (the only
+            place phones have room for it) and in the footer on desktops. */}
+        <MainMenu>
+          <MainMenu.Item icon={<Scan className="w-4 h-4" aria-hidden />} onSelect={showAll}>
+            Show everything
+          </MainMenu.Item>
+          <MainMenu.DefaultItems.SaveAsImage />
+          {!readOnly && <MainMenu.DefaultItems.ClearCanvas />}
+          <MainMenu.DefaultItems.Help />
+        </MainMenu>
+        <Footer>
+          <div className="h-9 flex items-center gap-2.5 pl-3 min-w-0">
+            {caption && (
+              <span className="hidden lg:flex items-center gap-1.5 min-w-0 text-[12.5px] whitespace-nowrap">
+                <span className="font-semibold text-fg">Whiteboard</span>
+                <span className="text-muted truncate">{caption}</span>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={showAll}
+              title="Show everything"
+              aria-label="Show everything on the board"
+              className="h-9 px-2.5 rounded-lg bg-surface ring-1 ring-inset ring-border text-[12.5px] text-muted hover:text-fg hover:bg-panel inline-flex items-center gap-1.5 whitespace-nowrap"
+            >
+              <Scan className="w-4 h-4" aria-hidden />
+              <span className="hidden xl:inline">Show everything</span>
+            </button>
+          </div>
+        </Footer>
+      </Excalidraw>
     </div>
   );
 }

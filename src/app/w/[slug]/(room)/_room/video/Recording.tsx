@@ -227,7 +227,7 @@ function HostControl({ rec }: { rec: Rec }) {
         </button>
       ) : control === "start" || control === "ask" ? (
         <button type="button" onClick={() => setPanel(panel === "confirm" ? null : "confirm")} disabled={rec.busy} aria-label="Record the call" aria-expanded={panel === "confirm"} className={`${BTN} disabled:opacity-60`}>
-          {rec.busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Circle className="w-3 h-3 fill-current text-danger" aria-hidden />}
+          {rec.busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden /> : <Circle className="w-3 h-3 text-danger" strokeWidth={3} aria-hidden />}
           <span className="hidden sm:inline">Record</span>
         </button>
       ) : control === "waiting" ? (
@@ -248,7 +248,7 @@ function HostControl({ rec }: { rec: Rec }) {
             aria-describedby={why ? "record-why" : undefined}
             className={`${BTN} opacity-50 hover:opacity-70`}
           >
-            <Circle className="w-3 h-3 fill-current text-danger" aria-hidden />
+            <Circle className="w-3 h-3 text-danger" strokeWidth={3} aria-hidden />
             <span className="hidden sm:inline">Record</span>
           </button>
           {rec.loaded && control === "blocked" && rec.short && <span className="hidden xl:inline text-[12px] text-muted whitespace-nowrap">{rec.short}</span>}

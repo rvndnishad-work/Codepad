@@ -27,7 +27,8 @@ const Whiteboard = dynamic(() => import("./Whiteboard"), {
 
 export const TOOL_PLUGINS: Record<ToolId, ToolPlugin> = {
   whiteboard: {
-    Stage: ({ room, dark, readOnly }: ToolProps) => <Whiteboard doc={room.doc} awareness={room.awareness} dark={dark} readOnly={readOnly} />,
+    Stage: ({ room, dark, readOnly, caption }: ToolProps) => <Whiteboard doc={room.doc} awareness={room.awareness} dark={dark} readOnly={readOnly} caption={caption} />,
+    titleInside: true,
   },
   code: { Stage: CodePad, HeaderActions: CodeLangPicker },
   notes: { Stage: Notes },

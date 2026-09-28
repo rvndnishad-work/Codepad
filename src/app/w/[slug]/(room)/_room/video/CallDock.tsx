@@ -13,9 +13,9 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } f
 import { useIsSpeaking, useIsMuted } from "@livekit/components-react";
 import { Track, type Participant } from "livekit-client";
 import { ChevronDown, ChevronUp, Maximize2, Minus, MoveDiagonal } from "lucide-react";
-import { Avatar, COMPACT_CALL, useMedia } from "../parts";
+import { COMPACT_CALL, RoleAvatar, useMedia } from "../parts";
 import { useCall } from "./VideoCall";
-import { CallControls, CallState, MediaNote, Tile, nameOf, useCallPeople } from "./CallParts";
+import { CallControls, CallState, MediaNote, Tile, nameOf, roleOf, useCallPeople } from "./CallParts";
 
 type Corner = "tl" | "tr" | "bl" | "br";
 const CORNERS: Corner[] = ["br", "bl", "tl", "tr"];
@@ -47,7 +47,24 @@ function mmss(sec: number): string {
   return `${m}:${String(sec % 60).padStart(2, "0")}`;
 }
 
-export function CallDock({ myRole, others, onHangUp }: { myRole: "interviewer" | "candidate"; others: string; onHangUp?: () => void }) {
+/**
+ * `column`: desktops with room to spare get the call in a column beside the
+ * stage (`side`, both people stacked) or at the top of the interviewer
+ * panel (`panel`, the other person large, you small), so it never covers
+ * the stage. Without it the call floats (narrow desktops) or is a strip
+ * (phones and touch tablets).
+ */
+export function CallDock({
+  myRole,
+  others,
+  onHangUp,
+  column,
+}: {
+  myRole: "interviewer" | "candidate";
+  others: string;
+  onHangUp?: () => void;
+  column?: "side" | "panel";
+}) {
   const call = useCall();
   const compact = useMedia(COMPACT_CALL);
   const [dock, setDock] = useState<{ corner: Corner; small: boolean }>({ corner: "br", small: false });
@@ -88,6 +105,7 @@ export function CallDock({ myRole, others, onHangUp }: { myRole: "interviewer" |
   };
 
   if (!call || call.status === "off" || call.status === "ended") return null;
+  if (column) return <Column kind={column} myRole={myRole} others={others} onHangUp={onHangUp} small={dock.small} onSmall={(small) => update({ small })} />;
   if (compact) return <Strip myRole={myRole} others={others} onHangUp={onHangUp} small={dock.small} onSmall={(small) => update({ small })} />;
   const place = `absolute z-30 ${CORNER_CLS[dock.corner]}`;
   const shell = "rounded-2xl bg-surface border border-border-strong shadow-2xl shadow-black/40";
@@ -180,19 +198,92 @@ function CallClock() {
 }
 
 /** The other person large, yourself small in the corner. */
-function Faces({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
+function Faces({ myRole, others, height = "h-[180px]" }: { myRole: "interviewer" | "candidate"; others: string; height?: string }) {
   const { local, main } = useCallPeople(myRole);
   return (
     <div className="relative mx-2">
       {main ? (
-        <Tile participant={main} preferScreen avatar={64} className="h-[180px]" />
+        <Tile participant={main} preferScreen avatar={64} className={height} />
       ) : (
-        <div className="h-[180px] rounded-xl bg-panel flex flex-col items-center justify-center gap-2 text-center px-4">
+        <div className={`${height} rounded-xl bg-panel flex flex-col items-center justify-center gap-2 text-center px-4`}>
           <span className="w-14 h-14 rounded-full border-2 border-dashed border-border-strong" aria-hidden />
           <span className="text-[12.5px] text-muted">Waiting for {others} to join the call</span>
         </div>
       )}
       <Tile participant={local} label="You" avatar={28} showName={false} rounded="rounded-lg" className="!absolute right-2 bottom-2 w-24 h-[60px] border border-border-strong" />
+    </div>
+  );
+}
+
+/** The call in a column beside the stage, or on top of the interviewer panel. */
+function Column({
+  kind,
+  myRole,
+  others,
+  onHangUp,
+  small,
+  onSmall,
+}: {
+  kind: "side" | "panel";
+  myRole: "interviewer" | "candidate";
+  others: string;
+  onHangUp?: () => void;
+  small: boolean;
+  onSmall: (small: boolean) => void;
+}) {
+  const call = useCall()!;
+  const shell = `shrink-0 bg-surface ${kind === "panel" ? "border-b border-border" : ""}`;
+  if (call.status !== "connected" || !call.room) {
+    return (
+      <section aria-label="Video call" className={`${shell} p-3.5`}>
+        <CallState compact />
+      </section>
+    );
+  }
+  return (
+    <section aria-label={small ? "Video call, folded" : "Video call"} className={shell}>
+      <div className="h-11 flex items-center gap-2 pl-3.5 pr-2 text-[12.5px] text-muted">
+        <span className="w-[7px] h-[7px] rounded-full bg-success" aria-hidden />
+        <CallClock />
+        <span className="ml-auto" />
+        {small && <CallControls size="sm" share={false} onLeave={onHangUp} />}
+        <button
+          type="button"
+          onClick={() => onSmall(!small)}
+          aria-label={small ? "Show the video" : "Hide the video"}
+          title={small ? "Show the video" : "Hide the video"}
+          className="w-8 h-8 rounded-lg text-muted hover:text-fg hover:bg-panel inline-flex items-center justify-center shrink-0"
+        >
+          {small ? <ChevronDown className="w-4 h-4" aria-hidden /> : <ChevronUp className="w-4 h-4" aria-hidden />}
+        </button>
+      </div>
+      {!small && (
+        <>
+          {kind === "side" ? <Stacked myRole={myRole} others={others} /> : <Faces myRole={myRole} others={others} height="h-[172px]" />}
+          <div className="flex justify-center gap-2 px-2 pt-3 pb-3.5">
+            <CallControls size="md" onLeave={onHangUp} />
+          </div>
+          <MediaNote className="px-3.5 pb-3.5 -mt-1" />
+        </>
+      )}
+    </section>
+  );
+}
+
+/** Beside the stage: the other person, then you, both full width. */
+function Stacked({ myRole, others }: { myRole: "interviewer" | "candidate"; others: string }) {
+  const { local, main } = useCallPeople(myRole);
+  return (
+    <div className="px-2.5 grid gap-2">
+      {main ? (
+        <Tile participant={main} preferScreen avatar={56} className="aspect-video" />
+      ) : (
+        <div className="aspect-video rounded-xl bg-panel flex flex-col items-center justify-center gap-2 text-center px-4">
+          <span className="w-12 h-12 rounded-full border-2 border-dashed border-border-strong" aria-hidden />
+          <span className="text-[12.5px] text-muted">Waiting for {others} to join the call</span>
+        </div>
+      )}
+      <Tile participant={local} label="You" avatar={44} className="aspect-video" />
     </div>
   );
 }
@@ -301,7 +392,7 @@ function PillPerson({ p }: { p: Participant }) {
   return (
     <span className="flex items-center gap-2.5 min-w-0">
       <span className={`rounded-full ${speaking ? "ring-2 ring-success ring-offset-1 ring-offset-surface" : ""}`}>
-        <Avatar name={name} size={36} />
+        <RoleAvatar name={name} role={roleOf(p)} size={36} />
       </span>
       <span className="leading-tight min-w-0 pr-1">
         <span className="block text-[13px] font-semibold truncate max-w-[140px]">{name}</span>

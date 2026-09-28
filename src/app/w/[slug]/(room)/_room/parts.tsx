@@ -1,7 +1,7 @@
 "use client";
 
 /** Small pieces shared by the lobby and the room. Site tokens only. */
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Loader2, Video, Wifi, WifiOff } from "lucide-react";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
@@ -160,12 +160,33 @@ export function ConnectionPill({ snap, compact = false }: { snap: RelaySnapshot;
 
 export function PresenceDot({ on, className = "" }: { on: boolean; className?: string }) {
   return (
-    <span className={`relative flex w-2.5 h-2.5 ${className}`} aria-hidden>
+    <span className={`${/\babsolute\b/.test(className) ? "" : "relative "}flex w-2.5 h-2.5 ${className}`} aria-hidden>
       {on && <span className="absolute inset-0 rounded-full bg-success/60 animate-ping motion-reduce:animate-none" />}
       <span className={`relative w-2.5 h-2.5 rounded-full ring-2 ring-surface ${on ? "bg-success" : "bg-border-strong"}`} />
     </span>
   );
 }
+
+/** True while a CSS media query matches; false on the server and where matchMedia is missing. */
+export function useMedia(query: string): boolean {
+  const subscribe = useCallback(
+    (fn: () => void) => {
+      if (typeof window === "undefined" || !window.matchMedia) return () => {};
+      const m = window.matchMedia(query);
+      m.addEventListener("change", fn);
+      return () => m.removeEventListener("change", fn);
+    },
+    [query],
+  );
+  return useSyncExternalStore(
+    subscribe,
+    () => (typeof window !== "undefined" && !!window.matchMedia && window.matchMedia(query).matches),
+    () => false,
+  );
+}
+
+/** Phones, and touch tablets up to an iPad in landscape: the call sits in a strip, not a floating card. */
+export const COMPACT_CALL = "(max-width: 767px), (pointer: coarse) and (max-width: 1194px)";
 
 /** Ticks once a second; `offset` is server minus local time. */
 export function useNow(offset = 0, every = 1000): number {
@@ -176,6 +197,13 @@ export function useNow(offset = 0, every = 1000): number {
     return () => clearInterval(t);
   }, [offset, every]);
   return now;
+}
+
+/** Drops a leading "# Title" from the task text when it only repeats the heading above it. */
+export function withoutTitle(md: string, title: string): string {
+  const m = /^\s*#{1,3}\s+(.+?)\s*#*\s*(\r?\n|$)/.exec(md);
+  if (!m || m[1].trim().toLowerCase() !== title.trim().toLowerCase()) return md;
+  return md.slice(m[0].length).replace(/^\s+/, "");
 }
 
 export function roleLabel(r: "interviewer" | "candidate"): string {

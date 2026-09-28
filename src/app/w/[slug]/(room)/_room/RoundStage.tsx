@@ -19,6 +19,7 @@ import { ROUND_META, roundText } from "@/lib/interview/room";
 import type { StageRound } from "@/lib/interview/room-server";
 import type { ToolsRoom } from "@/app/interview/[id]/tools/useToolsRoom";
 import SharedEditor from "@/app/interview/[id]/tools/SharedEditor";
+import { withoutTitle } from "./parts";
 
 const LivePreview = dynamic(() => import("./LivePreview"), {
   ssr: false,
@@ -214,7 +215,7 @@ export default function RoundStage({
           <h2 className="text-[18px] font-semibold tracking-tight">{round.title}</h2>
           {round.signature && <p className="mt-3 font-mono text-[12.5px] text-muted bg-panel rounded-lg px-3 py-2 ring-1 ring-inset ring-border break-all">{round.signature}</p>}
           <div className="mt-4 text-[14px] leading-relaxed text-fg/90 prose-room">
-            {round.description ? <MarkdownRenderer content={round.description} /> : <p className="text-muted">Your interviewer will explain the task.</p>}
+            {round.description ? <MarkdownRenderer content={withoutTitle(round.description, round.title)} /> : <p className="text-muted">Your interviewer will explain the task.</p>}
           </div>
           {isInterviewer && round.hint && (
             <details className="mt-5 rounded-lg bg-panel ring-1 ring-inset ring-border px-3 py-2 text-[13px]">

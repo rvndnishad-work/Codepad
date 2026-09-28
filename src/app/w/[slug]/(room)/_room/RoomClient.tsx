@@ -55,6 +55,8 @@ import { CallWaiting } from "./video/CallWaiting";
 import { CallChip } from "./video/CallParts";
 import { RecordingControl } from "./video/Recording";
 import { NoCallCard, NoCallNote, VideoNotSetUpChip, VideoOfferChip } from "./video/NoCall";
+import { CandidateLeftNotice } from "./CandidateLeft";
+import { clearLeft, markLeft, type LeftVia } from "@/lib/interview/room-leave";
 
 /*
  * Layout by width. Phones (below md): the stage full width, the call in a
@@ -171,7 +173,8 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
   // The full "On the stage" list as a drawer below xl.
   const [stageOpen, setStageOpen] = useState(false);
   const [ending, setEnding] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  // Candidates: how they are leaving (the call's hang up or Leave) while the confirm is open.
+  const [leaving, setLeaving] = useState<LeftVia | null>(null);
   useEffect(() => {
     if (!sheetOpen && !stageOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -230,7 +233,26 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
   const callOn = builtin && live;
   const callColumn = callOn && !compactCall && wide;
   const callInPanel = callColumn && panel && panelOpen && xl;
-  const hangUp = isInterviewer ? undefined : () => setLeaving(true);
+  const hangUp = isInterviewer ? undefined : () => setLeaving("hangup");
+
+  // Candidates: tell the interviewer this was on purpose, then go. The note
+  // rides the shared document; waiting for it is capped so Leave never hangs.
+  const leave = async (via: LeftVia) => {
+    if (!isInterviewer && room && provider && !readOnly) {
+      markLeft(room.doc, { at: Date.now() + (snap?.offset ?? 0), via });
+      await Promise.race([provider.flush(), new Promise((r) => setTimeout(r, 1500))]);
+    }
+    onLeave();
+  };
+  // Back in the room: clear the note so the interviewer sees them return.
+  // Once per visit, or it would wipe the note written on the way out.
+  const docReady = !!snap?.synced;
+  const cleared = useRef(false);
+  useEffect(() => {
+    if (cleared.current || !docReady || !room || isInterviewer || readOnly) return;
+    cleared.current = true;
+    clearLeft(room.doc);
+  }, [docReady, room, isInterviewer, readOnly]);
 
   return (
     <VideoCall sessionId={iv.id} enabled={builtin && !readOnly}>
@@ -263,7 +285,7 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                 </button>
               )
             ) : !ended ? (
-              <CandidateLeave builtin={builtin && !readOnly} onLeave={() => setLeaving(true)} />
+              <CandidateLeave builtin={builtin && !readOnly} onLeave={() => setLeaving("leave")} />
             ) : null
           }
           toggles={
@@ -462,7 +484,8 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
         </AnimatePresence>
 
         <AnimatePresence>{ending && <EndDialog data={data} onClose={() => setEnding(false)} onEnded={() => provider?.refresh()} />}</AnimatePresence>
-        <AnimatePresence>{leaving && <LeaveDialog onClose={() => setLeaving(false)} onLeave={onLeave} />}</AnimatePresence>
+        <AnimatePresence>{leaving && <LeaveDialog onClose={() => setLeaving(null)} onLeave={() => leave(leaving)} />}</AnimatePresence>
+        {isInterviewer && !ended && <CandidateLeftNotice doc={room?.doc ?? null} synced={docReady} name={iv.candidateName} onEnd={live ? () => setEnding(true) : null} />}
       </div>
     </VideoCall>
   );
@@ -1328,6 +1351,7 @@ function EndDialog({ data, onClose, onEnded }: { data: RoomData; onClose: () => 
 
 /** Candidates: the Leave button and the call's hang-up both ask first. */
 function LeaveDialog({ onClose, onLeave }: { onClose: () => void; onLeave: () => void }) {
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
@@ -1357,8 +1381,16 @@ function LeaveDialog({ onClose, onLeave }: { onClose: () => void; onLeave: () =>
           <button type="button" onClick={onClose} autoFocus className="h-10 px-4 rounded-lg border border-border text-[13.5px] font-medium hover:bg-panel">
             Stay
           </button>
-          <button type="button" onClick={onLeave} className="h-10 px-4 rounded-lg bg-danger text-bg text-[13.5px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110">
-            <LogOut className="w-4 h-4" aria-hidden /> Leave
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true);
+              onLeave();
+            }}
+            className="h-10 px-4 rounded-lg bg-danger text-bg text-[13.5px] font-semibold inline-flex items-center gap-1.5 hover:brightness-110 disabled:opacity-60"
+          >
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : <LogOut className="w-4 h-4" aria-hidden />} Leave
           </button>
         </div>
       </motion.div>

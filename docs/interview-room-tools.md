@@ -1,6 +1,6 @@
 # Interview room tools
 
-Live interview rooms have a dock of shared tools (whiteboard, code pad, shared
+Live interview rooms have a dock of shared tools (whiteboard, code editor, shared
 notes, question card, ranking board, timer). The interviewer switches a tool
 on from **Tools** and it opens for the candidate straight away; the candidate
 follows whatever is presented.
@@ -30,6 +30,18 @@ There are two kinds of state:
 6. **Check.** Run `npx tsc --noEmit`, which fails while any id is missing from `TOOL_DEFS`, `TOOL_ICON` or `TOOL_PLUGINS`. Then run `npx vitest run tests/unit/interview-tools.test.ts` and try it with two browsers: log in as the interviewer, and open the room as the candidate with `?token=<shareToken>`.
 
 The Tools menu, the dock, the wizard's "Tools in the room" picker and the API validation all pick the new tool up from these lists; none of them need editing.
+
+## The code editor
+
+The interviewer picks a stack from cards built from the playable playgrounds
+(`src/lib/interview/code-stacks.ts`); the choice is switchboard state
+(`codeStack`, action `{ type: "code", stack }`), so only interviewers change
+it. Each stack's files live in the doc as `code:<stack>:<path>` texts, seeded
+once with `seedDoc`, and both sides type in a shared Monaco editor
+(`tools/SharedMonaco.tsx`). Server stacks get a Run button; the last run is
+kept in the doc's `codeRuns` map so both sides see the same output. Browser
+stacks bundle the shared files in each browser and show the preview, the
+console, or both.
 
 ## Rules to keep
 

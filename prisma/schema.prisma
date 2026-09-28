@@ -987,6 +987,17 @@ model Workspace {
   trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
 
+  // ── Included AI credits (credits come with each paid seat) ─────────────
+  /// Included credits still unused. They sit in the ledger balance too; this
+  /// counter only says how much of that balance can expire. Consumption takes
+  /// included credits first.
+  includedCreditsLeft      Int       @default(0)
+  /// Size of the latest monthly grant. At the next grant, anything left above
+  /// this is older than a month and expires (one month rollover).
+  includedCreditsLastGrant Int       @default(0)
+  /// When the latest monthly grant ran. Null = never.
+  includedCreditsGrantedAt DateTime?
+
   // ── Settings > General ────────────────────────────────────────────────
   /// Public URL of the workspace logo. Shown in the app and, via Candidate
   /// experience, on candidate pages and emails. Null = no logo.

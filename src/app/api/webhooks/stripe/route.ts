@@ -13,6 +13,7 @@ import type Stripe from "stripe";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS, type WorkspaceAuditAction } from "@/lib/workspace-audit";
 import { planDisplayName, subscriptionUpdateAudits } from "@/lib/billing/usage";
 import { checkLowCredits } from "@/lib/billing/credit-alerts";
+import { runIncludedCreditsIfDue } from "@/lib/billing/included-credits-server";
 
 /** Billing events in the workspace audit log. Stripe is the actor. */
 function audit(workspaceId: string, action: WorkspaceAuditAction, meta: Record<string, unknown>) {
@@ -126,6 +127,12 @@ export async function POST(req: Request) {
             await audit(workspaceId, WORKSPACE_AUDIT_ACTIONS.SUBSCRIPTION_STARTED, { plan: planDisplayName(planName) });
           }
           console.log(`Workspace ${workspaceId} upgraded to ${planName} plan via checkout success.`);
+          // The first month of included credits arrives now, not at the next daily run.
+          try {
+            await runIncludedCreditsIfDue(workspaceId);
+          } catch (err) {
+            console.error(`Included credits for workspace ${workspaceId} failed:`, err);
+          }
         }
         break;
       }

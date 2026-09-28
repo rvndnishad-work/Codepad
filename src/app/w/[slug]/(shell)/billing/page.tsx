@@ -12,6 +12,7 @@ import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
 import { settingsAccess } from "@/lib/workspace/settings-server";
 import BillingClient, { type BillingTab } from "./BillingClient";
 import type { UsageData } from "./UsageTab";
+import { INCLUDED_CREDITS_PER_SEAT, addOneMonth, planIncludesCredits } from "@/lib/billing/included-credits";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -41,6 +42,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       stripeCustomerId: true,
       stripeSubscriptionId: true,
       lowCreditThreshold: true,
+      includedCreditsLeft: true,
+      includedCreditsGrantedAt: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },
   });
@@ -76,6 +79,11 @@ export default async function BillingPage({ params, searchParams }: Props) {
     ]);
     usage = {
       credits: summary,
+      included: {
+        left: workspace.includedCreditsLeft,
+        perMonth: planIncludesCredits(workspace.planName) ? workspace.members.length * INCLUDED_CREDITS_PER_SEAT : 0,
+        nextAt: workspace.includedCreditsGrantedAt ? addOneMonth(workspace.includedCreditsGrantedAt).toISOString() : null,
+      },
       packs: AI_CREDIT_PACKS.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: "badge" in p ? p.badge : null })),
       months,
       ledger: {

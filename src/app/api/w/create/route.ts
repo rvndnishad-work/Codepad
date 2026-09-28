@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { grantTrialCredits } from "@/lib/billing/included-credits-server";
 
 const createSchema = z.object({
   name: z.string().min(2).max(100),
@@ -55,6 +56,14 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Trial credits so the trial can run a real AI screening. Never fail the
+    // create over them.
+    try {
+      await grantTrialCredits(workspace.id, session.user.id);
+    } catch (err) {
+      console.error("Trial credit grant failed:", err);
+    }
 
     return NextResponse.json({ ok: true, slug: workspace.slug });
   } catch (err) {

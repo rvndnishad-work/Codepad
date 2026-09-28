@@ -70,17 +70,17 @@ export const PLAN_ORDER: WorkspacePlanKey[] = ["FREE", "GROWTH", "ENTERPRISE"];
 export const PLAN_COMPARISON: { feature: string; cells: [string, string, string] }[] = [
   { feature: "Take homes and live interviews", cells: ["Yes", "Yes", "Yes"] },
   { feature: "Question library and candidates", cells: ["Yes", "Yes", "Yes"] },
-  { feature: "AI screening", cells: ["No", "Yes, with credits", "Yes, with credits"] },
+  { feature: "AI screening", cells: ["No", "10 credits per seat a month", "10 credits per seat a month"] },
   { feature: "ATS sync, API keys and external tools", cells: ["No", "Yes", "Yes"] },
 ];
 
 /** Features Growth adds over Free, for the short list on the plan card. */
-export const GROWTH_ADDS = ["AI screening (uses credits)", "ATS sync", "API keys", "External tools for AI screening"];
+export const GROWTH_ADDS = ["AI screening, 10 credits per seat a month", "ATS sync", "API keys", "External tools for AI screening"];
 
 /** "$49" for 4900. Whole dollars when there are no cents. */
 export function formatUsd(cents: number): string {
   const dollars = cents / 100;
-  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: Number.isInteger(dollars) ? 0 : 2, maximumFractionDigits: 2 })}`;
 }
 
 /** Short price text for the comparison table. */

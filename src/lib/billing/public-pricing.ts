@@ -11,6 +11,9 @@ import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credit-packs";
 import { AI_ENGAGEMENT_CREDIT_COST, ENGAGEMENT_LABELS, type EngagementLevel } from "@/lib/ai-interview/engagement";
 import { PLAN_ORDER, WORKSPACE_PLANS, formatUsd, type WorkspacePlanKey } from "./plans";
 import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "./trial";
+import { INCLUDED_CREDITS_PER_SEAT, TRIAL_CREDITS } from "./included-credits";
+
+export { INCLUDED_CREDITS_PER_SEAT, TRIAL_CREDITS };
 
 export type Cadence = "monthly" | "annual";
 
@@ -50,8 +53,8 @@ export const PUBLIC_PLANS: PublicPlan[] = PLAN_ORDER.map((key): PublicPlan => {
       price: { monthly: "$0", annual: "$0" },
       unit: { monthly: "free", annual: "free" },
       note: {
-        monthly: `New workspaces get ${TRIAL_DURATION_DAYS} days of Growth first`,
-        annual: `New workspaces get ${TRIAL_DURATION_DAYS} days of Growth first`,
+        monthly: `Starts with ${TRIAL_DURATION_DAYS} days of Growth and ${TRIAL_CREDITS} AI credits`,
+        annual: `Starts with ${TRIAL_DURATION_DAYS} days of Growth and ${TRIAL_CREDITS} AI credits`,
       },
       seats: `Up to ${plan.seatLimit} seats (${TRIAL_SEAT_LIMIT} during the trial)`,
       includes: [
@@ -75,13 +78,14 @@ export const PUBLIC_PLANS: PublicPlan[] = PLAN_ORDER.map((key): PublicPlan => {
       },
       unit: { monthly: "per seat a month", annual: "per seat a month" },
       note: {
-        monthly: "Billed monthly",
-        annual: `Billed yearly, ${ANNUAL_SAVING_PERCENT}% less than monthly`,
+        monthly: `Billed monthly. Includes ${INCLUDED_CREDITS_PER_SEAT} AI credits per seat each month`,
+        annual: `Billed yearly, ${ANNUAL_SAVING_PERCENT}% less. Includes ${INCLUDED_CREDITS_PER_SEAT} AI credits per seat each month`,
       },
       seats: "As many seats as you pay for",
       includes: [
         "Everything in Free",
-        "AI screening (theory, practical and conversation rounds), paid with credits",
+        `AI screening (theory, practical and conversation rounds) with ${INCLUDED_CREDITS_PER_SEAT} credits per seat each month, pooled`,
+        "Unused included credits roll over for one month",
         "Greenhouse sync, signed webhooks, API and MCP",
         "Slack and Teams alerts",
       ],
@@ -97,7 +101,7 @@ export const PUBLIC_PLANS: PublicPlan[] = PLAN_ORDER.map((key): PublicPlan => {
     unit: { monthly: "talk to us", annual: "talk to us" },
     note: { monthly: null, annual: null },
     seats: "As many seats as you need",
-    includes: ["Everything in Growth", "Volume pricing on AI credits", "Invoice billing", "Help with setup and ATS mapping"],
+    includes: ["Everything in Growth", `${INCLUDED_CREDITS_PER_SEAT} AI credits per seat each month, plus volume pricing`, "Invoice billing", "Help with setup and ATS mapping"],
     cta: "sales",
     recommended: false,
   };
@@ -144,7 +148,8 @@ export const PUBLIC_COMPARISON: { feature: string; cells: [string, string, strin
   { feature: "Take-homes", cells: ["Yes", "Yes", "Yes"] },
   { feature: "Live coding interviews", cells: ["Yes", "Yes", "Yes"] },
   { feature: "Question library and candidates", cells: ["Yes", "Yes", "Yes"] },
-  { feature: "AI screening", cells: ["No", "Yes, with credits", "Yes, with credits"] },
+  { feature: "AI screening", cells: ["No", "Yes", "Yes"] },
+  { feature: "AI credits included", cells: [`${TRIAL_CREDITS} with the trial`, `${INCLUDED_CREDITS_PER_SEAT} per seat a month`, `${INCLUDED_CREDITS_PER_SEAT} per seat a month`] },
   { feature: "Greenhouse sync", cells: ["No", "Yes", "Yes"] },
   { feature: "Webhooks, API and MCP", cells: ["No", "Yes", "Yes"] },
   { feature: "Slack and Teams alerts", cells: ["No", "Yes", "Yes"] },
@@ -161,7 +166,11 @@ export const PUBLIC_PRICING_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How do AI screening credits work?",
-    a: `Credits are bought in packs and shared by the whole workspace. A screening uses credits once, when the candidate starts. It costs 1, 2 or 3 credits depending on how present the AI interviewer is. Credits do not expire at the end of the month.`,
+    a: `Each paid seat adds ${INCLUDED_CREDITS_PER_SEAT} credits a month to a pool the whole workspace shares. A screening uses credits once, when the candidate starts: 1, 2 or 3 depending on how present the AI interviewer is. Included credits are used first and roll over for one month. Need more? Packs top up the pool, and bought credits never expire.`,
+  },
+  {
+    q: "Do I get credits during the trial?",
+    a: `Yes. A new workspace gets ${TRIAL_CREDITS} free credits, enough to run real AI screenings before you pay. Trial credits never expire, and each person gets them once.`,
   },
   {
     q: "What happens when the trial ends?",

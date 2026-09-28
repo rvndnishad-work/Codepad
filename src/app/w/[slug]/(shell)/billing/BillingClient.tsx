@@ -15,6 +15,7 @@ import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import type { SeatUsage } from "@/lib/workspace/members";
 import UsageTab, { type UsageData } from "./UsageTab";
 import UnderlineTabs from "../_components/UnderlineTabs";
+import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 
 export type BillingTab = "plan" | "usage" | "invoices";
 
@@ -246,9 +247,9 @@ function CreditsCard({ slug, credits, aiScreening }: Props) {
       <span className="text-[13px] text-muted">
         {aiScreening ? (
           <>
-            An AI screening uses 1 to 3 credits when the candidate starts it.{" "}
+            Growth adds {INCLUDED_CREDITS_PER_SEAT} credits per seat each month. A screening uses 1 to 3 when the candidate starts it.{" "}
             <Link href={`/w/${slug}/billing?tab=usage`} className="text-secondary-soft hover:underline">
-              Buy credits
+              Usage and credits
             </Link>
           </>
         ) : (

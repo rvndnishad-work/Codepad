@@ -13,6 +13,7 @@ import { LOW_CREDIT_CHOICES } from "@/lib/workspace/settings";
 import type { UsageMonth } from "@/lib/billing/usage";
 import { saveWorkspaceSettingsAction } from "../settings/actions";
 import { buyCreditsAction } from "./actions";
+import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 
 export type LedgerRowView = {
   id: string;
@@ -25,6 +26,8 @@ export type LedgerRowView = {
 
 export type UsageData = {
   credits: { balance: number; held: number; available: number; usedThisMonth: number };
+  /** Credits that come with paid seats. `left` of the balance can expire; `nextAt` is the next monthly grant. */
+  included: { left: number; perMonth: number; nextAt: string | null };
   packs: { id: string; label: string; credits: number; priceCents: number; badge: string | null }[];
   months: UsageMonth[];
   ledger: { rows: LedgerRowView[]; page: number; pages: number; total: number };
@@ -85,8 +88,9 @@ function CreditsCard({ slug, data, canManage, stripeConfigured, notify }: { slug
         </h2>
         <span className="text-[28px] leading-tight font-semibold tracking-tight tabular-nums text-fg">{credits.available.toLocaleString("en-GB")} left</span>
         <p className="text-[13px] text-muted">
-          {credits.held ? `${plural(credits.balance, "credit")} in all. ` : "Credits never expire. "}1 to 3 credits per screening started.
+          {credits.held ? `${plural(credits.balance, "credit")} in all. ` : ""}1 to 3 credits per screening started.
         </p>
+        <p className="text-[13px] text-muted">{includedLine(data.included)}</p>
       </div>
 
       <dl className="grid grid-cols-2 rounded-lg border border-border divide-x divide-border">
@@ -118,6 +122,21 @@ function CreditsCard({ slug, data, canManage, stripeConfigured, notify }: { slug
   );
 }
 
+function includedLine(included: UsageData["included"]): string {
+  const next = included.nextAt
+    ? new Date(included.nextAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+    : null;
+  if (included.perMonth > 0) {
+    const when = next ? ` on ${next}` : " once the subscription starts";
+    const left = included.left > 0 ? ` ${plural(included.left, "included credit")} left, they roll over one month.` : "";
+    return `Your plan adds ${plural(included.perMonth, "credit")}${when}, ${INCLUDED_CREDITS_PER_SEAT} per seat.${left} Bought credits never expire.`;
+  }
+  if (included.left > 0) {
+    return `${plural(included.left, "included credit")} left from your last paid month${next ? `, they expire on ${next}` : ""}. Bought and trial credits never expire.`;
+  }
+  return `Growth adds ${INCLUDED_CREDITS_PER_SEAT} credits per seat every month. Bought and trial credits never expire.`;
+}
+
 /* ── Buy credits ────────────────────────────────────────────────────────── */
 
 function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug: string; data: UsageData; canManage: boolean; stripeConfigured: boolean; notify: Notify }) {
@@ -147,9 +166,9 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
         <h3 id="buy-credits" className="text-sm font-semibold text-fg">
           Buy credits
         </h3>
-        <p className="text-[13px] text-muted">One-time packs. Credits never expire and are only charged when a candidate starts.</p>
+        <p className="text-[13px] text-muted">One-time packs for more screenings. Bought credits never expire.</p>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-x-2 gap-y-3.5">
         {data.packs.map((p) => {
           const on = canBuy && p.id === picked;
           const inner = (
@@ -161,7 +180,7 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
               )}
               <span className="text-[15px] font-semibold tabular-nums text-fg">{p.credits.toLocaleString("en-GB")}</span>
               <span className="text-xs text-muted">{p.label}</span>
-              <span className="text-[13px] tabular-nums text-fg">${(p.priceCents / 100).toFixed(0)}</span>
+              <span className="text-[13px] tabular-nums text-fg">${(p.priceCents / 100).toLocaleString("en-US")}</span>
               <span className="text-xs tabular-nums text-subtle">${(p.priceCents / 100 / p.credits).toFixed(2)} each</span>
             </>
           );
@@ -263,7 +282,7 @@ function UsageChart({ months }: { months: UsageMonth[] }) {
   const top = Math.ceil(max / step) * step;
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step).filter((t, i, all) => all.length <= 6 || i % 2 === 0 || t === top);
   const [showTable, setShowTable] = useState(false);
-  const empty = totals.every((t) => t === 0) && months.every((m) => m.creditsUsed === 0 && m.creditsBought === 0);
+  const empty = totals.every((t) => t === 0) && months.every((m) => m.creditsUsed === 0 && m.creditsBought === 0 && m.creditsIncluded === 0);
   const current = months[months.length - 1];
 
   return (
@@ -378,6 +397,7 @@ function UsageChart({ months }: { months: UsageMonth[] }) {
                 <th className="px-4 py-2.5 font-semibold text-right">AI screenings</th>
                 <th className="px-4 py-2.5 font-semibold text-right">Interviews</th>
                 <th className="px-4 py-2.5 font-semibold text-right">Credits used</th>
+                <th className="px-4 py-2.5 font-semibold text-right">Credits included</th>
                 <th className="px-4 py-2.5 font-semibold text-right">Credits bought</th>
               </tr>
             </thead>
@@ -391,6 +411,7 @@ function UsageChart({ months }: { months: UsageMonth[] }) {
                   <td className="px-4 py-2.5 text-right text-muted">{m.aiScreenings}</td>
                   <td className="px-4 py-2.5 text-right text-muted">{m.interviews}</td>
                   <td className="px-4 py-2.5 text-right text-muted">{m.creditsUsed}</td>
+                  <td className="px-4 py-2.5 text-right text-muted">{m.creditsIncluded}</td>
                   <td className="px-4 py-2.5 text-right text-muted">{m.creditsBought}</td>
                 </tr>
               ))}

@@ -12,6 +12,8 @@ import {
   PUBLIC_PLANS,
   PUBLIC_PRICING_FAQ,
   SCREENING_CREDIT_COSTS,
+  INCLUDED_CREDITS_PER_SEAT,
+  TRIAL_CREDITS,
   type Cadence,
   type PublicPlan,
 } from "@/lib/billing/public-pricing";
@@ -84,11 +86,12 @@ export default function PricingClient({
         <div className="mx-auto max-w-6xl">
           <p className="ip-label">Pricing</p>
           <h1 className="ip-display ip-display-xl mt-4 max-w-3xl">
-            Pay per seat. Pay for AI screening only when a candidate starts.
+            AI screening is included with every seat.
           </h1>
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted">
-            Take-homes and live interviews are included on every plan. AI screenings are paid with credits, from{" "}
-            {LOWEST_CREDIT_PRICE} each. Candidates never take a seat.
+            Take-homes and live interviews on every plan. Each paid seat adds {INCLUDED_CREDITS_PER_SEAT} AI screening
+            credits a month to your team pool, and new workspaces start with {TRIAL_CREDITS} free credits. Need more?
+            Packs from {LOWEST_CREDIT_PRICE} a credit. Candidates never take a seat.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -159,10 +162,11 @@ export default function PricingClient({
         <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1fr_1.4fr]">
           <div>
             <p className="ip-label">AI screening credits</p>
-            <h2 className="ip-display ip-display-md mt-3">Buy credits in packs. Use them across the workspace.</h2>
+            <h2 className="ip-display ip-display-md mt-3">Need more screenings? Top up with packs.</h2>
             <p className="mt-4 text-[14px] leading-relaxed text-muted">
               Available on Growth and Enterprise. A screening uses credits once, when the candidate starts. How many
-              depends on how present you want the AI interviewer to be.
+              depends on how present you want the AI interviewer to be. Included credits are used first and roll over
+              for one month. Bought credits never expire.
             </p>
             <ul className="mt-6 divide-y divide-border border-y border-border">
               {SCREENING_CREDIT_COSTS.map((c) => (
@@ -196,7 +200,7 @@ export default function PricingClient({
                       <span className="font-medium">{p.label}</span>
                       {p.badge && <span className="ip-label ip-label-accent ml-2">{p.badge}</span>}
                     </td>
-                    <td className="ip-nums py-4 pr-4 text-right">{p.credits}</td>
+                    <td className="ip-nums py-4 pr-4 text-right">{p.credits.toLocaleString("en-US")}</td>
                     <td className="ip-nums py-4 pr-4 text-right font-semibold">{p.price}</td>
                     <td className="ip-nums py-4 text-right text-muted">{p.perCredit}</td>
                   </tr>

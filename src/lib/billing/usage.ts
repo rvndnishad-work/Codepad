@@ -15,6 +15,9 @@ export const LEDGER_KIND_LABELS: Record<string, string> = {
   CONSUMPTION: "Used",
   GRANT: "Added by Interviewpad",
   REFUND: "Refunded",
+  INCLUDED: "Included with plan",
+  INCLUDED_EXPIRED: "Expired",
+  TRIAL: "Trial credits",
 };
 
 export function ledgerKindLabel(kind: LedgerKind): string {
@@ -125,6 +128,8 @@ export type UsageMonth = {
   interviews: number;
   creditsUsed: number;
   creditsBought: number;
+  /** Credits added by the plan (monthly) or the trial. */
+  creditsIncluded: number;
 };
 
 /**
@@ -141,7 +146,7 @@ export function usageByMonth(
   },
 ): UsageMonth[] {
   const byKey = new Map<string, UsageMonth>(
-    months.map((m) => [m.key, { key: m.key, label: m.label, takeHomes: 0, aiScreenings: 0, interviews: 0, creditsUsed: 0, creditsBought: 0 }]),
+    months.map((m) => [m.key, { key: m.key, label: m.label, takeHomes: 0, aiScreenings: 0, interviews: 0, creditsUsed: 0, creditsBought: 0, creditsIncluded: 0 }]),
   );
   const bump = (at: Date | string, field: "takeHomes" | "aiScreenings" | "interviews") => {
     const m = byKey.get(monthKey(at));
@@ -156,6 +161,7 @@ export function usageByMonth(
     if (l.kind === "CONSUMPTION") m.creditsUsed += -l.amount;
     else if (l.kind === "REFUND") m.creditsUsed -= l.amount;
     else if (l.kind === "PURCHASE") m.creditsBought += l.amount;
+    else if (l.kind === "INCLUDED" || l.kind === "TRIAL") m.creditsIncluded += l.amount;
   }
   for (const m of byKey.values()) m.creditsUsed = Math.max(0, m.creditsUsed);
   return months.map((m) => byKey.get(m.key)!);

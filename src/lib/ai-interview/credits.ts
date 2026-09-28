@@ -11,6 +11,7 @@ export {
 import { creditCostForLevel, AI_INTERVIEW_COST_PER_SESSION } from "./engagement";
 
 export { AI_CREDIT_PACKS, getAiCreditPack, type AiCreditPack } from "./credit-packs";
+import { includedPart } from "@/lib/billing/included-credits";
 
 /**
  * Workspace plans that have access to the AI Screening feature.
@@ -96,7 +97,7 @@ export async function consumeCreditIfFirstTurn(
         practice: true,
         engagementLevel: true,
         consentAt: true,
-        workspace: { select: { consentRequired: true } },
+        workspace: { select: { consentRequired: true, includedCreditsLeft: true } },
       },
     });
     if (!session) throw new Error("Session not found");
@@ -149,6 +150,15 @@ export async function consumeCreditIfFirstTurn(
         sessionId: session.id,
       },
     });
+
+    // Included credits (the ones that can expire) are used before bought ones.
+    const fromIncluded = includedPart(cost, session.workspace?.includedCreditsLeft ?? 0);
+    if (fromIncluded > 0) {
+      await tx.workspace.updateMany({
+        where: { id: session.workspaceId, includedCreditsLeft: { gte: fromIncluded } },
+        data: { includedCreditsLeft: { decrement: fromIncluded } },
+      });
+    }
 
     // Compute post-consumption balance INSIDE the transaction so we read a
     // consistent snapshot. Pass it out for the IP-44 notification trigger to

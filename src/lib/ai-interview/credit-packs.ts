@@ -31,6 +31,13 @@ export const AI_CREDIT_PACKS = [
     label: "Scale",
     sublabel: "200 screenings",
   },
+  {
+    id: "agency-1000",
+    credits: 1000,
+    priceCents: 179000,
+    label: "Agency",
+    sublabel: "1,000 screenings",
+  },
 ] as const;
 
 export type AiCreditPack = (typeof AI_CREDIT_PACKS)[number];

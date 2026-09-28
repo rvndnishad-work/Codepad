@@ -8,7 +8,7 @@ import RevealLines from "@/components/wow/RevealLines";
 const BILLING_COPY = {
   title: "Credit-based",
   titleAccent: "billing",
-  desc: "Screenings are billed as credits on top of seats, tracked live. Set seat bounds, cap workspace limits, and watch spend as it happens.",
+  desc: "Every paid seat adds 10 AI screening credits a month to a shared pool, tracked live. Top up with packs when you need more, and watch spend as it happens.",
   bullets: [
     "Live credit gauge with usage-per-assessment breakdown",
     "Itemized recent usage history with cost tracking",

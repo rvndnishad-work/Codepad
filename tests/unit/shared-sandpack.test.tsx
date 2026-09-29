@@ -27,8 +27,8 @@ describe("SharedSandpack", () => {
     const read = () => host.querySelector("pre")?.textContent;
     await act(async () => render("start", 0));
     expect(read()).toBe("start");
+    // No pause needed: each shared edit reaches the bundler straight away.
     await act(async () => render("edited once", 1));
-    await act(async () => vi.advanceTimersByTime(600));
     expect(read()).toBe("edited once");
     // Unrelated re-renders (the other side typing in another file, a tab
     // switch) must not put the starter code back.

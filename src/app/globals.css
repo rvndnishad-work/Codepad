@@ -89,6 +89,16 @@
     --accent-2-glow: rgba(63, 57, 201, 0.12);
     --accent-2-ink: #ffffff;
 
+    /* Expressive accents: marketing surfaces only (the homepage gradients and
+       highlights). Never status, never the live-state signal. 700 steps on paper
+       so they hold 4.5:1 as text. */
+    --accent-3: #be185d;      /* 6.0:1 against white */
+    --accent-3-rgb: 190, 24, 93;
+    --c-accent-3: 190 24 93;
+    --accent-4: #0e7490;      /* 5.36:1 against white */
+    --accent-4-rgb: 14, 116, 144;
+    --c-accent-4: 14 116 144;
+
     /* STATUS — pass/warn/fail. Separate from --accent, which means "live /
        you are here" and must not double as a success colour. These are the
        800/700 steps, not the 500s: a saturated mid-tone reads fine on the
@@ -104,6 +114,7 @@
     --danger: #be123c;
     --danger-rgb: 190, 18, 60;
     --c-danger: 190 18 60;
+    --c-danger-solid: 190 18 60; /* solid fill under white text, 6.3:1 */
 
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
@@ -177,6 +188,13 @@
     --accent-2-glow: rgba(139, 147, 255, 0.16);
     --accent-2-ink: #0f1115;
 
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
+
     /* Status on the dark ground: the 400 steps, which are bright enough to
        carry (min: success 7.30, warning 8.41, danger 5.22). */
     --success: #34d399;
@@ -188,6 +206,7 @@
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   /* Large external monitors (> 1920px wide): keep growing past the 18px cap so
@@ -203,7 +222,7 @@
     font-size: var(--base-font-size);
     background: var(--bg);
     color: var(--fg);
-    font-family: var(--font-sans), "Inter", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+    font-family: var(--font-sans), "Geist", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -213,10 +232,9 @@
   body {
     background: var(--bg);
     color: var(--fg);
-    /* Inter character variants: single-storey a (cv11), open 4 (cv03),
-       open 6/9 (cv04), tabular figures off, alternate-1 (ss01).
-       These are no-ops on other fonts so they're safe to leave. */
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    /* Geist defaults; the old Inter-only character variants map to
+       different glyph sets in Geist, so they are off. */
+    font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
   }
 
@@ -1940,6 +1958,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
     --success: #34d399;
     --success-rgb: 52, 211, 153;
     --c-success: 52 211 153;
@@ -1949,6 +1974,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   /* THE INVERTED BAND.
@@ -1979,6 +2005,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-ink: #0f1115;
+
+    --accent-3: #ff2fb3;
+    --accent-3-rgb: 255, 47, 179;
+    --c-accent-3: 255 47 179;
+    --accent-4: #22d3ee;
+    --accent-4-rgb: 34, 211, 238;
+    --c-accent-4: 34 211 238;
     --success: #34d399;
     --success-rgb: 52, 211, 153;
     --c-success: 52 211 153;
@@ -1988,6 +2021,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #fb7185;
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
+    --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
   }
 
   .dark .ip-invert {
@@ -2010,6 +2044,13 @@ body.sidebar-collapsed .workspace-content {
     --accent-2-rgb: 63, 57, 201;
     --c-accent-2: 63 57 201;
     --accent-2-ink: #ffffff;
+
+    --accent-3: #be185d;      /* 6.0:1 against white */
+    --accent-3-rgb: 190, 24, 93;
+    --c-accent-3: 190 24 93;
+    --accent-4: #0e7490;      /* 5.36:1 against white */
+    --accent-4-rgb: 14, 116, 144;
+    --c-accent-4: 14 116 144;
     --success: #065f46;
     --success-rgb: 6, 95, 70;
     --c-success: 6 95 70;
@@ -2019,6 +2060,7 @@ body.sidebar-collapsed .workspace-content {
     --danger: #be123c;
     --danger-rgb: 190, 18, 60;
     --c-danger: 190 18 60;
+    --c-danger-solid: 190 18 60; /* solid fill under white text, 6.3:1 */
   }
 
   /* ── MICRO-INTERACTION ─────────────────────────────────────────────────
@@ -2088,7 +2130,11 @@ body.sidebar-collapsed .workspace-content {
   margin-top: 12px;
   max-width: min(72rem, calc(100% - 24px));
   border-radius: 999px;
-  background: var(--bg);
+  /* Near-opaque with a blur: page colour never fights the links, but the
+     pill reads as a surface floating over the page. */
+  background: rgb(var(--c-bg) / 0.86);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
   border-color: var(--border);
   box-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.45);
 }
@@ -2137,16 +2183,122 @@ body.sidebar-collapsed .workspace-content {
 }
 .nav-pill:hover {
   color: var(--nav-fg);
-  background: var(--nav-pill-hover);
 }
 .nav-pill-active {
   color: var(--nav-fg) !important;
-  background: var(--nav-pill-hover);
   border-color: var(--nav-ring);
-  box-shadow: 0 0 16px -6px rgba(139, 147, 255, 0.6);
+}
+/* The shared hover highlight that glides between items (NavGlide). */
+.nav-glide {
+  left: 0;
+  background: var(--nav-pill-hover);
+  transition: transform 260ms cubic-bezier(0.16, 1, 0.3, 1), width 260ms cubic-bezier(0.16, 1, 0.3, 1), opacity 180ms ease;
+}
+
+/* Dropdown panel: drops in from the trigger, then its items follow. */
+@keyframes nav-panel-in {
+  from { opacity: 0; transform: translateY(-6px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes nav-item-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+.nav-panel-in {
+  transform-origin: top center;
+  animation: nav-panel-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.nav-item-in {
+  animation: nav-item-in 260ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(40ms + var(--nav-i, 0) * 25ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-glide { transition: opacity 120ms ease; }
+  .nav-panel-in, .nav-item-in { animation: none; }
 }
 
 /* Dropdown panel tiles */
 .nav-tile { transition: background-color 150ms ease, transform 150ms ease; }
 .nav-tile:hover { background: var(--panel); }
 .nav-tile:active { transform: scale(0.99); }
+
+/* ── Code playground (/play) ─────────────────────────────────────────────
+   Chrome for the playground editor. Tokens only; the one accent is the
+   developer yellow. Everything here stops moving under reduced motion. */
+.pg-root { overflow: hidden; background: var(--bg); }
+.pg-panel { overflow: hidden; background: var(--bg); }
+
+/* Scrollbars are thin inside the IDE only; the rest of the site keeps the
+   browser default. */
+.pg-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+.pg-root ::-webkit-scrollbar-track { background: transparent; }
+.pg-root ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.pg-root ::-webkit-scrollbar-thumb:hover { background: var(--subtle); }
+
+/* Pane dividers: a hairline that turns accent on hover, drag or focus. The
+   ::before hit area widens the grab zone without widening the line. */
+.pg-divider {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+  background: var(--border);
+  transition: background-color 150ms ease;
+}
+.pg-divider::before { content: ""; position: absolute; }
+.pg-divider[aria-orientation="vertical"] { width: 1px; height: 100%; cursor: col-resize; }
+.pg-divider[aria-orientation="vertical"]::before { inset: 0 -6px; }
+.pg-divider[aria-orientation="horizontal"] { height: 1px; width: 100%; cursor: row-resize; }
+.pg-divider[aria-orientation="horizontal"]::before { inset: -6px 0; }
+.pg-divider:hover,
+.pg-divider:active,
+.pg-divider:focus-visible { background: var(--accent); outline: none; }
+
+/* Sandpack draws its own chrome; the playground supplies it instead. */
+.pg-root .sp-overlay,
+.pg-root .sp-error-indicator { display: none !important; }
+.pg-root .sp-layout { background: transparent !important; border: none !important; }
+.pg-root .sp-stack,
+.pg-root .sp-console,
+.pg-root .sp-preview-container { background: transparent !important; }
+
+/* Phone drawers and menus slide in from the edge they belong to. */
+@keyframes pg-in-left { from { transform: translateX(-24px); opacity: 0; } }
+@keyframes pg-in-right { from { transform: translateX(24px); opacity: 0; } }
+@keyframes pg-in-down { from { transform: translateY(-4px); opacity: 0; } }
+@keyframes pg-in-up { from { transform: translateY(16px); opacity: 0; } }
+.pg-sheet-left { animation: pg-in-left 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+.pg-sheet-right { animation: pg-in-right 200ms cubic-bezier(0.32, 0.72, 0, 1); }
+.pg-menu { animation: pg-in-down 140ms ease-out; transform-origin: top right; }
+.pg-sheet-up { animation: pg-in-up 220ms cubic-bezier(0.32, 0.72, 0, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-root *,
+  .pg-root *::before,
+  .pg-root *::after,
+  .pg-skeleton *,
+  .pg-skeleton *::before,
+  .pg-skeleton *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Candidates: menus, dialogs, toasts and the quick-view drawer. Each use site
+   pairs these with motion-reduce:animate-none. */
+@keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes dialogIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes drawerIn { from { transform: translateX(24px); opacity: 0; } }
+@keyframes fadeIn { from { opacity: 0; } }
+
+/* Workspace interview room: collaborator name tags on the shared editor use the UI face. */
+.room-scope .cm-ySelectionInfo {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 2px 6px;
+  border-radius: 6px;
+  top: -1.6em;
+}

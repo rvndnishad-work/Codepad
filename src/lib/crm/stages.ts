@@ -1,36 +1,46 @@
 /**
- * Pipeline stage taxonomy + helpers (IP-34).
+ * Screening stage taxonomy + helpers (IP-34, narrowed to screening only).
  *
  * `stage` is orthogonal to `Candidate.status`:
- *   - `stage` = where they are in the hiring process
+ *   - `stage` = where they are in screening (New, Screening, Passed, Not passed)
  *   - `status` = legacy disposition flag (active/hired/etc.)
  * Both columns coexist for backwards compat. New CRM UI keys off `stage`.
  */
 
-export const PIPELINE_STAGES = [
-  "APPLIED",
-  "SCREENED",
-  "TAKE_HOME",
-  "ONSITE",
-  "OFFER",
-  "HIRED",
-  "REJECTED",
-] as const;
+export const PIPELINE_STAGES = ["NEW", "SCREENING", "PASSED", "REJECTED"] as const;
 
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
+
+/**
+ * Stages from before screening-only Candidates (the app is not an ATS: it
+ * stops at a screening decision, and the ATS takes over from Passed). Old
+ * audit rows and API callers may still use them.
+ */
+const LEGACY_STAGES: Record<string, PipelineStage> = {
+  APPLIED: "NEW",
+  SCREENED: "SCREENING",
+  TAKE_HOME: "SCREENING",
+  ONSITE: "SCREENING",
+  OFFER: "PASSED",
+  HIRED: "PASSED",
+};
+
+/** Current stage for any stored or legacy value; unknown values read as New. */
+export function normalizeStage(s: unknown): PipelineStage {
+  if (typeof s !== "string") return "NEW";
+  if (isPipelineStage(s)) return s;
+  return LEGACY_STAGES[s] ?? "NEW";
+}
 
 /**
  * Forward-only progression order. Used by IP-69 auto-transitions: only move
  * a candidate forward, never back, when a workflow event fires.
  */
 export const STAGE_RANK: Record<PipelineStage, number> = {
-  APPLIED: 0,
-  SCREENED: 1,
-  TAKE_HOME: 2,
-  ONSITE: 3,
-  OFFER: 4,
-  HIRED: 5,
-  REJECTED: 6, // terminal but not "ahead" of HIRED — see isForwardTransition
+  NEW: 0,
+  SCREENING: 1,
+  PASSED: 2,
+  REJECTED: 3, // terminal but not "ahead" of PASSED — see isForwardTransition
 };
 
 export function isPipelineStage(s: string): s is PipelineStage {
@@ -39,12 +49,11 @@ export function isPipelineStage(s: string): s is PipelineStage {
 
 /**
  * True when `from → to` represents forward progress for IP-69 auto-transitions.
- * REJECTED is terminal but accepted from anywhere (recruiter signal); HIRED
- * is final and never auto-moves.
+ * Decisions (PASSED, REJECTED) are final for automation: events never move a
+ * decided candidate.
  */
 export function isForwardTransition(from: PipelineStage, to: PipelineStage): boolean {
-  if (from === "HIRED") return false;
-  if (to === "REJECTED") return true;
+  if (from === "PASSED" || from === "REJECTED") return false;
   return STAGE_RANK[to] > STAGE_RANK[from];
 }
 
@@ -59,37 +68,23 @@ export const REJECT_REASONS = [
 export type RejectReason = (typeof REJECT_REASONS)[number];
 
 export const STAGE_LABELS: Record<PipelineStage, string> = {
-  APPLIED: "Applied",
-  SCREENED: "Screened",
-  TAKE_HOME: "Take-home",
-  ONSITE: "Onsite",
-  OFFER: "Offer",
-  HIRED: "Hired",
-  REJECTED: "Rejected",
+  NEW: "New",
+  SCREENING: "Screening",
+  PASSED: "Passed",
+  REJECTED: "Not passed",
 };
 
-// Stage badges need legible contrast in BOTH light and dark mode. The pale
-// dark-mode tones (`text-*-300` on `bg-*-500/[0.05]`) sit at <2:1 contrast on
-// a light theme — which is what you see in the context menu portal. Each
-// entry pairs a saturated light-mode triple (text-700 / bg-100 / border-300)
-// with the original pale dark-mode triple via Tailwind `dark:` variants.
+// Stage badges need legible contrast in BOTH light and dark mode. Each entry
+// pairs a saturated light-mode triple (text-700 / bg-100 / border-300) with a
+// pale dark-mode triple via Tailwind `dark:` variants.
 export const STAGE_TONES: Record<PipelineStage, string> = {
-  APPLIED:
+  NEW:
     "border-slate-300 bg-slate-100 text-slate-700 " +
     "dark:border-slate-500/30 dark:bg-slate-500/[0.05] dark:text-slate-300",
-  SCREENED:
+  SCREENING:
     "border-indigo-300 bg-indigo-100 text-indigo-700 " +
     "dark:border-indigo-500/30 dark:bg-indigo-500/[0.06] dark:text-indigo-300",
-  TAKE_HOME:
-    "border-amber-300 bg-amber-100 text-amber-800 " +
-    "dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-300",
-  ONSITE:
-    "border-sky-300 bg-sky-100 text-sky-700 " +
-    "dark:border-sky-500/30 dark:bg-sky-500/[0.06] dark:text-sky-300",
-  OFFER:
-    "border-fuchsia-300 bg-fuchsia-100 text-fuchsia-700 " +
-    "dark:border-fuchsia-500/30 dark:bg-fuchsia-500/[0.06] dark:text-fuchsia-300",
-  HIRED:
+  PASSED:
     "border-emerald-300 bg-emerald-100 text-emerald-700 " +
     "dark:border-emerald-500/30 dark:bg-emerald-500/[0.06] dark:text-emerald-300",
   REJECTED:
@@ -99,9 +94,13 @@ export const STAGE_TONES: Record<PipelineStage, string> = {
 
 export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
   SKILL_GAP: "Skill gap",
-  CULTURE_FIT: "Culture / team fit",
+  CULTURE_FIT: "Team fit",
   COMP_MISMATCH: "Compensation mismatch",
-  NO_RESPONSE: "No response after outreach",
+  NO_RESPONSE: "No response",
   WITHDREW: "Candidate withdrew",
   OTHER: "Other (see notes)",
 };
+
+/** Reasons offered when marking someone Not passed. Compensation is an offer
+ *  question, which belongs to the ATS, so it stays readable but is not offered. */
+export const REJECT_REASON_CHOICES = REJECT_REASONS.filter((r) => r !== "COMP_MISMATCH");

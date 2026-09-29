@@ -1,4 +1,7 @@
 import { auth } from "@/lib/auth";
+import type { ComponentProps } from "react";
+import InterviewToolbox from "@/app/interview/[id]/tools/InterviewToolbox";
+import { toolRole } from "@/lib/interview/tools";
 import { staffCan } from "@/lib/permissions/staff";
 import { hasAccess } from "@/lib/marketplace/access";
 import { prisma } from "@/lib/prisma";
@@ -50,12 +53,24 @@ export default async function ChallengeAttemptPage({
   let isCollabPeer = false;
   let isInterviewer = false;
   let candidateName = "";
+  let liveTools: ComponentProps<typeof InterviewToolbox> | null = null;
   if (sessionIdParam) {
     const interviewSession = await prisma.interviewSession.findUnique({
       where: { id: sessionIdParam },
-      select: { shareToken: true, userId: true, creatorRole: true, candidateName: true },
+      select: { shareToken: true, userId: true, creatorRole: true, candidateName: true, type: true, format: true, panelJson: true },
     });
     if (interviewSession) {
+      const role = interviewSession.type === "live" ? toolRole(interviewSession, session?.user?.id, tokenParam) : null;
+      if (role) {
+        liveTools = {
+          sessionId: sessionIdParam,
+          roomKey: interviewSession.shareToken,
+          token: tokenParam && tokenParam === interviewSession.shareToken ? tokenParam : null,
+          interviewer: role === "interviewer",
+          meName: (role === "interviewer" ? session?.user?.name : interviewSession.candidateName) ?? "",
+          format: interviewSession.format,
+        };
+      }
       candidateName = interviewSession.candidateName ?? "";
       const isSessionOwner = session?.user?.id === interviewSession.userId;
       const hasValidToken = !!tokenParam && tokenParam === interviewSession.shareToken;
@@ -124,6 +139,18 @@ export default async function ChallengeAttemptPage({
         data: { status: "SUBMITTED", submittedAt: now },
       });
       takeHomeAssignment.status = "SUBMITTED";
+      if (takeHomeAssignment.workspaceId) {
+        const { emitWorkspaceEvent } = await import("@/lib/events");
+        void emitWorkspaceEvent(takeHomeAssignment.workspaceId, "takehome.submitted", {
+          candidate: {
+            id: takeHomeAssignment.candidateId,
+            name: takeHomeAssignment.candidateName,
+            email: takeHomeAssignment.candidateEmail,
+          },
+          takeHome: { id: takeHomeAssignment.id, title: challenge.title, score: null, submittedAt: now.toISOString() },
+          reportPath: `take-homes/${takeHomeAssignment.id}`,
+        });
+      }
     }
 
     if (takeHomeAssignment.status !== "ACTIVE") {
@@ -360,6 +387,7 @@ export default async function ChallengeAttemptPage({
         username={username}
       />
       )}
+      {liveTools && <InterviewToolbox {...liveTools} />}
     </>
   );
 }

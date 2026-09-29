@@ -8,6 +8,8 @@ import {
   updateInterviewArenaSettings,
   InterviewArenaSettings,
   updateMaintenanceSettings,
+  updatePlaygroundAssistSettings,
+  PlaygroundAssistSettings,
 } from "@/lib/settings";
 import {
   NavLinkConfig,
@@ -47,23 +49,27 @@ export default function SettingsForm({
   initialB2bSettings,
   initialArenaSettings,
   initialMaintenance,
+  initialAssistSettings,
 }: {
   initialLinks: NavLinkConfig[];
   initialB2bSettings: B2bSettingsConfig;
   initialArenaSettings: InterviewArenaSettings;
   initialMaintenance: MaintenanceConfig;
+  initialAssistSettings: PlaygroundAssistSettings;
 }) {
   const [links, setLinks] = useState(initialLinks);
   const [b2bSettings, setB2bSettings] = useState<B2bSettingsConfig>(initialB2bSettings);
   const [arenaSettings, setArenaSettings] = useState<InterviewArenaSettings>(initialArenaSettings);
   const [maintenance, setMaintenance] = useState<MaintenanceConfig>(initialMaintenance);
+  const [assistSettings, setAssistSettings] =
+    useState<PlaygroundAssistSettings>(initialAssistSettings);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Tabbed recruiter state. (ATS integrations moved to per-workspace UI at
   // /w/[slug]/integrations — see IP-32. Multi-tenant SaaS: each recruiting team
   // owns their own ATS account, so there's no useful platform-global tier.)
-  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "arena" | "maintenance">("nav");
+  const [activeTab, setActiveTab] = useState<"nav" | "billing" | "proctoring" | "arena" | "aiassist" | "maintenance">("nav");
 
   // Advanced Proctoring Heuristics Slider (Mock/UI State)
   const [sensitivity, setSensitivity] = useState(75);
@@ -83,6 +89,7 @@ export default function SettingsForm({
         updateB2bSettings(b2bSettings),
         updateInterviewArenaSettings(arenaSettings),
         updateMaintenanceSettings(maintenance),
+        updatePlaygroundAssistSettings(assistSettings),
       ]);
 
       setMessage({ type: "success", text: "Settings saved successfully!" });
@@ -160,6 +167,18 @@ export default function SettingsForm({
         >
           <Brain className="w-3.5 h-3.5" />
           Interview Arena
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("aiassist")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+            activeTab === "aiassist"
+              ? "bg-accent text-bg shadow-sm"
+              : "text-muted hover:text-fg hover:bg-elevated"
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          AI Assist
         </button>
         <button
           type="button"
@@ -540,6 +559,123 @@ export default function SettingsForm({
       )}
 
       {/* Tab 5: Site-wide Maintenance Mode */}
+      {/* Tab 5: Playground AI Assist */}
+      {activeTab === "aiassist" && (
+        <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+              Playground AI Assist
+            </h3>
+            <p className="text-xs text-muted leading-relaxed">
+              Login-only code helper in playgrounds (GLM-5.3-Flash), scoped to
+              the editor. Anonymous traffic can never reach the model — the API
+              route rejects it before any quota or model call.
+            </p>
+          </div>
+
+          {/* Kill switch — emerald when users are allowed in. */}
+          <div
+            className={`p-5 rounded-xl border flex items-center justify-between gap-4 transition-colors ${
+              assistSettings.enabled
+                ? "border-emerald-500/40 bg-emerald-500/5"
+                : "border-border bg-bg/50"
+            }`}
+          >
+            <div className="flex gap-3">
+              <div
+                className={`p-2 rounded-lg shrink-0 h-10 w-10 flex items-center justify-center ${
+                  assistSettings.enabled
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "bg-border/60 text-muted"
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-fg block">
+                  {assistSettings.enabled
+                    ? "AI Assist is ON — signed-in users can use it"
+                    : "AI Assist is OFF — the sidebar shows disabled"}
+                </label>
+                <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-md">
+                  Turning this off blocks new assist calls immediately (in-flight
+                  requests finish). The toolbar toggle and sidebar stay visible
+                  but explain the state — no dead buttons.
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setAssistSettings((prev) => ({ ...prev, enabled: !prev.enabled }))
+              }
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                assistSettings.enabled ? "bg-emerald-500" : "bg-border"
+              }`}
+              aria-pressed={assistSettings.enabled}
+              aria-label="Toggle AI Assist availability"
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-surface shadow ring-0 transition duration-200 ease-in-out ${
+                  assistSettings.enabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Daily free-message quota */}
+          <div className="p-5 rounded-xl border border-border bg-bg/50 space-y-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-lg bg-accent/10 text-accent">
+                <Zap className="w-4 h-4" />
+              </div>
+              <div>
+                <label className="text-sm font-bold text-fg block">
+                  Free messages per user per day
+                </label>
+                <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                  Applies the moment you save — no deploy needed. Lower it if
+                  model spend spikes; raise it for launch promos.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 pt-1">
+              <input
+                type="range"
+                min="1"
+                max="50"
+                value={Math.min(50, assistSettings.dailyLimit)}
+                onChange={(e) =>
+                  setAssistSettings((prev) => ({
+                    ...prev,
+                    dailyLimit: parseInt(e.target.value, 10),
+                  }))
+                }
+                aria-label="Free messages per user per day"
+                className="w-full accent-accent bg-border h-1.5 rounded-lg appearance-none cursor-pointer"
+              />
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={assistSettings.dailyLimit}
+                onChange={(e) =>
+                  setAssistSettings((prev) => ({
+                    ...prev,
+                    dailyLimit: Math.max(
+                      1,
+                      Math.min(100, parseInt(e.target.value, 10) || 0),
+                    ),
+                  }))
+                }
+                aria-label="Free messages per user per day (exact value)"
+                className="text-sm font-mono font-bold px-3 py-1 rounded bg-bg border border-border w-20 text-center text-fg focus:outline-none focus:border-accent transition"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === "maintenance" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>

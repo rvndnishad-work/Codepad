@@ -1,0 +1,50 @@
+/* /playgrounds catalogue: card lift and the animated backdrop behind each
+   template logo. Everything here stops under reduced motion. */
+
+/* The tinted shape behind a logo slowly changes shape and turns; each card
+   starts at a different point (inline animation-delay) so they never move
+   in step. */
+@keyframes pgl-morph {
+  0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; transform: rotate(0deg) scale(1); }
+  33% { border-radius: 58% 42% 36% 64% / 48% 62% 38% 52%; transform: rotate(120deg) scale(1.05); }
+  66% { border-radius: 42% 58% 63% 37% / 60% 35% 65% 40%; transform: rotate(240deg) scale(0.96); }
+  100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; transform: rotate(360deg) scale(1); }
+}
+
+.pgl-blob,
+.pgl-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  animation: pgl-morph 14s linear infinite;
+}
+.pgl-blob { opacity: 0.25; transition: opacity 0.3s ease; }
+.pgl-ring {
+  inset: -2px;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  transition: opacity 0.3s ease, inset 0.3s ease;
+}
+.pgl-logo { position: relative; transition: transform 0.3s ease; }
+
+.pgl-card {
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+}
+.pgl-card:hover { transform: translateY(-2px); }
+.pgl-card:hover .pgl-blob { opacity: 0.5; }
+.pgl-card:hover .pgl-ring { opacity: 0.7; inset: -5px; }
+.pgl-card:hover .pgl-logo { transform: scale(1.1); }
+.pgl-card .pgl-open { opacity: 0; transform: translateX(-4px); transition: opacity 0.18s ease, transform 0.18s ease; }
+.pgl-card:hover .pgl-open { opacity: 1; transform: translateX(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pgl-blob,
+  .pgl-ring { animation: none; }
+  .pgl-card,
+  .pgl-blob,
+  .pgl-ring,
+  .pgl-logo,
+  .pgl-card .pgl-open { transition: none; }
+  .pgl-card:hover,
+  .pgl-card:hover .pgl-logo { transform: none; }
+}

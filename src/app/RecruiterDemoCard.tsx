@@ -247,7 +247,7 @@ export function RecruiterDemoCard() {
     if (lineIndex === 0 || lineIndex === 1) {
       return (
         <>
-          <span className="text-purple-800 dark:text-purple-400">import</span>{" "}
+          <span className="text-purple-800 dark:text-purple-400">{"import "}</span>
           <span className="text-fg/80">{text.slice(7)}</span>
         </>
       );
@@ -258,7 +258,7 @@ export function RecruiterDemoCard() {
         const rest = text.slice(13);
         rendered = (
           <>
-            <span className="text-purple-800 dark:text-purple-400">public class</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">{"public class "}</span>
             {rest.startsWith("Solution") ? (
               <>
                 <span className="text-cyan-800 dark:text-cyan-400">Solution</span>
@@ -284,7 +284,7 @@ export function RecruiterDemoCard() {
         const rest = text.slice(23);
         return (
           <>
-            <span className="text-purple-800 dark:text-purple-400">    public static void</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">{"    public static void "}</span>
             {rest.startsWith("main") ? (
               <>
                 <span className="text-cyan-800 dark:text-cyan-400">main</span>
@@ -324,7 +324,7 @@ export function RecruiterDemoCard() {
         }
         return (
           <>
-            <span className="text-purple-800 dark:text-purple-400">        int</span>{" "}
+            <span className="text-purple-800 dark:text-purple-400">{"        int "}</span>
             {restRendered}
           </>
         );

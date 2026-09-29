@@ -22,12 +22,12 @@ export type Hook = { text: string; tone: "bad" | "good" };
  * 9vw mobile step, against ~297px of available width.
  */
 const HOOKS: Hook[] = [
-  { text: "YOU READ 40.", tone: "bad" },
-  { text: "#612 SKIPPED.", tone: "bad" },
-  { text: "THE QUEUE WON.", tone: "bad" },
-  { text: "1,000 SCORED.", tone: "good" },
-  { text: "#612 IS NOW #1.", tone: "good" },
-  { text: "RANKED BY 9AM.", tone: "good" },
+  { text: "You read 40.", tone: "bad" },
+  { text: "#612 skipped.", tone: "bad" },
+  { text: "The queue won.", tone: "bad" },
+  { text: "1,000 scored.", tone: "good" },
+  { text: "#612 is now #1.", tone: "good" },
+  { text: "Ranked by 9am.", tone: "good" },
 ];
 
 const TYPE_MS = 55;
@@ -104,7 +104,7 @@ export default function HireHeroTypewriter() {
         className={
           good
             ? "wow-gradient-boss transition-colors duration-500"
-            : "text-white transition-colors duration-500"
+            : "text-fg transition-colors duration-500"
         }
       >
         {shown || " "}
@@ -112,7 +112,7 @@ export default function HireHeroTypewriter() {
       <span
         aria-hidden
         className={`wow-blink ml-[0.06em] inline-block h-[0.72em] w-[0.07em] translate-y-[0.02em] ${
-          good ? "bg-[#8b93ff]" : "bg-rose-400"
+          good ? "bg-secondary" : "bg-danger"
         }`}
       />
       <span className="sr-only">

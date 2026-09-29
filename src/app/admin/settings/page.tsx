@@ -3,6 +3,7 @@ import {
   getB2bSettings,
   getInterviewArenaSettings,
   getMaintenanceSettings,
+  getPlaygroundAssistSettings,
 } from "@/lib/settings";
 import SettingsForm from "./SettingsForm";
 import { requireAdminAccess } from "@/lib/permissions/staff";
@@ -13,12 +14,14 @@ export const metadata = {
 
 export default async function SettingsPage() {
   await requireAdminAccess();
-  const [links, b2bSettings, arenaSettings, maintenance] = await Promise.all([
-    getNavLinks(),
-    getB2bSettings(),
-    getInterviewArenaSettings(),
-    getMaintenanceSettings(),
-  ]);
+  const [links, b2bSettings, arenaSettings, maintenance, assistSettings] =
+    await Promise.all([
+      getNavLinks(),
+      getB2bSettings(),
+      getInterviewArenaSettings(),
+      getMaintenanceSettings(),
+      getPlaygroundAssistSettings(),
+    ]);
 
   return (
     <div>
@@ -32,6 +35,7 @@ export default async function SettingsPage() {
         initialB2bSettings={b2bSettings}
         initialArenaSettings={arenaSettings}
         initialMaintenance={maintenance}
+        initialAssistSettings={assistSettings}
       />
     </div>
   );

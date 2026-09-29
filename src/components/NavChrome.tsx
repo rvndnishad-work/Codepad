@@ -50,7 +50,7 @@ export default function NavChrome({ children }: { children: ReactNode }) {
     <header data-scrolled={scrolled} data-immersive={immersive} className="site-nav sticky top-0 z-[100] transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300">
       <div
         aria-hidden
-        className="nav-hairline pointer-events-none absolute inset-x-0 bottom-[-1px] h-px bg-gradient-to-r from-transparent via-[#8b93ff]/60 to-transparent transition-opacity duration-300"
+        className="nav-hairline pointer-events-none absolute inset-x-0 bottom-[-1px] h-px bg-gradient-to-r from-transparent via-secondary/60 to-transparent transition-opacity duration-300"
       />
       {children}
     </header>

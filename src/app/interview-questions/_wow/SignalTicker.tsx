@@ -1,12 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { Flame } from "lucide-react";
 
 /**
- * SIGNAL TICKER — an infinite transmission strip of the most-asked
- * questions scrolling beneath the hero. Pure CSS motion (GPU transform),
- * pauses on hover, and freezes entirely for reduced-motion users.
+ * Strip of the most viewed questions under the hero. It scrolls sideways
+ * (CSS transform, see interview-questions.css), pauses on hover or focus and
+ * stands still under reduced motion.
  */
 export default function SignalTicker({
   items,
@@ -16,28 +14,26 @@ export default function SignalTicker({
   if (items.length === 0) return null;
   const loop = [...items, ...items];
   return (
-    <div className="relative overflow-hidden border-y border-white/10 bg-[#0a0a14]">
-      <style>{`
-        @keyframes qv-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .qv-marquee-track { animation: qv-marquee 55s linear infinite; }
-        .qv-marquee:hover .qv-marquee-track { animation-play-state: paused; }
-        @media (prefers-reduced-motion: reduce) {
-          .qv-marquee-track { animation: none; }
-        }
-      `}</style>
-      <div className="qv-marquee pointer-events-auto relative flex items-center">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#0a0a14] to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#0a0a14] to-transparent" />
-        <div className="qv-marquee-track flex w-max items-center gap-0 py-3">
+    <div className="iq-marquee flex h-[46px] items-center overflow-hidden border-y border-border bg-bg md:h-[52px]">
+      <div className="relative z-10 flex h-full shrink-0 items-center gap-2 border-r border-border bg-bg px-4 text-[13px] font-semibold text-fg md:px-6">
+        <Flame className="h-[15px] w-[15px] text-accent" aria-hidden />
+        <span className="md:hidden">Popular</span>
+        <span className="hidden md:inline">Most viewed</span>
+      </div>
+      <div className="relative min-w-0 flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-bg to-transparent" />
+        <div className="iq-marquee-track flex w-max items-center">
           {loop.map((q, i) => (
             <Link
               key={`${q.slug}-${i}`}
               href={`/interview-question/${q.slug}`}
-              className="group flex shrink-0 items-center gap-2.5 px-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/45 transition-colors hover:text-[#ffe600]"
+              tabIndex={i >= items.length ? -1 : undefined}
+              aria-hidden={i >= items.length ? true : undefined}
+              className="flex shrink-0 items-center gap-2.5 px-7 text-sm text-muted transition-colors hover:text-fg motion-reduce:transition-none"
             >
-              <Zap className="h-3 w-3 shrink-0 text-[#ff2fb3] transition-colors group-hover:text-[#ffe600]" />
-              <span className="max-w-[320px] truncate">{q.title}</span>
-              {q.company && <span className="shrink-0 text-white/25">@{q.company}</span>}
+              <span className="h-1 w-1 rounded-full bg-border-strong" aria-hidden />
+              <span className="max-w-[360px] truncate">{q.title}</span>
+              {q.company && <span className="shrink-0 text-[13px] text-subtle">{q.company}</span>}
             </Link>
           ))}
         </div>

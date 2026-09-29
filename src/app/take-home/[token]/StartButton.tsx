@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Play, Clock, Lock, Zap, X } from "lucide-react";
+import { readableTextOn } from "@/lib/workspace/candidate-experience";
 
 export default function StartButton({
   token,
   timeLimitMin,
+  brandColor,
 }: {
   token: string;
   timeLimitMin?: number;
+  /** Workspace brand colour for the start button, if set. */
+  brandColor?: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [accepted, setAccepted] = useState(false);
@@ -61,6 +65,7 @@ export default function StartButton({
       <button
         onClick={() => setConfirming(true)}
         disabled={loading || !accepted}
+        style={brandColor ? { background: brandColor, color: readableTextOn(brandColor) } : undefined}
         className="group/btn shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-accent hover:bg-accent-soft text-bg font-black uppercase tracking-wider text-xs transition-all duration-300 shadow-[0_0_24px_rgba(var(--accent-rgb),0.15)] hover:shadow-[0_0_32px_rgba(var(--accent-rgb),0.35)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-40 disabled:translate-y-0 disabled:shadow-none disabled:cursor-not-allowed"
       >
         <span>{loading ? "Spawning secure sandbox…" : "I'm ready — start the timer"}</span>

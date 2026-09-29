@@ -206,7 +206,7 @@ paths:
                 language: { type: string, example: python, description: "One of python, javascript/node, typescript, go, java, cpp, rust." }
                 code: { type: string, description: Source (max 64KB). }
                 stdin: { type: string, description: Standard input (max 16KB). }
-                speculative: { type: boolean, description: Allow cached/speculative result. }
+                speculative: { type: boolean, description: "Background warm-up (signed-in only); its result serves the next matching run once." }
       responses:
         "200":
           description: Execution result.
@@ -752,25 +752,6 @@ paths:
       security: [{ session: [] }]
       requestBody: { content: { application/json: { schema: { $ref: "#/components/schemas/GenericObject" } } } }
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
-  /api/w/{slug}/integrations:
-    parameters: [{ $ref: "#/components/parameters/Slug" }]
-    get:
-      tags: [Workspace]
-      summary: List workspace integrations (ATS/MCP/webhooks)
-      security: [{ session: [] }]
-      responses: { "200": { $ref: "#/components/responses/OkResponse" } }
-    post:
-      tags: [Workspace]
-      summary: Add an integration
-      security: [{ session: [] }]
-      requestBody: { content: { application/json: { schema: { $ref: "#/components/schemas/GenericObject" } } } }
-      responses: { "200": { $ref: "#/components/responses/OkResponse" } }
-    delete:
-      tags: [Workspace]
-      summary: Remove an integration
-      security: [{ session: [] }]
-      requestBody: { content: { application/json: { schema: { $ref: "#/components/schemas/GenericObject" } } } }
-      responses: { "200": { $ref: "#/components/responses/OkResponse" } }
   /api/w/{slug}/take-home:
     parameters: [{ $ref: "#/components/parameters/Slug" }]
     post:
@@ -956,24 +937,6 @@ paths:
       summary: Public MCP teardown
       security: []
       responses: { "200": { description: OK } }
-  /api/mcp/spike:
-    post:
-      tags: [MCP]
-      summary: MCP spike/experimental endpoint
-      security: [{ apiKey: [] }]
-      requestBody: { content: { application/json: { schema: { type: object } } } }
-      responses: { "200": { description: JSON-RPC 2.0 response } }
-    get:
-      tags: [MCP]
-      summary: MCP spike stream
-      security: [{ apiKey: [] }]
-      responses: { "200": { description: Stream } }
-    delete:
-      tags: [MCP]
-      summary: MCP spike teardown
-      security: [{ apiKey: [] }]
-      responses: { "200": { description: OK } }
-
   /api/webhooks/stripe:
     post:
       tags: [Webhooks]

@@ -1,0 +1,955 @@
+"use client";
+
+/**
+ * Lobby: the invite at a glance, who has arrived, and a quick check that
+ * this browser can reach the room. Both sides land here from their link and
+ * go into the room with one click.
+ */
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  CalendarClock,
+  Check,
+  ClipboardCheck,
+  Clock3,
+  Code2,
+  Copy,
+  DoorOpen,
+  FileText,
+  Flag,
+  Globe2,
+  Hourglass,
+  Layers,
+  Link2,
+  Lock,
+  MonitorCheck,
+  MonitorSmartphone,
+  NotebookPen,
+  PartyPopper,
+  Play,
+  Radio,
+  ShieldCheck,
+  Sparkles,
+  TriangleAlert,
+  Users,
+  Video,
+  Wifi,
+  X,
+} from "lucide-react";
+import { TOOLS, type ToolId } from "@/lib/interview/tools";
+import { TOOL_ICON } from "@/app/interview/[id]/tools/icons";
+import type { RoomData } from "@/lib/interview/room-server";
+import { useRelayProvider, useRelaySnapshot } from "@/app/interview/[id]/tools/useToolsRoom";
+import { meetingProvider } from "@/lib/interview/meeting";
+import { Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
+import { readableTextOn } from "@/lib/workspace/candidate-experience";
+import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
+import { giveInterviewConsentAction } from "./actions";
+import { LobbyVideo } from "./video/LobbyVideo";
+import { saveBuiltinVideo, saveMeetingLink, saveRecordVideo } from "./video/api";
+import type { RoomVideo } from "@/lib/video/room-video";
+
+type CheckState = "checking" | "ok" | "warn" | "fail";
+type CheckRow = { id: string; label: string; state: CheckState; detail: string };
+
+/**
+ * One colour per kind of thing, used for icon tiles and small labels only;
+ * cards stay neutral. Written out in full so Tailwind sees every class.
+ */
+const TONE = {
+  indigo: { tile: "bg-[#5a64a8] text-white", text: "text-secondary", ring: "ring-secondary/25", soft: "bg-secondary/10" },
+  cyan: { tile: "bg-[#3f7f86] text-white", text: "text-muted", ring: "ring-border", soft: "bg-panel" },
+  pink: { tile: "bg-[#9a5a74] text-white", text: "text-muted", ring: "ring-border", soft: "bg-panel" },
+  green: { tile: "bg-[#4c8363] text-white", text: "text-success", ring: "ring-success/25", soft: "bg-success/10" },
+  amber: { tile: "bg-[#a07c3f] text-white", text: "text-warning", ring: "ring-warning/25", soft: "bg-warning/10" },
+  red: { tile: "bg-[#a4524f] text-white", text: "text-danger", ring: "ring-danger/25", soft: "bg-danger/10" },
+} as const;
+type Tone = keyof typeof TONE;
+
+function IconTile({ icon: Icon, tone, size = "md" }: { icon: typeof Clock3; tone: Tone; size?: "sm" | "md" | "lg" }) {
+  const box = size === "lg" ? "w-11 h-11 rounded-xl" : size === "sm" ? "w-7 h-7 rounded-lg" : "w-9 h-9 rounded-xl";
+  const ico = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-[18px] h-[18px]";
+  return (
+    <span className={`${box} ${TONE[tone].tile} flex items-center justify-center shrink-0`}>
+      <Icon className={ico} strokeWidth={2.25} aria-hidden />
+    </span>
+  );
+}
+
+/** Panel heading: a coloured icon tile, the title, and an optional note on the right. */
+function PanelHead({ icon, tone, title, children }: { icon: typeof Clock3; tone: Tone; title: string; children?: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <IconTile icon={icon} tone={tone} />
+      <h2 className="text-[16px] font-semibold tracking-tight">{title}</h2>
+      {children && <div className="ml-auto flex items-center gap-2">{children}</div>}
+    </div>
+  );
+}
+
+const TOOL_BY_LABEL = new Map(TOOLS.map((t) => [t.label, t.id]));
+const TOOL_TONE_MUTED: Record<ToolId, Tone> = { whiteboard: "indigo", code: "cyan", question: "pink", notes: "amber", ranking: "green", timer: "amber" };
+
+/** Everyone on the invite, marked with whether they are here right now. */
+type Seat = { key: string; name: string; role: "interviewer" | "candidate"; tag: string; here: Person | null; me: boolean };
+
+function useSeats(data: RoomData, people: Person[]): Seat[] {
+  const { interview: iv } = data;
+  return useMemo(() => {
+    const byName = new Map(people.map((p) => [`${p.role}:${p.name.toLowerCase()}`, p]));
+    const used = new Set<string>();
+    const seat = (name: string, role: Seat["role"], tag: string): Seat => {
+      const k = `${role}:${name.toLowerCase()}`;
+      const here = byName.get(k) ?? null;
+      if (here) used.add(k);
+      return { key: `seat:${k}`, name, role, tag, here, me: !!here?.me };
+    };
+    const seats = [seat(iv.hostName, "interviewer", "Host"), ...iv.panel.map((n) => seat(n, "interviewer", "Panel")), seat(iv.candidateName, "candidate", "Candidate")];
+    // People who are here but not named on the invite (an admin, an emailed interviewer).
+    for (const p of people) {
+      const k = `${p.role}:${p.name.toLowerCase()}`;
+      if (used.has(k)) continue;
+      seats.splice(seats.length - 1, 0, { key: p.key, name: p.name, role: p.role, tag: p.role === "interviewer" ? "Interviewer" : "Candidate", here: p, me: p.me });
+    }
+    const seen = new Set<string>();
+    return seats.filter((s) => (seen.has(s.key) ? false : (seen.add(s.key), true)));
+  }, [iv.hostName, iv.panel, iv.candidateName, people]);
+}
+
+export default function LobbyClient({ data }: { data: RoomData }) {
+  const { interview: iv, viewer, workspace } = data;
+  const router = useRouter();
+  const reduce = useReducedMotion();
+  const provider = useRelayProvider({ sessionId: iv.id, place: "lobby", readOnly: true });
+  const snap = useRelaySnapshot(provider);
+  const me = useMemo(() => ({ name: viewer.name, role: viewer.role }), [viewer.name, viewer.role]);
+  const people = useRoster(snap, me, "lobby");
+  const seats = useSeats(data, people);
+  const now = useNow(snap.offset, 1000);
+  const isInterviewer = viewer.role === "interviewer";
+  const status = snap.room?.status ?? iv.status;
+  const ended = status === "completed" || status === "abandoned";
+  const live = status === "in_progress";
+  const roomHref = `/w/${workspace.slug}/interviews/${iv.id}/room`;
+  const startedAt = snap.room?.startedAt ?? iv.startedAt;
+
+  // Warm the room page so the click feels instant.
+  useEffect(() => {
+    if (!ended) router.prefetch(roomHref);
+  }, [router, roomHref, ended]);
+
+  const checks = useChecks(provider ? () => provider.ping() : null, snap.offset, snap.synced);
+  const blocking = checks.some((c) => c.state === "fail");
+  const passed = checks.filter((c) => c.state === "ok").length;
+  const checking = checks.some((c) => c.state === "checking");
+
+  const startsIn = iv.scheduledAt ? new Date(iv.scheduledAt).getTime() - now : null;
+  const inRoom = seats.filter((s) => s.here && !s.me).length;
+
+  const rise = (i: number) =>
+    reduce ? {} : { initial: { opacity: 0, y: 12 }, animate: { opacity: 1, y: 0 }, transition: { delay: 0.06 * i, duration: 0.4, ease: [0.2, 0.7, 0.2, 1] as const } };
+
+  // Consent before a recorded interview (Settings > Candidate experience),
+  // and always before a recorded video call.
+  const [agreed, setAgreed] = useState(false);
+  const [consenting, setConsenting] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const consentNeeded = iv.consentNeeded && !ended;
+
+  const enter = async () => {
+    if (consentNeeded) {
+      setConsenting(true);
+      setConsentError(null);
+      const res = await giveInterviewConsentAction(workspace.slug, iv.id).catch(() => null);
+      if (!res?.ok) {
+        setConsenting(false);
+        setConsentError(res?.error ?? "Something went wrong. Check your connection and try again.");
+        return;
+      }
+    }
+    router.push(roomHref);
+  };
+
+  return (
+    <div className="flex-1 flex flex-col">
+      <header className="sticky top-0 z-30 h-14 shrink-0 border-b border-border bg-bg/80 backdrop-blur supports-[backdrop-filter]:bg-bg/70">
+        <div className="h-full max-w-6xl mx-auto px-4 sm:px-6 flex items-center gap-3">
+          <Brand workspace={workspace} href={viewer.via === "member" ? `/w/${workspace.slug}` : undefined} trail="Interview lobby" />
+          <div className="ml-auto flex items-center gap-2">
+            <span className="sm:hidden">
+              <ConnectionPill snap={snap} compact />
+            </span>
+            <span className="hidden sm:inline-flex">
+              <ConnectionPill snap={snap} />
+            </span>
+            {viewer.via === "member" && (
+              <Link href={`/w/${workspace.slug}/interviews`} className="hidden sm:inline-flex h-8 px-3 rounded-lg border border-border text-[13px] font-medium items-center hover:bg-panel">
+                All interviews
+              </Link>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
+        {/* Hero: the invite and the one action that matters. */}
+        <motion.section {...rise(0)} className="relative overflow-hidden rounded-2xl border border-border bg-surface" style={GLOW}>
+          <DotGrid />
+          {/* Phones: the title, then the one action, then the details. Wide screens: the action on the right. */}
+          <div className="relative grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] gap-x-6 gap-y-5 lg:gap-y-6 p-5 sm:p-7 md:p-9">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <FormatPill format={iv.formatLabel} />
+                <span className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full ring-1 ring-inset text-[12px] font-medium ${isInterviewer ? `${TONE.indigo.soft} ${TONE.indigo.ring} ${TONE.indigo.text}` : `${TONE.amber.soft} ${TONE.amber.ring} ${TONE.amber.text}`}`}>
+                  <Sparkles className="w-3.5 h-3.5" aria-hidden /> {isInterviewer ? "You are interviewing" : "You are the candidate"}
+                </span>
+              </div>
+              <h1 className="mt-4 text-[26px] sm:text-[32px] md:text-[36px] leading-[1.12] font-semibold tracking-[-0.025em] text-balance">{iv.title}</h1>
+              <p className="mt-3 text-[15px] text-muted leading-relaxed max-w-xl">
+                {isInterviewer ? (
+                  <>
+                    Your interview with <span className="text-fg font-medium">{iv.candidateName}</span>. Check your setup, then open the room. You start the clock.
+                  </>
+                ) : (
+                  <>
+                    Hi <span className="text-fg font-medium">{iv.candidateName}</span>, welcome. This is your interview with <span className="text-fg font-medium">{workspace.name}</span>. Everything happens in this browser tab.
+                  </>
+                )}
+              </p>
+            </div>
+
+            <dl className="max-lg:order-last lg:col-start-1 lg:row-start-2 min-w-0 flex flex-wrap content-start gap-2">
+              <Chip icon={CalendarClock} tone="indigo" label="When" value={whenLabel(iv.scheduledAt)} />
+              <Chip icon={Clock3} tone="cyan" label="Length" value={`${Math.round(iv.totalSec / 60)} min`} />
+              <Chip icon={Users} tone="pink" label="Interviewers" value={[iv.hostName, ...iv.panel].join(", ")} />
+              <Chip icon={Globe2} tone="green" label="Time zone" value={Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " ")} />
+            </dl>
+
+            <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 min-w-0">
+            <StatusCard
+              ended={ended}
+              live={live}
+              startsIn={startsIn}
+              elapsedMs={live && startedAt ? now - new Date(startedAt).getTime() : null}
+              seats={seats}
+              inRoom={inRoom}
+              isInterviewer={isInterviewer}
+              reportHref={isInterviewer ? (viewer.via === "member" ? `/w/${workspace.slug}/interviews/${iv.id}/report` : `/interview/${iv.id}/report`) : null}
+              disabled={blocking || snap.connection === "denied" || consenting || (consentNeeded && !agreed)}
+              blocked={blocking || snap.connection === "denied"}
+              onEnter={() => void enter()}
+              meetingUrl={data.video.mode === "link" ? iv.meetingUrl : null}
+              brandColor={isInterviewer ? null : workspace.brand.color}
+              consent={
+                consentNeeded
+                  ? { agreed, onChange: setAgreed, workspaceName: workspace.name, privacyUrl: workspace.brand.privacyNoticeUrl, error: consentError, recorded: iv.recorded }
+                  : null
+              }
+            />
+            </div>
+          </div>
+        </motion.section>
+
+        {data.video.mode === "builtin" && !ended && (
+          <motion.div {...rise(1)} className="mt-6 rounded-2xl border border-border bg-surface p-5 sm:p-7">
+            <LobbyVideo />
+          </motion.div>
+        )}
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
+          <div className="flex flex-col gap-6 min-w-0">
+            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
+              <PanelHead icon={Flag} tone="indigo" title={isInterviewer ? "How the room works" : "What happens next"} />
+              <ol className="mt-5 grid sm:grid-cols-2 gap-3">
+                {steps(isInterviewer, iv.hostName, iv.formatBlurb, { checked: !checking && !blocking, live, ended }).map((s, i) => (
+                  <li
+                    key={s.title}
+                    className={`relative rounded-xl p-4 ring-1 ring-inset transition-colors ${
+                      s.current ? "bg-bg/50 ring-secondary/40" : "bg-bg/50 ring-border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <IconTile icon={s.icon} tone={s.done ? "green" : s.tone} />
+                      <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-subtle">Step {i + 1}</span>
+                      {s.done ? (
+                        <span className={`ml-auto h-6 px-2 rounded-full ${TONE.green.soft} ${TONE.green.text} text-[12px] font-medium inline-flex items-center gap-1`}>
+                          <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden /> Done
+                        </span>
+                      ) : s.current ? (
+                        <span className={`ml-auto h-6 px-2 rounded-full ${TONE[s.tone].tile} ring-1 ring-inset text-[12px] font-medium inline-flex items-center`}>Now</span>
+                      ) : null}
+                    </div>
+                    <p className="mt-3 text-[14px] font-semibold">{s.title}</p>
+                    <p className="mt-1 text-[13px] text-muted leading-relaxed">{s.body}</p>
+                  </li>
+                ))}
+              </ol>
+              {iv.tools.length > 0 && (
+                <div className="mt-6 pt-5 border-t border-border">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-subtle">In the room</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {iv.tools.map((t) => {
+                      const id = TOOL_BY_LABEL.get(t);
+                      const Icon = id ? TOOL_ICON[id] : Layers;
+                      return (
+                        <span key={t} className="h-9 pl-1.5 pr-3 rounded-xl bg-bg/50 ring-1 ring-inset ring-border text-[13px] font-medium inline-flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${TONE[id ? TOOL_TONE_MUTED[id] : "indigo"].tile}`}>
+                            <Icon className="w-3.5 h-3.5" aria-hidden />
+                          </span>
+                          {t}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </motion.section>
+
+            {isInterviewer && data.private && <InterviewerPrep data={data} rise={rise(2)} />}
+          </div>
+
+          <aside className="flex flex-col gap-6 lg:sticky lg:top-20">
+            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+              <PanelHead icon={Users} tone="pink" title="Who is here">
+                <span className={`h-6 px-2 rounded-full ${TONE.pink.soft} ${TONE.pink.text} text-[12px] font-medium tabular-nums inline-flex items-center`}>
+                  {seats.filter((s) => s.here).length} of {seats.length}
+                </span>
+              </PanelHead>
+              <ul className="mt-4 grid gap-2" aria-live="polite">
+                {seats.map((s) => (
+                  <li
+                    key={s.key}
+                    className={`min-w-0 flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-inset transition-colors ${
+                      s.here ? "bg-bg/50 ring-border-strong" : "bg-bg/30 ring-border"
+                    }`}
+                  >
+                    <span className="relative">
+                      {s.here ? (
+                        <RoleAvatar name={s.name} role={s.role} size={36} />
+                      ) : (
+                        <span className="w-9 h-9 rounded-full border border-dashed border-border-strong text-[12px] font-semibold text-subtle flex items-center justify-center" aria-hidden>
+                          {initials(s.name)}
+                        </span>
+                      )}
+                      {s.here && <PresenceDot on className="absolute -bottom-0.5 -right-0.5" />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-medium truncate">
+                        {s.name}
+                        {s.me && <span className="text-subtle font-normal"> (you)</span>}
+                      </p>
+                      <p className={`text-[12.5px] ${s.here ? TONE.green.text : "text-subtle"}`}>{s.here ? (s.here.place === "room" ? "In the room" : "In the lobby") : "Not here yet"}</p>
+                    </div>
+                    <span className={`shrink-0 h-6 px-2 rounded-full text-[12px] font-medium inline-flex items-center ${s.role === "candidate" ? `${TONE.amber.soft} ${TONE.amber.text}` : `${TONE.indigo.soft} ${TONE.indigo.text}`}`}>{s.tag}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.section>
+
+            <motion.section {...rise(2)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+              <PanelHead icon={ShieldCheck} tone={blocking ? "red" : "green"} title="Your setup">
+                <span
+                  className={`h-6 px-2 rounded-full text-[12px] font-medium tabular-nums inline-flex items-center ${
+                    blocking ? `${TONE.red.soft} ${TONE.red.text}` : checking ? "bg-panel text-muted" : `${TONE.green.soft} ${TONE.green.text}`
+                  }`}
+                >
+                  {checking ? "Checking" : blocking ? "Needs attention" : `${passed} of ${checks.length} ready`}
+                </span>
+              </PanelHead>
+              <div className="mt-3 h-1.5 rounded-full bg-panel overflow-hidden" aria-hidden>
+                <motion.div
+                  className={`h-full rounded-full ${blocking ? "bg-[#a4524f]" : "bg-[#4c8363]"}`}
+                  initial={false}
+                  animate={{ width: `${(checks.filter((c) => c.state !== "checking").length / checks.length) * 100}%` }}
+                  transition={{ duration: reduce ? 0 : 0.5, ease: [0.2, 0.7, 0.2, 1] }}
+                />
+              </div>
+              <ul className="mt-4 grid gap-2">
+                {checks.map((c) => (
+                  <li key={c.id} className="flex gap-3 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-3">
+                    <IconTile icon={CHECK_ICON[c.id] ?? ShieldCheck} tone={c.state === "fail" ? "red" : c.state === "warn" ? "amber" : CHECK_TONE[c.id] ?? "green"} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-medium">{c.label}</p>
+                      <p className="text-[12.5px] text-muted leading-relaxed">{c.detail}</p>
+                    </div>
+                    <CheckIcon state={c.state} />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-5 pt-4 border-t border-border flex items-center gap-2 text-[12.5px] text-muted">
+                <Lock className="w-3.5 h-3.5 text-subtle shrink-0" aria-hidden /> Private room. Only people on this invite can get in, and each link is personal.
+              </p>
+            </motion.section>
+          </aside>
+        </div>
+        {!isInterviewer && <CandidateHelpLine brand={workspace.brand} className="mt-8" />}
+      </main>
+    </div>
+  );
+}
+
+function FormatPill({ format }: { format: string }) {
+  const f = format.toLowerCase();
+  const [Icon, tone]: [typeof Clock3, Tone] = f.includes("coding")
+    ? [Code2, "cyan"]
+    : f.includes("design")
+      ? [Layers, "indigo"]
+      : f.includes("behaviour") || f.includes("behavior")
+        ? [Users, "pink"]
+        : [FileText, "indigo"];
+  return (
+    <span className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full ring-1 ring-inset text-[12px] font-medium ${TONE[tone].soft} ${TONE[tone].ring} ${TONE[tone].text}`}>
+      <Icon className="w-3.5 h-3.5" aria-hidden /> {format}
+    </span>
+  );
+}
+
+function Chip({ icon, tone, label, value }: { icon: typeof Clock3; tone: Tone; label: string; value: string }) {
+  return (
+    <div className={`min-w-0 max-w-full flex items-center gap-2.5 h-12 pl-2 pr-3.5 rounded-xl bg-bg/60 ring-1 ring-inset ring-border`}>
+      <IconTile icon={icon} tone={tone} size="sm" />
+      <div className="min-w-0 leading-tight">
+        <dt className="text-[12px] text-subtle">{label}</dt>
+        <dd className="text-[13.5px] font-medium truncate">{value}</dd>
+      </div>
+    </div>
+  );
+}
+
+function StatusCard({
+  ended,
+  live,
+  startsIn,
+  elapsedMs,
+  seats,
+  inRoom,
+  isInterviewer,
+  reportHref,
+  disabled,
+  blocked,
+  onEnter,
+  meetingUrl,
+  brandColor,
+  consent,
+}: {
+  ended: boolean;
+  live: boolean;
+  startsIn: number | null;
+  elapsedMs: number | null;
+  seats: Seat[];
+  inRoom: number;
+  isInterviewer: boolean;
+  reportHref: string | null;
+  disabled: boolean;
+  /** A setup check failed, so the room cannot open yet. */
+  blocked: boolean;
+  onEnter: () => void;
+  meetingUrl: string | null;
+  /** Workspace brand colour for the candidate's main button. */
+  brandColor: string | null;
+  /** The consent box, when the workspace asks candidates for consent or the call is recorded. */
+  consent: { agreed: boolean; onChange: (v: boolean) => void; workspaceName: string; privacyUrl: string | null; error: string | null; recorded: boolean } | null;
+}) {
+  const here = seats.filter((s) => s.here);
+  const soon = startsIn != null && startsIn > 0;
+  const label = ended ? "Finished" : live ? "Live now" : soon ? "Starts in" : startsIn != null ? "Start time passed" : "Not scheduled yet";
+  const big = ended ? "Thank you" : live ? countdown(elapsedMs ?? 0) : soon ? countdown(startsIn!) : startsIn != null ? "Ready when you are" : "Any time";
+  const [stateIcon, tone]: [typeof Clock3, Tone] = ended ? [PartyPopper, "green"] : live ? [Radio, "red"] : soon ? [Hourglass, "indigo"] : [DoorOpen, "cyan"];
+  return (
+    <div className="self-start rounded-2xl bg-surface/85 backdrop-blur ring-1 ring-inset ring-border-strong p-5 shadow-panel">
+      <div className="flex items-center gap-3">
+        <IconTile icon={stateIcon} tone={tone} size="lg" />
+        <div className="min-w-0">
+          <div className={`flex items-center gap-2 text-[13px] font-medium ${TONE[tone].text}`}>
+            {live && (
+              <span className="relative flex w-2 h-2" aria-hidden>
+                <span className="absolute inset-0 rounded-full bg-danger/60 animate-ping motion-reduce:animate-none" />
+                <span className="relative w-2 h-2 rounded-full bg-danger" />
+              </span>
+            )}
+            {label}
+            {live && <span className="text-subtle font-normal">· time in</span>}
+          </div>
+          <p suppressHydrationWarning className={`mt-0.5 font-semibold tracking-[-0.02em] tabular-nums ${big.length > 9 ? "text-[21px] leading-tight" : "text-[30px] leading-none"}`}>
+            {big}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center gap-3 rounded-xl bg-bg/50 ring-1 ring-inset ring-border px-3 py-2.5">
+        <div className="flex -space-x-2">
+          {here.slice(0, 4).map((s) => (
+            <span key={s.key} className="rounded-full ring-2 ring-surface" title={s.name}>
+              <RoleAvatar name={s.name} role={s.role} size={30} />
+            </span>
+          ))}
+        </div>
+        <p className="text-[13px] text-muted leading-snug">
+          {inRoom === 0 ? (isInterviewer ? "Only you so far" : "You are the first one here") : `${inRoom} ${inRoom === 1 ? "other person is" : "others are"} here`}
+        </p>
+      </div>
+
+      {ended ? (
+        reportHref ? (
+          <Link href={reportHref} className="group mt-5 w-full h-11 rounded-xl bg-[#5a64a8] text-white text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:brightness-110">
+            Open the report <ArrowUpRight className="w-4 h-4" aria-hidden />
+          </Link>
+        ) : (
+          <p className="mt-5 rounded-xl bg-panel p-3.5 text-[13px] text-muted leading-relaxed">The team will be in touch about next steps. You can close this tab.</p>
+        )
+      ) : (
+        <>
+        {consent && (
+          <label className="mt-5 flex items-start gap-3 rounded-xl bg-panel p-3.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consent.agreed}
+              onChange={(e) => consent.onChange(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-secondary"
+            />
+            <span className="text-[13px] text-fg leading-relaxed">
+              {consent.recorded ? (
+                <>
+                  I agree that {consent.workspaceName} can record the video call and keep the recording, code, notes and chat from this interview to review my application. The recording is deleted after 7 days.
+                </>
+              ) : (
+                <>I agree that {consent.workspaceName} can keep the code, notes and chat from this interview and use them to review my application.</>
+              )}
+              {consent.privacyUrl && (
+                <>
+                  {" "}
+                  Read the{" "}
+                  <a href={consent.privacyUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:no-underline">
+                    privacy notice
+                  </a>
+                  .
+                </>
+              )}
+            </span>
+          </label>
+        )}
+        {consent?.error && (
+          <p role="alert" className="mt-2 text-[12.5px] text-danger">
+            {consent.error}
+          </p>
+        )}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={onEnter}
+          style={brandColor ? { background: brandColor, color: readableTextOn(brandColor), boxShadow: "none" } : undefined}
+          className="group mt-5 w-full h-12 rounded-xl bg-[#5a64a8] text-white text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_-10px_rgb(0_0_0/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+          {live ? <Play className="w-4 h-4" aria-hidden /> : <DoorOpen className="w-4 h-4" aria-hidden />}
+          {live ? "Rejoin the interview" : "Enter the interview room"}
+          <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+        </button>
+        </>
+      )}
+      {!ended && blocked && <p className="mt-2 text-[12.5px] text-danger text-center">Fix the setup item marked in red first.</p>}
+      {!ended && !blocked && consent && !consent.agreed && <p className="mt-2 text-[12.5px] text-muted text-center">Tick the box above to go in.</p>}
+      {!ended && meetingUrl && (
+        <div className="mt-2.5">
+          <MeetingButton url={meetingUrl} />
+          <p className="mt-2 text-[12.5px] text-muted text-center">Audio and video run in your meeting tool. Keep this tab open for the code.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const CHECK_ICON: Record<string, typeof Clock3> = { net: Wifi, browser: Globe2, screen: MonitorSmartphone, clock: Clock3 };
+const CHECK_TONE: Record<string, Tone> = { net: "cyan", browser: "indigo", screen: "pink", clock: "amber" };
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join("");
+}
+
+function CheckIcon({ state }: { state: CheckState }) {
+  if (state === "checking") return <span className="mt-0.5 w-5 h-5 rounded-full border-2 border-border-strong border-t-secondary animate-spin shrink-0" aria-label="Checking" />;
+  const cls = state === "ok" ? "bg-success/15 text-success" : state === "warn" ? "bg-warning/15 text-warning" : "bg-danger/15 text-danger";
+  const Icon = state === "ok" ? Check : state === "warn" ? TriangleAlert : X;
+  return (
+    <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${cls}`} aria-label={state === "ok" ? "Passed" : state === "warn" ? "Warning" : "Failed"}>
+      <Icon className="w-3 h-3" strokeWidth={2.5} aria-hidden />
+    </span>
+  );
+}
+
+type Step = { title: string; body: string; icon: typeof Clock3; tone: Tone; done: boolean; current: boolean };
+
+function steps(isInterviewer: boolean, host: string, blurb: string | null, s: { checked: boolean; live: boolean; ended: boolean }): Step[] {
+  const inRoom = s.live || s.ended;
+  const rows = isInterviewer
+    ? [
+        { title: "Check your setup", body: "Connection, browser and screen are checked on this page.", icon: MonitorCheck, tone: "cyan" as Tone },
+        { title: "Open the room and start the clock", body: "The room shows who has arrived. Start when you are both in; the candidate's screen follows.", icon: DoorOpen, tone: "indigo" as Tone },
+        { title: "Run the stage", body: "Put a coding round, a whiteboard or a guide question on the shared stage. The candidate sees only what you show.", icon: Layers, tone: "pink" as Tone },
+        { title: "End and score", body: "Your notes and scorecard stay private and go into the report with the code from each round.", icon: ClipboardCheck, tone: "amber" as Tone },
+      ]
+    : [
+        { title: "Check your setup", body: "We check your connection, browser and screen right here. Nothing to install.", icon: MonitorCheck, tone: "cyan" as Tone },
+        { title: "Go into the room", body: `You can go in early and wait. ${host} starts the interview.`, icon: DoorOpen, tone: "indigo" as Tone },
+        { title: "Solve and talk it through", body: blurb ?? "You share an editor with your interviewer. Everything you type is saved as you go.", icon: Code2, tone: "pink" as Tone },
+        { title: "Wrap up", body: "When the interviewer ends the session you see a thank-you screen. You can close the tab then.", icon: PartyPopper, tone: "amber" as Tone },
+      ];
+  const doneUpTo = s.ended ? 4 : s.live ? 2 : s.checked ? 1 : 0;
+  return rows.map((r, i) => ({ ...r, done: i < doneUpTo || (inRoom && i === 1), current: i === doneUpTo && !s.ended }));
+}
+
+function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
+  const p = data.private!;
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(p.candidateLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {}
+  };
+  return (
+    <motion.section {...rise} className="min-w-0 rounded-2xl border border-border bg-surface p-5 sm:p-7">
+      <PanelHead icon={NotebookPen} tone="amber" title="Your prep">
+        <span className="h-6 px-2 rounded-full bg-panel text-[12px] text-muted inline-flex items-center gap-1">
+          <Lock className="w-3 h-3" aria-hidden /> Only interviewers
+        </span>
+      </PanelHead>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <Stat icon={Layers} tone="cyan" value={data.roundCount} label={data.roundCount === 1 ? "round ready" : "rounds ready"} />
+        <Stat icon={NotebookPen} tone="pink" value={p.guide.length} label={p.guide.length === 1 ? "guide question" : "guide questions"} />
+      </div>
+
+      {p.questionsNeeded && (
+        <div className="mt-4 rounded-xl bg-warning/10 ring-1 ring-inset ring-warning/25 p-3 text-[13.5px] flex items-center gap-3">
+          <IconTile icon={TriangleAlert} tone="amber" size="sm" />
+          <p className="flex-1">
+            Questions have not been picked yet.{" "}
+            {p.pickHref && (
+              <Link href={p.pickHref} className="font-medium text-warning underline-offset-2 hover:underline">
+                Pick them now
+              </Link>
+            )}
+          </p>
+        </div>
+      )}
+
+      {p.brief && (
+        <div className="mt-5 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-4">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-subtle">Brief</p>
+          <p className="mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap">{p.brief}</p>
+        </div>
+      )}
+
+      <CallEditor id={data.interview.id} initial={data.interview.meetingUrl} video={data.video} canChangeRecording={data.interview.status === "scheduled"} />
+
+      <div className="mt-5 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-4">
+        <div className="flex items-center gap-2.5">
+          <IconTile icon={Link2} tone="pink" size="sm" />
+          <p className="text-[14px] font-semibold">Candidate link</p>
+        </div>
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-bg ring-1 ring-inset ring-border p-1.5 pl-3">
+          <Link2 className="w-4 h-4 text-subtle shrink-0" aria-hidden />
+          <code className="flex-1 min-w-0 truncate text-[12.5px] text-muted font-mono">{p.candidateLink}</code>
+          <button type="button" onClick={copy} className={`h-8 px-3 rounded-lg text-[13px] font-semibold inline-flex items-center gap-1.5 shrink-0 transition ${copied ? "bg-success/15 text-success ring-1 ring-inset ring-success/30" : "bg-panel ring-1 ring-inset ring-border hover:ring-border-strong"}`}>
+            {copied ? <Check className="w-3.5 h-3.5" aria-hidden /> : <Copy className="w-3.5 h-3.5" aria-hidden />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        <p className="mt-1.5 text-[12.5px] text-muted">Personal to {data.interview.candidateName}. It stops working a day after the interview.</p>
+      </div>
+    </motion.section>
+  );
+}
+
+/** How people talk: built-in video or a meeting link (with the add-on), else the link box and a one-line offer. */
+function CallEditor({ id, initial, video, canChangeRecording }: { id: string; initial: string | null; video: RoomVideo; canChangeRecording: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const price = video.offerPrice;
+  if (!video.addonOn) {
+    return (
+      <MeetingEditor id={id} initial={initial}>
+        {video.canOffer && (
+          <p className="mt-3 text-[12.5px] text-muted">
+            {video.offerUpgrade ? "Or talk inside the room with built-in video, which comes with the Growth plan. " : `Or talk inside the room with built-in video, ${price} a month. `}
+            <Link href={video.billingHref} className="font-medium text-secondary-soft hover:underline">
+              See Billing
+            </Link>
+          </p>
+        )}
+      </MeetingEditor>
+    );
+  }
+  const pick = async (on: boolean) => {
+    if (on === video.builtinVideo) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await saveBuiltinVideo(id, on);
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not change how you talk.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-5 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-4">
+      <div className="flex items-center gap-2.5">
+        <IconTile icon={Video} tone="cyan" size="sm" />
+        <p className="text-[14px] font-semibold" id="call-choice">
+          Call
+        </p>
+      </div>
+      <div role="radiogroup" aria-labelledby="call-choice" className="mt-3 grid grid-cols-2 gap-1 rounded-xl bg-bg ring-1 ring-inset ring-border p-1">
+        {[
+          { on: true, label: "Built-in video" },
+          { on: false, label: "Meeting link" },
+        ].map((o) => {
+          const active = video.builtinVideo === o.on;
+          return (
+            <button
+              key={o.label}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={busy}
+              onClick={() => void pick(o.on)}
+              className={`h-8 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-60 ${active ? "bg-accent-4/15 text-fg ring-1 ring-inset ring-accent-4/50" : "text-muted hover:text-fg"}`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+      {err && (
+        <p role="alert" className="mt-1.5 text-[12.5px] text-danger">
+          {err}
+        </p>
+      )}
+      {video.builtinVideo ? (
+        <>
+          <p className="mt-1.5 text-[12.5px] text-muted">
+            {video.configured ? "You and the candidate talk inside the room, next to the code. No link needed." : "Video is not set up yet on this server. Use a meeting link for now."}
+          </p>
+          <RecordEditor id={id} video={video} canChange={canChangeRecording} />
+        </>
+      ) : (
+        <MeetingEditor id={id} initial={initial} nested />
+      )}
+    </div>
+  );
+}
+
+/** Hosts switch recording of the built-in call on or off before the interview starts. */
+function RecordEditor({ id, video, canChange }: { id: string; video: RoomVideo; canChange: boolean }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const toggle = async (on: boolean) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await saveRecordVideo(id, on);
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not change recording.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const note = !canChange
+    ? video.recordVideo
+      ? "You can start and stop recording from the room."
+      : "Recording can only be switched on before the interview starts."
+    : !video.recordingReady
+      ? "Recording is not set up yet on this server."
+      : "Recordings are deleted after 7 days. Each recorded hour uses 1 AI credit. The candidate is asked to agree first.";
+  return (
+    <div className="mt-3">
+      <label className={`flex items-start gap-2.5 ${canChange && !busy ? "cursor-pointer" : "cursor-not-allowed opacity-70"}`}>
+        <input
+          type="checkbox"
+          checked={video.recordVideo}
+          disabled={!canChange || busy}
+          onChange={(e) => void toggle(e.target.checked)}
+          className="mt-0.5 w-4 h-4 shrink-0 accent-secondary"
+        />
+        <span className="text-[13px] font-medium text-fg">Record the call</span>
+      </label>
+      {err ? (
+        <p role="alert" className="mt-1 ml-[26px] text-[12.5px] text-danger">
+          {err}
+        </p>
+      ) : (
+        <p className="mt-1 ml-[26px] text-[12.5px] text-muted">{note}</p>
+      )}
+    </div>
+  );
+}
+
+function MeetingEditor({ id, initial, nested = false, children }: { id: string; initial: string | null; nested?: boolean; children?: ReactNode }) {
+  const router = useRouter();
+  const [value, setValue] = useState(initial ?? "");
+  const [editing, setEditing] = useState(!initial);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const save = async (v: string) => {
+    setBusy(true);
+    setErr(null);
+    try {
+      await saveMeetingLink(id, v);
+      setEditing(!v.trim());
+      router.refresh();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Could not save the link.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const provider = meetingProvider(initial);
+  return (
+    <div className={nested ? "mt-2" : "mt-5 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-4"}>
+      {!nested && (
+        <div className="flex items-center gap-2.5 mb-3">
+          <IconTile icon={Video} tone="cyan" size="sm" />
+          <p className="text-[14px] font-semibold">Video call</p>
+        </div>
+      )}
+      {!editing && initial ? (
+        <div className="mt-1.5 flex items-center gap-2 rounded-xl bg-bg ring-1 ring-inset ring-border p-1.5 pl-3">
+          <Video className="w-4 h-4 text-success shrink-0" aria-hidden />
+          <span className="text-[13px] font-medium shrink-0">{provider ?? "Meeting"}</span>
+          <a href={initial} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0 truncate text-[12.5px] text-muted font-mono hover:text-fg">
+            {initial}
+          </a>
+          <button type="button" onClick={() => setEditing(true)} className="h-8 px-3 rounded-lg bg-panel ring-1 ring-inset ring-border text-[13px] font-medium hover:ring-border-strong shrink-0">
+            Change
+          </button>
+        </div>
+      ) : (
+        <form
+          className="mt-1.5 flex items-center gap-2 rounded-xl bg-bg ring-1 ring-inset ring-border focus-within:ring-secondary/60 p-1.5 pl-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save(value);
+          }}
+        >
+          <Video className="w-4 h-4 text-subtle shrink-0" aria-hidden />
+          <input
+            type="url"
+            inputMode="url"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Paste a Zoom, Google Meet or Teams link"
+            aria-label="Video call link"
+            className="flex-1 min-w-0 bg-transparent text-[13.5px] placeholder:text-subtle focus:outline-none"
+          />
+          <button type="submit" disabled={busy || value.trim() === (initial ?? "")} className="h-8 px-3 rounded-lg bg-secondary text-bg text-[13px] font-semibold hover:brightness-110 disabled:opacity-50 shrink-0">
+            {busy ? "Saving" : "Save"}
+          </button>
+        </form>
+      )}
+      {err ? (
+        <p role="alert" className="mt-1.5 text-[12.5px] text-danger">
+          {err}
+        </p>
+      ) : (
+        <p className="mt-1.5 text-[12.5px] text-muted">{initial ? "Everyone in the lobby and room gets a Join call button." : "Optional. Everyone gets a Join call button in the lobby and the room."}</p>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function Stat({ icon, tone, value, label }: { icon: typeof Clock3; tone: Tone; value: number; label: string }) {
+  return (
+    <div className={`rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3`}>
+      <IconTile icon={icon} tone={tone} size="lg" />
+      <div className="leading-tight min-w-0">
+        <p className="text-[20px] font-semibold tabular-nums">{value}</p>
+        <p className="text-[12.5px] text-muted leading-snug">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/** Connection, browser, screen and clock checks for the lobby. */
+function useChecks(ping: (() => Promise<number | null>) | null, offset: number, synced: boolean): CheckRow[] {
+  const [net, setNet] = useState<{ state: CheckState; ms: number | null }>({ state: "checking", ms: null });
+  const [screenOk, setScreenOk] = useState<boolean | null>(null);
+  const [browserOk, setBrowserOk] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const onResize = () => setScreenOk(window.innerWidth >= 1024);
+    onResize();
+    window.addEventListener("resize", onResize);
+    setBrowserOk(typeof fetch === "function" && typeof AbortController === "function" && !!window.crypto?.subtle && typeof navigator.sendBeacon === "function");
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!ping) return;
+    let stop = false;
+    (async () => {
+      const times: number[] = [];
+      for (let i = 0; i < 3 && !stop; i++) {
+        const t = await ping();
+        if (t != null) times.push(t);
+      }
+      if (stop) return;
+      if (!times.length) return setNet({ state: "fail", ms: null });
+      const ms = times.sort((a, b) => a - b)[Math.floor(times.length / 2)];
+      setNet({ state: ms < 900 ? "ok" : "warn", ms });
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [ping ? 1 : 0]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const skewMin = Math.round(Math.abs(offset) / 60000);
+  return [
+    {
+      id: "net",
+      label: "Connection to the room",
+      state: net.state,
+      detail:
+        net.state === "checking"
+          ? "Checking"
+          : net.state === "fail"
+            ? "Cannot reach Interviewpad. Check your internet connection, or try another network."
+            : net.state === "warn"
+              ? `Slow (${net.ms} ms) but it works. Edits may take a moment to appear.`
+              : `Good (${net.ms} ms). Works on office and home networks, no special setup needed.`,
+    },
+    {
+      id: "browser",
+      label: "Browser",
+      state: browserOk == null ? "checking" : browserOk ? "ok" : "fail",
+      detail: browserOk === false ? "This browser is too old for the room. Use a recent Chrome, Edge, Firefox or Safari." : "Supported",
+    },
+    {
+      id: "screen",
+      label: "Screen",
+      state: screenOk == null ? "checking" : screenOk ? "ok" : "warn",
+      detail: screenOk === false ? "A laptop or desktop works best. The editor is hard to use on a small screen." : "Large enough for the editor",
+    },
+    {
+      id: "clock",
+      label: "Clock",
+      state: !synced ? "checking" : skewMin >= 2 ? "warn" : "ok",
+      detail: skewMin >= 2 ? `Your computer clock is about ${skewMin} min off. The interview timer corrects for it.` : "In sync",
+    },
+  ];
+}

@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
+import { CANDIDATE_PAGE_SELECT, candidatePageSettings } from "@/lib/candidate-page-brand";
+import { readableTextOn } from "@/lib/workspace/candidate-experience";
+import { CandidateBrandMark, CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -48,10 +51,14 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
     select: {
       id: true, title: true, candidateName: true, status: true, deadlineAt: true,
       challengeIds: true, playgroundIds: true, promptScenarioIds: true, questionTimeLimitsJson: true,
-      workspace: { select: { name: true } },
+      workspaceId: true, candidateId: true,
+      workspace: { select: CANDIDATE_PAGE_SELECT },
     },
   });
   if (!session) notFound();
+  // Workspace logo, colour, help contact and privacy notice (Settings > Candidate experience).
+  const page = session.workspace ? candidatePageSettings(session.workspace) : null;
+  const brandColor = page?.brand.color ?? null;
 
   const now = new Date();
   const challengeIds = parseIds(session.challengeIds);
@@ -66,7 +73,7 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
     challengeIds.length
       ? prisma.challenge.findMany({ where: { id: { in: challengeIds } }, select: { id: true, slug: true, title: true, difficulty: true } })
       : Promise.resolve([]),
-    prisma.challengeAttempt.findMany({ where: { sessionId: session.id }, select: { challengeId: true, status: true, score: true } }),
+    prisma.challengeAttempt.findMany({ where: { sessionId: session.id }, select: { id: true, challengeId: true, status: true, score: true, startedAt: true, finishedAt: true } }),
     prisma.promptAttempt.findMany({ where: { sessionId: session.id }, select: { scenarioId: true } }),
   ]);
   const challengeById = new Map(challengeRows.map((c) => [c.id, c]));
@@ -79,12 +86,29 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
   // Completion = every DSA challenge has a finished attempt. (Prompt/playground
   // candidate execution lands in a follow-up — see IP-88 notes.) Idempotent.
   const allChallengesDone = challengeIds.length > 0 && challengeIds.every((id) => doneChallengeIds.has(id));
-  if (allChallengesDone && session.status !== "completed") {
-    await prisma.interviewSession.update({
-      where: { id: session.id },
+  if (allChallengesDone && (session.status === "scheduled" || session.status === "in_progress")) {
+    const closed = await prisma.interviewSession.updateMany({
+      where: { id: session.id, status: { in: ["scheduled", "in_progress"] } },
       data: { status: "completed", finishedAt: new Date() },
     }).catch(() => null);
     session.status = "completed";
+    // Only when this fallback is the one that closed it (the grade hook
+    // emits in the usual case).
+    if (closed?.count && session.workspaceId) {
+      const { takeHomeScore, countedAttempts } = await import("@/lib/take-home/status");
+      const { emitWorkspaceEvent } = await import("@/lib/events");
+      const counted = countedAttempts(attempts, challengeIds);
+      void emitWorkspaceEvent(session.workspaceId, "takehome.submitted", {
+        candidate: { id: session.candidateId, name: session.candidateName },
+        takeHome: {
+          id: session.id,
+          title: session.title || "Take-home assessment",
+          score: takeHomeScore(challengeIds.map((id) => counted.get(id)?.score)),
+          submittedAt: new Date().toISOString(),
+        },
+        reportPath: `take-homes/${session.id}`,
+      });
+    }
   }
 
   const wsName = session.workspace?.name ?? "the team";
@@ -98,15 +122,30 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
       </div>
       <div className="w-full max-w-3xl bg-surface/70 border border-border backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-sm relative z-10">
         <div className="flex justify-center mb-8">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
-            <span className="font-extrabold text-sm tracking-widest uppercase text-fg">Interviewpad</span>
-          </Link>
+          {page ? (
+            <CandidateBrandMark brand={page.brand} />
+          ) : (
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
+              <span className="font-extrabold text-sm tracking-widest uppercase text-fg">Interviewpad</span>
+            </Link>
+          )}
         </div>
         {children}
+        {page && <CandidateHelpLine brand={page.brand} className="mt-8" />}
       </div>
     </div>
   );
+
+  if (session.status === "cancelled") {
+    return shell(
+      <div className="text-center space-y-4 py-6">
+        <div className="w-16 h-16 bg-panel border border-border rounded-full flex items-center justify-center mx-auto text-muted"><AlertTriangle className="w-8 h-8" /></div>
+        <h2 className="text-2xl font-semibold tracking-tight">This take-home was cancelled</h2>
+        <p className="text-sm text-muted max-w-md mx-auto">{wsName} cancelled this invite, so the link no longer works. Contact them if you think this is a mistake.</p>
+      </div>
+    );
+  }
 
   if (pastDeadline) {
     return shell(
@@ -182,7 +221,10 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
               {r.done ? (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 shrink-0">Done</span>
               ) : r.runnable && r.href ? (
-                <Link href={r.href} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-bg text-[11px] font-bold uppercase tracking-wider hover:opacity-90 shrink-0">
+                <Link
+                  href={r.href}
+                  style={brandColor ? { background: brandColor, color: readableTextOn(brandColor) } : undefined}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-accent text-bg text-[11px] font-bold uppercase tracking-wider hover:opacity-90 shrink-0">
                   <Play className="w-3 h-3" /> Start
                 </Link>
               ) : (

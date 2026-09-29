@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { prefersReducedMotion } from "./motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -21,7 +22,7 @@ export default function WowReveal({
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || prefersReducedMotion()) return;
     const tween = gsap.from(el, {
       y,
       opacity: 0,

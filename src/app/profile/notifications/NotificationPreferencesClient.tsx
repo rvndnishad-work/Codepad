@@ -54,6 +54,12 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
     Icon: Award,
     group: "events",
   },
+  INTERVIEW_QUESTIONS_REQUESTED: {
+    label: "Questions requested",
+    body: "A teammate asked you to pick the questions for an interview.",
+    Icon: Award,
+    group: "events",
+  },
   PROMPT_UPVOTED: {
     label: "Prompt upvoted",
     body: "Someone in the community upvoted your shared prompt attempt.",

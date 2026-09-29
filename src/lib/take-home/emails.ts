@@ -6,13 +6,14 @@
  * All sends are fire-and-forget at the call site: a transport failure must
  * never roll back the underlying action (assignment created, submission saved).
  */
+import { siteOrigin } from "@/lib/site-url";
 import { sendEmail, sendTemplatedBatch, type BatchSendResult } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 
 /** Base URL for candidate/recruiter links — matches the AI-screening helper. */
 export function appBaseUrl(): string {
-  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return siteOrigin();
 }
 
 export function takeHomeUrl(token: string): string {
@@ -126,6 +127,7 @@ export async function sendTakeHomeReminder(args: {
   hoursLeft: number;
   workspaceId?: string;
   takeHomeId: string;
+  manual?: boolean;
 }) {
   return sendEmail({
     template: "take-home-reminder",
@@ -140,7 +142,7 @@ export async function sendTakeHomeReminder(args: {
     },
     workspaceId: args.workspaceId,
     sessionId: args.takeHomeId,
-    idempotencyKey: `th-reminder:${args.takeHomeId}`,
+    idempotencyKey: args.manual ? `th-reminder:${args.takeHomeId}:manual:${Date.now()}` : `th-reminder:${args.takeHomeId}`,
   });
 }
 
@@ -158,6 +160,10 @@ export async function sendTakeHomeSessionReminder(args: {
   hoursLeft: number;
   workspaceId?: string;
   sessionId: string;
+  /** A reminder a recruiter asked for; keyed apart from the automatic one. */
+  manual?: boolean;
+  /** The automatic "not started" nudge; keyed apart from the last call. */
+  nudge?: boolean;
 }) {
   return sendEmail({
     template: "take-home-reminder",
@@ -172,7 +178,11 @@ export async function sendTakeHomeSessionReminder(args: {
     },
     workspaceId: args.workspaceId,
     sessionId: args.sessionId,
-    idempotencyKey: `ths-reminder:${args.sessionId}`,
+    idempotencyKey: args.manual
+      ? `ths-reminder:${args.sessionId}:manual:${Date.now()}`
+      : args.nudge
+        ? `ths-reminder:${args.sessionId}:start`
+        : `ths-reminder:${args.sessionId}`,
   });
 }
 
@@ -223,7 +233,7 @@ export async function sendTakeHomeSubmissionEmails(args: {
     : Promise.resolve();
 
   // 2. Recruiter notify, fanned out per member.
-  const reviewUrl = `${appBaseUrl()}/w/${th.workspace.slug}?section=assessments&view=take-homes`;
+  const reviewUrl = `${appBaseUrl()}/w/${th.workspace.slug}/take-homes/${args.takeHomeId}`;
   const recruiterSends = th.workspace.members
     .filter((m) => !!m.user.email)
     .map((m) =>
@@ -294,7 +304,7 @@ export async function sendTakeHomeSessionSubmissionEmails(args: {
       })
     : Promise.resolve();
 
-  const reviewUrl = `${appBaseUrl()}/w/${s.workspace.slug}?section=assessments&view=take-homes`;
+  const reviewUrl = `${appBaseUrl()}/w/${s.workspace.slug}/take-homes/${args.sessionId}`;
   const recruiterSends = s.workspace.members
     .filter((m) => !!m.user.email)
     .map((m) =>

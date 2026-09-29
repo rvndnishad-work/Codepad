@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { judge, type JudgeCase } from "@/lib/judge/run";
+import { resolveHarnessSubmission } from "@/lib/run-payload";
 import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 import { hasHarness } from "@/lib/judge/harness";
 import { runUnitJs } from "@/lib/judge/unit-js";
@@ -24,6 +25,9 @@ const gradeSchema = z.object({
   // Harness mode:
   language: z.string().optional(),
   code: z.string().optional(),
+  // Multi-file harness submissions: the full workspace map plus the entry
+  // path. Absent entirely for legacy single-file submissions.
+  entryPath: z.string().optional(),
   // unit-js mode: the candidate's editable source files { "/path": "code" }.
   files: z.record(z.string(), z.string()).optional(),
   durationSec: z.number().int().min(0).max(60 * 60 * 24).optional(),
@@ -68,7 +72,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { stepId, language, code, files, durationSec, sessionId, token, dryRun } = parsed.data;
+  const { stepId, language, code, files, entryPath, durationSec, sessionId, token, dryRun } = parsed.data;
 
   // ── Resolve candidate (session user, else take-home token) ──
   const session = await auth().catch(() => null);
@@ -79,6 +83,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     if (candidate) {
       candidateUserId = candidate.userId;
       assignmentTokenMatched = candidate.kind === "assignment";
+    }
+  }
+  // Workspace interview room: a candidate without an account runs tests on
+  // their room pass. Attempts are filed under the interview's host with the
+  // session id, which is how the interview report finds them.
+  let viaRoomPass = false;
+  let roomChallengeIds: string[] = [];
+  if (!candidateUserId && sessionId) {
+    const { roomViewer, ROOM_SELECT } = await import("@/lib/interview/room-access");
+    const live = await prisma.interviewSession.findUnique({ where: { id: sessionId }, select: { ...ROOM_SELECT, type: true, challengeIds: true } });
+    if (live && live.type === "live" && live.status === "in_progress") {
+      const viewer = await roomViewer(live, { cookieHeader: req.headers.get("cookie"), legacy: false });
+      if (viewer) {
+        candidateUserId = live.userId;
+        viaRoomPass = true;
+        try {
+          roomChallengeIds = JSON.parse(live.challengeIds) as string[];
+        } catch {}
+      }
     }
   }
   if (!candidateUserId) {
@@ -97,6 +120,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   });
   if (!challenge || !challenge.published) {
     return NextResponse.json({ error: "challenge not found" }, { status: 404 });
+  }
+  if (viaRoomPass && !roomChallengeIds.includes(challenge.id)) {
+    return NextResponse.json({ error: "This challenge is not part of the interview." }, { status: 403 });
+  }
+
+  // Take-home submission lock: no resubmitting after finishing, after the
+  // deadline, or into someone else's take-home.
+  if (!dryRun && (sessionId || assignmentTokenMatched)) {
+    const { takeHomeSubmissionBlock, assignmentSubmissionBlock } = await import("@/lib/take-home/lock");
+    const blocked = sessionId
+      ? await takeHomeSubmissionBlock({ sessionId, challengeId: challenge.id, token, userId: candidateUserId })
+      : assignmentTokenMatched && token
+        ? await assignmentSubmissionBlock(token)
+        : null;
+    if (blocked) return NextResponse.json({ error: blocked }, { status: 409 });
   }
   const step = await prisma.challengeStep.findUnique({
     where: { id: stepId },
@@ -118,10 +156,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   let graded: Graded;
   try {
     if (step.judgingMode === "harness") {
-      if (!language || !code) {
+      if (!language) {
+        return NextResponse.json({ error: "Missing language parameter." }, { status: 400 });
+      }
+      // Multi-file submissions resolve entry + siblings; legacy callers
+      // send only `code`.
+      const submission = resolveHarnessSubmission({
+        code,
+        files: files ?? undefined,
+        entryPath,
+      });
+      if (!submission.ok) {
+        return NextResponse.json({ error: submission.error }, { status: submission.status });
+      }
+      const entryCode = submission.code;
+      if (!entryCode) {
         return NextResponse.json({ error: "Missing language or code." }, { status: 400 });
       }
-      if (Buffer.byteLength(code, "utf8") > MAX_CODE_BYTES) {
+      if (Buffer.byteLength(entryCode, "utf8") > MAX_CODE_BYTES) {
         return NextResponse.json({ error: "Code exceeds maximum size." }, { status: 413 });
       }
       if (!hasHarness(language)) {
@@ -162,7 +214,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         compare: c.compare ?? "exact",
       }));
 
-      const result = await judge({ language, code, contract, cases });
+      const result = await judge({
+        language,
+        code: entryCode,
+        contract,
+        cases,
+        extraFiles: submission.extraFiles,
+      });
       graded = {
         passed: result.passed,
         total: result.total,
@@ -176,7 +234,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             : { name: r.name, isHidden: false, status: r.status, got: r.got, expected: r.expected, error: r.error }
         ),
         testTests: result.results.map((r) => ({ path: "", name: r.name, status: r.status === "pass" ? "pass" : "fail", error: r.error ?? null })),
-        filesForRecord: { [`solution.${language}`]: code },
+        filesForRecord: files ?? { [`solution.${language}`]: entryCode },
       };
     } else if (step.judgingMode === "unit-js") {
       if (!files || Object.keys(files).length === 0) {
@@ -266,7 +324,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   // A passing submit credits the user's active prep journey (fire-and-forget:
   // grading must never fail because of tracker bookkeeping).
-  if (status === "passed") {
+  if (status === "passed" && !viaRoomPass) {
     void recordPrepCompletion(candidateUserId, slug, "challenge").catch((e) =>
       console.error("[prep-journey] completion credit failed:", e),
     );
@@ -279,15 +337,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         const updated = await prisma.takeHomeAssignment.update({
           where: { token },
           data: { status: "SUBMITTED", submittedAt: new Date() },
-          select: { id: true, workspaceId: true, candidateId: true },
+          select: {
+            id: true,
+            workspaceId: true,
+            candidateId: true,
+            candidateName: true,
+            candidateEmail: true,
+            submittedAt: true,
+            challenge: { select: { title: true } },
+          },
         });
+        if (updated.workspaceId) {
+          const { emitWorkspaceEvent } = await import("@/lib/events");
+          void emitWorkspaceEvent(updated.workspaceId, "takehome.submitted", {
+            candidate: { id: updated.candidateId, name: updated.candidateName, email: updated.candidateEmail },
+            takeHome: {
+              id: updated.id,
+              title: updated.challenge.title,
+              score: graded.score,
+              submittedAt: (updated.submittedAt ?? new Date()).toISOString(),
+            },
+            reportPath: `take-homes/${updated.id}`,
+          });
+        }
         // IP-69: forward-advance the candidate to TAKE_HOME on submission.
         if (updated.workspaceId && updated.candidateId) {
           const { advanceCandidateStage } = await import("@/lib/crm/advance");
           void advanceCandidateStage({
             workspaceId: updated.workspaceId,
             candidateId: updated.candidateId,
-            toStage: "TAKE_HOME",
+            toStage: "SCREENING",
             source: "auto:take-home-submitted",
           });
         }
@@ -308,7 +387,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     void (async () => {
       try {
         const th = await prisma.interviewSession.findFirst({
-          where: { id: sessionId, type: "take-home", status: { not: "completed" } },
+          where: { id: sessionId, type: "take-home", status: { in: ["scheduled", "in_progress"] } },
           select: {
             id: true,
             workspaceId: true,
@@ -332,7 +411,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
         const attempts = await prisma.challengeAttempt.findMany({
           where: { sessionId, status: { in: ["passed", "failed"] } },
-          select: { challengeId: true, score: true },
+          select: { id: true, challengeId: true, status: true, score: true, startedAt: true, finishedAt: true },
         });
         const done = new Set(attempts.map((a) => a.challengeId));
         if (!ids.every((id) => done.has(id))) return;
@@ -340,14 +419,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
         // Guarded update — count 0 means the lobby fallback (or a concurrent
         // grade) already completed it, so skip the comms to avoid duplicates.
         const res = await prisma.interviewSession.updateMany({
-          where: { id: sessionId, status: { not: "completed" } },
+          where: { id: sessionId, status: { in: ["scheduled", "in_progress"] } },
           data: { status: "completed", finishedAt: new Date() },
         });
         if (res.count === 0) return;
 
-        const avgScore = attempts.length
-          ? Math.round(attempts.reduce((s, a) => s + (a.score ?? 0), 0) / attempts.length)
-          : null;
+        // One attempt per question (the first), the same score the report shows.
+        const { countedAttempts, takeHomeScore } = await import("@/lib/take-home/status");
+        const counted = countedAttempts(attempts, ids);
+        const avgScore = takeHomeScore(ids.map((id) => counted.get(id)?.score));
 
         if (th.workspaceId) {
           if (th.candidateId) {
@@ -355,10 +435,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
             void advanceCandidateStage({
               workspaceId: th.workspaceId,
               candidateId: th.candidateId,
-              toStage: "TAKE_HOME",
+              toStage: "SCREENING",
               source: "auto:take-home-session-completed",
             });
           }
+          const { emitWorkspaceEvent } = await import("@/lib/events");
+          void emitWorkspaceEvent(th.workspaceId, "takehome.submitted", {
+            candidate: { id: th.candidateId, name: th.candidateName },
+            takeHome: {
+              id: th.id,
+              title: th.title || "Take-home assessment",
+              score: avgScore,
+              submittedAt: new Date().toISOString(),
+            },
+            reportPath: `take-homes/${th.id}`,
+          });
           const { sendTakeHomeSessionSubmissionEmails } = await import("@/lib/take-home/emails");
           await sendTakeHomeSessionSubmissionEmails({ sessionId, score: avgScore });
           if (th.workspace?.slug) {

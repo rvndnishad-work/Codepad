@@ -39,6 +39,7 @@ const ICON_FOR_TYPE: Record<string, { Icon: typeof Bell; tone: string }> = {
   TAKE_HOME_EXPIRING: { Icon: Clock, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
   TAKE_HOME_SUBMITTED: { Icon: Award, tone: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10" },
   SCORECARD_REQUESTED: { Icon: Award, tone: "text-rose-700 dark:text-rose-400 bg-rose-500/10" },
+  INTERVIEW_QUESTIONS_REQUESTED: { Icon: Briefcase, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
   PROMPT_UPVOTED: { Icon: Heart, tone: "text-fuchsia-800 dark:text-fuchsia-400 bg-fuchsia-500/10" },
   AI_CREDITS_LOW: { Icon: CreditCard, tone: "text-amber-800 dark:text-amber-400 bg-amber-500/10" },
   SECURITY_2FA_ENABLED: { Icon: ShieldCheck, tone: "text-emerald-800 dark:text-emerald-400 bg-emerald-500/10" },

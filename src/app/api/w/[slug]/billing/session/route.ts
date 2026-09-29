@@ -1,7 +1,12 @@
+import { appOrigin } from "@/lib/interview/links";
+import { cleanOrigin } from "@/lib/site-url";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
+import { checkoutSeatChargeCents } from "@/lib/billing/plans";
+import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -32,7 +37,7 @@ export async function POST(
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = cleanOrigin(req.headers.get("origin")) ?? (await appOrigin());
 
     const body = await req.json().catch(() => ({}));
     const plan = (body.plan || "GROWTH") as "STARTER" | "GROWTH";
@@ -46,7 +51,7 @@ export async function POST(
     if (workspace.stripeCustomerId && workspace.stripeSubscriptionId) {
       const portalSession = await stripe.billingPortal.sessions.create({
         customer: workspace.stripeCustomerId,
-        return_url: `${origin}/w/${slug}`,
+        return_url: `${origin}/w/${slug}/billing`,
       });
       return NextResponse.json({ url: portalSession.url });
     }
@@ -73,9 +78,12 @@ export async function POST(
     const seatCount = workspace.members.length;
 
     const isStarter = plan === "STARTER";
-    const priceAmount = isStarter
-      ? (cadence === "monthly" ? 1900 : 1500)
-      : (cadence === "monthly" ? 4900 : 3900);
+    // Seat price comes from the effective pricing (plan config with any admin
+    // override), the same source the pricing and billing pages show, so the
+    // page and Stripe agree. Annual plans bill once a year, so the amount is
+    // twelve discounted months.
+    const pricing = await getEffectivePricing();
+    const priceAmount = checkoutSeatChargeCents(isStarter ? "STARTER" : "GROWTH", cadence, pricing.growth);
 
     const productName = isStarter
       ? "Interviewpad Starter Workspace Seats"
@@ -106,9 +114,24 @@ export async function POST(
           },
           quantity: seatCount,
         },
+        // Built-in video switched on during the trial carries over as its own
+        // line. The webhook tags this item so seat changes never touch it.
+        ...(workspace.videoEnabled && !isStarter
+          ? [
+              {
+                price_data: {
+                  currency: "usd",
+                  product_data: { name: "Built-in video", metadata: { kind: VIDEO_ADDON_KIND } },
+                  unit_amount: videoAddonCents(interval, pricing.videoAddon),
+                  recurring: { interval },
+                },
+                quantity: 1,
+              },
+            ]
+          : []),
       ],
-      success_url: `${origin}/w/${slug}?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/w/${slug}?billing_cancel=true`,
+      success_url: `${origin}/w/${slug}/billing?billing_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/w/${slug}/billing?billing_cancel=true`,
       subscription_data: {
         metadata: {
           workspaceId: workspace.id,

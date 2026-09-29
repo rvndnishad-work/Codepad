@@ -29,25 +29,25 @@ export default function HeaderLink({
   const pathname = usePathname() ?? "";
   const prefix = matchPrefix ?? href;
   const active = prefix !== "/" && (pathname === prefix || pathname.startsWith(`${prefix}/`));
-  const toneClass = tone === "warn" ? "text-amber-500" : tone === "danger" ? "text-rose-400" : "";
+  const toneClass = tone === "warn" ? "text-warning" : tone === "danger" ? "text-danger" : "";
 
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`nav-pill group relative flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold tracking-[-0.005em] transition-all duration-200 ${
+      className={`nav-pill group relative z-[1] flex h-9 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-200 ${
         active ? "nav-pill-active" : ""
       } ${toneClass}`}
     >
       {label}
       {badge && (
         <span
-          className={`font-mono text-[9px] font-bold uppercase tracking-[0.14em] ${
+          className={`font-mono text-[10px] font-medium uppercase tracking-[0.08em] ${
             badge === "Soon"
-              ? "text-amber-500"
+              ? "text-warning"
               : badge === "Hidden"
-                ? "text-rose-400"
-                : "text-[#8b93ff]"
+                ? "text-danger"
+                : "text-secondary-soft"
           }`}
           aria-hidden
         >
@@ -55,7 +55,7 @@ export default function HeaderLink({
         </span>
       )}
       {active && (
-        <span aria-hidden className="absolute -bottom-[1px] left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-gradient-to-r from-[#8b93ff] to-[#ff2fb3]" />
+        <span aria-hidden className="absolute -bottom-[1px] left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-accent" />
       )}
     </Link>
   );

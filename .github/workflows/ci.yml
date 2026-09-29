@@ -24,6 +24,20 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      # Code-execution backend for /api/execute. Lets the backend e2e specs
+      # assert real run output (PISTON_REQUIRED=1) instead of only the
+      # graceful "executor unavailable" branch. Needs privileged mode for
+      # Piston's per-job isolate sandboxes.
+      piston:
+        image: ghcr.io/engineer-man/piston:latest
+        ports:
+          - 2000:2000
+        options: >-
+          --privileged
+          --health-cmd "wget -qO- http://localhost:2000/api/v2/runtimes >/dev/null 2>&1 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -42,6 +56,11 @@ jobs:
           DIRECT_URL: postgresql://postgres:postgres@localhost:5432/codepad_test
       - name: Run unit tests
         run: npm run test:unit
+      - name: Install Piston language packs
+        run: node scripts/piston-install-langs.mjs
+        env:
+          PISTON_URL: http://localhost:2000
+          PISTON_LANGS: python
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
       - name: Run E2E tests
@@ -49,3 +68,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/codepad_test
           DIRECT_URL: postgresql://postgres:postgres@localhost:5432/codepad_test
+          # Fail backend specs if the executor is unreachable — no silent
+          # graceful-branch passes in CI.
+          PISTON_REQUIRED: "1"

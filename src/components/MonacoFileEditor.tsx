@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { Monaco as MonacoApi } from "@monaco-editor/react";
+import "@/lib/monaco-loader";
 import { FileCode, Lock, Pencil, Plus, X } from "lucide-react";
 
 // Monaco is heavy and browser-only — load it lazily on the client.

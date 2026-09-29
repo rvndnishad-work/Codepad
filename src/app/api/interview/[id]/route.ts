@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
+import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
+import { cleanMeetingUrl, MAX_MEETING_URL } from "@/lib/interview/meeting";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
@@ -18,6 +22,12 @@ const patchSchema = z.object({
   // Guest-only: candidate requesting the interviewer to start the session.
   startRequested: z.boolean().optional(),
   totalSec: z.number().int().positive().optional(),
+  // Video call link for workspace rooms (https only, checked below).
+  meetingUrl: z.string().max(MAX_MEETING_URL).nullable().optional(),
+  // Workspace rooms: talk with built-in video (true) or the meeting link.
+  builtinVideo: z.boolean().optional(),
+  // Workspace rooms: record the built-in call. Only before the interview starts.
+  recordVideo: z.boolean().optional(),
   // Rubric support
   rubric: z.object({
     ratings: z.record(z.string(), z.number().min(1).max(5)),
@@ -31,21 +41,18 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token");
 
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, status: true, startRequestedAt: true, shareToken: true, totalSec: true, startedAt: true },
+    select: { ...ROOM_SELECT, startRequestedAt: true, totalSec: true, startedAt: true },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  // Allow the session owner or a valid share-token holder — being logged in
-  // as some OTHER user must not grant access to arbitrary session ids.
+  // Host, panel, emailed interviewers, room pass or share-token holders.
+  // Being logged in as some OTHER user must not grant access.
   const session = await auth().catch(() => null);
-  const isValidToken = !!token && token === existing.shareToken;
-  const isOwner = !!session?.user?.id && session.user.id === existing.userId;
-  if (!isOwner && !isValidToken) {
+  const viewer = await roomViewerFromRequest(req, existing, session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null);
+  if (!viewer) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -67,43 +74,29 @@ export async function PATCH(
   const existing = await prisma.interviewSession.findUnique({
     where: { id },
     select: {
-      userId: true,
-      shareToken: true,
-      creatorRole: true,
+      ...ROOM_SELECT,
       type: true,
       // IP-44: capture pre-update status + title so we can detect the
       // transition INTO "completed" without re-querying.
-      status: true,
       title: true,
       // IP-90: verdict hook needs the workspace/candidate linkage + the
       // pre-update verdict to detect first-time verdicts.
       verdict: true,
-      workspaceId: true,
       candidateId: true,
-      candidateName: true,
+      recordVideo: true,
     },
   });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const isOwner = !!session?.user?.id && existing.userId === session.user.id;
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get("token");
-  const hasShareToken = !!token && token === existing.shareToken;
-
-  if (!isOwner && !hasShareToken) {
+  // Host, panel, workspace admins, emailed interviewers (room pass or
+  // `?guest=`), and whoever holds the share token.
+  const viewer = await roomViewerFromRequest(req, existing, session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null);
+  if (!viewer) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  // Resolve dynamic interviewer role
-  let isInterviewer = false;
-  if (existing.type === "mock") {
-    // In mock practice sessions, anyone with access (owner or shareToken holder) has full controls
-    isInterviewer = isOwner || hasShareToken;
-  } else if (existing.creatorRole === "interviewer") {
-    isInterviewer = isOwner;
-  } else {
-    isInterviewer = isOwner ? false : hasShareToken;
-  }
+  // In mock practice sessions anyone with access has full controls.
+  const isInterviewer = existing.type === "mock" || viewer.role === "interviewer";
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -137,6 +130,23 @@ export async function PATCH(
   if (parsed.data.activePlaygroundId !== undefined)
     data.activePlaygroundId = parsed.data.activePlaygroundId;
   if (parsed.data.totalSec !== undefined) data.totalSec = parsed.data.totalSec;
+  if (parsed.data.meetingUrl !== undefined) {
+    const m = cleanMeetingUrl(parsed.data.meetingUrl);
+    if (!m.ok) return NextResponse.json({ error: m.error }, { status: 400 });
+    data.meetingUrl = m.url;
+  }
+  if (parsed.data.builtinVideo !== undefined) {
+    if (!existing.workspaceId) return NextResponse.json({ error: "Built-in video is only for workspace interviews." }, { status: 400 });
+    data.builtinVideo = parsed.data.builtinVideo;
+  }
+  if (parsed.data.recordVideo !== undefined) {
+    if (!existing.workspaceId) return NextResponse.json({ error: "Recording is only for workspace interviews." }, { status: 400 });
+    if (existing.status !== "scheduled") return NextResponse.json({ error: "Recording can only be switched on or off before the interview starts." }, { status: 400 });
+    data.recordVideo = parsed.data.recordVideo;
+    // The candidate agrees to a recorded call, so an earlier agreement to an
+    // unrecorded one does not count.
+    if (parsed.data.recordVideo && !existing.recordVideo) data.candidateConsentAt = null;
+  }
 
   if (parsed.data.rubric !== undefined) {
     const rubricData = parsed.data.rubric;
@@ -163,6 +173,13 @@ export async function PATCH(
     }
   }
 
+  // Workspace room: keep the code written in each round before the room
+  // closes, so the report shows it.
+  if (parsed.data.status === "completed" && existing.status !== "completed" && existing.workspaceId) {
+    const { snapshotRoomRounds } = await import("@/lib/interview/room-snapshot");
+    await snapshotRoomRounds(id).catch((e) => console.error("[room] snapshot failed:", e));
+  }
+
   const updated = await prisma.interviewSession.update({
     where: { id },
     data,
@@ -176,6 +193,9 @@ export async function PATCH(
       totalSec: true,
       startedAt: true,
       rubric: true,
+      workspace: { select: { slug: true } },
+      // The host may have sent their panel scorecard before ending the room.
+      scorecards: { where: { status: "submitted", reviewerKey: `u:${existing.userId}` }, select: { id: true }, take: 1 },
     },
   });
 
@@ -192,7 +212,7 @@ export async function PATCH(
     void writeWorkspaceAuditEntry({
       workspaceId: existing.workspaceId,
       actorUserId: session?.user?.id ?? null,
-      actorEmail: session?.user?.email ?? null,
+      actorEmail: session?.user?.email ?? viewer.guestEmail ?? null,
       action: "INTERVIEW_VERDICT_RECORDED",
       targetType: "candidate",
       targetId: existing.candidateId,
@@ -213,23 +233,53 @@ export async function PATCH(
     parsed.data.status === "completed" &&
     existing.status !== "completed"
   ) {
+    if (existing.workspaceId && existing.type !== "take-home") {
+      const { emitWorkspaceEvent } = await import("@/lib/events");
+      void emitWorkspaceEvent(existing.workspaceId, "interview.completed", {
+        candidate: { id: existing.candidateId, name: existing.candidateName },
+        interview: {
+          id,
+          title: existing.title,
+          type: existing.type,
+          verdict: updated.verdict,
+          completedAt: (data.finishedAt instanceof Date ? data.finishedAt : new Date()).toISOString(),
+        },
+        reportPath: `interviews/${id}/report`,
+      });
+    }
     const triggers = await import("@/lib/notifications/triggers");
+    // Workspace interviews: the old /interview link would only reopen the lobby.
+    const wsBase = updated.workspace && existing.type !== "take-home" ? `/w/${updated.workspace.slug}/interviews/${id}` : null;
     void triggers.notifyInterviewReplayReady({
       sessionId: id,
       ownerId: existing.userId,
       title: existing.title,
       type: existing.type,
+      href: wsBase ? `${wsBase}/report` : undefined,
     });
-    // SCORECARD_REQUESTED only fires when no rubric exists at completion
-    // time. If the recruiter completes + scores in one shot, no notification.
-    if (!updated.rubric) {
+    // SCORECARD_REQUESTED only fires when the host has not scored yet (no
+    // end-of-room rubric and no panel scorecard of their own).
+    if (!updated.rubric && updated.scorecards.length === 0) {
       void triggers.notifyScorecardRequested({
         sessionId: id,
         ownerId: existing.userId,
         title: existing.title,
         type: existing.type,
+        href: wsBase ? `${wsBase}/scorecard` : undefined,
       });
     }
+  }
+
+  // The built-in call ends with the interview, for everyone still on it.
+  if (existing.workspaceId && (parsed.data.status === "completed" || parsed.data.status === "abandoned") && existing.status !== parsed.data.status) {
+    closeVideoRoomAfter(id);
+  }
+
+  // Keep the organiser's calendar event in step: new length or call link
+  // moves it, an abandoned interview cancels it.
+  if (existing.workspaceId && (parsed.data.totalSec !== undefined || parsed.data.meetingUrl !== undefined || parsed.data.status === "abandoned")) {
+    const { syncInterviewEvent } = await import("@/lib/calendar/server");
+    await syncInterviewEvent(id);
   }
 
   return NextResponse.json(updated);
@@ -251,6 +301,13 @@ export async function DELETE(
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
+  if (existing.workspaceId) {
+    const { cancelInterviewEvent } = await import("@/lib/calendar/server");
+    await cancelInterviewEvent(id);
+  }
+  // Recording rows cascade with the session, so read their keys first.
+  const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [id] });
   await prisma.interviewSession.delete({ where: { id } });
+  await deleteRecordingKeys(recordingKeys);
   return NextResponse.json({ success: true });
 }

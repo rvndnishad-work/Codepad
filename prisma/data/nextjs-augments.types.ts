@@ -26,5 +26,15 @@ export type NextExample = {
 export type NextAugment = {
   title: string;
   answer?: string;
+  /**
+   * The Question Body (CLAUDE.md §6): interviewer-facing spoken prompt plus
+   * the grading rubric. Rendered WITHOUT rehype-raw — plain markdown only,
+   * no HTML and no inline SVG.
+   */
+  description?: string;
+  /**
+   * One plain sentence, <=155 chars, used as the page meta description.
+   */
+  seoDescription?: string;
   examples?: NextExample[];
 };

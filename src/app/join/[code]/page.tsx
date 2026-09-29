@@ -49,6 +49,12 @@ export default async function JoinCodePage({ params }: JoinCodePageProps) {
     redirect(`/join?error=expired&code=${encodeURIComponent(decodedCode)}`);
   }
 
+  // 4b. Workspace interviews open only from the private link in the invite:
+  // a four-digit code is too easy to guess.
+  if (isShareToken && session.workspaceId && session.type === "live" && session.creatorRole === "interviewer" && session.shortCode === decodedCode) {
+    redirect(`/join?error=invalid&code=${encodeURIComponent(decodedCode)}`);
+  }
+
   // 5. Success redirection:
   // If joining as peer via shareToken, append correct token parameter. Otherwise, direct session routing.
   if (isShareToken) {

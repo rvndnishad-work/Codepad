@@ -17,6 +17,13 @@ import {
   MonitorSmartphone,
   ScanEye,
 } from "lucide-react";
+import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFor } from "@/lib/interview/guests";
+import { roomViewer } from "@/lib/interview/room-access";
+import { headers } from "next/headers";
+import { loadInterviewReport } from "@/lib/interview/report-server";
+import { loadReportScorecards } from "@/lib/interview/scorecard-server";
+import InterviewReportView from "@/app/w/[slug]/(shell)/interviews/[id]/report/InterviewReportView";
 
 export const metadata = {
   title: "Executive Candidate Report — Interviewpad Recruiter",
@@ -27,10 +34,10 @@ export default async function CandidateReportPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; guest?: string }>;
 }) {
   const { id } = await params;
-  const { token } = await searchParams;
+  const { token, guest: guestKey } = await searchParams;
 
   const session = await auth().catch(() => null);
   const interview = await prisma.interviewSession.findUnique({
@@ -43,14 +50,57 @@ export default async function CandidateReportPage({
 
   if (!interview) notFound();
 
-  // Access: owner OR holder of correct shareToken.
-  const isOwner = !!session?.user?.id && session.user.id === interview.userId;
-  const hasShareToken = !!token && token === interview.shareToken;
-  if (!isOwner && !hasShareToken) {
+  // Access. Workspace interviews: the interviewers (host, panel, workspace
+  // admins, emailed interviewers by link or room pass) and any member of the
+  // workspace; never the candidate. Personal practice sessions keep the
+  // share-token link.
+  const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
+  const hdrs = await headers();
+  const viewer = await roomViewer(interview, {
+    user: session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null,
+    cookieHeader: hdrs.get("cookie"),
+    token,
+    guestKey,
+  });
+  let allowed = viewer?.role === "interviewer";
+  if (!allowed && interview.workspaceId && session?.user?.id) {
+    allowed = !!(await prisma.workspaceMember.findFirst({ where: { workspaceId: interview.workspaceId, userId: session.user.id }, select: { id: true } }));
+  }
+  if (!allowed && !interview.workspaceId) allowed = !!viewer;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest || viewer?.via === "pass";
+  if (!allowed) {
     if (!session?.user?.id) {
-      redirect(`/login?next=${encodeURIComponent(`/interview/${id}/report?token=${token}`)}`);
+      redirect(`/login?next=${encodeURIComponent(`/interview/${id}/report`)}`);
     }
     notFound();
+  }
+
+  // Workspace interviews have their report in the workspace. Members go
+  // there; interviewers who were emailed a room pass (not members) read the
+  // same report here, without the workspace around it.
+  if (interview.workspaceId) {
+    const [ws, member] = await Promise.all([
+      prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }),
+      session?.user?.id ? prisma.workspaceMember.findFirst({ where: { workspaceId: interview.workspaceId, userId: session.user.id }, select: { id: true } }) : null,
+    ]);
+    if (ws && member) redirect(`/w/${ws.slug}/interviews/${interview.id}/report`);
+    const report = await loadInterviewReport(interview.id);
+    if (!report) notFound();
+    // Emailed interviewers see the panel's scorecards once they submit their own.
+    const scorecards = await loadReportScorecards(interview.id, { guestId: viewer?.guestId ?? null });
+    const q = guestKey && viewer?.via === "guest" ? `?guest=${encodeURIComponent(guestKey)}` : "";
+    return (
+      <div className="min-h-screen bg-bg text-fg">
+        <InterviewReportView
+          report={report}
+          slug={null}
+          canDelete={false}
+          standalone
+          scorecards={scorecards}
+          scorecardHref={scorecards?.viewer.state ? `/interview/${interview.id}/scorecard${q}` : null}
+        />
+      </div>
+    );
   }
 
   // Parse Rubric
@@ -186,7 +236,7 @@ export default async function CandidateReportPage({
       {/* TOP CONTROL BAR (Hidden on Print) */}
       <div className="max-w-4xl mx-auto mb-8 flex items-center justify-between no-print bg-[#18181b] border border-[#27272a] rounded-2xl p-4 shadow-xl">
         <Link
-          href={`/interview/${interview.id}?token=${interview.shareToken}`}
+          href={guest ? `/interview/${interview.id}?guest=${encodeURIComponent(guestKey!)}` : `/interview/${interview.id}?token=${interview.shareToken}`}
           className="flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-all"
         >
           <ArrowLeft className="w-4 h-4" />

@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { AI_INTERVIEW_TEMPLATES } from "@/lib/ai-interview/scaffolds";
-import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 
 /**
  * Unauthenticated public MCP server.
@@ -69,7 +69,7 @@ export function buildPublicMcpServer(): McpServer {
       inputSchema: {},
     },
     async () => {
-      const rows = AI_CREDIT_PACKS.map((p) => ({
+      const rows = (await getEffectivePricing()).packs.map((p) => ({
         id: p.id,
         label: p.label,
         credits: p.credits,

@@ -1,0 +1,94 @@
+"use client";
+
+/**
+ * Sandpack fed from shared (Yjs) files: the interview room's code editor
+ * and live rounds. Both sides type in their own editor; this pushes the
+ * shared text into the local bundler as it arrives, so the preview
+ * follows the typing (see LivePreviewBridge).
+ *
+ * SandpackProvider resets its files to the `files` prop whenever the
+ * `files`, `customSetup` or `template` prop changes by reference, so every
+ * prop that reaches it must be stable across renders. Passing a fresh
+ * `customSetup` object on each keystroke silently put the starter code back
+ * and the preview never updated.
+ */
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useSandpack, type SandpackFiles, type SandpackPredefinedTemplate } from "@codesandbox/sandpack-react";
+import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
+import { supportsV2Bundler, V2_BUNDLER_URL } from "@/lib/templates";
+import { LivePreviewBridge } from "@/components/bridges/LivePreviewBridge";
+
+const HIDE_OVERLAYS = "data:text/css,.react-error-overlay,#webpack-dev-server-client-overlay,.sp-overlay{display:none!important}#ignore.css";
+
+/** Pushes changed files into the bundler as they arrive. */
+function FilesSync({ files }: { files: Record<string, string> }) {
+  const { sandpack } = useSandpack();
+  // The context object changes on every bundler message; reading it through
+  // a ref keeps this effect keyed on the shared files alone.
+  const sp = useRef(sandpack);
+  useEffect(() => {
+    sp.current = sandpack;
+  }, [sandpack]);
+  useEffect(() => {
+    const s = sp.current;
+    const changed: Record<string, string> = {};
+    for (const [path, code] of Object.entries(files)) if (s.files[path]?.code !== code) changed[path] = code;
+    if (Object.keys(changed).length) s.updateFile(changed);
+  }, [files]);
+  return null;
+}
+
+export default function SharedSandpack({
+  template,
+  dependencies,
+  fixed,
+  files,
+  dark = true,
+  autorun = true,
+  entry,
+  children,
+}: {
+  template: string;
+  dependencies?: Record<string, string>;
+  /** Files nobody edits (index.html, package.json). */
+  fixed: SandpackFiles;
+  /** Current shared text of the edited files. Omit when another bridge
+   * (SharedFilesBridge) keeps the files in step. */
+  files?: Record<string, string>;
+  /** False for server stacks: the files are only edited here, never bundled. */
+  autorun?: boolean;
+  /** File the editor opens with. */
+  entry?: string;
+  dark?: boolean;
+  /** Only to force re-renders in tests. */
+  tick?: number;
+  children: ReactNode;
+}) {
+  // Seeded once; later edits go through FilesSync.
+  const initial = useRef<SandpackFiles | null>(null);
+  if (!initial.current) initial.current = { ...fixed, ...(files ?? {}) };
+  const depsKey = JSON.stringify(dependencies ?? null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const customSetup = useMemo(() => (dependencies ? { dependencies } : undefined), [depsKey]);
+  const options = useMemo(
+    () => ({
+      ...(supportsV2Bundler(template) ? { bundlerURL: V2_BUNDLER_URL } : {}),
+      autorun,
+      autoReload: autorun,
+      initMode: "immediate" as const,
+      // "delayed" is a debounce and only fired once typing paused.
+      recompileMode: "immediate" as const,
+      externalResources: [HIDE_OVERLAYS],
+      ...(entry ? { activeFile: entry, visibleFiles: [entry] } : {}),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [template, autorun],
+  );
+  return (
+    <ShimmedSandpackProvider template={template as SandpackPredefinedTemplate} theme={dark ? "dark" : "light"} files={initial.current} customSetup={customSetup} options={options}>
+      {files && <FilesSync files={files} />}
+      <LivePreviewBridge enabled={autorun} />
+      {children}
+    </ShimmedSandpackProvider>
+  );
+}

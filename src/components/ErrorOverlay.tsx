@@ -141,6 +141,8 @@ function parseSandpackError(
        messages, no codeChangedRef gymnastics. Just the state value.
 ───────────────────────────────────────────────────────────────────── */
 
+const SHOW_DELAY_MS = 600;
+
 export function ErrorBridge({
   onError,
 }: {
@@ -149,6 +151,7 @@ export function ErrorBridge({
   const { sandpack } = useSandpack();
   const lastKeyRef = useRef<string>("");
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep the latest files in a ref so code-frame extraction stays fresh
   // without making the main effect re-run on every keystroke.
@@ -185,11 +188,28 @@ export function ErrorBridge({
       }
       const next = parseSandpackError(err, filesRef.current);
       const key = makeKey(next);
-      if (key !== lastKeyRef.current) {
+      if (key === lastKeyRef.current) return;
+      // The preview recompiles on every keystroke, so half-typed code fails
+      // for a moment all the time. Only raise the overlay once an error has
+      // held for SHOW_DELAY_MS; an overlay already up just updates in place.
+      if (lastKeyRef.current !== "") {
         lastKeyRef.current = key;
         onError(next);
+        return;
       }
+      if (showTimerRef.current) clearTimeout(showTimerRef.current);
+      showTimerRef.current = setTimeout(() => {
+        showTimerRef.current = null;
+        lastKeyRef.current = key;
+        onError(next);
+      }, SHOW_DELAY_MS);
       return;
+    }
+
+    // Error gone before it was shown: drop it.
+    if (showTimerRef.current) {
+      clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
     }
 
     // No error in Sandpack state. Debounce a clear.
@@ -221,6 +241,10 @@ export function ErrorBridge({
     const unsubscribe = listen((msg: any) => {
       if (msg.type !== "done") return;
       if (latestErrorRef.current?.message) return; // bundler still has an error
+      if (showTimerRef.current) {
+        clearTimeout(showTimerRef.current);
+        showTimerRef.current = null;
+      }
       if (lastKeyRef.current === "") return; // nothing to clear
       if (clearTimerRef.current) {
         clearTimeout(clearTimerRef.current);
@@ -238,6 +262,10 @@ export function ErrorBridge({
       if (clearTimerRef.current) {
         clearTimeout(clearTimerRef.current);
         clearTimerRef.current = null;
+      }
+      if (showTimerRef.current) {
+        clearTimeout(showTimerRef.current);
+        showTimerRef.current = null;
       }
     };
   }, []);

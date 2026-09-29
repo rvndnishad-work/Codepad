@@ -49,6 +49,8 @@ async function main() {
       where: { id: q.id },
       data: {
         ...(a.answer ? { answer: a.answer } : {}),
+        ...(a.description ? { description: a.description } : {}),
+        ...(a.seoDescription ? { seoDescription: a.seoDescription } : {}),
         ...(a.examples ? { examplesData: JSON.stringify(a.examples) } : {}),
       },
     });

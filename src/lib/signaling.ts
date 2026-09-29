@@ -26,10 +26,9 @@ export function getSignalingUrls(): string[] {
     }
   }
 
-  // Fallbacks: local development and fallback signaling
-  return [
-    "ws://localhost:4444",
-    "wss://signaling.yjs.dev",
-  ];
+  // Local signaling only in development; a deployed page must never try the visitor's own machine.
+  return process.env.NODE_ENV === "development"
+    ? ["ws://localhost:4444", "wss://signaling.yjs.dev"]
+    : ["wss://signaling.yjs.dev"];
 }
 

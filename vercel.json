@@ -1,5 +1,7 @@
 {
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "crons": [
     {
       "path": "/api/cron/telemetry-scan",
@@ -8,6 +10,34 @@
     {
       "path": "/api/cron/ai-screening-expiry",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/webhook-deliveries",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/take-home-reminders",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/scorecard-reminders",
+      "schedule": "40 * * * *"
+    },
+    {
+      "path": "/api/cron/data-retention",
+      "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/workspace-deletion",
+      "schedule": "45 2 * * *"
+    },
+    {
+      "path": "/api/cron/included-credits",
+      "schedule": "10 3 * * *"
+    },
+    {
+      "path": "/api/cron/recordings",
+      "schedule": "20 * * * *"
     }
   ]
 }

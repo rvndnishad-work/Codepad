@@ -1,0 +1,82 @@
+[
+  {
+    "title": "What are Cache Components in Next.js 16 and how does the 'use cache' directive work?",
+    "technology": "nextjs",
+    "difficulty": "hard",
+    "round": "Frontend",
+    "tags": ["nextjs", "caching", "rsc", "next-16"],
+    "description": "Cache Components make Next.js caching explicit and opt-in via the 'use cache' directive for pages, components, and functions."
+  },
+  {
+    "title": "What is the difference between revalidateTag(), updateTag(), and refresh() in Next.js 16?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "caching", "server-actions", "next-16"],
+    "description": "Three cache-update primitives with different semantics: SWR invalidation, read-your-writes, and uncached refresh."
+  },
+  {
+    "title": "What breaks when you upgrade to Next.js 16, and how do you migrate?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "upgrade", "migration", "next-16"],
+    "description": "Async dynamic APIs, removed features, behavior changes, and the automated upgrade CLI."
+  },
+  {
+    "title": "What is proxy.ts in Next.js 16 and how do you migrate from middleware.ts?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "proxy", "middleware", "next-16"],
+    "description": "Middleware is renamed to Proxy with a Node.js runtime default; rename file plus function via codemod."
+  },
+  {
+    "title": "How does prefetching and navigation caching work in Next.js 16?",
+    "technology": "nextjs",
+    "difficulty": "hard",
+    "round": "Frontend",
+    "tags": ["nextjs", "prefetching", "routing", "performance", "next-16"],
+    "description": "Layout deduplication, incremental prefetching, and the inlining and cached-navigation options."
+  },
+  {
+    "title": "How do you enable and evaluate the React Compiler in Next.js 16?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "react-compiler", "performance", "next-16"],
+    "description": "Stable reactCompiler flag plus Babel plugin; opt-in, with build-time cost to measure."
+  },
+  {
+    "title": "How do View Transitions work with next/link transitionTypes in Next.js 16.2?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "navigation", "view-transitions", "next-16"],
+    "description": "Per-navigation transition types on Link drive React View Transitions; App Router only."
+  },
+  {
+    "title": "How do you debug Server Functions and hydration mismatches in Next.js 16.2?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "debugging", "hydration", "server-functions", "next-16"],
+    "description": "Server Function terminal logs, hydration diff overlay, error cause chains, and Node inspector support."
+  },
+  {
+    "title": "What changed for next/image defaults in Next.js 16?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "image", "performance", "next-16"],
+    "description": "Cache TTL, srcset sizes, quality coercion, local-pattern security, and redirect limits."
+  },
+  {
+    "title": "How do Next.js Devtools MCP and AGENTS.md change AI-assisted debugging?",
+    "technology": "nextjs",
+    "difficulty": "medium",
+    "round": "Frontend",
+    "tags": ["nextjs", "ai", "debugging", "mcp", "next-16"],
+    "description": "Model Context Protocol context plus repo agent instructions and browser log forwarding."
+  }
+]

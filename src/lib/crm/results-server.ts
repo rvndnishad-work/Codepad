@@ -1,0 +1,285 @@
+/**
+ * Loads every assessment result for a set of candidates, in the normalised
+ * shape from results.ts. Server-only.
+ */
+import { prisma } from "@/lib/prisma";
+import { passMarkOf } from "@/lib/ai-interview/verdict";
+import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
+import { parseCriteria, parseRatings, passMarkOf as scorecardPassMarkOf, scorecardAverage } from "@/lib/interview/scorecard";
+import {
+  describePanelScore,
+  describeScore,
+  ratingToScore,
+  rubricAverage,
+  rubricToScore,
+  type CandidateResult,
+  type ResultState,
+} from "@/lib/crm/results";
+
+const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
+const minutes = (sec: number | null | undefined) => (sec && sec > 0 ? Math.max(1, Math.round(sec / 60)) : null);
+
+/**
+ * Results grouped by candidate id. Pass `candidateIds` to scope the query;
+ * omit it to load the whole workspace (the list page does this once).
+ */
+export async function loadCandidateResults(
+  workspaceId: string,
+  workspaceSlug: string,
+  candidateIds?: string[],
+): Promise<Map<string, CandidateResult[]>> {
+  const out = new Map<string, CandidateResult[]>();
+  if (candidateIds && candidateIds.length === 0) return out;
+  const candidateFilter = candidateIds ? { in: candidateIds } : { not: null };
+
+  const [legacy, sessions, screenings] = await Promise.all([
+    prisma.takeHomeAssignment.findMany({
+      where: { workspaceId, candidateId: candidateFilter },
+      select: {
+        id: true,
+        candidateId: true,
+        status: true,
+        token: true,
+        timeLimitMin: true,
+        expiresAt: true,
+        startedAt: true,
+        submittedAt: true,
+        createdAt: true,
+        challenge: { select: { title: true } },
+        attempt: { select: { id: true, score: true, durationSec: true } },
+      },
+    }),
+    prisma.interviewSession.findMany({
+      where: { workspaceId, candidateId: candidateFilter },
+      select: {
+        id: true,
+        candidateId: true,
+        type: true,
+        title: true,
+        status: true,
+        shareToken: true,
+        challengeIds: true,
+        totalSec: true,
+        deadlineAt: true,
+        scheduledAt: true,
+        startedAt: true,
+        finishedAt: true,
+        createdAt: true,
+        verdict: true,
+        takeHomePassMark: true,
+        rubric: { select: { ratings: true } },
+        scorecardPassMark: true,
+        scorecards: { where: { status: "submitted" }, select: { criteriaJson: true, ratingsJson: true } },
+      },
+    }),
+    prisma.aIInterviewSession.findMany({
+      where: { workspaceId, practice: false, candidateId: candidateFilter },
+      select: {
+        id: true,
+        candidateId: true,
+        positionTitle: true,
+        status: true,
+        score: true,
+        timeSpentSec: true,
+        expiresAt: true,
+        startedAt: true,
+        finishedAt: true,
+        createdAt: true,
+        batch: { select: { passMark: true } },
+      },
+    }),
+  ]);
+
+  const takeHomeSessionIds = sessions.filter((s) => s.type === "take-home").map((s) => s.id);
+  const attempts = takeHomeSessionIds.length
+    ? await prisma.challengeAttempt.findMany({
+        where: { sessionId: { in: takeHomeSessionIds }, status: { in: ["passed", "failed"] } },
+        select: { sessionId: true, challengeId: true, score: true, durationSec: true, finishedAt: true, startedAt: true },
+        orderBy: [{ finishedAt: "asc" }, { startedAt: "asc" }],
+      })
+    : [];
+  // The first finished attempt per (session, challenge) counts, as in the take-home report:
+  // retries after submitting never change the score.
+  const attemptsBySession = new Map<string, Map<string, (typeof attempts)[number]>>();
+  for (const a of attempts) {
+    if (!a.sessionId) continue;
+    const m = attemptsBySession.get(a.sessionId) ?? new Map();
+    if (!m.has(a.challengeId)) m.set(a.challengeId, a);
+    attemptsBySession.set(a.sessionId, m);
+  }
+
+  const push = (r: CandidateResult) => {
+    const list = out.get(r.candidateId) ?? [];
+    list.push(r);
+    out.set(r.candidateId, list);
+  };
+
+  for (const th of legacy) {
+    if (!th.candidateId) continue;
+    const score = th.attempt?.score ?? null;
+    const state: ResultState =
+      score != null
+        ? "scored"
+        : th.status === "SUBMITTED"
+          ? "submitted"
+          : th.status === "EXPIRED" || th.status === "CANCELLED" || (th.status === "PENDING" && th.expiresAt < new Date())
+            ? "expired"
+            : th.status === "ACTIVE" || th.status === "STARTED" || th.startedAt
+              ? "in_progress"
+              : "invited";
+    push({
+      id: th.id,
+      candidateId: th.candidateId,
+      kind: "take_home",
+      title: th.challenge.title,
+      state,
+      score,
+      rating: null,
+      ...(score != null ? describeScore("take_home", score) : { verdict: null, passed: null }),
+      sentAt: th.createdAt.toISOString(),
+      startedAt: iso(th.startedAt),
+      finishedAt: iso(th.submittedAt),
+      deadlineAt: th.expiresAt.toISOString(),
+      scheduledAt: null,
+      minutesTaken:
+        minutes(th.attempt?.durationSec) ??
+        (th.startedAt && th.submittedAt ? minutes((th.submittedAt.getTime() - th.startedAt.getTime()) / 1000) : null),
+      minutesAllowed: th.timeLimitMin,
+      href: `/w/${workspaceSlug}/take-homes/${th.id}`,
+    });
+  }
+
+  for (const s of sessions) {
+    if (!s.candidateId) continue;
+    if (s.type === "take-home") {
+      let challengeIds: string[] = [];
+      try {
+        const parsed = JSON.parse(s.challengeIds || "[]");
+        if (Array.isArray(parsed)) challengeIds = parsed.filter((x): x is string => typeof x === "string");
+      } catch {
+        /* treat as no challenges */
+      }
+      const byChallenge = attemptsBySession.get(s.id);
+      const scored = challengeIds
+        .map((cid) => byChallenge?.get(cid))
+        .filter((a): a is NonNullable<typeof a> => !!a && a.score != null);
+      const score = scored.length
+        ? Math.round(scored.reduce((sum, a) => sum + (a.score ?? 0), 0) / scored.length)
+        : null;
+      const taken = byChallenge
+        ? [...byChallenge.values()].reduce((sum, a) => sum + (a.durationSec ?? 0), 0)
+        : 0;
+      const finished = s.status === "completed";
+      const state: ResultState =
+        score != null && finished
+          ? "scored"
+          : finished
+            ? "submitted"
+            : s.status === "expired" || s.status === "abandoned" || s.status === "cancelled" || (s.status === "scheduled" && s.deadlineAt && s.deadlineAt < new Date())
+              ? "expired"
+              : s.status === "in_progress"
+                ? "in_progress"
+                : "invited";
+      push({
+        id: s.id,
+        candidateId: s.candidateId,
+        kind: "take_home",
+        title: s.title,
+        state,
+        score: finished ? score : null,
+        rating: null,
+        ...(finished && score != null ? describeScore("take_home", score, null, null, s.takeHomePassMark) : { verdict: null, passed: null }),
+        passMark: takeHomePassMarkOf(s.takeHomePassMark),
+        sentAt: s.createdAt.toISOString(),
+        startedAt: iso(s.startedAt),
+        finishedAt: iso(s.finishedAt),
+        deadlineAt: iso(s.deadlineAt),
+        scheduledAt: null,
+        minutesTaken: minutes(taken),
+        minutesAllowed: minutes(s.totalSec),
+        href: `/w/${workspaceSlug}/take-homes/${s.id}`,
+      });
+      continue;
+    }
+
+    // Live interviews. Submitted panel scorecards (1 to 4) or the older
+    // end-of-room rubric (1 to 5) make it scored; finished without either is
+    // waiting on feedback.
+    const cardAverages = s.scorecards.map((c) => scorecardAverage(parseRatings(c.ratingsJson, parseCriteria(c.criteriaJson)))).filter((x): x is number => x != null);
+    const panel = cardAverages.length ? Math.round((cardAverages.reduce((a, b) => a + b, 0) / cardAverages.length) * 10) / 10 : null;
+    const panelBar = scorecardPassMarkOf(s.scorecardPassMark);
+    const rating = panel ?? rubricAverage(s.rubric?.ratings);
+    const score = panel != null ? ratingToScore(panel, 4) : rating != null ? rubricToScore(rating) : null;
+    const state: ResultState =
+      score != null
+        ? "scored"
+        : s.status === "completed" || s.status === "finished" || s.finishedAt
+          ? "submitted"
+          : s.status === "abandoned" || s.status === "expired"
+            ? "expired"
+            : s.status === "in_progress" || s.startedAt
+              ? "in_progress"
+              : "invited";
+    push({
+      id: s.id,
+      candidateId: s.candidateId,
+      kind: "interview",
+      title: s.title,
+      state,
+      score,
+      rating,
+      ...(panel != null
+        ? { ...describePanelScore(panel, panelBar, s.verdict), ratingScale: 4, ratingBar: panelBar, passMark: ratingToScore(panelBar, 4) }
+        : score != null
+          ? describeScore("interview", score, rating, s.verdict)
+          : { verdict: null, passed: null }),
+      sentAt: s.createdAt.toISOString(),
+      startedAt: iso(s.startedAt),
+      finishedAt: iso(s.finishedAt),
+      deadlineAt: null,
+      scheduledAt: iso(s.scheduledAt),
+      minutesTaken:
+        s.startedAt && s.finishedAt ? minutes((s.finishedAt.getTime() - s.startedAt.getTime()) / 1000) : null,
+      minutesAllowed: minutes(s.totalSec),
+      // Finished interviews open the report, the rest the lobby.
+      href: `/w/${workspaceSlug}/interviews/${s.id}${state === "scored" || state === "submitted" ? "/report" : ""}`,
+    });
+  }
+
+  for (const a of screenings) {
+    if (!a.candidateId) continue;
+    const done = a.status === "COMPLETED" || !!a.finishedAt;
+    const score = done ? a.score : null;
+    const state: ResultState =
+      score != null
+        ? "scored"
+        : done
+          ? "submitted"
+          : a.status === "EXPIRED" || (!a.startedAt && a.expiresAt && a.expiresAt < new Date())
+            ? "expired"
+            : a.startedAt
+              ? "in_progress"
+              : "invited";
+    push({
+      id: a.id,
+      candidateId: a.candidateId,
+      kind: "ai_screening",
+      title: a.positionTitle,
+      state,
+      score,
+      rating: null,
+      ...(score != null ? describeScore("ai_screening", score, null, null, a.batch?.passMark) : { verdict: null, passed: null }),
+      passMark: passMarkOf(a.batch?.passMark),
+      sentAt: a.createdAt.toISOString(),
+      startedAt: iso(a.startedAt),
+      finishedAt: iso(a.finishedAt),
+      deadlineAt: iso(a.expiresAt),
+      scheduledAt: null,
+      minutesTaken: minutes(a.timeSpentSec),
+      minutesAllowed: null,
+      href: `/w/${workspaceSlug}/ai-interviews/${a.id}`,
+    });
+  }
+
+  return out;
+}

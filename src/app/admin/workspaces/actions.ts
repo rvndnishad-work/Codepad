@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
+import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -40,9 +41,11 @@ export async function deleteWorkspaceAction(workspaceId: string) {
     throw new Error("Missing workspace ID.");
   }
 
+  const recordingKeys = await collectRecordingKeys({ workspaceId });
   await prisma.workspace.delete({
     where: { id: workspaceId },
   });
+  await deleteRecordingKeys(recordingKeys);
 
   revalidatePath("/admin/workspaces");
   return { success: true };

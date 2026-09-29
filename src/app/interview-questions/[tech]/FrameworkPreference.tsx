@@ -35,10 +35,8 @@ export default function FrameworkPreference() {
   }
 
   return (
-    <div className="flex items-center flex-wrap gap-2 mt-4">
-      <span className="text-[11px] font-black uppercase tracking-wider text-muted">
-        Preferred framework
-      </span>
+    <div className="mt-4 flex flex-wrap items-center gap-2.5">
+      <span className="text-sm text-subtle">Solutions open in</span>
       <div className="flex gap-1.5">
         {FRAMEWORKS.map(([value, lbl]) => {
           const active = fw === value;
@@ -47,10 +45,10 @@ export default function FrameworkPreference() {
               key={value}
               onClick={() => pick(value)}
               aria-pressed={active}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold border transition ${
+              className={`h-8 rounded-lg border px-3 text-sm font-medium transition-colors motion-reduce:transition-none ${
                 active
-                  ? "bg-accent text-bg border-accent shadow-sm"
-                  : "bg-bg border-border text-muted hover:text-fg hover:border-accent/40"
+                  ? "border-accent bg-accent text-accent-ink"
+                  : "border-border bg-surface text-muted hover:border-border-strong hover:text-fg"
               }`}
             >
               {lbl}

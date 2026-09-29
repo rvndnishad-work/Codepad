@@ -20,7 +20,7 @@ export interface AIInterviewTemplateDef {
   testsCode: string;
   /** Coding surface kind. Defaults to "frontend" (Sandpack/React) when unset.
    *  "backend"/"dsa" render a Monaco + Run console surface (Piston). */
-  kind?: "frontend" | "backend" | "dsa";
+  kind?: "frontend" | "backend" | "dsa" | "conversation";
   /** Execution language for backend/dsa surfaces (/api/execute + Monaco). */
   language?: string;
   /** Non-executable framework label (e.g. "React", "Express") — steers AI

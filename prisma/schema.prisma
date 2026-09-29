@@ -56,6 +56,7 @@ model User {
   permissionOverrides  Json?
 
   accounts             Account[]
+  calendarConnections  CalendarConnection[]
   roles                UserRole[]
   blogBookmarks        BlogBookmark[]
   blogComments         BlogComment[]
@@ -72,6 +73,9 @@ model User {
   sessions             Session[]
   snippets             Snippet[]
   workspaces           WorkspaceMember[]
+  ownedCandidates      Candidate[]           @relation("CandidateOwner")
+  ownedCandidateBatches CandidateBatch[]     @relation("CandidateBatchOwner")
+  candidateNotes       CandidateNote[]
   securityEvents       SecurityAuditLog[]
   notifications        Notification[]
   notificationPreferences NotificationPreference[]
@@ -359,6 +363,7 @@ model Snippet {
   @@index([userId])
   @@index([visibility, updatedAt])
   @@index([viewCount])
+  @@index([template])
 }
 
 /// A coding challenge with starter code + hidden tests.
@@ -632,18 +637,244 @@ model InterviewSession {
   /// Per-session secret used to HMAC-sign agent report bodies. Never sent to
   /// the browser; only embedded in the agent launcher env.
   proctorSecret      String?
+  /// Take-home only: the saved question set this was sent from, if any.
+  takeHomeTemplateId String?
+  /// Take-home only: set when a recruiter cancels the invite. Status is
+  /// "cancelled" and the candidate link stops working.
+  cancelledAt        DateTime?
+  /// ── Live interview setup (interview wizard) ────────────────────────────
+  /// Interview format: "coding" | "discussion" | "behavioural" | "intro" |
+  /// "mixed". Null for sessions made before the wizard.
+  format             String?
+  /// JSON string[] of co-interviewer user ids. They open the room with the
+  /// same interviewer view as the host (`userId`).
+  panelJson          String?
+  /// How the questions get decided: "set" (picked at setup), "later" (a
+  /// teammate picks them before the interview) or "open" (no set questions).
+  questionPlan       String           @default("set")
+  /// The teammate asked to pick the questions when questionPlan = "later".
+  questionsOwnerId   String?
+  /// Note for that teammate, e.g. "Senior React, focus on state".
+  questionsNote      String?
+  /// Questionnaire (AIInterviewTemplate kind "conversation") used as the
+  /// interviewer's question guide. Shown to interviewers only.
+  guideTemplateId    String?
+  /// Private brief for the interviewers. Never shown to the candidate.
+  interviewerBrief   String?
+  /// Who set the interview up, when that is not the host.
+  createdById        String?
+  /// Shared by the interviews scheduled together in one wizard run (one per
+  /// candidate), so questions picked later can apply to all of them.
+  setupGroupId       String?
+  /// Live room toolbox, JSON (see src/lib/interview/tools.ts): which tools are
+  /// switched on, which one is presented, the question card and the timer.
+  /// Only interviewers write it.
+  toolsJson          String?
+  /// Workspace room: the round on the shared stage, "c:<challengeId>:<step>",
+  /// "p:<snippetId>" or "q:<promptScenarioId>". Null shows the room home.
+  /// Only interviewers write it.
+  roomRound          String?
+  /// Link to the video call (Zoom, Meet, Teams...) for a live interview. https only.
+  meetingUrl         String?
+  /// Use the workspace's built-in video call in the lobby and room (when the
+  /// workspace has the video add-on). False: the meeting link, if any, only.
+  builtinVideo       Boolean          @default(true)
+  /// Record the built-in video call. Candidates are told in the lobby and
+  /// must agree first; the host starts and stops the recording in the room.
+  recordVideo        Boolean          @default(false)
+  /// An interviewer asked in the room to record a call not set up for it.
+  /// Kept until the candidate answers; the earlier lobby consent is given
+  /// back if they decline. recordDeclinedAt stops a second ask.
+  recordAskedAt          DateTime?
+  recordAskedById        String?
+  recordAskedByName      String?
+  recordAskPrevConsentAt DateTime?
+  recordDeclinedAt       DateTime?
+  /// Guide questions picked from the public bank for this room (questionnaire JSON, reference answers included). Interviewers only.
+  guideJson          String?
+  /// Take-home only: score (0-100) results need to read as a good match.
+  /// Null = the default (60). Only labels results: passing is always a
+  /// recruiter's decision. Shared by every session in one send (setupGroupId).
+  takeHomePassMark   Int?
+  /// Take-home only: automatic reminder schedule. Hours after the invite to
+  /// nudge anyone who has not started (null = no nudge), hours before the
+  /// deadline for the last call (null = no last call), and a switch that
+  /// stops both. Sent by the take-home-reminders cron.
+  reminderStartAfterHours     Int?
+  reminderBeforeDeadlineHours Int?     @default(24)
+  remindersOff       Boolean          @default(false)
+  /// Idempotency stamp for the "not started" nudge (reminderSentAt is the last call's).
+  startReminderSentAt DateTime?
+  /// Interview pass mark on the 1 to 4 scorecard scale. Null means the
+  /// default (see src/lib/interview/scorecard.ts). It only labels the panel
+  /// average; a recruiter still decides who passes.
+  scorecardPassMark  Float?
+  /// Last time someone emailed the interviewers who still owe a scorecard.
+  scorecardNudgedAt  DateTime?
+  /// Interviewers see the others' scorecards only after submitting their own.
+  /// New interviews copy the workspace default (Settings > Screening defaults).
+  scorecardFirst     Boolean          @default(true)
+  /// Hours after the interview to email interviewers who still owe a
+  /// scorecard. Null means no automatic reminder. Copied from the workspace
+  /// default when the interview is scheduled.
+  scorecardReminderHours  Int?
+  /// Stamp for that automatic reminder, so the cron sends it once.
+  scorecardAutoRemindedAt DateTime?
+  /// When the candidate ticked the consent box before a recorded interview.
+  candidateConsentAt DateTime?
+  /// The candidate's interview round this session belongs to (a live
+  /// interview or a take-home). Null for practice/mock sessions and for
+  /// sessions made before interview plans. A rebooked round keeps every
+  /// attempt linked here.
+  candidateRoundId   String?
+  candidateRound     CandidateRound?  @relation(fields: [candidateRoundId], references: [id], onDelete: SetNull)
+  scorecards         InterviewScorecard[]
+  toolUpdates        InterviewToolUpdate[]
+  presence           InterviewPresence[]
+  guests             InterviewGuest[]
+  calendarEvent      InterviewCalendarEvent?
   createdAt          DateTime         @default(now())
+  takeHomeTemplate   TakeHomeTemplate? @relation(fields: [takeHomeTemplateId], references: [id], onDelete: SetNull)
   rubric             InterviewRubric?
   proctorReport      ProctorAgentReport?
   candidate          Candidate?       @relation(fields: [candidateId], references: [id])
   workspace          Workspace?       @relation(fields: [workspaceId], references: [id])
   user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  recordings         InterviewRecording[]
   @@index([userId, status])
   @@index([candidateId])
   @@index([workspaceId])
   /// Listing take-home sessions per workspace (IP-88).
   @@index([workspaceId, type])
+  @@index([takeHomeTemplateId])
+  @@index([questionsOwnerId])
+  @@index([setupGroupId])
+  @@index([scorecardReminderHours, scorecardAutoRemindedAt])
+  @@index([candidateRoundId])
+}
+
+/// Yjs updates for the shared tools in a live interview room (whiteboard,
+/// code pad, notes, ranking). Clients append and read with an id cursor;
+/// old rows are merged into one now and then.
+model InterviewToolUpdate {
+  id        Int              @id @default(autoincrement())
+  sessionId String
+  /// Which shared document the update belongs to: "tools" (room tools and
+  /// the workspace room) or "code:<challengeId>" (the classic attempt page).
+  channel   String           @default("tools")
+  update    Bytes
+  createdAt DateTime         @default(now())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, channel, id])
+}
+
+/// Who has a live room open right now, one row per browser tab and channel.
+/// Written by the relay on every poll (lastSeenAt) and when the tab sends
+/// its cursor and name (awareness, changedAt). Rows older than a few seconds
+/// count as gone.
+model InterviewPresence {
+  id         String           @id @default(cuid())
+  sessionId  String
+  channel    String           @default("tools")
+  /// Yjs awareness client id of the tab.
+  clientId   Int
+  role       String
+  name       String
+  /// "lobby" or "room".
+  place      String           @default("room")
+  /// Last y-protocols awareness update from the tab.
+  awareness  Bytes?
+  joinedAt   DateTime         @default(now())
+  lastSeenAt DateTime         @default(now())
+  changedAt  DateTime         @default(now())
+  session    InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, channel, clientId])
+  @@index([sessionId, channel, lastSeenAt])
+}
+
+/// An interviewer who is not a workspace member. HR types their email in the
+/// wizard; they get the details and a private link (`?guest=<token>`) that
+/// opens the interviewer side of this one room without an account.
+model InterviewGuest {
+  id        String           @id @default(cuid())
+  sessionId String
+  email     String
+  token     String           @unique
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+  session   InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, email])
+}
+
+/// One interviewer's structured scorecard for one live interview. Workspace
+/// interviewers are keyed "u:<userId>", emailed guests "g:<guestId>".
+/// Drafts are private to their author. Once submitted the card is locked:
+/// the author can only amend it with a reason, and every amendment is kept
+/// in InterviewScorecardEdit.
+model InterviewScorecard {
+  id             String                   @id @default(cuid())
+  sessionId      String
+  reviewerKey    String
+  userId         String?
+  guestId        String?
+  /// Name shown to the panel, snapshotted so the card stays readable.
+  reviewerName   String
+  /// Criteria as they were when the card was started, JSON
+  /// [{ id, label, hint, kind }].
+  criteriaJson   String
+  /// JSON { [criterionId]: { r: 1..4 | null, n: string } }.
+  ratingsJson    String                   @default("{}")
+  /// Overall evidence written by the interviewer.
+  notes          String?
+  /// "no" | "unsure" | "yes". Null until picked.
+  recommendation String?
+  /// "draft" | "submitted".
+  status         String                   @default("draft")
+  submittedAt    DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  session        InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  edits          InterviewScorecardEdit[]
+
+  @@unique([sessionId, reviewerKey])
+  @@index([sessionId, status])
+}
+
+/// A change to a scorecard after it was submitted: who, why, and the card
+/// before and after.
+model InterviewScorecardEdit {
+  id          String             @id @default(cuid())
+  scorecardId String
+  actorKey    String
+  actorName   String
+  reason      String
+  beforeJson  String
+  afterJson   String
+  createdAt   DateTime           @default(now())
+  scorecard   InterviewScorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
+
+  @@index([scorecardId, createdAt])
+}
+
+/// A saved take-home question set ("Senior frontend take home") that a
+/// recruiter can send again without picking questions each time.
+model TakeHomeTemplate {
+  id          String             @id @default(cuid())
+  workspaceId String
+  name        String
+  /// JSON [{ "challengeId": string, "minutes": number }], in order.
+  itemsJson   String
+  createdById String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessions    InterviewSession[]
+
+  @@index([workspaceId])
 }
 
 model BlogPost {
@@ -777,14 +1008,136 @@ model Workspace {
   /// GROWTH-level access regardless of planName.
   trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
+
+  // ── Included AI credits (credits come with each paid seat) ─────────────
+  /// Included credits still unused. They sit in the ledger balance too; this
+  /// counter only says how much of that balance can expire. Consumption takes
+  /// included credits first.
+  includedCreditsLeft      Int       @default(0)
+  /// Size of the latest monthly grant. At the next grant, anything left above
+  /// this is older than a month and expires (one month rollover).
+  includedCreditsLastGrant Int       @default(0)
+  /// When the latest monthly grant ran. Null = never.
+  includedCreditsGrantedAt DateTime?
+
+  // ── Built-in video add-on ─────────────────────────────────────────────
+  /// Admins switch built-in video calls (LiveKit) on in Billing. Off by
+  /// default; while on, a paid workspace carries the add-on on its Stripe
+  /// subscription.
+  videoEnabled     Boolean   @default(false)
+  videoEnabledAt   DateTime?
+  /// The add-on's Stripe subscription item, while it is billed.
+  videoAddonItemId String?
+
+  // ── Settings > General ────────────────────────────────────────────────
+  /// Public URL of the workspace logo. Shown in the app and, via Candidate
+  /// experience, on candidate pages and emails. Null = no logo.
+  logoUrl    String?
+  /// IANA time zone used to show dates and times, e.g. "Europe/London".
+  timezone   String  @default("UTC")
+  /// "DMY" (26 Sep 2026), "MDY" (Sep 26, 2026) or "YMD" (2026-09-26).
+  dateFormat String  @default("DMY")
+
+  // ── Settings > Candidate experience ───────────────────────────────────
+  /// Brand colour as "#rrggbb" for candidate pages and emails. Null = default.
+  brandColor         String?
+  /// Sender display name, sent as "<senderName> via Interviewpad". Null = workspace name.
+  senderName         String?
+  /// Reply-to address for candidate emails. Only used once replyToConfirmedAt is set.
+  replyToEmail       String?
+  replyToConfirmedAt DateTime?
+  /// One-time token in the reply-to confirmation link. Cleared on confirm.
+  replyToToken       String?   @unique
+  /// Link to the company privacy notice, shown on candidate pages.
+  privacyNoticeUrl   String?
+  /// Ask candidates to tick a consent box before AI screenings and recorded interviews.
+  consentRequired    Boolean   @default(false)
+  /// Contact shown to candidates who need help.
+  helpEmail          String?
+
+  // ── Settings > Screening defaults (starting values for new items) ─────
+  /// Take-home pass mark (0-100). 60 matches TAKE_HOME_PASS_MARK.
+  defaultTakeHomePassMark  Int     @default(60)
+  /// AI screening pass mark (0-100). 60 matches SCREENING_PASS_THRESHOLD.
+  defaultAiPassMark        Int     @default(60)
+  /// Interview pass mark on the 1-4 scorecard scale. 3 matches DEFAULT_PASS_MARK.
+  defaultInterviewPassMark Float   @default(3)
+  /// Days an invite link stays open. 7 matches DEFAULT_EXPIRY_DAYS.
+  inviteExpiryDays         Int     @default(7)
+  /// Send the "not started yet" reminder to new take-homes and AI screenings.
+  remindNotStarted         Boolean @default(true)
+  /// Send the "last call" reminder before the invite closes.
+  remindBeforeDeadline     Boolean @default(true)
+  /// Default length of a new AI screening round, in minutes.
+  aiDefaultMinutes         Int     @default(30)
+  /// Keep recordings of spoken AI screening answers by default.
+  keepVoiceAnswers         Boolean @default(false)
+  /// Language the AI interviewer speaks by default (BCP 47, e.g. "en").
+  interviewerLanguage      String  @default("en")
+  /// Default length of a new live interview, in minutes.
+  interviewDefaultMinutes  Int     @default(60)
+  /// Interviewers submit their own scorecard before they see the others.
+  scorecardFirst           Boolean @default(true)
+  /// Remind interviewers who owe a scorecard this many hours after the
+  /// interview. Null = no automatic reminder.
+  scorecardReminderHours   Int?
+  /// What kind of hiring the workspace does: "technical", "non_technical"
+  /// or "both". Filters interview plan templates and round kinds (a
+  /// non-technical workspace gets no coding rounds). Asked at onboarding.
+  hiringType               String  @default("technical")
+
+  // ── Settings > Security ───────────────────────────────────────────────
+  /// Every member must use two-factor sign-in (not only paid-plan admins).
+  require2faForAll      Boolean   @default(false)
+  /// When require2faForAll starts to be enforced. Null = immediately.
+  require2faFrom        DateTime?
+  /// Last time members without two-factor were emailed a reminder.
+  require2faRemindedAt  DateTime?
+  /// Longest a sign-in lasts in this workspace, in days. Null = site default.
+  sessionMaxAgeDays     Int?
+  /// Sessions started before this time are signed out of this workspace.
+  sessionsRevokedAt     DateTime?
+  /// Lowercase domains ("acme.com") invites are limited to. Empty = any.
+  allowedEmailDomains   String[]  @default([])
+  /// People with an allowed domain may join without an invite.
+  joinWithoutInvite     Boolean   @default(false)
+  /// Role given to people who join without an invite.
+  joinRole              String    @default("INTERVIEWER")
+  /// Longest lifetime of a new API key, in days. Null = no limit.
+  apiKeyMaxLifetimeDays Int?
+
+  // ── Billing and usage ─────────────────────────────────────────────────
+  /// Email admins when AI screening credits fall below this. Null = off.
+  lowCreditThreshold Int?
+  /// Last low-credit email; cleared when the balance goes back above the threshold.
+  lowCreditAlertedAt DateTime?
+  /// Stamped once the trial-expiry cron has recorded the trial ending.
+  trialEndedAt       DateTime?
+
+  // ── Settings > Data and privacy ───────────────────────────────────────
+  /// Workspace scheduled for deletion; erased 30 days after this by cron.
+  /// Access is blocked meanwhile, owners see an undo banner.
+  deletionScheduledAt   DateTime?
+  deletionRequestedById String?
+
+  slugRedirects           WorkspaceSlugRedirect[]
+  logo                    WorkspaceLogo?
+  candidateEmailTemplates CandidateEmailTemplate[]
+  retentionRules          RetentionRule[]
+  dataRequests            DataRequest[]
+  exports                 WorkspaceExport[]
   aiCreditLedger       AIInterviewCreditLedger[]
   aiInterviewSessions  AIInterviewSession[]
   aiInterviewTemplates AIInterviewTemplate[]
   aiScreeningBatches   AIScreeningBatch[]
+  takeHomeTemplates    TakeHomeTemplate[]
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
+  candidateBatches     CandidateBatch[]
+  interviewPlans       InterviewPlan[]
   challenges           Challenge[]
   sessions             InterviewSession[]
+  calendarConnections  CalendarConnection[]
   mcpApiKeys           McpApiKey[]
   mcpAuditLogs         McpAuditLog[]
   externalMcpServers   ExternalMcpServer[]
@@ -794,6 +1147,129 @@ model Workspace {
   invites              WorkspaceInvite[]
   auditLogs            WorkspaceAuditLog[]
   agentConfigs         AgentConfig[]
+  webhookEndpoints     WebhookEndpoint[]
+  questionVariants     QuestionVariant[]
+  atsJobMappings       AtsJobMapping[]
+  atsTestRequests      AtsTestRequest[]
+  atsSyncEvents        AtsSyncEvent[]
+  alertChannels        AlertChannel[]
+  interviewRecordings InterviewRecording[]
+}
+
+/// Old workspace web address kept after a slug change, so /w/<oldSlug>
+/// links keep working. An old slug cannot be taken by another workspace.
+/// The workspace logo uploaded in Settings > General, served from
+/// /api/workspace-logo/<workspaceId> so candidate pages and emails can load
+/// it. Workspace.logoUrl points at that route (with a version query) or at an
+/// https address someone pasted instead.
+model WorkspaceLogo {
+  workspaceId String    @id
+  mime        String
+  bytes       Bytes
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model WorkspaceSlugRedirect {
+  id          String    @id @default(cuid())
+  oldSlug     String    @unique
+  workspaceId String
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+/// Workspace wording for one candidate email template. Null subject/body
+/// fall back to the built-in wording. The invite link, deadline and
+/// unsubscribe footer are always appended by the sender, never stored here.
+model CandidateEmailTemplate {
+  id          String    @id @default(cuid())
+  workspaceId String
+  /// Template key, e.g. "take-home-invite", "ai-screening-invite".
+  key         String
+  subject     String?
+  body        String?
+  updatedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, key])
+}
+
+/// One data retention rule. No row = rule off with the built-in default
+/// period. kind: "INACTIVE_CANDIDATES" | "NOT_PASSED" | "VOICE_RECORDINGS" |
+/// "CODE_REPLAYS". Passed candidates are never erased by a rule.
+model RetentionRule {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  kind            String
+  enabled         Boolean   @default(false)
+  /// Period length, in `unit`s.
+  amount          Int
+  /// "DAYS" | "MONTHS".
+  unit            String    @default("MONTHS")
+  /// Last nightly run that looked at this rule.
+  lastRunAt       DateTime?
+  /// Items erased by the last run.
+  lastErasedCount Int?
+  /// When the next erase is due; the 7-day advance email goes out before it.
+  nextNoticeAt    DateTime?
+  noticeSentAt    DateTime?
+  updatedById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, kind])
+  @@index([enabled])
+}
+
+/// A candidate asking for a copy of their data or for it to be erased.
+/// kind: "COPY" | "ERASE". status: "OPEN" | "DONE" | "CANCELLED".
+model DataRequest {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  email         String
+  kind          String
+  status        String    @default("OPEN")
+  /// 30 days after the request by default.
+  dueAt         DateTime
+  requestedById String?
+  completedAt   DateTime?
+  completedById String?
+  /// Number of records found or erased.
+  itemCount     Int?
+  /// What was found or erased, per kind: { candidates, takeHomes, ... }.
+  summary       Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, email])
+}
+
+/// "Export everything" job: a zip of CSV/JSON, emailed as a link.
+/// status: "PENDING" | "RUNNING" | "READY" | "FAILED" | "EXPIRED".
+model WorkspaceExport {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  status        String    @default("PENDING")
+  /// Storage key of the zip, and a download URL when one is issued.
+  fileKey       String?
+  url           String?
+  sizeBytes     Int?
+  error         String?
+  requestedById String?
+  createdAt     DateTime  @default(now())
+  readyAt       DateTime?
+  expiresAt     DateTime?
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([status])
 }
 
 /// Pending teammate invitation (IP-73). Replaces the old "silently mint a
@@ -834,16 +1310,17 @@ model Candidate {
   /// JSON-encoded string[] of tags (e.g. ["senior", "react", "remote-ok"]).
   tags                String?
   /// Disposition flag — semantically "what's the current bucket for this
-  /// person?" Historical values: active/future_hire/do_not_hire/hired/
-  /// rejected/archived. Coexists with `stage` (the pipeline position) — see
-  /// IP-34. Kept for backwards compat with existing queries.
+  /// person?" Values: active/future_hire/do_not_hire/passed/rejected/
+  /// archived ("hired" before screening-only Candidates). Coexists with
+  /// `stage` — see IP-34. Kept for backwards compat with existing queries.
   status              String               @default("active")
-  /// IP-34: pipeline stage. One of:
-  ///   APPLIED → SCREENED → TAKE_HOME → ONSITE → OFFER → HIRED
-  ///                                                       ↘ REJECTED
-  /// REJECTED requires `rejectReason` set. Drag-drop on the Kanban moves
-  /// candidates between these.
-  stage               String               @default("APPLIED")
+  /// IP-34, narrowed to screening only (the app is not an ATS):
+  ///   NEW → SCREENING → PASSED
+  ///                   ↘ REJECTED ("Not passed")
+  /// REJECTED requires `rejectReason` set. Older values (APPLIED, SCREENED,
+  /// TAKE_HOME, ONSITE, OFFER, HIRED) were migrated; normalizeStage() still
+  /// reads them.
+  stage               String               @default("NEW")
   /// IP-34: when set, why this candidate was rejected.
   ///   SKILL_GAP / CULTURE_FIT / COMP_MISMATCH / NO_RESPONSE / WITHDREW / OTHER
   rejectReason        String?
@@ -851,10 +1328,29 @@ model Candidate {
   rejectReasonNote    String?
   /// Last time `stage` mutated — drives "time-in-stage" diagnostics.
   stageChangedAt      DateTime?
+  /// The hiring batch (role or drive) this candidate belongs to. One at a time.
+  batchId             String?
+  /// Workspace member responsible for moving this candidate along.
+  ownerId             String?
+  /// Set when the candidate came from a connected ATS: "<provider>:<id>",
+  /// e.g. "greenhouse:4417". Used to link re-sent requests to the same person.
+  atsRef              String?
+  /// The candidate's profile in the ATS (Greenhouse sends it with each request).
+  atsProfileUrl       String?
+  /// The interview plan this candidate's rounds were copied from (the
+  /// batch plan, or the workspace default for their role type). The rounds
+  /// themselves live in CandidateRound so one person's copy can differ.
+  planId              String?
+  plan                InterviewPlan?       @relation(fields: [planId], references: [id], onDelete: SetNull)
+  rounds              CandidateRound[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
+  atsTestRequests     AtsTestRequest[]
   workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  batch               CandidateBatch?      @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  owner               User?                @relation("CandidateOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  candidateNotes      CandidateNote[]
   sessions            InterviewSession[]
   takeHomes           TakeHomeAssignment[]
 
@@ -862,6 +1358,144 @@ model Candidate {
   @@index([workspaceId, status])
   @@index([workspaceId, name])
   @@index([workspaceId, stage])
+  @@index([workspaceId, batchId])
+  @@index([workspaceId, ownerId])
+}
+
+/// A named group of candidates for one role or hiring drive
+/// ("Frontend · Oct"). A candidate belongs to at most one batch.
+model CandidateBatch {
+  id          String      @id @default(cuid())
+  workspaceId String
+  name        String
+  roleTitle   String?
+  ownerId     String?
+  deadline    DateTime?
+  targetHires Int?
+  /// OPEN or CLOSED.
+  status      String      @default("OPEN")
+  /// The interview plan everyone in this batch follows.
+  planId      String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner       User?       @relation("CandidateBatchOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  plan        InterviewPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  candidates  Candidate[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+}
+
+/// An ordered list of rounds a role needs (e.g. AI interview, take-home,
+/// intro, coding, technical discussion, behavioural). Batches follow a plan;
+/// each candidate gets a copy of its rounds (CandidateRound). Built from the
+/// templates in src/lib/interview/rounds.ts.
+model InterviewPlan {
+  id             String               @id @default(cuid())
+  workspaceId    String
+  name           String
+  /// "technical" or "non_technical". Filters the round kinds offered.
+  roleType       String               @default("technical")
+  /// The workspace default for its role type, used for candidates with no
+  /// batch. At most one per workspace and role type (kept by the server).
+  isDefault      Boolean              @default(false)
+  /// Later rounds happen in the company's own ATS: the plan ends at its
+  /// last round here and nothing after it is tracked.
+  continuesInAts Boolean              @default(false)
+  /// Send the first round (an AI interview or take-home) by itself when a
+  /// candidate joins a batch on this plan. Off by default.
+  autoSendFirst  Boolean              @default(false)
+  /// Which built-in template it started from, e.g. "technical".
+  templateKey    String?
+  createdById    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rounds         InterviewPlanRound[]
+  batches        CandidateBatch[]
+  candidates     Candidate[]
+
+  @@index([workspaceId, roleType])
+}
+
+/// One round of an interview plan.
+model InterviewPlanRound {
+  id          String           @id @default(cuid())
+  planId      String
+  order       Int
+  /// "ai_interview", "take_home" or "interview" (a live interview).
+  kind        String
+  name        String
+  /// Live interviews: the wizard format ("intro", "coding", "discussion",
+  /// "behavioural", "mixed"). Null for the other kinds.
+  format      String?
+  /// Live interviews: length in minutes. AI interview and take-home: days
+  /// the invite stays open.
+  durationMin Int?
+  /// On the round's own scale: 1-4 scorecard for live interviews, 0-100 for
+  /// AI interviews and take-homes. Null = the workspace default. Only labels
+  /// results; a recruiter decides who passes.
+  passMark    Float?
+  required    Boolean          @default(true)
+  /// Kind-specific setup as JSON, e.g. {"takeHomeTemplateId": "..."} or
+  /// {"aiTemplateIds": ["..."]}.
+  settingsJson String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  plan        InterviewPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  candidateRounds CandidateRound[]
+
+  @@index([planId, order])
+}
+
+/// One candidate's copy of a plan round. Kept per person so skipping or
+/// adding a round affects only them, and editing the plan later never
+/// rewrites rounds that already happened. Interviews, take-homes and AI
+/// interviews link here through candidateRoundId.
+model CandidateRound {
+  id           String              @id @default(cuid())
+  candidateId  String
+  /// The plan round it was copied from. Null for rounds added by hand and
+  /// rounds rebuilt from history by the backfill.
+  planRoundId  String?
+  order        Int
+  kind         String
+  name         String
+  format       String?
+  durationMin  Int?
+  passMark     Float?
+  required     Boolean             @default(true)
+  /// A recruiter removed this round for this candidate.
+  skipped      Boolean             @default(false)
+  /// The recruiter's call after the round: "advance" (move to the next
+  /// round) or "stop". Null until decided. Never passes the candidate.
+  nextStep     String?
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  candidate    Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  planRound    InterviewPlanRound? @relation(fields: [planRoundId], references: [id], onDelete: SetNull)
+  sessions     InterviewSession[]
+  aiSessions   AIInterviewSession[]
+
+  @@index([candidateId, order])
+  @@index([planRoundId])
+}
+
+/// One note on a candidate, with its author. Replaces the single shared
+/// `Candidate.notes` text for new writes; that field stays as "earlier notes".
+model CandidateNote {
+  id          String    @id @default(cuid())
+  candidateId String
+  authorId    String?
+  body        String
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  author      User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([candidateId, createdAt])
 }
 
 model WorkspaceMember {
@@ -876,6 +1510,10 @@ model WorkspaceMember {
   /// `{ "<permission>": boolean }` — true grants, false revokes. null = pure
   /// role defaults. Resolved by src/lib/permissions (resolveEffective).
   permissions Json?
+  /// Last time this member opened a workspace page. Written at most once an
+  /// hour (see src/lib/workspace/members.ts) so page loads stay cheap. Null
+  /// until the member's first visit after the column was added.
+  lastActiveAt DateTime?
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -993,8 +1631,181 @@ model AtsIntegration {
   apiKey        String
   webhookSecret String?
   settings      String    @default("{}")
+  /// sha256 (hex) of the key Greenhouse sends as its Basic auth user name on
+  /// the Assessment Partner endpoints. The key itself is kept encrypted in
+  /// `apiKey` so an admin can copy it again.
+  partnerKeyHash String?  @unique
+  connectedById  String?
   createdAt     DateTime  @default(now())
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+/// "This ATS job gets this screening." For Greenhouse each mapping is one
+/// test in list_tests (partner_test_id = id), so a recruiter picks it on the
+/// job's interview plan in Greenhouse.
+model AtsJobMapping {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  provider      String
+  /// Job name as it reads in the ATS. Also names the candidate batch.
+  jobName       String
+  /// Optional second line, e.g. "Berlin, req 2231".
+  jobDetail     String?
+  /// "ai" (AIScreeningBatch) | "takehome" (TakeHomeTemplate) | "none".
+  screeningKind String    @default("none")
+  screeningId   String?
+  /// "auto" sends the invite at once, "review" waits for a recruiter.
+  sendMode      String    @default("auto")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  requests      AtsTestRequest[]
+
+  @@unique([workspaceId, provider, jobName])
+  @@index([workspaceId])
+}
+
+/// One request from the ATS to screen one candidate for one job. Its id is
+/// the partner_interview_id Greenhouse polls with.
+/// status: waiting (for a recruiter to send) | sent | failed | reported
+model AtsTestRequest {
+  id                    String         @id @default(cuid())
+  workspaceId           String
+  provider              String
+  mappingId             String?
+  candidateId           String
+  externalCandidateId   String?
+  externalApplicationId String?
+  jobName               String?
+  /// Greenhouse's "url" from send_test: we PATCH it once a result is ready.
+  callbackUrl           String?
+  /// "ai" | "takehome", copied from the mapping at request time.
+  screeningKind         String
+  screeningId           String?
+  /// The AIInterviewSession or take-home InterviewSession we sent.
+  sessionId             String?
+  status                String         @default("waiting")
+  sentAt                DateTime?
+  /// When the decided + finished result was reported back.
+  reportedAt            DateTime?
+  reportedDecision      String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  workspace             Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  candidate             Candidate      @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  mapping               AtsJobMapping? @relation(fields: [mappingId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, provider, externalApplicationId, mappingId])
+  @@index([workspaceId, createdAt])
+  @@index([candidateId])
+  @@index([sessionId])
+}
+
+/// The sync log: everything that came in from or went out to the ATS.
+/// direction: "in" | "out". status: imported | linked | waiting | sent |
+/// failed | info
+model AtsSyncEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  provider    String
+  direction   String
+  status      String
+  summary     String
+  detail      String?
+  httpStatus  Int?
+  candidateId String?
+  requestId   String?
+  /// Set on a failed write that a person retried, so it leaves "needs attention".
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([candidateId, createdAt])
+  @@index([requestId])
+}
+
+/// Outbound webhook target. We POST signed JSON here when a subscribed
+/// workspace event happens (see src/lib/events). `secret` is the signing
+/// secret, encrypted at rest like AtsIntegration.apiKey.
+model WebhookEndpoint {
+  id           String            @id @default(cuid())
+  workspaceId  String
+  url          String
+  secret       String
+  /// Subscribed event names, e.g. ["candidate.decided"].
+  events       String[]          @default([])
+  /// False while paused (by a person, or automatically after repeated failures).
+  active       Boolean           @default(true)
+  pausedAt     DateTime?
+  /// "manual" | "failures". Null while active.
+  pausedReason String?
+  /// Consecutive failed delivery attempts. Reset on any success.
+  failureCount Int               @default(0)
+  createdById  String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries   WebhookDelivery[]
+
+  @@index([workspaceId])
+}
+
+/// One event sent (or queued) to one endpoint, with its retry state.
+model WebhookDelivery {
+  id            String          @id @default(cuid())
+  endpointId    String
+  /// Shared by every endpoint that received the same event.
+  eventId       String
+  event         String
+  payload       Json
+  /// pending | sending | succeeded | failed
+  status        String          @default("pending")
+  attempts      Int             @default(0)
+  responseCode  Int?
+  nextAttemptAt DateTime?       @default(now())
+  lastError     String?
+  deliveredAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, createdAt])
+  @@index([status, nextAttemptAt])
+}
+
+/// A Slack or Microsoft Teams destination for short workspace alerts
+/// (see src/lib/alerts). Fed by the same event bus as webhooks. Messages carry
+/// a name, what happened and a link; never answers, transcripts or code.
+model AlertChannel {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  /// "slack" | "teams"
+  provider     String
+  /// "webhook" (pasted incoming webhook or workflow URL) | "oauth" (Slack app install)
+  mode         String    @default("webhook")
+  /// Human label for the destination, e.g. "#hiring-screens".
+  target       String
+  /// Incoming webhook or workflow URL, encrypted at rest.
+  url          String
+  /// Slack bot token from an app install, encrypted at rest. Null in webhook mode.
+  token        String?
+  /// Slack workspace name from an app install.
+  teamName     String?
+  /// Event names that post here, e.g. ["candidate.decided"].
+  events       String[]  @default([])
+  /// Adds the score as a percentage to screening and take home alerts.
+  includeScore Boolean   @default(false)
+  active       Boolean   @default(true)
+  lastSentAt   DateTime?
+  lastError    String?
+  lastErrorAt  DateTime?
+  createdById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 model AIInterviewSession {
@@ -1063,16 +1874,36 @@ model AIInterviewSession {
   /// Used as the authoritative baseline for diffs/grading so re-resolving
   /// templates at grade time can never drift and credit scaffold code.
   starterFilesJson String?
+  /// Unstarted invites close at this time (status becomes "EXPIRED") and stop
+  /// holding credits. Null for invites sent before expiry existed.
+  expiresAt        DateTime?
+  /// When the invite email last went out, and whether it was accepted by the
+  /// mail provider: "SENT" | "FAILED" | "SKIPPED" (no provider configured).
+  inviteSentAt      DateTime?
+  inviteEmailStatus String?
+  inviteEmailError  String?
+  /// Reminder email for unstarted invites; sent at most once automatically.
+  reminderSentAt    DateTime?
+  /// When the candidate ticked the consent box (Candidate experience). Null
+  /// when consent was not asked for or not yet given.
+  consentAt              DateTime?
+  /// The candidate's interview round this AI interview belongs to.
+  candidateRoundId String?
+  candidateRound   CandidateRound?           @relation(fields: [candidateRoundId], references: [id], onDelete: SetNull)
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   batch            AIScreeningBatch?         @relation(fields: [batchId], references: [id], onDelete: SetNull)
   rounds           AIInterviewRound[]
+  audioClips       AIInterviewAudio[]
+  shareLinks       AIReportShareLink[]
 
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@index([candidateId])
   @@index([batchId])
+  @@index([status, expiresAt])
+  @@index([candidateRoundId])
 }
 
 /// Revamp (2026-06): a screening campaign grouping multiple candidates under
@@ -1090,6 +1921,14 @@ model AIScreeningBatch {
   /// Live presence the recruiter chose for this screening: "REACTIVE" |
   /// "OBSERVER" | "COACH". Copied onto each session at invite; sets credit cost.
   engagementLevel String   @default("REACTIVE")
+  /// Invite settings chosen in New screening. Null on batches created before
+  /// these settings existed (no expiry, no automatic reminder).
+  expiresAfterDays  Int?
+  reminderAfterDays Int?
+  /// Score (0-100) a candidate needs to clear this screening. Null = the
+  /// default bar (SCREENING_PASS_THRESHOLD, 60). Only labels results: passing
+  /// is always a recruiter's decision.
+  passMark          Int?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   workspace       Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1108,7 +1947,7 @@ model AIScreeningRoundSpec {
   batchId          String
   /// 0-based round order within the batch.
   order            Int
-  /// "frontend" | "backend" | "dsa".
+  /// "frontend" | "backend" | "dsa" | "conversation" | "theory".
   paradigm         String
   /// Execution language for backend/dsa (e.g. "node", "python"). Null for frontend.
   language         String?
@@ -1122,6 +1961,9 @@ model AIScreeningRoundSpec {
   /// AIInterviewTemplate id when sourceKind is "scaffold" (per-round override).
   templateId       String?
   estimatedMinutes Int     @default(30)
+  /// Theory rounds only: the recruiter's settings (question count, time per
+  /// question, follow-ups, answer mode) as JSON. See lib/ai-interview/theory.ts.
+  theoryJson       String?
   batch            AIScreeningBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([batchId, order])
@@ -1134,6 +1976,65 @@ model AIScreeningRoundSpec {
 /// revamp default), so `chatHistory` here is reserved/nullable for a future
 /// per-round-reset option. Credit is still charged once per SESSION (on the
 /// first message of the first round), not per round.
+/// A recording of one spoken theory answer, kept only when the recruiter
+/// turned on replay for the round. Removed with its session.
+model AIInterviewAudio {
+  id        String   @id @default(cuid())
+  sessionId String
+  roundId   String
+  /// 0-based question position in the round.
+  question  Int
+  /// 0 for the main answer, n for the nth follow-up.
+  followUp  Int      @default(0)
+  /// Clip order within one answer (the mic can be paused and resumed).
+  seq       Int      @default(0)
+  mime      String
+  /// Legacy clips kept in the database. New clips live in R2 (storageKey).
+  bytes     Bytes?
+  /// Object key in the recordings bucket. Null for legacy database clips.
+  storageKey String?
+  seconds   Int      @default(0)
+  createdAt DateTime @default(now())
+  /// When the clip is deleted (7 days after it was kept). Null = legacy.
+  expiresAt DateTime?
+  session   AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([roundId, question])
+  @@index([sessionId])
+  @@index([expiresAt])
+}
+
+/// A recording of a live interview video call, made by LiveKit egress and
+/// stored in the R2 recordings bucket. Deleted 7 days after it was made.
+model InterviewRecording {
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  interviewSessionId String
+  /// LiveKit egress id while recording and processing.
+  egressId           String?   @unique
+  /// Object key in the recordings bucket.
+  storageKey         String
+  /// recording | processing | ready | failed | deleted
+  status             String    @default("recording")
+  mime               String    @default("video/mp4")
+  sizeBytes          BigInt?
+  seconds            Int?
+  startedById        String?
+  startedAt          DateTime  @default(now())
+  endedAt            DateTime?
+  expiresAt          DateTime
+  deletedAt          DateTime?
+  /// AI credits charged for this recording (1 per started hour).
+  creditsCharged     Int       @default(0)
+  error              String?
+  workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  interviewSession   InterviewSession @relation(fields: [interviewSessionId], references: [id], onDelete: Cascade)
+
+  @@index([interviewSessionId])
+  @@index([workspaceId, startedAt])
+  @@index([status, expiresAt])
+}
+
 model AIInterviewRound {
   id               String  @id @default(cuid())
   sessionId        String
@@ -1158,8 +2059,18 @@ model AIInterviewRound {
   /// score aggregates these.
   score            Int?
   ratings          String?
+  /// Theory rounds only: settings plus the questions drawn for this candidate
+  /// at invite (with reference answers). Server-only, never sent to the candidate.
+  theoryJson       String?
+  /// Theory rounds only: the candidate's answer to each question, follow-ups,
+  /// integrity counts and, after grading, the grade for each question.
+  answersJson      String?
   /// "PENDING" | "ACTIVE" | "COMPLETED".
   status           String  @default("PENDING")
+  /// Last test run of the candidate's final code, from the report's Tests
+  /// pane: JSON `{ passed, total, compileError, stderr, tests: [{ name, status, error }] }`.
+  testResultsJson  String?
+  testsRunAt       DateTime?
   startedAt        DateTime?
   finishedAt       DateTime?
   createdAt        DateTime @default(now())
@@ -1167,6 +2078,58 @@ model AIInterviewRound {
   session          AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId, order])
+}
+
+/// A read-only link to one AI screening report, for a hiring manager who is
+/// not in the workspace. The URL carries a signed token naming this row and
+/// its expiry; revoking sets revokedAt, which the page checks on every view.
+/// The shared page never shows reference answers or team notes.
+model AIReportShareLink {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  sessionId       String
+  createdByUserId String
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  viewCount       Int                @default(0)
+  lastViewedAt    DateTime?
+  createdAt       DateTime           @default(now())
+  session         AIInterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([workspaceId])
+}
+
+/// A workspace-private rewrite of a public question, so candidates cannot look
+/// the answer up. Made by AI from a bank question (PrepQuestion) or a public
+/// coding challenge. Coding variants also get their own private Challenge row
+/// (challengeId); bank variants are used by adding them to a questionnaire.
+model QuestionVariant {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  /// "bank" (PrepQuestion) | "challenge" (Challenge).
+  originKind       String
+  /// Id of the public question the variant was made from.
+  originQuestionId String
+  title            String
+  /// The rewritten question (bank) or challenge description (challenge).
+  prompt           String
+  /// Regenerated reference answer: markdown for bank questions, the reference
+  /// solution for coding variants. Never shown to candidates.
+  answer           String?
+  /// The private Challenge made for a coding variant.
+  challengeId      String?   @unique
+  /// "passed" when its tests ran and all passed before saving, "none" when the
+  /// question has no tests to run.
+  checkStatus      String    @default("none")
+  testsPassed      Int?
+  testsTotal       Int?
+  createdByUserId  String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, originKind, originQuestionId])
 }
 
 /// Workspace-scoped custom screening templates. The default `scaffolds.ts`
@@ -1233,6 +2196,9 @@ model McpApiKey {
   createdByUserId String?
   lastUsedAt      DateTime?
   revokedAt       DateTime?
+  /// Optional expiry. Null means the key never expires. The MCP endpoint
+  /// refuses a key once this time has passed.
+  expiresAt       DateTime?
   createdAt       DateTime      @default(now())
   workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   auditLogs       McpAuditLog[]
@@ -2195,4 +3161,49 @@ model AgentConfig {
   updatedAt       DateTime  @updatedAt
 
   @@index([workspaceId, role])
+}
+
+/// A member's Google or Microsoft calendar, connected per workspace. Used for
+/// free and busy times in the interview wizard and for creating the interview
+/// event on the organiser's calendar. Tokens are encrypted at rest
+/// (src/lib/crypto/at-rest.ts). One connection per member per workspace.
+model CalendarConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  workspaceId     String
+  /// "google" | "microsoft"
+  provider        String
+  /// The calendar account's address, which may differ from the login email.
+  email           String
+  accessTokenEnc  String
+  refreshTokenEnc String?
+  expiresAt       DateTime?
+  /// Space-separated scopes granted.
+  scopes          String    @default("")
+  /// "active" | "expired" (refresh failed, needs reconnecting)
+  status          String    @default("active")
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  events          InterviewCalendarEvent[]
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+/// The calendar event created for a live interview on the organiser's
+/// calendar, so it can be moved or cancelled when the interview changes.
+model InterviewCalendarEvent {
+  id           String             @id @default(cuid())
+  sessionId    String             @unique
+  connectionId String
+  externalId   String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  session      InterviewSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([connectionId])
 }

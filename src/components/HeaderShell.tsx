@@ -9,6 +9,9 @@ function HeaderShellInner({ children }: { children: ReactNode }) {
   if (pathname?.startsWith("/embed")) return null;
   if (pathname?.startsWith("/ai-interview")) return null;
   if (params?.get("view") === "preview") return null;
+  // The recruiter workspace (/w hub and /w/<slug>/...) draws its own app bar
+  // with the workspace switcher; /w/create keeps the site header.
+  if (pathname === "/w" || (pathname?.startsWith("/w/") && pathname !== "/w/create")) return null;
   // Full-screen coding IDE — the playground manages its own chrome (with an
   // exit button back to /playgrounds). Exact /play or /play/* only: the
   // /playgrounds browser keeps the global nav.

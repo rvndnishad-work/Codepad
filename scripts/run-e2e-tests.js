@@ -63,6 +63,68 @@ async function run() {
       },
     });
 
+    // Seed grading fixture: a tiny python harness challenge whose starter
+    // already passes, so the e2e grading spec exercises the judge pipeline
+    // (grade route -> Piston) without Monaco typing.
+    await prisma.challenge.deleteMany({ where: { slug: "e2e-harness-add" } });
+    await prisma.challenge.create({
+      data: {
+        slug: "e2e-harness-add",
+        title: "E2E Add",
+        description: "Add two integers.",
+        difficulty: "easy",
+        template: "python",
+        starterFiles: "{}",
+        testFiles: "{}",
+        published: true,
+        visibility: "public",
+        steps: {
+          create: [
+            {
+              position: 0,
+              description: "Implement `add(a, b)`.",
+              template: "python",
+              starterFiles: "{}",
+              testFiles: "{}",
+              judgingMode: "harness",
+              functionName: "add",
+              signatureJson: JSON.stringify({
+                params: [
+                  { name: "a", type: "int" },
+                  { name: "b", type: "int" },
+                ],
+                returnType: "int",
+              }),
+              languagesJson: JSON.stringify(["python"]),
+              starterCodeJson: JSON.stringify({
+                python: "def add(a, b):\n    return a + b\n",
+              }),
+              harnessTestsJson: JSON.stringify([
+                {
+                  id: "t1",
+                  name: "adds positives",
+                  argsJson: "[1, 2]",
+                  expectedJson: "3",
+                  isHidden: false,
+                  weight: 1,
+                  compare: "exact",
+                },
+                {
+                  id: "t2",
+                  name: "adds negatives",
+                  argsJson: "[-1, -2]",
+                  expectedJson: "-3",
+                  isHidden: true,
+                  weight: 1,
+                  compare: "exact",
+                },
+              ]),
+            },
+          ],
+        },
+      },
+    });
+
     await prisma.$disconnect();
     console.log("[E2E Runner] Database prepared and seeded successfully.\n");
   } catch (error) {

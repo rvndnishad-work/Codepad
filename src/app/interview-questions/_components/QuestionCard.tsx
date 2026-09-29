@@ -166,6 +166,17 @@ const CARD_THEMES: Record<string, CardTheme> = {
     tag: "bg-sky-500/10 text-sky-800 dark:text-sky-400 border-sky-500/20",
     tile: "bg-sky-500/10 border-sky-500/20 group-hover:border-sky-500/40",
   },
+  "javascript-coding": {
+    bg: "bg-gradient-to-br from-amber-500/[0.04] to-surface/40 dark:from-amber-500/[0.02] dark:to-surface/5",
+    border: "border-amber-500/20 dark:border-amber-500/15",
+    leftBorder: "border-l-amber-500",
+    hoverBg: "hover:from-amber-500/[0.08] dark:hover:from-amber-500/[0.05]",
+    hoverBorder: "hover:border-amber-500/40 dark:hover:border-amber-500/30",
+    hoverShadow: "hover:shadow-[0_8px_30px_rgba(245,158,11,0.08)]",
+    textAccent: "group-hover:text-amber-600 dark:group-hover:text-amber-400",
+    tag: "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20",
+    tile: "bg-amber-500/10 border-amber-500/20 group-hover:border-amber-500/40",
+  },
   "machine-coding": {
     bg: "bg-gradient-to-br from-indigo-500/[0.04] to-surface/40 dark:from-indigo-500/[0.02] dark:to-surface/5",
     border: "border-indigo-500/20 dark:border-indigo-500/15",

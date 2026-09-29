@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSandpack } from "@codesandbox/sandpack-react";
 import { toast } from "sonner";
+import { parseDepInput } from "@/lib/npm-dep";
 
 export function useNpmSearch(packageJsonPath: string, initialShowDeps = false) {
   const { sandpack } = useSandpack();
@@ -42,29 +43,6 @@ export function useNpmSearch(packageJsonPath: string, initialShowDeps = false) {
     }
     const next = mutator(parsed);
     sandpack.updateFile(packageJsonPath, JSON.stringify(next, null, 2) + "\n");
-  }
-
-  /**
-   * `hasVersion` distinguishes "user typed an explicit version" from "we
-   * defaulted to latest". Callers need that difference: an explicitly typed
-   * version is an instruction and must not be silently overridden by an
-   * autocomplete suggestion.
-   */
-  function parseDepInput(
-    input: string
-  ): { name: string; version: string; hasVersion: boolean } | null {
-    const trimmed = input.trim();
-    if (!trimmed) return null;
-    const scoped = trimmed.startsWith("@");
-    const sep = scoped ? trimmed.indexOf("@", 1) : trimmed.indexOf("@");
-    if (sep === -1) return { name: trimmed, version: "latest", hasVersion: false };
-    const name = trimmed.slice(0, sep);
-    const version = trimmed.slice(sep + 1).trim();
-    if (!name) return null;
-    // "axios@" is a bare name with a stray separator, not an explicit version.
-    return version
-      ? { name, version, hasVersion: true }
-      : { name, version: "latest", hasVersion: false };
   }
 
   function addDep(name: string, version: string) {

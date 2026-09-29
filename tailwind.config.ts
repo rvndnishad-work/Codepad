@@ -34,6 +34,10 @@ const config: Config = {
           soft: "rgb(var(--c-accent-soft) / <alpha-value>)",
           glow: "var(--accent-glow)",
           ink: "var(--accent-ink)",
+          /* Expressive accents for marketing surfaces (`bg-accent-3`,
+             `text-accent-4`); see globals.css. */
+          3: "rgb(var(--c-accent-3) / <alpha-value>)",
+          4: "rgb(var(--c-accent-4) / <alpha-value>)",
         },
         secondary: {
           DEFAULT: "rgb(var(--c-accent-2) / <alpha-value>)",
@@ -46,7 +50,11 @@ const config: Config = {
            legible on the dark ground only. */
         success: "rgb(var(--c-success) / <alpha-value>)",
         warning: "rgb(var(--c-warning) / <alpha-value>)",
-        danger: "rgb(var(--c-danger) / <alpha-value>)",
+        danger: {
+          DEFAULT: "rgb(var(--c-danger) / <alpha-value>)",
+          /* Solid fill under white text: hang up and End interview. */
+          solid: "rgb(var(--c-danger-solid) / <alpha-value>)",
+        },
         /* Ink is the structural primary (see globals.css "Runtime" notes):
            near-black on paper, paper on near-black. `ink-fg` is the only
            colour that belongs on top of it. */
@@ -62,7 +70,7 @@ const config: Config = {
       fontFamily: {
         sans: [
           "var(--font-sans)",
-          "Inter",
+          "Geist",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",

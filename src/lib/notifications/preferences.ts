@@ -37,6 +37,7 @@ export const DEFAULTS: Record<string, DefaultFlags> = {
   [NOTIFICATION_TYPES.TAKE_HOME_EXPIRING]: { inApp: true, email: true },
   [NOTIFICATION_TYPES.TAKE_HOME_SUBMITTED]: { inApp: true, email: true },
   [NOTIFICATION_TYPES.SCORECARD_REQUESTED]: { inApp: true, email: true },
+  [NOTIFICATION_TYPES.INTERVIEW_QUESTIONS_REQUESTED]: { inApp: true, email: false },
   [NOTIFICATION_TYPES.PROMPT_UPVOTED]: { inApp: true, email: false },
   [NOTIFICATION_TYPES.AI_CREDITS_LOW]: { inApp: true, email: true },
   [NOTIFICATION_TYPES.SECURITY_2FA_ENABLED]: { inApp: true, email: true },

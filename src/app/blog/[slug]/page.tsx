@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
@@ -244,8 +245,7 @@ export default async function BlogPostPage({
 
   const minutes = readingMinutes(blog.content);
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = siteOrigin();
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",

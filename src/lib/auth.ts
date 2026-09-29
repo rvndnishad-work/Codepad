@@ -263,6 +263,10 @@ export const {
       // Steady-state reads do zero DB work.
       if (user?.id) {
         token.uid = user.id;
+        // When this sign-in started. Workspaces with a sign-in length or a
+        // "sign out everyone" check it (Settings > Security). Only set here,
+        // never on update(), so a client cannot refresh its own sign-in.
+        token.signedInAt = Date.now();
         const dbUser = await prisma.user.findUnique({
           where: { id: user.id },
           select: { userType: true },
@@ -281,6 +285,7 @@ export const {
       if (session.user) {
         if (token?.uid) session.user.id = token.uid as string;
         else if (user?.id) session.user.id = user.id;
+        session.signedInAt = typeof token?.signedInAt === "number" ? token.signedInAt : null;
         // Expose userType so client + server components can branch on it
         (session.user as { userType?: string | null }).userType =
           (token?.userType as string | null | undefined) ?? null;

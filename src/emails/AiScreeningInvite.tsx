@@ -5,38 +5,71 @@
 import { Button, Text } from "@react-email/components";
 import * as React from "react";
 import { BaseLayout, emailStyles } from "./BaseLayout";
+import { BrandHeader, CandidateFooterLines, CustomIntro, candidateFooterText, ctaStyle, type CandidateEmailExtras } from "./candidate-brand";
 
 export type AiScreeningInviteProps = {
   candidateName: string;
   positionTitle: string;
   workspaceName: string;
   inviteUrl: string;
-};
+  /** Sent as a reminder for an invite the candidate has not started. */
+  reminder?: boolean;
+  /** When the invite closes, as an ISO string. Omitted when it never expires. */
+  expiresAt?: string | null;
+  /** Total planned minutes across the rounds. */
+  minutes?: number | null;
+} & CandidateEmailExtras;
+
+function closesOn(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+}
 
 export function AiScreeningInvite({
   candidateName,
   positionTitle,
   workspaceName,
   inviteUrl,
+  reminder,
+  expiresAt,
+  minutes,
+  brand,
+  custom,
+  unsubscribeUrl,
 }: AiScreeningInviteProps) {
+  const closes = closesOn(expiresAt);
+  const plan = minutes && minutes > 0 ? minutes : 30;
   return (
     <BaseLayout
-      preview={`Your AI screening invite from ${workspaceName}`}
+      preview={reminder ? `Reminder: your screening from ${workspaceName} is waiting` : `Your AI screening invite from ${workspaceName}`}
       footer={`This invitation was sent on behalf of ${workspaceName}. If you didn't expect it, you can safely ignore this email.`}
+      header={<BrandHeader brand={brand} />}
+      footerExtra={<CandidateFooterLines brand={brand} unsubscribeUrl={unsubscribeUrl} />}
     >
-      <Text style={emailStyles.badge("#a78bfa")}>AI Screening Invitation</Text>
-      <Text style={emailStyles.h1}>
-        Hi {candidateName} — you&apos;re invited to a technical screening.
-      </Text>
+      <Text style={emailStyles.badge("#a78bfa")}>{reminder ? "Reminder" : "AI Screening Invitation"}</Text>
+      {custom?.paragraphs ? (
+        <CustomIntro paragraphs={custom.paragraphs} />
+      ) : (
+        <>
+          <Text style={emailStyles.h1}>
+            {reminder
+              ? `Hi ${candidateName}, your technical screening is still waiting.`
+              : `Hi ${candidateName}, you are invited to a technical screening.`}
+          </Text>
+          <Text style={emailStyles.body}>
+            {workspaceName} has set up an automated screening for the{" "}
+            <span style={emailStyles.emphasis}>{positionTitle}</span> role. An AI
+            interviewer will guide you through a short coding exercise in your browser.
+          </Text>
+        </>
+      )}
       <Text style={emailStyles.body}>
-        {workspaceName} has set up an automated screening for the{" "}
-        <span style={emailStyles.emphasis}>{positionTitle}</span> role. An AI
-        interviewer will guide you through a short coding exercise in your browser.
+        No prior setup required. Plan around {plan} minutes of focused time.
+        {closes ? ` The link closes on ${closes}.` : ""}
       </Text>
-      <Text style={emailStyles.body}>
-        No prior setup required. Plan around 30 minutes of focused time.
-      </Text>
-      <Button href={inviteUrl} style={emailStyles.cta}>
+      <Button href={inviteUrl} style={ctaStyle(brand)}>
         Start your screening →
       </Button>
       <Text style={emailStyles.linkFallback}>
@@ -52,14 +85,24 @@ export function AiScreeningInvite({
 
 /** Plain-text fallback (Resend's text/plain alternative). */
 export function aiScreeningInviteText(p: AiScreeningInviteProps): string {
+  const closes = closesOn(p.expiresAt);
+  const plan = p.minutes && p.minutes > 0 ? p.minutes : 30;
   return [
-    `Hi ${p.candidateName},`,
-    "",
-    `${p.workspaceName} has invited you to an automated AI technical screening for the ${p.positionTitle} role.`,
+    ...(p.custom?.paragraphs
+      ? p.custom.paragraphs.flatMap((x, i, all) => (i < all.length - 1 ? [x, ""] : [x]))
+      : [
+          `Hi ${p.candidateName},`,
+          "",
+          p.reminder
+            ? `A reminder that ${p.workspaceName} invited you to an automated AI technical screening for the ${p.positionTitle} role, and it has not been started yet.`
+            : `${p.workspaceName} has invited you to an automated AI technical screening for the ${p.positionTitle} role.`,
+        ]),
     "",
     "Start your screening here:",
     p.inviteUrl,
     "",
-    "Plan around 30 minutes of focused time. No prior setup required.",
+    `Plan around ${plan} minutes of focused time. No prior setup required.`,
+    ...(closes ? [`The link closes on ${closes}.`] : []),
+    ...candidateFooterText(p),
   ].join("\n");
 }

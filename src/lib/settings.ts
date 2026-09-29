@@ -16,6 +16,7 @@ import {
 
 import { auth } from "./auth";
 import { staffCan } from "./permissions/staff";
+import { sanitizeAssistSettings } from "./playground-assist";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -186,6 +187,46 @@ export async function updateInterviewArenaSettings(config: InterviewArenaSetting
     where: { key: "interview_arena_settings" },
     update: { value: JSON.stringify(config) },
     create: { key: "interview_arena_settings", value: JSON.stringify(config) },
+  });
+}
+
+export type PlaygroundAssistSettings = {
+  enabled: boolean;
+  dailyLimit: number;
+};
+
+const DEFAULT_PLAYGROUND_ASSIST_SETTINGS: PlaygroundAssistSettings = {
+  enabled: true,
+  dailyLimit: 5,
+};
+
+/** Playground AI Assist kill switch + daily free-message quota (admin UI). */
+export async function getPlaygroundAssistSettings(): Promise<PlaygroundAssistSettings> {
+  try {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "playground_assist_settings" },
+    });
+    if (!setting) return DEFAULT_PLAYGROUND_ASSIST_SETTINGS;
+    return sanitizeAssistSettings(JSON.parse(setting.value));
+  } catch (error) {
+    console.error("Failed to fetch playground assist settings:", error);
+    return DEFAULT_PLAYGROUND_ASSIST_SETTINGS;
+  }
+}
+
+/** Update the assist kill switch / quota. Admin-only; values are sanitized. */
+export async function updatePlaygroundAssistSettings(
+  config: PlaygroundAssistSettings,
+) {
+  const session = await auth().catch(() => null);
+  if (!(await staffCan(session, "platform:admin"))) {
+    throw new Error("Unauthorized: Platform administrator access required.");
+  }
+  const clean = sanitizeAssistSettings(config);
+  return prisma.siteSetting.upsert({
+    where: { key: "playground_assist_settings" },
+    update: { value: JSON.stringify(clean) },
+    create: { key: "playground_assist_settings", value: JSON.stringify(clean) },
   });
 }
 

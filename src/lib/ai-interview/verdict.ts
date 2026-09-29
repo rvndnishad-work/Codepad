@@ -21,8 +21,32 @@ export type ScreeningVerdict = {
   className: string;
 };
 
-/** Score at/above this clears the hiring bar. */
+/** Default bar: a score at or above this clears it. Each screening can set its own. */
 export const SCREENING_PASS_THRESHOLD = 60;
+
+/** The range a recruiter can set a screening's pass mark to. */
+export const PASS_MARK_MIN = 30;
+export const PASS_MARK_MAX = 95;
+
+/** A screening's pass mark: its own setting, or the default when unset or unreadable. */
+export function passMarkOf(value: number | null | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return SCREENING_PASS_THRESHOLD;
+  return Math.max(PASS_MARK_MIN, Math.min(PASS_MARK_MAX, Math.round(value)));
+}
+
+/** Score bands around a bar: strong from 80 (or the bar, if higher), borderline within 20 below it. */
+export function verdictBands(bar?: number | null) {
+  const b = passMarkOf(bar);
+  return { bar: b, strong: Math.max(80, b), borderline: Math.max(0, b - 20) };
+}
+
+/**
+ * What a bar means for a questionnaire: how many of `questions` must be fully
+ * right (5 of 5) to reach it when the rest earn nothing.
+ */
+export function fullyRightNeeded(bar: number, questions: number): number {
+  return Math.ceil((passMarkOf(bar) / 100) * Math.max(1, questions));
+}
 
 const VERDICTS: Record<VerdictTier, Omit<ScreeningVerdict, "tier">> = {
   STRONG_FIT: {
@@ -52,13 +76,15 @@ const VERDICTS: Record<VerdictTier, Omit<ScreeningVerdict, "tier">> = {
 };
 
 /**
- * Map a composite screening score (0-100) to a verdict.
+ * Map a composite screening score (0-100) to a verdict against the
+ * screening's pass mark (default 60).
  * Returns null for ungraded sessions (null/undefined score).
  */
-export function getScreeningVerdict(score: number | null | undefined): ScreeningVerdict | null {
+export function getScreeningVerdict(score: number | null | undefined, passMark?: number | null): ScreeningVerdict | null {
   if (typeof score !== "number" || Number.isNaN(score)) return null;
   const clamped = Math.max(0, Math.min(100, Math.round(score)));
+  const b = verdictBands(passMark);
   const tier: VerdictTier =
-    clamped >= 80 ? "STRONG_FIT" : clamped >= 60 ? "GOOD_FIT" : clamped >= 40 ? "BORDERLINE" : "NOT_A_FIT";
+    clamped >= b.strong ? "STRONG_FIT" : clamped >= b.bar ? "GOOD_FIT" : clamped >= b.borderline ? "BORDERLINE" : "NOT_A_FIT";
   return { tier, ...VERDICTS[tier] };
 }

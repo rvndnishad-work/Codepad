@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isInterviewerFor } from "@/lib/interview/wizard";
 
 const updateSchema = z.object({
   challengeId: z.string().min(1),
@@ -19,14 +20,14 @@ export async function PATCH(
 
   const interview = await prisma.interviewSession.findUnique({
     where: { id },
-    select: { userId: true, shareToken: true },
+    select: { userId: true, panelJson: true, shareToken: true },
   });
 
   if (!interview) {
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const isOwner = !!session?.user?.id && interview.userId === session.user.id;
+  const isOwner = isInterviewerFor(interview, session?.user?.id);
   const hasShareToken = !!token && token === interview.shareToken;
 
   if (!isOwner && !hasShareToken) {

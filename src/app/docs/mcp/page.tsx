@@ -1,5 +1,5 @@
+import { appOrigin } from "@/lib/interview/links";
 import Link from "next/link";
-import { headers } from "next/headers";
 import {
   KeyRound,
   Terminal,
@@ -16,7 +16,7 @@ import {
   MCP_PUBLIC_TOOLS,
   type ToolCatalogEntry,
 } from "@/lib/mcp/catalog";
-import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credits";
+import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import CopyButton from "./CopyButton";
 
 export const metadata = {
@@ -26,19 +26,11 @@ export const metadata = {
 };
 
 async function resolveOrigin(): Promise<string> {
-  try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") ?? h.get("host");
-    const proto = h.get("x-forwarded-proto") ?? "https";
-    if (host) return `${proto}://${host}`;
-  } catch {
-    /* ignore */
-  }
-  return process.env.NEXTAUTH_URL || "https://interviewpad.in";
+  return appOrigin();
 }
 
 export default async function McpDocsPage() {
-  const origin = await resolveOrigin();
+  const [origin, pricing] = await Promise.all([resolveOrigin(), getEffectivePricing()]);
   const url = `${origin}/api/mcp`;
   const publicUrl = `${origin}/api/mcp/public`;
 
@@ -280,7 +272,7 @@ export default async function McpDocsPage() {
             Starter workspaces can browse this page but can&apos;t mint keys.
           </p>
           <p className="text-sm text-muted leading-relaxed">
-            Credits: {AI_CREDIT_PACKS.map((p) => `${p.credits} for $${p.priceCents / 100}`).join(" · ")}.{" "}
+            Credits: {pricing.packs.map((p) => `${p.credits} for $${p.priceCents / 100}`).join(" · ")}.{" "}
             <Link href="/pricing" className="text-accent underline underline-offset-2">
               See plans
             </Link>{" "}

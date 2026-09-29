@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play, RotateCcw, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, Database, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
 import CodeMirrorEditor from "./CodeMirrorEditor";
+import { LANG_COLOR, badge, frame, frameBar, frameLabel, iconBtn, runBtn } from "./_components/codeFrame";
 
 type SqlPlaygroundProps = {
   code: string;
@@ -75,7 +76,7 @@ export default function SqlPlayground({ code, label, title, description }: SqlPl
         setError(null);
       } catch (err: any) {
         console.error("SQL initialization error:", err);
-        setError("Failed to initialize SQLite WASM environment.");
+        setError("The SQL runner could not load. Check your connection and reload the page.");
       } finally {
         setLoading(false);
       }
@@ -126,106 +127,98 @@ export default function SqlPlayground({ code, label, title, description }: SqlPl
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden shadow-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-3.5 py-2 border-b border-border bg-bg/40">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-md bg-sky-500/15 text-sky-500 border border-sky-500/20">
-            <span className="w-1.5 h-1.5 rounded-sm bg-sky-500" /> SQL
+    <div className={frame}>
+      <div className={frameBar}>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className={badge}>
+            <span className="h-2 w-2 rounded-full" style={{ background: LANG_COLOR.sql }} aria-hidden /> SQL
           </span>
-          {label && <span className="text-xs font-bold text-muted truncate">{label}</span>}
+          {label && <span className={frameLabel}>{label}</span>}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={handleReset}
-            className="p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition"
-            title="Reset query"
-          >
-            <span className="sr-only">Reset</span>
-            <RotateCcw className="w-3.5 h-3.5" />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button type="button" onClick={handleReset} className={iconBtn} title="Reset query" aria-label="Reset query">
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
           </button>
-          <button
-            onClick={handleRun}
-            disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-60 shadow-sm"
-          >
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 fill-current" />}
-            Run Query
+          <button type="button" onClick={handleRun} disabled={loading} className={runBtn}>
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Play className="h-3.5 w-3.5 fill-current" aria-hidden />}
+            Run query
           </button>
         </div>
       </div>
 
-      {/* Schema Reference Panel */}
       {schemaText && (
-        <div className="border-b border-border bg-bg/25">
+        <div className="border-b border-border">
           <button
+            type="button"
             onClick={() => setShowSchema(!showSchema)}
-            className="flex items-center justify-between w-full px-4 py-2.5 text-left text-xs font-bold text-muted hover:text-fg hover:bg-elevated/40 transition"
+            aria-expanded={showSchema}
+            className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[13px] text-muted transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent motion-reduce:transition-none"
           >
-            <span className="flex items-center gap-1.5 uppercase tracking-wider text-[10px] font-black">
-              📊 Database Schema Reference
+            <span className="flex items-center gap-2 font-medium">
+              <Database className="h-4 w-4 text-subtle" aria-hidden /> Tables for this question
             </span>
-            <span className="text-[10px] text-accent font-black uppercase">
-              {showSchema ? "Hide Schema" : "Show Schema"}
-            </span>
+            <ChevronDown className={`h-4 w-4 text-subtle transition-transform motion-reduce:transition-none ${showSchema ? "rotate-180" : ""}`} aria-hidden />
           </button>
           {showSchema && (
-            <div className="p-4 border-t border-border bg-bg/10 max-h-48 overflow-y-auto font-mono text-[11px] text-muted whitespace-pre-wrap leading-relaxed">
+            <pre className="qa-code-scroll m-0 max-h-56 overflow-auto border-t border-border bg-bg/40 px-4 py-3 font-mono text-[12.5px] leading-relaxed text-muted">
               {schemaText}
-            </div>
+            </pre>
           )}
         </div>
       )}
 
-      {/* Editor */}
       <div>
         <CodeMirrorEditor value={query} onChange={setQuery} technology="sql" />
       </div>
 
-      {/* Results output */}
       {(results !== null || error !== null || loading) && (
-        <div className="border-t border-border bg-bg/60 p-4 max-h-80 overflow-auto">
+        <div className="qa-code-scroll max-h-80 overflow-auto border-t border-border bg-bg/50 p-4" aria-live="polite">
           {loading ? (
-            <div className="text-muted flex items-center gap-1.5 font-mono text-xs">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> executing query…
-            </div>
+            <p className="flex items-center gap-2 text-[13px] text-subtle">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Running the query…
+            </p>
           ) : error ? (
-            <div className="text-rose-600 dark:text-rose-400 font-mono text-xs whitespace-pre-wrap">
-              Error: {error}
-            </div>
+            <p className="flex items-start gap-2 whitespace-pre-wrap font-mono text-[12.5px] text-danger">
+              <XCircle className="mt-px h-4 w-4 shrink-0" aria-hidden /> {error}
+            </p>
           ) : results && results.length > 0 ? (
             <div className="space-y-4">
               {results.map((res, i) => (
-                <div key={i} className="overflow-x-auto rounded-xl border border-border bg-surface/50">
-                  <table className="w-full text-left font-mono text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-bg/85 border-b border-border">
-                        {res.columns.map((col) => (
-                          <th key={col} className="p-2 font-black uppercase text-muted tracking-wider border-r border-border/40 last:border-0">
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {res.values.map((row, rowIdx) => (
-                        <tr key={rowIdx} className="border-b border-border/40 last:border-0 hover:bg-bg/20">
-                          {row.map((val, colIdx) => (
-                            <td key={colIdx} className="p-2 border-r border-border/40 last:border-0 whitespace-nowrap text-fg/90">
-                              {val === null ? <span className="text-muted/50 italic">NULL</span> : String(val)}
-                            </td>
+                <div key={i}>
+                  <p className="mb-2 text-xs text-subtle">
+                    <span className="tabular-nums">{res.values.length}</span> {res.values.length === 1 ? "row" : "rows"}
+                  </p>
+                  <div className="qa-code-scroll overflow-x-auto rounded-xl border border-border bg-surface">
+                    <table className="w-full border-collapse text-left font-mono text-[12.5px]">
+                      <thead>
+                        <tr className="border-b border-border bg-panel">
+                          {res.columns.map((col) => (
+                            <th key={col} scope="col" className="whitespace-nowrap px-3 py-2 font-medium text-muted">
+                              {col}
+                            </th>
                           ))}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {res.values.map((row, rowIdx) => (
+                          <tr key={rowIdx} className="border-b border-border last:border-0 hover:bg-panel/60">
+                            {row.map((val, colIdx) => (
+                              <td key={colIdx} className="whitespace-nowrap px-3 py-2 text-fg/90 tabular-nums">
+                                {val === null ? <span className="italic text-subtle">NULL</span> : String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-emerald-600 dark:text-emerald-400 font-mono text-xs">
-              Query executed successfully. (No rows returned / 0 rows affected)
-            </div>
+            <p className="flex items-center gap-2 text-[13px] text-success">
+              <CheckCircle2 className="h-4 w-4" aria-hidden /> The query ran. It returned no rows.
+            </p>
           )}
         </div>
       )}

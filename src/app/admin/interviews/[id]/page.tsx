@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -95,7 +96,7 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
   }
 
   const statusClass = STATUS_COLOR[session.status] ?? STATUS_COLOR.abandoned;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = siteOrigin();
   const shareUrl = `${siteUrl}/interview/${session.id}?token=${session.shareToken}`;
 
   return (

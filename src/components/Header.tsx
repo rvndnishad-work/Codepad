@@ -11,6 +11,7 @@ import NavDropdown from "./NavDropdown";
 import NavChrome from "./NavChrome";
 import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
+import NavGlide from "./NavGlide";
 import NotificationBell from "./NotificationBell";
 
 export default async function Header() {
@@ -247,6 +248,7 @@ export default async function Header() {
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">
+            <NavGlide>
             {(devsMenuStatus !== "hidden" || showAdmin) &&
               (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
@@ -284,7 +286,7 @@ export default async function Header() {
                 }
               />
             )}
-
+            </NavGlide>
           </nav>
 
           {/* Utility island — divider + buttons flip with the bar state. */}
@@ -303,7 +305,7 @@ export default async function Header() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-[#8b93ff] via-[#ff2fb3] to-[#22d3ee] bg-[length:180%_100%] bg-left px-5 py-2 text-[13px] font-bold text-white shadow-[0_6px_24px_-8px_rgba(139,147,255,0.7)] transition-all duration-300 hover:bg-right hover:shadow-[0_8px_30px_-6px_rgba(255,47,179,0.6)] active:translate-y-px"
+                className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-fg px-5 py-2 text-[13px] font-semibold text-bg transition-colors duration-200 hover:bg-fg/85 active:translate-y-px"
               >
                 Sign in
               </Link>

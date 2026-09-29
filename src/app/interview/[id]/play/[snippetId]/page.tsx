@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import CollaborativePlaygroundLoader from "@/components/CollaborativePlaygroundLoader";
 import SessionTimer from "@/components/SessionTimer";
+import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
   title: "Interview Playground — Interviewpad",
@@ -16,10 +18,10 @@ export default async function InterviewPlaygroundPage({
   searchParams,
 }: {
   params: Promise<{ id: string; snippetId: string }>;
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; guest?: string }>;
 }) {
   const { id, snippetId } = await params;
-  const { token } = await searchParams;
+  const { token, guest: guestKey } = await searchParams;
 
   const interview = await prisma.interviewSession.findUnique({
     where: { id },
@@ -35,14 +37,15 @@ export default async function InterviewPlaygroundPage({
       startedAt: true,
       status: true,
       creatorRole: true,
+      panelJson: true,
     },
   });
   if (!interview) notFound();
   if (interview.sourceType !== "playground") notFound();
 
   const session = await auth().catch(() => null);
-  const isOwner =
-    !!session?.user?.id && session.user.id === interview.userId;
+  const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest;
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {
@@ -98,7 +101,7 @@ export default async function InterviewPlaygroundPage({
   // Build a back-href that preserves the candidate's share token so they
   // land back on the lobby with access intact.
   const backHref = isOwner
-    ? `/interview/${interview.id}?lobby=true`
+    ? `/interview/${interview.id}?lobby=true${guest ? `&guest=${encodeURIComponent(guestKey!)}` : ""}`
     : `/interview/${interview.id}?token=${interview.shareToken}&lobby=true`;
 
   return (

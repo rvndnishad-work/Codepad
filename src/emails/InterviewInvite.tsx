@@ -6,6 +6,7 @@
 import { Button, Text } from "@react-email/components";
 import * as React from "react";
 import { BaseLayout, emailStyles } from "./BaseLayout";
+import { BrandHeader, CandidateFooterLines, CustomIntro, candidateFooterText, ctaStyle, type CandidateEmailExtras } from "./candidate-brand";
 import { formatDeadlineUTC } from "./TakeHomeInvite";
 
 export type InterviewInviteProps = {
@@ -18,7 +19,11 @@ export type InterviewInviteProps = {
   /** ISO planned meeting time; null = "your recruiter will confirm the time". */
   scheduledAt: string | null;
   durationMin: number;
-};
+  /** The team's video call link (Zoom, Meet, Teams...), if set. */
+  meetingUrl?: string | null;
+  /** The built-in video call will be recorded. */
+  recorded?: boolean;
+} & CandidateEmailExtras;
 
 export function InterviewInvite({
   candidateName,
@@ -28,21 +33,34 @@ export function InterviewInvite({
   shortCode,
   scheduledAt,
   durationMin,
+  meetingUrl,
+  recorded,
+  brand,
+  custom,
+  unsubscribeUrl,
 }: InterviewInviteProps) {
   return (
     <BaseLayout
       preview={`Live interview with ${workspaceName}: ${title}`}
       footer={`This interview invitation was sent on behalf of ${workspaceName}. If you didn't expect it, you can safely ignore this email.`}
+      header={<BrandHeader brand={brand} />}
+      footerExtra={<CandidateFooterLines brand={brand} unsubscribeUrl={unsubscribeUrl} />}
     >
       <Text style={emailStyles.badge("#60a5fa")}>Live Interview</Text>
-      <Text style={emailStyles.h1}>
-        Hi {candidateName} — you&apos;re invited to a live interview.
-      </Text>
-      <Text style={emailStyles.body}>
-        {workspaceName} has scheduled{" "}
-        <span style={emailStyles.emphasis}>{title}</span> — a live
-        pair-programming session held right in your browser. No setup required.
-      </Text>
+      {custom?.paragraphs ? (
+        <CustomIntro paragraphs={custom.paragraphs} />
+      ) : (
+        <>
+          <Text style={emailStyles.h1}>
+            Hi {candidateName} — you&apos;re invited to a live interview.
+          </Text>
+          <Text style={emailStyles.body}>
+            {workspaceName} has scheduled{" "}
+            <span style={emailStyles.emphasis}>{title}</span> — a live
+            pair-programming session held right in your browser. No setup required.
+          </Text>
+        </>
+      )}
       <div style={emailStyles.scoreCardOuter}>
         <Text style={emailStyles.scoreLabel}>When</Text>
         <Text style={{ ...emailStyles.scoreValue("#F3F4F6"), fontSize: 18 }}>
@@ -54,6 +72,16 @@ export function InterviewInvite({
         <Text style={{ ...emailStyles.scoreValue("#F3F4F6"), fontSize: 18 }}>
           ~{durationMin} minutes
         </Text>
+        {meetingUrl && (
+          <>
+            <Text style={{ ...emailStyles.scoreLabel, marginTop: 12 }}>Video call</Text>
+            <Text style={{ ...emailStyles.body, margin: 0 }}>
+              <a href={meetingUrl} style={emailStyles.link}>
+                {meetingUrl}
+              </a>
+            </Text>
+          </>
+        )}
         {shortCode && (
           <>
             <Text style={{ ...emailStyles.scoreLabel, marginTop: 12 }}>
@@ -65,7 +93,12 @@ export function InterviewInvite({
           </>
         )}
       </div>
-      <Button href={joinUrl} style={emailStyles.cta}>
+      {recorded && (
+        <Text style={emailStyles.body}>
+          The video call will be recorded. You will be asked to agree before you join, and the recording is deleted after 7 days.
+        </Text>
+      )}
+      <Button href={joinUrl} style={ctaStyle(brand)}>
         Join your interview →
       </Button>
       <Text style={emailStyles.linkFallback}>
@@ -76,8 +109,9 @@ export function InterviewInvite({
         </a>
         <br />
         <br />
-        Keep this email — you&apos;ll use the same link (or the access code on
-        the join page) when the session starts. Times shown in UTC.
+        {shortCode
+          ? "Keep this email — you’ll use the same link (or the access code on the join page) when the session starts. Times shown in UTC."
+          : "Keep this email — this link is private to you and opens your interview lobby, where you can check your setup before joining. Times shown in UTC."}
       </Text>
     </BaseLayout>
   );
@@ -85,16 +119,19 @@ export function InterviewInvite({
 
 export function interviewInviteText(p: InterviewInviteProps): string {
   return [
-    `Hi ${p.candidateName},`,
-    "",
-    `${p.workspaceName} has scheduled a live interview with you: ${p.title} (~${p.durationMin} minutes).`,
+    ...(p.custom?.paragraphs
+      ? [...p.custom.paragraphs.flatMap((x) => [x, ""]), `Length: about ${p.durationMin} minutes.`]
+      : [`Hi ${p.candidateName},`, "", `${p.workspaceName} has scheduled a live interview with you: ${p.title} (~${p.durationMin} minutes).`]),
     "",
     p.scheduledAt
       ? `When: ${formatDeadlineUTC(p.scheduledAt)} (UTC).`
       : "Your recruiter will confirm the time.",
+    ...(p.meetingUrl ? ["", `Video call: ${p.meetingUrl}`] : []),
+    ...(p.recorded ? ["", "The video call will be recorded. You will be asked to agree before you join, and the recording is deleted after 7 days."] : []),
     ...(p.shortCode ? ["", `Access code: ${p.shortCode}`] : []),
     "",
     "Join here:",
     p.joinUrl,
+    ...candidateFooterText(p),
   ].join("\n");
 }

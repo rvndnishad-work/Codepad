@@ -67,6 +67,8 @@ export async function notifyInterviewReplayReady(args: {
   ownerId: string;
   title: string;
   type: string; // "mock" | "live"
+  /** Where the notification opens; defaults to the session page. */
+  href?: string;
 }) {
   // Mock sessions are self-completion; the candidate just clicked "End" and
   // doesn't need a notification telling them they did it.
@@ -77,7 +79,7 @@ export async function notifyInterviewReplayReady(args: {
       type: NOTIFICATION_TYPES.INTERVIEW_REPLAY_READY,
       title: `Replay ready: ${args.title}`,
       body: "Telemetry and timeline are queued — open the session to review.",
-      href: `/interview/${args.sessionId}`,
+      href: args.href ?? `/interview/${args.sessionId}`,
       payload: { sessionId: args.sessionId },
     });
   } catch (err) {
@@ -93,6 +95,8 @@ export async function notifyScorecardRequested(args: {
   ownerId: string;
   title: string;
   type: string;
+  /** Where the notification opens; defaults to the session page. */
+  href?: string;
 }) {
   if (args.type === "mock") return;
   try {
@@ -120,8 +124,8 @@ export async function notifyScorecardRequested(args: {
       userId: args.ownerId,
       type: NOTIFICATION_TYPES.SCORECARD_REQUESTED,
       title: `Scorecard needed: ${args.title}`,
-      body: "Session is complete but no rubric is saved yet.",
-      href: `/interview/${args.sessionId}`,
+      body: "The interview is over and your scorecard is not in yet.",
+      href: args.href ?? `/interview/${args.sessionId}`,
       payload: { sessionId: args.sessionId },
     });
   } catch (err) {
@@ -162,6 +166,34 @@ export async function notifyInterviewScheduled(args: {
     });
   } catch (err) {
     logErr("INTERVIEW_SCHEDULED", err);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * 4b. A teammate is asked to pick the questions for a live interview
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function notifyInterviewQuestionsRequested(args: {
+  userId: string;
+  actorId: string;
+  actorName: string;
+  workspaceSlug: string;
+  sessionIds: string[];
+  title: string;
+  note: string | null;
+}) {
+  if (args.userId === args.actorId || args.sessionIds.length === 0) return;
+  try {
+    const n = args.sessionIds.length;
+    await createNotification({
+      userId: args.userId,
+      type: NOTIFICATION_TYPES.INTERVIEW_QUESTIONS_REQUESTED,
+      title: `Pick questions: ${args.title}`,
+      body: `${args.actorName} asked you to choose the questions${n > 1 ? ` for ${n} interviews` : ""}.${args.note ? ` Note: ${args.note}` : ""}`,
+      href: `/w/${args.workspaceSlug}/interviews/${args.sessionIds[0]}/questions`,
+      payload: { sessionIds: args.sessionIds },
+    });
+  } catch (err) {
+    logErr("INTERVIEW_QUESTIONS_REQUESTED", err);
   }
 }
 
@@ -241,7 +273,7 @@ export async function notifyAiCreditsLowIfNeeded(args: {
             args.balance === 0
               ? "Workspace is out of AI screening credits. New sessions will be blocked until you top up."
               : `Roughly ${args.balance} session${args.balance === 1 ? "" : "s"} remaining. Top up to avoid interruption.`,
-          href: `/w/${workspace.slug}/ai-interviews`,
+          href: `/w/${workspace.slug}/billing?tab=usage`,
           payload: { workspaceId: args.workspaceId, balance: args.balance },
         }),
       ),

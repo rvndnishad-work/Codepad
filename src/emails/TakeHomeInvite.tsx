@@ -5,6 +5,7 @@
 import { Button, Text } from "@react-email/components";
 import * as React from "react";
 import { BaseLayout, emailStyles } from "./BaseLayout";
+import { BrandHeader, CandidateFooterLines, CustomIntro, candidateFooterText, ctaStyle, type CandidateEmailExtras } from "./candidate-brand";
 
 export type TakeHomeInviteProps = {
   candidateName: string;
@@ -14,7 +15,7 @@ export type TakeHomeInviteProps = {
   timeLimitMin: number;
   /** ISO string — formatted for display as UTC with a timezone note. */
   expiresAt: string;
-};
+} & CandidateEmailExtras;
 
 /** Human-readable UTC deadline. We show UTC explicitly + a note so the
  *  candidate can convert; their exact locale isn't known at send time. */
@@ -40,21 +41,32 @@ export function TakeHomeInvite({
   takeHomeUrl,
   timeLimitMin,
   expiresAt,
+  brand,
+  custom,
+  unsubscribeUrl,
 }: TakeHomeInviteProps) {
   return (
     <BaseLayout
       preview={`Your take-home from ${workspaceName}: ${challengeTitle}`}
       footer={`This take-home was sent on behalf of ${workspaceName}. If you didn't expect it, you can safely ignore this email.`}
+      header={<BrandHeader brand={brand} />}
+      footerExtra={<CandidateFooterLines brand={brand} unsubscribeUrl={unsubscribeUrl} />}
     >
       <Text style={emailStyles.badge("#a78bfa")}>Take-Home Assignment</Text>
-      <Text style={emailStyles.h1}>
-        Hi {candidateName} — you&apos;ve got a take-home to complete.
-      </Text>
-      <Text style={emailStyles.body}>
-        {workspaceName} has assigned you a take-home exercise:{" "}
-        <span style={emailStyles.emphasis}>{challengeTitle}</span>. You&apos;ll
-        work through it in your browser — no setup required.
-      </Text>
+      {custom?.paragraphs ? (
+        <CustomIntro paragraphs={custom.paragraphs} />
+      ) : (
+        <>
+          <Text style={emailStyles.h1}>
+            Hi {candidateName} — you&apos;ve got a take-home to complete.
+          </Text>
+          <Text style={emailStyles.body}>
+            {workspaceName} has assigned you a take-home exercise:{" "}
+            <span style={emailStyles.emphasis}>{challengeTitle}</span>. You&apos;ll
+            work through it in your browser — no setup required.
+          </Text>
+        </>
+      )}
       <div style={emailStyles.scoreCardOuter}>
         <Text style={emailStyles.scoreLabel}>Time limit</Text>
         <Text style={{ ...emailStyles.scoreValue("#F3F4F6"), fontSize: 20 }}>
@@ -65,7 +77,7 @@ export function TakeHomeInvite({
           {formatDeadlineUTC(expiresAt)}
         </Text>
       </div>
-      <Button href={takeHomeUrl} style={emailStyles.cta}>
+      <Button href={takeHomeUrl} style={ctaStyle(brand)}>
         Start your take-home →
       </Button>
       <Text style={emailStyles.linkFallback}>
@@ -85,10 +97,9 @@ export function TakeHomeInvite({
 
 export function takeHomeInviteText(p: TakeHomeInviteProps): string {
   return [
-    `Hi ${p.candidateName},`,
-    "",
-    `${p.workspaceName} has assigned you a take-home exercise: ${p.challengeTitle}.`,
-    "",
+    ...(p.custom?.paragraphs
+      ? p.custom.paragraphs.flatMap((x) => [x, ""])
+      : [`Hi ${p.candidateName},`, "", `${p.workspaceName} has assigned you a take-home exercise: ${p.challengeTitle}.`, ""]),
     `Time limit: ${p.timeLimitMin} minutes once you start.`,
     `Complete by: ${formatDeadlineUTC(p.expiresAt)}.`,
     "",
@@ -96,5 +107,6 @@ export function takeHomeInviteText(p: TakeHomeInviteProps): string {
     p.takeHomeUrl,
     "",
     "The timer only starts when you open the exercise. Times shown in UTC.",
+    ...candidateFooterText(p),
   ].join("\n");
 }

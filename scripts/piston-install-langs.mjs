@@ -20,7 +20,15 @@ const TOKEN = process.env.PISTON_AUTH_TOKEN ?? "";
 
 // Piston package names. "gcc" provides C/C++; "node" provides JavaScript.
 // These cover the 7 languages in src/lib/piston.ts LANGUAGE_MAP.
-const WANTED = ["python", "node", "typescript", "go", "java", "gcc", "rust"];
+const ALL_WANTED = ["python", "node", "typescript", "go", "java", "gcc", "rust"];
+
+// PISTON_LANGS="python,node" installs a subset (CI only needs what e2e runs).
+const WANTED = (process.env.PISTON_LANGS ?? "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean)
+  .filter((l) => ALL_WANTED.includes(l));
+const LANGS = WANTED.length > 0 ? WANTED : ALL_WANTED;
 
 const headers = {
   "content-type": "application/json",
@@ -48,7 +56,7 @@ async function main() {
   const packages = await res.json();
 
   let failures = 0;
-  for (const lang of WANTED) {
+  for (const lang of LANGS) {
     const versions = packages.filter((p) => p.language === lang);
     if (versions.length === 0) {
       console.error(`! "${lang}" not offered by this Piston server — skipping`);

@@ -1,0 +1,192 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import {
+  BellRing,
+  BookOpen,
+  Bot,
+  CalendarDays,
+  ClipboardList,
+  CreditCard,
+  Home,
+  KeyRound,
+  Mail,
+  Plug,
+  RefreshCw,
+  ScrollText,
+  Settings,
+  Lock,
+  Users,
+  UsersRound,
+  Video,
+  Webhook,
+} from "lucide-react";
+
+export type SidebarCounts = {
+  challenges: number;
+  interviews: number;
+  /** Submitted take-homes waiting on a decision. */
+  takeHomeReview: number;
+  candidates: number;
+  members: number;
+};
+
+type Props = {
+  slug: string;
+  /** Growth-level tools (AI screening, ATS sync, MCP) are on: paid or trial. */
+  growthFeatures: boolean;
+  counts: SidebarCounts;
+  /** Icon-only rail with tooltips (driven by the sidebar collapse toggle). */
+  collapsed?: boolean;
+};
+
+type NavItem = {
+  label: string;
+  icon: typeof Home;
+  href: string;
+  isActive: boolean;
+  count?: number | null;
+  /** Needs a Growth plan: shown with a lock and linked to billing. */
+  locked?: boolean;
+  /** Small "New" badge after the label. */
+  isNew?: boolean;
+};
+
+function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+  const Icon = item.icon;
+  const tone = item.isActive ? "bg-panel text-fg font-medium" : "text-muted hover:text-fg hover:bg-panel";
+
+  if (collapsed) {
+    // Icon-only with a native tooltip: a custom popover would be clipped by
+    // the scrolling nav container.
+    return (
+      <Link
+        href={item.href}
+        title={item.locked ? `${item.label} (Growth plan)` : item.label}
+        aria-label={item.label}
+        aria-current={item.isActive ? "page" : undefined}
+        className={`relative flex items-center justify-center h-9 rounded-lg transition-colors ${tone}`}
+      >
+        <Icon className={`w-4 h-4 shrink-0 ${item.isActive ? "text-secondary" : "text-subtle"}`} />
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href={item.href}
+      aria-current={item.isActive ? "page" : undefined}
+      className={`relative flex items-center gap-2.5 h-[34px] px-2.5 rounded-lg text-sm transition-colors ${tone}`}
+    >
+      {item.isActive && (
+        <span aria-hidden className="absolute -left-3 top-2 bottom-2 w-[3px] rounded-r bg-secondary" />
+      )}
+      <Icon className={`w-4 h-4 shrink-0 ${item.isActive ? "text-secondary" : "text-subtle"}`} aria-hidden />
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.isNew && (
+        <span className="rounded-full bg-secondary/15 text-secondary text-xs font-medium px-1.5 leading-5">New</span>
+      )}
+      {item.locked && <Lock className="w-3.5 h-3.5 text-subtle" aria-label="Growth plan" />}
+      {item.count !== null && item.count !== undefined && (
+        <span className={`text-xs tabular-nums ${item.isActive ? "text-fg" : "text-subtle"}`}>{item.count}</span>
+      )}
+    </Link>
+  );
+}
+
+function Group({ label, items, collapsed }: { label?: string; items: NavItem[]; collapsed: boolean }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {label &&
+        (collapsed ? (
+          <div className="h-px bg-border w-6 mx-auto my-3" aria-hidden />
+        ) : (
+          <div className="text-xs font-medium text-subtle px-2.5 mt-4 mb-1.5">{label}</div>
+        ))}
+      {items.map((item) => (
+        <NavLink key={item.label} item={item} collapsed={collapsed} />
+      ))}
+    </div>
+  );
+}
+
+export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, collapsed = false }: Props) {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const activeSection = params.get("section") || "overview";
+  const onWorkspaceRoute = pathname === `/w/${slug}`;
+
+  const sectionHref = (section: string) =>
+    section === "overview" ? `/w/${slug}` : `/w/${slug}?section=${section}`;
+  const sectionActive = (section: string) => onWorkspaceRoute && activeSection === section;
+  const route = (path: string) => ({ href: `/w/${slug}/${path}`, isActive: pathname.startsWith(`/w/${slug}/${path}`) });
+
+  // Growth tools stay visible on Free so teams can find them; they open the
+  // plans page instead of the tool.
+  const growth = (item: NavItem): NavItem =>
+    growthFeatures ? item : { ...item, href: `/w/${slug}/billing`, isActive: false, locked: true };
+
+  const hiring: NavItem[] = [
+    {
+      label: "Candidates",
+      icon: Users,
+      href: `/w/${slug}/candidates`,
+      isActive: pathname.startsWith(`/w/${slug}/candidates`) || pathname.startsWith(`/w/${slug}/batches`),
+      count: counts.candidates,
+    },
+    {
+      label: "Take home",
+      icon: ClipboardList,
+      href: `/w/${slug}/take-homes`,
+      isActive: pathname.startsWith(`/w/${slug}/take-homes`) || pathname.startsWith(`/w/${slug}/attempts`),
+      count: counts.takeHomeReview || undefined,
+    },
+    { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
+    growth({
+      label: "AI screening",
+      icon: Bot,
+      href: `/w/${slug}/ai-interviews`,
+      // External tools settings live under AI screening question sets.
+      isActive: pathname.startsWith(`/w/${slug}/ai-interviews`) || pathname.startsWith(`/w/${slug}/external-mcp`),
+    }),
+    { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
+  ];
+
+  const connections: NavItem[] = [
+    // The catalog is open to everyone (it shows status); each Growth tool
+    // inside it carries its own plan check.
+    {
+      label: "Connections",
+      icon: Plug,
+      href: `/w/${slug}/connections`,
+      isActive: pathname.startsWith(`/w/${slug}/connections`),
+    },
+    growth({ label: "ATS sync", icon: RefreshCw, ...route("ats") }),
+    growth({ label: "API and MCP", icon: KeyRound, ...route("api-keys") }),
+    growth({ label: "Webhooks", icon: Webhook, ...route("webhooks") }),
+    // Per-member calendars: useful on every plan.
+    { label: "Calendar", icon: CalendarDays, ...route("calendar") },
+    growth({ label: "Slack and Teams", icon: BellRing, ...route("alerts") }),
+  ];
+
+  const admin: NavItem[] = [
+    { label: "Members", icon: UsersRound, ...route("members"), count: counts.members },
+    { label: "Settings", icon: Settings, ...route("settings"), isNew: true },
+    { label: "Billing and usage", icon: CreditCard, ...route("billing") },
+    { label: "Audit log", icon: ScrollText, ...route("audit") },
+    { label: "Email activity", icon: Mail, ...route("emails") },
+  ];
+
+  return (
+    <nav aria-label="Workspace" className="flex flex-col">
+      <Group
+        items={[{ label: "Overview", icon: Home, href: sectionHref("overview"), isActive: sectionActive("overview") }]}
+        collapsed={collapsed}
+      />
+      <Group label="Hiring" items={hiring} collapsed={collapsed} />
+      <Group label="Connections" items={connections} collapsed={collapsed} />
+      <Group label="Administration" items={admin} collapsed={collapsed} />
+    </nav>
+  );
+}

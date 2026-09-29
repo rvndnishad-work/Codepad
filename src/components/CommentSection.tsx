@@ -28,6 +28,8 @@ export default function CommentSection({
   deleteUrlBase = "/api/comments",
   heading = "Responses",
   placeholder = "What are your thoughts?",
+  bare = false,
+  emptyText = "No responses yet. Be the first to share what you think.",
 }: {
   postId: string;
   initialComments: CommentNode[];
@@ -40,6 +42,9 @@ export default function CommentSection({
   deleteUrlBase?: string;
   heading?: string;
   placeholder?: string;
+  /** Leave out the outer spacing and heading when the page already titles the section. */
+  bare?: boolean;
+  emptyText?: string;
 }) {
   const createUrl = postUrl ?? `/api/blogs/${postId}/comments`;
   const router = useRouter();
@@ -107,16 +112,18 @@ export default function CommentSection({
   }
 
   return (
-    <section className="mt-16">
-      <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="w-5 h-5 text-accent" />
-        <h2 className="text-xl font-black tracking-tight text-fg">
-          {heading}{" "}
-          <span className="text-muted/50 font-bold text-base tabular-nums">
-            ({comments.length})
-          </span>
-        </h2>
-      </div>
+    <section className={bare ? "" : "mt-16"}>
+      {!bare && (
+        <div className="flex items-center gap-2 mb-6">
+          <MessageSquare className="w-5 h-5 text-accent" />
+          <h2 className="text-xl font-black tracking-tight text-fg">
+            {heading}{" "}
+            <span className="text-muted/50 font-bold text-base tabular-nums">
+              ({comments.length})
+            </span>
+          </h2>
+        </div>
+      )}
 
       {/* Composer */}
       {signedIn ? (
@@ -163,8 +170,8 @@ export default function CommentSection({
 
       {/* List */}
       {comments.length === 0 ? (
-        <div className="text-center py-12 text-muted text-sm">
-          No responses yet. Be the first to share what you think.
+        <div className={`text-center text-muted text-sm ${bare ? "py-6" : "py-12"}`}>
+          {emptyText}
         </div>
       ) : (
         <ul className="flex flex-col gap-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Lightweight vertical resize hook — returns a drag handle's onMouseDown / onTouchStart
@@ -8,8 +8,33 @@ import { useCallback, useRef, useState } from "react";
  * Since the Console is placed at the bottom, dragging UP decreases clientY (negative dy)
  * but should INCREASE console height. So: height = startH - dy.
  */
-export function useResizableHeight(initialHeight: number, minHeight = 80, maxHeight = 800) {
+export function useResizableHeight(
+  initialHeight: number,
+  minHeight = 80,
+  maxHeight = 800,
+  /** When set, the height persists across sessions under this localStorage key. */
+  storageKey?: string,
+) {
   const [height, setHeight] = useState(initialHeight);
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw === null) return;
+      const n = Number(raw);
+      if (Number.isFinite(n)) setHeight(Math.min(maxHeight, Math.max(minHeight, n)));
+    } catch {
+      /* private mode — run with defaults */
+    }
+  }, [storageKey, minHeight, maxHeight]);
+  useEffect(() => {
+    if (!storageKey) return;
+    try {
+      window.localStorage.setItem(storageKey, String(height));
+    } catch {
+      /* ignore */
+    }
+  }, [height, storageKey]);
   const dragging = useRef(false);
   const startY = useRef(0);
   const startH = useRef(0);

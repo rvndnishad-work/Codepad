@@ -287,7 +287,14 @@ export default function InterviewBuilder({
     template?: string;
     category?: string;
     estimatedMinutes: number;
-  }[]>([]);
+  }[]>(() => {
+    // ?challenges=id1,id2 comes from the workspace question library.
+    const ids = (searchParams?.get("challenges") ?? "").split(",").filter(Boolean);
+    return ids.flatMap((id) => {
+      const c = challenges.find((x) => x.id === id);
+      return c ? [{ id, type: "challenge" as const, title: c.title, difficulty: c.difficulty, estimatedMinutes: c.estimatedMinutes }] : [];
+    });
+  });
   const [scenario, setScenario] = useState("");
   const [minutes, setMinutes] = useState(60);
   const [creating, setCreating] = useState(false);
@@ -479,7 +486,7 @@ export default function InterviewBuilder({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
           <div className="space-y-1">
             <Link
-              href={workspaceSlug ? `/w/${workspaceSlug}?section=assessments&view=interviews` : "/interview"}
+              href={workspaceSlug ? `/w/${workspaceSlug}/interviews` : "/interview"}
               className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted hover:text-fg transition-all group"
             >
               <div className="p-1 rounded-full bg-surface border border-border group-hover:border-border-strong group-hover:bg-panel transition-all">

@@ -1,74 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 
-/**
- * Cost (in credits) for a single AI screening. Centralized so it can later be
- * read from plan config without touching call sites.
- */
-export const AI_INTERVIEW_COST_PER_SESSION = 1;
+export {
+  AI_INTERVIEW_COST_PER_SESSION,
+  AI_ENGAGEMENT_CREDIT_COST,
+  normalizeEngagementLevel,
+  creditCostForLevel,
+  type EngagementLevel,
+} from "./engagement";
+import { creditCostForLevel, AI_INTERVIEW_COST_PER_SESSION } from "./engagement";
 
-/**
- * Live presence of the AI interviewer during a screening. Higher presence means
- * more background Gemini calls, so it costs more credits per completed session.
- */
-export type EngagementLevel = "REACTIVE" | "OBSERVER" | "COACH";
-
-/**
- * Credits charged (once, on the candidate's first turn) per completed screening,
- * scaled by the recruiter's chosen interviewer presence. REACTIVE === the legacy
- * flat cost so existing screenings are unaffected.
- */
-export const AI_ENGAGEMENT_CREDIT_COST: Record<EngagementLevel, number> = {
-  REACTIVE: AI_INTERVIEW_COST_PER_SESSION, // 1
-  OBSERVER: 2,
-  COACH: 3,
-};
-
-/** Coerce an arbitrary stored value to a valid level (defaults to REACTIVE). */
-export function normalizeEngagementLevel(v: string | null | undefined): EngagementLevel {
-  return v === "OBSERVER" || v === "COACH" ? v : "REACTIVE";
-}
-
-/** Credit cost for a level (defaults to the REACTIVE cost for unknown input). */
-export function creditCostForLevel(level: string | null | undefined): number {
-  return AI_ENGAGEMENT_CREDIT_COST[normalizeEngagementLevel(level)];
-}
-
-/**
- * Public-facing credit pack tiers. Prices are USD cents. Keep in sync with any
- * Stripe Product/Price catalog you decide to set up — the checkout flow uses
- * `price_data` so no Stripe-side IDs are required to start.
- */
-export const AI_CREDIT_PACKS = [
-  {
-    id: "starter-10",
-    credits: 10,
-    priceCents: 2900,
-    label: "Starter",
-    sublabel: "10 screenings",
-  },
-  {
-    id: "team-50",
-    credits: 50,
-    priceCents: 12900,
-    label: "Team",
-    sublabel: "50 screenings",
-    badge: "Most popular",
-  },
-  {
-    id: "scale-200",
-    credits: 200,
-    priceCents: 44900,
-    label: "Scale",
-    sublabel: "200 screenings",
-  },
-] as const;
-
-export type AiCreditPack = (typeof AI_CREDIT_PACKS)[number];
-
-export function getAiCreditPack(id: string): AiCreditPack | undefined {
-  return AI_CREDIT_PACKS.find((p) => p.id === id);
-}
+export { AI_CREDIT_PACKS, getAiCreditPack, type AiCreditPack } from "./credit-packs";
+import { includedPart } from "@/lib/billing/included-credits";
 
 /**
  * Workspace plans that have access to the AI Screening feature.
@@ -129,15 +72,40 @@ export class InsufficientCreditsError extends Error {
   }
 }
 
+/**
+ * The workspace asks candidates for consent (Settings > Candidate
+ * experience) and this candidate has not given it, so the screening cannot
+ * start. The candidate page shows the consent step first.
+ */
+export class ConsentRequiredError extends Error {
+  constructor() {
+    super("Candidate consent is required before this screening can start");
+    this.name = "ConsentRequiredError";
+  }
+}
+
 export async function consumeCreditIfFirstTurn(
   sessionId: string
 ): Promise<{ charged: boolean }> {
   return prisma.$transaction(async (tx) => {
     const session = await tx.aIInterviewSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, workspaceId: true, startedAt: true, practice: true, engagementLevel: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        startedAt: true,
+        practice: true,
+        engagementLevel: true,
+        consentAt: true,
+        workspace: { select: { consentRequired: true, includedCreditsLeft: true } },
+      },
     });
     if (!session) throw new Error("Session not found");
+
+    // Only a screening that has not started needs consent; one under way keeps going.
+    if (!session.startedAt && !session.practice && session.workspace?.consentRequired && !session.consentAt) {
+      throw new ConsentRequiredError();
+    }
 
     // Credit cost scales with the interviewer's live presence (REACTIVE=1,
     // OBSERVER=2, COACH=3) and is charged once, here, on the first turn.
@@ -183,6 +151,15 @@ export async function consumeCreditIfFirstTurn(
       },
     });
 
+    // Included credits (the ones that can expire) are used before bought ones.
+    const fromIncluded = includedPart(cost, session.workspace?.includedCreditsLeft ?? 0);
+    if (fromIncluded > 0) {
+      await tx.workspace.updateMany({
+        where: { id: session.workspaceId, includedCreditsLeft: { gte: fromIncluded } },
+        data: { includedCreditsLeft: { decrement: fromIncluded } },
+      });
+    }
+
     // Compute post-consumption balance INSIDE the transaction so we read a
     // consistent snapshot. Pass it out for the IP-44 notification trigger to
     // evaluate against the threshold.
@@ -202,6 +179,14 @@ export async function consumeCreditIfFirstTurn(
           workspaceId: result.workspaceId,
           balance: result.newBalance,
         });
+        // The email to admins, when the workspace set a threshold on Billing and usage.
+        // Never let it fail the turn: the credit is already charged.
+        try {
+          const { checkLowCredits } = await import("@/lib/billing/credit-alerts");
+          await checkLowCredits(result.workspaceId, result.newBalance);
+        } catch (err) {
+          console.error("[credits] low-credit email check failed:", err);
+        }
       }
       return { charged: result.charged };
     });

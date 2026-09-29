@@ -7,9 +7,15 @@ import InterviewRunner, {
   type SessionPlayground,
 } from "./InterviewRunner";
 import MobileLobby from "@/components/MobileLobby";
+import InterviewerGuide, { type GuideData } from "./InterviewerGuide";
+import InterviewToolbox from "./tools/InterviewToolbox";
+import { parseQuestionnaire } from "@/lib/ai-interview/questionnaire";
+import { questionState } from "@/lib/interview/wizard";
 import { shouldRenderMobileLobby } from "@/lib/device";
 
 import { validatePageAccess } from "@/lib/settings";
+import { isInterviewerFor } from "@/lib/interview/wizard";
+import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
   title: "Interview Session — Interviewpad",
@@ -20,11 +26,26 @@ export default async function InterviewRunPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ token?: string; lobby?: string; desktop?: string }>;
+  searchParams: Promise<{ token?: string; guest?: string; lobby?: string; desktop?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
   const { token, lobby } = sp;
+  const guestKey = typeof sp.guest === "string" ? sp.guest : null;
+
+  // Workspace interviews have their own lobby and room under the workspace.
+  // Older links (share token, emailed interviewer key) are swapped for a
+  // room pass on the way in.
+  const ws = await prisma.interviewSession.findUnique({
+    where: { id },
+    select: { type: true, creatorRole: true, workspace: { select: { slug: true } } },
+  });
+  if (ws?.workspace && ws.type === "live" && ws.creatorRole === "interviewer") {
+    const base = `/w/${ws.workspace.slug}/interviews/${id}`;
+    if (token) redirect(`${base}/join?t=${encodeURIComponent(token)}`);
+    if (guestKey) redirect(`${base}/join?g=${encodeURIComponent(guestKey)}`);
+    redirect(`${base}/lobby`);
+  }
 
   // IP-38: mobile-handoff lobby. Run before any auth check so a candidate on
   // a phone always gets the QR experience first; auth and access checks
@@ -38,7 +59,7 @@ export default async function InterviewRunPage({
   if (showLobby) {
     const host = hdrs.get("host") ?? "interviewpad.in";
     const proto = hdrs.get("x-forwarded-proto") ?? "https";
-    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const qs = token ? `?token=${encodeURIComponent(token)}` : guestKey ? `?guest=${encodeURIComponent(guestKey)}` : "";
     const fullUrl = `${proto}://${host}/interview/${id}${qs}`;
     return (
       <MobileLobby
@@ -60,7 +81,10 @@ export default async function InterviewRunPage({
   if (!interview) notFound();
 
   // Access: owner OR holder of correct shareToken (read-only).
-  const isOwner = !!session?.user?.id && session.user.id === interview.userId;
+  // Host and co-interviewers (panel) get the owner's interviewer view.
+  // Interviewers HR emailed (no account) come in with their own guest key.
+  const guest = interview.creatorRole === "interviewer" ? await guestFor(interview.id, guestKey) : null;
+  const isOwner = isInterviewerFor(interview, session?.user?.id) || !!guest;
   const hasShareToken = !!token && token === interview.shareToken;
   if (!isOwner && !hasShareToken) {
     if (!session?.user?.id) {
@@ -212,7 +236,51 @@ export default async function InterviewRunPage({
     }),
   ]);
 
+  // Interviewer-only guide: brief and question guide. Built only for the
+  // host and panel, so reference answers never reach the candidate.
+  let guide: GuideData | null = null;
+  if (interviewerView && isOwner && interview.workspaceId && (interview.format || interview.guideTemplateId || interview.guideJson || interview.interviewerBrief)) {
+    const tpl = interview.guideTemplateId
+      ? await prisma.aIInterviewTemplate.findFirst({
+          where: { id: interview.guideTemplateId, workspaceId: interview.workspaceId },
+          select: { title: true, testsCode: true },
+        })
+      : null;
+    const pending =
+      interview.status === "scheduled" &&
+      questionState({
+        questionPlan: interview.questionPlan,
+        roundCount: challengeIds.length + playgroundIds.length + promptScenarioIds.length,
+        guideTemplateId: interview.guideTemplateId ?? (interview.guideJson ? "bank" : null),
+      }) === "needed";
+    const ws = pending ? await prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }) : null;
+    guide = {
+      sessionId: interview.id,
+      format: interview.format,
+      brief: interview.interviewerBrief,
+      title: tpl?.title ?? (interview.guideJson ? "Picked questions" : null),
+      // The library questionnaire, then any public bank questions picked for this room.
+      items: [...(tpl ? parseQuestionnaire(tpl.testsCode) : []), ...(interview.guideJson ? parseQuestionnaire(interview.guideJson) : [])].map((i) => ({ q: i.q, a: i.a })),
+      pending,
+      pickHref: ws ? `/w/${ws.slug}/interviews/${interview.id}/questions` : null,
+    };
+  }
+
   return (
+    <>
+    {guide && <InterviewerGuide guide={guide} tools={interview.type === "live"} />}
+    {interview.type === "live" && (
+      <InterviewToolbox
+        sessionId={interview.id}
+        roomKey={interview.shareToken}
+        token={hasShareToken ? token! : null}
+        guest={guest ? guestKey : null}
+        interviewer={interviewerView}
+        meName={(interviewerView ? (guest ? guest.email.split("@")[0] : session?.user?.name) : interview.candidateName) ?? ""}
+        format={interview.format}
+        guideQuestions={guide?.items.map((i) => i.q) ?? []}
+      />
+    )}
     <InterviewRunner
       interview={{
         id: interview.id,
@@ -262,6 +330,8 @@ export default async function InterviewRunPage({
       }))}
       interviewerView={interviewerView}
       isOwner={isOwner}
+      guestToken={guest ? guestKey : null}
     />
+    </>
   );
 }

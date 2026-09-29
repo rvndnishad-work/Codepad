@@ -14,7 +14,7 @@ export const metadata = {
 // see the same chip for the same state.
 const STATUS_BADGES: Record<string, string> = {
   active: "text-sky-600 dark:text-sky-400 bg-sky-500/[0.08] border-sky-500/20",
-  hired: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/20",
+  passed: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/[0.08] border-emerald-500/20",
   rejected: "text-rose-600 dark:text-rose-400 bg-rose-500/[0.08] border-rose-500/20",
   archived: "text-muted bg-panel/40 border-border",
 };

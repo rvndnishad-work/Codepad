@@ -667,12 +667,111 @@ const REEXPORTS: Record<string, string> = {
   sys: "util",
 };
 
+/**
+ * `node:`-prefixed core imports (`require("node:stream")`). Sandpack's v2
+ * bundler does not special-case the scheme — it resolves the specifier as a
+ * package name — so every builtin needs an alias package or the eager
+ * resolution of framework deps dies, e.g.:
+ *
+ *     Cannot find module 'node:stream' from
+ *     '/node_modules/@vue/server-renderer/dist/server-renderer.cjs.prod.js'
+ *
+ * Each alias re-exports its unprefixed sibling, so behaviour (real
+ * implementation vs. readable stub) is defined in exactly one place.
+ */
+const NODE_PREFIXED: Array<[string, string]> = [
+  ...Object.keys(IMPLEMENTED).map(
+    (name): [string, string] => [`node:${name}`, name],
+  ),
+  ...STUBBED.map((name): [string, string] => [`node:${name}`, name]),
+  ...Object.entries(REEXPORTS).map(
+    ([alias, target]): [string, string] => [`node:${alias}`, target],
+  ),
+];
+
 /** Every builtin name we provide: implemented, re-exported or stubbed. */
 export const SHIMMED_NODE_BUILTINS: string[] = [
   ...Object.keys(IMPLEMENTED),
   ...Object.keys(REEXPORTS),
   ...STUBBED,
+  ...NODE_PREFIXED.map(([name]) => name),
 ];
+
+/**
+ * Optional template-engine dependencies probed (but never needed) by
+ * `@vue/compiler-sfc`'s bundled consolidate. The v2 bundler's eager walk
+ * resolves every `require` in the file, so each missing engine kills the
+ * whole preview with `Cannot find module 'twig' from '.../compiler-sfc…'`
+ * — and WORSE, the missing-dep auto-installer then force-feeds them one by
+ * one into the user's package.json (max 12) without ever converging.
+ *
+ * Every entry here is lazy-required inside try/catch by consolidate and only
+ * used when a template explicitly picks that engine (`lang="twig"`), which
+ * our templates never do — so an empty module is behaviour-identical to
+ * "not installed", while letting the eager walk pass. A real install always
+ * wins via the `taken` skip in `add()` below.
+ *
+ * List captured empirically from the bundler's resolution errors for the
+ * pinned compiler-sfc; re-capture if that version changes.
+ */
+export const OPTIONAL_DEPS: string[] = [
+  "arc-templates/dist/es5",
+  "atpl",
+  "babel-core",
+  "bracket-template",
+  "coffee-script",
+  "dot",
+  "dust",
+  "dustjs-helpers",
+  "dustjs-linkedin",
+  "eco",
+  "ect",
+  "ejs",
+  "haml-coffee",
+  "hamlet",
+  "hamljs",
+  "handlebars",
+  "hogan.js",
+  "htmling",
+  "jade",
+  "jazz",
+  "jqtpl",
+  "just",
+  "liquid-node",
+  "liquor",
+  "lodash",
+  "marko",
+  "mote",
+  "mustache",
+  "nunjucks",
+  "plates",
+  "pug",
+  "qejs",
+  "ractive",
+  "razor-tmpl",
+  "react",
+  "react-dom/server",
+  "slm",
+  "squirrelly",
+  "swig",
+  "swig-templates",
+  "teacup/lib/express",
+  "templayed",
+  "then-jade",
+  "then-pug",
+  "tinyliquid",
+  "toffee",
+  "twig",
+  "twing",
+  "underscore",
+  "vash",
+  "velocityjs",
+  "walrus",
+  "whiskers",
+];
+
+/** Empty module for optional deps: resolving succeeds, use fails gracefully. */
+const EMPTY_OPTIONAL_SRC = `"use strict";\nmodule.exports = {};\n"`;
 
 /** True for any path belonging to an injected shim package. */
 export function isNodeShimPath(path: string): boolean {
@@ -708,8 +807,11 @@ export function buildNodeBuiltinShims(
 
   const add = (name: string, source: string) => {
     // Skip when the user installed a real package under this name, and skip
-    // `fs/promises` style entries whose base package the user owns.
-    if (taken.has(name) || taken.has(name.split("/")[0])) return;
+    // `fs/promises` style entries whose base package the user owns. The bare
+    // name is checked too, so a real `stream` install also drops the
+    // `node:stream` alias instead of shadowing it.
+    const bare = name.startsWith("node:") ? name.slice("node:".length) : name;
+    if (taken.has(name) || taken.has(bare) || taken.has(bare.split("/")[0])) return;
     files[`/node_modules/${name}/package.json`] = { code: PKG(name), hidden: true };
     files[`/node_modules/${name}/index.js`] = { code: source, hidden: true };
   };
@@ -720,7 +822,34 @@ export function buildNodeBuiltinShims(
     const up = "../".repeat(name.split("/").length);
     add(name, `"use strict";\nmodule.exports = require("${up}${target}/index.js");\n`);
   }
+  for (const [name, target] of NODE_PREFIXED) {
+    const up = "../".repeat(name.split("/").length);
+    add(name, `"use strict";\nmodule.exports = require("${up}${target}/index.js");\n`);
+  }
   for (const name of STUBBED) add(name, stubSource(name));
+
+  // Optional template engines: stub so the eager walk passes. Deep names
+  // (`teacup/lib/express`) need both a root package entry (so the resolver
+  // finds the package) and the file itself; both honour the real-install
+  // skip via the root package name.
+  for (const name of OPTIONAL_DEPS) {
+    if (!name.includes("/")) {
+      add(name, EMPTY_OPTIONAL_SRC);
+      continue;
+    }
+    const root = name.split("/")[0];
+    if (taken.has(root)) continue;
+    add(root, EMPTY_OPTIONAL_SRC);
+    const sub = name.slice(root.length + 1);
+    files[`/node_modules/${root}/${sub}.js`] = {
+      code: EMPTY_OPTIONAL_SRC,
+      hidden: true,
+    };
+    files[`/node_modules/${root}/${sub}/index.js`] = {
+      code: EMPTY_OPTIONAL_SRC,
+      hidden: true,
+    };
+  }
 
   shimCache.set(cacheKey, files);
   return files;

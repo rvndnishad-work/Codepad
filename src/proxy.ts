@@ -5,6 +5,7 @@ import { isAdminEmail } from "@/lib/admin";
 import { guardFor, STAFF_SENTINEL } from "@/lib/permissions/route-guards";
 import { resolveUserPermissionsUncached } from "@/lib/permissions/access";
 import { PLATFORM_PERMISSIONS } from "@/lib/permissions/permissions";
+import { REQUEST_PATH_HEADER } from "@/lib/workspace/screening-defaults";
 
 // Next.js 16 "Proxy" (formerly Middleware) — runs on the Node.js runtime by
 // default, so Prisma + next-auth JWT decoding work here directly.
@@ -86,10 +87,22 @@ async function enforceRouteGuard(req: NextRequest): Promise<NextResponse | null>
     : new NextResponse("Not Found", { status: 404 });
 }
 
+/**
+ * Continue to the page. Workspace pages also get the path they were asked
+ * for, so an old workspace web address can open the same page at the new
+ * one (see the /w/[slug] layouts).
+ */
+function passThrough(req: NextRequest): NextResponse {
+  if (!req.nextUrl.pathname.startsWith("/w/")) return NextResponse.next();
+  const headers = new Headers(req.headers);
+  headers.set(REQUEST_PATH_HEADER, req.nextUrl.pathname + req.nextUrl.search);
+  return NextResponse.next({ request: { headers } });
+}
+
 export async function proxy(req: NextRequest) {
   try {
     const cfg = await getMaintenanceConfig();
-    if (!cfg.enabled) return (await enforceRouteGuard(req)) ?? NextResponse.next();
+    if (!cfg.enabled) return (await enforceRouteGuard(req)) ?? passThrough(req);
 
     const { pathname } = req.nextUrl;
     if (isAllowlisted(pathname)) return NextResponse.next();
@@ -104,7 +117,7 @@ export async function proxy(req: NextRequest) {
       });
       const email =
         typeof token?.email === "string" ? token.email : null;
-      if (isAdminEmail(email)) return NextResponse.next();
+      if (isAdminEmail(email)) return passThrough(req);
     } catch {
       // Couldn't decode the session — treat as anonymous. Admins can still
       // reach /admin & /login via the allowlist to lift maintenance.

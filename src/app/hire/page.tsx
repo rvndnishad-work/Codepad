@@ -3,18 +3,18 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
-import HireWowHero from "@/components/hire-wow/HireWowHero";
+import HireWowHero, { type HeroStat } from "@/components/hire-wow/HireWowHero";
 import HireWowFlood from "@/components/hire-wow/HireWowFlood";
 import HireWowPipeline from "@/components/hire-wow/HireWowPipeline";
 import HireWowRoom from "@/components/hire-wow/HireWowRoom";
-import HireWowRadar from "@/components/hire-wow/HireWowRadar";
 import HireWowFeatures from "@/components/hire-wow/HireWowFeatures";
-import HireWowDuel from "@/components/hire-wow/HireWowDuel";
-import HireWowRecord from "@/components/hire-wow/HireWowRecord";
+import HireWowEvidence from "@/components/hire-wow/HireWowEvidence";
 import HireWowTrust from "@/components/hire-wow/HireWowTrust";
-import PricingTeaser from "./PricingTeaser";
 import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
+import SpotlightScope from "@/components/wow/SpotlightScope";
+import { applyPricingCopy } from "@/lib/billing/pricing-copy";
+import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 
 export const metadata: Metadata = {
   title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
@@ -30,21 +30,24 @@ export const metadata: Metadata = {
 
 export default async function HirePage() {
   const session = await auth().catch(() => null);
-  const [challengeCount, sessionCount, workspaceCount] = await Promise.all([
+  const [challengeCount, sessionCount, workspaceCount, pricing] = await Promise.all([
     prisma.challenge.count({ where: { published: true } }).catch(() => 0),
     prisma.interviewSession.count().catch(() => 0),
     prisma.workspace.count().catch(() => 0),
+    getPublicPricingInputs(),
   ]);
+  const { plans: pricingPlans, lowestCreditPrice } = applyPricingCopy(pricing.copy, pricing.prices);
 
-  const roomStats = buildStats({ sessionCount, challengeCount, workspaceCount });
+  const heroStats = buildStats({ sessionCount, challengeCount, workspaceCount });
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
 
   return (
-    <div className="min-h-screen bg-[var(--wow-bg)] transition-colors">
+    <div className="wow-scope min-h-screen bg-bg transition-colors">
+      <SpotlightScope />
       <ScrollProgressBar />
 
       <HireWowHero
-        stats={{ workspaces: workspaceCount, sessions: sessionCount, challenges: challengeCount }}
+        stats={heroStats}
         ctaHref={ctaHref}
         signedIn={!!session?.user}
       />
@@ -53,24 +56,17 @@ export default async function HirePage() {
 
       <HireWowPipeline />
 
-      <HireWowRoom roomStats={roomStats} />
+      <HireWowRoom />
 
-      <HireWowRadar />
-
-      {/* Six live feature demos, reskinned in boss mode — same behaviors. */}
-      <section className="bg-[var(--wow-bg)] px-4 py-24 transition-colors md:py-32">
+      <section className="bg-bg px-4 py-24 transition-colors md:py-32">
         <div className="mx-auto max-w-6xl">
           <HireWowFeatures />
         </div>
       </section>
 
-      <HireWowDuel />
+      <HireWowEvidence />
 
-      <HireWowRecord />
-
-      <HireWowTrust />
-
-      <PricingTeaser />
+      <HireWowTrust pricingPlans={pricingPlans} lowestCreditPrice={lowestCreditPrice} />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>
@@ -86,19 +82,19 @@ function buildStats(counts: {
   sessionCount: number;
   challengeCount: number;
   workspaceCount: number;
-}): { value: string; label: string }[] {
-  const stats: { value: string; label: string }[] = [];
+}): HeroStat[] {
+  const stats: HeroStat[] = [];
   if (counts.sessionCount >= 50)
-    stats.push({ value: formatCount(counts.sessionCount), label: "Interview sessions run" });
+    stats.push({ value: formatCount(counts.sessionCount), label: "Interview sessions run", live: true });
   if (counts.challengeCount >= 10)
-    stats.push({ value: formatCount(counts.challengeCount), label: "Curated challenges ready to assign" });
+    stats.push({ value: formatCount(counts.challengeCount), label: "Challenges ready to assign", live: true });
   if (counts.workspaceCount >= 25)
-    stats.push({ value: formatCount(counts.workspaceCount), label: "Hiring workspaces" });
+    stats.push({ value: formatCount(counts.workspaceCount), label: "Hiring workspaces", live: true });
 
   const capabilities = [
-    { value: "8", label: "Execution languages, server-graded" },
-    { value: "3", label: "ATS integrations: Greenhouse, Lever, Ashby" },
-    { value: "100%", label: "Attempts captured with replay + integrity signals" },
+    { value: "8", label: "Languages, server-graded", live: false },
+    { value: "3", label: "ATS integrations", live: false },
+    { value: "100%", label: "Attempts kept as a replay", live: false },
   ];
   for (const c of capabilities) {
     if (stats.length >= 3) break;

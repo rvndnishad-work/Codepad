@@ -26,7 +26,7 @@ export async function listTemplatesForWorkspace(
     estimatedMinutes: row.estimatedMinutes,
     starterFiles: safeParseStarterFiles(row.starterFiles),
     testsCode: row.testsCode,
-    kind: (row.kind as "frontend" | "backend" | "dsa" | null) ?? undefined,
+    kind: (row.kind as "frontend" | "backend" | "dsa" | "conversation" | null) ?? undefined,
     language: row.language ?? undefined,
     frameworkLabel: row.frameworkLabel ?? undefined,
     custom: true,
@@ -60,7 +60,7 @@ export async function resolveTemplate(
         estimatedMinutes: row.estimatedMinutes,
         starterFiles: safeParseStarterFiles(row.starterFiles),
         testsCode: row.testsCode,
-        kind: (row.kind as "frontend" | "backend" | "dsa" | null) ?? undefined,
+        kind: (row.kind as "frontend" | "backend" | "dsa" | "conversation" | null) ?? undefined,
         language: row.language ?? undefined,
         frameworkLabel: row.frameworkLabel ?? undefined,
       };

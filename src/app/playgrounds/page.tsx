@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getPopularTemplateIds } from "@/lib/popular-templates";
 import { timed, pingDb } from "@/lib/timing";
 import "@/components/wow/wow.css";
 import "@/components/home-wow/home-wow.css";
@@ -50,5 +51,11 @@ export default async function PlaygroundsPage() {
   console.log(
     `[timing] playgrounds:total ${Math.round(performance.now() - pageStart)}ms`,
   );
-  return <PlaygroundsBrowser welcome={welcome} />;
+  // Global usage ranking for the "Most Popular" row — one indexed aggregate,
+  // resolved server-side so the section renders with correct data on first
+  // paint (no client fetch, no flash of the fallback list).
+  const popularIds = await timed("playgrounds:popular", () =>
+    getPopularTemplateIds(4),
+  );
+  return <PlaygroundsBrowser welcome={welcome} popularIds={popularIds} />;
 }

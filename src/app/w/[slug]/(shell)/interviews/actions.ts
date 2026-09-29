@@ -24,6 +24,7 @@ import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { recordingConfigured } from "@/lib/recording/live-server";
 import {
+  offersGuide,
   formatOf,
   isEmail,
   isInterviewerFor,
@@ -181,7 +182,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     // Each room's guide: its own set when questions differ per candidate,
     // otherwise the shared one. A set is a library questionnaire, public
     // bank questions, or both.
-    const useGuide = d.plan === "set" && format.guide;
+    const useGuide = d.plan === "set" && offersGuide(format);
     const sets = people.map((p) => (useGuide ? (p.questions ?? { guideId: d.guideId, bankIds: d.bankIds ?? [] }) : { guideId: null, bankIds: [] as string[] }));
     if (useGuide && !format.coding && sets.some((q) => !q.guideId && q.bankIds.length === 0)) {
       throw new ActionError(people.length > 1 ? "Every candidate needs a question guide or some questions." : "Choose a question guide.");
@@ -374,7 +375,7 @@ export async function setInterviewQuestionsAction(slug: string, sessionId: strin
     if (s.status !== "scheduled") throw new ActionError("This interview has already started, so its questions are fixed.");
     const format = formatOf(s.format);
     const coding = format ? format.coding : true;
-    const guide = format ? format.guide : false;
+    const guide = format ? offersGuide(format) : false;
     if (d.plan === "open" && coding) throw new ActionError("Coding rounds need at least one question.");
     const rounds = d.plan === "set" && coding ? d.rounds : [];
     const guideId = d.plan === "set" && guide ? d.guideId : null;

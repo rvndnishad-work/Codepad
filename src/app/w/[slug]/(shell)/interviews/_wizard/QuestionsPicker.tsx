@@ -9,7 +9,7 @@ import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { BookOpen, Clock, ExternalLink, ListChecks, MessagesSquare, Search, UserRoundCheck } from "lucide-react";
 import type { GuideOption, MemberOption, RoundOption } from "@/lib/interview/wizard-server";
-import { plansFor, type FormatDef, type QuestionPlan, type WizardRound } from "@/lib/interview/wizard";
+import { offersGuide, plansFor, type FormatDef, type QuestionPlan, type WizardRound } from "@/lib/interview/wizard";
 import { Avatar, inputCls } from "../../candidates/_components/ui";
 import RoundsBuilder from "./RoundsBuilder";
 import { CheckDot, ChoiceCard, Chip, textareaCls } from "./parts";
@@ -94,12 +94,12 @@ export default function QuestionsPicker({
             <>
               {format.coding && (
                 <div className="flex flex-col gap-2">
-                  {format.guide && <SubHead title="Coding rounds" body="What the candidate works on in the shared editor." />}
+                  {offersGuide(format) && <SubHead title="Coding rounds" body="What the candidate works on in the shared editor." />}
                   <RoundsBuilder options={roundOptions} rounds={value.rounds} onChange={(rounds) => onChange({ rounds })} />
                 </div>
               )}
-              {format.guide && guideSlot}
-              {format.guide && !guideSlot && (
+              {offersGuide(format) && guideSlot}
+              {offersGuide(format) && !guideSlot && (
                 <div className="flex flex-col gap-2">
                   <SubHead
                     title={format.coding ? "Question guide (optional)" : "Question guide"}

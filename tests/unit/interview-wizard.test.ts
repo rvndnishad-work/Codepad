@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  offersGuide,
   FORMAT_BY_ID,
   STEPS,
   defaultStart,
@@ -80,6 +81,14 @@ describe("interview wizard steps", () => {
 });
 
 describe("interview wizard helpers", () => {
+  it("offers a question set for every format that has one, and optionally for coding rounds", () => {
+    expect(offersGuide(FORMAT_BY_ID.coding)).toBe(true);
+    expect(offersGuide(FORMAT_BY_ID.mixed)).toBe(true);
+    expect(offersGuide(FORMAT_BY_ID.discussion)).toBe(true);
+    // A coding round is still valid with problems and no guide.
+    expect(FORMAT_BY_ID.coding.guide).toBe(false);
+  });
+
   it("titles from the format and a single candidate", () => {
     expect(defaultTitle(FORMAT_BY_ID.coding, base.candidates)).toBe("Coding interview with Priya");
     expect(defaultTitle(FORMAT_BY_ID.intro, [])).toBe("Intro chat");

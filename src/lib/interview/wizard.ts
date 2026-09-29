@@ -285,6 +285,15 @@ export function suggestedMinutes(format: FormatDef | null, rounds: WizardRound[]
   return clampMinutes(Math.max(base, Math.ceil(need / 15) * 15));
 }
 
+/**
+ * Whether the Questions step offers an interviewer guide (a library question
+ * set or public questions). Guide formats are built around one; a plain
+ * coding round can still add one, optionally, next to its problems.
+ */
+export function offersGuide(format: FormatDef): boolean {
+  return format.guide || format.coding;
+}
+
 export function clampMinutes(n: number): number {
   return Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, Math.round(n)));
 }

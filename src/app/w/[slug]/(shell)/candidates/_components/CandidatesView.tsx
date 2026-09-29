@@ -32,6 +32,7 @@ import {
   passOverrides,
   rowsToCsv,
   sortRows,
+  waitingCounts,
   type RosterBatch,
   type RosterFilters,
   type RosterMember,
@@ -39,6 +40,10 @@ import {
   type SortKey,
 } from "@/lib/crm/roster";
 import { RESULT_KIND_LABELS } from "@/lib/crm/results";
+import { WAITING_KEYS, WAITING_LABELS, type WaitingKey } from "@/lib/interview/rounds-view";
+import { RoundsBadge, RoundsCell } from "./RoundsCell";
+import { RoundLegend, RoundStrip } from "./RoundStrip";
+import { roundsBadge, roundsLine, stripItems } from "@/lib/interview/rounds-view";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
@@ -94,6 +99,7 @@ function readFilters(sp: URLSearchParams): RosterFilters {
     minScore: min && !Number.isNaN(Number(min)) ? Number(min) : null,
     attention: sp.get("attention") === "1",
     archived: sp.get("archived") === "1",
+    waiting: WAITING_KEYS.includes(sp.get("waiting") as WaitingKey) ? (sp.get("waiting") as WaitingKey) : null,
   };
 }
 
@@ -108,6 +114,7 @@ function writeFilters(f: RosterFilters, extra: Record<string, string | null>): s
   if (f.minScore != null) p.set("min", String(f.minScore));
   if (f.attention) p.set("attention", "1");
   if (f.archived) p.set("archived", "1");
+  if (f.waiting) p.set("waiting", f.waiting);
   for (const [k, v] of Object.entries(extra)) if (v) p.set(k, v);
   return p.toString();
 }
@@ -208,6 +215,12 @@ export function CandidatesView({
     () => filterRows(live, { ...filters, attention: true }, meId).filter((r) => !filters.stage || r.stage === filters.stage).length,
     [live, filters, meId],
   );
+  // Waiting on chips count under every other filter, the stage included.
+  const waiting = useMemo(
+    () => waitingCounts(filterRows(live, { ...filters, waiting: null }, meId).filter((r) => !filters.stage || r.stage === filters.stage)),
+    [live, filters, meId],
+  );
+  const hasRounds = useMemo(() => live.some((r) => r.rounds && r.rounds.total > 0), [live]);
   const sources = useMemo(() => [...new Set(live.map((r) => r.source).filter((s): s is string => !!s))].sort(), [live]);
   const tags = useMemo(() => {
     const c = new Map<string, number>();
@@ -356,6 +369,29 @@ export function CandidatesView({
           );
         })}
       </div>
+
+      {hasRounds && (
+        <div role="group" aria-label="Waiting on" className="flex items-center gap-1.5 overflow-x-auto -my-1 py-1">
+          <span className="text-[13px] text-subtle shrink-0 mr-1">Waiting on</span>
+          {WAITING_KEYS.map((k) => {
+            const on = filters.waiting === k;
+            return (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={on}
+                onClick={() => set({ waiting: on ? null : k })}
+                className={`shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full border text-[13px] font-medium transition-colors ${
+                  on ? "border-secondary bg-secondary/10 text-fg" : "border-border text-muted hover:text-fg hover:bg-panel"
+                }`}
+              >
+                {WAITING_LABELS[k]}
+                <span className={`tabular-nums ${on ? "text-secondary-soft" : "text-subtle"}`}>{waiting[k]}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -734,6 +770,7 @@ export function CandidatesView({
           showBatch={!scopeBatchId}
         />
       )}
+      {hasRounds && visible.length > 0 && <RoundLegend className="px-1" />}
 
       {quickRow && (
         <QuickView
@@ -867,6 +904,11 @@ function FilterMenu({
 
 const GRID =
   "xl:grid xl:grid-cols-[36px_minmax(0,1.6fr)_140px_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] xl:gap-4 xl:items-center";
+/** With interview rounds: the Rounds column takes the Next step column's place and room (the badge sits under the line). */
+const GRID_ROUNDS =
+  "xl:grid xl:grid-cols-[36px_minmax(0,1.3fr)_minmax(0,0.8fr)_118px_minmax(0,2fr)_104px_32px] xl:gap-4 xl:items-center";
+const GRID_ROUNDS_NO_BATCH =
+  "xl:grid xl:grid-cols-[36px_minmax(0,1.4fr)_118px_minmax(0,2.2fr)_104px_32px] xl:gap-4 xl:items-center";
 const GRID_NO_BATCH =
   "xl:grid xl:grid-cols-[36px_minmax(0,1.6fr)_140px_minmax(0,1.1fr)_minmax(0,1.2fr)_120px_32px] xl:gap-4 xl:items-center";
 
@@ -907,7 +949,8 @@ function ListTable({
   onArchive: (id: string, archived: boolean) => void;
   empty: boolean;
 }) {
-  const grid = showBatch ? GRID : GRID_NO_BATCH;
+  const anyRounds = rows.some((r) => r.rounds && r.rounds.total > 0);
+  const grid = anyRounds ? (showBatch ? GRID_ROUNDS : GRID_ROUNDS_NO_BATCH) : showBatch ? GRID : GRID_NO_BATCH;
   if (!rows.length) {
     return (
       <div className="rounded-xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center">
@@ -927,8 +970,8 @@ function ListTable({
         <span role="columnheader">Candidate</span>
         {showBatch && <span role="columnheader">Batch</span>}
         <span role="columnheader">Stage</span>
-        <span role="columnheader">Latest result</span>
-        <span role="columnheader">Next step</span>
+        <span role="columnheader">{anyRounds ? "Rounds" : "Latest result"}</span>
+        {!anyRounds && <span role="columnheader">Next step</span>}
         <span role="columnheader">Owner</span>
         <span role="columnheader" className="sr-only">
           Actions
@@ -975,8 +1018,14 @@ function ListTable({
                   </span>
                   {r.combined != null && <span className="text-xs font-semibold text-fg">{r.combined}</span>}
                 </div>
+                {r.rounds && r.rounds.total > 0 && (
+                  <div className="xl:hidden flex items-center gap-2 mt-2 min-w-0">
+                    <RoundStrip items={stripItems(r.rounds)} />
+                    <span className="text-xs text-muted truncate">{roundsLine(r.rounds)}</span>
+                  </div>
+                )}
                 <div className="xl:hidden mt-1.5">
-                  <NextStepPill next={r.next} compact />
+                  {roundsBadge(r.rounds) ? <RoundsBadge rounds={r.rounds} /> : <NextStepPill next={r.next} compact />}
                 </div>
               </div>
             </div>
@@ -1021,7 +1070,15 @@ function ListTable({
               </span>
             </div>
             <div role="cell" className="hidden xl:block min-w-0">
-              {!r.latest && r.pending ? (
+              {r.rounds && r.rounds.total > 0 ? (
+                <div className="flex flex-col gap-1.5 items-start min-w-0 w-full">
+                  <RoundsCell slug={slug} candidateId={r.id} name={r.name} stage={r.stage} rounds={r.rounds} canPipeline={perms.canPipeline && r.status !== "archived"} />
+                  <RoundsBadge rounds={r.rounds} />
+                </div>
+              ) : anyRounds ? (
+                // No plan for this person: what the results say is next.
+                <NextStepPill next={r.next} />
+              ) : !r.latest && r.pending ? (
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-[13px] text-fg truncate">{r.pending.text}</span>
                   <span className="text-xs text-subtle truncate">
@@ -1032,9 +1089,11 @@ function ListTable({
                 <ScoreBar value={r.latest?.score ?? null} label={r.latest ? `${RESULT_KIND_LABELS[r.latest.kind]} · ${r.latest.title}` : undefined} />
               )}
             </div>
-            <div role="cell" className="hidden xl:block min-w-0">
-              <NextStepPill next={r.next} />
-            </div>
+            {!anyRounds && (
+              <div role="cell" className="hidden xl:block min-w-0">
+                <NextStepPill next={r.next} />
+              </div>
+            )}
             <div role="cell" className="hidden xl:flex items-center gap-2 min-w-0">
               {owner ? (
                 <>

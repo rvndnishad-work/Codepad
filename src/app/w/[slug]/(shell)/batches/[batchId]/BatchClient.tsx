@@ -17,7 +17,9 @@ import { PassOverrideDialog, RejectDialog } from "../../candidates/_components/d
 import { Avatar, Btn, Menu, MenuItem, StageDot, stageLabel, useToasts } from "../../candidates/_components/ui";
 import { BatchRounds } from "../../candidates/_components/PlanEditor";
 import type { PlanView } from "@/lib/interview/plans-server";
-import type { HiringType } from "@/lib/interview/rounds";
+import type { HiringType, RoundState } from "@/lib/interview/rounds";
+import { planColumns, roundInColumn, type RoundView } from "@/lib/interview/rounds-view";
+import { RoundTile } from "../../candidates/_components/PlanEditor";
 
 type Tab = "candidates" | "board" | "results" | "rounds";
 const SHORTLIST = "shortlist";
@@ -214,7 +216,25 @@ export default function BatchClient({
   );
 }
 
-type SortCol = "combined" | ResultKind | "minutes";
+/** A result kind, or `round:<plan round id>` when the batch has a plan. */
+type SortCol = "combined" | ResultKind | "minutes" | `round:${string}`;
+
+const ROUND_TONE: Partial<Record<RoundState, string>> = {
+  above_bar: "text-success",
+  below_bar: "text-danger",
+  did_not_finish: "text-danger",
+  awaiting_review: "text-warning",
+  scheduled: "text-secondary-soft",
+  in_progress: "text-secondary-soft",
+};
+
+/** A round's cell: its score, or where it stands when there is none. */
+function roundCellText(r: RoundView | null): string {
+  if (!r) return "None";
+  if (r.skipped) return "Skipped";
+  if (r.result?.score && r.state !== "awaiting_review") return r.result.score;
+  return r.stateLabel;
+}
 
 function Results({
   slug,
@@ -240,7 +260,16 @@ function Results({
   const [busy, start] = useTransition();
   const [toasts, toast] = useToasts();
 
-  const value = (r: RosterRow, c: SortCol) => (c === "combined" ? r.combined : c === "minutes" ? r.takeHomeMinutes : r.byKind[c]);
+  // With a plan, each plan round is a column; without, the result kinds are.
+  const columns = useMemo(() => planColumns(rows.map((r) => r.rounds)), [rows]);
+  const byRounds = columns.length > 0;
+  const value = (r: RosterRow, c: SortCol): number | null => {
+    if (c.startsWith("round:")) {
+      const f = roundInColumn(r.rounds, c.slice(6))?.result?.frac;
+      return f == null ? null : Math.round(f * 1000) / 10;
+    }
+    return c === "combined" ? r.combined : c === "minutes" ? r.takeHomeMinutes : r.byKind[c as ResultKind];
+  };
   const ranked = useMemo(() => {
     const scored = [...rows].sort((a, b) => {
       const va = value(a, sort);
@@ -273,14 +302,23 @@ function Results({
       const s = v == null ? "" : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
-    const lines = [
-      ["rank", "name", "email", "stage", "combined", "ai_screening", "take_home", "interview_rating", "take_home_minutes", "shortlisted"].join(","),
-      ...ranked.map((r, i) =>
-        [i + 1, r.name, r.email, stageLabel(r.stage), r.combined, r.byKind.ai_screening, r.byKind.take_home, r.interviewRating, r.takeHomeMinutes, r.tags.includes(SHORTLIST) ? "yes" : ""]
-          .map(esc)
-          .join(","),
-      ),
-    ];
+    const lines = byRounds
+      ? [
+          ["rank", "name", "email", "stage", "combined", ...columns.map((c) => c.name), "shortlisted"].map(esc).join(","),
+          ...ranked.map((r, i) =>
+            [i + 1, r.name, r.email, stageLabel(r.stage), r.combined, ...columns.map((c) => roundCellText(roundInColumn(r.rounds, c.key))), r.tags.includes(SHORTLIST) ? "yes" : ""]
+              .map(esc)
+              .join(","),
+          ),
+        ]
+      : [
+          ["rank", "name", "email", "stage", "combined", "ai_screening", "take_home", "interview_rating", "take_home_minutes", "shortlisted"].join(","),
+          ...ranked.map((r, i) =>
+            [i + 1, r.name, r.email, stageLabel(r.stage), r.combined, r.byKind.ai_screening, r.byKind.take_home, r.interviewRating, r.takeHomeMinutes, r.tags.includes(SHORTLIST) ? "yes" : ""]
+              .map(esc)
+              .join(","),
+          ),
+        ];
     const url = URL.createObjectURL(new Blob([lines.join("\n") + "\n"], { type: "text/csv" }));
     const a = document.createElement("a");
     a.href = url;
@@ -295,9 +333,15 @@ function Results({
     return kind === "minutes" ? Math.min(...vals) : Math.max(...vals);
   };
 
-  const G = "grid grid-cols-[32px_36px_minmax(0,1.4fr)_repeat(5,minmax(76px,1fr))_96px] gap-3.5 items-center";
+  const G = "grid gap-3.5 items-center";
+  const gridStyle = {
+    gridTemplateColumns: byRounds
+      ? `32px 36px minmax(160px,1.4fr) minmax(76px,1fr) repeat(${columns.length}, minmax(96px,1fr)) 96px`
+      : "32px 36px minmax(0,1.4fr) repeat(5, minmax(76px,1fr)) 96px",
+  };
+  const minWidth = byRounds ? 32 + 36 + 160 + 76 + columns.length * 96 + 96 + (columns.length + 5) * 14 + 32 : 860;
   const head = (c: SortCol, text: string) => (
-    <button type="button" onClick={() => setSort(c)} aria-pressed={sort === c} className={`text-left ${sort === c ? "text-fg" : "hover:text-fg"}`}>
+    <button type="button" onClick={() => setSort(c)} aria-pressed={sort === c} className={`text-left truncate max-w-full ${sort === c ? "text-fg" : "hover:text-fg"}`}>
       {text}
       {sort === c ? (c === "minutes" ? " ↑" : " ↓") : ""}
     </button>
@@ -308,7 +352,8 @@ function Results({
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-[13px] text-muted flex-1 min-w-[260px]">
           Ranked by combined score: AI screening {RESULT_WEIGHTS.ai_screening * 100}%, take-home {RESULT_WEIGHTS.take_home * 100}%, interview{" "}
-          {RESULT_WEIGHTS.interview * 100}%. Missing results are left out of the weighting. Tick 2 to 4 people to compare them.
+          {RESULT_WEIGHTS.interview * 100}%. Missing results are left out of the weighting.{byRounds ? " Each plan round has its own column; sort by one to rank on it." : ""} Tick 2
+          to 4 people to compare them.
         </p>
         <button
           type="button"
@@ -327,18 +372,31 @@ function Results({
       </div>
 
       <div className="rounded-xl border border-border bg-surface overflow-x-auto">
-        <div className="min-w-[860px]">
-          <div className={`${G} px-4 py-2.5 text-xs font-medium text-subtle border-b border-border`}>
+        <div style={{ minWidth }}>
+          <div className={`${G} px-4 py-2.5 text-xs font-medium text-subtle border-b border-border`} style={gridStyle}>
             <span>
               <span className="sr-only">Compare</span>
             </span>
             <span>Rank</span>
             <span>Candidate</span>
             {head("combined", "Combined")}
-            {head("ai_screening", "AI screening")}
-            {head("take_home", "Take-home")}
-            {head("interview", "Interview")}
-            {head("minutes", "Time taken")}
+            {byRounds ? (
+              columns.map((c) => (
+                <span key={c.key} className="flex items-center gap-1.5 min-w-0">
+                  <RoundTile kind={c.kind} format={c.format} size={18} />
+                  <span className="truncate" title={c.name}>
+                    {head(`round:${c.key}`, c.name)}
+                  </span>
+                </span>
+              ))
+            ) : (
+              <>
+                {head("ai_screening", "AI screening")}
+                {head("take_home", "Take-home")}
+                {head("interview", "Interview")}
+                {head("minutes", "Time taken")}
+              </>
+            )}
             <span>Shortlist</span>
           </div>
           {ranked.length === 0 && <p className="px-4 py-10 text-center text-[13px] text-subtle">{onlyShortlist ? "Nobody is on the shortlist yet." : "No candidates in this batch yet."}</p>}
@@ -348,7 +406,7 @@ function Results({
             const cell = (v: number | null | string) =>
               v == null || v === "" ? <span className="text-subtle">None</span> : <span className="tabular-nums text-fg">{v}</span>;
             return (
-              <div key={r.id} className={`${G} px-4 py-3 border-b border-border last:border-b-0 text-sm ${on ? "bg-secondary/[0.07]" : "hover:bg-panel/50"}`}>
+              <div key={r.id} style={gridStyle} className={`${G} px-4 py-3 border-b border-border last:border-b-0 text-sm ${on ? "bg-secondary/[0.07]" : "hover:bg-panel/50"}`}>
                 <input
                   type="checkbox"
                   checked={on}
@@ -370,10 +428,24 @@ function Results({
                   <StageDot stage={r.stage} className="shrink-0" />
                 </Link>
                 <span className="font-semibold">{r.combined == null ? <span className="font-normal text-subtle">Incomplete</span> : r.combined}</span>
-                {cell(r.byKind.ai_screening)}
-                {cell(r.byKind.take_home)}
-                {cell(r.interviewRating != null ? r.interviewRating.toFixed(1) : null)}
-                {cell(r.takeHomeMinutes != null ? `${r.takeHomeMinutes} min` : null)}
+                {byRounds ? (
+                  columns.map((c) => {
+                    const rd = roundInColumn(r.rounds, c.key);
+                    const scored = !!rd?.result?.score && rd.state !== "awaiting_review";
+                    return (
+                      <span key={c.key} className={`truncate ${scored ? `tabular-nums font-medium ${ROUND_TONE[rd!.state] ?? "text-fg"}` : `text-xs ${rd ? (ROUND_TONE[rd.state] ?? "text-subtle") : "text-subtle"}`}`}>
+                        {roundCellText(rd)}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <>
+                    {cell(r.byKind.ai_screening)}
+                    {cell(r.byKind.take_home)}
+                    {cell(r.interviewRating != null ? r.interviewRating.toFixed(1) : null)}
+                    {cell(r.takeHomeMinutes != null ? `${r.takeHomeMinutes} min` : null)}
+                  </>
+                )}
                 <button
                   type="button"
                   aria-pressed={listed}
@@ -433,13 +505,18 @@ function Results({
           </div>
           <div className="grid gap-3.5" style={{ gridTemplateColumns: `repeat(${Math.max(compared.length, 2)}, minmax(0, 1fr))` }}>
             {compared.map((r) => {
-              const lines: [string, string, SortCol][] = [
+              const lines: [string, string, SortCol][] = byRounds
+                ? [
+                    ["Combined", r.combined != null ? String(r.combined) : "Incomplete", "combined"],
+                    ...columns.map((c): [string, string, SortCol] => [c.name, roundCellText(roundInColumn(r.rounds, c.key)), `round:${c.key}`]),
+                  ]
+                : [
                 ["Combined", r.combined != null ? String(r.combined) : "Incomplete", "combined"],
                 ["AI screening", r.byKind.ai_screening != null ? String(r.byKind.ai_screening) : r.results.some((x) => x.kind === "ai_screening") ? "Pending" : "Not sent", "ai_screening"],
                 ["Take-home", r.byKind.take_home != null ? String(r.byKind.take_home) : r.results.some((x) => x.kind === "take_home") ? "Pending" : "Not sent", "take_home"],
                 ["Time taken", r.takeHomeMinutes != null ? `${r.takeHomeMinutes} min` : "None", "minutes"],
                 ["Interview", r.interviewRating != null ? `${r.interviewRating.toFixed(1)} of ${r.interviewScale ?? 5}` : "Not yet", "interview"],
-              ];
+                  ];
               return (
                 <div key={r.id} className="rounded-xl border border-border bg-bg p-4 flex flex-col gap-3 min-w-0">
                   <div className="flex items-center gap-2.5 min-w-0">

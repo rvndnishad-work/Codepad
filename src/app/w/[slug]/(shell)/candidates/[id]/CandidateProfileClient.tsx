@@ -51,7 +51,7 @@ import {
 import { ConfirmDialog, PassOverrideDialog, RejectDialog } from "../_components/dialogs";
 import type { CandidateAtsCard } from "@/lib/ats/connection-server";
 import AtsSourceCard, { atsName } from "./AtsSourceCard";
-import RoundsCard, { type ProfileRound } from "./RoundsCard";
+import RoundsTimeline, { PlanCard } from "./RoundsTimeline";
 import type { RoleType } from "@/lib/interview/rounds";
 import { ChecklistRow } from "../_components/Checklist";
 import type { Perms } from "../_components/CandidatesView";
@@ -83,7 +83,6 @@ export default function CandidateProfileClient({
   perms,
   ats = null,
   canSendAtsInvite = false,
-  rounds = [],
   planName = null,
   roleType = "technical",
   openReject = null,
@@ -102,8 +101,7 @@ export default function CandidateProfileClient({
   /** Set when the candidate came in from an ATS. */
   ats?: CandidateAtsCard | null;
   canSendAtsInvite?: boolean;
-  /** The candidate's interview rounds, from their plan or added by hand. */
-  rounds?: ProfileRound[];
+  /** The candidate's plan, when they have one. Their rounds come on `row.rounds`. */
   planName?: string | null;
   roleType?: RoleType;
   /** Open the Not passed dialog on arrival, with this reason and note filled in. */
@@ -114,6 +112,9 @@ export default function CandidateProfileClient({
   const [busy, start] = useTransition();
   const [toasts, toast] = useToasts();
   const [rejecting, setRejecting] = useState(() => !!openReject && row.stage !== "PASSED" && row.stage !== "REJECTED" && perms.canPipeline);
+  // What the Not passed dialog opens with: from a round report's Stop here, or the timeline's.
+  const [rejectPreset, setRejectPreset] = useState(openReject);
+  const hasRounds = !!row.rounds && row.rounds.rounds.length > 0;
   const [confirmPass, setConfirmPass] = useState(false);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [editing, setEditing] = useState(false);
@@ -441,7 +442,30 @@ export default function CandidateProfileClient({
       {tab === "overview" && (
         <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
           <div className="flex flex-col gap-5 min-w-0">
-            {!isClosed && !archived && (
+            {(hasRounds || planName || perms.canWrite) && (
+              <RoundsTimeline
+                slug={slug}
+                candidateId={row.id}
+                name={row.name}
+                stage={row.stage}
+                rounds={row.rounds ?? null}
+                planName={planName}
+                roleType={roleType}
+                canEdit={perms.canWrite && !archived && !isClosed}
+                canPipeline={perms.canPipeline}
+                closed={isClosed || archived}
+                busy={busy}
+                onPass={() => move("PASSED")}
+                onReject={(after) => {
+                  if (after) setRejectPreset({ reason: "SKILL_GAP", note: `Stopped after ${after}` });
+                  setRejecting(true);
+                }}
+                toast={toast}
+              />
+            )}
+
+            {/* With rounds, the timeline says what is next; this banner is for people without a plan. */}
+            {!isClosed && !archived && !hasRounds && (
               <div
                 className={`rounded-xl border px-4 py-3.5 flex flex-wrap items-center gap-3.5 ${
                   row.next.tone === "danger" ? "border-danger/30 bg-danger/10" : row.next.tone === "warning" ? "border-warning/30 bg-warning/10" : "border-border bg-surface"
@@ -476,10 +500,6 @@ export default function CandidateProfileClient({
               </div>
             )}
 
-            {(rounds.length > 0 || planName || perms.canWrite) && (
-              <RoundsCard slug={slug} candidateId={row.id} planName={planName} roleType={roleType} rounds={rounds} canEdit={perms.canWrite && !archived} toast={toast} />
-            )}
-
             <ResultsGrid results={sortedResults} combined={row.combined} />
 
             <section className="rounded-xl border border-border bg-surface">
@@ -496,6 +516,7 @@ export default function CandidateProfileClient({
           </div>
 
           <div className="flex flex-col gap-5">
+            {hasRounds && row.rounds && row.rounds.total > 0 && <PlanCard rounds={row.rounds} name={row.name} stage={row.stage} roleType={roleType} />}
             {ats && <AtsSourceCard slug={slug} candidateName={row.name} card={ats} canSend={canSendAtsInvite} />}
             <NotesCard slug={slug} candidateId={row.id} notes={notes.slice(0, 3)} canWrite={perms.canWrite} meId={meId} isManager={perms.isManager} compact onAll={() => setTab("notes")} total={notes.length} />
             <DetailsCard
@@ -528,11 +549,12 @@ export default function CandidateProfileClient({
         <RejectDialog
           names={[row.name]}
           busy={busy}
-          initialReason={openReject?.reason ?? null}
-          initialNote={openReject?.note ?? ""}
+          initialReason={rejectPreset?.reason ?? null}
+          initialNote={rejectPreset?.note ?? ""}
           onCancel={() => setRejecting(false)}
           onConfirm={(reason: RejectReason, note) => {
             setRejecting(false);
+            setRejectPreset(null);
             act(
               bulkCandidatesAction(slug, [row.id], { action: "stage", stage: "REJECTED", rejectReason: reason, rejectReasonNote: note }),
               "Marked as not passed",

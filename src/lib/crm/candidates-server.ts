@@ -17,6 +17,7 @@ import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDelet
 import { auth } from "@/lib/auth";
 import { cancelInterviewEvent } from "@/lib/calendar/server";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
+import { cancelUpcomingInterview } from "@/lib/interview/invite-server";
 import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import {
@@ -466,6 +467,7 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
     });
   }
   if (fields.includes("status")) {
+    if (patch.status === "archived" && current.status !== "archived") await cancelInterviewsOnArchive(actor, [id]);
     void audit(
       actor,
       patch.status === "archived"
@@ -642,6 +644,33 @@ export async function tagCandidates(actor: CandidateActor, ids: string[], add: s
   return { changed };
 }
 
+/**
+ * Cancels the upcoming live interviews of candidates who were just archived,
+ * and emails each of them. Restoring does not bring the interviews back.
+ */
+async function cancelInterviewsOnArchive(actor: CandidateActor, candidateIds: string[]): Promise<number> {
+  if (!candidateIds.length) return 0;
+  const upcoming = await prisma.interviewSession.findMany({
+    where: { workspaceId: actor.workspaceId, candidateId: { in: candidateIds }, type: { not: "take-home" }, status: "scheduled", startedAt: null },
+    select: { id: true },
+  });
+  let cancelled = 0;
+  for (const s of upcoming) {
+    const done = await cancelUpcomingInterview({
+      workspaceId: actor.workspaceId,
+      sessionId: s.id,
+      actor: { userId: actor.actorUserId, email: actor.actorEmail },
+      reason: "Candidate archived",
+      notifyCandidate: true,
+    }).catch((err) => {
+      console.error("[archive] could not cancel interview", s.id, err);
+      return false;
+    });
+    if (done) cancelled++;
+  }
+  return cancelled;
+}
+
 export async function archiveCandidates(actor: CandidateActor, ids: string[], archived: boolean) {
   const rows = await scopedCandidates(actor, ids);
   const changing = rows.filter((r) => (archived ? r.status !== "archived" : r.status === "archived"));
@@ -657,7 +686,8 @@ export async function archiveCandidates(actor: CandidateActor, ids: string[], ar
       { candidateName: c.name, fromStatus: c.status, toStatus: status },
     );
   }
-  return { changed: changing.length };
+  const interviewsCancelled = archived ? await cancelInterviewsOnArchive(actor, changing.map((c) => c.id)) : 0;
+  return { changed: changing.length, interviewsCancelled };
 }
 
 /** The placeholder written over an erased person's name on their assessments. */
@@ -879,7 +909,7 @@ export async function runBulkAction(
   actor: CandidateActor,
   ids: string[],
   op: BulkAction,
-): Promise<{ changed: number }> {
+): Promise<{ changed: number; interviewsCancelled?: number }> {
   if (!(await canMember(actor.member, BULK_PERMISSION[op.action]))) {
     throw new CandidateError(403, "You do not have permission to do that.");
   }

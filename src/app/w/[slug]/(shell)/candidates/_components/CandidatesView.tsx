@@ -258,7 +258,9 @@ export function CandidatesView({
         toast(r.error, "error");
         return;
       }
-      toast(done(r.changed), "ok", undo ? () => run(ids, undo, () => "Undone") : undefined);
+      // Restoring does not bring cancelled interviews back, so say so.
+      const called = r.interviewsCancelled ? `, ${r.interviewsCancelled === 1 ? "1 upcoming interview" : `${r.interviewsCancelled} upcoming interviews`} cancelled` : "";
+      toast(done(r.changed) + called, "ok", undo ? () => run(ids, undo, () => (called ? "Restored. Book the interview again if needed" : "Undone")) : undefined);
       if (op.action === "archive" || op.action === "restore" || op.action === "erase") setSelected(new Set());
       router.refresh();
     });
@@ -819,7 +821,7 @@ export function CandidatesView({
       {confirm === "archive" && (
         <ConfirmDialog
           title={`Archive ${plural(selected.size, "candidate")}?`}
-          body="They leave the list and the board but keep their history and results. You can restore them from Saved views, Show archived."
+          body="They leave the list and the board but keep their history and results. Interviews still to come are cancelled and they are told by email. You can restore them from Saved views, Show archived."
           confirmLabel="Archive"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {

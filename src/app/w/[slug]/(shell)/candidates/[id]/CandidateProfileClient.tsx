@@ -577,7 +577,7 @@ export default function CandidateProfileClient({
       {confirm === "archive" && (
         <ConfirmDialog
           title={`Archive ${row.name}?`}
-          body="They leave the list and the board but keep their history, notes and results. You can restore them at any time."
+          body="They leave the list and the board but keep their history, notes and results. Interviews still to come are cancelled and they are told by email. You can restore them at any time."
           confirmLabel="Archive"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {

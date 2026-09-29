@@ -14,7 +14,7 @@
  * Saving a plan brings every candidate on it in step: rounds not yet held
  * change, rounds already held keep their history (see plans-server).
  */
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -28,28 +28,32 @@ import {
   MessagesSquare,
   MoreHorizontal,
   Plus,
+  Send,
   Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react";
 import { Btn, inputCls, Menu, MenuItem, MenuLabel } from "./ui";
 import { Toggle } from "../../settings/_components/form";
-import { createPlanAction, deletePlanAction, savePlanAction, setBatchPlanAction } from "../plan-actions";
-import type { PlanView } from "@/lib/interview/plans-server";
+import { createPlanAction, deletePlanAction, planSourcesAction, savePlanAction, setBatchPlanAction } from "../plan-actions";
+import type { PlanSources, PlanView } from "@/lib/interview/plans-server";
 import {
   defaultDuration,
   formatLabel,
   formatsFor,
   INVITE_DAYS,
+  inSentence,
   kindName,
   LIVE_MINUTES,
   LIVE_PASS,
+  parseRoundSettings,
   PLAN_NAME_MAX,
   PLAN_ROUNDS_MAX,
   ROLE_TYPE_LABELS,
   roleTypesFor,
   ROUND_NAME_MAX,
   roundsFromTemplate,
+  roundSource,
   SCORE_PASS,
   templateByKey,
   templatesFor,
@@ -71,9 +75,11 @@ type DraftRound = {
   durationMin: string;
   passMark: string;
   required: boolean;
+  /** AI interview and take-home rounds: the AI screening or template it sends, "" until picked. */
+  source: string;
 };
 
-type Draft = { name: string; roleType: RoleType; continuesInAts: boolean; rounds: DraftRound[] };
+type Draft = { name: string; roleType: RoleType; continuesInAts: boolean; autoSendFirst: boolean; rounds: DraftRound[] };
 
 let seq = 0;
 const newKey = () => `r${++seq}`;
@@ -83,6 +89,7 @@ function draftFromPlan(p: PlanView): Draft {
     name: p.name,
     roleType: p.roleType,
     continuesInAts: p.continuesInAts,
+    autoSendFirst: p.autoSendFirst,
     rounds: p.rounds.map((r) => ({
       key: r.id,
       id: r.id,
@@ -92,6 +99,7 @@ function draftFromPlan(p: PlanView): Draft {
       durationMin: r.durationMin != null ? String(r.durationMin) : "",
       passMark: r.passMark != null ? String(r.passMark) : "",
       required: r.required,
+      source: roundSource(r.kind, parseRoundSettings(r.settingsJson)) ?? "",
     })),
   };
 }
@@ -102,6 +110,7 @@ function draftFromTemplate(t: PlanTemplate | null, role: RoleType, name: string,
     name,
     roleType: t?.roleType ?? role,
     continuesInAts: t?.continuesInAts ?? false,
+    autoSendFirst: false,
     rounds: rows.map((r) => ({
       key: newKey(),
       id: null,
@@ -111,6 +120,7 @@ function draftFromTemplate(t: PlanTemplate | null, role: RoleType, name: string,
       durationMin: r.durationMin != null ? String(r.durationMin) : "",
       passMark: "",
       required: r.required,
+      source: "",
     })),
   };
 }
@@ -120,6 +130,7 @@ function toInput(d: Draft): PlanInput {
     name: d.name,
     roleType: d.roleType,
     continuesInAts: d.continuesInAts,
+    autoSendFirst: d.autoSendFirst,
     rounds: d.rounds.map((r) => ({
       id: r.id,
       kind: r.kind,
@@ -128,6 +139,7 @@ function toInput(d: Draft): PlanInput {
       durationMin: r.durationMin.trim() === "" ? null : Number(r.durationMin),
       passMark: r.passMark.trim() === "" ? null : Number(r.passMark),
       required: r.required,
+      settings: r.kind === "ai_interview" ? { aiScreeningId: r.source || null } : r.kind === "take_home" ? { takeHomeTemplateId: r.source || null } : null,
     })),
   };
 }
@@ -270,6 +282,17 @@ export function PlanEditor({
   const formats = formatsFor(draft.roleType);
   const disabled = !canEdit || pending;
 
+  const [sources, setSources] = useState<PlanSources | null>(null);
+  useEffect(() => {
+    let live = true;
+    planSourcesAction(slug).then((res) => live && res.ok && setSources(res.sources));
+    return () => {
+      live = false;
+    };
+  }, [slug]);
+  const first = draft.rounds[0];
+  const canAutoSend = !!first && first.kind !== "interview";
+
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
   const setRound = (key: string, patch: Partial<DraftRound>) => setDraft((d) => ({ ...d, rounds: d.rounds.map((r) => (r.key === key ? { ...r, ...patch } : r)) }));
   const move = (i: number, by: number) =>
@@ -293,6 +316,7 @@ export function PlanEditor({
         durationMin: String(defaultDuration(kind, format)),
         passMark: "",
         required: true,
+        source: "",
       };
       // AI interviews and take-homes usually come first; live interviews go last.
       const lastEarly = d.rounds.reduce((at, r, i) => (r.kind !== "interview" ? i : at), -1);
@@ -380,12 +404,35 @@ export function PlanEditor({
               role={draft.roleType}
               formats={formats}
               disabled={disabled}
+              sources={sources}
+              slug={slug}
               onChange={(patch) => setRound(r.key, patch)}
               onMove={(by) => move(i, by)}
               onRemove={() => remove(r.key)}
             />
           ))}
         </ol>
+      )}
+
+      {canAutoSend && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 border-t border-border">
+          <span className="shrink-0" aria-hidden>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-border text-muted">
+              <Send className="w-4 h-4" />
+            </span>
+          </span>
+          <div className="min-w-0 flex-1 basis-[240px]">
+            <div className="text-sm font-medium text-fg">Send round 1 by itself</div>
+            <div className="text-xs text-muted mt-0.5">
+              {!first.source
+                ? `Pick what round 1 sends first. Then anyone added to a batch on this plan gets the ${inSentence(kindName(first.kind, draft.roleType))} straight away.`
+                : draft.autoSendFirst
+                  ? `On: people added to a batch on this plan get ${first.name} straight away. Later rounds always wait for you.`
+                  : "Off: you send round 1 yourself from each candidate."}
+            </div>
+          </div>
+          <Toggle checked={draft.autoSendFirst && !!first.source} onChange={(v) => set({ autoSendFirst: v })} label="Send round 1 by itself" disabled={disabled || !first.source} />
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3 px-4 py-3.5 border-t border-border">
@@ -446,6 +493,8 @@ function RoundRow({
   role,
   formats,
   disabled,
+  sources,
+  slug,
   onChange,
   onMove,
   onRemove,
@@ -456,6 +505,8 @@ function RoundRow({
   role: RoleType;
   formats: string[];
   disabled: boolean;
+  sources: PlanSources | null;
+  slug: string;
   onChange: (patch: Partial<DraftRound>) => void;
   onMove: (by: number) => void;
   onRemove: () => void;
@@ -504,9 +555,7 @@ function RoundRow({
                 </select>
               </>
             ) : (
-              <span className="text-xs text-muted truncate">
-                {r.kind === "ai_interview" ? "Automated. You pick the questions when you send it." : "Sent as a link. You pick the task when you send it."}
-              </span>
+              <SourcePicker id={`${id}-source`} n={n} round={r} role={role} sources={sources} slug={slug} disabled={disabled} onChange={(source) => onChange({ source })} />
             )}
           </div>
         </div>
@@ -547,6 +596,65 @@ function RoundRow({
         </div>
       </div>
     </li>
+  );
+}
+
+/** What an AI interview or take-home round sends: one of the workspace's AI screenings or take-home templates. */
+function SourcePicker({
+  id,
+  n,
+  round: r,
+  role,
+  sources,
+  slug,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  n: number;
+  round: DraftRound;
+  role: RoleType;
+  sources: PlanSources | null;
+  slug: string;
+  disabled: boolean;
+  onChange: (source: string) => void;
+}) {
+  const ai = r.kind === "ai_interview";
+  const list = sources ? (ai ? sources.ai : sources.takeHome) : null;
+  const noun = ai ? "AI screening" : role === "non_technical" ? "written task template" : "take-home template";
+  if (list && list.length === 0 && !r.source) {
+    return (
+      <span className="text-xs text-muted truncate">
+        No {noun}s yet.{" "}
+        <a href={ai ? `/w/${slug}/ai-interviews/new` : `/w/${slug}/take-homes/templates`} className="text-secondary-soft hover:underline underline-offset-4">
+          Make one
+        </a>{" "}
+        to send this round in one click.
+      </span>
+    );
+  }
+  return (
+    <>
+      <label htmlFor={id} className="sr-only">
+        Round {n} sends
+      </label>
+      <select
+        id={id}
+        value={r.source}
+        disabled={disabled || !list}
+        onChange={(e) => onChange(e.target.value)}
+        className={`h-7 max-w-full min-w-0 rounded-md border bg-bg px-2 text-xs ${r.source ? "border-border text-fg" : "border-border text-muted"}`}
+      >
+        <option value="">{list ? `Pick the ${noun} it sends` : "Loading"}</option>
+        {r.source && list && !list.some((x) => x.id === r.source) && <option value={r.source}>A {noun} that was removed</option>}
+        {list?.map((x) => (
+          <option key={x.id} value={x.id}>
+            {x.name}
+            {"closed" in x && x.closed ? " (closed)" : ""}
+          </option>
+        ))}
+      </select>
+    </>
   );
 }
 

@@ -16,7 +16,9 @@ import {
   normalizeHiringType,
   normalizeRoleType,
   overrideReason,
+  parseRoundSettings,
   planProgress,
+  roundSource,
   roundAfter,
   roundStateLabel,
   segmentOf,
@@ -32,6 +34,8 @@ export type RoundMeta = {
   format: string | null;
   /** The plan round this copy came from; null when added for this person. */
   planRoundId: string | null;
+  /** AI interview and take-home rounds: the AI screening or template the plan round sends, when one is picked. */
+  sends: string | null;
   manual: boolean;
   held: boolean;
   durationMin: number | null;
@@ -58,6 +62,27 @@ export type CandidateRounds = {
 function scoreText(r: CandidateResult): string | null {
   if (r.kind === "interview" && r.rating != null) return `${r.rating.toFixed(1)} of ${r.ratingScale ?? 5}`;
   return r.score != null ? `${Math.round(r.score)}%` : null;
+}
+
+/** Names of the AI screenings and take-home templates plan rounds send, looked up once for every candidate. */
+async function sourceNames(workspaceId: string, rounds: { kind: string; json: string | null }[]): Promise<(kind: string, json: string | null) => string | null> {
+  const ai = new Set<string>();
+  const th = new Set<string>();
+  for (const r of rounds) {
+    if (!r.json) continue;
+    const id = roundSource(r.kind as PlanRoundKind, parseRoundSettings(r.json));
+    if (!id) continue;
+    (r.kind === "ai_interview" ? ai : th).add(id);
+  }
+  const [a, t] = await Promise.all([
+    ai.size ? prisma.aIScreeningBatch.findMany({ where: { workspaceId, id: { in: [...ai] } }, select: { id: true, positionTitle: true } }) : [],
+    th.size ? prisma.takeHomeTemplate.findMany({ where: { workspaceId, id: { in: [...th] } }, select: { id: true, name: true } }) : [],
+  ]);
+  const names = new Map<string, string>([...a.map((x): [string, string] => [x.id, x.positionTitle]), ...t.map((x): [string, string] => [x.id, x.name])]);
+  return (kind, json) => {
+    const id = json ? roundSource(kind as PlanRoundKind, parseRoundSettings(json)) : null;
+    return id ? (names.get(id) ?? null) : null;
+  };
 }
 
 /** The score and the pass mark on 0-1, and the bar in words. */
@@ -108,6 +133,7 @@ export async function loadCandidateRounds(
             skipped: true,
             nextStep: true,
             planRoundId: true,
+            planRound: { select: { settingsJson: true } },
             sessions: { select: { id: true, status: true, verdict: true } },
             aiSessions: { select: { id: true } },
           },
@@ -118,6 +144,7 @@ export async function loadCandidateRounds(
   const withRounds = candidates.filter((c) => c.rounds.length > 0);
   const results: Map<string, CandidateResult[]> = preloaded ?? (withRounds.length ? await loadCandidateResults(workspaceId, workspaceSlug, withRounds.map((c) => c.id)) : new Map());
   const hiring = normalizeHiringType(ws?.hiringType);
+  const sendsName = await sourceNames(workspaceId, withRounds.flatMap((c) => c.rounds.map((r) => ({ kind: r.kind, json: r.planRound?.settingsJson ?? null }))));
 
   for (const c of candidates) {
     const byId = new Map((results.get(c.id) ?? []).map((r) => [r.id, r]));
@@ -163,6 +190,7 @@ export async function loadCandidateRounds(
       meta.set(r.id, {
         format: r.format,
         planRoundId: r.planRoundId,
+        sends: sendsName(r.kind, r.planRound?.settingsJson ?? null),
         manual: !r.planRoundId,
         held: r.sessions.length + r.aiSessions.length > 0 || !!r.nextStep,
         durationMin: r.durationMin,
@@ -216,6 +244,7 @@ export function summarizeRounds(cr: CandidateRounds, nameOf: (id: string | null)
       return {
         id: r.id,
         planRoundId: m?.planRoundId ?? null,
+        sends: m?.sends ?? null,
         number: r.number,
         name: r.name,
         kind: r.kind,

@@ -12,13 +12,13 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, CircleCheck, CircleStop, DoorOpen, Loader2, Plus, RotateCcw, Scale, Send } from "lucide-react";
-import { formatLabel, formatsFor, kindName, ROLE_TYPE_LABELS, ROUND_NAME_MAX, type PlanRoundKind, type RoleType } from "@/lib/interview/rounds";
+import { formatLabel, formatsFor, inSentence, kindName, ROLE_TYPE_LABELS, ROUND_NAME_MAX, type PlanRoundKind, type RoleType } from "@/lib/interview/rounds";
 import { currentRound, liveRounds, stoppedRound, stripItems, waitingKey, type RoundsSummary, type RoundView } from "@/lib/interview/rounds-view";
 import { Btn, fmtDate, fmtWhen, inputCls, Menu, MenuItem } from "../_components/ui";
 import { RoundTile } from "../_components/PlanEditor";
 import { RoundStrip } from "../_components/RoundStrip";
 import { RoundStatePill } from "../_components/RoundsCell";
-import { addRoundAction, removeRoundAction, setRoundNextStepAction, setRoundSkippedAction } from "../plan-actions";
+import { addRoundAction, removeRoundAction, setRoundNextStepAction, sendRoundAction, setRoundSkippedAction } from "../plan-actions";
 
 type Toast = (text: string, tone?: "ok" | "error") => void;
 
@@ -42,8 +42,9 @@ function metaLine(r: RoundView): string {
   } else {
     if (r.pending?.at) bits.push(`${r.state === "in_progress" ? "Started" : "Sent"} ${fmtDate(r.pending.at)}`);
     if (r.pending?.due && r.state === "scheduled") bits.push(`expires ${fmtDate(r.pending.due)}`);
-    if (r.result?.at) bits.push(`${r.kind === "take_home" ? "submitted" : "finished"} ${fmtDate(r.result.at)}`);
-    if (!r.result && !r.pending) bits.push("not sent yet");
+    if (r.state === "did_not_finish") bits.push("the invite ran out before they finished");
+    else if (r.result?.at) bits.push(`${r.kind === "take_home" ? "submitted" : "finished"} ${fmtDate(r.result.at)}`);
+    if (!r.result && !r.pending) bits.push(r.sends ? `not sent yet · sends ${r.sends}` : "not sent yet");
   }
   const text = bits.filter(Boolean).join(" · ");
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -157,9 +158,32 @@ export default function RoundsTimeline({
               <Btn variant="primary" icon={CalendarDays} href={wizard(r)}>
                 Schedule
               </Btn>
+            ) : r.sends && canPipeline ? (
+              <Btn
+                variant="primary"
+                icon={Send}
+                disabled={pending}
+                onClick={() =>
+                  start(async () => {
+                    const res = await sendRoundAction(slug, r.id);
+                    if (!res.ok) return toast(res.error, "error");
+                    toast(
+                      res.reused
+                        ? `${first} already had ${r.sends}, now linked to ${r.name}.`
+                        : res.emailed
+                          ? `${r.name} sent to ${first}.`
+                          : `${r.name} is ready for ${first}, but the email did not go out.`,
+                      res.emailed || res.reused ? undefined : "error",
+                    );
+                    router.refresh();
+                  })
+                }
+              >
+                Send {inSentence(kindName(r.kind, roleType))}
+              </Btn>
             ) : (
               <Btn variant="primary" icon={Send} href={sendHref(r)}>
-                Send {kindName(r.kind, roleType).toLowerCase()}
+                Send {inSentence(kindName(r.kind, roleType))}
               </Btn>
             )}
             {canEdit && !r.held && (
@@ -469,7 +493,7 @@ const WAITING_TEXT = (rounds: RoundsSummary, name: string, stage: string): strin
     case "schedule":
       return cur.kind === "interview" ? `You: book ${cur.name}.` : `You: send the ${cur.name.toLowerCase()}.`;
     case "candidate":
-      return `${first}: the ${cur.name.toLowerCase()} invite is out${cur.pending?.due ? ` until ${fmtDate(cur.pending.due)}` : ""}.`;
+      return `${first}: the ${inSentence(cur.name)} invite is out${cur.pending?.due ? ` until ${fmtDate(cur.pending.due)}` : ""}.`;
     case "interview":
       return cur.pending?.at ? `${cur.name} on ${fmtWhen(cur.pending.at)}. Nothing needed from you until then.` : `${cur.name} is booked.`;
     case "review":

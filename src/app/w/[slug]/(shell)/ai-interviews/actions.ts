@@ -5,6 +5,7 @@
  * instead of throwing, because production builds replace thrown messages with
  * a generic digest and the recruiter would never see why something failed.
  */
+import { linkSessionsToRounds } from "@/lib/interview/round-send-server";
 import { appOrigin } from "@/lib/interview/links";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -271,6 +272,8 @@ export async function createScreeningAction(
       return { batchId: batch.id, sessions };
     });
 
+    // People on an interview plan: this counts as their AI interview round.
+    await linkSessionsToRounds(w.workspace.id, "ai_interview", result.sessions.map((s) => ({ candidateId: s.candidateId, sessionId: s.id })));
     const { sent, failed } = await sendAll(result.sessions, w.workspace);
     audit(w, WORKSPACE_AUDIT_ACTIONS.AI_SCREENING_CREATED, "aiScreeningBatch", result.batchId, {
       positionTitle,
@@ -372,6 +375,7 @@ export async function addToScreeningAction(
         },
       }),
     );
+    await linkSessionsToRounds(w.workspace.id, "ai_interview", sessions.map((s) => ({ candidateId: s.candidateId, sessionId: s.id })));
     const { sent, failed } = await sendAll(sessions, w.workspace);
     audit(w, WORKSPACE_AUDIT_ACTIONS.AI_SCREENING_CANDIDATES_ADDED, "aiScreeningBatch", batch.id, {
       positionTitle: batch.positionTitle,

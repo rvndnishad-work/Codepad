@@ -81,6 +81,7 @@ export async function loadCandidateResults(
         status: true,
         score: true,
         timeSpentSec: true,
+        expiresAt: true,
         startedAt: true,
         finishedAt: true,
         createdAt: true,
@@ -254,7 +255,7 @@ export async function loadCandidateResults(
         ? "scored"
         : done
           ? "submitted"
-          : a.status === "EXPIRED"
+          : a.status === "EXPIRED" || (!a.startedAt && a.expiresAt && a.expiresAt < new Date())
             ? "expired"
             : a.startedAt
               ? "in_progress"
@@ -272,7 +273,7 @@ export async function loadCandidateResults(
       sentAt: a.createdAt.toISOString(),
       startedAt: iso(a.startedAt),
       finishedAt: iso(a.finishedAt),
-      deadlineAt: null,
+      deadlineAt: iso(a.expiresAt),
       scheduledAt: null,
       minutesTaken: minutes(a.timeSpentSec),
       minutesAllowed: null,

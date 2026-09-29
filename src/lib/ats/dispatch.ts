@@ -40,10 +40,22 @@ async function systemActor(workspaceId: string): Promise<{ userId: string; email
   return pick ? { userId: pick.userId, email: pick.user.email } : null;
 }
 
-async function sendAiScreening(
+/** Links a sent session to the candidate round it belongs to, when there is one and it is not linked yet. */
+async function linkRound(kind: "ai" | "takehome", sessionId: string, roundId: string | null | undefined) {
+  if (!roundId) return;
+  if (kind === "ai") await prisma.aIInterviewSession.updateMany({ where: { id: sessionId, candidateRoundId: null }, data: { candidateRoundId: roundId } });
+  else await prisma.interviewSession.updateMany({ where: { id: sessionId, candidateRoundId: null }, data: { candidateRoundId: roundId } });
+}
+
+/**
+ * Invites one candidate to an existing AI screening. Also used by interview
+ * plan rounds (round-send-server), which pass the round the invite belongs to.
+ */
+export async function sendAiScreening(
   ws: { id: string; name: string; planName: string; trialEndsAt: Date | null; stripeSubscriptionId: string | null },
   batchId: string,
   candidate: { id: string; name: string; email: string },
+  opts: { roundId?: string | null } = {},
 ): Promise<DispatchResult> {
   if (!effectivePlanAllowsAiScreening(ws)) return { ok: false, error: "This workspace plan does not include AI screening." };
   const batch = await prisma.aIScreeningBatch.findFirst({
@@ -57,7 +69,10 @@ async function sendAiScreening(
     where: { batchId: batch.id, workspaceId: ws.id, OR: [{ candidateId: candidate.id }, { candidateEmail: candidate.email }] },
     select: { id: true },
   });
-  if (existing) return { ok: true, sessionId: existing.id, emailed: false, reused: true };
+  if (existing) {
+    await linkRound("ai", existing.id, opts.roundId);
+    return { ok: true, sessionId: existing.id, emailed: false, reused: true };
+  }
 
   const [{ loadCreditSummary }, { creditCheck, expiryDate, DEFAULT_EXPIRY_DAYS }, create, { parseTheorySettings }, { deliverInvite }] =
     await Promise.all([
@@ -107,14 +122,21 @@ async function sendAiScreening(
     }),
   );
   const session = sessions[0];
+  await linkRound("ai", session.id, opts.roundId);
   const delivery = await deliverInvite(session, ws, await appOrigin());
   return { ok: true, sessionId: session.id, emailed: delivery.sent };
 }
 
-async function sendTakeHome(
+/**
+ * Sends one candidate a take-home from a template. `actor` is who it is sent
+ * from (the ATS path uses whoever connected the ATS); `roundId` links it to
+ * an interview plan round.
+ */
+export async function sendTakeHome(
   ws: { id: string; name: string },
   templateId: string,
   candidate: { id: string; name: string; email: string },
+  opts: { actor?: { userId: string; email: string | null } | null; roundId?: string | null } = {},
 ): Promise<DispatchResult> {
   const template = await prisma.takeHomeTemplate.findFirst({ where: { id: templateId, workspaceId: ws.id } });
   if (!template) return { ok: false, error: "The mapped take home template no longer exists. Pick another one in the job mapping." };
@@ -129,9 +151,12 @@ async function sendTakeHome(
     where: { workspaceId: ws.id, type: "take-home", takeHomeTemplateId: template.id, candidateId: candidate.id, status: { in: ["scheduled", "in_progress"] } },
     select: { id: true },
   });
-  if (existing) return { ok: true, sessionId: existing.id, emailed: false, reused: true };
+  if (existing) {
+    await linkRound("takehome", existing.id, opts.roundId);
+    return { ok: true, sessionId: existing.id, emailed: false, reused: true };
+  }
 
-  const actor = await systemActor(ws.id);
+  const actor = opts.actor ?? (await systemActor(ws.id));
   if (!actor) return { ok: false, error: "This workspace has no members to send the take home from." };
 
   const limits: Record<string, number> = {};
@@ -166,6 +191,7 @@ async function sendTakeHome(
       candidateAccessToken: token,
       deadlineAt,
       takeHomeTemplateId: template.id,
+      candidateRoundId: opts.roundId ?? null,
       ...(start
         ? {
             takeHomePassMark: takeHomePassMarkOf(start.passMark),
@@ -222,6 +248,9 @@ export async function sendRequestScreening(requestId: string, opts: { actorUserI
         ? await sendAiScreening(req.workspace, req.screeningId, person)
         : await sendTakeHome(req.workspace, req.screeningId, person);
     if (!res.ok) return fail(req.id, res.error);
+    // An imported candidate on a plan: the screening counts as their round of that kind.
+    const { linkSessionsToRounds } = await import("@/lib/interview/round-send-server");
+    await linkSessionsToRounds(req.workspaceId, req.screeningKind === "ai" ? "ai_interview" : "take_home", [{ candidateId: person.id, sessionId: res.sessionId }]);
 
     await prisma.atsTestRequest.update({
       where: { id: req.id },

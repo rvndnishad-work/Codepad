@@ -18,10 +18,15 @@ import {
   setCandidateRoundSkipped,
   setDefaultPlan,
   removeCandidateRound,
+  loadPlanSources,
   type ExtraRoundInput,
   type NewPlanInput,
+  type PlanSources,
   type PlanView,
 } from "@/lib/interview/plans-server";
+import { sendCandidateRound } from "@/lib/interview/round-send-server";
+import { prisma } from "@/lib/prisma";
+import { canMember } from "@/lib/permissions";
 import type { NextStep, PlanInput, RoleType } from "@/lib/interview/rounds";
 
 type ActionError = { ok: false; error: string };
@@ -139,6 +144,35 @@ export async function setRoundNextStepAction(slug: string, roundId: string, step
     refresh(slug);
     revalidatePath(`/w/${slug}/interviews`, "layout");
     return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** The AI screenings and take-home templates a plan's rounds can send, for the plan editor. */
+export async function planSourcesAction(slug: string): Promise<PlanActionResult<{ sources: PlanSources }>> {
+  try {
+    const actor = await resolveCandidateActor(slug);
+    return { ok: true, sources: await loadPlanSources(actor.workspaceId) };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Sends an AI interview or take-home round with what its plan round is set up to send. */
+export async function sendRoundAction(slug: string, roundId: string): Promise<PlanActionResult<{ emailed: boolean; reused: boolean }>> {
+  try {
+    const actor = await resolveCandidateActor(slug, "candidate:write");
+    const round = await prisma.candidateRound.findFirst({ where: { id: roundId, candidate: { workspaceId: actor.workspaceId } }, select: { kind: true } });
+    if (!round) throw new CandidateError(404, "That round was not found.");
+    const needs = round.kind === "take_home" ? "takehome:create" : "interview:conduct";
+    if (!(await canMember(actor.member, needs))) throw new CandidateError(403, `You do not have permission to send ${round.kind === "take_home" ? "take-homes" : "AI interviews"}.`);
+    const res = await sendCandidateRound(actor.workspaceId, roundId, { userId: actor.actorUserId, email: actor.actorEmail });
+    if (!res.ok) throw new CandidateError(400, res.error);
+    refresh(slug);
+    revalidatePath(`/w/${slug}/ai-interviews`, "layout");
+    revalidatePath(`/w/${slug}/take-homes`, "layout");
+    return { ok: true, emailed: res.emailed, reused: res.reused };
   } catch (err) {
     return fail(err);
   }

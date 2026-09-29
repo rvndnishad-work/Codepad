@@ -33,6 +33,12 @@ import { emitWorkspaceEvent } from "@/lib/events";
 import { loadCandidateResults } from "@/lib/crm/results-server";
 import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
 
+/** After people join a batch: their plan's first round goes out by itself when the plan says so. */
+async function afterJoiningBatch(actor: CandidateActor, ids: string[]) {
+  const { autoSendFirstRounds } = await import("@/lib/interview/round-send-server");
+  await autoSendFirstRounds(actor.workspaceId, ids, { userId: actor.actorUserId, email: actor.actorEmail });
+}
+
 /** The legacy `status` column mirrors the decision. Flags such as
  *  future_hire survive while the candidate is still being screened. */
 function statusForStage(stage: PipelineStage, current?: string): string {
@@ -194,7 +200,7 @@ export async function createCandidate(
   if (email) {
     const existing = await prisma.candidate.findUnique({
       where: { workspaceId_email: { workspaceId: actor.workspaceId, email } },
-      select: { id: true, name: true, email: true, stage: true, status: true, tags: true },
+      select: { id: true, name: true, email: true, stage: true, status: true, tags: true, batchId: true },
     });
     if (existing) {
       if (onDuplicate === "error") {
@@ -222,7 +228,10 @@ export async function createCandidate(
           data: { candidateId: existing.id, authorId: actor.actorUserId, body: input.notes.trim() },
         });
       }
-      if (input.batchId) await syncCandidateRounds(actor.workspaceId, [existing.id]);
+      if (input.batchId) {
+        await syncCandidateRounds(actor.workspaceId, [existing.id]);
+        if (input.batchId !== existing.batchId) await afterJoiningBatch(actor, [existing.id]);
+      }
       if (opts.audit !== false) {
         void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_UPDATED, "candidate", existing.id, {
           candidateName: name,
@@ -257,6 +266,7 @@ export async function createCandidate(
   }
   // Copy the rounds of their batch plan, or the workspace default.
   await syncCandidateRounds(actor.workspaceId, [created.id]);
+  if (input.batchId) await afterJoiningBatch(actor, [created.id]);
   if (opts.audit !== false) {
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_CREATED, "candidate", created.id, {
       candidateName: name,
@@ -438,6 +448,7 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
   }
   if (fields.includes("batch")) {
     await syncCandidateRounds(actor.workspaceId, [id]);
+    if (updated.batchId) await afterJoiningBatch(actor, [id]);
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_BATCH_CHANGED, "candidate", id, {
       candidateName: updated.name,
       fromBatchId: current.batchId,
@@ -572,6 +583,7 @@ export async function setCandidatesBatch(actor: CandidateActor, ids: string[], b
   if (!changing.length) return { changed: 0 };
   await prisma.candidate.updateMany({ where: { id: { in: changing.map((c) => c.id) } }, data: { batchId } });
   await syncCandidateRounds(actor.workspaceId, changing.map((c) => c.id));
+  if (batchId) await afterJoiningBatch(actor, changing.map((c) => c.id));
   for (const c of changing) {
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_BATCH_CHANGED, "candidate", c.id, {
       candidateName: c.name,

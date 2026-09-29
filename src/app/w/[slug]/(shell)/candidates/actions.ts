@@ -236,6 +236,7 @@ export async function bulkCreateTakeHomeSessions(
   const createdRows: { name: string; email: string; token: string; sessionId: string }[] = [];
   // Pre-existing candidates to forward-advance to TAKE_HOME after commit (IP-69).
   const advanceIds: string[] = [];
+  const sentPairs: { candidateId: string; sessionId: string }[] = [];
 
   await prisma.$transaction(async (tx) => {
     for (const r of cleaned) {
@@ -290,12 +291,19 @@ export async function bulkCreateTakeHomeSessions(
         });
 
         details.push({ email: r.email, status: "dispatched", tokenPreview: token.slice(0, 8) + "…", candidateId });
+        sentPairs.push({ candidateId, sessionId: created.id });
         createdRows.push({ name: r.name, email: r.email, token, sessionId: created.id });
       } catch (err) {
         details.push({ email: r.email, status: "errored", reason: (err as Error).message?.slice(0, 200) ?? "unknown" });
       }
     }
   });
+
+  // People on an interview plan: this counts as their take-home round.
+  if (sentPairs.length) {
+    const { linkSessionsToRounds } = await import("@/lib/interview/round-send-server");
+    await linkSessionsToRounds(workspaceId, "take_home", sentPairs);
+  }
 
   // IP-69: forward-advance pre-existing candidates to TAKE_HOME (post-commit).
   for (const candidateId of advanceIds) {

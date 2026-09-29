@@ -1342,6 +1342,10 @@ model Candidate {
   /// themselves live in CandidateRound so one person's copy can differ.
   planId              String?
   plan                InterviewPlan?       @relation(fields: [planId], references: [id], onDelete: SetNull)
+  /// A plan a recruiter picked for this one person (from the interview
+  /// wizard), used when their batch has no plan. No foreign key: a deleted
+  /// plan simply stops counting and they fall back to the workspace default.
+  pickedPlanId        String?
   rounds              CandidateRound[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt

@@ -4,8 +4,9 @@
  * Wizard step "Round": which round of each person's interview plan this
  * interview is. We suggest each person's next open live round (one matching
  * the chosen format first); the recruiter can pick another or leave it out
- * of the plan. AI interviews and take-homes are sent, not booked, so they
- * are not offered here.
+ * of the plan. Someone with no plan (and no batch plan) can be given one
+ * here. AI interviews and take-homes are sent, not booked, so they are not
+ * offered here.
  */
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -13,7 +14,7 @@ import { formatLabel, type RoundState } from "@/lib/interview/rounds";
 import type { WizardState } from "@/lib/interview/wizard";
 import { Avatar, inputCls } from "../../candidates/_components/ui";
 import { RoundTile } from "../../candidates/_components/PlanEditor";
-import { candidateRoundChoicesAction, type RoundChoice } from "../actions";
+import { candidateRoundChoicesAction, pickCandidatePlanAction, type NoPlan, type PlanOption, type RoundChoice } from "../actions";
 import { StepHeading } from "./parts";
 
 type Patch = (p: Partial<WizardState>) => void;
@@ -25,6 +26,10 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
   const ids = state.noCandidate ? [] : state.candidates.flatMap((c) => (c.id ? [c.id] : []));
   const key = ids.join(",");
   const [choices, setChoices] = useState<Record<string, RoundChoice> | null>(null);
+  const [noPlan, setNoPlan] = useState<Record<string, NoPlan>>({});
+  const [plans, setPlans] = useState<PlanOption[]>([]);
+  const [picking, setPicking] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +38,7 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
       setChoices({});
       return;
     }
-    setChoices(null);
+    if (!reload) setChoices(null);
     candidateRoundChoicesAction(slug, key.split(","), state.format).then((res) => {
       if (!live) return;
       if (!res.ok) {
@@ -42,11 +47,29 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
         return;
       }
       setChoices(res.choices);
+      setNoPlan(res.noPlan);
+      setPlans(res.plans);
     });
     return () => {
       live = false;
     };
-  }, [slug, key, state.format]);
+  }, [slug, key, state.format, reload]);
+
+  // Gives one person a plan, then loads their new rounds so the suggestion fills in.
+  const pickPlan = async (candidateId: string, planId: string) => {
+    if (!planId) return;
+    setPicking(candidateId);
+    setError(null);
+    const res = await pickCandidatePlanAction(slug, candidateId, planId);
+    setPicking(null);
+    if (!res.ok) return setError(res.error);
+    const roundIds = { ...(state.roundIds ?? {}) };
+    const roundNames = { ...(state.roundNames ?? {}) };
+    delete roundIds[candidateId];
+    delete roundNames[candidateId];
+    patch({ roundIds, roundNames });
+    setReload((n) => n + 1);
+  };
 
   // Fill in the suggestion for anyone not chosen yet.
   useEffect(() => {
@@ -118,6 +141,34 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
                       </div>
                     </div>
                   </div>
+                  {!(choice && choice.options.length > 0) && noPlan[c.id]?.canPick && (
+                    <div className="flex flex-col gap-1 min-w-0 w-full sm:w-[300px]">
+                      <label className="sr-only" htmlFor={`plan-${c.id}`}>
+                        Interview plan for {c.name}
+                      </label>
+                      {plans.length ? (
+                        <div className="flex items-center gap-2">
+                          {picking === c.id ? <Loader2 className="w-4 h-4 animate-spin text-muted shrink-0" aria-hidden /> : <span className="w-4 shrink-0" />}
+                          <select id={`plan-${c.id}`} value="" disabled={picking !== null} onChange={(e) => pickPlan(c.id!, e.target.value)} className={`${inputCls} min-w-0`}>
+                            <option value="">Give them a plan…</option>
+                            {plans.map((p) => (
+                              <option key={p.id} value={p.id} disabled={p.live === 0}>
+                                {p.name} ({p.total} {p.total === 1 ? "round" : "rounds"}
+                                {p.live === 0 ? ", no live interview" : ""}
+                                {p.isDefault ? ", default" : ""})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted">No plans yet. Make one on a batch&rsquo;s Rounds tab or in Settings.</span>
+                      )}
+                    </div>
+                  )}
+                  {!(choice && choice.options.length > 0) && (() => {
+                    const np = noPlan[c.id];
+                    return np && !np.canPick ? <span className="text-xs text-muted w-full sm:w-[300px]">{np.reason}</span> : null;
+                  })()}
                   {choice && choice.options.length > 0 && (
                     <div className="flex flex-col gap-1 min-w-0 w-full sm:w-[300px]">
                       <label className="sr-only" htmlFor={`round-${c.id}`}>
@@ -162,7 +213,7 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
         <p className="text-[13px] text-muted">
           {newPeople && newPeople === state.candidates.length
             ? "New people have no plan yet. Add them to a batch with a plan to track their rounds."
-            : "None of these people have an interview plan yet. Give their batch a plan on its Rounds tab, or carry on without one."}
+            : "None of these people have an interview plan yet. Give them one above, or carry on and this interview will not count as a round."}
         </p>
       )}
     </div>

@@ -247,6 +247,7 @@ const LABELS: Record<string, string> = {
   BATCH_UPDATED: "Edited batch",
   BATCH_DELETED: "Deleted batch",
   BATCH_PLAN_SET: "Changed the interview plan of batch",
+  CANDIDATE_PLAN_SET: "Picked an interview plan for",
   INTERVIEW_PLAN_CREATED: "Created interview plan",
   INTERVIEW_PLAN_UPDATED: "Edited interview plan",
   INTERVIEW_PLAN_DELETED: "Deleted interview plan",

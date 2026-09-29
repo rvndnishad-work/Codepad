@@ -24,7 +24,9 @@ import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { recordingConfigured } from "@/lib/recording/live-server";
 import { loadCandidateRounds } from "@/lib/interview/rounds-server";
-import { roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
+import { normalizeRoleType, roleTypesFor, roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
+import { setCandidatePlan, workspaceHiringType } from "@/lib/interview/plans-server";
+import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
 import { cancelUpcomingInterview, resendInterviewInvite } from "@/lib/interview/invite-server";
 import { canChangeInterview, mayChangeInterview, newTimeProblem } from "@/lib/interview/reschedule";
 import {
@@ -624,13 +626,51 @@ export type RoundChoice = {
   suggested: string | null;
 };
 
+/** Someone with no plan: whether a plan can be picked for them here, and why not. */
+export type NoPlan = { canPick: true } | { canPick: false; reason: string };
+
+/** A plan that can be picked for people with none. */
+export type PlanOption = { id: string; name: string; live: number; total: number; isDefault: boolean };
+
 /** Each candidate's live rounds for the wizard's Round step, with the one we suggest. */
-export async function candidateRoundChoicesAction(slug: string, candidateIds: string[], format: string | null): Promise<Result<{ choices: Record<string, RoundChoice> }>> {
+export async function candidateRoundChoicesAction(
+  slug: string,
+  candidateIds: string[],
+  format: string | null,
+): Promise<Result<{ choices: Record<string, RoundChoice>; noPlan: Record<string, NoPlan>; plans: PlanOption[] }>> {
   try {
     const a = await loadActor(slug);
     const ids = [...new Set(candidateIds.filter((x) => typeof x === "string" && x.length <= 40))].slice(0, MAX_CANDIDATES);
     const plans = await loadCandidateRounds(a.workspace.id, slug, ids);
     const choices: Record<string, RoundChoice> = {};
+    // People with no rounds yet can be given a plan here, unless a batch plan or a decision says otherwise.
+    const missing = ids.filter((id) => !plans.get(id)?.progress.rounds.some((r) => r.kind === "interview"));
+    const noPlan: Record<string, NoPlan> = {};
+    let planOptions: PlanOption[] = [];
+    if (missing.length) {
+      const [people, hiring, all] = await Promise.all([
+        prisma.candidate.findMany({
+          where: { workspaceId: a.workspace.id, id: { in: missing } },
+          select: { id: true, stage: true, status: true, batch: { select: { name: true, planId: true } } },
+        }),
+        workspaceHiringType(a.workspace.id),
+        prisma.interviewPlan.findMany({
+          where: { workspaceId: a.workspace.id },
+          orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+          select: { id: true, name: true, roleType: true, isDefault: true, rounds: { select: { kind: true } } },
+        }),
+      ]);
+      const allowed = roleTypesFor(hiring);
+      planOptions = all
+        .filter((p) => allowed.includes(normalizeRoleType(p.roleType)))
+        .map((p) => ({ id: p.id, name: p.name, live: p.rounds.filter((r) => r.kind === "interview").length, total: p.rounds.length, isDefault: p.isDefault }));
+      for (const c of people) {
+        if (c.batch?.planId) noPlan[c.id] = { canPick: false, reason: `Their batch ${c.batch.name} has a plan with no live interview round.` };
+        else if (c.status === "archived") noPlan[c.id] = { canPick: false, reason: "Archived, so no plan is added." };
+        else if (c.stage !== "NEW" && c.stage !== "SCREENING") noPlan[c.id] = { canPick: false, reason: "Already decided, so no plan is added." };
+        else noPlan[c.id] = { canPick: true };
+      }
+    }
     for (const [id, p] of plans) {
       const live = p.progress.rounds.filter((r) => r.kind === "interview");
       choices[id] = {
@@ -641,8 +681,21 @@ export async function candidateRoundChoicesAction(slug: string, candidateIds: st
         suggested: suggestLiveRound(p.progress, format),
       };
     }
-    return { ok: true, choices };
+    return { ok: true, choices, noPlan, plans: planOptions };
   } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Gives one person with no plan an interview plan, from the Round step. Needs `candidate:write`. */
+export async function pickCandidatePlanAction(slug: string, candidateId: string, planId: string): Promise<Result> {
+  try {
+    const actor = await resolveCandidateActor(slug, "candidate:write");
+    await setCandidatePlan(actor, String(candidateId).slice(0, 40), String(planId).slice(0, 40));
+    revalidatePath(`/w/${slug}/candidates`, "layout");
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof CandidateError) return { ok: false, error: err.message };
     return fail(err);
   }
 }

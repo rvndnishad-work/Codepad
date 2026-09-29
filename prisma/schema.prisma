@@ -722,6 +722,12 @@ model InterviewSession {
   scorecardAutoRemindedAt DateTime?
   /// When the candidate ticked the consent box before a recorded interview.
   candidateConsentAt DateTime?
+  /// The candidate's interview round this session belongs to (a live
+  /// interview or a take-home). Null for practice/mock sessions and for
+  /// sessions made before interview plans. A rebooked round keeps every
+  /// attempt linked here.
+  candidateRoundId   String?
+  candidateRound     CandidateRound?  @relation(fields: [candidateRoundId], references: [id], onDelete: SetNull)
   scorecards         InterviewScorecard[]
   toolUpdates        InterviewToolUpdate[]
   presence           InterviewPresence[]
@@ -745,6 +751,7 @@ model InterviewSession {
   @@index([questionsOwnerId])
   @@index([setupGroupId])
   @@index([scorecardReminderHours, scorecardAutoRemindedAt])
+  @@index([candidateRoundId])
 }
 
 /// Yjs updates for the shared tools in a live interview room (whiteboard,
@@ -1074,6 +1081,10 @@ model Workspace {
   /// Remind interviewers who owe a scorecard this many hours after the
   /// interview. Null = no automatic reminder.
   scorecardReminderHours   Int?
+  /// What kind of hiring the workspace does: "technical", "non_technical"
+  /// or "both". Filters interview plan templates and round kinds (a
+  /// non-technical workspace gets no coding rounds). Asked at onboarding.
+  hiringType               String  @default("technical")
 
   // ── Settings > Security ───────────────────────────────────────────────
   /// Every member must use two-factor sign-in (not only paid-plan admins).
@@ -1123,6 +1134,7 @@ model Workspace {
   atsIntegration       AtsIntegration?
   candidates           Candidate[]
   candidateBatches     CandidateBatch[]
+  interviewPlans       InterviewPlan[]
   challenges           Challenge[]
   sessions             InterviewSession[]
   calendarConnections  CalendarConnection[]
@@ -1325,6 +1337,12 @@ model Candidate {
   atsRef              String?
   /// The candidate's profile in the ATS (Greenhouse sends it with each request).
   atsProfileUrl       String?
+  /// The interview plan this candidate's rounds were copied from (the
+  /// batch plan, or the workspace default for their role type). The rounds
+  /// themselves live in CandidateRound so one person's copy can differ.
+  planId              String?
+  plan                InterviewPlan?       @relation(fields: [planId], references: [id], onDelete: SetNull)
+  rounds              CandidateRound[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   aiInterviewSessions AIInterviewSession[]
@@ -1356,14 +1374,114 @@ model CandidateBatch {
   targetHires Int?
   /// OPEN or CLOSED.
   status      String      @default("OPEN")
+  /// The interview plan everyone in this batch follows.
+  planId      String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   owner       User?       @relation("CandidateBatchOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  plan        InterviewPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
   candidates  Candidate[]
 
   @@unique([workspaceId, name])
   @@index([workspaceId, status])
+}
+
+/// An ordered list of rounds a role needs (e.g. AI interview, take-home,
+/// intro, coding, technical discussion, behavioural). Batches follow a plan;
+/// each candidate gets a copy of its rounds (CandidateRound). Built from the
+/// templates in src/lib/interview/rounds.ts.
+model InterviewPlan {
+  id             String               @id @default(cuid())
+  workspaceId    String
+  name           String
+  /// "technical" or "non_technical". Filters the round kinds offered.
+  roleType       String               @default("technical")
+  /// The workspace default for its role type, used for candidates with no
+  /// batch. At most one per workspace and role type (kept by the server).
+  isDefault      Boolean              @default(false)
+  /// Later rounds happen in the company's own ATS: the plan ends at its
+  /// last round here and nothing after it is tracked.
+  continuesInAts Boolean              @default(false)
+  /// Send the first round (an AI interview or take-home) by itself when a
+  /// candidate joins a batch on this plan. Off by default.
+  autoSendFirst  Boolean              @default(false)
+  /// Which built-in template it started from, e.g. "technical".
+  templateKey    String?
+  createdById    String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  rounds         InterviewPlanRound[]
+  batches        CandidateBatch[]
+  candidates     Candidate[]
+
+  @@index([workspaceId, roleType])
+}
+
+/// One round of an interview plan.
+model InterviewPlanRound {
+  id          String           @id @default(cuid())
+  planId      String
+  order       Int
+  /// "ai_interview", "take_home" or "interview" (a live interview).
+  kind        String
+  name        String
+  /// Live interviews: the wizard format ("intro", "coding", "discussion",
+  /// "behavioural", "mixed"). Null for the other kinds.
+  format      String?
+  /// Live interviews: length in minutes. AI interview and take-home: days
+  /// the invite stays open.
+  durationMin Int?
+  /// On the round's own scale: 1-4 scorecard for live interviews, 0-100 for
+  /// AI interviews and take-homes. Null = the workspace default. Only labels
+  /// results; a recruiter decides who passes.
+  passMark    Float?
+  required    Boolean          @default(true)
+  /// Kind-specific setup as JSON, e.g. {"takeHomeTemplateId": "..."} or
+  /// {"aiTemplateIds": ["..."]}.
+  settingsJson String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  plan        InterviewPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  candidateRounds CandidateRound[]
+
+  @@index([planId, order])
+}
+
+/// One candidate's copy of a plan round. Kept per person so skipping or
+/// adding a round affects only them, and editing the plan later never
+/// rewrites rounds that already happened. Interviews, take-homes and AI
+/// interviews link here through candidateRoundId.
+model CandidateRound {
+  id           String              @id @default(cuid())
+  candidateId  String
+  /// The plan round it was copied from. Null for rounds added by hand and
+  /// rounds rebuilt from history by the backfill.
+  planRoundId  String?
+  order        Int
+  kind         String
+  name         String
+  format       String?
+  durationMin  Int?
+  passMark     Float?
+  required     Boolean             @default(true)
+  /// A recruiter removed this round for this candidate.
+  skipped      Boolean             @default(false)
+  /// The recruiter's call after the round: "advance" (move to the next
+  /// round) or "stop". Null until decided. Never passes the candidate.
+  nextStep     String?
+  decidedById  String?
+  decidedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  candidate    Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  planRound    InterviewPlanRound? @relation(fields: [planRoundId], references: [id], onDelete: SetNull)
+  sessions     InterviewSession[]
+  aiSessions   AIInterviewSession[]
+
+  @@index([candidateId, order])
+  @@index([planRoundId])
 }
 
 /// One note on a candidate, with its author. Replaces the single shared
@@ -1769,6 +1887,9 @@ model AIInterviewSession {
   /// When the candidate ticked the consent box (Candidate experience). Null
   /// when consent was not asked for or not yet given.
   consentAt              DateTime?
+  /// The candidate's interview round this AI interview belongs to.
+  candidateRoundId String?
+  candidateRound   CandidateRound?           @relation(fields: [candidateRoundId], references: [id], onDelete: SetNull)
   ledgerEntries    AIInterviewCreditLedger[]
   candidate        Candidate?                @relation(fields: [candidateId], references: [id])
   workspace        Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -1782,6 +1903,7 @@ model AIInterviewSession {
   @@index([candidateId])
   @@index([batchId])
   @@index([status, expiresAt])
+  @@index([candidateRoundId])
 }
 
 /// Revamp (2026-06): a screening campaign grouping multiple candidates under

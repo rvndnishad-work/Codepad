@@ -152,7 +152,7 @@ async function candidatesOnPlan(workspaceId: string, planId: string, alsoDefault
       workspaceId,
       stage: { in: OPEN_STAGES },
       NOT: { status: "archived" },
-      OR: [{ planId }, { batch: { planId } }, ...(alsoDefault ? [{ batchId: null }, { batch: { planId: null } }] : [])],
+      OR: [{ planId }, { pickedPlanId: planId }, { batch: { planId } }, ...(alsoDefault ? [{ batchId: null }, { batch: { planId: null } }] : [])],
     },
     select: { id: true },
   });
@@ -337,6 +337,29 @@ export async function setBatchPlan(actor: CandidateActor, batchId: string, planI
   void audit(actor, WORKSPACE_AUDIT_ACTIONS.BATCH_PLAN_SET, "candidateBatch", batchId, { name: batch.name, planName: plan?.name ?? null });
   const changed = await syncCandidateRounds(actor.workspaceId, await batchCandidates(actor.workspaceId, batchId));
   return { changed };
+}
+
+/**
+ * Picks a plan for one person whose batch has none (from the interview
+ * wizard). Their rounds are copied from it at once. A batch plan, when the
+ * batch gets one later, still wins.
+ */
+export async function setCandidatePlan(actor: CandidateActor, candidateId: string, planId: string) {
+  const c = await prisma.candidate.findFirst({
+    where: { id: candidateId, workspaceId: actor.workspaceId },
+    select: { id: true, name: true, stage: true, status: true, pickedPlanId: true, batch: { select: { name: true, planId: true } } },
+  });
+  if (!c) throw new CandidateError(404, "Candidate not found.");
+  if (c.batch?.planId) throw new CandidateError(400, `${c.name} follows the plan of ${c.batch.name}. Change it on that batch.`);
+  if (!OPEN_STAGES.includes(c.stage) || c.status === "archived") throw new CandidateError(400, `${c.name} already has a decision, so their rounds are kept as they are.`);
+  const plan = await loadPlan(actor, planId);
+  await assertRoleType(actor, normalizeRoleType(plan.roleType));
+  if (c.pickedPlanId !== plan.id) {
+    await prisma.candidate.update({ where: { id: c.id }, data: { pickedPlanId: plan.id } });
+    void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_PLAN_SET, "candidate", c.id, { candidateName: c.name, planName: plan.name });
+  }
+  await syncCandidateRounds(actor.workspaceId, [c.id]);
+  return { ok: true as const };
 }
 
 /** Makes a plan the default for its role type, or clears the default for `roleType`. */

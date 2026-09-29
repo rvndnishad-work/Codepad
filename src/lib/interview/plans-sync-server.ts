@@ -5,6 +5,7 @@
  *
  * Which plan a candidate follows:
  *   - their batch's plan, when the batch has one;
+ *   - otherwise a plan a recruiter picked for them (Candidate.pickedPlanId);
  *   - otherwise the workspace default for its hiring type, when the
  *     workspace hires for one kind of role (technical or non-technical);
  *   - otherwise none. A "both" workspace has no single default, so people
@@ -40,6 +41,7 @@ export async function syncCandidateRounds(workspaceId: string, candidateIds: str
       select: {
         id: true,
         planId: true,
+        pickedPlanId: true,
         batch: { select: { planId: true } },
         rounds: {
           select: { id: true, planRoundId: true, order: true, kind: true, name: true, format: true, durationMin: true, passMark: true, required: true, skipped: true, nextStep: true, _count: { select: { sessions: true, aiSessions: true } } },
@@ -52,8 +54,7 @@ export async function syncCandidateRounds(workspaceId: string, candidateIds: str
 
   const planIds = new Set<string>();
   for (const c of candidates) {
-    const id = c.batch?.planId ?? fallback;
-    if (id) planIds.add(id);
+    for (const id of [c.batch?.planId, c.pickedPlanId, fallback]) if (id) planIds.add(id);
   }
   const plans = new Map(
     (
@@ -66,7 +67,9 @@ export async function syncCandidateRounds(workspaceId: string, candidateIds: str
 
   let changed = 0;
   for (const c of candidates) {
-    const planId = c.batch?.planId ?? fallback;
+    // A picked plan that was deleted since no longer counts.
+    const picked = c.pickedPlanId && plans.has(c.pickedPlanId) ? c.pickedPlanId : null;
+    const planId = c.batch?.planId ?? picked ?? fallback;
     const planRounds = (planId && plans.get(planId)) || [];
     const current: CandidateRoundRow[] = c.rounds.map((r) => ({
       id: r.id,
@@ -111,10 +114,10 @@ async function applySync(tx: Tx, candidateId: string, diff: ReturnType<typeof sy
 }
 
 
-/** Open candidates who follow the workspace default (no batch plan). */
+/** Open candidates who follow the workspace default (no batch plan, none picked). */
 export async function candidatesOnDefault(workspaceId: string): Promise<string[]> {
   const rows = await prisma.candidate.findMany({
-    where: { workspaceId, stage: { in: OPEN_STAGES }, NOT: { status: "archived" }, OR: [{ batchId: null }, { batch: { planId: null } }] },
+    where: { workspaceId, stage: { in: OPEN_STAGES }, NOT: { status: "archived" }, pickedPlanId: null, OR: [{ batchId: null }, { batch: { planId: null } }] },
     select: { id: true },
   });
   return rows.map((r) => r.id);

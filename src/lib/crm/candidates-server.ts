@@ -17,7 +17,6 @@ import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDelet
 import { auth } from "@/lib/auth";
 import { cancelInterviewEvent } from "@/lib/calendar/server";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
-import { cancelUpcomingInterview } from "@/lib/interview/invite-server";
 import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import {
@@ -650,6 +649,8 @@ export async function tagCandidates(actor: CandidateActor, ids: string[], add: s
  */
 async function cancelInterviewsOnArchive(actor: CandidateActor, candidateIds: string[]): Promise<number> {
   if (!candidateIds.length) return 0;
+  // Loaded here: invite-server is server-only, and this file is also used by unit tests.
+  const { cancelUpcomingInterview } = await import("@/lib/interview/invite-server");
   const upcoming = await prisma.interviewSession.findMany({
     where: { workspaceId: actor.workspaceId, candidateId: { in: candidateIds }, type: { not: "take-home" }, status: "scheduled", startedAt: null },
     select: { id: true },

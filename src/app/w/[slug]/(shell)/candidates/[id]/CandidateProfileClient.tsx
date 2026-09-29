@@ -86,6 +86,7 @@ export default function CandidateProfileClient({
   rounds = [],
   planName = null,
   roleType = "technical",
+  openReject = null,
 }: {
   slug: string;
   meId: string;
@@ -105,12 +106,14 @@ export default function CandidateProfileClient({
   rounds?: ProfileRound[];
   planName?: string | null;
   roleType?: RoleType;
+  /** Open the Not passed dialog on arrival, with this reason and note filled in. */
+  openReject?: { reason: RejectReason | null; note: string } | null;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"overview" | "activity" | "notes">("overview");
   const [busy, start] = useTransition();
   const [toasts, toast] = useToasts();
-  const [rejecting, setRejecting] = useState(false);
+  const [rejecting, setRejecting] = useState(() => !!openReject && row.stage !== "PASSED" && row.stage !== "REJECTED" && perms.canPipeline);
   const [confirmPass, setConfirmPass] = useState(false);
   const [confirm, setConfirm] = useState<null | "archive" | "erase">(null);
   const [editing, setEditing] = useState(false);
@@ -525,6 +528,8 @@ export default function CandidateProfileClient({
         <RejectDialog
           names={[row.name]}
           busy={busy}
+          initialReason={openReject?.reason ?? null}
+          initialNote={openReject?.note ?? ""}
           onCancel={() => setRejecting(false)}
           onConfirm={(reason: RejectReason, note) => {
             setRejecting(false);

@@ -304,9 +304,16 @@ async function assertPassBacked(
   const out = new Map<string, string>();
   if (!rows.length) return out;
   const results = await loadCandidateResults(actor.workspaceId, actor.workspaceSlug, rows.map((r) => r.id));
+  // Interview rounds: a required round that is not above bar makes it a manual pass too.
+  const { loadCandidateRounds } = await import("@/lib/interview/rounds-server");
+  const { overrideReason } = await import("@/lib/interview/rounds");
+  const rounds = await loadCandidateRounds(actor.workspaceId, actor.workspaceSlug, rows.map((r) => r.id), undefined, results);
   for (const r of rows) {
     const check = passCheck(results.get(r.id) ?? []);
-    if (check.override) out.set(r.id, check.reason ?? "Below the bar");
+    const cr = rounds.get(r.id);
+    const fromRounds = cr && cr.progress.total > 0 ? overrideReason(cr.progress) : null;
+    const reason = [fromRounds, check.override ? (check.reason ?? "Below the bar") : null].filter(Boolean).join("; ");
+    if (reason) out.set(r.id, reason);
   }
   if (out.size && !override) {
     const first = rows.find((r) => out.has(r.id))!;

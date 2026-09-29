@@ -7,6 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { describeScore, type CandidateResult } from "@/lib/crm/results";
+import { planProgress, type RoundInput } from "@/lib/interview/rounds";
 
 const db = vi.hoisted(() => ({
   candidate: {
@@ -22,6 +23,7 @@ const db = vi.hoisted(() => ({
 }));
 const audit = vi.hoisted(() => vi.fn());
 const loadResults = vi.hoisted(() => vi.fn());
+const loadRounds = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 vi.mock("@/lib/auth", () => ({ auth: vi.fn() }));
@@ -31,6 +33,7 @@ vi.mock("@/lib/workspace-audit", () => ({
   WORKSPACE_AUDIT_ACTIONS: new Proxy({}, { get: (_t, k) => k }),
 }));
 vi.mock("@/lib/crm/results-server", () => ({ loadCandidateResults: loadResults }));
+vi.mock("@/lib/interview/rounds-server", () => ({ loadCandidateRounds: loadRounds }));
 vi.mock("@/lib/interview/plans-sync-server", () => ({ syncCandidateRounds: vi.fn(async () => 0) }));
 // MCP server dependencies that are not under test.
 vi.mock("@/lib/ai-interview/credits", () => ({ getWorkspaceCredits: vi.fn(), refundCredit: vi.fn() }));
@@ -108,6 +111,22 @@ beforeEach(() => {
   db.candidate.update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({ ...candidate(), ...data }));
   db.candidate.create.mockResolvedValue({ id: "new1" });
   db.candidate.findUnique.mockResolvedValue(null);
+  loadRounds.mockResolvedValue(new Map());
+});
+
+/** A candidate's rounds, as the rounds loader returns them. */
+function roundsFor(byId: Record<string, RoundInput[]>) {
+  loadRounds.mockResolvedValue(new Map(Object.entries(byId).map(([id, rs]) => [id, { progress: planProgress(rs) }])));
+}
+const round = (order: number, name: string, state: "above_bar" | "below_bar" | null): RoundInput => ({
+  id: `r${order}`,
+  order,
+  kind: "interview",
+  name,
+  required: true,
+  skipped: false,
+  nextStep: null,
+  attempts: state ? [{ state, at: `2026-09-2${order}T10:00:00Z` }] : [],
 });
 
 describe("moving a candidate to Passed", () => {
@@ -132,6 +151,28 @@ describe("moving a candidate to Passed", () => {
       expect.objectContaining({ data: expect.objectContaining({ stage: "PASSED", status: "passed" }) }),
     );
     expect(lastAuditMeta()).toMatchObject({ toStage: "PASSED", manualOverride: "AI screening 5, Not a fit" });
+  });
+
+  it("treats a pass over a below-bar or unheld interview round as a manual override, and names the round", async () => {
+    db.candidate.findMany.mockResolvedValue([candidate()]);
+    resultsFor({ c1: [scored("ai_screening", 82)] });
+    roundsFor({ c1: [round(1, "Intro chat", "above_bar"), round(2, "Coding round", "below_bar"), round(3, "Behavioural", null)] });
+
+    const err = await moveCandidatesStage(actor, ["c1"], "PASSED").catch((e) => e);
+    expect(err.status).toBe(409);
+    expect(err.message).toBe("Asha Rao: Coding round below the bar; 1 round not held. Confirm the pass as a manual override.");
+
+    await expect(moveCandidatesStage(actor, ["c1"], "PASSED", { override: true })).resolves.toEqual({ moved: 1 });
+    expect(lastAuditMeta()).toMatchObject({ toStage: "PASSED", manualOverride: "Coding round below the bar; 1 round not held" });
+  });
+
+  it("passes without asking when every round is above bar", async () => {
+    db.candidate.findMany.mockResolvedValue([candidate()]);
+    resultsFor({ c1: [scored("ai_screening", 82)] });
+    roundsFor({ c1: [round(1, "Intro chat", "above_bar"), round(2, "Coding round", "above_bar")] });
+
+    await expect(moveCandidatesStage(actor, ["c1"], "PASSED")).resolves.toEqual({ moved: 1 });
+    expect(lastAuditMeta()).not.toHaveProperty("manualOverride");
   });
 
   it("passes a candidate whose results clear the bar without asking", async () => {

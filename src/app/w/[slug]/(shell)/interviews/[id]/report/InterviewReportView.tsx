@@ -36,6 +36,7 @@ import type { ReportScorecards } from "@/lib/interview/scorecard-server";
 import { bandLabel, fmtScore, SCORE_MAX } from "@/lib/interview/scorecard";
 import type { ReportRecording, ReportRecordings } from "@/lib/recording/live";
 import PanelScorecards from "./PanelScorecards";
+import NextStepPanel, { type NextStepData } from "./NextStepPanel";
 import { Avatar, Btn } from "../../../candidates/_components/ui";
 import { deleteInterviewAction } from "../../actions";
 
@@ -111,6 +112,7 @@ export default function InterviewReportView({
   canEditPassMark = false,
   canNudge = false,
   recordings = null,
+  nextStep = null,
 }: {
   report: InterviewReport;
   slug: string | null;
@@ -124,6 +126,8 @@ export default function InterviewReportView({
   canNudge?: boolean;
   /** The call recording, for members; null when the call was not set up to be recorded. */
   recordings?: ReportRecordings | null;
+  /** "What next?" for an interview that is one of the candidate's rounds, once it has a result. */
+  nextStep?: NextStepData | null;
 }) {
   const [deleting, setDeleting] = useState(false);
   const status = statusOf(r);
@@ -216,6 +220,13 @@ export default function InterviewReportView({
         </div>
       </section>
 
+      {/* Below xl the side column falls under the report, so the next step comes first here. */}
+      {nextStep && !standalone && (
+        <div className="xl:hidden">
+          <NextStepPanel d={nextStep} />
+        </div>
+      )}
+
       <div className="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-5 items-start print:block">
         <div className="flex flex-col gap-5 min-w-0 print:gap-4">
           {scorecards && (
@@ -228,6 +239,11 @@ export default function InterviewReportView({
         </div>
 
         <div className="flex flex-col gap-5 min-w-0 print:mt-4 print:gap-4">
+          {nextStep && !standalone && (
+            <div className="hidden xl:block">
+              <NextStepPanel d={nextStep} id="next-step-wide" />
+            </div>
+          )}
           <Card title="Details" icon={CalendarDays}>
             <dl className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-3 gap-y-2.5 text-[13px]">
               <dt className="text-subtle">Scheduled</dt>

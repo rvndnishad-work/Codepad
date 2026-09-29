@@ -14,6 +14,7 @@ import {
   deletePlan,
   savePlan,
   setBatchPlan,
+  setCandidateRoundNextStep,
   setCandidateRoundSkipped,
   setDefaultPlan,
   removeCandidateRound,
@@ -21,7 +22,7 @@ import {
   type NewPlanInput,
   type PlanView,
 } from "@/lib/interview/plans-server";
-import type { PlanInput, RoleType } from "@/lib/interview/rounds";
+import type { NextStep, PlanInput, RoleType } from "@/lib/interview/rounds";
 
 type ActionError = { ok: false; error: string };
 export type PlanActionResult<T = object> = ({ ok: true } & T) | ActionError;
@@ -124,6 +125,19 @@ export async function removeRoundAction(slug: string, roundId: string): Promise<
     const actor = await resolveCandidateActor(slug, "candidate:write");
     await removeCandidateRound(actor, roundId);
     refresh(slug);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Move on, stop here, or undecided again, after a round with a result. */
+export async function setRoundNextStepAction(slug: string, roundId: string, step: NextStep | null): Promise<PlanActionResult> {
+  try {
+    const actor = await resolveCandidateActor(slug, "candidate:manage_pipeline");
+    await setCandidateRoundNextStep(actor, roundId, step);
+    refresh(slug);
+    revalidatePath(`/w/${slug}/interviews`, "layout");
     return { ok: true };
   } catch (err) {
     return fail(err);

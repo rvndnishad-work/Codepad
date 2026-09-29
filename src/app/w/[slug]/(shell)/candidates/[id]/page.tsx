@@ -6,10 +6,11 @@ import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/acti
 import { loadCandidateAtsCard } from "@/lib/ats/connection-server";
 import { canMember } from "@/lib/permissions";
 import { loadCandidateRounds } from "@/lib/interview/rounds-server";
+import { REJECT_REASONS, type RejectReason } from "@/lib/crm/stages";
 import CandidateProfileClient from "./CandidateProfileClient";
 import type { ProfileRound } from "./RoundsCard";
 
-type Props = { params: Promise<{ slug: string; id: string }> };
+type Props = { params: Promise<{ slug: string; id: string }>; searchParams?: Promise<{ decide?: string; reason?: string; round?: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug, id } = await params;
@@ -21,8 +22,9 @@ export async function generateMetadata({ params }: Props) {
   return { title: candidate ? `${candidate.name} — Candidate` : "Candidate not found", robots: { index: false, follow: false } };
 }
 
-export default async function CandidateProfilePage({ params }: Props) {
+export default async function CandidateProfilePage({ params, searchParams }: Props) {
   const { slug, id } = await params;
+  const sp = (await searchParams) ?? {};
   const actor = await resolveCandidateActor(slug).catch((err) => {
     if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/candidates/${id}`);
     if (err instanceof CandidateError && err.status === 404) notFound();
@@ -148,6 +150,12 @@ export default async function CandidateProfilePage({ params }: Props) {
       rounds={rounds}
       planName={candidate.plan?.name ?? null}
       roleType={roleType}
+      // "Stop here" on a round report lands here with the Not passed dialog open.
+      openReject={
+        sp.decide === "not_passed"
+          ? { reason: REJECT_REASONS.includes(sp.reason as RejectReason) ? (sp.reason as RejectReason) : null, note: rounds.find((r) => r.id === sp.round) ? `Stopped after ${rounds.find((r) => r.id === sp.round)!.name}` : "" }
+          : null
+      }
     />
   );
 }

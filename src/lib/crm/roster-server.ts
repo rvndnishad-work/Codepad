@@ -8,6 +8,8 @@ import { computeNextStep, daysSince, needsAttention, passCheck, resultStateText,
 import { normalizeStage } from "@/lib/crm/stages";
 import { parseTags } from "@/lib/crm/candidates-server";
 import type { RosterRow } from "@/lib/crm/roster";
+import { loadCandidateRounds } from "@/lib/interview/rounds-server";
+import { overrideReason } from "@/lib/interview/rounds";
 
 export async function loadRoster(
   workspaceId: string,
@@ -43,9 +45,12 @@ export async function loadRoster(
     workspaceSlug,
     opts.batchId || opts.ids ? candidates.map((c) => c.id) : undefined,
   );
+  const rounds = await loadCandidateRounds(workspaceId, workspaceSlug, candidates.map((c) => c.id), new Map(candidates.map((c) => [c.id, c.stage])), results);
   const now = Date.now();
   return candidates.map((c) => {
     const rs = results.get(c.id) ?? [];
+    const cr = rounds.get(c.id);
+    const roundsPass = cr && cr.progress.total > 0 ? overrideReason(cr.progress) : null;
     const summary = summarizeResults(rs);
     const stageChangedAt = (c.stageChangedAt ?? c.createdAt).toISOString();
     const next = computeNextStep({
@@ -85,7 +90,8 @@ export async function loadRoster(
       takeHomeMinutes: summary.takeHomeMinutes,
       next,
       attention: c.status !== "archived" && needsAttention(next, c.stage, daysInStage),
-      manualPass: normalizeStage(c.stage) === "PASSED" ? (passCheck(rs).reason ?? null) : null,
+      manualPass: normalizeStage(c.stage) === "PASSED" ? [roundsPass, passCheck(rs).reason].filter(Boolean).join("; ") || null : null,
+      roundsPass,
     };
   });
 }

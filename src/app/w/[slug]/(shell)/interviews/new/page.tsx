@@ -17,7 +17,7 @@ export const metadata = { title: "New interview", robots: { index: false, follow
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ candidateId?: string; candidates?: string; challenges?: string; guide?: string; format?: string }>;
+  searchParams: Promise<{ candidateId?: string; candidates?: string; challenges?: string; guide?: string; format?: string; rounds?: string }>;
 };
 
 const list = (v: string | undefined) => (v ?? "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -67,6 +67,13 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
         rounds: rounds.slice(0, 10),
         guideId: data.guides.some((g) => g.id === sp.guide) ? sp.guide! : null,
         format: sp.format ?? null,
+        // "candidateId:roundId" pairs from Next round due and a round report; the server checks each round on scheduling.
+        roundIds: Object.fromEntries(
+          list(sp.rounds)
+            .map((pair) => pair.split(":"))
+            .filter((p) => p.length === 2 && p[0] && p[1] && p[1].length <= 40)
+            .slice(0, 20),
+        ),
       }}
     />
   );

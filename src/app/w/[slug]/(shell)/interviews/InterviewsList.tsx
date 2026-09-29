@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Ban,
+  CalendarCheck2,
   CalendarClock,
   CalendarPlus,
+  ChevronDown,
   CalendarX2,
   CircleCheck,
   CircleX,
@@ -32,7 +34,9 @@ import {
 import { humanize } from "@/lib/workspace/display";
 import type { QuestionState } from "@/lib/interview/wizard";
 import type { OutcomeGroup, OutcomeKey } from "@/lib/interview/list-outcome";
-import type { Segment } from "@/lib/interview/rounds";
+import { segmentOf, type RoundState, type Segment, type WaitingOn } from "@/lib/interview/rounds";
+import type { NextRoundDue } from "@/lib/interview/rounds-server";
+import { RoundTile } from "../candidates/_components/PlanEditor";
 import { RoundStrip } from "../candidates/_components/RoundStrip";
 import { Avatar, Btn, fmtDate, inputCls, useToasts } from "../candidates/_components/ui";
 
@@ -51,6 +55,8 @@ export type InterviewRow = {
   group: OutcomeGroup;
   /** The candidate's own decision, as a small line under a finished interview. */
   candidateLine: { text: string; tone: "success" | "danger" | "muted" } | null;
+  /** Where Decide goes: the round report's "What next?" or the candidate profile. */
+  decideHref: string | null;
   /** Which round of the candidate's plan this is, when it is linked to one. */
   round: { number: number | null; total: number; name: string; strip: { seg: Segment; name: string; here: boolean }[] } | null;
   /** The interviewer's take from the End interview dialog. Never a pass on its own. */
@@ -85,13 +91,21 @@ export type InterviewRow = {
   mineToPick: boolean;
 };
 
-type View = "all" | OutcomeGroup | "questions";
+/** One candidate's whole plan, for Group by candidate. */
+export type PersonRounds = {
+  planName: string | null;
+  waitingOn: WaitingOn;
+  rounds: { id: string; number: number | null; name: string; kind: string; format: string | null; state: RoundState; label: string; at: string | null; score: string | null; href: string | null }[];
+};
+
+type View = "all" | OutcomeGroup | "questions" | "due";
 
 const VIEWS: { id: View; label: string; hideEmpty?: boolean }[] = [
   { id: "all", label: "All" },
   { id: "upcoming", label: "Coming up" },
   { id: "live", label: "Live now", hideEmpty: true },
   { id: "decision", label: "Needs decision" },
+  { id: "due", label: "Next round due", hideEmpty: true },
   { id: "passed", label: "Passed" },
   { id: "not_passed", label: "Not passed" },
   { id: "questions", label: "Needs questions", hideEmpty: true },
@@ -211,16 +225,32 @@ function rank(r: InterviewRow): number {
   if (r.outcome === "missed" || r.outcome === "questions") return 1;
   if (r.outcome === "upcoming" || r.outcome === "unscheduled") return 3;
   if (r.outcome === "cancelled") return 5;
-  if (r.group === "passed" || r.group === "not_passed") return 4;
+  if (r.group === "passed" || r.group === "not_passed" || r.group === "moved_on") return 4;
   return r.outcome === "scorecards" ? 2 : 1;
 }
 
-export default function InterviewsList({ slug, rows, view: initialView, q: initialQ }: { slug: string; rows: InterviewRow[]; view: string; q: string }) {
+export default function InterviewsList({
+  slug,
+  rows,
+  people = {},
+  due = [],
+  view: initialView,
+  q: initialQ,
+}: {
+  slug: string;
+  rows: InterviewRow[];
+  people?: Record<string, PersonRounds>;
+  due?: NextRoundDue[];
+  view: string;
+  q: string;
+}) {
   const [view, setView] = useState<View>(() => {
     const v = LEGACY_VIEW[initialView] ?? initialView;
     return VIEWS.some((x) => x.id === v) ? (v as View) : "all";
   });
   const [q, setQ] = useState(initialQ);
+  const [grouped, setGrouped] = useState(false);
+  const [openPeople, setOpenPeople] = useState<Set<string>>(new Set());
   const [toasts, toast] = useToasts();
   const router = useRouter();
   const [origin, setOrigin] = useState("");
@@ -238,8 +268,9 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
       c[r.group]++;
       if (r.questions === "needed") c.questions++;
     }
+    c.due = due.length;
     return c;
-  }, [rows]);
+  }, [rows, due]);
   const waitingCards = rows.filter((r) => r.outcome === "scorecards").length;
   const nextUp = rows.filter((r) => r.outcome === "upcoming" && r.scheduledAt).sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!))[0];
 
@@ -260,6 +291,26 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
       // Coming up: soonest first. Everything else: most recent first.
       return rank(a) === 3 ? ta.localeCompare(tb) : tb.localeCompare(ta);
     });
+
+  // Group by candidate: a person with a plan becomes one row that folds out; the rest stay as they are.
+  type Item = { kind: "row"; r: InterviewRow } | { kind: "person"; id: string; name: string; rows: InterviewRow[]; plan: PersonRounds };
+  const items: Item[] = [];
+  const seen = new Map<string, Item & { kind: "person" }>();
+  for (const r of shown) {
+    const plan = grouped && r.candidateId ? people[r.candidateId] : undefined;
+    if (!plan || !r.candidateId) {
+      items.push({ kind: "row", r });
+      continue;
+    }
+    const g = seen.get(r.candidateId);
+    if (g) g.rows.push(r);
+    else {
+      const item = { kind: "person" as const, id: r.candidateId, name: r.candidateName ?? "Unnamed candidate", rows: [r], plan };
+      seen.set(r.candidateId, item);
+      items.push(item);
+    }
+  }
+  const dueShown = due.filter((d) => !needle || d.name.toLowerCase().includes(needle) || d.round.name.toLowerCase().includes(needle));
 
   const tiles: {
     id: View;
@@ -382,14 +433,24 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
             );
           })}
         </div>
-        <label className="relative w-full md:w-72">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+        {view !== "due" && Object.keys(people).length > 0 && (
+          <label className="inline-flex items-center gap-2 text-[13px] text-muted whitespace-nowrap cursor-pointer select-none">
+            <input type="checkbox" checked={grouped} onChange={(e) => setGrouped(e.target.checked)} className="w-4 h-4 accent-secondary" />
+            Group by candidate
+          </label>
+        )}
+        <label className="relative flex-1 md:flex-none md:w-72">
           <span className="sr-only">Search interviews</span>
           <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-subtle" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search candidate, title or interviewer" className={`${inputCls} pl-8`} />
         </label>
+        </div>
       </div>
 
-      {shown.length === 0 ? (
+      {view === "due" ? (
+        <DueList slug={slug} due={dueShown} />
+      ) : shown.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center flex flex-col items-center gap-2">
           <Inbox className="w-6 h-6 text-subtle" aria-hidden />
           <p className="text-[15px] font-medium text-fg">{rows.length ? "No matches" : "No interviews yet"}</p>
@@ -397,7 +458,36 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
         </div>
       ) : (
         <ul className="rounded-xl border border-border bg-surface overflow-hidden">
-          {shown.map((r) => {
+          {items.map((it) =>
+            it.kind === "person" ? (
+              <PersonGroup
+                key={`p:${it.id}`}
+                slug={slug}
+                id={it.id}
+                name={it.name}
+                plan={it.plan}
+                count={it.rows.length}
+                open={openPeople.has(it.id)}
+                onToggle={() =>
+                  setOpenPeople((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(it.id)) next.delete(it.id);
+                    else next.add(it.id);
+                    return next;
+                  })
+                }
+              />
+            ) : (
+              renderRow(it.r)
+            ),
+          )}
+        </ul>
+      )}
+      {toasts}
+    </div>
+  );
+
+  function renderRow(r: InterviewRow) {
             const look = LOOK[r.outcome];
             const Icon = look.icon;
             return (
@@ -476,12 +566,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                 </span>
               </li>
             );
-          })}
-        </ul>
-      )}
-      {toasts}
-    </div>
-  );
+  }
 }
 
 function Banner({ icon: Icon, tone, onClick, children }: { icon: ComponentType<{ className?: string }>; tone: "warning" | "accent-4"; onClick: () => void; children: React.ReactNode }) {
@@ -645,8 +730,8 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
           <Btn icon={FileText} href={report}>
             Report
           </Btn>
-          {r.candidateId && (
-            <Btn variant="primary" icon={Scale} href={`/w/${slug}/candidates/${r.candidateId}`}>
+          {r.decideHref && (
+            <Btn variant="primary" icon={Scale} href={r.decideHref}>
               Decide
             </Btn>
           )}
@@ -728,4 +813,189 @@ function when(iso: string, now: number | null): string {
 function fmtLength(min: number): string {
   if (min < 60) return `${min} min`;
   return min % 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min / 60} h`;
+}
+
+const STATE_PILL: Partial<Record<RoundState, string>> = {
+  above_bar: "bg-success/10 text-success",
+  below_bar: "bg-danger/10 text-danger",
+  did_not_finish: "bg-warning/10 text-warning",
+  awaiting_review: "bg-accent-4/10 text-accent-4",
+  scheduled: "bg-secondary/10 text-secondary-soft",
+  in_progress: "bg-secondary/10 text-secondary-soft",
+  not_started: "ring-1 ring-inset ring-border-strong text-muted",
+  stopped: "bg-panel text-subtle",
+};
+
+const WAITING_TEXT: Record<Exclude<WaitingOn, null>, string> = {
+  schedule: "next round to book",
+  candidate: "waiting on the candidate",
+  interview: "interview booked",
+  review: "awaiting scorecards",
+  next_step: "next step to pick",
+  decision: "ready for a decision",
+};
+
+function dayText(iso: string, withTime: boolean): string {
+  return new Date(iso).toLocaleString("en-GB", withTime ? { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" } : { day: "numeric", month: "short" });
+}
+
+/** A candidate's rounds as one row that folds out, for Group by candidate. */
+function PersonGroup({
+  slug,
+  id,
+  name,
+  plan,
+  count,
+  open,
+  onToggle,
+}: {
+  slug: string;
+  id: string;
+  name: string;
+  plan: PersonRounds;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const done = plan.rounds.filter((r) => r.state === "above_bar" || r.state === "below_bar" || r.state === "did_not_finish").length;
+  const booked = plan.rounds.find((r) => r.state === "scheduled" && r.at);
+  const focus = plan.rounds.find((r) => r.state !== "above_bar" && r.state !== "below_bar" && r.state !== "did_not_finish" && r.state !== "stopped") ?? plan.rounds[plan.rounds.length - 1];
+  const summary = [`${done} done`, booked?.at ? `next ${dayText(booked.at, false)}` : plan.waitingOn ? WAITING_TEXT[plan.waitingOn] : null].filter(Boolean).join(" · ");
+  const panelId = `rounds-${id}`;
+  return (
+    <li className="border-t border-border first:border-t-0">
+      <div className="flex items-center gap-4 px-4 md:px-5 py-4">
+        <RoundTile kind={focus?.kind ?? "interview"} format={focus?.format} size={40} />
+        <div className="min-w-0 flex-1">
+          <Link href={`/w/${slug}/candidates/${id}`} className="text-[15px] font-semibold text-fg truncate hover:underline underline-offset-4">
+            {name}
+          </Link>
+          <span className="block text-sm text-muted truncate mt-0.5">{plan.planName ?? "Their rounds"}</span>
+          <span className="flex items-center gap-2 mt-1.5 text-[13px] text-muted min-w-0">
+            <RoundStrip items={plan.rounds.map((r) => ({ seg: segmentOf(r.state), name: r.name }))} />
+            <span className="truncate">{summary}</span>
+          </span>
+        </div>
+        <span className="hidden sm:inline text-xs text-subtle whitespace-nowrap">{count === 1 ? "1 interview" : `${count} interviews`}</span>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="h-8 px-2.5 rounded-lg text-[13px] text-muted hover:text-fg hover:bg-panel inline-flex items-center gap-1"
+        >
+          {open ? "Hide" : "Rounds"}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+        </button>
+      </div>
+      {open && (
+        <ol id={panelId} className="mx-4 md:mx-5 mb-4 flex flex-col gap-2">
+          {plan.rounds.map((r) => {
+            const when = r.at ? dayText(r.at, r.state === "scheduled") : r.state === "not_started" ? "Not booked" : null;
+            const body = (
+              <>
+                <span className="w-5 text-xs tabular-nums text-subtle text-right shrink-0">{r.number ?? ""}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm text-fg truncate">{r.name}</span>
+                  <span className="block text-xs text-muted">{[when, r.score].filter(Boolean).join(" · ") || " "}</span>
+                </span>
+                <span className={`inline-flex items-center h-6 px-2 rounded-full text-xs font-medium whitespace-nowrap ${STATE_PILL[r.state] ?? "bg-panel text-muted"}`}>{r.label}</span>
+              </>
+            );
+            return (
+              <li key={r.id}>
+                {r.href ? (
+                  <Link href={r.href} className="flex items-center gap-3 rounded-xl border border-border bg-bg/40 px-3.5 py-2.5 hover:border-border-strong hover:bg-panel/50 transition-colors">
+                    {body}
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-3 rounded-xl border border-border bg-bg/40 px-3.5 py-2.5">{body}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </li>
+  );
+}
+
+/** People moved on whose next live round is not booked yet. */
+function DueList({ slug, due }: { slug: string; due: NextRoundDue[] }) {
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  // Dates read in the viewer's time zone, so they are filled in after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const href = (list: NextRoundDue[]) => {
+    const formats = [...new Set(list.map((d) => d.round.format).filter(Boolean))];
+    const ids = list.map((d) => d.candidateId);
+    return `/w/${slug}/interviews/new?candidates=${ids.join(",")}&rounds=${list.map((d) => `${d.candidateId}:${d.round.id}`).join(",")}${formats.length === 1 ? `&format=${formats[0]}` : ""}`;
+  };
+  if (!due.length) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border-strong bg-surface/50 px-6 py-14 text-center flex flex-col items-center gap-2">
+        <CalendarCheck2 className="w-6 h-6 text-subtle" aria-hidden />
+        <p className="text-[15px] font-medium text-fg">No rounds waiting to be booked</p>
+        <p className="text-[13px] text-muted max-w-sm">When someone moves a candidate on after a round, their next round shows here until it is booked.</p>
+      </div>
+    );
+  }
+  const chosen = due.filter((d) => picked.has(d.candidateId));
+  return (
+    <div className="flex flex-col gap-3">
+      <ul className="rounded-xl border border-border bg-surface overflow-hidden">
+        {due.map((d) => {
+          const on = picked.has(d.candidateId);
+          return (
+            <li key={d.candidateId} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 md:px-5 py-3.5 border-t border-border first:border-t-0">
+              <input
+                type="checkbox"
+                checked={on}
+                aria-label={`Select ${d.name}`}
+                onChange={() =>
+                  setPicked((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(d.candidateId)) next.delete(d.candidateId);
+                    else next.add(d.candidateId);
+                    return next;
+                  })
+                }
+                className="w-4 h-4 accent-secondary shrink-0"
+              />
+              <RoundTile kind="interview" format={d.round.format} size={32} />
+              <div className="min-w-0 flex-1 basis-[220px]">
+                <div className="text-sm font-medium text-fg truncate">
+                  <Link href={`/w/${slug}/candidates/${d.candidateId}`} className="hover:underline underline-offset-4">
+                    {d.name}
+                  </Link>{" "}
+                  · {d.round.name}
+                </div>
+                <div className="text-xs text-muted truncate">
+                  {[
+                    d.round.number ? `Round ${d.round.number} of ${d.total}` : null,
+                    d.from ? `${d.from.name} moved on${d.from.by ? ` by ${d.from.by}` : ""}${d.from.at && mounted ? `, ${dayText(d.from.at, false)}` : ""}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </div>
+              </div>
+              <Btn variant="primary" icon={CalendarPlus} href={href([d])}>
+                Schedule
+              </Btn>
+            </li>
+          );
+        })}
+      </ul>
+      {chosen.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Btn variant="primary" size="md" icon={CalendarPlus} href={href(chosen)}>
+            Schedule {chosen.length} together
+          </Btn>
+          <span className="text-[13px] text-muted">One wizard run, one room each.</span>
+        </div>
+      ) : (
+        due.length > 1 && <p className="text-[13px] text-muted">Select several to book them in one wizard run.</p>
+      )}
+    </div>
+  );
 }

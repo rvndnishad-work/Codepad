@@ -5,8 +5,11 @@
 import { prisma } from "@/lib/prisma";
 import { passMarkOf } from "@/lib/ai-interview/verdict";
 import { takeHomePassMarkOf } from "@/lib/take-home/pass-mark";
+import { parseCriteria, parseRatings, passMarkOf as scorecardPassMarkOf, scorecardAverage } from "@/lib/interview/scorecard";
 import {
+  describePanelScore,
   describeScore,
+  ratingToScore,
   rubricAverage,
   rubricToScore,
   type CandidateResult,
@@ -65,6 +68,8 @@ export async function loadCandidateResults(
         verdict: true,
         takeHomePassMark: true,
         rubric: { select: { ratings: true } },
+        scorecardPassMark: true,
+        scorecards: { where: { status: "submitted" }, select: { criteriaJson: true, ratingsJson: true } },
       },
     }),
     prisma.aIInterviewSession.findMany({
@@ -196,10 +201,14 @@ export async function loadCandidateResults(
       continue;
     }
 
-    // Live interviews. A rubric makes it scored; finished without one is
+    // Live interviews. Submitted panel scorecards (1 to 4) or the older
+    // end-of-room rubric (1 to 5) make it scored; finished without either is
     // waiting on feedback.
-    const rating = rubricAverage(s.rubric?.ratings);
-    const score = rating != null ? rubricToScore(rating) : null;
+    const cardAverages = s.scorecards.map((c) => scorecardAverage(parseRatings(c.ratingsJson, parseCriteria(c.criteriaJson)))).filter((x): x is number => x != null);
+    const panel = cardAverages.length ? Math.round((cardAverages.reduce((a, b) => a + b, 0) / cardAverages.length) * 10) / 10 : null;
+    const panelBar = scorecardPassMarkOf(s.scorecardPassMark);
+    const rating = panel ?? rubricAverage(s.rubric?.ratings);
+    const score = panel != null ? ratingToScore(panel, 4) : rating != null ? rubricToScore(rating) : null;
     const state: ResultState =
       score != null
         ? "scored"
@@ -218,7 +227,11 @@ export async function loadCandidateResults(
       state,
       score,
       rating,
-      ...(score != null ? describeScore("interview", score, rating, s.verdict) : { verdict: null, passed: null }),
+      ...(panel != null
+        ? { ...describePanelScore(panel, panelBar, s.verdict), ratingScale: 4, ratingBar: panelBar, passMark: ratingToScore(panelBar, 4) }
+        : score != null
+          ? describeScore("interview", score, rating, s.verdict)
+          : { verdict: null, passed: null }),
       sentAt: s.createdAt.toISOString(),
       startedAt: iso(s.startedAt),
       finishedAt: iso(s.finishedAt),

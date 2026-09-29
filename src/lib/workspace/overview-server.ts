@@ -20,7 +20,7 @@ export async function loadOverviewExtras(
   now: Date = new Date(),
 ): Promise<OverviewExtras> {
   const since = new Date(now.getTime() - BOUNCE_WINDOW_DAYS * DAY);
-  const [batches, batched, submitted, finishedLive, emailLogs, atsFailures, alertChannels, pausedHooks] = await Promise.all([
+  const [batches, batched, submitted, finishedLive, emailLogs, atsFailures, alertChannels, pausedHooks, cards] = await Promise.all([
     prisma.candidateBatch.findMany({
       where: { workspaceId },
       orderBy: [{ status: "desc" }, { createdAt: "desc" }],
@@ -41,7 +41,7 @@ export async function loadOverviewExtras(
     prisma.interviewSession.findMany({
       where: { workspaceId, type: { not: "take-home" }, finishedAt: { gte: new Date(now.getTime() - BOUNCE_WINDOW_DAYS * DAY) } },
       take: 200,
-      select: { id: true, rubric: { select: { id: true } } },
+      select: { id: true, rubric: { select: { id: true } }, scorecards: { where: { status: "submitted" }, select: { id: true }, take: 1 } },
     }),
     prisma.emailLog.findMany({
       where: { workspaceId, createdAt: { gte: since } },
@@ -64,6 +64,18 @@ export async function loadOverviewExtras(
     prisma.webhookEndpoint.findMany({
       where: { workspaceId, active: false, pausedReason: "failures" },
       select: { id: true, url: true, pausedAt: true, updatedAt: true },
+    }),
+    // Panel scorecards submitted in the window, for Recent activity.
+    prisma.interviewScorecard.findMany({
+      where: { status: "submitted", submittedAt: { gte: since }, session: { workspaceId } },
+      orderBy: { submittedAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        reviewerName: true,
+        submittedAt: true,
+        session: { select: { title: true, candidateId: true, candidateName: true, candidate: { select: { name: true } } } },
+      },
     }),
   ]);
 
@@ -117,7 +129,16 @@ export async function loadOverviewExtras(
     batches,
     candidateBatch: Object.fromEntries(batched.map((c) => [c.id, c.batchId!])),
     takeHomeScores,
-    scorecardSessionIds: finishedLive.filter((s) => !!s.rubric).map((s) => s.id),
+    // Scored with the older end-of-room rubric, or at least one panel scorecard submitted.
+    scorecardEvents: cards.map((c) => ({
+      id: c.id,
+      reviewerName: c.reviewerName,
+      candidateId: c.session.candidateId,
+      candidateName: c.session.candidate?.name?.trim() || c.session.candidateName?.trim() || null,
+      title: c.session.title,
+      at: (c.submittedAt ?? new Date()).toISOString(),
+    })),
+    scorecardSessionIds: finishedLive.filter((s) => !!s.rubric || s.scorecards.length > 0).map((s) => s.id),
     bounced: bouncedLogs.map((l) => {
       const p = byEmail.get(l.recipientEmail.toLowerCase());
       return {

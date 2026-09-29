@@ -8,7 +8,7 @@ import { notifyScorecardRequested } from "@/lib/notifications/triggers";
  *
  * Scans for live interview sessions that:
  *   - reached status="completed" more than STALE_AFTER_MS ago
- *   - still have no rubric attached
+ *   - still have no rubric attached and no panel scorecard from the host
  * The notify helper already dedup's per-sessionId, so re-running every 2h
  * just no-ops on sessions we've already nudged.
  *
@@ -34,17 +34,22 @@ export async function POST(req: NextRequest) {
       userId: true,
       title: true,
       type: true,
+      workspace: { select: { slug: true } },
+      scorecards: { where: { status: "submitted" }, select: { reviewerKey: true } },
     },
     take: MAX_BATCH,
   });
 
   let fired = 0;
   for (const s of candidates) {
+    // The host already sent their panel scorecard.
+    if (s.scorecards.some((c) => c.reviewerKey === `u:${s.userId}`)) continue;
     await notifyScorecardRequested({
       sessionId: s.id,
       ownerId: s.userId,
       title: s.title,
       type: s.type,
+      href: s.workspace ? `/w/${s.workspace.slug}/interviews/${s.id}/scorecard` : undefined,
     });
     fired++;
   }

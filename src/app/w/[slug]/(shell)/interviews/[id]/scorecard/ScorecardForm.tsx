@@ -8,6 +8,7 @@
  * (the page passes their `?guest=` query through to the API).
  */
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Check, Loader2, Lock, PencilLine } from "lucide-react";
 import type { MyScorecard } from "@/lib/interview/scorecard-server";
@@ -71,6 +72,7 @@ export default function ScorecardForm({
   const dirty = useRef(false);
 
   const locked = mode === "locked";
+  const router = useRouter();
   const issues = submitIssues({ criteria: data.criteria, ratings, recommendation: rec });
 
   async function put(intent: "draft" | "submit" | "amend"): Promise<boolean> {
@@ -87,6 +89,8 @@ export default function ScorecardForm({
       }
       setData(j.scorecard as MyScorecard);
       setError(null);
+      // A submitted card changes the report, candidate and overview: drop any cached copies of them.
+      if (intent !== "draft") router.refresh();
       return true;
     } catch {
       setError("You look offline. Your changes are still here; try again in a moment.");

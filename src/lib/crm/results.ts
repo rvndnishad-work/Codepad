@@ -34,8 +34,12 @@ export type CandidateResult = {
   state: ResultState;
   /** 0 to 100. Interviews convert their 1 to 5 rubric with `rubricToScore`. */
   score: number | null;
-  /** Interview only: the raw rubric average, 1 to 5. */
+  /** Interview only: the raw rating average, 1 to `ratingScale`. */
   rating: number | null;
+  /** Interview only: top of the rating scale. 5 for the older end-of-room rubric (the default), 4 for panel scorecards. */
+  ratingScale?: number;
+  /** Interview only: the pass mark on the rating scale. Defaults to INTERVIEW_PASS_RATING. */
+  ratingBar?: number;
   /** Short verdict label ("Strong fit", "Passed", "4.5 of 5"). */
   verdict: string | null;
   passed: boolean | null;
@@ -94,6 +98,21 @@ export function rubricToScore(rating: number): number {
 /** Interview rubric average at or above this clears the bar. */
 export const INTERVIEW_PASS_RATING = 3.5;
 
+/** Map a 1 to `of` rating onto 0 to 100. */
+export function ratingToScore(rating: number, of: number): number {
+  return Math.round(((rating - 1) / (of - 1)) * 100);
+}
+
+/**
+ * Verdict and pass flag for an interview scored by panel scorecards (1 to 4)
+ * against its own pass mark. A failing interviewer verdict still fails it.
+ */
+export function describePanelScore(average: number, passMark: number, interviewerVerdict?: string | null) {
+  const flagged = interviewerVerdict ? FAILING_INTERVIEW_VERDICTS[interviewerVerdict] : undefined;
+  if (flagged) return { verdict: `${average.toFixed(1)} of 4, ${flagged}`, passed: false };
+  return { verdict: `${average.toFixed(1)} of 4`, passed: average >= passMark };
+}
+
 /** Interviewer verdicts that fail the interview whatever the rubric says. */
 const FAILING_INTERVIEW_VERDICTS: Record<string, string> = {
   failed: "marked failed",
@@ -134,8 +153,10 @@ export type ResultsSummary = {
   latest: CandidateResult | null;
   /** Best score per kind (the candidate's strongest attempt counts). */
   byKind: Record<ResultKind, number | null>;
-  /** Interview rubric average, 1 to 5, for display. */
+  /** Interview rating average, 1 to `interviewScale`, for display. */
   interviewRating: number | null;
+  /** Top of the interview rating scale: 5 (older rubric) or 4 (panel scorecards). */
+  interviewScale: number;
   /** Weighted over the kinds that have a score; null when none do. */
   combined: number | null;
   /** Finished results, scored or not (the old tile counted scores only). */
@@ -151,6 +172,7 @@ export function summarizeResults(results: CandidateResult[]): ResultsSummary {
     interview: null,
   };
   let interviewRating: number | null = null;
+  let interviewScale = 5;
   let takeHomeMinutes: number | null = null;
   let latest: CandidateResult | null = null;
   let submitted = 0;
@@ -161,7 +183,10 @@ export function summarizeResults(results: CandidateResult[]): ResultsSummary {
     const best = byKind[r.kind];
     if (best == null || r.score > best) {
       byKind[r.kind] = r.score;
-      if (r.kind === "interview") interviewRating = r.rating;
+      if (r.kind === "interview") {
+        interviewRating = r.rating;
+        interviewScale = r.ratingScale ?? 5;
+      }
       if (r.kind === "take_home") takeHomeMinutes = r.minutesTaken;
     }
     if (!latest || resultTime(r) > resultTime(latest)) latest = r;
@@ -177,7 +202,7 @@ export function summarizeResults(results: CandidateResult[]): ResultsSummary {
   }
   const combined = weight > 0 ? Math.round(sum / weight) : null;
 
-  return { latest, byKind, interviewRating, combined, submitted, takeHomeMinutes };
+  return { latest, byKind, interviewRating, interviewScale, combined, submitted, takeHomeMinutes };
 }
 
 /**

@@ -27,6 +27,8 @@ export type RosterRow = {
   combined: number | null;
   byKind: Record<ResultKind, number | null>;
   interviewRating: number | null;
+  /** Top of the interview rating scale: 5 (older rubric) or 4 (panel scorecards). */
+  interviewScale?: number;
   takeHomeMinutes: number | null;
   next: NextStep;
   attention: boolean;

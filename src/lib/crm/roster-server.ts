@@ -81,6 +81,7 @@ export async function loadRoster(
       combined: summary.combined,
       byKind: summary.byKind,
       interviewRating: summary.interviewRating,
+      interviewScale: summary.interviewScale,
       takeHomeMinutes: summary.takeHomeMinutes,
       next,
       attention: c.status !== "archived" && needsAttention(next, c.stage, daysInStage),

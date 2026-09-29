@@ -67,6 +67,8 @@ export async function notifyInterviewReplayReady(args: {
   ownerId: string;
   title: string;
   type: string; // "mock" | "live"
+  /** Where the notification opens; defaults to the session page. */
+  href?: string;
 }) {
   // Mock sessions are self-completion; the candidate just clicked "End" and
   // doesn't need a notification telling them they did it.
@@ -77,7 +79,7 @@ export async function notifyInterviewReplayReady(args: {
       type: NOTIFICATION_TYPES.INTERVIEW_REPLAY_READY,
       title: `Replay ready: ${args.title}`,
       body: "Telemetry and timeline are queued — open the session to review.",
-      href: `/interview/${args.sessionId}`,
+      href: args.href ?? `/interview/${args.sessionId}`,
       payload: { sessionId: args.sessionId },
     });
   } catch (err) {
@@ -93,6 +95,8 @@ export async function notifyScorecardRequested(args: {
   ownerId: string;
   title: string;
   type: string;
+  /** Where the notification opens; defaults to the session page. */
+  href?: string;
 }) {
   if (args.type === "mock") return;
   try {
@@ -120,8 +124,8 @@ export async function notifyScorecardRequested(args: {
       userId: args.ownerId,
       type: NOTIFICATION_TYPES.SCORECARD_REQUESTED,
       title: `Scorecard needed: ${args.title}`,
-      body: "Session is complete but no rubric is saved yet.",
-      href: `/interview/${args.sessionId}`,
+      body: "The interview is over and your scorecard is not in yet.",
+      href: args.href ?? `/interview/${args.sessionId}`,
       payload: { sessionId: args.sessionId },
     });
   } catch (err) {

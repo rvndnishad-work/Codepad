@@ -52,6 +52,16 @@ export default async function CandidateProfilePage({ params }: Props) {
   ]);
   const row = rows[0];
   if (!row || !candidate) notFound();
+  // Scorecards are audited against the interview, not the candidate.
+  const interviewIds = row.results.filter((r) => r.kind === "interview").map((r) => r.id);
+  const scorecardAudit = interviewIds.length
+    ? await prisma.workspaceAuditLog.findMany({
+        where: { workspaceId: actor.workspaceId, targetType: "interviewSession", targetId: { in: interviewIds }, action: { in: ["INTERVIEW_SCORECARD_SUBMITTED", "INTERVIEW_SCORECARD_AMENDED"] } },
+        orderBy: { createdAt: "asc" },
+        take: 100,
+        select: { id: true, action: true, meta: true, createdAt: true, actorEmail: true, actorUserId: true },
+      })
+    : [];
 
   const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
   // Who made the current decision: the newest move into it. Older rows use
@@ -84,7 +94,7 @@ export default async function CandidateProfilePage({ params }: Props) {
   const activity: ActivityItem[] = [
     ...noteItems,
     ...createdItem,
-    ...audit
+    ...[...audit, ...scorecardAudit]
       .filter((a) => a.action !== "CANDIDATE_NOTE_ADDED")
       .map((a) =>
         describeAudit(

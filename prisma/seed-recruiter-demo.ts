@@ -622,6 +622,13 @@ async function seedTakeHomes(ctx: Ctx, challengeIds: Record<string, string>) {
   }
 }
 
+/** Competencies the seeded panel scorecards are rated on. */
+const SEED_CRITERIA = [
+  { id: "problem_solving", label: "Problem solving", hint: null, kind: "competency" },
+  { id: "code_quality", label: "Code quality", hint: null, kind: "competency" },
+  { id: "communication", label: "Communication", hint: null, kind: "competency" },
+];
+
 async function seedInterviews(ctx: Ctx, challengeIds: Record<string, string>) {
   for (const [i, iv] of INTERVIEWS.entries()) {
     const c = ctx.candidates.get(iv.candidate)!;
@@ -649,11 +656,30 @@ async function seedInterviews(ctx: Ctx, challengeIds: Record<string, string>) {
         startedAt: done || iv.status === "in_progress" ? when : null,
         finishedAt: done ? new Date(when.getTime() + (iv.minutes - 4) * 60_000) : null,
         createdAt: at(Math.min(iv.atDays, 0) - 3, 10),
+        panelJson: iv.panel ? JSON.stringify(iv.panel.map((k) => ctx.team[k].id)) : null,
         ...(iv.ratings
           ? { rubric: { create: { ratings: JSON.stringify(iv.ratings), notes: iv.notes ?? null, interviewerId: ctx.team[iv.interviewer].id, createdAt: new Date(when.getTime() + iv.minutes * 60_000) } } }
           : {}),
       },
     });
+    for (const [n, card] of (iv.scorecards ?? []).entries()) {
+      const u = ctx.team[card.by];
+      const submittedAt = new Date(when.getTime() + (iv.minutes + 20 + n * 90) * 60_000);
+      await prisma.interviewScorecard.create({
+        data: {
+          sessionId: sid("iv", `${iv.candidate}_${i}`),
+          reviewerKey: `u:${u.id}`,
+          userId: u.id,
+          reviewerName: TEAM.find((t) => t.key === card.by)?.name ?? u.email,
+          criteriaJson: JSON.stringify(SEED_CRITERIA),
+          ratingsJson: JSON.stringify(Object.fromEntries(SEED_CRITERIA.map((c, k) => [c.id, { r: card.ratings[k], n: "" }]))),
+          recommendation: card.recommendation,
+          status: "submitted",
+          submittedAt,
+          createdAt: submittedAt,
+        },
+      });
+    }
   }
 
   // Set up with the interview wizard: a behavioural round run from a

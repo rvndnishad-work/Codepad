@@ -193,6 +193,9 @@ export async function PATCH(
       totalSec: true,
       startedAt: true,
       rubric: true,
+      workspace: { select: { slug: true } },
+      // The host may have sent their panel scorecard before ending the room.
+      scorecards: { where: { status: "submitted", reviewerKey: `u:${existing.userId}` }, select: { id: true }, take: 1 },
     },
   });
 
@@ -245,20 +248,24 @@ export async function PATCH(
       });
     }
     const triggers = await import("@/lib/notifications/triggers");
+    // Workspace interviews: the old /interview link would only reopen the lobby.
+    const wsBase = updated.workspace && existing.type !== "take-home" ? `/w/${updated.workspace.slug}/interviews/${id}` : null;
     void triggers.notifyInterviewReplayReady({
       sessionId: id,
       ownerId: existing.userId,
       title: existing.title,
       type: existing.type,
+      href: wsBase ? `${wsBase}/report` : undefined,
     });
-    // SCORECARD_REQUESTED only fires when no rubric exists at completion
-    // time. If the recruiter completes + scores in one shot, no notification.
-    if (!updated.rubric) {
+    // SCORECARD_REQUESTED only fires when the host has not scored yet (no
+    // end-of-room rubric and no panel scorecard of their own).
+    if (!updated.rubric && updated.scorecards.length === 0) {
       void triggers.notifyScorecardRequested({
         sessionId: id,
         ownerId: existing.userId,
         title: existing.title,
         type: existing.type,
+        href: wsBase ? `${wsBase}/scorecard` : undefined,
       });
     }
   }

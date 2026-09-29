@@ -32,6 +32,7 @@ import { passCheck } from "@/lib/crm/results";
 import { emitWorkspaceEvent } from "@/lib/events";
 import { loadCandidateResults } from "@/lib/crm/results-server";
 import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
+import { roundsForAts, thenLabel } from "@/lib/interview/rounds-view";
 
 /** After people join a batch: their plan's first round goes out by itself when the plan says so. */
 async function afterJoiningBatch(actor: CandidateActor, ids: string[]) {
@@ -501,15 +502,22 @@ function emitDecision(
   toStage: "PASSED" | "REJECTED",
   extra: { rejectReason?: string | null; manualOverride?: string | null },
 ) {
-  return emitWorkspaceEvent(actor.workspaceId, "candidate.decided", {
+  return (async () => {
+    // Every round and its result, so an ATS or webhook receiver sees how the decision was reached.
+    const summary = await import("@/lib/interview/rounds-server")
+      .then((m) => m.loadRoundsSummary(actor.workspaceId, actor.workspaceSlug, candidate.id))
+      .catch(() => null);
+    return emitWorkspaceEvent(actor.workspaceId, "candidate.decided", {
     candidate,
     decision: toStage === "PASSED" ? "passed" : "not_passed",
+    rounds: summary ? { plan: summary.planName, continuesIn: thenLabel(summary), list: roundsForAts(summary, { includeScore: true }) } : null,
     previousStage: fromStage,
     rejectReason: extra.rejectReason ?? null,
     manualOverride: extra.manualOverride ?? null,
     decidedBy: { email: actor.actorEmail },
     reportPath: `candidates/${candidate.id}`,
-  });
+    });
+  })();
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

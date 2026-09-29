@@ -11,7 +11,7 @@ import { ChevronDown, Clock, Layers, UserRound } from "lucide-react";
 import { PIPELINE_STAGES, REJECT_REASON_LABELS, STAGE_LABELS, type PipelineStage, type RejectReason } from "@/lib/crm/stages";
 import { STUCK_AFTER_DAYS, type NextStep } from "@/lib/crm/results";
 import type { RosterRow } from "@/lib/crm/roster";
-import { roundsBadge, roundsLine, stripItems } from "@/lib/interview/rounds-view";
+import { roundsBadge, roundsLine, stripItems, thenLabel } from "@/lib/interview/rounds-view";
 import { Avatar, StageDot } from "./ui";
 import { RoundStrip } from "./RoundStrip";
 
@@ -188,7 +188,7 @@ export function Board({
         )}
         {r.rounds && r.rounds.total > 0 && (
           <div className="mt-2 flex items-center gap-2 min-w-0" title={roundsLine(r.rounds)}>
-            <RoundStrip items={stripItems(r.rounds)} />
+            <RoundStrip items={stripItems(r.rounds)} then={thenLabel(r.rounds)} />
             <span className="text-xs text-subtle tabular-nums shrink-0">
               {r.rounds.done} of {r.rounds.total}
             </span>

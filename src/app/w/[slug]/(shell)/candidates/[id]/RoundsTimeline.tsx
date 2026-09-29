@@ -13,7 +13,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CalendarDays, CircleCheck, CircleStop, DoorOpen, Loader2, Plus, RotateCcw, Scale, Send } from "lucide-react";
 import { formatLabel, formatsFor, inSentence, kindName, ROLE_TYPE_LABELS, ROUND_NAME_MAX, type PlanRoundKind, type RoleType } from "@/lib/interview/rounds";
-import { currentRound, liveRounds, stoppedRound, stripItems, waitingKey, type RoundsSummary, type RoundView } from "@/lib/interview/rounds-view";
+import { currentRound, liveRounds, stoppedRound, stripItems, thenLabel, waitingKey, type RoundsSummary, type RoundView } from "@/lib/interview/rounds-view";
 import { Btn, fmtDate, fmtWhen, inputCls, Menu, MenuItem } from "../_components/ui";
 import { RoundTile } from "../_components/PlanEditor";
 import { RoundStrip } from "../_components/RoundStrip";
@@ -243,7 +243,7 @@ export default function RoundsTimeline({
 
       {rounds && rounds.total > 0 && (
         <div className="px-5 pb-4">
-          <RoundStrip items={stripItems(rounds)} size="full" />
+          <RoundStrip items={stripItems(rounds)} then={thenLabel(rounds)} size="full" />
         </div>
       )}
 
@@ -349,6 +349,7 @@ export default function RoundsTimeline({
               </li>
             );
           })}
+          {thenLabel(rounds) && <HandOffNote ats={thenLabel(rounds)!} connected={!!rounds!.atsName} first={first} />}
           <DecisionCard
             rounds={rounds!}
             stage={stage}
@@ -363,6 +364,27 @@ export default function RoundsTimeline({
 
       {adding && <AddRoundForm slug={slug} candidateId={candidateId} roleType={roleType} pending={pending} run={run} onClose={() => setAdding(false)} />}
     </section>
+  );
+}
+
+/** The plan ends here: later rounds happen in the company ATS and are not tracked. */
+function HandOffNote({ ats, connected, first }: { ats: string; connected: boolean; first: string }) {
+  return (
+    <li className="flex gap-3">
+      <div className="flex flex-col items-center shrink-0 w-[34px]">
+        <span className="w-[34px] h-[34px] rounded-lg border border-dashed border-border-strong text-subtle flex items-center justify-center" aria-hidden>
+          <ArrowRight className="w-4 h-4" strokeWidth={1.9} />
+        </span>
+        <span className="flex-1 w-px bg-border my-1" aria-hidden />
+      </div>
+      <div className="flex-1 min-w-0 mb-3 rounded-xl border border-dashed border-border-strong px-4 py-3">
+        <h3 className="text-sm font-semibold text-fg">Then {ats}</h3>
+        <p className="text-xs text-muted mt-1">
+          Later rounds happen in {ats} and are not tracked here.{" "}
+          {connected ? `Passing ${first} hands them over to ${ats} with these round results.` : `Passing ${first} ends their screening here.`}
+        </p>
+      </div>
+    </li>
   );
 }
 

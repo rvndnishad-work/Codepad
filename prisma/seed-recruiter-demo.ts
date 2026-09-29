@@ -25,6 +25,8 @@ import { serializeQuestionnaire, type QuestionItem } from "../src/lib/ai-intervi
 import { theoryMinutes, theoryRoundScore, type TheoryAnswer, type TheorySettings, type TheoryVerdict } from "../src/lib/ai-interview/theory";
 import { creditCostForLevel } from "../src/lib/ai-interview/engagement";
 import { AI_INTERVIEW_TEMPLATES } from "../src/lib/ai-interview/scaffolds";
+import { loadCandidateResults } from "../src/lib/crm/results-server";
+import { attemptFromResult, type PlanRoundKind } from "../src/lib/interview/rounds";
 import {
   ANAGRAM_SOLUTIONS,
   BANK_QUESTIONNAIRES,
@@ -115,6 +117,7 @@ async function teardown() {
   await prisma.candidateNote.deleteMany({ where: seeded });
   await prisma.candidate.deleteMany({ where: seeded });
   await prisma.candidateBatch.deleteMany({ where: seeded });
+  await prisma.interviewPlan.deleteMany({ where: seeded });
   await prisma.challenge.deleteMany({ where: seeded });
   await prisma.workspaceAuditLog.deleteMany({ where: seeded });
   await prisma.workspaceMember.deleteMany({ where: seeded });
@@ -644,7 +647,8 @@ async function seedInterviews(ctx: Ctx, challengeIds: Record<string, string>) {
         title: iv.title,
         type: "live",
         creatorRole: "interviewer",
-        sourceType: "challenge",
+        sourceType: iv.challenges.length ? "challenge" : "combined",
+        format: iv.format ?? null,
         challengeIds: JSON.stringify(iv.challenges.map((k) => challengeIds[k])),
         totalSec: iv.minutes * 60,
         status: iv.status,
@@ -1124,6 +1128,196 @@ async function seedScreeningSession(
 
 /* ── Main ────────────────────────────────────────────────────────────────── */
 
+/* ── Interview plans and rounds ──────────────────────────────────────────── */
+
+type SeedPlanRound = { kind: PlanRoundKind; name: string; format?: string; durationMin: number; required: boolean; sends?: string };
+
+/**
+ * A Technical plan on the Frontend batch, a Quick screen that hands over to
+ * the ATS on the Backend batch, and a Non-technical plan on Customer Success.
+ * The Graduate batch closed before plans existed and keeps none.
+ */
+const ROUND_PLANS: { key: string; batch: string; name: string; roleType: "technical" | "non_technical"; templateKey: string; continuesInAts: boolean; autoSendFirst: boolean; rounds: SeedPlanRound[] }[] = [
+  {
+    key: "fe",
+    batch: "fe",
+    name: "Frontend Engineer · Oct",
+    roleType: "technical",
+    templateKey: "technical",
+    continuesInAts: false,
+    autoSendFirst: false,
+    rounds: [
+      { kind: "ai_interview", name: "AI interview", durationMin: 5, required: true, sends: sid("screen", "fe") },
+      { kind: "take_home", name: "Take home", durationMin: 3, required: false, sends: sid("tht", "fe") },
+      { kind: "interview", name: "Coding round", format: "coding", durationMin: 60, required: true },
+      { kind: "interview", name: "Behavioural", format: "behavioural", durationMin: 45, required: true },
+    ],
+  },
+  {
+    key: "be",
+    batch: "be",
+    name: "Backend quick screen",
+    roleType: "technical",
+    templateKey: "quick_technical",
+    continuesInAts: true,
+    autoSendFirst: true,
+    rounds: [
+      { kind: "ai_interview", name: "AI interview", durationMin: 5, required: true, sends: sid("screen", "be") },
+      { kind: "interview", name: "Coding round", format: "coding", durationMin: 75, required: true },
+    ],
+  },
+  {
+    key: "cs",
+    batch: "cs",
+    name: "Customer Success",
+    roleType: "non_technical",
+    templateKey: "non_technical",
+    continuesInAts: false,
+    autoSendFirst: false,
+    rounds: [
+      { kind: "interview", name: "Intro chat", format: "intro", durationMin: 30, required: true },
+      { kind: "interview", name: "Case discussion", format: "discussion", durationMin: 60, required: true },
+      { kind: "interview", name: "Behavioural", format: "behavioural", durationMin: 45, required: true },
+    ],
+  },
+];
+
+/** Moved on after their last round, so their next round shows as due. */
+const MOVED_ON = new Set(["marcus"]);
+
+const RESULT_STATES = new Set(["above_bar", "below_bar", "did_not_finish"]);
+const SESSION_KIND: Record<string, PlanRoundKind> = { "take-home": "take_home", live: "interview" };
+
+/**
+ * Gives each batch its plan and every person in it their rounds, linking the
+ * interviews, take-homes and AI interviews seeded above in date order. A
+ * sitting that fits no plan round becomes a round added for that person.
+ * Plan rounds passed over before a later one are skipped; rounds followed by
+ * a later one are marked moved on; a Not passed candidate stops at their last
+ * round.
+ */
+async function seedRounds(ctx: Ctx): Promise<number> {
+  const ws = await prisma.workspace.findUniqueOrThrow({ where: { id: ctx.workspaceId }, select: { hiringType: true } });
+  // The Customer Success plan is non-technical, so the demo hires for both.
+  if (ws.hiringType !== "both") await prisma.workspace.update({ where: { id: ctx.workspaceId }, data: { hiringType: "both" } });
+
+  const planRounds = new Map<string, (SeedPlanRound & { id: string; order: number })[]>();
+  for (const p of ROUND_PLANS) {
+    const rounds = p.rounds.map((r, i) => ({ ...r, id: sid("planround", `${p.key}_${i + 1}`), order: i + 1 }));
+    await prisma.interviewPlan.create({
+      data: {
+        id: sid("plan", p.key),
+        workspaceId: ctx.workspaceId,
+        name: p.name,
+        roleType: p.roleType,
+        templateKey: p.templateKey,
+        continuesInAts: p.continuesInAts,
+        autoSendFirst: p.autoSendFirst,
+        createdById: ctx.ownerId,
+        rounds: {
+          create: rounds.map((r) => ({
+            id: r.id,
+            order: r.order,
+            kind: r.kind,
+            name: r.name,
+            format: r.format ?? null,
+            durationMin: r.durationMin,
+            required: r.required,
+            settingsJson: r.sends ? JSON.stringify(r.kind === "ai_interview" ? { aiScreeningId: r.sends } : { takeHomeTemplateId: r.sends }) : null,
+          })),
+        },
+      },
+    });
+    await prisma.candidateBatch.update({ where: { id: sid("batch", p.batch) }, data: { planId: sid("plan", p.key) } });
+    planRounds.set(p.batch, rounds);
+  }
+
+  const people = [...ctx.candidates.values()].filter((c) => c.batch && planRounds.has(c.batch));
+  const results = await loadCandidateResults(ctx.workspaceId, ctx.slug, people.map((c) => c.id));
+  let count = 0;
+  for (const c of people) {
+    const plan = planRounds.get(c.batch!)!;
+    const batchOwner = BATCHES.find((b) => b.key === c.batch)!.owner;
+    const [sessions, aiSessions] = await Promise.all([
+      prisma.interviewSession.findMany({ where: { candidateId: c.id }, select: { id: true, type: true, status: true, verdict: true, format: true } }),
+      prisma.aIInterviewSession.findMany({ where: { candidateId: c.id, practice: false }, select: { id: true } }),
+    ]);
+    const byId = new Map((results.get(c.id) ?? []).map((r) => [r.id, r]));
+    const items = [
+      ...sessions.map((s) => ({ id: s.id, ai: false, kind: SESSION_KIND[s.type] ?? ("interview" as PlanRoundKind), format: s.format, res: byId.get(s.id), extra: { status: s.status, verdict: s.verdict } })),
+      ...aiSessions.map((s) => ({ id: s.id, ai: true, kind: "ai_interview" as PlanRoundKind, format: null as string | null, res: byId.get(s.id), extra: undefined })),
+    ]
+      .flatMap((i) => {
+        if (!i.res) return [];
+        const attempt = attemptFromResult(i.res, i.extra);
+        if (attempt.state === "cancelled") return [];
+        return [{ ...i, attempt, at: new Date(attempt.at ?? i.res.sentAt).getTime() }];
+      })
+      .sort((a, b) => a.at - b.at);
+
+    // Slots in plan order; a sitting with no matching plan round gets its own slot after the previous sitting.
+    type Slot = { plan: (typeof plan)[number] | null; kind: PlanRoundKind; name: string; format: string | null; item: (typeof items)[number] | null };
+    const slots: Slot[] = plan.map((r) => ({ plan: r, kind: r.kind, name: r.name, format: r.format ?? null, item: null }));
+    let lastIdx = -1;
+    for (const item of items) {
+      const idx = slots.findIndex((s, n) => n > lastIdx && s.plan && !s.item && s.kind === item.kind && (item.kind !== "interview" || !item.format || s.format === item.format));
+      if (idx >= 0) {
+        slots[idx].item = item;
+        lastIdx = idx;
+      } else {
+        const name = item.kind === "take_home" ? "Take home" : item.kind === "ai_interview" ? "AI interview" : item.format === "behavioural" ? "Behavioural" : "Interview";
+        slots.splice(lastIdx + 1, 0, { plan: null, kind: item.kind, name, format: item.format, item });
+        lastIdx++;
+      }
+    }
+    const lastLinked = slots.reduce((n, s, i) => (s.item ? i : n), -1);
+    const linkedAfter = (i: number) => slots.slice(i + 1).find((s) => s.item)?.item ?? null;
+    const lastResult = [...slots.keys()].reverse().find((i) => slots[i].item && RESULT_STATES.has(slots[i].item!.attempt.state));
+    const stageAt = c.stageDaysAgo != null ? at(-c.stageDaysAgo, 15) : at(-c.addedDaysAgo, 9);
+
+    for (const [i, s] of slots.entries()) {
+      const hasResult = !!s.item && RESULT_STATES.has(s.item.attempt.state);
+      const next = linkedAfter(i);
+      let nextStep: "advance" | "stop" | null = null;
+      let decidedAt: Date | null = null;
+      if (hasResult && next) {
+        nextStep = "advance";
+        decidedAt = new Date(next.at - 3 * HOUR);
+      } else if (hasResult && i === lastResult && c.stage === "REJECTED") {
+        nextStep = "stop";
+        decidedAt = new Date(stageAt.getTime() - HOUR);
+      } else if (hasResult && i === lastResult && MOVED_ON.has(c.key)) {
+        nextStep = "advance";
+        decidedAt = new Date(s.item!.at + 20 * HOUR);
+      }
+      const id = sid("cround", `${c.key}_${i + 1}`);
+      await prisma.candidateRound.create({
+        data: {
+          id,
+          candidateId: c.id,
+          planRoundId: s.plan?.id ?? null,
+          order: i + 1,
+          kind: s.kind,
+          name: s.name,
+          format: s.format,
+          durationMin: s.plan?.durationMin ?? null,
+          required: s.plan?.required ?? true,
+          skipped: !s.item && i < lastLinked,
+          nextStep,
+          decidedAt,
+          decidedById: nextStep ? ctx.team[batchOwner].id : null,
+          createdAt: at(-c.addedDaysAgo, 9),
+        },
+      });
+      if (s.item?.ai) await prisma.aIInterviewSession.update({ where: { id: s.item.id }, data: { candidateRoundId: id } });
+      else if (s.item) await prisma.interviewSession.update({ where: { id: s.item.id }, data: { candidateRoundId: id } });
+    }
+    await prisma.candidate.update({ where: { id: c.id }, data: { planId: sid("plan", ROUND_PLANS.find((p) => p.batch === c.batch)!.key) } });
+    count++;
+  }
+  return count;
+}
+
 async function main() {
   assertLocalDatabase();
   console.log("[seed:recruiter] Removing earlier demo rows…");
@@ -1160,6 +1354,8 @@ async function main() {
   await seedScreenings(ctx);
   const total = Object.values(SCREENINGS).reduce((n, list) => n + list.length, 0);
   console.log(`  ✓ AI screening: ${PLANS.length} screenings, ${total} candidates, credits`);
+  const rounds = await seedRounds(ctx);
+  console.log(`  ✓ Interview plans: ${ROUND_PLANS.length} plans, ${rounds} candidates on rounds`);
 
   console.log(`\n[seed:recruiter] Done. Open /w/${ws.slug}/candidates`);
   if (owner.email === DEMO_OWNER_EMAIL) console.log(`  Sign in as ${DEMO_OWNER_EMAIL} / ${DEMO_PASSWORD}`);

@@ -24,6 +24,10 @@
       "schedule": "40 * * * *"
     },
     {
+      "path": "/api/cron/round-nudges",
+      "schedule": "50 * * * *"
+    },
+    {
       "path": "/api/cron/data-retention",
       "schedule": "30 2 * * *"
     },

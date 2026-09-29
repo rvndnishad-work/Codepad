@@ -13,7 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { ROLE_TYPE_LABELS, type RoundState } from "@/lib/interview/rounds";
-import { currentRound, roundDetail, roundsBadge, roundsLine, roundsSub, stripItems, waitingKey, type BadgeTone, type RoundsSummary } from "@/lib/interview/rounds-view";
+import { currentRound, roundDetail, roundsBadge, roundsLine, roundsSub, stripItems, thenLabel, waitingKey, type BadgeTone, type RoundsSummary } from "@/lib/interview/rounds-view";
 import { setRoundNextStepAction } from "../plan-actions";
 import { RoundTile } from "./PlanEditor";
 import { RoundStrip } from "./RoundStrip";
@@ -69,7 +69,7 @@ export function RoundsCell({
   return (
     <div className="flex flex-col gap-1 min-w-0 w-full items-start">
       <RoundsPopover slug={slug} candidateId={candidateId} name={name} stage={stage} rounds={rounds} canPipeline={canPipeline}>
-        <RoundStrip items={stripItems(rounds)} size="md" className="py-1" />
+        <RoundStrip items={stripItems(rounds)} then={thenLabel(rounds)} size="md" className="py-1" />
       </RoundsPopover>
       <span className="text-[13px] text-fg truncate max-w-full">{roundsLine(rounds)}</span>
       {subText && (

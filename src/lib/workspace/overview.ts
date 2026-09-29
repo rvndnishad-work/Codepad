@@ -10,6 +10,13 @@ import { awaitsReview } from "./display";
 import { normalizeStage } from "@/lib/crm/stages";
 import { takeHomeVerdict } from "@/lib/take-home/pass-mark";
 
+/** Recent activity lines for a candidate's latest stage change. New has none: "was added" covers it. */
+const STAGE_ACTIVITY: Partial<Record<ReturnType<typeof normalizeStage>, string>> = {
+  SCREENING: "moved to screening",
+  PASSED: "was passed",
+  REJECTED: "was marked not passed",
+};
+
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
@@ -30,6 +37,8 @@ export type OverviewExtras = {
    * finished interviews missing from it show as "no scorecard yet".
    */
   scorecardSessionIds?: string[];
+  /** Panel scorecards submitted recently, newest first, for Recent activity. */
+  scorecardEvents?: { id: string; reviewerName: string; candidateId: string | null; candidateName: string | null; title: string; at: string }[];
   /** Invites that bounced and were not delivered since. */
   bounced: { id: string; email: string; template: string; at: string; candidateId: string | null; candidateName: string | null }[];
   /** Failed calls to a connected tool (ATS, Slack...). Empty until a connection reports errors. */
@@ -173,6 +182,7 @@ export function scopeToBatch(input: OverviewInput, batchId: string): OverviewInp
       ...input.extras,
       bounced: input.extras.bounced.filter((b) => inBatch(b.candidateId)),
       connectionErrors: input.extras.connectionErrors.filter((e) => !e.candidateId || inBatch(e.candidateId)),
+      scorecardEvents: input.extras.scorecardEvents?.filter((e) => inBatch(e.candidateId)),
     },
   };
 }
@@ -456,6 +466,20 @@ export function buildOverview(input: OverviewInput, now: Date = new Date()): Ove
   // Recent activity, newest first -----------------------------------------
   const activity = [
     ...input.candidates.map((c) => ({ id: `c-${c.id}`, who: c.name, what: "was added as a candidate", at: c.createdAt })),
+    // The latest stage change: a recruiter's decision or a move into screening.
+    ...input.candidates.flatMap((c) => {
+      const what = STAGE_ACTIVITY[normalizeStage(c.stage)];
+      if (!what || !c.stageChangedAt) return [];
+      // A candidate created straight into a stage already shows as "added".
+      if (new Date(c.stageChangedAt).getTime() - new Date(c.createdAt).getTime() < 60_000) return [];
+      return [{ id: `st-${c.id}`, who: c.name, what, at: c.stageChangedAt }];
+    }),
+    ...(input.extras?.scorecardEvents ?? []).map((e) => ({
+      id: `sc-${e.id}`,
+      who: e.reviewerName,
+      what: `sent a scorecard for ${e.candidateName ? `${e.candidateName}, ` : ""}${e.title.toLowerCase()}`,
+      at: e.at,
+    })),
     ...input.takeHomes
       .filter((th) => th.submittedAt)
       .map((th) => ({ id: `ths-${th.id}`, who: th.candidateName, what: `submitted ${th.challengeTitle}`, at: th.submittedAt! })),

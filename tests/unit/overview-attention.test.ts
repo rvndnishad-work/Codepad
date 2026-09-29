@@ -190,3 +190,34 @@ describe("Overview filters", () => {
     expect(scopeToRange(input, "all", NOW)).toBe(input);
   });
 });
+
+describe("Overview recent activity", () => {
+  const withActivity: OverviewInput = {
+    ...input,
+    candidates: [
+      ...input.candidates,
+      { id: "pravin", name: "Pravin Nishad", stage: "PASSED", createdAt: ago(3), stageChangedAt: ago(0.2) },
+      { id: "kofi", name: "Kofi Mensah", stage: "REJECTED", createdAt: ago(30), stageChangedAt: ago(0.4) },
+    ],
+    extras: {
+      ...extras,
+      candidateBatch: { ...extras.candidateBatch, pravin: "b-fe" },
+      scorecardEvents: [{ id: "card1", reviewerName: "Arvind Nishad", candidateId: "pravin", candidateName: "Pravin Nishad", title: "Intro chat", at: ago(0.3) }],
+    },
+  };
+
+  it("shows recruiter decisions and submitted scorecards, newest first", () => {
+    const lines = buildOverview(withActivity, NOW).activity.map((a) => `${a.who} ${a.what}`);
+    expect(lines.slice(0, 3)).toEqual(["Pravin Nishad was passed", "Arvind Nishad sent a scorecard for Pravin Nishad, intro chat", "Kofi Mensah was marked not passed"]);
+  });
+
+  it("does not repeat a stage set when the candidate was added", () => {
+    const only = { ...input, candidates: input.candidates.filter((c) => c.id === "ana"), sessions: [], takeHomes: [], takeHomeSessions: [], aiInterviewSessions: [] };
+    // Ana was created straight into Screening: only the "added" line.
+    expect(buildOverview(only, NOW).activity.map((a) => a.id)).toEqual(["c-ana"]);
+  });
+
+  it("keeps scorecard events to the chosen batch", () => {
+    expect(scopeToBatch(withActivity, "b-be").extras?.scorecardEvents).toEqual([]);
+  });
+});

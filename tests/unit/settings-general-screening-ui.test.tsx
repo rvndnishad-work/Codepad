@@ -96,7 +96,7 @@ describe("General", () => {
     now: "2026-09-27T10:00:00.000Z",
     canEdit: true,
     owner: false,
-    initial: { name: "Acme", slug: "acme", timezone: "UTC", dateFormat: "DMY" as const },
+    initial: { name: "Acme", slug: "acme", timezone: "UTC", dateFormat: "DMY" as const, hiringType: "technical" as const },
     logoUrl: null,
     timezones: [
       { value: "UTC", label: "UTC (GMT+0)" },

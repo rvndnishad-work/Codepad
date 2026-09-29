@@ -31,6 +31,7 @@ vi.mock("@/lib/workspace-audit", () => ({
   WORKSPACE_AUDIT_ACTIONS: new Proxy({}, { get: (_t, k) => k }),
 }));
 vi.mock("@/lib/crm/results-server", () => ({ loadCandidateResults: loadResults }));
+vi.mock("@/lib/interview/plans-sync-server", () => ({ syncCandidateRounds: vi.fn(async () => 0) }));
 // MCP server dependencies that are not under test.
 vi.mock("@/lib/ai-interview/credits", () => ({ getWorkspaceCredits: vi.fn(), refundCredit: vi.fn() }));
 vi.mock("@/lib/ai-interview/template-resolver", () => ({ resolveTemplate: vi.fn() }));

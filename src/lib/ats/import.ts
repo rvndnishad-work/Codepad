@@ -8,6 +8,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { logSyncEvent } from "./sync-log";
+import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
 import { screeningNoun, sendRequestScreening } from "./dispatch";
 
 export type ImportPerson = {
@@ -84,6 +85,7 @@ async function findOrCreateCandidate(
     if (!existing.batchId) patch.batch = { connect: { id: batchId } };
     if (!existing.phone && input.person.phone) patch.phone = input.person.phone;
     if (Object.keys(patch).length) await prisma.candidate.update({ where: { id: existing.id }, data: patch });
+    if (patch.batch) await syncCandidateRounds(input.workspaceId, [existing.id]);
     return { id: existing.id, name: existing.name, created: false };
   }
   try {
@@ -111,6 +113,7 @@ async function findOrCreateCandidate(
       targetId: row.id,
       meta: { source: input.provider, via: "ats", job: input.mapping.jobName },
     });
+    await syncCandidateRounds(input.workspaceId, [row.id]);
     return { ...row, created: true };
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

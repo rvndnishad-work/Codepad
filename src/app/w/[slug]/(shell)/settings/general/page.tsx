@@ -71,6 +71,7 @@ export default async function GeneralSettingsPage({ params }: Props) {
         slug: ctx.settings.slug,
         timezone: ctx.settings.timezone,
         dateFormat: ctx.settings.dateFormat,
+        hiringType: ctx.settings.hiringType,
       }}
       logoUrl={ctx.settings.logoUrl}
       timezones={timezones}

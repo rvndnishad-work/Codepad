@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Settings > General. Name, web address, time zone and date format save
- * together through the save bar; the logo uploads on its own as soon as a
+ * Settings > General. Name, web address, what roles the workspace hires
+ * for, time zone and date format save together through the save bar; the logo uploads on its own as soon as a
  * file is picked. The aside lists the latest settings changes from the
  * audit log.
  */
@@ -15,11 +15,12 @@ import { SaveBar, Segmented, Select, SettingRow, SettingsCard, TextInput, useSet
 import { DATE_FORMATS, SETTINGS_TABS, formatWorkspaceDate, type DateFormat } from "@/lib/workspace/settings";
 import { LOGO_MAX_BYTES, LOGO_TYPES, checkLogoFile } from "@/lib/workspace/screening-defaults";
 import { relativeTime } from "@/lib/workspace/display";
+import { HIRING_TYPE_LABELS, HIRING_TYPES, type HiringType } from "@/lib/interview/rounds";
 import { checkSlugAction, removeLogoAction, uploadLogoAction, type SlugCheck } from "./actions";
 
 export type RecentChange = { id: string; title: string; detail: string | null; actor: string; at: string; path: string | null };
 
-type Values = { name: string; slug: string; timezone: string; dateFormat: DateFormat };
+type Values = { name: string; slug: string; timezone: string; dateFormat: DateFormat; hiringType: HiringType };
 
 type Props = {
   slug: string;
@@ -51,6 +52,22 @@ export default function GeneralSettings({ slug, origin, now, canEdit, owner, ini
           </SettingRow>
           <SlugRow slug={slug} host={host} value={values.slug} saved={initial.slug} onChange={(v) => set("slug", v)} error={errors.slug} disabled={disabled || !owner} owner={owner} />
           <LogoRow slug={slug} name={values.name || initial.name} initialUrl={logoUrl} disabled={!canEdit} />
+        </SettingsCard>
+
+        <SettingsCard title="Hiring" description="What kind of roles you screen for. It sets which interview plan templates you see.">
+          <SettingRow
+            label="Hiring for"
+            help={
+              values.hiringType === "non_technical"
+                ? "Plans offer intro, role discussion and behavioural rounds, with no coding rounds."
+                : values.hiringType === "both"
+                  ? "Each plan picks technical or non-technical. Candidates with no batch follow no plan until they join one."
+                  : "Plans offer intro, coding, technical discussion and behavioural rounds."
+            }
+            error={errors.hiringType}
+          >
+            <Segmented label="Hiring for" value={values.hiringType} onChange={(v) => set("hiringType", v)} disabled={disabled} options={HIRING_TYPES.map((h) => ({ value: h, label: HIRING_TYPE_LABELS[h] }))} />
+          </SettingRow>
         </SettingsCard>
 
         <SettingsCard

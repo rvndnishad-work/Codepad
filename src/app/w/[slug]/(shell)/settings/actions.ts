@@ -21,6 +21,7 @@ import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspa
 import { diffSettings, normalizeWorkspaceSettings, type SettingsGroup, type WorkspaceSettings, SETTINGS_TABS } from "@/lib/workspace/settings";
 import { SETTINGS_SELECT, settingsAccess } from "@/lib/workspace/settings-server";
 import { isReservedSlug } from "@/lib/workspace/screening-defaults";
+import { resyncAfterHiringTypeChange } from "@/lib/interview/plans-sync-server";
 
 export type SaveSettingsResult =
   | {
@@ -117,6 +118,9 @@ export async function saveWorkspaceSettingsAction(
       meta: { tab: group, field: c.field, label: c.label, from: c.from, to: c.to },
     });
   }
+
+  // People with no batch plan follow the default for the new hiring type.
+  if (changes.some((c) => c.field === "hiringType")) await resyncAfterHiringTypeChange(ws.id).catch((err) => console.error("[settings] round sync failed:", err));
 
   const newSlug = slugChange ? (slugChange.value as string) : null;
   revalidatePath(`/w/${newSlug ?? slug}`, "layout");

@@ -15,8 +15,11 @@ import { BatchDialog } from "../../candidates/_components/BatchDialog";
 import { CandidatesView, type Perms } from "../../candidates/_components/CandidatesView";
 import { PassOverrideDialog, RejectDialog } from "../../candidates/_components/dialogs";
 import { Avatar, Btn, Menu, MenuItem, StageDot, stageLabel, useToasts } from "../../candidates/_components/ui";
+import { BatchRounds } from "../../candidates/_components/PlanEditor";
+import type { PlanView } from "@/lib/interview/plans-server";
+import type { HiringType } from "@/lib/interview/rounds";
 
-type Tab = "candidates" | "board" | "results";
+type Tab = "candidates" | "board" | "results" | "rounds";
 const SHORTLIST = "shortlist";
 
 export default function BatchClient({
@@ -28,6 +31,9 @@ export default function BatchClient({
   batches,
   members,
   perms,
+  plans,
+  planId,
+  hiringType,
 }: {
   slug: string;
   meId: string;
@@ -37,11 +43,16 @@ export default function BatchClient({
   batches: RosterBatch[];
   members: RosterMember[];
   perms: Perms;
+  plans: PlanView[];
+  planId: string | null;
+  hiringType: HiringType;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const tab: Tab = sp.get("tab") === "board" ? "board" : sp.get("tab") === "results" ? "results" : "candidates";
+  const tabParam = sp.get("tab");
+  const tab: Tab = tabParam === "board" || tabParam === "results" || tabParam === "rounds" ? tabParam : "candidates";
+  const plan = plans.find((p) => p.id === planId) ?? null;
   const [settings, setSettings] = useState(false);
   const [adding, setAdding] = useState(false);
   const [toasts, toast] = useToasts();
@@ -121,6 +132,7 @@ export default function BatchClient({
             ["candidates", "Candidates"],
             ["board", "Board"],
             ["results", "Results"],
+            ["rounds", plan ? `Rounds · ${plan.rounds.length}` : "Rounds"],
           ] as const
         ).map(([id, text]) => (
           <button
@@ -136,7 +148,16 @@ export default function BatchClient({
         ))}
       </div>
 
-      {tab === "results" ? (
+      {tab === "rounds" ? (
+        <BatchRounds
+          slug={slug}
+          batch={{ id: batch.id, name: batch.name, planId, candidates: active.length }}
+          plans={plans}
+          hiringType={hiringType}
+          canEdit={perms.canWrite}
+          toast={toast}
+        />
+      ) : tab === "results" ? (
         <Results slug={slug} rows={active} latestNotes={latestNotes} canPipeline={perms.canPipeline} canWrite={perms.canWrite} batchName={batch.name} />
       ) : (
         <CandidatesView

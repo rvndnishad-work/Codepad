@@ -44,6 +44,7 @@ function matches(row: Row, where: Row | undefined): boolean {
   return true;
 }
 
+vi.mock("@/lib/interview/plans-sync-server", () => ({ syncCandidateRounds: vi.fn(async () => 0) }));
 vi.mock("@/lib/prisma", () => {
   const table = (name: string) => {
     const rows = () => (db.tables[name] ??= []);

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
 import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/roster-server";
 import { summarizeBatch } from "@/lib/crm/batches";
+import { listPlans, workspaceHiringType } from "@/lib/interview/plans-server";
 import BatchClient from "./BatchClient";
 
 type Props = { params: Promise<{ slug: string; batchId: string }> };
@@ -26,10 +27,12 @@ export default async function BatchPage({ params }: Props) {
   });
   if (!batch) notFound();
 
-  const [rows, lookups, perms] = await Promise.all([
+  const [rows, lookups, perms, plans, hiringType] = await Promise.all([
     loadRoster(actor.workspaceId, actor.workspaceSlug, { batchId }),
     loadRosterLookups(actor.workspaceId),
     loadCandidatePerms(actor.member, actor.isManager),
+    listPlans(actor.workspaceId),
+    workspaceHiringType(actor.workspaceId),
   ]);
   // Latest note per candidate, for the compare panel.
   const notes = rows.length
@@ -66,6 +69,9 @@ export default async function BatchPage({ params }: Props) {
       batches={lookups.batches}
       members={lookups.members}
       perms={perms}
+      plans={plans}
+      planId={batch.planId}
+      hiringType={hiringType}
     />
   );
 }

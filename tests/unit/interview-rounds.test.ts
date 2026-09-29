@@ -17,6 +17,10 @@ import {
   roundsFromTemplate,
   roundStateLabel,
   strip,
+  syncRounds,
+  validatePlan,
+  type CandidateRoundRow,
+  type PlanRoundRow,
   takeHomeAttempt,
   templateByKey,
   templatesFor,
@@ -276,5 +280,104 @@ describe("attemptFromResult", () => {
     expect(attemptFromResult({ ...r, kind: "ai_screening", state: "invited", finishedAt: null }, undefined, now).state).toBe("invited");
     expect(attemptFromResult({ ...r, kind: "take_home", state: "expired" }, undefined, now).state).toBe("did_not_finish");
     expect(attemptFromResult({ ...r, kind: "take_home", state: "submitted" }, undefined, now).state).toBe("awaiting_review");
+  });
+});
+
+describe("validatePlan", () => {
+  const base = { name: "Backend engineer", roleType: "technical" as const, continuesInAts: false };
+
+  it("cleans names, fills default lengths and numbers rounds in order", () => {
+    const res = validatePlan({ ...base, name: "  Backend engineer ", rounds: [{ kind: "ai_interview", name: " AI interview ", required: true }, { kind: "interview", name: "Coding", format: "coding", required: false }] });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.plan.name).toBe("Backend engineer");
+    expect(res.plan.rounds.map((r) => [r.order, r.name, r.durationMin, r.required, r.format])).toEqual([
+      [1, "AI interview", 5, true, null],
+      [2, "Coding", 60, false, "coding"],
+    ]);
+  });
+
+  it("refuses coding rounds in a non-technical plan and live rounds with no format", () => {
+    const coding = validatePlan({ ...base, roleType: "non_technical", rounds: [{ kind: "interview", name: "Coding", format: "coding", required: true }] });
+    expect(coding).toEqual({ ok: false, error: "Round 1 is a coding round, which non-technical plans do not have." });
+    const noFormat = validatePlan({ ...base, rounds: [{ kind: "interview", name: "Chat", required: true }] });
+    expect(noFormat.ok).toBe(false);
+  });
+
+  it("checks lengths and pass marks against each kind of round", () => {
+    expect(validatePlan({ ...base, rounds: [{ kind: "interview", name: "Intro", format: "intro", durationMin: 5, required: true }] }).ok).toBe(false);
+    expect(validatePlan({ ...base, rounds: [{ kind: "take_home", name: "Task", durationMin: 45, required: true }] }).ok).toBe(false);
+    expect(validatePlan({ ...base, rounds: [{ kind: "interview", name: "Intro", format: "intro", passMark: 70, required: true }] }).ok).toBe(false);
+    const ok = validatePlan({ ...base, rounds: [{ kind: "interview", name: "Intro", format: "intro", passMark: 2.6, required: true }, { kind: "take_home", name: "Task", passMark: 70.4, required: true }] });
+    expect(ok.ok && ok.plan.rounds.map((r) => r.passMark)).toEqual([2.5, 70]);
+  });
+
+  it("needs a name and at least one round, and rejects a round listed twice", () => {
+    expect(validatePlan({ ...base, name: " ", rounds: [{ kind: "take_home", name: "Task", required: true }] }).ok).toBe(false);
+    expect(validatePlan({ ...base, rounds: [] }).ok).toBe(false);
+    expect(validatePlan({ ...base, rounds: [{ id: "a", kind: "take_home", name: "Task", required: true }, { id: "a", kind: "take_home", name: "Task", required: true }] }).ok).toBe(false);
+  });
+});
+
+describe("syncRounds", () => {
+  const plan: PlanRoundRow[] = [
+    { id: "p1", order: 1, kind: "ai_interview", name: "AI interview", durationMin: 5, required: true },
+    { id: "p2", order: 2, kind: "interview", name: "Coding round", format: "coding", durationMin: 60, required: true },
+    { id: "p3", order: 3, kind: "interview", name: "Behavioural", format: "behavioural", durationMin: 45, required: true },
+  ];
+  const row = (id: string, planRoundId: string | null, order: number, held = false, kind: CandidateRoundRow["kind"] = "take_home", format: string | null = null): CandidateRoundRow => ({ id, planRoundId, order, kind, format, skipped: false, held });
+
+  it("gives a candidate with no rounds a full copy of the plan", () => {
+    const res = syncRounds(plan, []);
+    expect(res.create.map((r) => [r.planRoundId, r.order, r.skipped])).toEqual([["p1", 1, false], ["p2", 2, false], ["p3", 3, false]]);
+    expect(res.update).toEqual([]);
+    expect(res.remove).toEqual([]);
+  });
+
+  it("updates unheld rounds from the plan and leaves held ones as they are", () => {
+    const res = syncRounds(plan, [row("c1", "p1", 1, true), row("c2", "p2", 2), row("c3", "p3", 3)]);
+    expect(res.create).toEqual([]);
+    expect(res.remove).toEqual([]);
+    expect(res.update.map((u) => [u.id, u.order, u.fields?.name])).toEqual([["c2", 2, "Coding round"], ["c3", 3, "Behavioural"]]);
+  });
+
+  it("removes unheld rounds from an old plan but keeps held ones and rounds added by hand", () => {
+    const res = syncRounds(plan, [row("old1", "x1", 1, true), row("old2", "x2", 2), row("hand", null, 3)]);
+    expect(res.remove).toEqual(["old2"]);
+    // The held round stays first and needs no change; the hand-added one moves up.
+    expect(res.update.map((u) => [u.id, u.order, u.fields])).toEqual([["hand", 2, undefined]]);
+    expect(res.create.map((c) => [c.planRoundId, c.order])).toEqual([["p1", 3], ["p2", 4], ["p3", 5]]);
+    // Nothing held after them, so the new rounds stay open.
+    expect(res.create.every((c) => !c.skipped)).toBe(true);
+  });
+
+  it("adds a new plan round before a held one as skipped, so no one is sent back", () => {
+    const res = syncRounds(plan, [row("c2", "p2", 1, true), row("c3", "p3", 2)]);
+    expect(res.create).toHaveLength(1);
+    expect(res.create[0]).toMatchObject({ planRoundId: "p1", order: 1, skipped: true });
+    expect(res.update.map((u) => [u.id, u.order])).toEqual([["c2", 2], ["c3", 3]]);
+  });
+
+  it("counts a held round from before the plan as the matching plan round", () => {
+    // Rebuilt from history: an AI interview and a coding round already held.
+    const res = syncRounds(plan, [row("h1", null, 1, true, "ai_interview"), row("h2", null, 2, true, "interview", "coding")]);
+    expect(res.update).toEqual([
+      { id: "h1", order: 1, planRoundId: "p1" },
+      { id: "h2", order: 2, planRoundId: "p2" },
+    ]);
+    expect(res.create.map((c) => [c.planRoundId, c.order, c.skipped])).toEqual([["p3", 3, false]]);
+  });
+
+  it("does not match a held round to a plan round of another format", () => {
+    const res = syncRounds(plan, [row("h1", null, 1, true, "interview", "behavioural")]);
+    // Behavioural matches p3, so the AI interview and coding round before it are added as skipped.
+    expect(res.update).toEqual([{ id: "h1", order: 3, planRoundId: "p3" }]);
+    expect(res.create.map((c) => [c.planRoundId, c.order, c.skipped])).toEqual([["p1", 1, true], ["p2", 2, true]]);
+  });
+
+  it("counts a held live interview of unknown format as the next live round", () => {
+    const res = syncRounds(plan, [row("h1", null, 1, true, "ai_interview"), row("h2", null, 2, true, "interview", null)]);
+    expect(res.update.map((u) => [u.id, u.planRoundId])).toEqual([["h1", "p1"], ["h2", "p2"]]);
+    expect(res.create.map((c) => c.planRoundId)).toEqual(["p3"]);
   });
 });

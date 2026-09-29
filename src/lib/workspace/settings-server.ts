@@ -19,6 +19,7 @@ export const SETTINGS_SELECT = {
   logoUrl: true,
   timezone: true,
   dateFormat: true,
+  hiringType: true,
   brandColor: true,
   senderName: true,
   replyToEmail: true,

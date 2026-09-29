@@ -26,6 +26,17 @@ export type HiringType = RoleType | "both";
 
 export const HIRING_TYPES: HiringType[] = ["technical", "non_technical", "both"];
 
+export const HIRING_TYPE_LABELS: Record<HiringType, string> = {
+  technical: "Technical roles",
+  non_technical: "Non-technical roles",
+  both: "Both",
+};
+
+export const ROLE_TYPE_LABELS: Record<RoleType, string> = {
+  technical: "Technical",
+  non_technical: "Non-technical",
+};
+
 export const PLAN_ROUND_KIND_LABELS: Record<PlanRoundKind, string> = {
   ai_interview: "AI interview",
   take_home: "Take home",
@@ -493,7 +504,27 @@ export function copyRounds(plan: PlanRoundRow[]) {
 /** Round rows for a new plan built from a template, with the chosen early rounds first. */
 export function roundsFromTemplate(t: PlanTemplate, early: PlanRoundKind[] = []): PlanRoundRow[] {
   const first = EARLY_ROUNDS.filter((r) => early.includes(r.kind) && !t.rounds.some((x) => x.kind === r.kind));
-  return [...first, ...t.rounds].map((r, i) => ({ order: i + 1, kind: r.kind, name: r.name, format: r.format ?? null, durationMin: r.durationMin ?? null, passMark: null, required: r.required }));
+  return [...first, ...t.rounds].map((r, i) => ({
+    order: i + 1,
+    kind: r.kind,
+    name: r.kind === "take_home" ? kindName(r.kind, t.roleType) : r.name,
+    format: r.format ?? null,
+    durationMin: r.durationMin ?? null,
+    passMark: null,
+    required: r.required,
+  }));
+}
+
+/** What a round of this kind is called in a plan of this role type. Non-technical roles get a written task, not a take-home. */
+export function kindName(kind: PlanRoundKind, role: RoleType): string {
+  if (kind === "take_home") return role === "non_technical" ? "Written task" : "Take home";
+  return PLAN_ROUND_KIND_LABELS[kind];
+}
+
+/** A live interview format's name; "discussion" is a role discussion in non-technical plans. */
+export function formatLabel(format: string | null | undefined, role: RoleType): string {
+  if (format === "discussion" && role === "non_technical") return "Role discussion";
+  return (format && FORMAT_NAMES[format]) || "Interview";
 }
 
 // ── Rebuilding rounds from history (backfill) ───────────────────────────
@@ -567,4 +598,189 @@ export function attemptFromResult(
       if (r.scheduledAt && new Date(r.scheduledAt).getTime() < now.getTime() - NO_SHOW_AFTER_MIN * 60_000) return { state: "did_not_finish", at };
       return { state: "scheduled", at };
   }
+}
+
+// ── Editing a plan ──────────────────────────────────────────────────────
+
+export const PLAN_NAME_MAX = 80;
+export const ROUND_NAME_MAX = 60;
+export const PLAN_ROUNDS_MAX = 12;
+/** Live interview length, minutes. */
+export const LIVE_MINUTES = { min: 15, max: 240 } as const;
+/** AI interview and take-home invite window, days. */
+export const INVITE_DAYS = { min: 1, max: 30 } as const;
+/** Live interview pass mark on the 1-4 scorecard scale. */
+export const LIVE_PASS = { min: 1.5, max: 4, step: 0.25 } as const;
+/** AI interview and take-home pass mark, 0-100. */
+export const SCORE_PASS = { min: 30, max: 95 } as const;
+
+export type PlanInput = {
+  name: string;
+  roleType: RoleType;
+  continuesInAts: boolean;
+  rounds: {
+    /** Existing plan round id, kept so candidates' copies stay matched. */
+    id?: string | null;
+    kind: PlanRoundKind;
+    name: string;
+    format?: string | null;
+    durationMin?: number | null;
+    passMark?: number | null;
+    required: boolean;
+  }[];
+};
+
+export type CleanPlan = { name: string; roleType: RoleType; continuesInAts: boolean; rounds: (Omit<PlanRoundRow, "id"> & { id: string | null })[] };
+
+const KINDS: PlanRoundKind[] = ["ai_interview", "take_home", "interview"];
+
+/** Default length for a new round of this kind. */
+export function defaultDuration(kind: PlanRoundKind, format?: string | null): number {
+  if (kind !== "interview") return kind === "ai_interview" ? 5 : 3;
+  return format === "intro" ? 30 : format === "behavioural" ? 45 : 60;
+}
+
+/**
+ * Checks a plan before it is saved. Returns the cleaned plan, or the first
+ * problem in words a recruiter can act on. Round order is the array order.
+ */
+export function validatePlan(input: PlanInput): { ok: true; plan: CleanPlan } | { ok: false; error: string } {
+  const name = (input.name ?? "").trim();
+  if (!name) return { ok: false, error: "Give the plan a name." };
+  if (name.length > PLAN_NAME_MAX) return { ok: false, error: `Keep the plan name under ${PLAN_NAME_MAX} characters.` };
+  const roleType = normalizeRoleType(input.roleType);
+  const list = Array.isArray(input.rounds) ? input.rounds : [];
+  if (list.length === 0) return { ok: false, error: "Add at least one round." };
+  if (list.length > PLAN_ROUNDS_MAX) return { ok: false, error: `A plan can have up to ${PLAN_ROUNDS_MAX} rounds.` };
+  const seen = new Set<string>();
+  const rounds: CleanPlan["rounds"] = [];
+  for (const [i, r] of list.entries()) {
+    const n = i + 1;
+    if (!KINDS.includes(r.kind)) return { ok: false, error: `Round ${n} has an unknown kind.` };
+    const rName = (r.name ?? "").trim();
+    if (!rName) return { ok: false, error: `Give round ${n} a name.` };
+    if (rName.length > ROUND_NAME_MAX) return { ok: false, error: `Keep round ${n}'s name under ${ROUND_NAME_MAX} characters.` };
+    const format = r.kind === "interview" ? (r.format ?? null) : null;
+    if (r.kind === "interview" && !roundAllowed(roleType, { kind: r.kind, format })) {
+      return { ok: false, error: roleType === "non_technical" && (format === "coding" || format === "mixed") ? `Round ${n} is a coding round, which non-technical plans do not have.` : `Pick a format for round ${n}.` };
+    }
+    const range = r.kind === "interview" ? LIVE_MINUTES : INVITE_DAYS;
+    const duration = r.durationMin == null ? defaultDuration(r.kind, format) : Math.round(Number(r.durationMin));
+    if (!Number.isFinite(duration) || duration < range.min || duration > range.max) {
+      return { ok: false, error: r.kind === "interview" ? `Round ${n} can last ${range.min} to ${range.max} minutes.` : `Round ${n}'s invite can stay open ${range.min} to ${range.max} days.` };
+    }
+    let passMark: number | null = null;
+    if (r.passMark != null && String(r.passMark) !== "") {
+      const p = Number(r.passMark);
+      if (r.kind === "interview") {
+        if (!Number.isFinite(p) || p < LIVE_PASS.min || p > LIVE_PASS.max) return { ok: false, error: `Round ${n}'s pass mark goes from ${LIVE_PASS.min} to ${LIVE_PASS.max}.` };
+        passMark = Math.round(p / LIVE_PASS.step) * LIVE_PASS.step;
+      } else {
+        if (!Number.isFinite(p) || p < SCORE_PASS.min || p > SCORE_PASS.max) return { ok: false, error: `Round ${n}'s pass mark goes from ${SCORE_PASS.min} to ${SCORE_PASS.max}.` };
+        passMark = Math.round(p);
+      }
+    }
+    const id = r.id ? String(r.id) : null;
+    if (id) {
+      if (seen.has(id)) return { ok: false, error: "A round appears twice. Reload and try again." };
+      seen.add(id);
+    }
+    rounds.push({ id, order: n, kind: r.kind, name: rName, format, durationMin: duration, passMark, required: r.required !== false });
+  }
+  return { ok: true, plan: { name, roleType, continuesInAts: !!input.continuesInAts, rounds } };
+}
+
+// ── Keeping candidates' copies in step with their plan ──────────────────
+
+export type CandidateRoundRow = {
+  id: string;
+  planRoundId: string | null;
+  order: number;
+  kind: PlanRoundKind;
+  format: string | null;
+  skipped: boolean;
+  /** Has an interview, take-home or AI interview linked, or a next step set. */
+  held: boolean;
+};
+
+export type RoundSync = {
+  create: (ReturnType<typeof copyRounds>[number] & { order: number; skipped: boolean })[];
+  update: { id: string; order: number; planRoundId?: string; fields?: Omit<ReturnType<typeof copyRounds>[number], "order" | "planRoundId"> }[];
+  remove: string[];
+};
+
+/**
+ * What to change in one candidate's rounds so they follow `plan`. Changes
+ * only reach rounds not yet held: held rounds keep their name and history,
+ * rounds from an old plan that were never held go, and missing plan rounds
+ * are added. A held round from before this plan (another plan, or rebuilt
+ * from history) counts as the next plan round of the same kind and format
+ * (any live round, when its format is not known), so no one is asked to do
+ * a round twice. Rounds a recruiter added by hand
+ * stay. A new round that would land before a round the candidate already
+ * held is added as skipped, so it never sends someone back.
+ */
+export function syncRounds(plan: PlanRoundRow[], current: CandidateRoundRow[]): RoundSync {
+  const planRows = copyRounds(plan);
+  const planIndex = new Map<string, number>();
+  planRows.forEach((r, i) => r.planRoundId && planIndex.set(r.planRoundId, i + 1));
+
+  const remove: string[] = [];
+  type Item = { key: number; tie: number; existing?: CandidateRoundRow; fresh?: RoundSync["create"][number]; mapped: boolean; adopt?: string };
+  const items: Item[] = [];
+  const taken = new Set<number>();
+  let lastKey = 0;
+  let tie = 0;
+  for (const r of [...current].sort((a, b) => a.order - b.order)) {
+    const idx = r.planRoundId ? planIndex.get(r.planRoundId) : undefined;
+    if (idx !== undefined && !taken.has(idx)) {
+      taken.add(idx);
+      lastKey = idx;
+      items.push({ key: idx, tie: 0, existing: r, mapped: true });
+      continue;
+    }
+    if (r.held) {
+      const j = planRows.findIndex((p, i) => i + 1 > lastKey && !taken.has(i + 1) && p.kind === r.kind && (r.kind !== "interview" || !r.format || p.format === r.format));
+      if (j >= 0 && planRows[j].planRoundId) {
+        taken.add(j + 1);
+        lastKey = j + 1;
+        items.push({ key: j + 1, tie: 0, existing: r, mapped: true, adopt: planRows[j].planRoundId! });
+      } else {
+        items.push({ key: lastKey, tie: ++tie, existing: r, mapped: false });
+      }
+    } else if (!r.planRoundId) {
+      // Added by hand: keeps its place.
+      items.push({ key: lastKey, tie: ++tie, existing: r, mapped: false });
+    } else {
+      remove.push(r.id);
+    }
+  }
+  planRows.forEach((row, i) => {
+    if (taken.has(i + 1)) return;
+    items.push({ key: i + 1, tie: 1000 + i, fresh: { ...row, skipped: false }, mapped: true });
+  });
+  items.sort((a, b) => a.key - b.key || a.tie - b.tie);
+
+  const lastHeld = items.reduce((at, it, i) => (it.existing?.held ? i : at), -1);
+  const create: RoundSync["create"] = [];
+  const update: RoundSync["update"] = [];
+  items.forEach((it, i) => {
+    const order = i + 1;
+    if (it.fresh) {
+      create.push({ ...it.fresh, order, skipped: i < lastHeld });
+      return;
+    }
+    const r = it.existing!;
+    if (it.adopt) {
+      update.push({ id: r.id, order, planRoundId: it.adopt });
+    } else if (it.mapped && !r.held) {
+      const { order: _o, planRoundId: _p, ...fields } = planRows[it.key - 1];
+      void _o;
+      void _p;
+      update.push({ id: r.id, order, fields });
+    } else if (r.order !== order) {
+      update.push({ id: r.id, order });
+    }
+  });
+  return { create, update, remove };
 }

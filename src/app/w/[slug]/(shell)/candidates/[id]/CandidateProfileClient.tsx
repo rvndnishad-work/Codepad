@@ -51,6 +51,8 @@ import {
 import { ConfirmDialog, PassOverrideDialog, RejectDialog } from "../_components/dialogs";
 import type { CandidateAtsCard } from "@/lib/ats/connection-server";
 import AtsSourceCard, { atsName } from "./AtsSourceCard";
+import RoundsCard, { type ProfileRound } from "./RoundsCard";
+import type { RoleType } from "@/lib/interview/rounds";
 import { ChecklistRow } from "../_components/Checklist";
 import type { Perms } from "../_components/CandidatesView";
 import { Avatar, Btn, Field, fmtDate, inputCls, Menu, MenuItem, MenuLabel, StageChip, StageDot, stageLabel, useToasts } from "../_components/ui";
@@ -81,6 +83,9 @@ export default function CandidateProfileClient({
   perms,
   ats = null,
   canSendAtsInvite = false,
+  rounds = [],
+  planName = null,
+  roleType = "technical",
 }: {
   slug: string;
   meId: string;
@@ -96,6 +101,10 @@ export default function CandidateProfileClient({
   /** Set when the candidate came in from an ATS. */
   ats?: CandidateAtsCard | null;
   canSendAtsInvite?: boolean;
+  /** The candidate's interview rounds, from their plan or added by hand. */
+  rounds?: ProfileRound[];
+  planName?: string | null;
+  roleType?: RoleType;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"overview" | "activity" | "notes">("overview");
@@ -462,6 +471,10 @@ export default function CandidateProfileClient({
                   </>
                 ) : null}
               </div>
+            )}
+
+            {(rounds.length > 0 || planName || perms.canWrite) && (
+              <RoundsCard slug={slug} candidateId={row.id} planName={planName} roleType={roleType} rounds={rounds} canEdit={perms.canWrite && !archived} toast={toast} />
             )}
 
             <ResultsGrid results={sortedResults} combined={row.combined} />

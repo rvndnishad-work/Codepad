@@ -109,12 +109,12 @@ export default function HireWowHero({
           </span>
         </div>
 
-        <h1 className="wow-font-display mt-8 text-[9vw] leading-[0.9] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[7.5vw] lg:text-[5rem]">
+        <h1 className="wow-font-display mt-8 text-[9vw] leading-[0.9] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[7.5vw] lg:text-[5rem]">
           <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">1,000 applied.</span></span>
           <span className="block overflow-hidden pb-2"><span className="wow-hire-line block whitespace-nowrap"><HireHeroTypewriter /></span></span>
         </h1>
 
-        <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
+        <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 dark:[text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
           A thousand applications, read in the order they arrived, and the
           shortlist closed at forty. Send every applicant the same take-home or
           AI screening interview instead. We grade each attempt on our servers

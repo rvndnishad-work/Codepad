@@ -13,6 +13,7 @@ import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
 import NavGlide from "./NavGlide";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
@@ -295,6 +296,8 @@ export default async function Header() {
                 recruiters get the same notification model (IP-40). The bell
                 silently no-ops when unauthenticated (API returns 401). */}
             {user ? <NotificationBell /> : null}
+
+            <ThemeToggle />
 
             {user ? (
               <UserMenu

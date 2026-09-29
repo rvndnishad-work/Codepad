@@ -129,7 +129,7 @@ export default function HomeWowHero({
 
       {PHOTOS.map((p) => (
         <figure key={p.src} className={`wow-hero-photo wow-float absolute z-10 hidden w-52 lg:block ${p.pos}`} style={{ ["--wow-rot" as string]: p.rot }}>
-          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-md">
+          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-clay dark:shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-md">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.src} alt="" className="h-32 w-full rounded-xl object-cover" loading="eager" />
             <figcaption className="px-1 py-2 text-[13px] font-medium leading-snug text-fg/80">{p.label}</figcaption>
@@ -152,18 +152,18 @@ export default function HomeWowHero({
           </div>
         </div>
 
-        <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
+        <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
           <span className="block overflow-hidden pb-1"><span className="wow-hero-line block">Don&apos;t learn</span></span>
           <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text block pb-2">to interview.</span></span>
           <span className="block overflow-hidden pb-2"><span className="wow-hero-line wow-text-stroke block">Live inside it.</span></span>
         </h1>
 
-        <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
+        <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 dark:[text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
           Solve problems in a real editor against hidden tests, sit AI mock interviews that ask the
           follow-up, and build a replay portfolio that shows recruiters how you actually work.
         </p>
 
-        <div className="wow-hero-terminal mt-8 w-full max-w-xl overflow-hidden rounded-2xl border border-fg/15 bg-surface/95 text-left shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)]">
+        <div className="wow-hero-terminal mt-8 w-full max-w-xl overflow-hidden rounded-2xl border border-fg/15 bg-surface/95 text-left shadow-clay dark:shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)]">
           <div className="flex items-center gap-1.5 border-b border-fg/10 bg-fg/[0.04] px-4 py-2.5">
             <span className="h-2.5 w-2.5 rounded-full bg-danger" />
             <span className="h-2.5 w-2.5 rounded-full bg-warning" />

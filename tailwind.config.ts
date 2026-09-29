@@ -66,7 +66,16 @@ const config: Config = {
            their own alpha, so they stay as plain vars. */
         rule: "var(--rule)",
         grid: "var(--grid)",
+        /* Pastel clay fills from the light theme reference (dimmed on
+           dark). Tiles and illustrations only, always with fg text. */
+        clay: {
+          pink: "rgb(var(--c-clay-pink) / <alpha-value>)",
+          sky: "rgb(var(--c-clay-sky) / <alpha-value>)",
+          ice: "rgb(var(--c-clay-ice) / <alpha-value>)",
+          slate: "rgb(var(--c-clay-slate) / <alpha-value>)",
+        },
       },
+
       fontFamily: {
         sans: [
           "var(--font-sans)",
@@ -111,6 +120,8 @@ const config: Config = {
            than a blurred glass bubble. Defined per theme in globals.css — on
            dark a black drop is invisible, so the token swaps to an edge ring. */
         "panel": "var(--shadow-panel)",
+        /* Light theme cards: the soft navy drop of the clay reference. */
+        "clay": "var(--shadow-clay)",
       },
       backgroundImage: {
         "grid-pattern":

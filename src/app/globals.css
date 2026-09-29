@@ -6,11 +6,17 @@
 
 @layer base {
   :root {
-    /* ── Interviewpad "Runtime" palette ──────────────────────────────────
-       Neutrals are warm-tinted paper rather than the generic blue-gray every
-       dev-tool site ships. The page is stock; surfaces are sheets laid on it.
-       Every step is opaque so a hairline resolves identically wherever it
-       crosses. */
+    /* ── Light theme: "Clay" ─────────────────────────────────────────────
+       Taken from the soft clay-3D reference Arvind picked (Peter Tarka,
+       Dribbble): a pale blue-grey page, off-white sheets, deep navy for
+       ink and structure, sky blue for the developer signal, slate indigo
+       for hiring, and a soft pink + teal pair for decoration only. Depth
+       comes from a soft navy shadow, never from gradients.
+       Contrast (WCAG, text on bg / surface / panel): fg 11.9 / 14.2 / 10.7,
+       muted 8.0 / 9.6 / 7.2, subtle 5.7 / 6.8 / 5.1, accent 5.4 / 6.4 / 4.8,
+       accent-2 6.2 / 7.4 / 5.6, status colours all >= 5.0 on bg.
+       Only routes listed in src/lib/theme-routes.ts render in light today;
+       every other route is still forced dark until it is revamped. */
     /* Two channel notations, deliberately. `--x-rgb` is COMMA separated and
        feeds the existing `rgba(var(--x-rgb), .4)` calls in this file and in
        inline styles. `--c-x` is SPACE separated and feeds Tailwind, which
@@ -18,103 +24,97 @@
        there (`rgb(1, 2, 3 / .4)` parses as nothing and the declaration is
        dropped, which silently turns backgrounds transparent). Keep all three
        representations of a colour in sync. */
-    --bg: #f6f5f2;
-    --bg-rgb: 246, 245, 242;
-    --c-bg: 246 245 242;
-    --surface: #fdfcfa;
-    --c-surface: 253 252 250;
-    --panel: #efede7;
-    --c-panel: 239 237 231;
-    --elevated: #e4e1d9;
-    --c-elevated: 228 225 217;
+    --bg: #dbe4ea;
+    --bg-rgb: 219, 228, 234;
+    --c-bg: 219 228 234;
+    --surface: #f4f7f9;
+    --c-surface: 244 247 249;
+    --panel: #ccdae3;
+    --c-panel: 204 218 227;
+    --elevated: #bccfdc;
+    --c-elevated: 188 207 220;
 
-    --border: #ddd9d0;
-    --c-border: 221 217 208;
-    --border-strong: #c0bbae;
-    --c-border-strong: 192 187 174;
+    --border: #c3d1db;
+    --c-border: 195 209 219;
+    --border-strong: #9bb0c1;
+    --c-border-strong: 155 176 193;
 
-    --muted: #4e525a;   /* 7.4:1 on --surface */
-    --c-muted: 78 82 90;
-    /* The quietest step. Was #6f747d, whose "4.9:1" only held against
-       --surface; on --panel it is 4.01:1 and on --elevated 3.60:1, so every
-       chip and footer label on a tinted ground failed AA. #5c616b clears it
-       on all four: bg 5.70, surface 6.06, panel 5.31, elevated 4.76. */
-    --subtle: #5c616b;
-    --c-subtle: 92 97 107;
-    --fg: #16181c;      /* near-black with a blue undertone, 16.6:1 */
-    --c-fg: 22 24 28;
+    --muted: #34405f;
+    --c-muted: 52 64 95;
+    --subtle: #4a5673;
+    --c-subtle: 74 86 115;
+    --fg: #1b2440;      /* deep navy, the darkest panel in the reference */
+    --c-fg: 27 36 64;
 
-    /* INK — the structural primary. Primary CTAs, the loud end of the type
-       scale, and every "this is the action" surface are ink, never brand
-       colour. That frees the accent to mean exactly one thing (below). */
-    --ink: #16181c;
-    --c-ink: 22 24 28;
-    --ink-fg: #fdfcfa;
-    --c-ink-fg: 253 252 250;
+    /* INK — the structural primary. Primary CTAs and the loud end of the
+       type scale are navy, like the reference panels. */
+    --ink: #27314f;
+    --c-ink: 39 49 79;
+    --ink-fg: #f4f7f9;
+    --c-ink-fg: 244 247 249;
 
-    /* Hairline rule + blueprint grid. --rule is the editorial separator
-       (visible, structural); --grid is the field behind a section and is
-       meant to be felt rather than seen. */
-    --rule: rgba(22, 24, 28, 0.14);
-    --grid: rgba(22, 24, 28, 0.05);
+    --rule: rgba(27, 36, 64, 0.14);
+    --grid: rgba(27, 36, 64, 0.06);
 
-    /* Elevation for panels that FLOAT over page content (nav dropdowns, the
-       mobile sheet). Everything else in the system gets its depth from the
-       rule; these are the exception, because the thing underneath them is
-       arbitrary. A hard drop, not a blur halo. */
+    /* Clay depth: a soft, wide navy shadow under a crisp 1px edge. */
     --shadow-panel:
       0 1px 0 var(--border),
-      0 2px 4px -1px rgba(22, 24, 28, 0.10),
-      0 24px 48px -20px rgba(22, 24, 28, 0.35);
+      0 2px 6px -1px rgba(39, 49, 79, 0.10),
+      0 24px 48px -20px rgba(39, 49, 79, 0.35);
+    --shadow-clay:
+      0 1px 2px rgba(39, 49, 79, 0.06),
+      0 14px 34px -14px rgba(39, 49, 79, 0.28);
 
-    /* ACCENT = the signal. Live state, the active marker, the one word in a
-       headline that carries weight. Never a decorative wash. */
-    --accent: #ce362e;        /* 5.0:1 against white */
-    --accent-rgb: 206, 54, 46;
-    --c-accent: 206 54 46;
-    --accent-soft: #f87171;   /* decorative only */
-    --c-accent-soft: 248 113 113;
-    --accent-glow: rgba(206, 54, 46, 0.1);
+    /* ACCENT = the developer signal: the reference sky blue. The fill step
+       (#4ba3c7) is too light for text, so text uses this deeper step. */
+    --accent: #1d5f80;        /* 5.4:1 on bg, 6.4:1 on surface */
+    --accent-rgb: 29, 95, 128;
+    --c-accent: 29 95 128;
+    --accent-soft: #4ba3c7;   /* the button blue, fills and decoration */
+    --c-accent-soft: 75 163 199;
+    --accent-glow: rgba(75, 163, 199, 0.18);
+    --accent-ink: #ffffff;    /* 7.0:1 on --accent */
 
-    /* The text colour that belongs on top of --accent. */
-    --accent-ink: #ffffff;
-
-    /* Secondary — the hiring/recruiter side of the product. Deep technical
-       indigo; same discipline, different audience. */
-    --accent-2: #3f39c9;      /* 7.0:1 against white */
-    --accent-2-rgb: 63, 57, 201;
-    --c-accent-2: 63 57 201;
-    --accent-2-soft: #6366f1;
-    --c-accent-2-soft: 99 102 241;
-    --accent-2-glow: rgba(63, 57, 201, 0.12);
+    /* Secondary — hiring. The slate indigo of the reference tiles. */
+    --accent-2: #434f7c;      /* 6.2:1 on bg */
+    --accent-2-rgb: 67, 79, 124;
+    --c-accent-2: 67 79 124;
+    --accent-2-soft: #6679a2;
+    --c-accent-2-soft: 102 121 162;
+    --accent-2-glow: rgba(102, 121, 162, 0.18);
     --accent-2-ink: #ffffff;
 
-    /* Expressive accents: marketing surfaces only (the homepage gradients and
-       highlights). Never status, never the live-state signal. 700 steps on paper
-       so they hold 4.5:1 as text. */
-    --accent-3: #be185d;      /* 6.0:1 against white */
-    --accent-3-rgb: 190, 24, 93;
-    --c-accent-3: 190 24 93;
-    --accent-4: #0e7490;      /* 5.36:1 against white */
-    --accent-4-rgb: 14, 116, 144;
-    --c-accent-4: 14 116 144;
+    /* Decoration only (marketing highlights): soft pink and teal. Text
+       steps here; the pastel fills are --clay-pink / --clay-teal. */
+    --accent-3: #8e3f7e;      /* 5.2:1 on bg */
+    --accent-3-rgb: 142, 63, 126;
+    --c-accent-3: 142 63 126;
+    --accent-4: #1a6173;      /* 5.4:1 on bg */
+    --accent-4-rgb: 26, 97, 115;
+    --c-accent-4: 26 97 115;
 
-    /* STATUS — pass/warn/fail. Separate from --accent, which means "live /
-       you are here" and must not double as a success colour. These are the
-       800/700 steps, not the 500s: a saturated mid-tone reads fine on the
-       near-black dark ground and collapses to ~2:1 on paper, which is how
-       difficulty badges ended up illegible in light theme. Verified on all
-       four light grounds (min: success 5.88, warning 5.43, danger 4.81). */
-    --success: #065f46;
-    --success-rgb: 6, 95, 70;
-    --c-success: 6 95 70;
-    --warning: #92400e;
-    --warning-rgb: 146, 64, 14;
-    --c-warning: 146 64 14;
-    --danger: #be123c;
-    --danger-rgb: 190, 18, 60;
-    --c-danger: 190 18 60;
-    --c-danger-solid: 190 18 60; /* solid fill under white text, 6.3:1 */
+    /* Pastel clay fills from the reference, for tiles and illustrations.
+       Always with navy (--fg) text on top. */
+    --clay-pink: #eac7e5;
+    --c-clay-pink: 234 199 229;
+    --clay-sky: #83c0d4;
+    --c-clay-sky: 131 192 212;
+    --clay-ice: #cde3e9;
+    --c-clay-ice: 205 227 233;
+    --clay-slate: #6679a2;
+    --c-clay-slate: 102 121 162;
+
+    /* STATUS — muted, and dark enough to read on every light ground. */
+    --success: #27604a;
+    --success-rgb: 39, 96, 74;
+    --c-success: 39 96 74;
+    --warning: #7a4f10;
+    --warning-rgb: 122, 79, 16;
+    --c-warning: 122 79 16;
+    --danger: #9c2f45;
+    --danger-rgb: 156, 47, 69;
+    --c-danger: 156 47 69;
+    --c-danger-solid: 156 47 69; /* solid fill under white text, 7.1:1 */
 
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes
@@ -187,6 +187,17 @@
     --c-accent-2-soft: 165 180 252;
     --accent-2-glow: rgba(139, 147, 255, 0.16);
     --accent-2-ink: #0f1115;
+
+    --shadow-clay: 0 0 0 1px rgba(245, 246, 247, 0.06), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
+    /* Clay fills on dark: the same hues, dimmed so they never glow. */
+    --clay-pink: #5a3f58;
+    --c-clay-pink: 90 63 88;
+    --clay-sky: #2f5566;
+    --c-clay-sky: 47 85 102;
+    --clay-ice: #26343c;
+    --c-clay-ice: 38 52 60;
+    --clay-slate: #3b4460;
+    --c-clay-slate: 59 68 96;
 
     --accent-3: #ff2fb3;
     --accent-3-rgb: 255, 47, 179;
@@ -2136,12 +2147,12 @@ body.sidebar-collapsed .workspace-content {
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   backdrop-filter: blur(16px) saturate(140%);
   border-color: var(--border);
-  box-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-clay);
 }
 /* Floating state (immersive dark-hero routes only): white content over the hero.
    Non-immersive routes keep themed content when stretched so light pages
    stay readable. */
-.site-nav[data-scrolled="false"][data-immersive="true"] {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] {
   --nav-fg: #fff;
   --nav-muted: rgba(255, 255, 255, 0.68);
   --nav-pill-hover: rgba(255, 255, 255, 0.12);
@@ -2160,17 +2171,17 @@ body.sidebar-collapsed .workspace-content {
 }
 
 /* Dynamic logo wordmark follows the bar state (overrides its var(--fg)). */
-.site-nav[data-scrolled="false"][data-immersive="true"] .ld-word { color: #fff !important; }
-.site-nav[data-scrolled="false"][data-immersive="true"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-word { color: #fff !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
 
 /* Utility island + divider adapt to the floating state. */
-.site-nav[data-scrolled="false"][data-immersive="true"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
-.site-nav[data-scrolled="false"][data-immersive="true"] .nav-utils button {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-utils button {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
 }
-.site-nav[data-scrolled="false"][data-immersive="true"] .mobile-menu-btn {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .mobile-menu-btn {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;

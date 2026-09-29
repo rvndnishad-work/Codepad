@@ -52,7 +52,7 @@
 .wow-card-glow:hover {
   transform: translateY(-3px);
   border-color: rgb(var(--c-fg) / 0.22);
-  box-shadow: 0 24px 60px -24px rgb(0 0 0 / .8);
+  box-shadow: var(--shadow-clay);
 }
 
 .wow-marquee-track { display: flex; width: max-content; animation: wow-marquee 28s linear infinite; }

@@ -8,19 +8,20 @@
    The cinematic 3D hero stays dark in both themes (intentional). */
 
 :root {
-  --wow-bg: #f1eefb;
-  --wow-bg-2: #e7e2f7;
-  --wow-fg: #17142b;
-  --wow-muted: rgba(23, 20, 43, 0.68);
-  --wow-faint: rgba(23, 20, 43, 0.52);
-  --wow-card: rgba(255, 255, 255, 0.78);
-  --wow-card-border: rgba(45, 38, 110, 0.14);
-  --wow-chip: rgba(255, 255, 255, 0.85);
-  --wow-stage: rgba(255, 255, 255, 0.6);
-  --wow-glow-a: rgba(124, 58, 237, 0.16);
-  --wow-glow-b: rgba(34, 211, 238, 0.14);
-  --wow-glow-c: rgba(255, 47, 179, 0.12);
-  --wow-img-veil: linear-gradient(to top, rgba(241,238,251,0.96), rgba(241,238,251,0.25));
+  /* Light values follow the "Clay" palette in globals.css. */
+  --wow-bg: #dbe4ea;
+  --wow-bg-2: #ccdae3;
+  --wow-fg: #1b2440;
+  --wow-muted: rgba(27, 36, 64, 0.72);
+  --wow-faint: rgba(27, 36, 64, 0.58);
+  --wow-card: rgba(244, 247, 249, 0.85);
+  --wow-card-border: rgba(27, 36, 64, 0.12);
+  --wow-chip: rgba(244, 247, 249, 0.9);
+  --wow-stage: rgba(244, 247, 249, 0.6);
+  --wow-glow-a: rgba(102, 121, 162, 0.16);
+  --wow-glow-b: rgba(75, 163, 199, 0.14);
+  --wow-glow-c: rgba(234, 199, 229, 0.3);
+  --wow-img-veil: linear-gradient(to top, rgba(219,228,234,0.96), rgba(219,228,234,0.25));
 }
 
 .dark {
@@ -42,8 +43,8 @@
 /* Light-theme corrections for shared wow classes */
 :root .wow-grid-bg {
   background-image:
-    linear-gradient(rgba(45, 38, 110, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(45, 38, 110, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(27, 36, 64, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(27, 36, 64, 0.07) 1px, transparent 1px);
 }
 
 /* Flowing connector between feature cards: a pulse of indigo travelling

@@ -33,8 +33,10 @@ export default function WowFinal() {
 
   return (
     // A closing CTA band, not a footer: the global <Footer /> renders right
-    // after it and owns the links, socials and copyright.
-    <section ref={root} className="wow-noise relative overflow-hidden bg-accent text-accent-ink">
+    // after it and owns the links, socials and copyright. Light theme uses
+    // the soft sky panel from the clay reference with navy type; a full
+    // deep-blue band read as too much colour.
+    <section ref={root} className="wow-noise relative overflow-hidden bg-clay-sky text-fg dark:bg-accent dark:text-accent-ink">
       {/* morphing SVG waves on top edge. Wave 2 scrubs right by 12% of its
           own width, so it starts pulled left by more than that to keep its
           left end off-screen for the whole tween. */}
@@ -42,7 +44,7 @@ export default function WowFinal() {
         <path className="wow-wave-1 fill-surface" d="M0,50 C240,95 360,5 600,45 S960,90 1200,40 S1380,60 1440,45 L1440,0 L0,0 Z" />
       </svg>
       <svg viewBox="0 0 1440 90" preserveAspectRatio="none" className="wow-wave-2 -ml-[16%] -mt-[70px] block h-[70px] w-[130%] opacity-60 md:-mt-[90px] md:h-[90px]" aria-hidden>
-        <path d="M0,60 C260,10 420,85 660,50 S1000,15 1220,55 S1390,70 1440,55 L1440,0 L0,0 Z" className="fill-accent-soft" />
+        <path d="M0,60 C260,10 420,85 660,50 S1000,15 1220,55 S1390,70 1440,55 L1440,0 L0,0 Z" className="fill-clay-ice dark:fill-accent-soft" />
       </svg>
 
       <div className="relative mx-auto max-w-7xl px-4 pb-16 pt-14 md:pb-20 md:pt-20">
@@ -53,10 +55,10 @@ export default function WowFinal() {
         </h2>
 
         <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center">
-          <Link href="/login" className="group flex w-fit items-center gap-2 rounded-full bg-accent-ink px-9 py-4 text-sm font-semibold text-accent transition hover:scale-[1.02]">
+          <Link href="/login" className="group flex w-fit items-center gap-2 rounded-full bg-ink px-9 py-4 text-sm font-semibold text-ink-fg transition dark:bg-accent-ink dark:text-accent hover:scale-[1.02]">
             Create free account <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
-          <Link href="/challenges" className="flex w-fit items-center gap-2 rounded-full border-2 border-accent-ink px-9 py-[14px] text-sm font-semibold transition hover:bg-accent-ink hover:text-accent">
+          <Link href="/challenges" className="flex w-fit items-center gap-2 rounded-full border-2 border-ink px-9 py-[14px] text-sm font-semibold transition hover:bg-ink hover:text-ink-fg dark:border-accent-ink dark:hover:bg-accent-ink dark:hover:text-accent">
             Browse challenges
           </Link>
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest md:ml-auto md:items-end">

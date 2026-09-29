@@ -741,7 +741,7 @@ export type InterviewSeed = {
   candidate: string;
   title: string;
   interviewer: TeamKey;
-  status: "scheduled" | "in_progress" | "completed";
+  status: "scheduled" | "in_progress" | "completed" | "cancelled";
   /** Negative: in the past. */
   atDays: number;
   minutes: number;
@@ -749,6 +749,10 @@ export type InterviewSeed = {
   ratings?: { CodeQuality: number; ProblemSolving: number; Communication: number };
   verdict?: "success" | "failed";
   notes?: string;
+  /** Teammates on the panel besides the host. */
+  panel?: TeamKey[];
+  /** Submitted panel scorecards (1 to 4 per competency) and each one's recommendation. */
+  scorecards?: { by: TeamKey; ratings: [number, number, number]; recommendation: "yes" | "unsure" | "no" }[];
 };
 
 export const INTERVIEWS: InterviewSeed[] = [
@@ -759,6 +763,11 @@ export const INTERVIEWS: InterviewSeed[] = [
   { candidate: "dmitri", title: "Backend: system design and code", interviewer: "daniel", status: "completed", atDays: 0, minutes: 75, challenges: ["lru"] },
   { candidate: "chloe", title: "Backend: system design and code", interviewer: "mei", status: "scheduled", atDays: 1, minutes: 75, challenges: ["lru"] },
   { candidate: "samuel", title: "Graduate: pair programming", interviewer: "daniel", status: "completed", atDays: -20, minutes: 45, challenges: ["lru"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success" },
+  // One of each outcome the Interviews list shows: not passed, waiting for a decision, waiting for a scorecard, cancelled.
+  { candidate: "kofi", title: "Senior Frontend: live pairing", interviewer: "daniel", status: "completed", atDays: -4, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 2, ProblemSolving: 2, Communication: 3 }, verdict: "failed", notes: "Could not get focus handling working and did not test the close paths." },
+  { candidate: "lena", title: "Senior Frontend: live pairing", interviewer: "daniel", panel: ["priya"], status: "completed", atDays: -1, minutes: 60, challenges: ["debounce"], verdict: "success", scorecards: [{ by: "daniel", ratings: [4, 3, 3], recommendation: "yes" }, { by: "priya", ratings: [3, 3, 3], recommendation: "unsure" }] },
+  { candidate: "grace", title: "Senior Frontend: live pairing", interviewer: "daniel", panel: ["mei"], status: "completed", atDays: 0, minutes: 60, challenges: ["debounce"], scorecards: [{ by: "daniel", ratings: [3, 3, 4], recommendation: "yes" }] },
+  { candidate: "arjun", title: "Backend: system design and code", interviewer: "mei", status: "cancelled", atDays: 1, minutes: 75, challenges: ["retry"] },
 ];
 
 /* ── Prompt tasks (Question library) ───────────────────────────────────── */

@@ -955,6 +955,16 @@ export function ReviewStep({
           value={state.noCandidate ? "No candidate yet, one open link" : people.length === 1 ? people[0].name : `${people.length} people, one room each`}
           detail={people.length > 1 ? people.map((p) => firstName(p.name)).join(", ") : people[0]?.email || undefined}
         />
+        {!state.noCandidate && people.some((p) => p.id && state.roundNames?.[p.id]) && (
+          <ReviewCard
+            step="round"
+            goTo={goTo}
+            icon={ListOrdered}
+            title="Round"
+            value={people.length === 1 ? state.roundNames?.[people[0].id!] || "Not part of their plan" : `${people.filter((p) => p.id && state.roundNames?.[p.id]).length} of ${people.length} linked to a round`}
+            detail={people.length > 1 ? people.map((p) => `${firstName(p.name)}: ${(p.id && state.roundNames?.[p.id]) || "no round"}`).join(", ") : undefined}
+          />
+        )}
         <ReviewCard
           step="panel"
           goTo={goTo}

@@ -6,7 +6,9 @@ import { canSeeOthers, isRecommendation, parseCriteria, parseRatings, passMarkOf
 import { INTERVIEWER_TAKE, REPORT_CRITERIA } from "@/lib/interview/report-server";
 import { INTERVIEW_PASS_RATING } from "@/lib/crm/results";
 import { normalizeStage } from "@/lib/crm/stages";
-import { interviewOutcome } from "@/lib/interview/list-outcome";
+import { candidateLine, groupOf, interviewOutcome } from "@/lib/interview/list-outcome";
+import { loadCandidateRounds } from "@/lib/interview/rounds-server";
+import { segmentOf } from "@/lib/interview/rounds";
 import InterviewsList, { type InterviewRow } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
@@ -68,6 +70,12 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
   const peopleIds = [...new Set(sessions.flatMap((s) => [...parsePanel(s.panelJson), ...(s.questionsOwnerId ? [s.questionsOwnerId] : [])]))];
   const people = peopleIds.length ? await prisma.user.findMany({ where: { id: { in: peopleIds } }, select: { id: true, name: true, email: true } }) : [];
   const nameOf = new Map(people.map((u) => [u.id, u.name ?? u.email ?? "Teammate"]));
+  // Each linked candidate's rounds, so a row can say which round it is.
+  const plans = await loadCandidateRounds(
+    workspace.id,
+    slug,
+    sessions.map((s) => s.candidateId).filter((x): x is string => !!x),
+  );
   const now = new Date();
 
   const rows: InterviewRow[] = sessions.map((s) => {
@@ -84,6 +92,18 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
           });
     const scoring = scoringOf(s, userId, nameOf);
     const stage = s.candidateId && s.candidate ? normalizeStage(s.candidate.stage) : null;
+    const outcome = interviewOutcome(
+      {
+        state,
+        questions,
+        scheduledAt: s.scheduledAt?.toISOString() ?? null,
+        cards: { expected: scoring.expected, submitted: scoring.submitted },
+        rubric: scoring.rubric,
+        verdict: s.verdict,
+        score: scoring.score,
+      },
+      now,
+    );
     return {
       id: s.id,
       title: s.title,
@@ -91,10 +111,10 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       candidateId: s.candidateId,
       type: s.type,
       state,
-      outcome: interviewOutcome(
-        { state, questions, scheduledAt: s.scheduledAt?.toISOString() ?? null, stage, cards: { expected: scoring.expected, submitted: scoring.submitted }, rubric: scoring.rubric },
-        now,
-      ),
+      outcome,
+      group: groupOf(outcome, stage),
+      candidateLine: candidateLine(outcome, stage),
+      round: roundOf(plans.get(s.candidateId ?? ""), s.id),
       take: s.verdict && INTERVIEWER_TAKE[s.verdict] ? INTERVIEWER_TAKE[s.verdict] : null,
       scoring,
       shortCode: s.shortCode,
@@ -118,6 +138,22 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
   });
 
   return <InterviewsList slug={slug} rows={rows} view={sp.view ?? "all"} q={(sp.q ?? "").trim()} />;
+}
+
+/** "Round 2 of 4 · Coding round" and the whole plan as a strip, with this interview's round marked. */
+function roundOf(plan: Awaited<ReturnType<typeof loadCandidateRounds>> extends Map<string, infer V> ? V | undefined : never, sessionId: string): InterviewRow["round"] {
+  if (!plan) return null;
+  const roundId = plan.roundOfSession.get(sessionId);
+  if (!roundId) return null;
+  const live = plan.progress.rounds.filter((r) => r.state !== "skipped");
+  const here = plan.progress.rounds.find((r) => r.id === roundId);
+  if (!here) return null;
+  return {
+    number: here.number,
+    total: live.length,
+    name: here.name,
+    strip: live.map((r) => ({ seg: segmentOf(r.state), name: r.name, here: r.id === roundId })),
+  };
 }
 
 type ScoringSource = {

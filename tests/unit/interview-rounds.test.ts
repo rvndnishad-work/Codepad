@@ -17,6 +17,7 @@ import {
   roundsFromTemplate,
   roundStateLabel,
   strip,
+  suggestLiveRound,
   syncRounds,
   validatePlan,
   type CandidateRoundRow,
@@ -379,5 +380,37 @@ describe("syncRounds", () => {
     const res = syncRounds(plan, [row("h1", null, 1, true, "ai_interview"), row("h2", null, 2, true, "interview", null)]);
     expect(res.update.map((u) => [u.id, u.planRoundId])).toEqual([["h1", "p1"], ["h2", "p2"]]);
     expect(res.create.map((c) => c.planRoundId)).toEqual(["p3"]);
+  });
+});
+
+describe("suggestLiveRound", () => {
+  const round = (id: string, order: number, kind: RoundInput["kind"], format: string | null, attempts: Attempt[] = [], nextStep: RoundInput["nextStep"] = null): RoundInput => ({
+    id,
+    order,
+    kind,
+    name: id,
+    format,
+    required: true,
+    skipped: false,
+    nextStep,
+    attempts,
+  });
+
+  it("picks the next live round not yet booked, after the rounds already held", () => {
+    const p = planProgress([
+      round("ai", 1, "ai_interview", null, [above], "advance"),
+      round("intro", 2, "interview", "intro", [above], "advance"),
+      round("coding", 3, "interview", "coding"),
+      round("beh", 4, "interview", "behavioural"),
+    ]);
+    expect(suggestLiveRound(p)).toBe("coding");
+    expect(suggestLiveRound(p, "behavioural")).toBe("beh");
+    expect(suggestLiveRound(p, "discussion")).toBe("coding");
+  });
+
+  it("skips AI interviews and rounds already booked, and returns null when nothing is open", () => {
+    const booked: Attempt = { state: "scheduled", at: "2026-10-02T09:00:00Z" };
+    const p = planProgress([round("ai", 1, "ai_interview", null), round("coding", 2, "interview", "coding", [booked])]);
+    expect(suggestLiveRound(p)).toBeNull();
   });
 });

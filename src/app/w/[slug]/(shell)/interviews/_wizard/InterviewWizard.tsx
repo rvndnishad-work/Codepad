@@ -39,6 +39,7 @@ import { defaultTools, isToolId } from "@/lib/interview/tools";
 import QuestionsPicker from "./QuestionsPicker";
 import { CandidatesStep, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
 import CalendarAvailability from "./CalendarAvailability";
+import { RoundStep } from "./RoundStep";
 import { fmtMinutes, spring } from "./parts";
 
 export type WizardProps = {
@@ -114,7 +115,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     s.title = defaultTitle(f, s.candidates);
     return s;
   });
-  const [step, setStep] = useState<StepId>(state.format && hasPrefill ? (state.candidates.length ? "panel" : "candidates") : "format");
+  const [step, setStep] = useState<StepId>(state.format && hasPrefill ? (state.candidates.length ? "round" : "candidates") : "format");
   const [dir, setDir] = useState(1);
   const [titleEdited, setTitleEdited] = useState(false);
   const [restored, setRestored] = useState(false);
@@ -251,7 +252,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         title: state.title.trim() || autoTitle,
         candidates: rooms.map((c, i) => {
           const set = own ? roomSets(state)[i].set : null;
-          return { id: c.id, name: c.name, email: c.email, time: toIso(state.times[i]), ...(set ? { questions: { guideId: set.guideId, bankIds: set.bank.map((b) => b.id) } } : {}) };
+          return { id: c.id, name: c.name, email: c.email, time: toIso(state.times[i]), roundId: c.id ? state.roundIds?.[c.id] || null : null, ...(set ? { questions: { guideId: set.guideId, bankIds: set.bank.map((b) => b.id) } } : {}) };
         }),
         hostId: state.hostId,
         panelIds: state.panelIds,
@@ -308,6 +309,8 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         return <FormatStep state={state} onPick={pickFormat} />;
       case "candidates":
         return <CandidatesStep state={state} patch={patch} people={people} />;
+      case "round":
+        return <RoundStep slug={slug} state={state} patch={patch} />;
       case "panel":
         return <PanelStep state={state} patch={patch} members={members} meId={meId} />;
       case "questions":

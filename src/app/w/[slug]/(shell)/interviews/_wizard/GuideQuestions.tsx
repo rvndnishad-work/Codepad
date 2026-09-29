@@ -5,12 +5,13 @@
  * separate set per candidate, each built from a library questionnaire,
  * public bank questions, or both.
  *
- * GuideSets sits in the step; QuestionSources is the picker in the right
- * sidebar and adds to whichever set is selected ("target").
+ * GuideSets lists what each set holds; LibraryList and PublicList are the
+ * pickers (QuestionBuilder puts them side by side) and add to whichever set
+ * is selected ("target").
  */
 import { useEffect, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { BookOpen, Check, Clock, Copy, ExternalLink, Globe2, Library, Loader2, Plus, Search, Users, X } from "lucide-react";
+import { BookOpen, Check, Clock, Copy, ExternalLink, Library, Loader2, Plus, Search, Users, X } from "lucide-react";
 import type { GuideOption, PublicCategory } from "@/lib/interview/wizard-server";
 import {
   MAX_BANK,
@@ -64,7 +65,7 @@ export function GuideSets({
   guides: GuideOption[];
   target: GuideTarget;
   onTarget: (t: GuideTarget) => void;
-  onBrowse: () => void;
+  onBrowse?: () => void;
   optional: boolean;
 }) {
   const reduce = useReducedMotion();
@@ -100,7 +101,7 @@ export function GuideSets({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h3 className="text-[15px] font-semibold text-fg">{optional ? "Questions for the interviewer (optional)" : "Questions for the interviewer"}</h3>
-          <p className="text-[13px] text-muted">Pick a questionnaire or public questions on the right. Interviewers see them in the room, the candidate never does.</p>
+          <p className="text-[13px] text-muted">Interviewers see these in the room and can show one to the candidate. The reference answers stay private.</p>
         </div>
         <div className="flex items-center gap-2">
           {canSplit && (
@@ -114,9 +115,11 @@ export function GuideSets({
               ]}
             />
           )}
-          <Btn size="md" icon={Library} onClick={onBrowse} className="lg:hidden">
-            Browse
-          </Btn>
+          {onBrowse && (
+            <Btn size="md" icon={Library} onClick={onBrowse} className="lg:hidden">
+              Browse
+            </Btn>
+          )}
         </div>
       </div>
 
@@ -218,7 +221,7 @@ export function GuideSets({
                   )}
                   {!guide && r.set.bank.length === 0 && (
                     <p className="text-[13px] text-muted px-1 py-1.5">
-                      {own && !active ? "Select this card, then pick questions on the right." : "Pick a questionnaire or public questions on the right."}
+                      {own && !active ? "Select this card, then pick questions from the list." : "Pick a questionnaire or public questions from the list."}
                     </p>
                   )}
                 </div>
@@ -231,69 +234,11 @@ export function GuideSets({
   );
 }
 
-/* ───────────────────────── In the sidebar ───────────────────────── */
+/* ───────────────────────── Pickers ───────────────────────── */
 
 type PublicRow = { id: string; slug: string; title: string; summary: string | null; difficulty: string; technology: string | null; round: string | null };
 
-export function QuestionSources({
-  slug,
-  state,
-  patch,
-  guides,
-  categories,
-  target,
-  onTarget,
-}: {
-  slug: string;
-  state: WizardState;
-  patch: Patch;
-  guides: GuideOption[];
-  categories: PublicCategory[];
-  target: GuideTarget;
-  onTarget: (t: GuideTarget) => void;
-}) {
-  const [tab, setTab] = useState<"library" | "public">(guides.length ? "library" : "public");
-  const set = currentSet(state, target);
-  const own = usesOwnSets(state);
-  const write = (next: QuestionSet) => writeSet(state, patch, own ? target : ALL, next);
-
-  return (
-    <div className="flex flex-col">
-      <div className="sticky top-0 z-10 bg-surface border-b border-border p-3 flex flex-col gap-2.5">
-        <div className="flex items-center gap-2 text-[13px]">
-          <span className="text-subtle shrink-0">Adding to</span>
-          {own ? (
-            <select value={target} onChange={(e) => onTarget(e.target.value)} aria-label="Adding to" className={`${inputCls} h-8`}>
-              {state.candidates.map((c) => (
-                <option key={candidateKey(c)} value={candidateKey(c)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="font-medium text-fg truncate">{targetLabel(state, target)}</span>
-          )}
-        </div>
-        <Segmented
-          id="q-source"
-          value={tab}
-          onChange={setTab}
-          options={[
-            { id: "library", label: <><Library className="w-3.5 h-3.5" aria-hidden /> Questionnaires</> },
-            { id: "public", label: <><Globe2 className="w-3.5 h-3.5" aria-hidden /> Public questions</> },
-          ]}
-        />
-      </div>
-      {tab === "library" ? (
-        <LibraryList slug={slug} guides={guides} value={set.guideId} onChange={(guideId) => write({ ...set, guideId })} />
-      ) : (
-        <PublicList slug={slug} categories={categories} picked={set.bank} onChange={(bank) => write({ ...set, bank })} />
-      )}
-    </div>
-  );
-}
-
-function LibraryList({ slug, guides, value, onChange }: { slug: string; guides: GuideOption[]; value: string | null; onChange: (id: string | null) => void }) {
+export function LibraryList({ slug, guides, value, onChange }: { slug: string; guides: GuideOption[]; value: string | null; onChange: (id: string | null) => void }) {
   const reduce = useReducedMotion();
   const [q, setQ] = useState("");
   const needle = q.trim().toLowerCase();
@@ -366,7 +311,7 @@ function LibraryList({ slug, guides, value, onChange }: { slug: string; guides: 
 
 const DIFFS = ["all", "easy", "medium", "hard"] as const;
 
-function PublicList({ slug, categories, picked, onChange }: { slug: string; categories: PublicCategory[]; picked: BankPick[]; onChange: (b: BankPick[]) => void }) {
+export function PublicList({ slug, categories, picked, onChange }: { slug: string; categories: PublicCategory[]; picked: BankPick[]; onChange: (b: BankPick[]) => void }) {
   const [tech, setTech] = useState("");
   const [diff, setDiff] = useState<(typeof DIFFS)[number]>("all");
   const [q, setQ] = useState("");

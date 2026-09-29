@@ -200,7 +200,7 @@ export function CandidateBrowser({ state, patch, people }: { state: WizardState;
   );
 }
 
-export function CandidatesStep({ state, patch, people, onBrowse }: { state: WizardState; patch: Patch; people: PersonOption[]; onBrowse: () => void }) {
+export function CandidatesStep({ state, patch, people }: { state: WizardState; patch: Patch; people: PersonOption[] }) {
   const reduce = useReducedMotion();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
@@ -235,16 +235,11 @@ export function CandidatesStep({ state, patch, people, onBrowse }: { state: Wiza
     <div className="flex flex-col gap-5">
       <StepHeading
         title="Who are you interviewing?"
-        lead="Pick people from the list on the right, or add someone new. Each person gets their own room and link."
+        lead="Tick people in the list, or add someone new. Each person gets their own room and link."
         aside={
-          <div className="flex items-center gap-2">
-            <Btn size="md" icon={Users} onClick={onBrowse} className="lg:hidden">
-              Browse
-            </Btn>
-            <Btn size="md" icon={UserPlus} onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
-              Add someone new
-            </Btn>
-          </div>
+          <Btn size="md" icon={UserPlus} onClick={() => setAdding((v) => !v)} aria-expanded={adding}>
+            Add someone new
+          </Btn>
         }
       />
 
@@ -282,59 +277,68 @@ export function CandidatesStep({ state, patch, people, onBrowse }: { state: Wiza
         )}
       </AnimatePresence>
 
-      <section className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="text-[15px] font-semibold text-fg">{state.candidates.length ? `Picked (${state.candidates.length})` : "Picked"}</h3>
-          {state.candidates.length > 1 && <span className="text-[13px] text-muted">{state.candidates.length} rooms will be created</span>}
-        </div>
-        {state.candidates.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center flex flex-col items-center gap-2">
-            <Users className="w-6 h-6 text-subtle" aria-hidden />
-            <p className="text-[14px] font-medium text-fg">{state.noCandidate ? "One open room, nobody named" : "Nobody picked yet"}</p>
-            <p className="text-[13px] text-muted max-w-sm">{state.noCandidate ? "Send its link to whoever you like after scheduling." : "Tick people in the list on the right. You can pick up to 20."}</p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-start">
+        <section aria-label="Candidates" className="min-w-0 rounded-xl border border-border bg-surface overflow-hidden">
+          <div className="max-h-[620px] overflow-y-auto">
+            <CandidateBrowser state={state} patch={patch} people={people} />
           </div>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            <AnimatePresence initial={false}>
-              {state.candidates.map((c) => {
-                const p = c.id ? byId.get(c.id) : undefined;
-                return (
-                  <motion.li
-                    key={c.id ?? `new:${c.email || c.name}`}
-                    layout={!reduce}
-                    initial={reduce ? false : { opacity: 0, x: 16 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={reduce ? undefined : { opacity: 0, x: 16, height: 0 }}
-                    transition={spring}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
-                  >
-                    <Avatar name={c.name} size={32} />
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-[14px] font-medium text-fg truncate">
-                        {c.name}
-                        {!c.id && <span className="ml-2 text-xs font-normal text-secondary-soft">new</span>}
-                      </span>
-                      <span className="block text-xs text-subtle truncate">{c.email || "No email, share the link yourself"}</span>
-                    </span>
-                    {p && <StageChip stage={p.stage} />}
-                    <button type="button" onClick={() => removeAt(c)} aria-label={`Remove ${c.name}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-panel">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </motion.li>
-                );
-              })}
-            </AnimatePresence>
-          </ul>
-        )}
-      </section>
+        </section>
+        <div className="min-w-0 flex flex-col gap-4">
+          <section className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="text-[15px] font-semibold text-fg">{state.candidates.length ? `Picked (${state.candidates.length})` : "Picked"}</h3>
+              {state.candidates.length > 1 && <span className="text-[13px] text-muted">{state.candidates.length} rooms will be created</span>}
+            </div>
+            {state.candidates.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border-strong px-6 py-10 text-center flex flex-col items-center gap-2">
+                <Users className="w-6 h-6 text-subtle" aria-hidden />
+                <p className="text-[14px] font-medium text-fg">{state.noCandidate ? "One open room, nobody named" : "Nobody picked yet"}</p>
+                <p className="text-[13px] text-muted max-w-sm">{state.noCandidate ? "Send its link to whoever you like after scheduling." : "Tick people in the list. You can pick up to 20."}</p>
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-1.5">
+                <AnimatePresence initial={false}>
+                  {state.candidates.map((c) => {
+                    const p = c.id ? byId.get(c.id) : undefined;
+                    return (
+                      <motion.li
+                        key={c.id ?? `new:${c.email || c.name}`}
+                        layout={!reduce}
+                        initial={reduce ? false : { opacity: 0, x: 16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={reduce ? undefined : { opacity: 0, x: 16, height: 0 }}
+                        transition={spring}
+                        className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
+                      >
+                        <Avatar name={c.name} size={32} />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-[14px] font-medium text-fg truncate">
+                            {c.name}
+                            {!c.id && <span className="ml-2 text-xs font-normal text-secondary-soft">new</span>}
+                          </span>
+                          <span className="block text-xs text-subtle truncate">{c.email || "No email, share the link yourself"}</span>
+                        </span>
+                        {p && <StageChip stage={p.stage} />}
+                        <button type="button" onClick={() => removeAt(c)} aria-label={`Remove ${c.name}`} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-fg hover:bg-panel">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </motion.li>
+                    );
+                  })}
+                </AnimatePresence>
+              </ul>
+            )}
+          </section>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <Switch
-          on={state.noCandidate}
-          onChange={(v) => patch({ noCandidate: v, candidates: v ? [] : state.candidates })}
-          label="No candidate yet"
-          hint="Create one room now and send its link to whoever you like later."
-        />
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <Switch
+              on={state.noCandidate}
+              onChange={(v) => patch({ noCandidate: v, candidates: v ? [] : state.candidates })}
+              label="No candidate yet"
+              hint="Create one room now and send its link to whoever you like later."
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

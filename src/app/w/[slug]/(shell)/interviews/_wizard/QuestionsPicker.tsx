@@ -40,7 +40,7 @@ export default function QuestionsPicker({
   members,
   meId,
   allowLater = true,
-  guideSlot,
+  builder,
 }: {
   slug: string;
   format: FormatDef;
@@ -51,8 +51,8 @@ export default function QuestionsPicker({
   members: MemberOption[];
   meId: string;
   allowLater?: boolean;
-  /** Replaces the single questionnaire picker (the wizard's per-candidate guides). */
-  guideSlot?: ReactNode;
+  /** Replaces the rounds and questionnaire pickers when questions are picked now (the wizard's QuestionBuilder). */
+  builder?: ReactNode;
 }) {
   const reduce = useReducedMotion();
   const plans = plansFor(format).filter((p) => allowLater || p !== "later");
@@ -90,7 +90,8 @@ export default function QuestionsPicker({
           transition={{ duration: 0.2 }}
           className="flex flex-col gap-5"
         >
-          {value.plan === "set" && (
+          {value.plan === "set" && builder}
+          {value.plan === "set" && !builder && (
             <>
               {format.coding && (
                 <div className="flex flex-col gap-2">
@@ -98,8 +99,7 @@ export default function QuestionsPicker({
                   <RoundsBuilder options={roundOptions} rounds={value.rounds} onChange={(rounds) => onChange({ rounds })} />
                 </div>
               )}
-              {offersGuide(format) && guideSlot}
-              {offersGuide(format) && !guideSlot && (
+              {offersGuide(format) && (
                 <div className="flex flex-col gap-2">
                   <SubHead
                     title={format.coding ? "Question guide (optional)" : "Question guide"}

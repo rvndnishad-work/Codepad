@@ -2,14 +2,13 @@
 
 /**
  * New live interview, one step at a time: format, candidates, interviewers,
- * questions, schedule, review. A collapsible sidebar on the right holds the
- * pickers (candidates, questions) and the summary ticket, and the draft is
- * kept in this browser until it is scheduled.
+ * questions, schedule, review. Each step uses the full width for its
+ * pickers, and the draft is kept in this browser until it is scheduled.
  */
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Library, Loader2, Mail, MailCheck, MailX, ReceiptText, RotateCcw, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Loader2, Mail, MailCheck, MailX, RotateCcw, Sparkles } from "lucide-react";
 import type { GuideOption, MemberOption, PersonOption, PublicCategory, RoundOption } from "@/lib/interview/wizard-server";
 import {
   offersGuide,
@@ -22,7 +21,6 @@ import {
   nextSlot,
   normalizeGuests,
   roomSets,
-  setSize,
   stepIssues,
   usesOwnSets,
   suggestedMinutes,
@@ -35,13 +33,13 @@ import {
 import { Avatar, Btn, useToasts } from "../../candidates/_components/ui";
 import { scheduleInterviewsAction, type Scheduled } from "../actions";
 import type { DeliveryStatus } from "@/lib/interview/guests";
-import { ALL, GuideSets, QuestionSources, type GuideTarget } from "./GuideQuestions";
-import SidePanel, { useSideOpen, type SideTab } from "./SidePanel";
+import { ALL, type GuideTarget } from "./GuideQuestions";
+import QuestionBuilder from "./QuestionBuilder";
 import { defaultTools, isToolId } from "@/lib/interview/tools";
 import QuestionsPicker from "./QuestionsPicker";
-import { CandidateBrowser, CandidatesStep, FORMAT_ICON, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
+import { CandidatesStep, FormatStep, PanelStep, ReviewStep, ScheduleStep } from "./Steps";
 import CalendarAvailability from "./CalendarAvailability";
-import { fmtMinutes, fmtWhen, spring } from "./parts";
+import { fmtMinutes, spring } from "./parts";
 
 export type WizardProps = {
   slug: string;
@@ -121,9 +119,6 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
   const [titleEdited, setTitleEdited] = useState(false);
   const [restored, setRestored] = useState(false);
   const [done, setDone] = useState<{ created: Scheduled[]; guests: DeliveryStatus[] } | null>(null);
-  const [sideOpen, setSideOpen] = useSideOpen();
-  const [sideTab, setSideTab] = useState("summary");
-  const [drawer, setDrawer] = useState(false);
   const [guideTarget, setGuideTarget] = useState<GuideTarget>(ALL);
   const [pending, start] = useTransition();
   const [toasts, toast] = useToasts();
@@ -290,13 +285,6 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     if (state.noCandidate && state.times.length > 1) setState((s) => ({ ...s, times: s.times.slice(0, 1) }));
   }, [state.noCandidate, state.times.length]);
 
-  // Each step opens the sidebar on its picker, or on the summary.
-  const pickerTab = step === "candidates" ? "people" : step === "questions" && state.plan === "set" && format && offersGuide(format) ? "questions" : null;
-  useEffect(() => {
-    setSideTab(pickerTab ?? "summary");
-    setDrawer(false);
-  }, [step, pickerTab]);
-
   if (done)
     return (
       <DoneView
@@ -310,47 +298,16 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
       />
     );
 
-  const openSide = (tab: string) => {
-    setSideTab(tab);
-    setSideOpen(true);
-    setDrawer(true);
-  };
-  // Where the sidebar adds guide questions: the shared set, or one person.
+  // Where picked guide questions go: the shared set, or one person.
   const own = usesOwnSets(state);
   const target: GuideTarget = own ? (state.candidates.some((c) => candidateKey(c) === guideTarget) ? guideTarget : candidateKey(state.candidates[0])) : ALL;
   const rooms = state.noCandidate ? 1 : Math.max(1, state.candidates.length);
-  const sideTabs: SideTab[] = [
-    ...(pickerTab === "people"
-      ? [{ id: "people", label: "Candidates", icon: Users, count: state.candidates.length, body: <CandidateBrowser state={state} patch={patch} people={people} /> }]
-      : []),
-    ...(pickerTab === "questions"
-      ? [
-          {
-            id: "questions",
-            label: "Questions",
-            icon: Library,
-            body: <QuestionSources slug={slug} state={state} patch={patch} guides={guides} categories={bankCategories} target={target} onTarget={setGuideTarget} />,
-          },
-        ]
-      : []),
-    {
-      id: "summary",
-      label: "Summary",
-      icon: ReceiptText,
-      body: (
-        <div className="p-3">
-          <Ticket state={state} members={members} guides={guides} rooms={rooms} />
-        </div>
-      ),
-    },
-  ];
-
   const stepBody = (() => {
     switch (step) {
       case "format":
         return <FormatStep state={state} onPick={pickFormat} />;
       case "candidates":
-        return <CandidatesStep state={state} patch={patch} people={people} onBrowse={() => openSide("people")} />;
+        return <CandidatesStep state={state} patch={patch} people={people} />;
       case "panel":
         return <PanelStep state={state} patch={patch} members={members} meId={meId} />;
       case "questions":
@@ -373,8 +330,18 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
               guides={guides}
               members={members}
               meId={meId}
-              guideSlot={
-                <GuideSets state={state} patch={patch} guides={guides} target={target} onTarget={setGuideTarget} onBrowse={() => openSide("questions")} optional={format.coding} />
+              builder={
+                <QuestionBuilder
+                  slug={slug}
+                  format={format}
+                  state={state}
+                  patch={patch}
+                  roundOptions={roundOptions}
+                  guides={guides}
+                  categories={bankCategories}
+                  target={target}
+                  onTarget={setGuideTarget}
+                />
               }
             />
           </div>
@@ -420,9 +387,6 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
               </motion.span>
             )}
           </AnimatePresence>
-          <Btn icon={ReceiptText} onClick={() => openSide(pickerTab ?? "summary")} className="lg:hidden">
-            {pickerTab === "people" ? "Candidates" : pickerTab === "questions" ? "Questions" : "Summary"}
-          </Btn>
           {state.format && (
             <Btn icon={RotateCcw} onClick={startOver}>
               Start over
@@ -479,24 +443,19 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
         </ol>
       </nav>
 
-      <div className="flex gap-6 items-start">
-        {/* Step body */}
-        <div className="flex-1 min-w-0 relative">
-          <AnimatePresence mode="wait" initial={false} custom={dir}>
-            <motion.div
-              key={step}
-              custom={dir}
-              initial={reduce ? false : { opacity: 0, x: dir * 28 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={reduce ? undefined : { opacity: 0, x: dir * -28 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {stepBody}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        <SidePanel tabs={sideTabs} active={sideTab} onActive={setSideTab} open={sideOpen} onOpen={setSideOpen} drawer={drawer} onDrawer={setDrawer} />
+      <div className="min-w-0 relative">
+        <AnimatePresence mode="wait" initial={false} custom={dir}>
+          <motion.div
+            key={step}
+            custom={dir}
+            initial={reduce ? false : { opacity: 0, x: dir * 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduce ? undefined : { opacity: 0, x: dir * -28 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            {stepBody}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Footer */}
@@ -539,123 +498,6 @@ function toIso(local: string | undefined): string | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
   if (!m) return null;
   return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).toISOString();
-}
-
-/* ───────────────────────── Summary ticket ───────────────────────── */
-
-function Ticket({ state, members, guides, rooms }: { state: WizardState; members: MemberOption[]; guides: GuideOption[]; rooms: number }) {
-  const format = formatOf(state.format);
-  const Icon = format ? FORMAT_ICON[format.id] : null;
-  const host = members.find((m) => m.userId === state.hostId);
-  const panel = state.panelIds.map((id) => members.find((m) => m.userId === id)).filter((m): m is MemberOption => !!m);
-  const owner = members.find((m) => m.userId === state.questionsOwnerId);
-  const guide = guides.find((g) => g.id === state.guideId);
-
-  const row = (label: string, body: React.ReactNode, key: string) => (
-    <motion.div key={key} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="flex flex-col gap-1 py-3 border-t border-dashed border-border first:border-t-0">
-      <span className="text-xs text-subtle">{label}</span>
-      <div className="text-[13px] text-fg">{body}</div>
-    </motion.div>
-  );
-
-  return (
-    <div className="relative rounded-2xl border border-border bg-surface overflow-hidden">
-      <div
-        className="px-4 pt-4 pb-3"
-        style={{ backgroundImage: "radial-gradient(260px 120px at 0% 0%, rgb(var(--c-accent-2) / 0.22), transparent 70%)" }}
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="w-8 h-8 rounded-lg bg-secondary/15 text-secondary-soft flex items-center justify-center">
-            {Icon ? <Icon className="w-4 h-4" aria-hidden /> : <Sparkles className="w-4 h-4" aria-hidden />}
-          </span>
-          <div className="min-w-0">
-            <p className="text-[14px] font-semibold text-fg truncate">{state.format ? state.title : "Your interview"}</p>
-            <p className="text-xs text-subtle">{format ? `${format.label}, ${fmtMinutes(state.minutes)}` : "Fills in as you go"}</p>
-          </div>
-        </div>
-      </div>
-      {/* Ticket notch */}
-      <div aria-hidden className="relative h-0 border-t border-dashed border-border">
-        <span className="absolute -left-2 -top-2 w-4 h-4 rounded-full bg-bg border border-border" />
-        <span className="absolute -right-2 -top-2 w-4 h-4 rounded-full bg-bg border border-border" />
-      </div>
-      <div className="px-4 pb-2">
-        <AnimatePresence initial={false}>
-          {(state.candidates.length > 0 || state.noCandidate) &&
-            row(
-              state.noCandidate ? "Candidate" : `Candidates (${rooms})`,
-              state.noCandidate ? (
-                <span className="text-muted">Open link, nobody named</span>
-              ) : (
-                <span className="flex items-center">
-                  {state.candidates.slice(0, 6).map((c, i) => (
-                    <span key={c.id ?? c.email ?? i} className="-ml-1 first:ml-0 ring-2 ring-surface rounded-full">
-                      <Avatar name={c.name} size={28} />
-                    </span>
-                  ))}
-                  <span className="ml-2 truncate">{state.candidates.length === 1 ? state.candidates[0].name : state.candidates.length > 6 ? `+${state.candidates.length - 6} more` : ""}</span>
-                </span>
-              ),
-              "cand",
-            )}
-          {host &&
-            state.format &&
-            row(
-              "Interviewers",
-              <span>
-                {host.name} hosts{panel.length ? `, with ${panel.map((p) => p.name.split(" ")[0]).join(", ")}` : ""}
-                {(state.guests?.length ?? 0) > 0 && <span className="block text-muted">Details emailed to {state.guests!.length === 1 ? state.guests![0] : `${state.guests!.length} people`}</span>}
-              </span>,
-              "panel",
-            )}
-          {format &&
-            (state.rounds.length > 0 || state.guideId || (state.bank?.length ?? 0) > 0 || usesOwnSets(state) || state.plan !== "set") &&
-            row(
-              "Questions",
-              state.plan === "later" ? (
-                <span className="text-warning">{owner ? `${owner.name} picks later` : "A teammate picks later"}</span>
-              ) : state.plan === "open" ? (
-                <span className="text-muted">No set questions</span>
-              ) : (
-                <ol className="flex flex-col gap-1">
-                  {state.rounds.map((r, i) => (
-                    <li key={r.key} className="flex gap-2">
-                      <span className="text-subtle tabular-nums">{i + 1}.</span>
-                      <span className="truncate">{r.title}</span>
-                    </li>
-                  ))}
-                  {usesOwnSets(state) ? (
-                    roomSets(state).map((r) => (
-                      <li key={r.candidate ? candidateKey(r.candidate) : "all"} className="text-muted truncate">
-                        {r.candidate?.name.split(" ")[0]}: {setSize(r.set, guides)} questions
-                      </li>
-                    ))
-                  ) : (
-                    <>
-                      {guide && <li className="text-muted">Guide: {guide.title}</li>}
-                      {(state.bank?.length ?? 0) > 0 && <li className="text-muted">{state.bank!.length} public questions</li>}
-                    </>
-                  )}
-                </ol>
-              ),
-              "q",
-            )}
-          {state.times.some(Boolean) &&
-            row(
-              "When",
-              rooms > 1 ? (
-                <span>
-                  {state.times.filter(Boolean).length} of {rooms} timed, first {fmtWhen([...state.times].filter(Boolean).sort()[0])}
-                </span>
-              ) : (
-                <span>{fmtWhen(state.times[0])}</span>
-              ),
-              "when",
-            )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
 }
 
 /* ───────────────────────── Done ───────────────────────── */

@@ -99,6 +99,18 @@ export function describeAudit(
       return { ...base, kind: "archive", title: "Archived", detail: who ? `By ${who}` : null };
     case "CANDIDATE_RESTORED":
       return { ...base, kind: "archive", title: "Restored from the archive", detail: who ? `By ${who}` : null };
+    case "INTERVIEW_SCORECARD_SUBMITTED":
+    case "INTERVIEW_SCORECARD_AMENDED": {
+      const reviewer = typeof m.reviewer === "string" ? m.reviewer : who;
+      const avg = typeof m.average === "number" ? `${m.average.toFixed(1)} of 4` : null;
+      const rec = m.recommendation === "yes" ? "recommends pass" : m.recommendation === "no" ? "recommends not passing" : m.recommendation === "unsure" ? "unsure" : null;
+      return {
+        ...base,
+        kind: "result",
+        title: `${row.action === "INTERVIEW_SCORECARD_AMENDED" ? "Scorecard changed" : "Scorecard sent"} by ${reviewer ?? "an interviewer"}`,
+        detail: [typeof m.title === "string" ? m.title : null, avg, rec].filter(Boolean).join(" · ") || null,
+      };
+    }
     case "INTERVIEW_VERDICT_RECORDED":
       return {
         ...base,

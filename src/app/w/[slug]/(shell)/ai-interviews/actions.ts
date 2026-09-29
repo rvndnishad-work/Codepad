@@ -5,8 +5,8 @@
  * instead of throwing, because production builds replace thrown messages with
  * a generic digest and the recruiter would never see why something failed.
  */
+import { appOrigin } from "@/lib/interview/links";
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { revalidatePath } from "next/cache";
@@ -99,15 +99,7 @@ function refresh(slug: string, extra: string[] = []) {
 }
 
 async function resolveOrigin(): Promise<string> {
-  try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") ?? h.get("host");
-    const proto = h.get("x-forwarded-proto") ?? "https";
-    if (host) return `${proto}://${host}`;
-  } catch {
-    // headers() is unavailable outside a request.
-  }
-  return process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return appOrigin();
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;

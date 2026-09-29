@@ -1,5 +1,5 @@
+import { appOrigin } from "@/lib/interview/links";
 import Link from "next/link";
-import { headers } from "next/headers";
 import {
   KeyRound,
   Terminal,
@@ -26,15 +26,7 @@ export const metadata = {
 };
 
 async function resolveOrigin(): Promise<string> {
-  try {
-    const h = await headers();
-    const host = h.get("x-forwarded-host") ?? h.get("host");
-    const proto = h.get("x-forwarded-proto") ?? "https";
-    if (host) return `${proto}://${host}`;
-  } catch {
-    /* ignore */
-  }
-  return process.env.NEXTAUTH_URL || "https://interviewpad.in";
+  return appOrigin();
 }
 
 export default async function McpDocsPage() {

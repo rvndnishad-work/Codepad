@@ -1,9 +1,9 @@
+import { siteOrigin } from "@/lib/site-url";
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_URL = siteOrigin();
 
 const STATIC_ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
   { path: "/", changeFrequency: "daily", priority: 1.0 },

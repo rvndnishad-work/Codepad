@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import { graderQuestionList, parseQuestionnaire, type QuestionItem } from "./questionnaire";
 import { prisma } from "@/lib/prisma";
 import { analyzeTelemetry, type TelemetryEvent } from "@/lib/proctoring/ai-detection";
@@ -663,7 +664,7 @@ export async function gradeSessionById(params: {
     positionTitle: session.positionTitle,
     score: aggregateScore,
     aiSuspicionScore,
-    origin: params.origin ?? process.env.NEXTAUTH_URL ?? "",
+    origin: params.origin ?? siteOrigin(),
   }).catch((err) => console.warn("[ai-grade] recruiter notify failed:", err));
 
   return {

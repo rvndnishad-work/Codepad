@@ -1,7 +1,7 @@
+import { siteOrigin } from "@/lib/site-url";
 import { prisma } from "@/lib/prisma";
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const SITE_URL = siteOrigin();
 
 const SITE_NAME = "Interviewpad";
 const FEED_DESCRIPTION =

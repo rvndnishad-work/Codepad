@@ -19,9 +19,12 @@ import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { formatUsd } from "@/lib/billing/plans";
 import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
 import { pendingRoomAsk, recordingConfigured } from "@/lib/recording/live-server";
+import { appOrigin } from "./links";
+import { siteOrigin } from "@/lib/site-url";
 
+/** Site origin for links built without a request. Never localhost on a deployment. */
 export function baseUrl(): string {
-  return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return siteOrigin();
 }
 
 /** Path (no origin) that lets the candidate into one room until the pass expires. */
@@ -323,7 +326,7 @@ export async function loadRoom(
       guide: [...(tpl ? parseQuestionnaire(tpl.testsCode) : []), ...(s.guideJson ? parseQuestionnaire(s.guideJson) : [])].map((i) => ({ q: i.q, a: i.a ?? null })),
       questionsNeeded: needed,
       pickHref: needed ? `/w/${slug}/interviews/${s.id}/questions` : null,
-      candidateLink: candidateRoomUrl(s, slug),
+      candidateLink: candidateRoomUrl(s, slug, await appOrigin()),
       notes: s.notes,
       rubric: s.rubric ? json<Record<string, number>>(s.rubric.ratings, {}) : null,
       rubricNotes: s.rubric?.notes ?? null,

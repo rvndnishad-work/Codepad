@@ -12,6 +12,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Copy, ExternalLink, Library, Loader2, Mail, MailCheck, MailX, ReceiptText, RotateCcw, Sparkles, Users } from "lucide-react";
 import type { GuideOption, MemberOption, PersonOption, PublicCategory, RoundOption } from "@/lib/interview/wizard-server";
 import {
+  offersGuide,
   STEPS,
   callFields,
   defaultTitle,
@@ -220,7 +221,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
             minutes: suggestedMinutes(f, state.rounds, defaultMinutes),
             plan: plansFor(f).includes(state.plan) && state.format ? state.plan : f.plan,
             rounds: f.coding ? state.rounds : [],
-            guideId: f.guide ? state.guideId : null,
+            guideId: offersGuide(f) ? state.guideId : null,
           }
         : {}),
     });
@@ -290,7 +291,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
   }, [state.noCandidate, state.times.length]);
 
   // Each step opens the sidebar on its picker, or on the summary.
-  const pickerTab = step === "candidates" ? "people" : step === "questions" && state.plan === "set" && format?.guide ? "questions" : null;
+  const pickerTab = step === "candidates" ? "people" : step === "questions" && state.plan === "set" && format && offersGuide(format) ? "questions" : null;
   useEffect(() => {
     setSideTab(pickerTab ?? "summary");
     setDrawer(false);

@@ -64,4 +64,20 @@ describe("groupOf and candidateLine", () => {
     expect(candidateLine("below_bar", "REJECTED")?.text).toBe("Candidate not passed");
     expect(candidateLine("upcoming", "PASSED")).toBeNull();
   });
+
+  it("moves an interview out of Needs decision once the recruiter moves the candidate on", () => {
+    const moved = { nextStep: "advance" as const, next: "Technical discussion" };
+    expect(groupOf("above_bar", "SCREENING", moved)).toBe("moved_on");
+    expect(candidateLine("above_bar", "SCREENING", moved)).toEqual({ text: "Moved on to Technical discussion", tone: "success" });
+    // A decided candidate still files under the decision.
+    expect(groupOf("above_bar", "PASSED", moved)).toBe("passed");
+  });
+
+  it("keeps stopped and undecided rounds under Needs decision, with a line saying which", () => {
+    expect(groupOf("below_bar", "SCREENING", { nextStep: "stop", next: "Behavioural" })).toBe("decision");
+    expect(candidateLine("below_bar", "SCREENING", { nextStep: "stop", next: "Behavioural" })?.text).toBe("Stopped here, not marked as not passed yet");
+    expect(candidateLine("below_bar", "SCREENING", { nextStep: null, next: "Behavioural" })?.text).toBe("Next step not picked yet");
+    // The last round has no next step: the candidate decision is next.
+    expect(candidateLine("above_bar", "SCREENING", { nextStep: null, next: null })?.text).toBe("No decision on the candidate yet");
+  });
 });

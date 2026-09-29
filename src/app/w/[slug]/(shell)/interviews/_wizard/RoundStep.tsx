@@ -56,7 +56,14 @@ export function RoundStep({ slug, state, patch }: { slug: string; state: WizardS
     const names = { ...(state.roundNames ?? {}) };
     let changed = false;
     for (const id of ids) {
-      if (id in next) continue;
+      // A round picked before (or passed in the link) that is no longer on their plan falls back to the suggestion.
+      if (id in next && (next[id] === "" || choices[id]?.options.some((o) => o.id === next[id]))) {
+        if (!(id in names)) {
+          names[id] = choices[id]?.options.find((o) => o.id === next[id])?.name ?? "";
+          changed = true;
+        }
+        continue;
+      }
       next[id] = choices[id]?.suggested ?? "";
       names[id] = choices[id]?.options.find((o) => o.id === next[id])?.name ?? "";
       changed = true;

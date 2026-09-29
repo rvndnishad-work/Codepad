@@ -51,7 +51,7 @@ export type WizardProps = {
   guides: GuideOption[];
   bankCategories: PublicCategory[];
   /** From the URL: candidates, rounds, guide or format to start with. */
-  prefill: { candidateIds: string[]; rounds: WizardRound[]; guideId: string | null; format: string | null };
+  prefill: { candidateIds: string[]; rounds: WizardRound[]; guideId: string | null; format: string | null; roundIds?: Record<string, string> };
   /** Interview length from Settings > Screening defaults. */
   defaultMinutes: number;
   /** Built-in video add-on: on gives the Call choice; off, billing managers see a one-line offer. */
@@ -108,6 +108,7 @@ export default function InterviewWizard({ slug, meId, people, members, roundOpti
     if (prefill.rounds.length || prefill.guideId) s.plan = "set";
     s.rounds = prefill.rounds;
     s.guideId = prefill.guideId;
+    if (prefill.roundIds && Object.keys(prefill.roundIds).length) s.roundIds = prefill.roundIds;
     s.candidates = prefill.candidateIds.flatMap((id) => {
       const p = people.find((x) => x.id === id);
       return p ? [{ id: p.id, name: p.name, email: p.email ?? "" }] : [];

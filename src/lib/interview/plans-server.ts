@@ -16,14 +16,17 @@ import { candidatesOnDefault, syncCandidateRounds } from "@/lib/interview/plans-
 import {
   defaultDuration,
   formatsFor,
+  hasResult,
   normalizeHiringType,
   normalizeRoleType,
   roleTypesFor,
+  roundAfter,
   roundAllowed,
   ROUND_NAME_MAX,
   templateByKey,
   validatePlan,
   type HiringType,
+  type NextStep,
   type PlanInput,
   type PlanRoundKind,
   type PlanRoundRow,
@@ -349,6 +352,38 @@ export async function setCandidateRoundSkipped(actor: CandidateActor, roundId: s
     candidateName: round.candidate.name,
     round: round.name,
   });
+  return { ok: true as const };
+}
+
+/**
+ * The recruiter's call after a round with a result: move on to the next
+ * round, stop here, or (null) undecided again. Never passes or rejects the
+ * candidate: stopping leads to the Not passed dialog, which the recruiter
+ * confirms separately.
+ */
+export async function setCandidateRoundNextStep(actor: CandidateActor, roundId: string, step: NextStep | null) {
+  if (step !== null && step !== "advance" && step !== "stop") throw new CandidateError(400, "Pick move on or stop.");
+  const round = await loadCandidateRound(actor, roundId);
+  const cand = await prisma.candidate.findFirst({ where: { id: round.candidate.id, workspaceId: actor.workspaceId }, select: { stage: true } });
+  const stage = (cand?.stage ?? "").toUpperCase();
+  if (stage === "PASSED" || stage === "REJECTED") throw new CandidateError(400, `${round.candidate.name} is already decided. Reopen them on their profile first.`);
+  if (round.nextStep === step) return { ok: true as const };
+  if (step) {
+    const { loadCandidateRounds } = await import("@/lib/interview/rounds-server");
+    const cr = (await loadCandidateRounds(actor.workspaceId, actor.workspaceSlug, [round.candidate.id])).get(round.candidate.id);
+    const pr = cr?.progress.rounds.find((r) => r.id === roundId);
+    if (!cr || !pr) throw new CandidateError(404, "That round was not found.");
+    if (!hasResult(pr.state)) throw new CandidateError(400, `${round.name} has no result yet.`);
+    if (step === "advance" && !roundAfter(cr.progress, roundId)) {
+      throw new CandidateError(400, `${round.name} is their last round. Pass them or not on their profile.`);
+    }
+  }
+  await prisma.candidateRound.update({
+    where: { id: roundId },
+    data: { nextStep: step, decidedById: step ? actor.actorUserId : null, decidedAt: step ? new Date() : null },
+  });
+  const action = step === "advance" ? WORKSPACE_AUDIT_ACTIONS.CANDIDATE_ROUND_MOVED_ON : step === "stop" ? WORKSPACE_AUDIT_ACTIONS.CANDIDATE_ROUND_STOPPED : WORKSPACE_AUDIT_ACTIONS.CANDIDATE_ROUND_NEXT_STEP_CLEARED;
+  void audit(actor, action, "candidate", round.candidate.id, { candidateName: round.candidate.name, round: round.name });
   return { ok: true as const };
 }
 

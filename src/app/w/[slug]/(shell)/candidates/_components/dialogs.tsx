@@ -10,14 +10,19 @@ export function RejectDialog({
   onCancel,
   onConfirm,
   busy,
+  initialReason,
+  initialNote = "",
 }: {
   names: string[];
   onCancel: () => void;
   onConfirm: (reason: RejectReason, note: string) => void;
   busy?: boolean;
+  /** Filled in when the recruiter came from "Stop here" on a round. */
+  initialReason?: RejectReason | null;
+  initialNote?: string;
 }) {
-  const [reason, setReason] = useState<RejectReason | "">("");
-  const [note, setNote] = useState("");
+  const [reason, setReason] = useState<RejectReason | "">(initialReason ?? "");
+  const [note, setNote] = useState(initialNote);
   const who = names.length === 1 ? names[0] : plural(names.length, "candidate");
   return (
     <Dialog

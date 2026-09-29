@@ -9,9 +9,11 @@ import {
   copyRounds,
   currentAttempt,
   liveAttempt,
+  overrideReason,
   passNeedsOverride,
   planProgress,
   progressLine,
+  roundAfter,
   roundAllowed,
   roundsFromHistory,
   roundsFromTemplate,
@@ -412,5 +414,26 @@ describe("suggestLiveRound", () => {
     const booked: Attempt = { state: "scheduled", at: "2026-10-02T09:00:00Z" };
     const p = planProgress([round("ai", 1, "ai_interview", null), round("coding", 2, "interview", "coding", [booked])]);
     expect(suggestLiveRound(p)).toBeNull();
+  });
+});
+
+describe("overrideReason and roundAfter", () => {
+  it("names the rounds that make a pass manual", () => {
+    const p = planProgress([round("Intro", [above], { nextStep: "advance" }), round("Coding", [below], { nextStep: "advance" }), round("Chat", [dnf]), round("Final")]);
+    expect(overrideReason(p)).toBe("Coding below the bar; Chat not finished; 1 round not held");
+  });
+
+  it("is null when every required round is above bar, ignoring optional and skipped ones", () => {
+    const p = planProgress([round("Intro", [above], { nextStep: "advance" }), round("Extra", [], { required: false }), round("Gone", [], { skipped: true }), round("Coding", [above])]);
+    expect(overrideReason(p)).toBeNull();
+  });
+
+  it("finds the next round that is not skipped, and null after the last", () => {
+    const a = round("A", [above]);
+    const b = round("B", [], { skipped: true });
+    const c = round("C");
+    const p = planProgress([a, b, c]);
+    expect(roundAfter(p, a.id)?.name).toBe("C");
+    expect(roundAfter(p, c.id)).toBeNull();
   });
 });

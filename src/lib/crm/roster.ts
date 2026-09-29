@@ -35,18 +35,23 @@ export type RosterRow = {
   /** Set when the candidate is Passed over results that do not back it: the
    *  reason, e.g. "AI screening 5, Not a fit". A recruiter's manual override. */
   manualPass: string | null;
+  /** From the interview rounds: why passing now would be a manual pass ("Coding round below the bar"). Null when the rounds back a pass or there are none. */
+  roundsPass?: string | null;
 };
 
 /**
  * The candidates in `rows` a pass would override: not yet Passed, and with a
  * best result below the bar or nothing scored. Empty means a plain pass.
  */
-export function passOverrides(rows: Pick<RosterRow, "id" | "name" | "stage" | "results">[]) {
+export function passOverrides(rows: (Pick<RosterRow, "id" | "name" | "stage" | "results"> & { roundsPass?: string | null })[]) {
   return rows
     .filter((r) => r.stage !== "PASSED")
-    .map((r) => ({ id: r.id, name: r.name, check: passCheck(r.results) }))
-    .filter((r) => r.check.override)
-    .map((r) => ({ id: r.id, name: r.name, reason: r.check.reason ?? "Below the bar" }));
+    .map((r) => {
+      const check = passCheck(r.results);
+      const reason = [r.roundsPass ?? null, check.override ? (check.reason ?? "Below the bar") : null].filter(Boolean).join("; ");
+      return { id: r.id, name: r.name, reason };
+    })
+    .filter((r) => r.reason);
 }
 
 export type RosterBatch = { id: string; name: string; status: string };

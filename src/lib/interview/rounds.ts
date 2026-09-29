@@ -435,6 +435,32 @@ export function passNeedsOverride(p: PlanProgress): boolean {
 }
 
 /**
+ * Why passing now would be a manual pass, in words ("Coding round below the
+ * bar; 2 rounds not held"). Null when every required round is above bar.
+ */
+export function overrideReason(p: PlanProgress): string | null {
+  if (!passNeedsOverride(p)) return null;
+  const open = p.rounds.filter((r) => r.required && r.state !== "skipped" && r.state !== "above_bar");
+  const names = (xs: PlanRound[]) => xs.map((r) => r.name).join(", ");
+  const below = open.filter((r) => r.state === "below_bar");
+  const dnf = open.filter((r) => r.state === "did_not_finish");
+  const rest = open.length - below.length - dnf.length;
+  const parts = [
+    below.length ? `${names(below)} below the bar` : null,
+    dnf.length ? `${names(dnf)} not finished` : null,
+    rest ? `${rest} ${rest === 1 ? "round" : "rounds"} not held` : null,
+  ];
+  return parts.filter(Boolean).join("; ");
+}
+
+/** The next round after this one that is not skipped, or null when it is the last. */
+export function roundAfter(p: PlanProgress, roundId: string): PlanRound | null {
+  const i = p.rounds.findIndex((r) => r.id === roundId);
+  if (i < 0) return null;
+  return p.rounds.slice(i + 1).find((r) => r.state !== "skipped") ?? null;
+}
+
+/**
  * The live round a new interview for this candidate most likely is: the
  * first live round not yet booked, from the round they are on. One whose
  * format matches the interview being set up wins. Null when none is open.

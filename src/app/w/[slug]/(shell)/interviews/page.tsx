@@ -7,9 +7,9 @@ import { INTERVIEWER_TAKE, REPORT_CRITERIA } from "@/lib/interview/report-server
 import { INTERVIEW_PASS_RATING } from "@/lib/crm/results";
 import { normalizeStage } from "@/lib/crm/stages";
 import { candidateLine, groupOf, interviewOutcome } from "@/lib/interview/list-outcome";
-import { loadCandidateRounds } from "@/lib/interview/rounds-server";
-import { segmentOf } from "@/lib/interview/rounds";
-import InterviewsList, { type InterviewRow } from "./InterviewsList";
+import { loadCandidateRounds, loadNextRoundDue } from "@/lib/interview/rounds-server";
+import { roundAfter, roundStateLabel, segmentOf } from "@/lib/interview/rounds";
+import InterviewsList, { type InterviewRow, type PersonRounds } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
 
@@ -71,11 +71,14 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
   const people = peopleIds.length ? await prisma.user.findMany({ where: { id: { in: peopleIds } }, select: { id: true, name: true, email: true } }) : [];
   const nameOf = new Map(people.map((u) => [u.id, u.name ?? u.email ?? "Teammate"]));
   // Each linked candidate's rounds, so a row can say which round it is.
-  const plans = await loadCandidateRounds(
-    workspace.id,
-    slug,
-    sessions.map((s) => s.candidateId).filter((x): x is string => !!x),
-  );
+  const [plans, due] = await Promise.all([
+    loadCandidateRounds(
+      workspace.id,
+      slug,
+      sessions.map((s) => s.candidateId).filter((x): x is string => !!x),
+    ),
+    loadNextRoundDue(workspace.id, slug),
+  ]);
   const now = new Date();
 
   const rows: InterviewRow[] = sessions.map((s) => {
@@ -92,6 +95,8 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
           });
     const scoring = scoringOf(s, userId, nameOf);
     const stage = s.candidateId && s.candidate ? normalizeStage(s.candidate.stage) : null;
+    const plan = plans.get(s.candidateId ?? "");
+    const step = stepOf(plan, s.id);
     const outcome = interviewOutcome(
       {
         state,
@@ -112,9 +117,15 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       type: s.type,
       state,
       outcome,
-      group: groupOf(outcome, stage),
-      candidateLine: candidateLine(outcome, stage),
-      round: roundOf(plans.get(s.candidateId ?? ""), s.id),
+      group: groupOf(outcome, stage, step),
+      candidateLine: candidateLine(outcome, stage, step),
+      round: roundOf(plan, s.id),
+      // A round waiting on move on or stop is decided on its report; anything else on the profile.
+      decideHref: s.candidateId
+        ? step && step.next && !step.nextStep
+          ? `/w/${slug}/interviews/${s.id}/report#next-step`
+          : `/w/${slug}/candidates/${s.candidateId}`
+        : null,
       take: s.verdict && INTERVIEWER_TAKE[s.verdict] ? INTERVIEWER_TAKE[s.verdict] : null,
       scoring,
       shortCode: s.shortCode,
@@ -137,7 +148,44 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
     };
   });
 
-  return <InterviewsList slug={slug} rows={rows} view={sp.view ?? "all"} q={(sp.q ?? "").trim()} />;
+  // Every linked candidate's whole plan, for Group by candidate.
+  const personRounds: Record<string, PersonRounds> = {};
+  for (const [id, cr] of plans) {
+    if (!cr.progress.total) continue;
+    personRounds[id] = {
+      planName: cr.planName,
+      waitingOn: cr.progress.waitingOn,
+      rounds: cr.progress.rounds
+        .filter((r) => r.state !== "skipped")
+        .map((r) => {
+          const m = cr.meta.get(r.id);
+          const sessionId = [...cr.roundOfSession].filter(([, rid]) => rid === r.id).map(([sid]) => sid);
+          const row = rows.find((x) => sessionId.includes(x.id) && x.state !== "cancelled");
+          return {
+            id: r.id,
+            number: r.number,
+            name: r.name,
+            kind: r.kind,
+            format: m?.format ?? null,
+            state: r.state,
+            label: roundStateLabel(r.state, r.kind),
+            at: m?.latest?.at ?? row?.scheduledAt ?? null,
+            score: m?.latest?.score ?? null,
+            href: row ? (row.state === "completed" ? `/w/${slug}/interviews/${row.id}/report` : row.href) : (m?.latest?.href ?? null),
+          };
+        }),
+    };
+  }
+
+  return <InterviewsList slug={slug} rows={rows} people={personRounds} due={due} view={sp.view ?? "all"} q={(sp.q ?? "").trim()} />;
+}
+
+/** The recruiter's next step on this interview's round, and the round after it. */
+function stepOf(plan: Awaited<ReturnType<typeof loadCandidateRounds>> extends Map<string, infer V> ? V | undefined : never, sessionId: string) {
+  const roundId = plan?.roundOfSession.get(sessionId);
+  const round = roundId ? plan!.progress.rounds.find((r) => r.id === roundId) : null;
+  if (!plan || !round) return null;
+  return { nextStep: round.nextStep, next: roundAfter(plan.progress, round.id)?.name ?? null };
 }
 
 /** "Round 2 of 4 · Coding round" and the whole plan as a strip, with this interview's round marked. */

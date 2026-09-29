@@ -145,7 +145,7 @@ export async function createSessions(
     const data: TheoryRoundData = { v: 1, settings, items: drawQuestions(args.theoryQuestions?.get(r.templateId) ?? [], settings) };
     return JSON.stringify(data);
   };
-  const created: { id: string; inviteToken: string; candidateName: string; candidateEmail: string; positionTitle: string; expiresAt: Date | null; rounds: { estimatedMinutes: number }[] }[] = [];
+  const created: { id: string; candidateId: string | null; inviteToken: string; candidateName: string; candidateEmail: string; positionTitle: string; expiresAt: Date | null; rounds: { estimatedMinutes: number }[] }[] = [];
   for (const c of args.candidates) {
     // The legacy templateId column is non-null; point it at the first round.
     const legacyTemplateId = rounds[0].templateId ?? rounds[0].sourceId ?? "batch";
@@ -189,6 +189,7 @@ export async function createSessions(
       },
       select: {
         id: true,
+        candidateId: true,
         inviteToken: true,
         candidateName: true,
         candidateEmail: true,

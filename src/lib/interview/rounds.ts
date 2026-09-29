@@ -287,6 +287,7 @@ export const ROUND_STATE_LABELS: Record<RoundState, string> = {
 export function roundStateLabel(state: RoundState, kind: PlanRoundKind): string {
   if (state === "scheduled" && kind !== "interview") return "Invited";
   if (state === "not_started") return kind === "interview" ? "To schedule" : "To send";
+  if (state === "awaiting_review" && kind === "take_home") return "Submitted";
   return ROUND_STATE_LABELS[state];
 }
 
@@ -522,7 +523,73 @@ export function progressLine(p: PlanProgress): string {
 
 // ── Copying a plan to a candidate ───────────────────────────────────────
 
-export type PlanRoundRow = { id?: string; order: number; kind: PlanRoundKind; name: string; format?: string | null; durationMin?: number | null; passMark?: number | null; required: boolean };
+export type PlanRoundRow = {
+  id?: string;
+  order: number;
+  kind: PlanRoundKind;
+  name: string;
+  format?: string | null;
+  durationMin?: number | null;
+  passMark?: number | null;
+  required: boolean;
+  /** AI interview and take-home rounds: what to send (see RoundSettings), as stored JSON. Stays on the plan; candidates' copies read it from there. */
+  settingsJson?: string | null;
+};
+
+// ── What an AI interview or take-home round sends ───────────────────────
+
+/**
+ * Kind-specific setup of a plan round: the AI screening an AI interview
+ * round invites people to, or the take-home template a take-home round
+ * sends. Empty until the recruiter picks one; then the round can be sent in
+ * one click, or by itself when someone joins the batch.
+ */
+export type RoundSettings = { aiScreeningId?: string | null; takeHomeTemplateId?: string | null };
+
+export function parseRoundSettings(json: string | null | undefined): RoundSettings {
+  if (!json) return {};
+  try {
+    const v = JSON.parse(json) as Record<string, unknown>;
+    const str = (x: unknown) => (typeof x === "string" && x.trim() ? x.trim() : null);
+    return { aiScreeningId: str(v.aiScreeningId), takeHomeTemplateId: str(v.takeHomeTemplateId) };
+  } catch {
+    return {};
+  }
+}
+
+/** The one source that matters for this kind, or null when none is picked. */
+export function roundSource(kind: PlanRoundKind, s: RoundSettings): string | null {
+  if (kind === "ai_interview") return s.aiScreeningId ?? null;
+  if (kind === "take_home") return s.takeHomeTemplateId ?? null;
+  return null;
+}
+
+/** Stored JSON for a round's settings: only the key its kind uses, null when empty. */
+export function roundSettingsJson(kind: PlanRoundKind, s: RoundSettings | null | undefined): string | null {
+  const id = s ? roundSource(kind, s) : null;
+  if (!id) return null;
+  return JSON.stringify(kind === "ai_interview" ? { aiScreeningId: id } : { takeHomeTemplateId: id });
+}
+
+/**
+ * Which of a candidate's rounds a newly sent AI interview or take-home
+ * belongs to: the round asked for, when it is one of theirs of that kind;
+ * otherwise their first round of that kind that is not skipped, has nothing
+ * sent yet and has no next step. Null when none is open, so the send stays
+ * outside the plan.
+ */
+export function pickOpenRound(
+  rounds: { id: string; order: number; kind: string; skipped: boolean; nextStep: string | null; linked: number }[],
+  kind: PlanRoundKind,
+  wanted?: string | null,
+): string | null {
+  const sorted = [...rounds].sort((a, b) => a.order - b.order);
+  if (wanted) {
+    const w = sorted.find((r) => r.id === wanted && r.kind === kind);
+    if (w) return w.id;
+  }
+  return sorted.find((r) => r.kind === kind && !r.skipped && !r.nextStep && r.linked === 0)?.id ?? null;
+}
 
 /** The CandidateRound rows a candidate gets from a plan, in order from 1. */
 export function copyRounds(plan: PlanRoundRow[]) {
@@ -558,6 +625,14 @@ export function roundsFromTemplate(t: PlanTemplate, early: PlanRoundKind[] = [])
 export function kindName(kind: PlanRoundKind, role: RoleType): string {
   if (kind === "take_home") return role === "non_technical" ? "Written task" : "Take home";
   return PLAN_ROUND_KIND_LABELS[kind];
+}
+
+/** A name for the middle of a sentence: lower case, keeping acronyms like AI. */
+export function inSentence(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => (/^[A-Z]{2,}$/.test(w) ? w : w.toLowerCase()))
+    .join(" ");
 }
 
 /** A live interview format's name; "discussion" is a role discussion in non-technical plans. */
@@ -657,6 +732,8 @@ export type PlanInput = {
   name: string;
   roleType: RoleType;
   continuesInAts: boolean;
+  /** Send the first round by itself when someone joins a batch on this plan. */
+  autoSendFirst?: boolean;
   rounds: {
     /** Existing plan round id, kept so candidates' copies stay matched. */
     id?: string | null;
@@ -666,10 +743,18 @@ export type PlanInput = {
     durationMin?: number | null;
     passMark?: number | null;
     required: boolean;
+    /** AI interview and take-home rounds: what to send. */
+    settings?: RoundSettings | null;
   }[];
 };
 
-export type CleanPlan = { name: string; roleType: RoleType; continuesInAts: boolean; rounds: (Omit<PlanRoundRow, "id"> & { id: string | null })[] };
+export type CleanPlan = {
+  name: string;
+  roleType: RoleType;
+  continuesInAts: boolean;
+  autoSendFirst: boolean;
+  rounds: (Omit<PlanRoundRow, "id"> & { id: string | null; settingsJson: string | null })[];
+};
 
 const KINDS: PlanRoundKind[] = ["ai_interview", "take_home", "interview"];
 
@@ -724,9 +809,17 @@ export function validatePlan(input: PlanInput): { ok: true; plan: CleanPlan } | 
       if (seen.has(id)) return { ok: false, error: "A round appears twice. Reload and try again." };
       seen.add(id);
     }
-    rounds.push({ id, order: n, kind: r.kind, name: rName, format, durationMin: duration, passMark, required: r.required !== false });
+    rounds.push({ id, order: n, kind: r.kind, name: rName, format, durationMin: duration, passMark, required: r.required !== false, settingsJson: roundSettingsJson(r.kind, r.settings) });
   }
-  return { ok: true, plan: { name, roleType, continuesInAts: !!input.continuesInAts, rounds } };
+  const autoSendFirst = !!input.autoSendFirst;
+  if (autoSendFirst) {
+    const first = rounds[0];
+    if (first.kind === "interview") return { ok: false, error: "Only an AI interview or take-home can be sent by itself. Move one to round 1, or turn off sending it by itself." };
+    if (!first.settingsJson) {
+      return { ok: false, error: `Pick which ${first.kind === "ai_interview" ? "AI screening" : "take-home"} round 1 sends, or turn off sending it by itself.` };
+    }
+  }
+  return { ok: true, plan: { name, roleType, continuesInAts: !!input.continuesInAts, autoSendFirst, rounds } };
 }
 
 // ── Keeping candidates' copies in step with their plan ──────────────────

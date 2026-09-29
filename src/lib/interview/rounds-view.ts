@@ -25,6 +25,8 @@ export type RoundView = {
   id: string;
   /** The plan round this copy came from; null when added for this person. */
   planRoundId: string | null;
+  /** AI interview and take-home rounds: the AI screening or template it sends in one click, when the plan picked one. */
+  sends: string | null;
   number: number | null;
   name: string;
   kind: PlanRoundKind;

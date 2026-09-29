@@ -256,6 +256,7 @@ const LABELS: Record<string, string> = {
   CANDIDATE_ROUND_ADDED: "Added a round for",
   CANDIDATE_ROUND_REMOVED: "Removed a round for",
   CANDIDATE_ROUND_MOVED_ON: "Moved to the next round",
+  CANDIDATE_ROUND_SENT: "Sent a round to",
   CANDIDATE_ROUND_STOPPED: "Stopped the rounds for",
   CANDIDATE_ROUND_NEXT_STEP_CLEARED: "Reopened the next step for",
   AI_SCREENING_CREATED: "Sent AI screening",

@@ -27,6 +27,8 @@ import {
   validatePlan,
   type HiringType,
   type NextStep,
+  parseRoundSettings,
+  type CleanPlan,
   type PlanInput,
   type PlanRoundKind,
   type PlanRoundRow,
@@ -58,6 +60,7 @@ const ROUND_SELECT = {
   durationMin: true,
   passMark: true,
   required: true,
+  settingsJson: true,
 } as const;
 
 export type PlanView = {
@@ -175,6 +178,36 @@ async function dropUnheldCopies(tx: Tx, planRoundIds: string[]) {
   });
 }
 
+/** The AI screenings and take-home templates a plan's rounds send must be this workspace's own. */
+async function assertSources(workspaceId: string, rounds: CleanPlan["rounds"]) {
+  const ai = new Set<string>();
+  const th = new Set<string>();
+  for (const r of rounds) {
+    const s = parseRoundSettings(r.settingsJson);
+    if (s.aiScreeningId) ai.add(s.aiScreeningId);
+    if (s.takeHomeTemplateId) th.add(s.takeHomeTemplateId);
+  }
+  const [aiFound, thFound] = await Promise.all([
+    ai.size ? prisma.aIScreeningBatch.count({ where: { id: { in: [...ai] }, workspaceId } }) : 0,
+    th.size ? prisma.takeHomeTemplate.count({ where: { id: { in: [...th] }, workspaceId } }) : 0,
+  ]);
+  if (aiFound !== ai.size) throw new CandidateError(400, "One of the AI screenings picked for a round no longer exists. Pick another.");
+  if (thFound !== th.size) throw new CandidateError(400, "One of the take-home templates picked for a round no longer exists. Pick another.");
+}
+
+/** What a plan's AI interview and take-home rounds can send: this workspace's AI screenings and take-home templates. */
+export async function loadPlanSources(workspaceId: string) {
+  const [ai, th] = await Promise.all([
+    prisma.aIScreeningBatch.findMany({ where: { workspaceId }, orderBy: { createdAt: "desc" }, take: 200, select: { id: true, positionTitle: true, status: true } }),
+    prisma.takeHomeTemplate.findMany({ where: { workspaceId }, orderBy: { updatedAt: "desc" }, take: 200, select: { id: true, name: true } }),
+  ]);
+  return {
+    ai: ai.map((a) => ({ id: a.id, name: a.positionTitle, closed: a.status !== "ACTIVE" })),
+    takeHome: th.map((t) => ({ id: t.id, name: t.name })),
+  };
+}
+export type PlanSources = Awaited<ReturnType<typeof loadPlanSources>>;
+
 /* ── Plans ───────────────────────────────────────────────────────────── */
 
 export type NewPlanInput = {
@@ -193,6 +226,7 @@ export async function createPlan(actor: CandidateActor, input: NewPlanInput): Pr
   if (!checked.ok) throw new CandidateError(400, checked.error);
   const clean = checked.plan;
   await assertRoleType(actor, clean.roleType);
+  await assertSources(actor.workspaceId, clean.rounds);
   const templateKey = input.templateKey && templateByKey(input.templateKey) ? input.templateKey : null;
   const batch = input.batchId
     ? await prisma.candidateBatch.findFirst({ where: { id: input.batchId, workspaceId: actor.workspaceId }, select: { id: true, name: true, planId: true } })
@@ -207,10 +241,11 @@ export async function createPlan(actor: CandidateActor, input: NewPlanInput): Pr
         name: clean.name,
         roleType: clean.roleType,
         continuesInAts: clean.continuesInAts,
+        autoSendFirst: clean.autoSendFirst,
         isDefault: !!input.makeDefault,
         templateKey,
         createdById: actor.actorUserId,
-        rounds: { create: clean.rounds.map((r) => ({ order: r.order, kind: r.kind, name: r.name, format: r.format, durationMin: r.durationMin, passMark: r.passMark, required: r.required })) },
+        rounds: { create: clean.rounds.map((r) => ({ order: r.order, kind: r.kind, name: r.name, format: r.format, durationMin: r.durationMin, passMark: r.passMark, required: r.required, settingsJson: r.settingsJson })) },
       },
       select: { id: true },
     });
@@ -245,6 +280,7 @@ export async function savePlan(actor: CandidateActor, planId: string, input: Omi
   const checked = validatePlan({ ...input, roleType });
   if (!checked.ok) throw new CandidateError(400, checked.error);
   const clean = checked.plan;
+  await assertSources(actor.workspaceId, clean.rounds);
 
   const existing = new Set(current.rounds.map((r) => r.id));
   for (const r of clean.rounds) if (r.id && !existing.has(r.id)) throw new CandidateError(409, "This plan changed while you were editing. Reload and try again.");
@@ -258,7 +294,7 @@ export async function savePlan(actor: CandidateActor, planId: string, input: Omi
       // A default belongs to one role type; moving it keeps one default per type.
       await tx.interviewPlan.updateMany({ where: { workspaceId: actor.workspaceId, roleType, isDefault: true, NOT: { id: planId } }, data: { isDefault: false } });
     }
-    await tx.interviewPlan.update({ where: { id: planId }, data: { name: clean.name, roleType, continuesInAts: clean.continuesInAts } });
+    await tx.interviewPlan.update({ where: { id: planId }, data: { name: clean.name, roleType, continuesInAts: clean.continuesInAts, autoSendFirst: clean.autoSendFirst } });
     for (const r of clean.rounds) {
       const { id, ...data } = r;
       if (id) await tx.interviewPlanRound.update({ where: { id }, data });
@@ -269,6 +305,7 @@ export async function savePlan(actor: CandidateActor, planId: string, input: Omi
   const changes: string[] = [];
   if (clean.name !== current.name) changes.push("name");
   if (clean.continuesInAts !== current.continuesInAts) changes.push("ATS hand-off");
+  if (clean.autoSendFirst !== current.autoSendFirst) changes.push("send first round by itself");
   if (roleType !== current.roleType) changes.push("role type");
   changes.push("rounds");
   void audit(actor, WORKSPACE_AUDIT_ACTIONS.INTERVIEW_PLAN_UPDATED, "interviewPlan", planId, { name: clean.name, fields: changes, rounds: clean.rounds.length, removedRounds: removed.length });

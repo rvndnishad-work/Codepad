@@ -9,7 +9,10 @@ import {
   copyRounds,
   currentAttempt,
   liveAttempt,
+  inSentence,
   overrideReason,
+  parseRoundSettings,
+  pickOpenRound,
   passNeedsOverride,
   planProgress,
   progressLine,
@@ -17,6 +20,8 @@ import {
   roundAllowed,
   roundsFromHistory,
   roundsFromTemplate,
+  roundSettingsJson,
+  roundSource,
   roundStateLabel,
   strip,
   suggestLiveRound,
@@ -319,6 +324,78 @@ describe("validatePlan", () => {
     expect(validatePlan({ ...base, name: " ", rounds: [{ kind: "take_home", name: "Task", required: true }] }).ok).toBe(false);
     expect(validatePlan({ ...base, rounds: [] }).ok).toBe(false);
     expect(validatePlan({ ...base, rounds: [{ id: "a", kind: "take_home", name: "Task", required: true }, { id: "a", kind: "take_home", name: "Task", required: true }] }).ok).toBe(false);
+  });
+});
+
+describe("what an AI interview or take-home round sends", () => {
+  it("keeps only the id that fits the round kind", () => {
+    const s = { aiScreeningId: "ai1", takeHomeTemplateId: "th1" };
+    expect(roundSettingsJson("ai_interview", s)).toBe(JSON.stringify({ aiScreeningId: "ai1" }));
+    expect(roundSettingsJson("take_home", s)).toBe(JSON.stringify({ takeHomeTemplateId: "th1" }));
+    expect(roundSettingsJson("interview", s)).toBeNull();
+    expect(roundSettingsJson("take_home", { aiScreeningId: "ai1" })).toBeNull();
+    expect(roundSettingsJson("take_home", null)).toBeNull();
+  });
+
+  it("reads settings back and survives bad JSON", () => {
+    expect(roundSource("ai_interview", parseRoundSettings(JSON.stringify({ aiScreeningId: " ai1 " })))).toBe("ai1");
+    expect(roundSource("take_home", parseRoundSettings(JSON.stringify({ aiScreeningId: "ai1" })))).toBeNull();
+    expect(parseRoundSettings("{nope")).toEqual({});
+    expect(parseRoundSettings(null)).toEqual({});
+  });
+});
+
+describe("inSentence", () => {
+  it("lower-cases a round name but keeps acronyms", () => {
+    expect(inSentence("AI interview")).toBe("AI interview");
+    expect(inSentence("Take home")).toBe("take home");
+    expect(inSentence("Written task")).toBe("written task");
+  });
+});
+
+describe("pickOpenRound", () => {
+  const r = (id: string, order: number, kind: string, extra: Partial<{ skipped: boolean; nextStep: string | null; linked: number }> = {}) => ({
+    id, order, kind, skipped: false, nextStep: null, linked: 0, ...extra,
+  });
+
+  it("links a send to the first open round of its kind", () => {
+    const rounds = [r("c", 3, "take_home"), r("a", 1, "ai_interview"), r("b", 2, "take_home")];
+    expect(pickOpenRound(rounds, "take_home")).toBe("b");
+    expect(pickOpenRound(rounds, "ai_interview")).toBe("a");
+    expect(pickOpenRound(rounds, "interview")).toBeNull();
+  });
+
+  it("passes over rounds that are skipped, already sent or already decided", () => {
+    const rounds = [r("a", 1, "take_home", { linked: 1 }), r("b", 2, "take_home", { skipped: true }), r("c", 3, "take_home", { nextStep: "advance" }), r("d", 4, "take_home")];
+    expect(pickOpenRound(rounds, "take_home")).toBe("d");
+    expect(pickOpenRound(rounds.slice(0, 3), "take_home")).toBeNull();
+  });
+
+  it("uses the round the sender picked when it is of that kind", () => {
+    const rounds = [r("a", 1, "take_home"), r("b", 2, "take_home"), r("x", 3, "ai_interview")];
+    expect(pickOpenRound(rounds, "take_home", "b")).toBe("b");
+    expect(pickOpenRound(rounds, "take_home", "x")).toBe("a");
+  });
+});
+
+describe("validatePlan: sending the first round by itself", () => {
+  const base = { name: "Backend engineer", roleType: "technical" as const, continuesInAts: false };
+
+  it("is off by default and stores what each round sends", () => {
+    const res = validatePlan({ ...base, rounds: [{ kind: "ai_interview", name: "AI interview", required: true, settings: { aiScreeningId: "ai1", takeHomeTemplateId: "th1" } }, { kind: "interview", name: "Coding", format: "coding", required: true, settings: { aiScreeningId: "ai1" } }] });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.plan.autoSendFirst).toBe(false);
+    expect(res.plan.rounds.map((x) => x.settingsJson)).toEqual([JSON.stringify({ aiScreeningId: "ai1" }), null]);
+  });
+
+  it("only sends an AI interview or take-home that knows what to send", () => {
+    const live = validatePlan({ ...base, autoSendFirst: true, rounds: [{ kind: "interview", name: "Intro", format: "intro", required: true }] });
+    expect(live.ok).toBe(false);
+    const noSource = validatePlan({ ...base, autoSendFirst: true, rounds: [{ kind: "take_home", name: "Task", required: true }] });
+    expect(noSource).toEqual({ ok: false, error: "Pick which take-home round 1 sends, or turn off sending it by itself." });
+    const ok = validatePlan({ ...base, autoSendFirst: true, rounds: [{ kind: "take_home", name: "Task", required: true, settings: { takeHomeTemplateId: "th1" } }] });
+    expect(ok.ok && ok.plan.autoSendFirst).toBe(true);
   });
 });
 

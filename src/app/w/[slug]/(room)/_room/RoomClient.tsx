@@ -402,6 +402,10 @@ function Room({ data, onLeave }: { data: RoomData; onLeave: () => void }) {
                   setStageOpen(false);
                   void showTool(t);
                 }}
+                onQuestion={(q) => {
+                  setStageOpen(false);
+                  void (q ? showQuestion(q) : showTool(null));
+                }}
               />
             </>
           )}
@@ -758,6 +762,7 @@ function Rail({
   props,
   onRound,
   onTool,
+  onQuestion,
   className,
   onClose,
 }: {
@@ -768,6 +773,8 @@ function Rail({
   props: ToolProps;
   onRound: (k: string | null) => void;
   onTool: (t: ToolId | null) => void;
+  /** Puts a guide question on the stage's question card; null takes it off. */
+  onQuestion: (text: string | null) => void;
   /** Where it sits: docked (xl) or a drawer over the stage. */
   className: string;
   onClose: () => void;
@@ -777,6 +784,7 @@ function Rail({
   const stageTools = TOOLS.filter((t) => t.stage && TOOL_PLUGINS[t.id].Stage);
   const state = props.state;
   const hasTimer = state.enabled.includes("timer") && !!state.timer;
+  const guide = data.private?.guide ?? [];
   return (
     <nav aria-label="Stage" className={`shrink-0 min-h-0 flex-col border-r border-border bg-surface ${className}`}>
       <div className="px-4 pt-4 pb-1 flex items-start gap-2">
@@ -843,6 +851,39 @@ function Rail({
             </ul>
           )}
         </section>
+
+        {guide.length > 0 && (
+          <section className="min-w-0">
+            <h2 className="px-2 text-[12px] font-medium text-subtle">Questions</h2>
+            <p className="px-2 text-[12px] text-muted">From your interview guide. Only you see this list.</p>
+            <ul className="mt-2 grid grid-cols-1 gap-1 min-w-0">
+              {guide.map((g, i) => {
+                const on = presented === "question" && state.question?.text === g.q.trim();
+                return (
+                  <li key={i}>
+                    <button
+                      type="button"
+                      disabled={props.readOnly}
+                      onClick={() => onQuestion(on ? null : g.q)}
+                      title={on ? "Take it off the stage" : "Show this question to the candidate"}
+                      className={`w-full text-left rounded-xl px-2.5 py-2 flex items-start gap-2.5 transition-colors disabled:opacity-60 ${on ? "bg-secondary/10 ring-1 ring-inset ring-secondary/35" : "hover:bg-panel/70"}`}
+                    >
+                      <span className={`w-[30px] h-[30px] rounded-[9px] flex items-center justify-center text-[12px] font-semibold shrink-0 ${on ? "bg-secondary text-bg" : "bg-panel text-muted"}`}>
+                        {i + 1}
+                      </span>
+                      <span className="min-w-0 flex-1 text-[13px] leading-snug line-clamp-3">{g.q}</span>
+                      {on && (
+                        <span className="shrink-0 mt-1 h-5 px-1.5 rounded bg-success/15 text-success text-[12px] font-medium inline-flex items-center gap-1">
+                          <Radio className="w-3 h-3" aria-hidden /> Live
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <section className="min-w-0">
           <h2 className="px-2 text-[12px] font-medium text-subtle">Tools</h2>

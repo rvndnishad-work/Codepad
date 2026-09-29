@@ -127,7 +127,7 @@ export function resultActivity(results: CandidateResult[]): ActivityItem[] {
     if (r.finishedAt && (r.state === "submitted" || r.state === "scored")) {
       const bits = [
         r.minutesTaken != null && r.minutesAllowed ? `${r.minutesTaken} of ${r.minutesAllowed} minutes` : r.minutesTaken != null ? `${r.minutesTaken} minutes` : null,
-        r.score != null ? (r.kind === "interview" && r.rating != null ? `${r.rating.toFixed(1)} of 5` : `score ${r.score}`) : "not scored yet",
+        r.score != null ? (r.kind === "interview" && r.rating != null ? `${r.rating.toFixed(1)} of ${r.ratingScale ?? 5}` : `score ${r.score}`) : "not scored yet",
         r.verdict && r.kind !== "interview" ? r.verdict : null,
       ].filter(Boolean);
       out.push({

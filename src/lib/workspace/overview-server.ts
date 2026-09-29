@@ -41,7 +41,7 @@ export async function loadOverviewExtras(
     prisma.interviewSession.findMany({
       where: { workspaceId, type: { not: "take-home" }, finishedAt: { gte: new Date(now.getTime() - BOUNCE_WINDOW_DAYS * DAY) } },
       take: 200,
-      select: { id: true, rubric: { select: { id: true } } },
+      select: { id: true, rubric: { select: { id: true } }, scorecards: { where: { status: "submitted" }, select: { id: true }, take: 1 } },
     }),
     prisma.emailLog.findMany({
       where: { workspaceId, createdAt: { gte: since } },
@@ -117,7 +117,8 @@ export async function loadOverviewExtras(
     batches,
     candidateBatch: Object.fromEntries(batched.map((c) => [c.id, c.batchId!])),
     takeHomeScores,
-    scorecardSessionIds: finishedLive.filter((s) => !!s.rubric).map((s) => s.id),
+    // Scored with the older end-of-room rubric, or at least one panel scorecard submitted.
+    scorecardSessionIds: finishedLive.filter((s) => !!s.rubric || s.scorecards.length > 0).map((s) => s.id),
     bounced: bouncedLogs.map((l) => {
       const p = byEmail.get(l.recipientEmail.toLowerCase());
       return {

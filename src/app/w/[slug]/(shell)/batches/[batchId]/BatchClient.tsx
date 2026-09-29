@@ -417,7 +417,7 @@ function Results({
                 ["AI screening", r.byKind.ai_screening != null ? String(r.byKind.ai_screening) : r.results.some((x) => x.kind === "ai_screening") ? "Pending" : "Not sent", "ai_screening"],
                 ["Take-home", r.byKind.take_home != null ? String(r.byKind.take_home) : r.results.some((x) => x.kind === "take_home") ? "Pending" : "Not sent", "take_home"],
                 ["Time taken", r.takeHomeMinutes != null ? `${r.takeHomeMinutes} min` : "None", "minutes"],
-                ["Interview", r.interviewRating != null ? `${r.interviewRating.toFixed(1)} of 5` : "Not yet", "interview"],
+                ["Interview", r.interviewRating != null ? `${r.interviewRating.toFixed(1)} of ${r.interviewScale ?? 5}` : "Not yet", "interview"],
               ];
               return (
                 <div key={r.id} className="rounded-xl border border-border bg-bg p-4 flex flex-col gap-3 min-w-0">

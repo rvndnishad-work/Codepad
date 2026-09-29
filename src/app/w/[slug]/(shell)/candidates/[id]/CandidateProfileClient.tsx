@@ -675,9 +675,9 @@ function ResultRow({ r, index }: { r: CandidateResult; index: number }) {
               <span className="text-[26px] leading-none font-semibold tracking-tight text-fg tabular-nums">
                 {r.kind === "interview" && r.rating != null ? r.rating.toFixed(1) : r.score}
               </span>
-              <span className="text-[13px] text-subtle">{r.kind === "interview" && r.rating != null ? "/ 5" : "/ 100"}</span>
+              <span className="text-[13px] text-subtle">{r.kind === "interview" && r.rating != null ? `/ ${r.ratingScale ?? 5}` : "/ 100"}</span>
               <span className="ml-auto text-xs text-subtle tabular-nums">
-                Bar {r.kind === "interview" && r.rating != null ? INTERVIEW_PASS_RATING : (r.passMark ?? PASS_MARK[r.kind])}
+                Bar {r.kind === "interview" && r.rating != null ? (r.ratingBar ?? INTERVIEW_PASS_RATING) : (r.passMark ?? PASS_MARK[r.kind])}
               </span>
             </div>
             <div className="relative h-1.5 rounded-full bg-panel" aria-hidden>

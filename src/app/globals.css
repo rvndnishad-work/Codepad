@@ -12,9 +12,11 @@
        ink and structure, sky blue for the developer signal, slate indigo
        for hiring, and a soft pink + teal pair for decoration only. Depth
        comes from a soft navy shadow, never from gradients.
-       Contrast (WCAG, text on bg / surface / panel): fg 11.9 / 14.2 / 10.7,
-       muted 8.0 / 9.6 / 7.2, subtle 5.7 / 6.8 / 5.1, accent 5.4 / 6.4 / 4.8,
-       accent-2 6.2 / 7.4 / 5.6, status colours all >= 5.0 on bg.
+       The ground is a step lighter than the reference and the navy a step
+       deeper, so type stands off the page (the first pass read flat).
+       Contrast (WCAG, text on bg / surface / panel): fg 15.3 / 17.2 / 13.9,
+       muted 11.1 / 12.5 / 10.1, subtle 7.6 / 8.6 / 6.9, accent 7.0 / 7.9 / 6.3,
+       accent-2 8.0 / 9.0 / 7.2, status colours all >= 6.8 on bg.
        Only routes listed in src/lib/theme-routes.ts render in light today;
        every other route is still forced dark until it is revamped. */
     /* Two channel notations, deliberately. `--x-rgb` is COMMA separated and
@@ -24,36 +26,36 @@
        there (`rgb(1, 2, 3 / .4)` parses as nothing and the declaration is
        dropped, which silently turns backgrounds transparent). Keep all three
        representations of a colour in sync. */
-    --bg: #dbe4ea;
-    --bg-rgb: 219, 228, 234;
-    --c-bg: 219 228 234;
-    --surface: #f4f7f9;
-    --c-surface: 244 247 249;
-    --panel: #ccdae3;
-    --c-panel: 204 218 227;
-    --elevated: #bccfdc;
-    --c-elevated: 188 207 220;
+    --bg: #e9eff3;
+    --bg-rgb: 233, 239, 243;
+    --c-bg: 233 239 243;
+    --surface: #fbfcfd;
+    --c-surface: 251 252 253;
+    --panel: #dbe5eb;
+    --c-panel: 219 229 235;
+    --elevated: #cad8e2;
+    --c-elevated: 202 216 226;
 
-    --border: #c3d1db;
-    --c-border: 195 209 219;
-    --border-strong: #9bb0c1;
-    --c-border-strong: 155 176 193;
+    --border: #cfdbe3;
+    --c-border: 207 219 227;
+    --border-strong: #a3b6c5;
+    --c-border-strong: 163 182 197;
 
-    --muted: #34405f;
-    --c-muted: 52 64 95;
-    --subtle: #4a5673;
-    --c-subtle: 74 86 115;
-    --fg: #1b2440;      /* deep navy, the darkest panel in the reference */
-    --c-fg: 27 36 64;
+    --muted: #27314d;
+    --c-muted: 39 49 77;
+    --subtle: #3f4a66;
+    --c-subtle: 63 74 102;
+    --fg: #0f1730;      /* one step deeper than the darkest reference panel, so type pops */
+    --c-fg: 15 23 48;
 
     /* INK — the structural primary. Primary CTAs and the loud end of the
        type scale are navy, like the reference panels. */
-    --ink: #27314f;
-    --c-ink: 39 49 79;
-    --ink-fg: #f4f7f9;
-    --c-ink-fg: 244 247 249;
+    --ink: #1b2440;
+    --c-ink: 27 36 64;
+    --ink-fg: #fbfcfd;
+    --c-ink-fg: 251 252 253;
 
-    --rule: rgba(27, 36, 64, 0.14);
+    --rule: rgba(15, 23, 48, 0.14);
     --grid: rgba(27, 36, 64, 0.06);
 
     /* Clay depth: a soft, wide navy shadow under a crisp 1px edge. */
@@ -67,18 +69,18 @@
 
     /* ACCENT = the developer signal: the reference sky blue. The fill step
        (#4ba3c7) is too light for text, so text uses this deeper step. */
-    --accent: #1d5f80;        /* 5.4:1 on bg, 6.4:1 on surface */
-    --accent-rgb: 29, 95, 128;
-    --c-accent: 29 95 128;
+    --accent: #155577;        /* 7.0:1 on bg, 7.9:1 on surface */
+    --accent-rgb: 21, 85, 119;
+    --c-accent: 21 85 119;
     --accent-soft: #4ba3c7;   /* the button blue, fills and decoration */
     --c-accent-soft: 75 163 199;
     --accent-glow: rgba(75, 163, 199, 0.18);
-    --accent-ink: #ffffff;    /* 7.0:1 on --accent */
+    --accent-ink: #ffffff;    /* 8.1:1 on --accent */
 
     /* Secondary — hiring. The slate indigo of the reference tiles. */
-    --accent-2: #434f7c;      /* 6.2:1 on bg */
-    --accent-2-rgb: 67, 79, 124;
-    --c-accent-2: 67 79 124;
+    --accent-2: #3a4573;      /* 8.0:1 on bg */
+    --accent-2-rgb: 58, 69, 115;
+    --c-accent-2: 58 69 115;
     --accent-2-soft: #6679a2;
     --c-accent-2-soft: 102 121 162;
     --accent-2-glow: rgba(102, 121, 162, 0.18);
@@ -86,12 +88,12 @@
 
     /* Decoration only (marketing highlights): soft pink and teal. Text
        steps here; the pastel fills are --clay-pink / --clay-teal. */
-    --accent-3: #8e3f7e;      /* 5.2:1 on bg */
-    --accent-3-rgb: 142, 63, 126;
-    --c-accent-3: 142 63 126;
-    --accent-4: #1a6173;      /* 5.4:1 on bg */
-    --accent-4-rgb: 26, 97, 115;
-    --c-accent-4: 26 97 115;
+    --accent-3: #843873;      /* 6.5:1 on bg */
+    --accent-3-rgb: 132, 56, 115;
+    --c-accent-3: 132 56 115;
+    --accent-4: #155a6b;      /* 6.7:1 on bg */
+    --accent-4-rgb: 21, 90, 107;
+    --c-accent-4: 21 90 107;
 
     /* Pastel clay fills from the reference, for tiles and illustrations.
        Always with navy (--fg) text on top. */
@@ -105,16 +107,16 @@
     --c-clay-slate: 102 121 162;
 
     /* STATUS — muted, and dark enough to read on every light ground. */
-    --success: #27604a;
-    --success-rgb: 39, 96, 74;
-    --c-success: 39 96 74;
-    --warning: #7a4f10;
-    --warning-rgb: 122, 79, 16;
-    --c-warning: 122 79 16;
-    --danger: #9c2f45;
-    --danger-rgb: 156, 47, 69;
-    --c-danger: 156 47 69;
-    --c-danger-solid: 156 47 69; /* solid fill under white text, 7.1:1 */
+    --success: #1f5a43;
+    --success-rgb: 31, 90, 67;
+    --c-success: 31 90 67;
+    --warning: #6e470e;
+    --warning-rgb: 110, 71, 14;
+    --c-warning: 110 71 14;
+    --danger: #932a40;
+    --danger-rgb: 147, 42, 64;
+    --c-danger: 147 42 64;
+    --c-danger-solid: 147 42 64; /* solid fill under white text, 7.7:1 */
 
     --ui-scale: 1;
     /* Fluid root type: every rem-based size (incl. the px→rem font sizes

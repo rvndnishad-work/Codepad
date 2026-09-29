@@ -179,7 +179,7 @@ export default function CodeVerse3D({ paused = false, tone = "arcade" }: { pause
           subtle shimmer, never a positional snap. */}
       {light ? null : <Stars radius={60} depth={40} count={1200} factor={3.2} saturation={0.4} fade speed={0.5} />}
       <CometField color={p.dust} />
-      <Core color={p.core} shell={light ? "#d3e0e8" : "#0d0d18"} />
+      <Core color={p.core} shell={light ? "#dfe8ee" : "#0d0d18"} />
       <Ring radius={2.55} color={p.rings[0]} speed={0.25} tilt={0.55} />
       <Ring radius={3.2} color={p.rings[1]} speed={-0.16} tilt={0.9} />
       <Satellites colors={p.cubes} />

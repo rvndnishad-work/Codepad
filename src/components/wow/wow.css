@@ -30,6 +30,12 @@
   background-clip: text;
   color: transparent;
 }
+/* Light theme: a solid accent. The fade into the soft step washed the
+   headline out on the pale ground. */
+:root:not(.dark) .wow-gradient-text {
+  background: none;
+  color: rgb(var(--c-accent));
+}
 /* Hiring gradient: indigo into near-white, static. */
 .wow-gradient-boss {
   background: linear-gradient(100deg, rgb(var(--c-accent-2-soft)) 0%, rgb(var(--c-fg)) 100%);

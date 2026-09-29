@@ -15,6 +15,9 @@
 import { prisma } from "@/lib/prisma";
 import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDeleted } from "@/lib/recording/objects-server";
 import { auth } from "@/lib/auth";
+import { cancelInterviewEvent } from "@/lib/calendar/server";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
+import { cancelUpcomingInterview } from "@/lib/interview/invite-server";
 import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import {
@@ -32,6 +35,7 @@ import { passCheck } from "@/lib/crm/results";
 import { emitWorkspaceEvent } from "@/lib/events";
 import { loadCandidateResults } from "@/lib/crm/results-server";
 import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
+import { roundsForAts, thenLabel } from "@/lib/interview/rounds-view";
 
 /** After people join a batch: their plan's first round goes out by itself when the plan says so. */
 async function afterJoiningBatch(actor: CandidateActor, ids: string[]) {
@@ -463,6 +467,7 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
     });
   }
   if (fields.includes("status")) {
+    if (patch.status === "archived" && current.status !== "archived") await cancelInterviewsOnArchive(actor, [id]);
     void audit(
       actor,
       patch.status === "archived"
@@ -501,15 +506,22 @@ function emitDecision(
   toStage: "PASSED" | "REJECTED",
   extra: { rejectReason?: string | null; manualOverride?: string | null },
 ) {
-  return emitWorkspaceEvent(actor.workspaceId, "candidate.decided", {
+  return (async () => {
+    // Every round and its result, so an ATS or webhook receiver sees how the decision was reached.
+    const summary = await import("@/lib/interview/rounds-server")
+      .then((m) => m.loadRoundsSummary(actor.workspaceId, actor.workspaceSlug, candidate.id))
+      .catch(() => null);
+    return emitWorkspaceEvent(actor.workspaceId, "candidate.decided", {
     candidate,
     decision: toStage === "PASSED" ? "passed" : "not_passed",
+    rounds: summary ? { plan: summary.planName, continuesIn: thenLabel(summary), list: roundsForAts(summary, { includeScore: true }) } : null,
     previousStage: fromStage,
     rejectReason: extra.rejectReason ?? null,
     manualOverride: extra.manualOverride ?? null,
     decidedBy: { email: actor.actorEmail },
     reportPath: `candidates/${candidate.id}`,
-  });
+    });
+  })();
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -632,6 +644,33 @@ export async function tagCandidates(actor: CandidateActor, ids: string[], add: s
   return { changed };
 }
 
+/**
+ * Cancels the upcoming live interviews of candidates who were just archived,
+ * and emails each of them. Restoring does not bring the interviews back.
+ */
+async function cancelInterviewsOnArchive(actor: CandidateActor, candidateIds: string[]): Promise<number> {
+  if (!candidateIds.length) return 0;
+  const upcoming = await prisma.interviewSession.findMany({
+    where: { workspaceId: actor.workspaceId, candidateId: { in: candidateIds }, type: { not: "take-home" }, status: "scheduled", startedAt: null },
+    select: { id: true },
+  });
+  let cancelled = 0;
+  for (const s of upcoming) {
+    const done = await cancelUpcomingInterview({
+      workspaceId: actor.workspaceId,
+      sessionId: s.id,
+      actor: { userId: actor.actorUserId, email: actor.actorEmail },
+      reason: "Candidate archived",
+      notifyCandidate: true,
+    }).catch((err) => {
+      console.error("[archive] could not cancel interview", s.id, err);
+      return false;
+    });
+    if (done) cancelled++;
+  }
+  return cancelled;
+}
+
 export async function archiveCandidates(actor: CandidateActor, ids: string[], archived: boolean) {
   const rows = await scopedCandidates(actor, ids);
   const changing = rows.filter((r) => (archived ? r.status !== "archived" : r.status === "archived"));
@@ -647,7 +686,8 @@ export async function archiveCandidates(actor: CandidateActor, ids: string[], ar
       { candidateName: c.name, fromStatus: c.status, toStatus: status },
     );
   }
-  return { changed: changing.length };
+  const interviewsCancelled = archived ? await cancelInterviewsOnArchive(actor, changing.map((c) => c.id)) : 0;
+  return { changed: changing.length, interviewsCancelled };
 }
 
 /** The placeholder written over an erased person's name on their assessments. */
@@ -666,24 +706,34 @@ export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
   // Recordings identify the person too: collect their bucket objects before the rows go.
   const [aiSessions, liveSessions] = await Promise.all([
     prisma.aIInterviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
-    prisma.interviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
+    prisma.interviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true, type: true, status: true, startedAt: true } }),
   ]);
   const liveIds = liveSessions.map((s) => s.id);
+  // Their interviews still to come are called off: nobody is left to join them.
+  const upcomingIds = liveSessions.filter((s) => s.type !== "take-home" && s.status === "scheduled" && !s.startedAt).map((s) => s.id);
   const recordingKeys = await collectRecordingKeys({ aiSessionIds: aiSessions.map((s) => s.id), interviewSessionIds: liveIds });
   await prisma.$transaction([
     prisma.takeHomeAssignment.updateMany({
       where: { candidateId: { in: cids } },
       data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid" },
     }),
-    prisma.interviewSession.updateMany({ where: { candidateId: { in: cids } }, data: { candidateName: ERASED_NAME } }),
+    // The round links are cleared here, not left to the cascade: Postgres re-checks
+    // a row this transaction already changed, and the rounds are gone by then.
+    prisma.interviewSession.updateMany({ where: { candidateId: { in: cids } }, data: { candidateName: ERASED_NAME, candidateRoundId: null } }),
+    prisma.interviewSession.updateMany({ where: { id: { in: upcomingIds }, status: "scheduled" }, data: { status: "cancelled", cancelledAt: new Date() } }),
     prisma.aIInterviewSession.updateMany({
       where: { candidateId: { in: cids } },
-      data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid" },
+      data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid", candidateRoundId: null },
     }),
     // A voice recording identifies the person, so it goes with the name.
     prisma.aIInterviewAudio.deleteMany({ where: { session: { candidateId: { in: cids } } } }),
     prisma.candidate.deleteMany({ where: { id: { in: cids }, workspaceId: actor.workspaceId } }),
   ]);
+  // No email: the address is gone with the person. The calendar event and call room go too.
+  for (const id of upcomingIds) {
+    await cancelInterviewEvent(id).catch((err) => console.error("[erase] calendar cancel failed", err));
+    closeVideoRoomAfter(id);
+  }
   await markInterviewRecordingsDeleted(liveIds).catch((err) => console.error("[recordings] could not mark videos deleted", err));
   await deleteRecordingKeys(recordingKeys);
   // No names in the audit row: the point of erasing is that they are gone.
@@ -859,7 +909,7 @@ export async function runBulkAction(
   actor: CandidateActor,
   ids: string[],
   op: BulkAction,
-): Promise<{ changed: number }> {
+): Promise<{ changed: number; interviewsCancelled?: number }> {
   if (!(await canMember(actor.member, BULK_PERMISSION[op.action]))) {
     throw new CandidateError(403, "You do not have permission to do that.");
   }

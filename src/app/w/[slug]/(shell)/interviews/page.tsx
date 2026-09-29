@@ -9,6 +9,9 @@ import { normalizeStage } from "@/lib/crm/stages";
 import { candidateLine, groupOf, interviewOutcome } from "@/lib/interview/list-outcome";
 import { loadCandidateRounds, loadNextRoundDue } from "@/lib/interview/rounds-server";
 import { roundAfter, roundStateLabel, segmentOf } from "@/lib/interview/rounds";
+import { canMember } from "@/lib/permissions";
+import { ERASED_NAME } from "@/lib/crm/candidates-server";
+import { canChangeInterview, mayChangeInterview } from "@/lib/interview/reschedule";
 import InterviewsList, { type InterviewRow, type PersonRounds } from "./InterviewsList";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ view?: string; q?: string }> };
@@ -19,9 +22,12 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const sp = await searchParams;
   const { workspace, userId } = await loadTakeHomeAccess(slug, `/w/${slug}/interviews`);
+  const member = await prisma.workspaceMember.findFirst({ where: { workspaceId: workspace.id, userId }, select: { userId: true, role: true, permissions: true } });
+  const managesInterviews = member ? await canMember(member, "interview:manage") : false;
   const sessions = await prisma.interviewSession.findMany({
     // Take-homes are InterviewSession rows too; they live under Take home.
-    where: { workspaceId: workspace.id, type: { not: "take-home" } },
+    // Interviews of erased candidates stay for reporting but leave the list.
+    where: { workspaceId: workspace.id, type: { not: "take-home" }, NOT: { candidateId: null, candidateName: ERASED_NAME } },
     orderBy: { createdAt: "desc" },
     take: 500,
     select: {
@@ -145,6 +151,7 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
       questions,
       questionsOwner: s.questionsOwnerId ? (nameOf.get(s.questionsOwnerId) ?? "A teammate") : null,
       mineToPick: s.questionsOwnerId === userId,
+      canChange: canChangeInterview(s) && mayChangeInterview(s, userId, managesInterviews),
     };
   });
 

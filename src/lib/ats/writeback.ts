@@ -10,6 +10,8 @@
 import { prisma } from "@/lib/prisma";
 import { loadCandidateResults } from "@/lib/crm/results-server";
 import { appOrigin } from "@/lib/interview/links";
+import { loadRoundsSummary } from "@/lib/interview/rounds-server";
+import { atsRoundsText } from "@/lib/interview/rounds-view";
 import { buildTestStatus, callbackHostAllowed, type TestStatus } from "./greenhouse";
 import { parseAtsSettings } from "./settings";
 import { logSyncEvent } from "./sync-log";
@@ -56,6 +58,9 @@ export async function loadRequestState(requestId: string, workspaceId?: string):
     // A session we sent but can no longer find (deleted) counts as closed.
     result = r ? { state: r.state, score: r.score } : { state: "expired", score: null };
   }
+  // Round results ride along once a recruiter has decided, like the rest of the result.
+  const decided = req.candidate.stage === "PASSED" || req.candidate.stage === "REJECTED";
+  const summary = decided ? await loadRoundsSummary(req.workspaceId, req.workspace.slug, req.candidateId).catch(() => null) : null;
   const status = buildTestStatus({
     requestStatus: req.status,
     requestCreatedAt: req.createdAt,
@@ -65,6 +70,7 @@ export async function loadRequestState(requestId: string, workspaceId?: string):
     profileUrl: await candidateProfileUrl(req.workspace.slug, req.candidateId),
     includeScore: settings.sendScore,
     screeningLabel: req.jobName ? `${screeningNoun(req.screeningKind)} for ${req.jobName}` : screeningNoun(req.screeningKind),
+    rounds: summary ? atsRoundsText(summary, { includeScore: settings.sendScore }) : null,
   });
   return {
     status,

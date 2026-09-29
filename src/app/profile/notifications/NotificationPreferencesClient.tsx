@@ -60,6 +60,12 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
     Icon: Award,
     group: "events",
   },
+  ROUND_NEEDS_ACTION: {
+    label: "Round needs you",
+    body: "A candidate's round result waits for your next step, or their next round is not sent or booked yet.",
+    Icon: Clock,
+    group: "events",
+  },
   PROMPT_UPVOTED: {
     label: "Prompt upvoted",
     body: "Someone in the community upvoted your shared prompt attempt.",

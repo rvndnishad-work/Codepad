@@ -1473,6 +1473,11 @@ model CandidateRound {
   nextStep     String?
   decidedById  String?
   decidedAt    DateTime?
+  /// The last nudge sent for this round: "next_step" (a result waits for
+  /// move on or stop) or "next_round" (moved on, not sent or booked yet).
+  /// Keeps the hourly nudge to once per round and reason.
+  nudgedFor    String?
+  nudgedAt     DateTime?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
   candidate    Candidate           @relation(fields: [candidateId], references: [id], onDelete: Cascade)

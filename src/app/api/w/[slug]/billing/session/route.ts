@@ -1,3 +1,5 @@
+import { appOrigin } from "@/lib/interview/links";
+import { cleanOrigin } from "@/lib/site-url";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStripe } from "@/lib/stripe";
@@ -35,7 +37,7 @@ export async function POST(
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = cleanOrigin(req.headers.get("origin")) ?? (await appOrigin());
 
     const body = await req.json().catch(() => ({}));
     const plan = (body.plan || "GROWTH") as "STARTER" | "GROWTH";

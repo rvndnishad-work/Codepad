@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { hasAccess, getPaywallOptions } from "@/lib/marketplace/access";
@@ -354,8 +355,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
     jsInfo = { testCount: Array.isArray(cases) ? cases.length : 0 };
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = siteOrigin();
   const challengeJsonLd = {
     "@context": "https://schema.org",
     "@type": "LearningResource",

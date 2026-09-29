@@ -1,3 +1,4 @@
+import { configuredOrigin, originFromHeaders, siteOrigin } from "@/lib/site-url";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { assertCronAuth } from "@/lib/cron-auth";
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   const gate = assertCronAuth(req);
   if (!gate.ok) return gate.response;
 
-  const origin = process.env.NEXTAUTH_URL ?? new URL(req.url).origin;
+  const origin = configuredOrigin() ?? originFromHeaders(req.headers) ?? siteOrigin();
   const now = Date.now();
 
   // Candidates in flight: started, never finished, still ACTIVE.

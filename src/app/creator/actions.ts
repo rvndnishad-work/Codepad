@@ -1,5 +1,6 @@
 "use server";
 
+import { appOrigin } from "@/lib/interview/links";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
@@ -42,11 +43,7 @@ async function requireMySpace(spaceId: string, userId: string) {
 }
 
 async function origin() {
-  const h = await headers();
-  return (
-    h.get("origin") ??
-    (h.get("host") ? `https://${h.get("host")}` : "http://localhost:3000")
-  );
+  return (await headers()).get("origin") ?? (await appOrigin());
 }
 
 // ── Stripe onboarding ────────────────────────────────────────────────────────

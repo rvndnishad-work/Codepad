@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -44,9 +45,7 @@ const SITE_DESCRIPTION =
   "Run and save JS, TS, React, Vue, Angular, Svelte, and Solid snippets. Isolated sandbox execution in your browser — no install needed.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-  ),
+  metadataBase: new URL(siteOrigin()),
   title: {
     default: "Interviewpad — JavaScript Playground",
     template: "%s — Interviewpad",

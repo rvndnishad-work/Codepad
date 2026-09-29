@@ -7,6 +7,7 @@
  * address on the EmailSuppression list with reason "unsubscribe", which
  * sendEmail already checks before every send.
  */
+import { siteOrigin } from "@/lib/site-url";
 import { createHmac, timingSafeEqual } from "crypto";
 
 function baseSecret(explicit?: string): string | null {
@@ -35,7 +36,7 @@ export function verifyUnsubscribe(email: string, sig: string, secret?: string): 
 }
 
 function appBase(): string {
-  return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
+  return siteOrigin();
 }
 
 /** The link for the email footer, or null when links cannot be signed. */

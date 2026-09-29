@@ -2043,7 +2043,7 @@ function RoundSurface({
                     Browser Preview
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-muted/40 mr-1 hidden sm:inline">localhost:3000</span>
+                    <span className="text-[10px] font-mono text-muted/40 mr-1 hidden sm:inline">preview</span>
                     <button
                       type="button"
                       onClick={handleRefreshPreview}
@@ -2100,7 +2100,7 @@ function RoundSurface({
                       Browser Preview
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono text-muted/40 mr-1 hidden sm:inline">localhost:3000</span>
+                      <span className="text-[10px] font-mono text-muted/40 mr-1 hidden sm:inline">preview</span>
                       <button
                         type="button"
                         onClick={handleRefreshPreview}

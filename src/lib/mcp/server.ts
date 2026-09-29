@@ -1,3 +1,4 @@
+import { siteOrigin } from "@/lib/site-url";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
@@ -486,7 +487,7 @@ export function buildMcpServer(auth: AuthedKey): McpServer {
           // Best-effort email (matches the UI behavior). Origin is derived
           // from NEXTAUTH_URL because this code runs inside a tool handler
           // where the original Request isn't in scope.
-          const origin = process.env.NEXTAUTH_URL || "http://localhost:3000";
+          const origin = siteOrigin();
           const inviteUrl = `${origin}/ai-interview/${session.inviteToken}`;
           if (args.send_email !== false) {
             void sendInviteEmail({

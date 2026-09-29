@@ -44,14 +44,21 @@ export default function SharedSandpack({
   fixed,
   files,
   dark = true,
+  autorun = true,
+  entry,
   children,
 }: {
   template: string;
   dependencies?: Record<string, string>;
   /** Files nobody edits (index.html, package.json). */
   fixed: SandpackFiles;
-  /** Current shared text of the edited files. */
-  files: Record<string, string>;
+  /** Current shared text of the edited files. Omit when another bridge
+   * (SharedFilesBridge) keeps the files in step. */
+  files?: Record<string, string>;
+  /** False for server stacks: the files are only edited here, never bundled. */
+  autorun?: boolean;
+  /** File the editor opens with. */
+  entry?: string;
   dark?: boolean;
   /** Only to force re-renders in tests. */
   tick?: number;
@@ -59,26 +66,28 @@ export default function SharedSandpack({
 }) {
   // Seeded once; later edits go through FilesSync.
   const initial = useRef<SandpackFiles | null>(null);
-  if (!initial.current) initial.current = { ...fixed, ...files };
+  if (!initial.current) initial.current = { ...fixed, ...(files ?? {}) };
   const depsKey = JSON.stringify(dependencies ?? null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const customSetup = useMemo(() => (dependencies ? { dependencies } : undefined), [depsKey]);
   const options = useMemo(
     () => ({
       ...(supportsV2Bundler(template) ? { bundlerURL: V2_BUNDLER_URL } : {}),
-      autorun: true,
-      autoReload: true,
+      autorun,
+      autoReload: autorun,
       initMode: "immediate" as const,
       // "delayed" is a debounce and only fired once typing paused.
       recompileMode: "immediate" as const,
       externalResources: [HIDE_OVERLAYS],
+      ...(entry ? { activeFile: entry, visibleFiles: [entry] } : {}),
     }),
-    [template],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [template, autorun],
   );
   return (
     <ShimmedSandpackProvider template={template as SandpackPredefinedTemplate} theme={dark ? "dark" : "light"} files={initial.current} customSetup={customSetup} options={options}>
-      <FilesSync files={files} />
-      <LivePreviewBridge enabled />
+      {files && <FilesSync files={files} />}
+      <LivePreviewBridge enabled={autorun} />
       {children}
     </ShimmedSandpackProvider>
   );

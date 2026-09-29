@@ -15,6 +15,8 @@
 import { prisma } from "@/lib/prisma";
 import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDeleted } from "@/lib/recording/objects-server";
 import { auth } from "@/lib/auth";
+import { cancelInterviewEvent } from "@/lib/calendar/server";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { canMember, type Permission } from "@/lib/permissions";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import {
@@ -674,24 +676,34 @@ export async function eraseCandidates(actor: CandidateActor, ids: string[]) {
   // Recordings identify the person too: collect their bucket objects before the rows go.
   const [aiSessions, liveSessions] = await Promise.all([
     prisma.aIInterviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
-    prisma.interviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true } }),
+    prisma.interviewSession.findMany({ where: { candidateId: { in: cids } }, select: { id: true, type: true, status: true, startedAt: true } }),
   ]);
   const liveIds = liveSessions.map((s) => s.id);
+  // Their interviews still to come are called off: nobody is left to join them.
+  const upcomingIds = liveSessions.filter((s) => s.type !== "take-home" && s.status === "scheduled" && !s.startedAt).map((s) => s.id);
   const recordingKeys = await collectRecordingKeys({ aiSessionIds: aiSessions.map((s) => s.id), interviewSessionIds: liveIds });
   await prisma.$transaction([
     prisma.takeHomeAssignment.updateMany({
       where: { candidateId: { in: cids } },
       data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid" },
     }),
-    prisma.interviewSession.updateMany({ where: { candidateId: { in: cids } }, data: { candidateName: ERASED_NAME } }),
+    // The round links are cleared here, not left to the cascade: Postgres re-checks
+    // a row this transaction already changed, and the rounds are gone by then.
+    prisma.interviewSession.updateMany({ where: { candidateId: { in: cids } }, data: { candidateName: ERASED_NAME, candidateRoundId: null } }),
+    prisma.interviewSession.updateMany({ where: { id: { in: upcomingIds }, status: "scheduled" }, data: { status: "cancelled", cancelledAt: new Date() } }),
     prisma.aIInterviewSession.updateMany({
       where: { candidateId: { in: cids } },
-      data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid" },
+      data: { candidateName: ERASED_NAME, candidateEmail: "erased@invalid", candidateRoundId: null },
     }),
     // A voice recording identifies the person, so it goes with the name.
     prisma.aIInterviewAudio.deleteMany({ where: { session: { candidateId: { in: cids } } } }),
     prisma.candidate.deleteMany({ where: { id: { in: cids }, workspaceId: actor.workspaceId } }),
   ]);
+  // No email: the address is gone with the person. The calendar event and call room go too.
+  for (const id of upcomingIds) {
+    await cancelInterviewEvent(id).catch((err) => console.error("[erase] calendar cancel failed", err));
+    closeVideoRoomAfter(id);
+  }
   await markInterviewRecordingsDeleted(liveIds).catch((err) => console.error("[recordings] could not mark videos deleted", err));
   await deleteRecordingKeys(recordingKeys);
   // No names in the audit row: the point of erasing is that they are gone.

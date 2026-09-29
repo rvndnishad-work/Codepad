@@ -328,6 +328,7 @@ const LABELS: Record<string, string> = {
   TRIAL_ENDED: "The free trial ended",
   INTERVIEW_INVITE_RESENT: "Resent the interview invite to",
   INTERVIEW_CANCELLED: "Cancelled the interview with",
+  INTERVIEW_RESCHEDULED: "Moved the interview with",
   RECORDING_STARTED: "Started recording the interview with",
   RECORDING_STOPPED: "Stopped recording the interview with",
   RECORDING_CONSENT_REQUESTED: "Asked to record the interview with",

@@ -25,6 +25,8 @@ import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { recordingConfigured } from "@/lib/recording/live-server";
 import { loadCandidateRounds } from "@/lib/interview/rounds-server";
 import { roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
+import { cancelUpcomingInterview, resendInterviewInvite } from "@/lib/interview/invite-server";
+import { canChangeInterview, mayChangeInterview, newTimeProblem } from "@/lib/interview/reschedule";
 import {
   offersGuide,
   formatOf,
@@ -492,6 +494,119 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
       targetId: s.id,
       meta: { title: s.title, candidateName: s.candidateName },
     });
+    revalidatePath(`/w/${slug}/interviews`, "layout");
+    if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Loads an interview that can still be moved or cancelled, and checks the caller may. */
+async function changeableInterview(a: Awaited<ReturnType<typeof loadActor>>, id: string) {
+  const s = await prisma.interviewSession.findFirst({
+    where: { id: String(id).slice(0, 40), workspaceId: a.workspace.id, type: { not: "take-home" } },
+    select: {
+      id: true,
+      userId: true,
+      createdById: true,
+      title: true,
+      format: true,
+      totalSec: true,
+      interviewerBrief: true,
+      status: true,
+      startedAt: true,
+      finishedAt: true,
+      scheduledAt: true,
+      candidateName: true,
+      candidateId: true,
+      user: { select: { name: true, email: true } },
+      guests: { select: { email: true } },
+    },
+  });
+  if (!s) throw new ActionError("This interview no longer exists.");
+  const member = a.workspace.members.find((m) => m.userId === a.userId)!;
+  if (!mayChangeInterview(s, a.userId, await canMember(member, "interview:manage"))) {
+    throw new ActionError("Only the host, whoever set it up, or someone who manages interviews can change it.");
+  }
+  if (!canChangeInterview(s)) throw new ActionError("This interview has started, finished or been cancelled, so it can no longer be changed.");
+  return s;
+}
+
+/**
+ * Moves an interview that has not started to a new time. The calendar event
+ * follows; with `notify`, the candidate and any emailed interviewers get the
+ * new time and a fresh link (the old link stops working after the old time).
+ */
+export async function rescheduleInterviewAction(
+  slug: string,
+  id: string,
+  input: { at: string; notify: boolean },
+): Promise<Result<{ emailed: boolean; note: string | null }>> {
+  try {
+    const a = await loadActor(slug);
+    const s = await changeableInterview(a, id);
+    const at = new Date(String(input?.at ?? ""));
+    const problem = newTimeProblem(at);
+    if (problem) throw new ActionError(problem);
+    const moved = await prisma.interviewSession.updateMany({
+      where: { id: s.id, status: "scheduled", startedAt: null },
+      data: { scheduledAt: at },
+    });
+    if (!moved.count) throw new ActionError("This interview has just started or been cancelled.");
+    await syncInterviewEvent(s.id);
+
+    let emailed = false;
+    let note: string | null = null;
+    if (input?.notify) {
+      const res = await resendInterviewInvite({ workspaceId: a.workspace.id, sessionId: s.id, actor: { userId: a.userId, email: a.email } });
+      if (res.ok && res.sent) emailed = true;
+      else note = res.ok ? "The email could not be sent. Copy the new link for the candidate instead." : res.error;
+      if (s.guests.length) {
+        await inviteGuests({
+          workspaceId: a.workspace.id,
+          emails: s.guests.map((g) => g.email),
+          rooms: [{ id: s.id, candidateName: s.candidateName, scheduledAt: at }],
+          title: s.title,
+          format: s.format,
+          minutes: Math.round(s.totalSec / 60),
+          hostName: s.user.name || s.user.email || "the host",
+          inviterName: a.name,
+          brief: s.interviewerBrief,
+          origin: await appOrigin(),
+        });
+      }
+    }
+    void writeWorkspaceAuditEntry({
+      workspaceId: a.workspace.id,
+      actorUserId: a.userId,
+      actorEmail: a.email,
+      action: WORKSPACE_AUDIT_ACTIONS.INTERVIEW_RESCHEDULED,
+      targetType: "interviewSession",
+      targetId: s.id,
+      meta: { candidateName: s.candidateName, from: s.scheduledAt?.toISOString() ?? null, to: at.toISOString(), notified: emailed },
+    });
+    revalidatePath(`/w/${slug}/interviews`, "layout");
+    if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
+    return { ok: true, emailed, note };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Cancels an interview that has not started. The report and notes stay. */
+export async function cancelInterviewAction(slug: string, id: string, input: { notify: boolean }): Promise<Result> {
+  try {
+    const a = await loadActor(slug);
+    const s = await changeableInterview(a, id);
+    const done = await cancelUpcomingInterview({
+      workspaceId: a.workspace.id,
+      sessionId: s.id,
+      actor: { userId: a.userId, email: a.email },
+      reason: "Cancelled from Interviews",
+      notifyCandidate: !!input?.notify,
+    });
+    if (!done) throw new ActionError("This interview has just started or been cancelled.");
     revalidatePath(`/w/${slug}/interviews`, "layout");
     if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
     return { ok: true };

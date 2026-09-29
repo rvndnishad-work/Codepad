@@ -589,7 +589,7 @@ export default function CandidateProfileClient({
       {confirm === "erase" && (
         <ConfirmDialog
           title={`Erase ${row.name} for good?`}
-          body="This removes them and their notes permanently and replaces their name on past assessments with Erased candidate. This cannot be undone."
+          body="This removes them and their notes permanently and replaces their name on past assessments with Erased candidate. Interviews still to come are cancelled. This cannot be undone."
           confirmLabel="Erase"
           danger
           requireText="erase"

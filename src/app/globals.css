@@ -15,7 +15,7 @@
        The ground is a step lighter than the reference and the navy a step
        deeper, so type stands off the page (the first pass read flat).
        Contrast (WCAG, text on bg / surface / panel): fg 15.3 / 17.2 / 13.9,
-       muted 11.1 / 12.5 / 10.1, subtle 7.6 / 8.6 / 6.9, accent 7.0 / 7.9 / 6.3,
+       muted 11.1 / 12.5 / 10.1, subtle 7.6 / 8.6 / 6.9, accent (gold text) 5.5 / 6.3 / 5.0,
        accent-2 8.0 / 9.0 / 7.2, status colours all >= 6.8 on bg.
        Only routes listed in src/lib/theme-routes.ts render in light today;
        every other route is still forced dark until it is revamped. */
@@ -67,15 +67,22 @@
       0 1px 2px rgba(39, 49, 79, 0.06),
       0 14px 34px -14px rgba(39, 49, 79, 0.28);
 
-    /* ACCENT = the developer signal: the reference sky blue. The fill step
-       (#4ba3c7) is too light for text, so text uses this deeper step. */
-    --accent: #155577;        /* 7.0:1 on bg, 7.9:1 on surface */
-    --accent-rgb: 21, 85, 119;
-    --c-accent: 21 85 119;
-    --accent-soft: #4ba3c7;   /* the button blue, fills and decoration */
-    --c-accent-soft: 75 163 199;
-    --accent-glow: rgba(75, 163, 199, 0.18);
-    --accent-ink: #ffffff;    /* 8.1:1 on --accent */
+    /* ACCENT = the developer signal, yellow in both themes. On a light
+       ground yellow only works as a FILL with navy on top (buttons, pills,
+       highlights), so the colour is split: --accent-fill paints surfaces
+       (Tailwind bg-/fill-/border-/ring-accent resolve to it) and --accent
+       is the text step, a deep gold that holds contrast on every ground.
+       The fill is a warm golden yellow rather than the dark theme #FFE600,
+       which reads as neon on a pale page. */
+    --accent: #7d5800;        /* gold text: 5.5:1 on bg, 6.3:1 on surface */
+    --accent-rgb: 125, 88, 0;
+    --c-accent: 125 88 0;
+    --accent-fill: #f5c518;   /* navy on it: 10.9:1 */
+    --c-accent-fill: 245 197 24;
+    --accent-soft: #f9dc6e;   /* decoration only */
+    --c-accent-soft: 249 220 110;
+    --accent-glow: rgba(245, 197, 24, 0.22);
+    --accent-ink: #0f1730;    /* navy on the yellow fill */
 
     /* Secondary — hiring. The slate indigo of the reference tiles. */
     --accent-2: #3a4573;      /* 8.0:1 on bg */
@@ -177,6 +184,8 @@
     --accent: #FFE600;        /* 14.4:1 on --bg */
     --accent-rgb: 255, 230, 0;
     --c-accent: 255 230 0;
+    --accent-fill: #FFE600;   /* on dark the text and fill steps are one */
+    --c-accent-fill: 255 230 0;
     --accent-soft: #FFD700;
     --c-accent-soft: 255 215 0;
     --accent-glow: rgba(255, 230, 0, 0.15);

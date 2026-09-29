@@ -154,7 +154,7 @@ export default function HomeWowHero({
 
         <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
           <span className="block overflow-hidden pb-1"><span className="wow-hero-line block">Don&apos;t learn</span></span>
-          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text block pb-2">to interview.</span></span>
+          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text mx-auto block pb-2">to interview.</span></span>
           <span className="block overflow-hidden pb-2"><span className="wow-hero-line wow-text-stroke block">Live inside it.</span></span>
         </h1>
 

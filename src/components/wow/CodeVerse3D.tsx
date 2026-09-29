@@ -41,14 +41,15 @@ const PALETTES = {
 } as const;
 
 /** Light theme ("Clay"): the same scene in the reference palette, navy
- *  wireframe over a pale shell, sky/pink/slate cubes. No stars: white
+ *  wireframe over a pale shell, the golden yellow of the light accent
+ *  with sky/pink/slate cubes. No stars: white
  *  points vanish on the light page. */
 type Palette = { core: string; rings: readonly [string, string]; cubes: readonly string[]; dust: string };
 const LIGHT_PALETTES: Record<keyof typeof PALETTES, Palette> = {
   arcade: {
     core: "#27314f",
-    rings: ["#4ba3c7", "#c98bbd"],
-    cubes: ["#4ba3c7", "#eac7e5", "#6679a2", "#83c0d4", "#434f7c"],
+    rings: ["#f5c518", "#4ba3c7"],
+    cubes: ["#f5c518", "#4ba3c7", "#eac7e5", "#6679a2", "#434f7c"],
     dust: "#6679a2",
   },
   boss: {

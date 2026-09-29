@@ -31,6 +31,7 @@ import {
 import { passCheck } from "@/lib/crm/results";
 import { emitWorkspaceEvent } from "@/lib/events";
 import { loadCandidateResults } from "@/lib/crm/results-server";
+import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
 
 /** The legacy `status` column mirrors the decision. Flags such as
  *  future_hire survive while the candidate is still being screened. */
@@ -221,6 +222,7 @@ export async function createCandidate(
           data: { candidateId: existing.id, authorId: actor.actorUserId, body: input.notes.trim() },
         });
       }
+      if (input.batchId) await syncCandidateRounds(actor.workspaceId, [existing.id]);
       if (opts.audit !== false) {
         void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_UPDATED, "candidate", existing.id, {
           candidateName: name,
@@ -253,6 +255,8 @@ export async function createCandidate(
       data: { candidateId: created.id, authorId: actor.actorUserId, body: input.notes.trim() },
     });
   }
+  // Copy the rounds of their batch plan, or the workspace default.
+  await syncCandidateRounds(actor.workspaceId, [created.id]);
   if (opts.audit !== false) {
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_CREATED, "candidate", created.id, {
       candidateName: name,
@@ -426,6 +430,7 @@ export async function updateCandidate(actor: CandidateActor, id: string, patch: 
     });
   }
   if (fields.includes("batch")) {
+    await syncCandidateRounds(actor.workspaceId, [id]);
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_BATCH_CHANGED, "candidate", id, {
       candidateName: updated.name,
       fromBatchId: current.batchId,
@@ -559,6 +564,7 @@ export async function setCandidatesBatch(actor: CandidateActor, ids: string[], b
   const changing = rows.filter((r) => r.batchId !== batchId);
   if (!changing.length) return { changed: 0 };
   await prisma.candidate.updateMany({ where: { id: { in: changing.map((c) => c.id) } }, data: { batchId } });
+  await syncCandidateRounds(actor.workspaceId, changing.map((c) => c.id));
   for (const c of changing) {
     void audit(actor, WORKSPACE_AUDIT_ACTIONS.CANDIDATE_BATCH_CHANGED, "candidate", c.id, {
       candidateName: c.name,

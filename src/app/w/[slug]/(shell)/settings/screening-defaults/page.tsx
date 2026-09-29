@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { getSettingsPageContext } from "@/lib/workspace/settings-server";
+import { canMember } from "@/lib/permissions";
+import { listPlans } from "@/lib/interview/plans-server";
 import ScreeningDefaults from "./ScreeningDefaults";
+import InterviewPlans from "./InterviewPlans";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -13,9 +16,15 @@ export async function generateMetadata({ params }: Props) {
 /** Settings > Screening defaults: what new take-homes, AI screenings and interviews start with. */
 export default async function ScreeningDefaultsSettingsPage({ params }: Props) {
   const { slug } = await params;
-  const { settings: s, canEdit } = await getSettingsPageContext(slug);
+  const { settings: s, canEdit, workspace, me } = await getSettingsPageContext(slug);
+  const [plans, member] = await Promise.all([
+    listPlans(workspace.id),
+    prisma.workspaceMember.findFirst({ where: { workspaceId: workspace.id, userId: me.userId }, select: { role: true, permissions: true } }),
+  ]);
+  const canWrite = member ? await canMember(member, "candidate:write") : false;
   return (
     <ScreeningDefaults
+      plans={<InterviewPlans slug={slug} plans={plans} hiringType={s.hiringType} canEdit={canEdit} canWrite={canWrite} />}
       slug={slug}
       canEdit={canEdit}
       initial={{

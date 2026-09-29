@@ -5,7 +5,9 @@ import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/ros
 import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/activity";
 import { loadCandidateAtsCard } from "@/lib/ats/connection-server";
 import { canMember } from "@/lib/permissions";
+import { attemptFromResult, normalizeHiringType, normalizeRoleType, planProgress, type Attempt, type NextStep, type PlanRoundKind } from "@/lib/interview/rounds";
 import CandidateProfileClient from "./CandidateProfileClient";
+import type { ProfileRound } from "./RoundsCard";
 
 type Props = { params: Promise<{ slug: string; id: string }> };
 
@@ -42,7 +44,31 @@ export default async function CandidateProfilePage({ params }: Props) {
       take: 300,
       select: { id: true, action: true, meta: true, createdAt: true, actorEmail: true, actorUserId: true },
     }),
-    prisma.candidate.findFirst({ where: { id, workspaceId: actor.workspaceId }, select: { rejectReasonNote: true, createdAt: true } }),
+    prisma.candidate.findFirst({
+      where: { id, workspaceId: actor.workspaceId },
+      select: {
+        rejectReasonNote: true,
+        createdAt: true,
+        plan: { select: { name: true, roleType: true } },
+        workspace: { select: { hiringType: true } },
+        rounds: {
+          orderBy: { order: "asc" },
+          select: {
+            id: true,
+            order: true,
+            kind: true,
+            name: true,
+            format: true,
+            required: true,
+            skipped: true,
+            nextStep: true,
+            planRoundId: true,
+            sessions: { select: { id: true, status: true, verdict: true } },
+            aiSessions: { select: { id: true } },
+          },
+        },
+      },
+    }),
     loadCandidateAtsCard(actor.workspaceId, id).catch((err) => {
       console.error("[candidate profile] ATS card failed:", err);
       return null;
@@ -62,6 +88,49 @@ export default async function CandidateProfilePage({ params }: Props) {
         select: { id: true, action: true, meta: true, createdAt: true, actorEmail: true, actorUserId: true },
       })
     : [];
+
+  // The candidate's rounds, each with the results of the sittings linked to it.
+  const resultById = new Map(row.results.map((r) => [r.id, r]));
+  const roundInputs = candidate.rounds.map((r) => {
+    const attempts: Attempt[] = [];
+    for (const s of r.sessions) {
+      const res = resultById.get(s.id);
+      if (res) attempts.push(attemptFromResult(res, { status: s.status, verdict: s.verdict }));
+    }
+    for (const s of r.aiSessions) {
+      const res = resultById.get(s.id);
+      if (res) attempts.push(attemptFromResult(res));
+    }
+    return {
+      id: r.id,
+      order: r.order,
+      kind: r.kind as PlanRoundKind,
+      name: r.name,
+      required: r.required,
+      skipped: r.skipped,
+      nextStep: (r.nextStep as NextStep | null) ?? null,
+      attempts,
+    };
+  });
+  const progress = planProgress(roundInputs, row.stage);
+  const byRound = new Map(candidate.rounds.map((r) => [r.id, r]));
+  const rounds: ProfileRound[] = progress.rounds.map((p) => {
+    const r = byRound.get(p.id)!;
+    return {
+      id: p.id,
+      kind: p.kind,
+      name: p.name,
+      format: r.format,
+      required: p.required,
+      skipped: p.skipped,
+      manual: !r.planRoundId,
+      held: r.sessions.length + r.aiSessions.length > 0 || !!r.nextStep,
+      state: p.state,
+      number: p.number,
+    };
+  });
+  const hiring = normalizeHiringType(candidate.workspace.hiringType);
+  const roleType = candidate.plan ? normalizeRoleType(candidate.plan.roleType) : hiring === "non_technical" ? "non_technical" : "technical";
 
   const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
   // Who made the current decision: the newest move into it. Older rows use
@@ -132,6 +201,9 @@ export default async function CandidateProfilePage({ params }: Props) {
       perms={perms}
       ats={ats}
       canSendAtsInvite={canSendAi || canSendTakeHome}
+      rounds={rounds}
+      planName={candidate.plan?.name ?? null}
+      roleType={roleType}
     />
   );
 }

@@ -3,7 +3,8 @@
 /**
  * Settings > Screening defaults. Starting values for new take-homes, AI
  * screenings and interviews. Each composer starts from these and can still
- * change them per send; things already sent keep their own values.
+ * change them per send; things already sent keep their own values. The
+ * interview plans card (InterviewPlans) saves on its own, not via the bar.
  */
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
@@ -43,7 +44,7 @@ const fmtMark = (n: number) => (Number.isInteger(n * 2) ? n.toFixed(1) : String(
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 const hours = (n: number) => `${n} ${n === 1 ? "hour" : "hours"}`;
 
-export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: string; canEdit: boolean; initial: Values }) {
+export default function ScreeningDefaults({ slug, canEdit, initial, plans }: { slug: string; canEdit: boolean; initial: Values; plans?: React.ReactNode }) {
   const form = useSettingsForm<Values>({ slug, group: "screening-defaults", initial, canEdit });
   const { values: v, set, errors, disabled } = form;
 
@@ -56,6 +57,8 @@ export default function ScreeningDefaults({ slug, canEdit, initial }: { slug: st
           ones already sent keep their own.
         </p>
       </div>
+
+      {plans}
 
       <SettingsCard
         title="Pass marks"

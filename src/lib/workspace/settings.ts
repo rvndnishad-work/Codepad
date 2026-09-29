@@ -21,6 +21,7 @@ import {
 import { DEFAULT_LAST_CALL_HOURS, DEFAULT_START_REMINDER_HOURS, type ReminderPlan } from "@/lib/take-home/reminders";
 import { DEFAULT_EXPIRY_DAYS, DEFAULT_REMINDER_DAYS, EXPIRY_CHOICES } from "@/lib/ai-interview/console";
 import { INTERVIEWER_LANGUAGES } from "@/lib/ai-interview/languages";
+import { HIRING_TYPE_LABELS, HIRING_TYPES, type HiringType } from "@/lib/interview/rounds";
 
 const DAY_MS = 86_400_000;
 
@@ -107,6 +108,8 @@ export type WorkspaceSettings = {
   logoUrl: string | null;
   timezone: string;
   dateFormat: DateFormat;
+  /** Which roles the workspace screens for; filters interview plan templates. */
+  hiringType: HiringType;
   // Candidate experience
   brandColor: string | null;
   senderName: string | null;
@@ -150,6 +153,7 @@ export const SETTINGS_DEFAULTS: Omit<WorkspaceSettings, "name" | "slug"> = {
   logoUrl: null,
   timezone: "UTC",
   dateFormat: "DMY",
+  hiringType: "technical",
   brandColor: null,
   senderName: null,
   replyToEmail: null,
@@ -359,6 +363,12 @@ export const SETTINGS_FIELDS = {
     label: "Date format",
     parse: (v) => (DATE_FORMATS.some((f) => f.id === v) ? ok(v) : bad("Pick a date format.")),
     show: (v) => DATE_FORMATS.find((f) => f.id === v)?.label ?? String(v),
+  },
+  hiringType: {
+    group: "general",
+    label: "Hiring for",
+    parse: (v) => ((HIRING_TYPES as unknown[]).includes(v) ? ok(v) : bad("Pick technical, non-technical or both.")),
+    show: (v) => HIRING_TYPE_LABELS[v as HiringType] ?? String(v),
   },
 
   brandColor: {

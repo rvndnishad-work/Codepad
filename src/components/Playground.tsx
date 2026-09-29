@@ -44,6 +44,7 @@ import PlaygroundToolbar from "./PlaygroundToolbar";
 import { FilesBridge } from "./bridges/FilesBridge";
 import { SandpackPreviewWithLoader } from "./PreviewLoadingOverlay";
 import { RunBridge } from "./bridges/RunBridge";
+import { LivePreviewBridge } from "./bridges/LivePreviewBridge";
 import { ConsoleEntryBridge } from "./bridges/ConsoleEntryBridge";
 import { ConsoleClearBridge } from "./bridges/ConsoleClearBridge";
 import { FormatBridge } from "./bridges/FormatBridge";
@@ -575,8 +576,11 @@ function PlaygroundEditor({
                 autorun: isBackend ? false : prefs.autoRun,
                 autoReload: isBackend ? false : prefs.autoRun,
                 initMode: "immediate" as const,
-                recompileMode: isBackend ? "immediate" : "delayed",
-                recompileDelay: isBackend ? 0 : 300,
+                // Every edit goes straight to the bundler so the preview
+                // follows the typing. A 300 ms "delayed" mode is a debounce:
+                // it only fired once typing paused. LivePreviewBridge
+                // re-sends anything dropped while a compile was busy.
+                recompileMode: "immediate",
                 visibleFiles: initialVisibleFiles,
                 activeFile: initialVisibleFiles[0],
                 externalResources: [
@@ -735,6 +739,7 @@ function PlaygroundEditor({
                 onChange={onFilesChange}
               />
               <ErrorBridge onError={setBundlerError} />
+              <LivePreviewBridge enabled={!isBackend} />
               <MissingDepBridge enabled={editable && !isBackend} />
               <RunBridge
                 runRef={runner.runRef}

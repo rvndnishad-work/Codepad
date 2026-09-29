@@ -45,7 +45,7 @@ import { TOOL_ICON, TOOL_TONE } from "@/app/interview/[id]/tools/icons";
 import type { RoomData } from "@/lib/interview/room-server";
 import { useRelayProvider, useRelaySnapshot } from "@/app/interview/[id]/tools/useToolsRoom";
 import { meetingProvider } from "@/lib/interview/meeting";
-import { Brand, ConnectionPill, DotGrid, MeetingButton, PresenceDot, RoleAvatar, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
+import { Brand, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, countdown, useNow, useRoster, whenLabel, type Person } from "./parts";
 import { readableTextOn } from "@/lib/workspace/candidate-experience";
 import { CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 import { giveInterviewConsentAction } from "./actions";
@@ -57,33 +57,18 @@ type CheckState = "checking" | "ok" | "warn" | "fail";
 type CheckRow = { id: string; label: string; state: CheckState; detail: string };
 
 /**
- * One colour per kind of thing, so each panel reads at a glance. Written out
- * in full so Tailwind sees every class; `glow` is the channel var for the
- * soft wash at the top of a card.
+ * One colour per kind of thing, used for icon tiles and small labels only;
+ * cards stay neutral. Written out in full so Tailwind sees every class.
  */
 const TONE = {
-  indigo: { tile: "bg-secondary/15 text-secondary ring-secondary/30", text: "text-secondary", ring: "ring-secondary/25", soft: "bg-secondary/10", glow: "--c-accent-2" },
-  cyan: { tile: "bg-accent-4/15 text-accent-4 ring-accent-4/30", text: "text-accent-4", ring: "ring-accent-4/25", soft: "bg-accent-4/10", glow: "--c-accent-4" },
-  pink: { tile: "bg-accent-3/15 text-accent-3 ring-accent-3/30", text: "text-accent-3", ring: "ring-accent-3/25", soft: "bg-accent-3/10", glow: "--c-accent-3" },
-  green: { tile: "bg-success/15 text-success ring-success/30", text: "text-success", ring: "ring-success/25", soft: "bg-success/10", glow: "--c-success" },
-  amber: { tile: "bg-warning/15 text-warning ring-warning/30", text: "text-warning", ring: "ring-warning/25", soft: "bg-warning/10", glow: "--c-warning" },
-  red: { tile: "bg-danger/15 text-danger ring-danger/30", text: "text-danger", ring: "ring-danger/25", soft: "bg-danger/10", glow: "--c-danger" },
+  indigo: { tile: "bg-secondary/15 text-secondary ring-secondary/30", text: "text-secondary", ring: "ring-secondary/25", soft: "bg-secondary/10" },
+  cyan: { tile: "bg-accent-4/15 text-accent-4 ring-accent-4/30", text: "text-accent-4", ring: "ring-accent-4/25", soft: "bg-accent-4/10" },
+  pink: { tile: "bg-accent-3/15 text-accent-3 ring-accent-3/30", text: "text-accent-3", ring: "ring-accent-3/25", soft: "bg-accent-3/10" },
+  green: { tile: "bg-success/15 text-success ring-success/30", text: "text-success", ring: "ring-success/25", soft: "bg-success/10" },
+  amber: { tile: "bg-warning/15 text-warning ring-warning/30", text: "text-warning", ring: "ring-warning/25", soft: "bg-warning/10" },
+  red: { tile: "bg-danger/15 text-danger ring-danger/30", text: "text-danger", ring: "ring-danger/25", soft: "bg-danger/10" },
 } as const;
 type Tone = keyof typeof TONE;
-
-/** Card wash: a soft corner glow in the card's own colour. */
-const wash = (tone: Tone, at = "0% 0%"): CSSProperties => ({
-  backgroundImage: `radial-gradient(420px 180px at ${at}, rgb(var(${TONE[tone].glow}) / 0.11), transparent 70%)`,
-});
-
-/** Hero glow: indigo, cyan and pink, so the page opens with colour. */
-const HERO_GLOW: CSSProperties = {
-  backgroundImage: [
-    "radial-gradient(620px 260px at 0% 0%, rgb(var(--c-accent-2) / 0.26), transparent 70%)",
-    "radial-gradient(520px 260px at 55% 130%, rgb(var(--c-accent-4) / 0.14), transparent 70%)",
-    "radial-gradient(420px 240px at 100% 0%, rgb(var(--c-accent-3) / 0.14), transparent 70%)",
-  ].join(", "),
-};
 
 function IconTile({ icon: Icon, tone, size = "md" }: { icon: typeof Clock3; tone: Tone; size?: "sm" | "md" | "lg" }) {
   const box = size === "lg" ? "w-11 h-11 rounded-xl" : size === "sm" ? "w-7 h-7 rounded-lg" : "w-9 h-9 rounded-xl";
@@ -211,8 +196,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
         {/* Hero: the invite and the one action that matters. */}
-        <motion.section {...rise(0)} className="relative overflow-hidden rounded-3xl border border-border bg-surface" style={HERO_GLOW}>
-          <span aria-hidden className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-secondary via-accent-4 to-accent-3" />
+        <motion.section {...rise(0)} className="relative overflow-hidden rounded-2xl border border-border bg-surface" style={GLOW}>
           <DotGrid />
           {/* Phones: the title, then the one action, then the details. Wide screens: the action on the right. */}
           <div className="relative grid lg:grid-cols-[minmax(0,1fr)_340px] lg:grid-rows-[auto_1fr] gap-x-6 gap-y-5 lg:gap-y-6 p-5 sm:p-7 md:p-9">
@@ -277,14 +261,14 @@ export default function LobbyClient({ data }: { data: RoomData }) {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] items-start">
           <div className="flex flex-col gap-6 min-w-0">
-            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-7" style={wash("indigo")}>
+            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-7">
               <PanelHead icon={Flag} tone="indigo" title={isInterviewer ? "How the room works" : "What happens next"} />
               <ol className="mt-5 grid sm:grid-cols-2 gap-3">
                 {steps(isInterviewer, iv.hostName, iv.formatBlurb, { checked: !checking && !blocking, live, ended }).map((s, i) => (
                   <li
                     key={s.title}
                     className={`relative rounded-xl p-4 ring-1 ring-inset transition-colors ${
-                      s.current ? `${TONE[s.tone].soft} ${TONE[s.tone].ring}` : "bg-bg/50 ring-border"
+                      s.current ? "bg-bg/50 ring-secondary/40" : "bg-bg/50 ring-border"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -329,7 +313,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
           </div>
 
           <aside className="flex flex-col gap-6 lg:sticky lg:top-20">
-            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6" style={wash("pink")}>
+            <motion.section {...rise(1)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
               <PanelHead icon={Users} tone="pink" title="Who is here">
                 <span className={`h-6 px-2 rounded-full ${TONE.pink.soft} ${TONE.pink.text} text-[12px] font-medium tabular-nums inline-flex items-center`}>
                   {seats.filter((s) => s.here).length} of {seats.length}
@@ -340,7 +324,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
                   <li
                     key={s.key}
                     className={`min-w-0 flex items-center gap-3 rounded-xl px-3 py-2.5 ring-1 ring-inset transition-colors ${
-                      s.here ? (s.role === "candidate" ? "bg-warning/5 ring-warning/25" : "bg-secondary/5 ring-secondary/25") : "bg-bg/40 ring-border"
+                      s.here ? "bg-bg/50 ring-border-strong" : "bg-bg/30 ring-border"
                     }`}
                   >
                     <span className="relative">
@@ -366,7 +350,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               </ul>
             </motion.section>
 
-            <motion.section {...rise(2)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6" style={wash(blocking ? "red" : "green")}>
+            <motion.section {...rise(2)} className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
               <PanelHead icon={ShieldCheck} tone={blocking ? "red" : "green"} title="Your setup">
                 <span
                   className={`h-6 px-2 rounded-full text-[12px] font-medium tabular-nums inline-flex items-center ${
@@ -378,7 +362,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               </PanelHead>
               <div className="mt-3 h-1.5 rounded-full bg-panel overflow-hidden" aria-hidden>
                 <motion.div
-                  className={`h-full rounded-full ${blocking ? "bg-danger" : "bg-gradient-to-r from-accent-4 to-success"}`}
+                  className={`h-full rounded-full ${blocking ? "bg-danger" : "bg-success"}`}
                   initial={false}
                   animate={{ width: `${(checks.filter((c) => c.state !== "checking").length / checks.length) * 100}%` }}
                   transition={{ duration: reduce ? 0 : 0.5, ease: [0.2, 0.7, 0.2, 1] }}
@@ -426,7 +410,7 @@ function FormatPill({ format }: { format: string }) {
 
 function Chip({ icon, tone, label, value }: { icon: typeof Clock3; tone: Tone; label: string; value: string }) {
   return (
-    <div className={`min-w-0 max-w-full flex items-center gap-2.5 h-12 pl-2 pr-3.5 rounded-xl bg-bg/60 ring-1 ring-inset ${TONE[tone].ring}`}>
+    <div className={`min-w-0 max-w-full flex items-center gap-2.5 h-12 pl-2 pr-3.5 rounded-xl bg-bg/60 ring-1 ring-inset ring-border`}>
       <IconTile icon={icon} tone={tone} size="sm" />
       <div className="min-w-0 leading-tight">
         <dt className="text-[12px] text-subtle">{label}</dt>
@@ -476,7 +460,7 @@ function StatusCard({
   const big = ended ? "Thank you" : live ? countdown(elapsedMs ?? 0) : soon ? countdown(startsIn!) : startsIn != null ? "Ready when you are" : "Any time";
   const [stateIcon, tone]: [typeof Clock3, Tone] = ended ? [PartyPopper, "green"] : live ? [Radio, "red"] : soon ? [Hourglass, "indigo"] : [DoorOpen, "cyan"];
   return (
-    <div className="self-start rounded-2xl bg-surface/85 backdrop-blur ring-1 ring-inset ring-border-strong p-5 shadow-panel" style={wash(tone, "100% 0%")}>
+    <div className="self-start rounded-2xl bg-surface/85 backdrop-blur ring-1 ring-inset ring-border-strong p-5 shadow-panel">
       <div className="flex items-center gap-3">
         <IconTile icon={stateIcon} tone={tone} size="lg" />
         <div className="min-w-0">
@@ -511,16 +495,16 @@ function StatusCard({
 
       {ended ? (
         reportHref ? (
-          <Link href={reportHref} className="group mt-5 w-full h-11 rounded-xl bg-gradient-to-r from-secondary to-accent-3 text-bg text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:brightness-110">
+          <Link href={reportHref} className="group mt-5 w-full h-11 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:brightness-110">
             Open the report <ArrowUpRight className="w-4 h-4" aria-hidden />
           </Link>
         ) : (
-          <p className={`mt-5 rounded-xl ${TONE.green.soft} ring-1 ring-inset ${TONE.green.ring} p-3.5 text-[13px] text-fg leading-relaxed`}>The team will be in touch about next steps. You can close this tab.</p>
+          <p className="mt-5 rounded-xl bg-panel p-3.5 text-[13px] text-muted leading-relaxed">The team will be in touch about next steps. You can close this tab.</p>
         )
       ) : (
         <>
         {consent && (
-          <label className={`mt-5 flex items-start gap-3 rounded-xl ${TONE.amber.soft} ring-1 ring-inset ${TONE.amber.ring} p-3.5 cursor-pointer`}>
+          <label className="mt-5 flex items-start gap-3 rounded-xl bg-panel p-3.5 cursor-pointer">
             <input
               type="checkbox"
               checked={consent.agreed}
@@ -558,7 +542,7 @@ function StatusCard({
           disabled={disabled}
           onClick={onEnter}
           style={brandColor ? { background: brandColor, color: readableTextOn(brandColor), boxShadow: "none" } : undefined}
-          className="group mt-5 w-full h-12 rounded-xl bg-gradient-to-r from-secondary via-secondary to-accent-3 text-bg text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          className="group mt-5 w-full h-12 rounded-xl bg-secondary text-bg text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           {live ? <Play className="w-4 h-4" aria-hidden /> : <DoorOpen className="w-4 h-4" aria-hidden />}
           {live ? "Rejoin the interview" : "Enter the interview room"}
@@ -633,7 +617,7 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
     } catch {}
   };
   return (
-    <motion.section {...rise} className="min-w-0 rounded-2xl border border-border bg-surface p-5 sm:p-7" style={wash("amber")}>
+    <motion.section {...rise} className="min-w-0 rounded-2xl border border-border bg-surface p-5 sm:p-7">
       <PanelHead icon={NotebookPen} tone="amber" title="Your prep">
         <span className="h-6 px-2 rounded-full bg-panel text-[12px] text-muted inline-flex items-center gap-1">
           <Lock className="w-3 h-3" aria-hidden /> Only interviewers
@@ -660,8 +644,8 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
       )}
 
       {p.brief && (
-        <div className="mt-5 rounded-xl bg-secondary/5 ring-1 ring-inset ring-secondary/20 p-4">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-secondary">Brief</p>
+        <div className="mt-5 rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-4">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-subtle">Brief</p>
           <p className="mt-1.5 text-[14px] leading-relaxed whitespace-pre-wrap">{p.brief}</p>
         </div>
       )}
@@ -676,7 +660,7 @@ function InterviewerPrep({ data, rise }: { data: RoomData; rise: object }) {
         <div className="mt-3 flex items-center gap-2 rounded-xl bg-bg ring-1 ring-inset ring-border p-1.5 pl-3">
           <Link2 className="w-4 h-4 text-subtle shrink-0" aria-hidden />
           <code className="flex-1 min-w-0 truncate text-[12.5px] text-muted font-mono">{p.candidateLink}</code>
-          <button type="button" onClick={copy} className={`h-8 px-3 rounded-lg text-[13px] font-semibold inline-flex items-center gap-1.5 shrink-0 transition ${copied ? "bg-success text-bg" : "bg-accent-3 text-bg hover:brightness-110"}`}>
+          <button type="button" onClick={copy} className={`h-8 px-3 rounded-lg text-[13px] font-semibold inline-flex items-center gap-1.5 shrink-0 transition ${copied ? "bg-success/15 text-success ring-1 ring-inset ring-success/30" : "bg-panel ring-1 ring-inset ring-border hover:ring-border-strong"}`}>
             {copied ? <Check className="w-3.5 h-3.5" aria-hidden /> : <Copy className="w-3.5 h-3.5" aria-hidden />}
             {copied ? "Copied" : "Copy"}
           </button>
@@ -697,7 +681,7 @@ function CallEditor({ id, initial, video, canChangeRecording }: { id: string; in
     return (
       <MeetingEditor id={id} initial={initial}>
         {video.canOffer && (
-          <p className={`mt-3 rounded-lg ${TONE.indigo.soft} px-3 py-2 text-[12.5px] text-muted`}>
+          <p className="mt-3 text-[12.5px] text-muted">
             {video.offerUpgrade ? "Or talk inside the room with built-in video, which comes with the Growth plan. " : `Or talk inside the room with built-in video, ${price} a month. `}
             <Link href={video.billingHref} className="font-medium text-secondary-soft hover:underline">
               See Billing
@@ -891,7 +875,7 @@ function MeetingEditor({ id, initial, nested = false, children }: { id: string; 
 
 function Stat({ icon, tone, value, label }: { icon: typeof Clock3; tone: Tone; value: number; label: string }) {
   return (
-    <div className={`rounded-xl ${TONE[tone].soft} ring-1 ring-inset ${TONE[tone].ring} p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3`}>
+    <div className={`rounded-xl bg-bg/50 ring-1 ring-inset ring-border p-3 sm:p-3.5 flex items-center gap-2.5 sm:gap-3`}>
       <IconTile icon={icon} tone={tone} size="lg" />
       <div className="leading-tight min-w-0">
         <p className="text-[20px] font-semibold tabular-nums">{value}</p>

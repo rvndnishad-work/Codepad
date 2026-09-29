@@ -5,7 +5,7 @@ import { loadCandidatePerms, loadRoster, loadRosterLookups } from "@/lib/crm/ros
 import { describeAudit, resultActivity, type ActivityItem } from "@/lib/crm/activity";
 import { loadCandidateAtsCard } from "@/lib/ats/connection-server";
 import { canMember } from "@/lib/permissions";
-import { attemptFromResult, normalizeHiringType, normalizeRoleType, planProgress, type Attempt, type NextStep, type PlanRoundKind } from "@/lib/interview/rounds";
+import { loadCandidateRounds } from "@/lib/interview/rounds-server";
 import CandidateProfileClient from "./CandidateProfileClient";
 import type { ProfileRound } from "./RoundsCard";
 
@@ -46,28 +46,7 @@ export default async function CandidateProfilePage({ params }: Props) {
     }),
     prisma.candidate.findFirst({
       where: { id, workspaceId: actor.workspaceId },
-      select: {
-        rejectReasonNote: true,
-        createdAt: true,
-        plan: { select: { name: true, roleType: true } },
-        workspace: { select: { hiringType: true } },
-        rounds: {
-          orderBy: { order: "asc" },
-          select: {
-            id: true,
-            order: true,
-            kind: true,
-            name: true,
-            format: true,
-            required: true,
-            skipped: true,
-            nextStep: true,
-            planRoundId: true,
-            sessions: { select: { id: true, status: true, verdict: true } },
-            aiSessions: { select: { id: true } },
-          },
-        },
-      },
+      select: { rejectReasonNote: true, createdAt: true, plan: { select: { name: true } } },
     }),
     loadCandidateAtsCard(actor.workspaceId, id).catch((err) => {
       console.error("[candidate profile] ATS card failed:", err);
@@ -89,48 +68,13 @@ export default async function CandidateProfilePage({ params }: Props) {
       })
     : [];
 
-  // The candidate's rounds, each with the results of the sittings linked to it.
-  const resultById = new Map(row.results.map((r) => [r.id, r]));
-  const roundInputs = candidate.rounds.map((r) => {
-    const attempts: Attempt[] = [];
-    for (const s of r.sessions) {
-      const res = resultById.get(s.id);
-      if (res) attempts.push(attemptFromResult(res, { status: s.status, verdict: s.verdict }));
-    }
-    for (const s of r.aiSessions) {
-      const res = resultById.get(s.id);
-      if (res) attempts.push(attemptFromResult(res));
-    }
-    return {
-      id: r.id,
-      order: r.order,
-      kind: r.kind as PlanRoundKind,
-      name: r.name,
-      required: r.required,
-      skipped: r.skipped,
-      nextStep: (r.nextStep as NextStep | null) ?? null,
-      attempts,
-    };
+  // The candidate's rounds and where each stands.
+  const plan = (await loadCandidateRounds(actor.workspaceId, actor.workspaceSlug, [id], new Map([[id, row.stage]]))).get(id)!;
+  const rounds: ProfileRound[] = plan.progress.rounds.map((p) => {
+    const m = plan.meta.get(p.id)!;
+    return { id: p.id, kind: p.kind, name: p.name, format: m.format, required: p.required, skipped: p.skipped, manual: m.manual, held: m.held, state: p.state, number: p.number };
   });
-  const progress = planProgress(roundInputs, row.stage);
-  const byRound = new Map(candidate.rounds.map((r) => [r.id, r]));
-  const rounds: ProfileRound[] = progress.rounds.map((p) => {
-    const r = byRound.get(p.id)!;
-    return {
-      id: p.id,
-      kind: p.kind,
-      name: p.name,
-      format: r.format,
-      required: p.required,
-      skipped: p.skipped,
-      manual: !r.planRoundId,
-      held: r.sessions.length + r.aiSessions.length > 0 || !!r.nextStep,
-      state: p.state,
-      number: p.number,
-    };
-  });
-  const hiring = normalizeHiringType(candidate.workspace.hiringType);
-  const roleType = candidate.plan ? normalizeRoleType(candidate.plan.roleType) : hiring === "non_technical" ? "non_technical" : "technical";
+  const roleType = plan.roleType;
 
   const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
   // Who made the current decision: the newest move into it. Older rows use

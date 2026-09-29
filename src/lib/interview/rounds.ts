@@ -265,6 +265,8 @@ export type RoundInput = {
   required: boolean;
   skipped: boolean;
   nextStep: NextStep | null;
+  /** Live interviews: the wizard format. */
+  format?: string | null;
   /** Every sitting of this round, in any order. */
   attempts: Attempt[];
 };
@@ -430,6 +432,17 @@ export function planProgress(input: RoundInput[], stage?: string | null): PlanPr
  */
 export function passNeedsOverride(p: PlanProgress): boolean {
   return p.rounds.some((r) => r.required && r.state !== "skipped" && r.state !== "above_bar");
+}
+
+/**
+ * The live round a new interview for this candidate most likely is: the
+ * first live round not yet booked, from the round they are on. One whose
+ * format matches the interview being set up wins. Null when none is open.
+ */
+export function suggestLiveRound(p: PlanProgress, format?: string | null): string | null {
+  const start = p.current ? p.rounds.indexOf(p.current) : 0;
+  const open = p.rounds.slice(Math.max(0, start)).filter((r) => r.kind === "interview" && r.state === "not_started");
+  return (open.find((r) => format && r.format === format) ?? open[0])?.id ?? null;
 }
 
 // ── The strip and the one-line summary ──────────────────────────────────

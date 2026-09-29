@@ -31,7 +31,9 @@ import {
 } from "lucide-react";
 import { humanize } from "@/lib/workspace/display";
 import type { QuestionState } from "@/lib/interview/wizard";
-import { OUTCOME_GROUPS, type OutcomeGroup, type OutcomeKey } from "@/lib/interview/list-outcome";
+import type { OutcomeGroup, OutcomeKey } from "@/lib/interview/list-outcome";
+import type { Segment } from "@/lib/interview/rounds";
+import { RoundStrip } from "../candidates/_components/RoundStrip";
 import { Avatar, Btn, fmtDate, inputCls, useToasts } from "../candidates/_components/ui";
 
 type Tone = "success" | "warning" | "danger" | "neutral";
@@ -43,8 +45,14 @@ export type InterviewRow = {
   candidateId: string | null;
   type: string;
   state: "scheduled" | "live" | "completed" | "cancelled";
-  /** Where the interview stands for the recruiter; Passed and Not passed come from the candidate stage. */
+  /** Where this interview stands. Never the candidate's decision. */
   outcome: OutcomeKey;
+  /** The filter it files under: finished interviews go by the candidate's decision. */
+  group: OutcomeGroup;
+  /** The candidate's own decision, as a small line under a finished interview. */
+  candidateLine: { text: string; tone: "success" | "danger" | "muted" } | null;
+  /** Which round of the candidate's plan this is, when it is linked to one. */
+  round: { number: number | null; total: number; name: string; strip: { seg: Segment; name: string; here: boolean }[] } | null;
   /** The interviewer's take from the End interview dialog. Never a pass on its own. */
   take: { label: string; tone: Tone } | null;
   scoring: {
@@ -144,23 +152,29 @@ const LOOK: Record<OutcomeKey, Look> = {
     tile: "bg-accent-4/15 text-accent-4 ring-accent-4/30",
     pill: "bg-accent-4/10 text-accent-4",
   },
-  decision: {
-    label: "Needs a decision",
-    icon: Scale,
-    tile: "bg-warning/15 text-warning ring-warning/35",
-    pill: "bg-warning/10 text-warning",
-  },
-  passed: {
-    label: "Passed",
+  above_bar: {
+    label: "Above bar",
     icon: CircleCheck,
     tile: "bg-success/15 text-success ring-success/30",
     pill: "bg-success/10 text-success",
   },
-  not_passed: {
-    label: "Not passed",
+  below_bar: {
+    label: "Below bar",
     icon: CircleX,
     tile: "bg-danger/10 text-danger ring-danger/30",
     pill: "bg-danger/10 text-danger",
+  },
+  did_not_finish: {
+    label: "Did not finish",
+    icon: LogOut,
+    tile: "bg-warning/15 text-warning ring-warning/30",
+    pill: "bg-warning/10 text-warning",
+  },
+  held: {
+    label: "Held, not scored",
+    icon: ClipboardPen,
+    tile: "bg-panel text-muted ring-border-strong",
+    pill: "bg-panel text-muted",
   },
   cancelled: {
     label: "Cancelled",
@@ -168,6 +182,13 @@ const LOOK: Record<OutcomeKey, Look> = {
     tile: "bg-panel text-subtle ring-border",
     pill: "bg-panel text-subtle",
   },
+};
+
+/** Looks for the summary tiles, which count groups rather than outcomes. */
+const GROUP_LOOK: Record<"decision" | "passed" | "not_passed", Look> = {
+  decision: { label: "Needs a decision", icon: Scale, tile: "bg-warning/15 text-warning ring-warning/35", pill: "bg-warning/10 text-warning" },
+  passed: { label: "Passed", icon: CircleCheck, tile: "bg-success/15 text-success ring-success/30", pill: "bg-success/10 text-success" },
+  not_passed: { label: "Not passed", icon: CircleX, tile: "bg-danger/10 text-danger ring-danger/30", pill: "bg-danger/10 text-danger" },
 };
 
 const TAKE_ICON: Record<string, ComponentType<{ className?: string }>> = {
@@ -185,18 +206,14 @@ const TONE_TEXT: Record<Tone, string> = {
 };
 
 /** Needs attention first, then what is coming up soonest, then decided and cancelled. */
-const RANK: Record<OutcomeKey, number> = {
-  live: 0,
-  decision: 1,
-  missed: 1,
-  questions: 1,
-  scorecards: 2,
-  upcoming: 3,
-  unscheduled: 3,
-  passed: 4,
-  not_passed: 4,
-  cancelled: 5,
-};
+function rank(r: InterviewRow): number {
+  if (r.outcome === "live") return 0;
+  if (r.outcome === "missed" || r.outcome === "questions") return 1;
+  if (r.outcome === "upcoming" || r.outcome === "unscheduled") return 3;
+  if (r.outcome === "cancelled") return 5;
+  if (r.group === "passed" || r.group === "not_passed") return 4;
+  return r.outcome === "scorecards" ? 2 : 1;
+}
 
 export default function InterviewsList({ slug, rows, view: initialView, q: initialQ }: { slug: string; rows: InterviewRow[]; view: string; q: string }) {
   const [view, setView] = useState<View>(() => {
@@ -218,7 +235,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
     const c = Object.fromEntries(VIEWS.map((v) => [v.id, 0])) as Record<View, number>;
     c.all = rows.length;
     for (const r of rows) {
-      for (const [g, keys] of Object.entries(OUTCOME_GROUPS) as [OutcomeGroup, readonly OutcomeKey[]][]) if (keys.includes(r.outcome)) c[g]++;
+      c[r.group]++;
       if (r.questions === "needed") c.questions++;
     }
     return c;
@@ -232,16 +249,16 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
   const shown = rows
     .filter(
       (r) =>
-        (view === "all" || (view === "questions" ? r.questions === "needed" : (OUTCOME_GROUPS[view] as readonly OutcomeKey[]).includes(r.outcome))) &&
+        (view === "all" || (view === "questions" ? r.questions === "needed" : r.group === view)) &&
         (!needle || [r.title, r.candidateName ?? "", r.interviewer ?? "", r.shortCode ?? "", ...r.panel].some((v) => v.toLowerCase().includes(needle))),
     )
     .sort((a, b) => {
-      const d = RANK[a.outcome] - RANK[b.outcome];
+      const d = rank(a) - rank(b);
       if (d) return d;
       const ta = a.when ?? "";
       const tb = b.when ?? "";
       // Coming up: soonest first. Everything else: most recent first.
-      return RANK[a.outcome] === 3 ? ta.localeCompare(tb) : tb.localeCompare(ta);
+      return rank(a) === 3 ? ta.localeCompare(tb) : tb.localeCompare(ta);
     });
 
   const tiles: {
@@ -262,22 +279,22 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
       id: "decision",
       label: "Needs a decision",
       value: counts.decision,
-      sub: waitingCards ? `${waitingCards} waiting for scorecards` : counts.decision ? "Scores are in" : "All decided",
-      look: LOOK.decision,
+      sub: waitingCards ? `${waitingCards} waiting for scorecards` : counts.decision ? "Interviews held, candidate not decided" : "All decided",
+      look: GROUP_LOOK.decision,
     },
     {
       id: "passed",
       label: "Passed",
       value: counts.passed,
-      sub: "Decided by your team",
-      look: LOOK.passed,
+      sub: "Candidate passed by your team",
+      look: GROUP_LOOK.passed,
     },
     {
       id: "not_passed",
       label: "Not passed",
       value: counts.not_passed,
-      sub: "Decided by your team",
-      look: LOOK.not_passed,
+      sub: "Candidate not passed",
+      look: GROUP_LOOK.not_passed,
     },
   ];
 
@@ -391,7 +408,7 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                   if (!r.href || (e.target as HTMLElement).closest("a,button")) return;
                   router.push(r.href);
                 }}
-                className={`group grid grid-cols-[40px_minmax(0,1fr)] md:grid-cols-[40px_minmax(0,1fr)_auto] xl:grid-cols-[40px_minmax(0,1fr)_240px_190px_196px] items-center gap-x-4 gap-y-2.5 px-4 md:px-5 py-4 border-t border-border first:border-t-0 hover:bg-panel/60 transition-colors ${r.href ? "cursor-pointer" : ""}`}
+                className={`group grid grid-cols-[40px_minmax(0,1fr)] md:grid-cols-[40px_minmax(0,1fr)_auto] xl:grid-cols-[40px_minmax(0,1fr)_230px_180px_196px] items-center gap-x-4 gap-y-2.5 px-4 md:px-5 py-4 border-t border-border first:border-t-0 hover:bg-panel/60 transition-colors ${r.href ? "cursor-pointer" : ""}`}
               >
                 <span aria-hidden className={`relative row-span-2 xl:row-span-1 self-start xl:self-center flex w-10 h-10 rounded-xl items-center justify-center ring-1 ring-inset ${look.tile}`}>
                   <Icon className="w-5 h-5" strokeWidth={2} />
@@ -410,7 +427,13 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                     )}
                     <span className={`xl:hidden inline-flex items-center gap-1 h-6 px-2 rounded-full text-xs font-medium whitespace-nowrap ${look.pill}`}>{look.label}</span>
                   </span>
-                  <span className="block text-sm text-muted truncate mt-0.5">{r.title}</span>
+                  <span className="block text-sm text-muted truncate mt-0.5">{r.round ? r.round.name : r.title}</span>
+                  {r.round && (
+                    <span className="flex items-center gap-2 mt-1.5 min-w-0 text-[13px] text-muted">
+                      <RoundStrip items={r.round.strip} />
+                      <span className="whitespace-nowrap">{r.round.number ? `Round ${r.round.number} of ${r.round.total}` : "Skipped round"}</span>
+                    </span>
+                  )}
                   <span className="flex items-center gap-2 mt-1.5 min-w-0 text-[13px] text-subtle">
                     <People host={r.interviewer} panel={r.panel} />
                     <span className="truncate">
@@ -424,6 +447,15 @@ export default function InterviewsList({ slug, rows, view: initialView, q: initi
                   <span className="min-w-0 flex flex-col gap-1">
                     <span className={`hidden xl:inline-flex self-start items-center h-6 px-2 rounded-full text-xs font-medium whitespace-nowrap ${look.pill}`}>{look.label}</span>
                     <span className="text-[13px] text-muted">{detail(r, now)}</span>
+                    {r.candidateLine && (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-subtle">
+                        <span
+                          aria-hidden
+                          className={`w-1.5 h-1.5 rounded-full ${r.candidateLine.tone === "success" ? "bg-success" : r.candidateLine.tone === "danger" ? "bg-danger" : "bg-border-strong"}`}
+                        />
+                        {r.candidateLine.text}
+                      </span>
+                    )}
                   </span>
 
                   {/* Scores and the interviewer's take */}
@@ -603,7 +635,11 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
           Report
         </Btn>
       );
-    case "decision":
+    case "above_bar":
+    case "below_bar":
+    case "did_not_finish":
+    case "held":
+      if (r.group !== "decision") break;
       return (
         <>
           <Btn icon={FileText} href={report}>
@@ -617,12 +653,13 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
         </>
       );
     default:
-      return (
-        <Btn icon={FileText} href={report}>
-          Report
-        </Btn>
-      );
+      break;
   }
+  return (
+    <Btn icon={FileText} href={report}>
+      Report
+    </Btn>
+  );
 }
 
 /** One line under the outcome saying what it means for this interview. */
@@ -641,11 +678,12 @@ function detail(r: InterviewRow, now: number | null): string {
       return r.scheduledAt ? when(r.scheduledAt, now) : "Scheduled";
     case "scorecards":
       return `${s.submitted} of ${s.expected} scorecards in${s.missing.length ? `, waiting on ${names(s.missing)}` : ""}`;
-    case "decision":
-      return r.when ? `Interviewed ${fmtDate(r.when)}, no decision yet` : "No decision yet";
-    case "passed":
-    case "not_passed":
-      return r.when ? `Interviewed ${fmtDate(r.when)}` : "Decided";
+    case "above_bar":
+    case "below_bar":
+    case "held":
+      return r.when ? `Interviewed ${fmtDate(r.when)}` : "Interviewed";
+    case "did_not_finish":
+      return r.when ? `Left early, ${fmtDate(r.when)}` : "Left early";
     case "cancelled":
       return r.scheduledAt ? `Was set for ${fmtDate(r.scheduledAt)}` : "Called off";
   }

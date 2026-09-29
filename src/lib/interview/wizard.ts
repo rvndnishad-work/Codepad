@@ -157,6 +157,10 @@ export type WizardState = {
   tools?: string[];
   /** Put the interview on the organiser's connected calendar. Unset means yes. */
   calendarEvent?: boolean;
+  /** Which of their interview rounds this is, per existing candidate id. "" = not part of the plan. The Round step fills in the suggestion. */
+  roundIds?: Record<string, string>;
+  /** Candidate id to the picked round's name, for the Review step. */
+  roundNames?: Record<string, string>;
 };
 
 export type CallChoice = "builtin" | "link";
@@ -177,11 +181,12 @@ export function callFields(
   return s.recordVideo ? { builtinVideo: true, recordVideo: true } : { builtinVideo: true };
 }
 
-export type StepId ="format" | "candidates" | "panel" | "questions" | "schedule" | "review";
+export type StepId = "format" | "candidates" | "round" | "panel" | "questions" | "schedule" | "review";
 
 export const STEPS: { id: StepId; label: string; hint: string }[] = [
   { id: "format", label: "Format", hint: "What kind of interview" },
   { id: "candidates", label: "Candidates", hint: "Who is interviewed" },
+  { id: "round", label: "Round", hint: "Which round of their plan" },
   { id: "panel", label: "Interviewers", hint: "Who runs it" },
   { id: "questions", label: "Questions", hint: "Now, later or none" },
   { id: "schedule", label: "Schedule", hint: "When and how long" },
@@ -198,6 +203,9 @@ export function stepIssues(s: WizardState, step: StepId): string[] {
       if (s.noCandidate) return [];
       if (s.candidates.length === 0) return ["Add at least one candidate, or choose to share a link later."];
       if (s.candidates.some((c) => c.email && !isEmail(c.email))) return ["One of the emails does not look right."];
+      return [];
+    case "round":
+      // Optional: an interview can stand outside any plan.
       return [];
     case "panel":
       if (!s.hostId) return ["Choose who runs the interview."];

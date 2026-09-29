@@ -23,6 +23,8 @@ import { cancelInterviewEvent, syncInterviewEvent } from "@/lib/calendar/server"
 import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { recordingConfigured } from "@/lib/recording/live-server";
+import { loadCandidateRounds } from "@/lib/interview/rounds-server";
+import { roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
 import {
   offersGuide,
   formatOf,
@@ -98,6 +100,8 @@ const scheduleSchema = z.object({
         time: z.string().datetime().nullable(),
         /** This person's own guide, when questions differ per candidate. */
         questions: questionSet.optional(),
+        /** Which of their interview rounds this is (CandidateRound id). */
+        roundId: z.string().max(40).nullable().optional(),
       }),
     )
     .max(MAX_CANDIDATES),
@@ -177,7 +181,18 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     if (d.plan === "set" && format.coding && rounds.length === 0) throw new ActionError("Add at least one coding round.");
 
     // No named people means one session with an open link.
-    const people = d.candidates.length ? d.candidates : [{ id: null, name: "", email: "", time: null, questions: undefined }];
+    const people = d.candidates.length ? d.candidates : [{ id: null, name: "", email: "", time: null, questions: undefined, roundId: null }];
+
+    // Rounds must be that person's own live rounds in this workspace.
+    const askedRounds = people.flatMap((p) => (p.id && p.roundId ? [{ candidateId: p.id, roundId: p.roundId }] : []));
+    const okRounds = askedRounds.length
+      ? await prisma.candidateRound.findMany({
+          where: { id: { in: askedRounds.map((r) => r.roundId) }, kind: "interview", candidate: { workspaceId: a.workspace.id } },
+          select: { id: true, candidateId: true, passMark: true },
+        })
+      : [];
+    const roundFor = (p: { id: string | null; roundId?: string | null }) => okRounds.find((r) => r.id === p.roundId && r.candidateId === p.id) ?? null;
+    if (askedRounds.some((r) => !roundFor({ id: r.candidateId, roundId: r.roundId }))) throw new ActionError("One of the rounds is no longer on that candidate's plan. Go back to the Round step and pick again.");
 
     // Each room's guide: its own set when questions differ per candidate,
     // otherwise the shared one. A set is a library questionnaire, public
@@ -253,6 +268,14 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
         },
       });
       if (!res.ok) throw new ActionError(res.error);
+      const planRound = roundFor(p);
+      if (planRound) {
+        // The round's own pass mark, when the plan sets one, labels this interview's scorecards.
+        await prisma.interviewSession.update({
+          where: { id: res.id },
+          data: { candidateRoundId: planRound.id, ...(planRound.passMark != null ? { scorecardPassMark: storedPassMark(planRound.passMark) } : {}) },
+        });
+      }
       created.push({
         id: res.id,
         name: res.candidateName ?? (p.name || null),
@@ -472,6 +495,38 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
     revalidatePath(`/w/${slug}/interviews`, "layout");
     if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
     return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+export type RoundChoice = {
+  planName: string | null;
+  /** Rounds held out of the total, for "2 of 4 done". */
+  done: number;
+  total: number;
+  options: { id: string; number: number | null; name: string; format: string | null; state: string; stateLabel: string }[];
+  suggested: string | null;
+};
+
+/** Each candidate's live rounds for the wizard's Round step, with the one we suggest. */
+export async function candidateRoundChoicesAction(slug: string, candidateIds: string[], format: string | null): Promise<Result<{ choices: Record<string, RoundChoice> }>> {
+  try {
+    const a = await loadActor(slug);
+    const ids = [...new Set(candidateIds.filter((x) => typeof x === "string" && x.length <= 40))].slice(0, MAX_CANDIDATES);
+    const plans = await loadCandidateRounds(a.workspace.id, slug, ids);
+    const choices: Record<string, RoundChoice> = {};
+    for (const [id, p] of plans) {
+      const live = p.progress.rounds.filter((r) => r.kind === "interview");
+      choices[id] = {
+        planName: p.planName,
+        done: p.progress.done,
+        total: p.progress.total,
+        options: live.map((r) => ({ id: r.id, number: r.number, name: r.name, format: r.format ?? null, state: r.state, stateLabel: r.skipped ? "Skipped" : roundStateLabel(r.state, r.kind) })),
+        suggested: suggestLiveRound(p.progress, format),
+      };
+    }
+    return { ok: true, choices };
   } catch (err) {
     return fail(err);
   }

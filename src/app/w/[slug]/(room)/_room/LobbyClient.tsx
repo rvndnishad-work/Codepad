@@ -40,8 +40,8 @@ import {
   Wifi,
   X,
 } from "lucide-react";
-import { TOOLS } from "@/lib/interview/tools";
-import { TOOL_ICON, TOOL_TONE } from "@/app/interview/[id]/tools/icons";
+import { TOOLS, type ToolId } from "@/lib/interview/tools";
+import { TOOL_ICON } from "@/app/interview/[id]/tools/icons";
 import type { RoomData } from "@/lib/interview/room-server";
 import { useRelayProvider, useRelaySnapshot } from "@/app/interview/[id]/tools/useToolsRoom";
 import { meetingProvider } from "@/lib/interview/meeting";
@@ -61,12 +61,12 @@ type CheckRow = { id: string; label: string; state: CheckState; detail: string }
  * cards stay neutral. Written out in full so Tailwind sees every class.
  */
 const TONE = {
-  indigo: { tile: "bg-secondary/15 text-secondary ring-secondary/30", text: "text-secondary", ring: "ring-secondary/25", soft: "bg-secondary/10" },
-  cyan: { tile: "bg-accent-4/15 text-accent-4 ring-accent-4/30", text: "text-accent-4", ring: "ring-accent-4/25", soft: "bg-accent-4/10" },
-  pink: { tile: "bg-accent-3/15 text-accent-3 ring-accent-3/30", text: "text-accent-3", ring: "ring-accent-3/25", soft: "bg-accent-3/10" },
-  green: { tile: "bg-success/15 text-success ring-success/30", text: "text-success", ring: "ring-success/25", soft: "bg-success/10" },
-  amber: { tile: "bg-warning/15 text-warning ring-warning/30", text: "text-warning", ring: "ring-warning/25", soft: "bg-warning/10" },
-  red: { tile: "bg-danger/15 text-danger ring-danger/30", text: "text-danger", ring: "ring-danger/25", soft: "bg-danger/10" },
+  indigo: { tile: "bg-[#5a64a8] text-white", text: "text-secondary", ring: "ring-secondary/25", soft: "bg-secondary/10" },
+  cyan: { tile: "bg-[#3f7f86] text-white", text: "text-muted", ring: "ring-border", soft: "bg-panel" },
+  pink: { tile: "bg-[#9a5a74] text-white", text: "text-muted", ring: "ring-border", soft: "bg-panel" },
+  green: { tile: "bg-[#4c8363] text-white", text: "text-success", ring: "ring-success/25", soft: "bg-success/10" },
+  amber: { tile: "bg-[#a07c3f] text-white", text: "text-warning", ring: "ring-warning/25", soft: "bg-warning/10" },
+  red: { tile: "bg-[#a4524f] text-white", text: "text-danger", ring: "ring-danger/25", soft: "bg-danger/10" },
 } as const;
 type Tone = keyof typeof TONE;
 
@@ -74,8 +74,8 @@ function IconTile({ icon: Icon, tone, size = "md" }: { icon: typeof Clock3; tone
   const box = size === "lg" ? "w-11 h-11 rounded-xl" : size === "sm" ? "w-7 h-7 rounded-lg" : "w-9 h-9 rounded-xl";
   const ico = size === "lg" ? "w-5 h-5" : size === "sm" ? "w-3.5 h-3.5" : "w-[18px] h-[18px]";
   return (
-    <span className={`${box} ${TONE[tone].tile} ring-1 ring-inset flex items-center justify-center shrink-0`}>
-      <Icon className={ico} aria-hidden />
+    <span className={`${box} ${TONE[tone].tile} flex items-center justify-center shrink-0`}>
+      <Icon className={ico} strokeWidth={2.25} aria-hidden />
     </span>
   );
 }
@@ -92,6 +92,7 @@ function PanelHead({ icon, tone, title, children }: { icon: typeof Clock3; tone:
 }
 
 const TOOL_BY_LABEL = new Map(TOOLS.map((t) => [t.label, t.id]));
+const TOOL_TONE_MUTED: Record<ToolId, Tone> = { whiteboard: "indigo", code: "cyan", question: "pink", notes: "amber", ranking: "green", timer: "amber" };
 
 /** Everyone on the invite, marked with whether they are here right now. */
 type Seat = { key: string; name: string; role: "interviewer" | "candidate"; tag: string; here: Person | null; me: boolean };
@@ -294,10 +295,9 @@ export default function LobbyClient({ data }: { data: RoomData }) {
                     {iv.tools.map((t) => {
                       const id = TOOL_BY_LABEL.get(t);
                       const Icon = id ? TOOL_ICON[id] : Layers;
-                      const tone = id ? TOOL_TONE[id] : null;
                       return (
-                        <span key={t} className={`h-9 pl-1.5 pr-3 rounded-xl ring-1 ring-inset text-[13px] font-medium inline-flex items-center gap-2 ${tone ? tone.row : "bg-panel ring-border"}`}>
-                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${tone ? tone.tile : "bg-panel text-muted"}`}>
+                        <span key={t} className="h-9 pl-1.5 pr-3 rounded-xl bg-bg/50 ring-1 ring-inset ring-border text-[13px] font-medium inline-flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center ${TONE[id ? TOOL_TONE_MUTED[id] : "indigo"].tile}`}>
                             <Icon className="w-3.5 h-3.5" aria-hidden />
                           </span>
                           {t}
@@ -362,7 +362,7 @@ export default function LobbyClient({ data }: { data: RoomData }) {
               </PanelHead>
               <div className="mt-3 h-1.5 rounded-full bg-panel overflow-hidden" aria-hidden>
                 <motion.div
-                  className={`h-full rounded-full ${blocking ? "bg-danger" : "bg-success"}`}
+                  className={`h-full rounded-full ${blocking ? "bg-[#a4524f]" : "bg-[#4c8363]"}`}
                   initial={false}
                   animate={{ width: `${(checks.filter((c) => c.state !== "checking").length / checks.length) * 100}%` }}
                   transition={{ duration: reduce ? 0 : 0.5, ease: [0.2, 0.7, 0.2, 1] }}
@@ -495,7 +495,7 @@ function StatusCard({
 
       {ended ? (
         reportHref ? (
-          <Link href={reportHref} className="group mt-5 w-full h-11 rounded-xl bg-secondary text-bg text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:brightness-110">
+          <Link href={reportHref} className="group mt-5 w-full h-11 rounded-xl bg-[#5a64a8] text-white text-[14px] font-semibold inline-flex items-center justify-center gap-2 hover:brightness-110">
             Open the report <ArrowUpRight className="w-4 h-4" aria-hidden />
           </Link>
         ) : (
@@ -542,7 +542,7 @@ function StatusCard({
           disabled={disabled}
           onClick={onEnter}
           style={brandColor ? { background: brandColor, color: readableTextOn(brandColor), boxShadow: "none" } : undefined}
-          className="group mt-5 w-full h-12 rounded-xl bg-secondary text-bg text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_24px_-8px_rgb(var(--c-accent-2)/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          className="group mt-5 w-full h-12 rounded-xl bg-[#5a64a8] text-white text-[14.5px] font-semibold inline-flex items-center justify-center gap-2 shadow-[0_8px_20px_-10px_rgb(0_0_0/0.6)] transition hover:brightness-110 disabled:opacity-50 disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
         >
           {live ? <Play className="w-4 h-4" aria-hidden /> : <DoorOpen className="w-4 h-4" aria-hidden />}
           {live ? "Rejoin the interview" : "Enter the interview room"}

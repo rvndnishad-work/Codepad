@@ -8,6 +8,9 @@ import type { RosterRow } from "@/lib/crm/roster";
 import { relativeTime } from "@/lib/workspace/display";
 import { addNoteAction, quickViewAction, type QuickViewData } from "../manage-actions";
 import { ChecklistList } from "./Checklist";
+import { RoundRows } from "./RoundsCell";
+import { RoundStrip } from "./RoundStrip";
+import { roundsLine, stripItems } from "@/lib/interview/rounds-view";
 import { Avatar, Btn, inputCls } from "./ui";
 
 export function QuickView({
@@ -144,6 +147,17 @@ export function QuickView({
                 </Btn>
               )}
             </div>
+          )}
+
+          {row.rounds && row.rounds.total > 0 && (
+            <section>
+              <div className="flex items-center justify-between gap-3 mb-1.5">
+                <h3 className="text-xs font-medium text-subtle">Rounds · {row.rounds.done} of {row.rounds.total} done</h3>
+                <RoundStrip items={stripItems(row.rounds)} />
+              </div>
+              <p className="text-[13px] text-fg">{roundsLine(row.rounds)}</p>
+              <RoundRows rounds={row.rounds} />
+            </section>
           )}
 
           <section>

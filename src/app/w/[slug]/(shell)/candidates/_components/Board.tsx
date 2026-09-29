@@ -11,7 +11,9 @@ import { ChevronDown, Clock, Layers, UserRound } from "lucide-react";
 import { PIPELINE_STAGES, REJECT_REASON_LABELS, STAGE_LABELS, type PipelineStage, type RejectReason } from "@/lib/crm/stages";
 import { STUCK_AFTER_DAYS, type NextStep } from "@/lib/crm/results";
 import type { RosterRow } from "@/lib/crm/roster";
+import { roundsBadge, roundsLine, stripItems } from "@/lib/interview/rounds-view";
 import { Avatar, StageDot } from "./ui";
+import { RoundStrip } from "./RoundStrip";
 
 type GroupBy = "none" | "batch" | "owner";
 
@@ -184,14 +186,29 @@ export function Board({
             ))}
           </div>
         )}
+        {r.rounds && r.rounds.total > 0 && (
+          <div className="mt-2 flex items-center gap-2 min-w-0" title={roundsLine(r.rounds)}>
+            <RoundStrip items={stripItems(r.rounds)} />
+            <span className="text-xs text-subtle tabular-nums shrink-0">
+              {r.rounds.done} of {r.rounds.total}
+            </span>
+          </div>
+        )}
         <div className="mt-2.5 flex items-center gap-2 min-w-0">
           {reason ? (
             <span className="flex-1 min-w-0 truncate text-xs text-danger">{reason}</span>
           ) : (
-            <span className={`flex-1 min-w-0 flex items-center gap-1.5 text-xs ${NEXT_TEXT[r.next.tone]}`} title={r.next.detail ?? undefined}>
-              <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${NEXT_DOT[r.next.tone]}`} />
-              <span className="truncate">{r.next.label}</span>
-            </span>
+            (() => {
+              // The rounds say what is owed when there are any; otherwise the results do.
+              const b = roundsBadge(r.rounds);
+              const tone: NextStep["tone"] = b ? (b.tone === "warning" ? "warning" : b.tone === "secondary" ? "info" : "plain") : r.next.tone;
+              return (
+                <span className={`flex-1 min-w-0 flex items-center gap-1.5 text-xs ${NEXT_TEXT[tone]}`} title={b ? undefined : (r.next.detail ?? undefined)}>
+                  <span aria-hidden className={`w-1.5 h-1.5 rounded-full shrink-0 ${NEXT_DOT[tone]}`} />
+                  <span className="truncate">{b ? b.text : r.next.label}</span>
+                </span>
+              );
+            })()
           )}
           {!decided && (
             <span className={`shrink-0 inline-flex items-center gap-0.5 text-xs tabular-nums ${stuck ? "text-warning" : "text-subtle"}`} title={`${r.daysInStage} days in ${STAGE_LABELS[r.stage as PipelineStage] ?? r.stage}`}>

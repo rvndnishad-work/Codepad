@@ -8,7 +8,7 @@ import { computeNextStep, daysSince, needsAttention, passCheck, resultStateText,
 import { normalizeStage } from "@/lib/crm/stages";
 import { parseTags } from "@/lib/crm/candidates-server";
 import type { RosterRow } from "@/lib/crm/roster";
-import { loadCandidateRounds } from "@/lib/interview/rounds-server";
+import { deciderNames, loadCandidateRounds, summarizeRounds } from "@/lib/interview/rounds-server";
 import { overrideReason } from "@/lib/interview/rounds";
 
 export async function loadRoster(
@@ -46,6 +46,7 @@ export async function loadRoster(
     opts.batchId || opts.ids ? candidates.map((c) => c.id) : undefined,
   );
   const rounds = await loadCandidateRounds(workspaceId, workspaceSlug, candidates.map((c) => c.id), new Map(candidates.map((c) => [c.id, c.stage])), results);
+  const nameOf = await deciderNames(rounds.values());
   const now = Date.now();
   return candidates.map((c) => {
     const rs = results.get(c.id) ?? [];
@@ -92,6 +93,7 @@ export async function loadRoster(
       attention: c.status !== "archived" && needsAttention(next, c.stage, daysInStage),
       manualPass: normalizeStage(c.stage) === "PASSED" ? [roundsPass, passCheck(rs).reason].filter(Boolean).join("; ") || null : null,
       roundsPass,
+      rounds: cr && cr.progress.rounds.length ? summarizeRounds(cr, nameOf) : null,
     };
   });
 }

@@ -3,6 +3,7 @@
  * a batch's tabs, plus the pure filtering used by all of them. Client-safe.
  */
 import { passCheck, type CandidateResult, type NextStep, type ResultKind } from "@/lib/crm/results";
+import { waitingKey, type RoundsSummary, type WaitingKey } from "@/lib/interview/rounds-view";
 
 export type RosterRow = {
   id: string;
@@ -37,6 +38,8 @@ export type RosterRow = {
   manualPass: string | null;
   /** From the interview rounds: why passing now would be a manual pass ("Coding round below the bar"). Null when the rounds back a pass or there are none. */
   roundsPass?: string | null;
+  /** The candidate's interview rounds, when they have any. */
+  rounds?: RoundsSummary | null;
 };
 
 /**
@@ -67,6 +70,8 @@ export type RosterFilters = {
   minScore: number | null;
   attention: boolean;
   archived: boolean;
+  /** Waiting on filter, from the interview rounds. */
+  waiting?: WaitingKey | null;
 };
 
 export const EMPTY_FILTERS: RosterFilters = {
@@ -79,7 +84,18 @@ export const EMPTY_FILTERS: RosterFilters = {
   minScore: null,
   attention: false,
   archived: false,
+  waiting: null,
 };
+
+/** Rows per Waiting on chip, for the counts. */
+export function waitingCounts(rows: RosterRow[]): Record<WaitingKey, number> {
+  const out: Record<WaitingKey, number> = { candidate: 0, schedule: 0, next_step: 0, review: 0, decision: 0 };
+  for (const r of rows) {
+    const k = waitingKey(r.rounds);
+    if (k) out[k]++;
+  }
+  return out;
+}
 
 /** Everything except the stage, so the stage strip can count under the other filters. */
 export function filterRows(rows: RosterRow[], f: RosterFilters, meId?: string): RosterRow[] {
@@ -95,6 +111,7 @@ export function filterRows(rows: RosterRow[], f: RosterFilters, meId?: string): 
     if (f.tag && !r.tags.includes(f.tag)) return false;
     if (f.minScore != null && (r.combined ?? -1) < f.minScore) return false;
     if (f.attention && !r.attention) return false;
+    if (f.waiting && waitingKey(r.rounds) !== f.waiting) return false;
     if (q) {
       const hay = `${r.name} ${r.email ?? ""} ${r.phone ?? ""} ${r.tags.join(" ")}`.toLowerCase();
       if (!hay.includes(q)) return false;

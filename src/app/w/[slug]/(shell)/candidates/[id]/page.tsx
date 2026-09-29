@@ -8,7 +8,6 @@ import { canMember } from "@/lib/permissions";
 import { loadCandidateRounds } from "@/lib/interview/rounds-server";
 import { REJECT_REASONS, type RejectReason } from "@/lib/crm/stages";
 import CandidateProfileClient from "./CandidateProfileClient";
-import type { ProfileRound } from "./RoundsCard";
 
 type Props = { params: Promise<{ slug: string; id: string }>; searchParams?: Promise<{ decide?: string; reason?: string; round?: string }> };
 
@@ -70,13 +69,10 @@ export default async function CandidateProfilePage({ params, searchParams }: Pro
       })
     : [];
 
-  // The candidate's rounds and where each stands.
-  const plan = (await loadCandidateRounds(actor.workspaceId, actor.workspaceSlug, [id], new Map([[id, row.stage]]))).get(id)!;
-  const rounds: ProfileRound[] = plan.progress.rounds.map((p) => {
-    const m = plan.meta.get(p.id)!;
-    return { id: p.id, kind: p.kind, name: p.name, format: m.format, required: p.required, skipped: p.skipped, manual: m.manual, held: m.held, state: p.state, number: p.number };
-  });
-  const roleType = plan.roleType;
+  // The rounds themselves come on the row; the role type decides which formats a new round offers.
+  const plan = row.rounds ? null : (await loadCandidateRounds(actor.workspaceId, actor.workspaceSlug, [id], new Map([[id, row.stage]]))).get(id);
+  const roleType = row.rounds?.roleType ?? plan?.roleType ?? "technical";
+  const roundName = (rid: string | undefined) => row.rounds?.rounds.find((r) => r.id === rid)?.name ?? null;
 
   const memberName = (uid: string | null) => lookups.members.find((m) => m.id === uid)?.name ?? null;
   // Who made the current decision: the newest move into it. Older rows use
@@ -147,13 +143,12 @@ export default async function CandidateProfilePage({ params, searchParams }: Pro
       perms={perms}
       ats={ats}
       canSendAtsInvite={canSendAi || canSendTakeHome}
-      rounds={rounds}
       planName={candidate.plan?.name ?? null}
       roleType={roleType}
       // "Stop here" on a round report lands here with the Not passed dialog open.
       openReject={
         sp.decide === "not_passed"
-          ? { reason: REJECT_REASONS.includes(sp.reason as RejectReason) ? (sp.reason as RejectReason) : null, note: rounds.find((r) => r.id === sp.round) ? `Stopped after ${rounds.find((r) => r.id === sp.round)!.name}` : "" }
+          ? { reason: REJECT_REASONS.includes(sp.reason as RejectReason) ? (sp.reason as RejectReason) : null, note: roundName(sp.round) ? `Stopped after ${roundName(sp.round)}` : "" }
           : null
       }
     />

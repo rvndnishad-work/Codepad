@@ -9,13 +9,17 @@
  */
 import { prisma } from "@/lib/prisma";
 import { loadCandidateResults } from "@/lib/crm/results-server";
-import type { CandidateResult } from "@/lib/crm/results";
+import { INTERVIEW_PASS_RATING, type CandidateResult } from "@/lib/crm/results";
+import type { RoundResultView, RoundsSummary, RoundView } from "@/lib/interview/rounds-view";
 import {
   attemptFromResult,
   normalizeHiringType,
   normalizeRoleType,
+  overrideReason,
   planProgress,
   roundAfter,
+  roundStateLabel,
+  segmentOf,
   type Attempt,
   type NextStep,
   type PlanProgress,
@@ -26,11 +30,15 @@ import {
 
 export type RoundMeta = {
   format: string | null;
+  /** The plan round this copy came from; null when added for this person. */
+  planRoundId: string | null;
   manual: boolean;
   held: boolean;
   durationMin: number | null;
-  /** The latest sitting that has a result: when, the score in words, and its report. */
-  latest: { at: string | null; score: string | null; href: string | null } | null;
+  /** The latest sitting that has a result: when, the score in words and against its bar, and its report. */
+  latest: RoundResultView | null;
+  /** The latest sitting booked, sent or running, with no result yet. */
+  pending: RoundView["pending"];
   decidedAt: string | null;
   decidedById: string | null;
 };
@@ -50,6 +58,17 @@ export type CandidateRounds = {
 function scoreText(r: CandidateResult): string | null {
   if (r.kind === "interview" && r.rating != null) return `${r.rating.toFixed(1)} of ${r.ratingScale ?? 5}`;
   return r.score != null ? `${Math.round(r.score)}%` : null;
+}
+
+/** The score and the pass mark on 0-1, and the bar in words. */
+function scoreBar(r: CandidateResult): Pick<RoundResultView, "frac" | "bar" | "barText"> {
+  if (r.kind === "interview") {
+    const scale = r.ratingScale ?? 5;
+    const bar = r.ratingBar ?? INTERVIEW_PASS_RATING;
+    return { frac: r.rating != null ? r.rating / scale : null, bar: bar / scale, barText: `bar ${Number(bar.toFixed(2))}` };
+  }
+  const mark = r.passMark ?? null;
+  return { frac: r.score != null ? r.score / 100 : null, bar: mark != null ? mark / 100 : null, barText: mark != null ? `bar ${mark}%` : null };
 }
 
 /**
@@ -108,13 +127,28 @@ export async function loadCandidateRounds(
       const attempts: Attempt[] = [];
       let latest: RoundMeta["latest"] = null;
       let latestT = -Infinity;
+      let pending: RoundMeta["pending"] = null;
+      let pendingT = -Infinity;
       const note = (res: CandidateResult, a: Attempt) => {
         attempts.push(a);
-        if (a.state !== "above_bar" && a.state !== "below_bar" && a.state !== "did_not_finish" && a.state !== "awaiting_review") return;
         const t = a.at ? new Date(a.at).getTime() : 0;
+        if (a.state === "scheduled" || a.state === "invited" || a.state === "in_progress") {
+          if (t < pendingT) return;
+          pendingT = t;
+          const isLive = res.kind === "interview";
+          pending = {
+            at: a.state === "in_progress" ? (res.startedAt ?? a.at) : isLive ? (res.scheduledAt ?? a.at) : res.sentAt,
+            due: res.deadlineAt,
+            href: isLive ? null : res.href,
+            lobbyHref: isLive ? `/w/${workspaceSlug}/interviews/${res.id}/lobby` : null,
+          };
+          return;
+        }
+        if (a.state !== "above_bar" && a.state !== "below_bar" && a.state !== "did_not_finish" && a.state !== "awaiting_review") return;
         if (t < latestT) return;
         latestT = t;
-        latest = { at: a.at, score: a.state === "did_not_finish" ? null : scoreText(res), href: res.href };
+        const dnf = a.state === "did_not_finish";
+        latest = { at: a.at, score: dnf ? null : scoreText(res), ...(dnf ? { frac: null, bar: null, barText: null } : scoreBar(res)), href: res.kind === "interview" ? `/w/${workspaceSlug}/interviews/${res.id}/report` : res.href };
       };
       for (const s of r.sessions) {
         roundOfSession.set(s.id, r.id);
@@ -128,10 +162,12 @@ export async function loadCandidateRounds(
       }
       meta.set(r.id, {
         format: r.format,
+        planRoundId: r.planRoundId,
         manual: !r.planRoundId,
         held: r.sessions.length + r.aiSessions.length > 0 || !!r.nextStep,
         durationMin: r.durationMin,
         latest,
+        pending,
         decidedAt: r.decidedAt?.toISOString() ?? null,
         decidedById: r.decidedById,
       });
@@ -157,6 +193,59 @@ export async function loadCandidateRounds(
     });
   }
   return out;
+}
+
+/**
+ * A candidate's rounds as plain data for the pages (see rounds-view).
+ * `nameOf` turns the member ids who moved people on into names.
+ */
+export function summarizeRounds(cr: CandidateRounds, nameOf: (id: string | null) => string | null = () => null): RoundsSummary {
+  const p = cr.progress;
+  return {
+    planName: cr.planName,
+    roleType: cr.roleType,
+    total: p.total,
+    done: p.done,
+    waitingOn: p.waitingOn,
+    readyForDecision: p.readyForDecision,
+    currentId: p.current?.id ?? null,
+    stoppedAtId: p.stoppedAt?.id ?? null,
+    override: p.total > 0 ? overrideReason(p) : null,
+    rounds: p.rounds.map((r) => {
+      const m = cr.meta.get(r.id);
+      return {
+        id: r.id,
+        planRoundId: m?.planRoundId ?? null,
+        number: r.number,
+        name: r.name,
+        kind: r.kind,
+        format: m?.format ?? r.format ?? null,
+        required: r.required,
+        skipped: r.skipped,
+        manual: m?.manual ?? false,
+        held: m?.held ?? false,
+        durationMin: m?.durationMin ?? null,
+        state: r.state,
+        seg: segmentOf(r.state),
+        stateLabel: roundStateLabel(r.state, r.kind),
+        nextStep: r.nextStep,
+        decidedAt: m?.decidedAt ?? null,
+        decidedBy: nameOf(m?.decidedById ?? null),
+        result: m?.latest ?? null,
+        pending: r.state === "scheduled" || r.state === "in_progress" ? (m?.pending ?? null) : null,
+      };
+    }),
+  };
+}
+
+/** Names for the members who moved people on, for summarizeRounds. */
+export async function deciderNames(rounds: Iterable<CandidateRounds>): Promise<(id: string | null) => string | null> {
+  const ids = new Set<string>();
+  for (const cr of rounds) for (const m of cr.meta.values()) if (m.decidedById) ids.add(m.decidedById);
+  if (!ids.size) return () => null;
+  const users = await prisma.user.findMany({ where: { id: { in: [...ids] } }, select: { id: true, name: true, email: true } });
+  const map = new Map(users.map((u) => [u.id, u.name || u.email || null]));
+  return (id) => (id ? (map.get(id) ?? null) : null);
 }
 
 export type NextRoundDue = {

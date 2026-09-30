@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
  * COLLIDING PLANETS — icy world (left) grinding into a lava world (right)
@@ -142,6 +143,7 @@ function Planet({
   glowColor,
   spin = 0.1,
   bobPhase = 0,
+  clay,
 }: {
   position: [number, number, number];
   radius: number;
@@ -150,6 +152,8 @@ function Planet({
   glowColor: string;
   spin?: number;
   bobPhase?: number;
+  /** Light theme: matte clay colour; no texture, no additive halo. */
+  clay?: string;
 }) {
   const group = useRef<THREE.Group>(null);
   const mesh = useRef<THREE.Mesh>(null);
@@ -163,6 +167,16 @@ function Planet({
       group.current.position.y = position[1] + Math.sin(t * 0.5 + bobPhase) * 0.06;
     }
   });
+  if (clay) {
+    return (
+      <group ref={group} position={position}>
+        <mesh ref={mesh}>
+          <sphereGeometry args={[radius, 48, 48]} />
+          <meshLambertMaterial color={clay} />
+        </mesh>
+      </group>
+    );
+  }
   if (!map || !glowTex) return null;
   return (
     <group ref={group} position={position}>
@@ -204,7 +218,7 @@ function ImpactFlash() {
 }
 
 /** Expanding shockwave rings, looping. */
-function Shockwaves() {
+function Shockwaves({ light = false }: { light?: boolean }) {
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   const time = useRef(0);
   useFrame((_, rawDelta) => {
@@ -216,7 +230,7 @@ function Shockwaves() {
       const s = 1 + phase * 2.6;
       m.scale.set(s, s, 1);
       const mat = m.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.4 * (1 - phase);
+      mat.opacity = (light ? 0.3 : 0.4) * (1 - phase);
     }
   });
   return (
@@ -229,7 +243,11 @@ function Shockwaves() {
           }}
         >
           <ringGeometry args={[1.15, 1.22, 96]} />
-          <meshBasicMaterial color={i === 0 ? "#ffd9a0" : "#8b93ff"} transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+          {light ? (
+            <meshBasicMaterial color="#0f1730" transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} />
+          ) : (
+            <meshBasicMaterial color={i === 0 ? "#ffd9a0" : "#8b93ff"} transparent opacity={0.3} side={THREE.DoubleSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+          )}
         </mesh>
       ))}
     </group>
@@ -237,7 +255,7 @@ function Shockwaves() {
 }
 
 /** Sparks blasted outward from the contact point. */
-function Sparks({ count = 130 }: { count?: number }) {
+function Sparks({ count = 130, pebble }: { count?: number; pebble?: string }) {
   const ref = useRef<THREE.Points>(null);
   const time = useRef(0);
   const seeds = useMemo(() => {
@@ -271,7 +289,12 @@ function Sparks({ count = 130 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
+      {pebble ? (
+        // light: opaque matte pebbles, normal blending
+        <pointsMaterial size={0.075} color={pebble} sizeAttenuation depthWrite={false} />
+      ) : (
       <pointsMaterial size={0.055} color="#ffc37a" transparent opacity={0.85} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+      )}
     </points>
   );
 }
@@ -286,7 +309,40 @@ function Rig({ children }: { children: React.ReactNode }) {
   return <group ref={ref}>{children}</group>;
 }
 
+/** Light theme: a few tiny navy / indigo / gold sparkles instead of glowing stars. */
+function Sparkles() {
+  const groups = useMemo(() => {
+    const make = (n: number) => {
+      const a = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        a[i * 3] = (Math.random() - 0.5) * 22;
+        a[i * 3 + 1] = (Math.random() - 0.5) * 12;
+        a[i * 3 + 2] = -6 - Math.random() * 6;
+      }
+      return a;
+    };
+    return [
+      { pos: make(40), color: "#0f1730", opacity: 0.35 },
+      { pos: make(20), color: "#3f47b8", opacity: 0.45 },
+      { pos: make(8), color: "#f5c518", opacity: 0.9 },
+    ];
+  }, []);
+  return (
+    <>
+      {groups.map((g, i) => (
+        <points key={i}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[g.pos, 3]} />
+          </bufferGeometry>
+          <pointsMaterial size={0.06} color={g.color} transparent opacity={g.opacity} sizeAttenuation depthWrite={false} />
+        </points>
+      ))}
+    </>
+  );
+}
+
 export default function CollidingPlanets3D({ paused = false }: { paused?: boolean }) {
+  const light = useIsLightTheme();
   const iceTex = useIceTexture();
   const lavaTex = useLavaTexture();
   const iceGlow = useGlowTexture([
@@ -308,7 +364,27 @@ export default function CollidingPlanets3D({ paused = false }: { paused?: boolea
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
-      <Stars radius={60} depth={40} count={700} factor={2.6} saturation={0.25} fade speed={0.35} />
+      {light ? (
+        <>
+          {/* soft top-left key light for the matte clay spheres */}
+          <ambientLight intensity={1.6} />
+          <directionalLight position={[-5, 6, 6]} intensity={2.2} />
+          <Sparkles />
+        </>
+      ) : (
+        <Stars radius={60} depth={40} count={700} factor={2.6} saturation={0.25} fade speed={0.35} />
+      )}
+      {light ? (
+        <Rig>
+          {/* clay daylight: pink world (left) vs periwinkle world (right), pebble burst at contact */}
+          <Planet position={[-1.85, -0.7, -0.8]} radius={1.2} map={null} glowTex={null} glowColor="" clay="#eac7e5" spin={0.08} bobPhase={0} />
+          <Planet position={[1.85, -0.7, -0.8]} radius={1.05} map={null} glowTex={null} glowColor="" clay="#9aa2ff" spin={-0.11} bobPhase={Math.PI} />
+          <Shockwaves light />
+          <Sparks count={70} pebble="#f5c518" />
+          <Sparks count={45} pebble="#c89bc2" />
+          <Sparks count={35} pebble="#4b8fa9" />
+        </Rig>
+      ) : (
       <Rig>
         {/* icy world (left) vs lava world (right), grinding at center-low */}
         <Planet position={[-1.85, -0.7, -0.8]} radius={1.2} map={iceTex} glowTex={iceGlow} glowColor="#9fd0ff" spin={0.08} bobPhase={0} />
@@ -317,6 +393,7 @@ export default function CollidingPlanets3D({ paused = false }: { paused?: boolea
         <Shockwaves />
         <Sparks />
       </Rig>
+      )}
     </Canvas>
   );
 }

@@ -220,21 +220,21 @@ export default function CandidateCockpitClient({
   return (
     <div ref={root} className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
       {/* ── Collision hero ── */}
-      <section data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
+      <section data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#07070e] dark:text-white">
         <div aria-hidden className="ci-bg pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-[-180px] h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-[#8b93ff]/15 blur-[130px]" />
-          <div className="wow-grid-bg absolute inset-0 opacity-70" />
+          <div className="absolute left-1/2 top-[-180px] h-[420px] w-[820px] -translate-x-1/2 hidden rounded-full bg-[#8b93ff]/15 blur-[130px] dark:block" />
+          <div className="wow-grid-bg absolute inset-0 opacity-30 dark:opacity-70" />
         </div>
         <div aria-hidden data-planets className="ci-3d absolute inset-0 transform-gpu will-change-transform">
           <CollidingPlanets3D paused={paused || scrolling} />
         </div>
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-[#07070e]/60 via-transparent to-[#07070e]" />
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_58%_48%_at_50%_42%,rgba(7,7,14,0.82),transparent_70%)]" />
+        <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b dark:block from-[#07070e]/60 via-transparent to-[#07070e]" />
+        <div aria-hidden className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_58%_48%_at_50%_42%,rgba(7,7,14,0.82),transparent_70%)]" />
 
         {/* planet captions */}
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-5 z-10 hidden items-center justify-between px-8 font-mono text-[10px] uppercase tracking-[0.3em] text-white/35 md:flex">
-          <span className="flex items-center gap-1.5"><Snowflake className="h-3 w-3 text-sky-300" /> Ice // stay calm</span>
-          <span className="flex items-center gap-1.5">Bring heat <Flame className="h-3 w-3 text-orange-400" /> // fire</span>
+          <span className="flex items-center gap-1.5"><Snowflake className="h-3 w-3 text-[#4b8fa9] dark:text-sky-300" /> Ice // stay calm</span>
+          <span className="flex items-center gap-1.5">Bring heat <Flame className="h-3 w-3 text-[#c89bc2] dark:text-orange-400" /> // fire</span>
         </div>
 
         <div className="relative z-20 mx-auto max-w-4xl px-4 pb-16 pt-24 text-center md:pt-32">
@@ -246,7 +246,7 @@ export default function CandidateCockpitClient({
             Practice arena
           </p>
 
-          <h1 className="wow-font-display mt-6 text-6xl leading-[0.92] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] md:text-8xl">
+          <h1 className="wow-font-display mt-6 text-6xl leading-[0.92] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] md:text-8xl">
             <span className="block overflow-hidden pb-1"><span className="ci-line block">TRAIN FOR</span></span>
             <span className="block overflow-hidden pb-2"><span className="ci-line wow-gradient-text block pb-2">THE REAL THING.</span></span>
           </h1>
@@ -260,24 +260,24 @@ export default function CandidateCockpitClient({
           <div className="ci-fade mt-8 flex flex-wrap items-center justify-center gap-3">
             <button
               onClick={() => setWizardOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-[13px] font-black uppercase tracking-wider text-black shadow-[0_6px_24px_-8px_rgba(255,255,255,0.5)] transition hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0f1730] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-black dark:shadow-[0_6px_24px_-8px_rgba(255,255,255,0.5)] transition hover:scale-105 active:scale-95"
             >
               <Layers className="h-4 w-4" />
               Start practicing
             </button>
             <button
               onClick={() => setAiPracticeOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white backdrop-blur-md transition hover:border-white/40 hover:bg-white/[0.1] active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-fg backdrop-blur-md dark:text-white transition hover:border-white/40 hover:bg-white/[0.1] active:scale-95"
             >
-              <Sparkles className="h-4 w-4 text-[#ffe600]" />
+              <Sparkles className="h-4 w-4 text-[#d9a50a] dark:text-[#ffe600]" />
               AI mock interview
             </button>
           </div>
 
           <div className="ci-fade mt-8 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-10">
-            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-white"><CountUp value={stats.total} /></strong> Sessions</span>
-            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-white"><CountUp value={stats.completed} /></strong> Completed</span>
-            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-[#7ef0c1]">{passRate}%</strong> Pass rate</span>
+            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-fg dark:text-white"><CountUp value={stats.total} /></strong> Sessions</span>
+            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-fg dark:text-white"><CountUp value={stats.completed} /></strong> Completed</span>
+            <span><strong className="wow-font-display text-xl normal-case tabular-nums tracking-normal text-[#3f47b8] dark:text-[#7ef0c1]">{passRate}%</strong> Pass rate</span>
           </div>
         </div>
       </section>

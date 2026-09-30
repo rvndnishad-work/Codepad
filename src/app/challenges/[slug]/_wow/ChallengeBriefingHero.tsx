@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 import { ArrowLeft, Binary, Braces, Clock, FlaskConical, LayoutTemplate, Lock, Eye } from "lucide-react";
 
 const KIND_ICON = { algorithms: Binary, ui: LayoutTemplate, js: Braces } as const;
@@ -55,6 +56,7 @@ export default function ChallengeBriefingHero({
   const root = useRef<HTMLElement>(null);
   const tint = KIND_TINT[kind] ?? "#8b93ff";
   const Icon = KIND_ICON[kind];
+  const light = useIsLightTheme();
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -76,16 +78,24 @@ export default function ChallengeBriefingHero({
   ];
 
   return (
-    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
+    <section ref={root} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#08080f] dark:text-white">
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden dark:block">
         <div className="absolute -top-32 right-[6%] h-[420px] w-[640px] rounded-full blur-[140px]" style={{ backgroundColor: tint, opacity: 0.15 }} />
         <div className="absolute -bottom-40 -left-24 h-[340px] w-[460px] rounded-full bg-[#8b93ff]/10 blur-[120px]" />
         <div className="wow-grid-bg absolute inset-0 [mask-image:linear-gradient(to_bottom,black_60%,transparent_98%)]" />
       </div>
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080f]" />
-      <div aria-hidden className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-b from-transparent to-[#08080f]" />
+      <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#08080f] dark:block" />
+      <div aria-hidden className="absolute inset-x-0 bottom-0 hidden h-16 bg-gradient-to-b from-transparent to-[#08080f] dark:block" />
+      {/* light only: a small matte clay planet with a navy hairline ring */}
+      <div aria-hidden className="pointer-events-none absolute right-[8%] top-28 hidden h-40 w-40 lg:block dark:!hidden">
+        <div
+          className="absolute inset-0 rounded-full"
+          style={{ background: "radial-gradient(circle at 34% 30%, #fbe4f5 0%, #eac7e5 45%, #c89bc2 100%)" }}
+        />
+        <div className="absolute left-1/2 top-1/2 h-12 w-64 -translate-x-1/2 -translate-y-1/2 -rotate-12 rounded-[50%] border border-[#0f1730]/25" />
+      </div>
 
-      <div aria-hidden className="cb-mark pointer-events-none absolute -right-10 top-1/2 hidden -translate-y-1/2 opacity-[0.12] lg:block">
+      <div aria-hidden className="cb-mark pointer-events-none absolute -right-10 top-1/2 hidden -translate-y-1/2 text-[#0f1730] opacity-[0.06] lg:block dark:text-inherit dark:opacity-[0.12]">
         <Icon className="h-80 w-80" strokeWidth={0.8} />
       </div>
 
@@ -101,7 +111,7 @@ export default function ChallengeBriefingHero({
         <div className="cb-fade mt-7 flex items-center gap-3">
           <span
             className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-md"
-            style={{ boxShadow: `0 0 36px -8px ${tint}` }}
+            style={light ? undefined : { boxShadow: `0 0 36px -8px ${tint}` }}
           >
             <Icon className="h-5 w-5" style={{ color: tint }} />
           </span>
@@ -111,14 +121,14 @@ export default function ChallengeBriefingHero({
           </p>
         </div>
 
-        <h1 className="mt-4 max-w-4xl text-[13vw] font-black leading-[0.95] tracking-tight text-white drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)] sm:text-6xl md:text-7xl">
+        <h1 className="mt-4 max-w-4xl text-[13vw] font-black leading-[0.95] tracking-tight text-fg dark:text-white dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.9)] sm:text-6xl md:text-7xl">
           <span className="block overflow-hidden pb-2"><span className="cb-line block">{title}</span></span>
         </h1>
 
         {/* parameter band */}
         <div className="mt-8 grid max-w-3xl grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 backdrop-blur-md sm:grid-cols-4">
           {params.map((p) => (
-            <div key={p.label} className="cb-param bg-[#0b0d16]/90 px-4 py-3.5">
+            <div key={p.label} className="cb-param bg-surface px-4 py-3.5 dark:bg-[#0b0d16]/90">
               <p className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                 {p.icon && <p.icon className="h-3 w-3" />}
                 {p.dot && <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />}
@@ -130,7 +140,7 @@ export default function ChallengeBriefingHero({
         </div>
 
         {visibility === "private" && (
-          <p className="cb-fade mt-4 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-300">
+          <p className="cb-fade mt-4 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
             <Lock className="h-3 w-3" /> Private
           </p>
         )}

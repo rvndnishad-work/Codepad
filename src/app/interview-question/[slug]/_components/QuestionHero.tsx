@@ -87,13 +87,13 @@ export default function QuestionHero({
   }
 
   const ghost =
-    "inline-flex h-11 items-center gap-2 rounded-full border border-white/[0.14] bg-white/[0.06] px-4 text-sm font-medium text-white/85 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-white/[0.1] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
+    "inline-flex h-11 items-center gap-2 rounded-full border border-white/[0.14] bg-white/[0.06] px-4 text-sm font-medium text-white/85 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-white/[0.1] hover:text-fg dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
 
   return (
-    <header ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <header ref={root} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#08080f] dark:text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 right-[8%] h-[440px] w-[520px] rounded-full blur-[130px]" style={{ background: tint(color, 16) }} />
-        <div className="absolute -bottom-40 -left-24 h-[360px] w-[420px] rounded-full bg-accent-2/10 blur-[120px]" />
+        <div className="absolute -top-32 right-[8%] hidden dark:block h-[440px] w-[520px] rounded-full blur-[130px]" style={{ background: tint(color, 16) }} />
+        <div className="absolute -bottom-40 -left-24 hidden dark:block h-[360px] w-[420px] rounded-full bg-accent-2/10 blur-[120px]" />
         <div className="wow-grid-bg absolute inset-0 [mask-image:linear-gradient(to_bottom,black_50%,transparent_96%)]" />
       </div>
       {/* Fades into the page so no edge shows where the hero ends. */}
@@ -107,13 +107,13 @@ export default function QuestionHero({
         )}
 
         <nav aria-label="Breadcrumb" className="qh-fade flex min-w-0 items-center gap-1.5 text-[13px] text-white/55">
-          <Link href="/interview-questions" className="shrink-0 transition-colors hover:text-white">
+          <Link href="/interview-questions" className="shrink-0 transition-colors hover:text-fg dark:hover:text-white">
             Interview questions
           </Link>
           {question.technology && (
             <>
               <ChevronRight className="h-3.5 w-3.5 shrink-0 text-white/30" aria-hidden />
-              <Link href={`/interview-questions/${question.technology}`} className="shrink-0 transition-colors hover:text-white">
+              <Link href={`/interview-questions/${question.technology}`} className="shrink-0 transition-colors hover:text-fg dark:hover:text-white">
                 {techName}
               </Link>
             </>
@@ -142,7 +142,7 @@ export default function QuestionHero({
           {question.company && (
             <Link
               href={`/interview-questions/company/${question.company.slug}`}
-              className={`${chip} transition-colors hover:border-white/30 hover:text-white`}
+              className={`${chip} transition-colors hover:border-white/30 hover:text-fg dark:hover:text-white`}
             >
               <Building2 className="h-3.5 w-3.5 text-white/45" aria-hidden />
               {question.company.name}
@@ -160,7 +160,7 @@ export default function QuestionHero({
           </span>
         </div>
 
-        <h1 className="mt-5 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] text-white [text-wrap:balance] sm:text-[38px] lg:max-w-[calc(100%-340px)] lg:text-[44px] lg:leading-[1.1]">
+        <h1 className="mt-5 text-[30px] font-semibold leading-[1.15] tracking-[-0.025em] text-fg dark:text-white [text-wrap:balance] sm:text-[38px] lg:max-w-[calc(100%-340px)] lg:text-[44px] lg:leading-[1.1]">
           <span className="block overflow-hidden pb-1">
             <span className="qh-line block">
               {titleParts(question.title).map((p, i) =>
@@ -201,7 +201,7 @@ export default function QuestionHero({
             className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-[background-color,box-shadow,transform] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none ${
               solved
                 ? "border border-success/40 bg-success/15 text-success hover:bg-success/20"
-                : "bg-white text-[#0b0d12] hover:-translate-y-px hover:shadow-[0_12px_30px_-12px_rgba(255,255,255,0.45)] motion-reduce:hover:translate-y-0"
+                : "bg-fg text-bg dark:bg-white dark:text-[#0b0d12] hover:-translate-y-px dark:hover:shadow-[0_12px_30px_-12px_rgba(255,255,255,0.45)] motion-reduce:hover:translate-y-0"
             }`}
           >
             <Check className="h-4 w-4" aria-hidden />

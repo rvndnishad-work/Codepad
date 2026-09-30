@@ -2386,3 +2386,18 @@ body.sidebar-collapsed .workspace-content {
 :root:not(.dark) .bg-secondary:is(.text-bg, .text-white):not(:where(.keep-dark *, .ip-on-dark *, .dark *)) {
   color: var(--accent-2-ink);
 }
+
+/* Space heroes in light (Clay daylight). Their copy was written as bare
+   `text-white` for the night sky; on the pale sky it takes the navy ink.
+   Elements that paint their own fill (buttons, badges) keep their label. */
+:root:not(.dark) .space-hero .text-white:not([class*="bg-"]) {
+  color: var(--fg);
+}
+/* Glassy chips over the 3D scene: faint white glass vanishes on the pale sky,
+   so in light they become solid surface pills that stay legible over a planet. */
+:root:not(.dark) .space-hero :is(.bg-white\/\[0\.04\], .bg-white\/\[0\.06\], .bg-white\/\[0\.1\], .bg-white\/10) {
+  background-color: rgb(var(--c-surface) / 0.92);
+}
+:root:not(.dark) .space-hero .text-white:is(.bg-white\/\[0\.04\], .bg-white\/\[0\.06\], .bg-white\/\[0\.1\], .bg-white\/10) {
+  color: var(--fg);
+}

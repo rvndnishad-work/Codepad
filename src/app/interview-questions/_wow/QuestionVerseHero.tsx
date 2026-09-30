@@ -9,6 +9,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { AudioWaveform, ChevronLeft, ChevronRight, Eye, Heart, Radar } from "lucide-react";
 import CountUp from "@/components/scroll/CountUp";
 import GlobalSearch from "../GlobalSearch";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -30,6 +31,14 @@ const BANDS: { id: "all" | "easy" | "medium" | "hard"; label: string; dot: strin
   { id: "medium", label: "Medium", dot: "#fbbf24" },
   { id: "hard", label: "Hard", dot: "#fb7185" },
 ];
+
+/** Light ("clay daylight") twins of the band dots — muted clay, no neon. */
+const LIGHT_DOTS: Record<(typeof BANDS)[number]["id"], string> = {
+  all: "#d9a50a",
+  easy: "#4b8fa9",
+  medium: "#b8892a",
+  hard: "#a86a9f",
+};
 
 /**
  * SOL DECK — a synthwave half-sun rising on the left over a horizon grid,
@@ -54,6 +63,8 @@ export default function QuestionVerseHero({
   const [scrolling, setScrolling] = useState(false);
   const [band, setBand] = useState<(typeof BANDS)[number]["id"]>("all");
   const [feedIdx, setFeedIdx] = useState(0);
+  const isLight = useIsLightTheme();
+  const dotOf = (b: (typeof BANDS)[number]) => (isLight ? LIGHT_DOTS[b.id] : b.dot);
 
   const feed = useMemo(() => {
     const pool = band === "all" ? featured : featured.filter((f) => f.difficulty === band);
@@ -102,14 +113,15 @@ export default function QuestionVerseHero({
   }, [reduceMotion]);
 
   const current = feed.length > 0 ? feed[feedIdx % feed.length] : null;
-  const activeDot = BANDS.find((b) => b.id === band)?.dot ?? "#ffb64d";
+  const activeBand = BANDS.find((b) => b.id === band);
+  const activeDot = activeBand ? dotOf(activeBand) : "#ffb64d";
   const step = (dir: 1 | -1) => {
     if (feed.length === 0) return;
     setFeedIdx((i) => (i + dir + feed.length) % feed.length);
   };
 
   return (
-    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
+    <section ref={root} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#07070e] dark:text-white">
       {/* sun backdrop — half sun low on the left */}
       <div aria-hidden className="qv2-bg pointer-events-none absolute inset-0">
         <div className="qv2-scene absolute inset-0">
@@ -117,15 +129,15 @@ export default function QuestionVerseHero({
         </div>
       </div>
       {/* readability veils: text lives right, fade at the bottom */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-l from-[#07070e]/90 via-[#07070e]/35 to-transparent" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#07070e]/40 via-transparent to-[#07070e]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-gradient-to-l dark:block from-[#07070e]/90 via-[#07070e]/35 to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b dark:block from-[#07070e]/40 via-transparent to-[#07070e]" />
 
       {/* HUD frame */}
       <div aria-hidden className="pointer-events-none absolute inset-4 z-20 hidden sm:block">
-        <span className="qv2-hud absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2 border-[#ffb64d]/60" />
-        <span className="qv2-hud absolute right-0 top-0 h-6 w-6 border-r-2 border-t-2 border-[#ffb64d]/60" />
-        <span className="qv2-hud absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-[#ffb64d]/60" />
-        <span className="qv2-hud absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-[#ffb64d]/60" />
+        <span className="qv2-hud absolute left-0 top-0 h-6 w-6 border-l-2 border-t-2 border-[#0f1730]/35 dark:border-[#ffb64d]/60" />
+        <span className="qv2-hud absolute right-0 top-0 h-6 w-6 border-r-2 border-t-2 border-[#0f1730]/35 dark:border-[#ffb64d]/60" />
+        <span className="qv2-hud absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-[#0f1730]/35 dark:border-[#ffb64d]/60" />
+        <span className="qv2-hud absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-[#0f1730]/35 dark:border-[#ffb64d]/60" />
         <span className="qv2-hud absolute left-10 top-1 font-mono text-[10px] uppercase tracking-[0.3em] text-white/40">
           SOL // east horizon
         </span>
@@ -141,11 +153,11 @@ export default function QuestionVerseHero({
         {/* ── Right: command column ── */}
         <div>
           <p className="qv2-fade inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
-            <AudioWaveform className="h-3.5 w-3.5 text-[#ffb64d]" />
+            <AudioWaveform className="h-3.5 w-3.5 text-[#3f47b8] dark:text-[#ffb64d]" />
             Interrogation archive v2.0
           </p>
 
-          <h1 className="wow-font-display mt-6 text-[13vw] leading-[0.92] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-7xl lg:text-[5.2rem]">
+          <h1 className="wow-font-display mt-6 text-[13vw] leading-[0.92] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-7xl lg:text-[5.2rem]">
             <span className="block overflow-hidden pb-1"><span className="qv2-line block">EVERY ROOM</span></span>
             <span className="block overflow-hidden pb-1"><span className="qv2-line wow-gradient-text block pb-2">LEAKS ITS</span></span>
             <span className="block overflow-hidden pb-2"><span className="qv2-line wow-text-stroke block">QUESTIONS.</span></span>
@@ -170,11 +182,11 @@ export default function QuestionVerseHero({
                   onClick={() => setBand(b.id)}
                   className={`flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition-all duration-300 ${
                     band === b.id
-                      ? "bg-white font-bold text-black shadow-[0_0_28px_-8px_rgba(255,255,255,0.7)]"
+                      ? "border border-[#0f1730]/20 bg-white font-bold text-black dark:border-0 dark:shadow-[0_0_28px_-8px_rgba(255,255,255,0.7)]"
                       : "border border-white/15 bg-white/[0.06] text-white/60 backdrop-blur hover:border-white/35 hover:text-white"
                   }`}
                 >
-                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: b.dot, boxShadow: `0 0 8px 1px ${b.dot}` }} />
+                  <span className="h-1.5 w-1.5 rounded-full" style={isLight ? { background: dotOf(b) } : { background: b.dot, boxShadow: `0 0 8px 1px ${b.dot}` }} />
                   {b.label}
                 </button>
               ))}
@@ -189,7 +201,7 @@ export default function QuestionVerseHero({
 
       {/* ── Bottom: decoder strip (MANUAL — dots + arrows, no autoplay) ── */}
       <div className="relative z-20 mx-auto max-w-7xl px-4 pb-16">
-        <div className="qv2-fade overflow-hidden rounded-2xl border border-white/10 bg-[#0a0a12]/80 backdrop-blur-md">
+        <div className="qv2-fade overflow-hidden rounded-2xl border border-white/10 bg-surface/90 dark:bg-[#0a0a12]/80 backdrop-blur-md">
           <div className="flex items-center gap-2 border-b border-white/10 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/50">
             <Radar className="h-3.5 w-3.5" style={{ color: activeDot }} />
             Decoder // {band === "all" ? "all bands" : `${band} frequency`}
@@ -204,7 +216,7 @@ export default function QuestionVerseHero({
                     onClick={() => setFeedIdx(i)}
                     aria-label={`Show ${f.title}`}
                     className={`h-1 rounded-full transition-all duration-300 ${
-                      i === feedIdx % feed.length ? "w-6 bg-[#ffb64d]" : "w-2 bg-white/20 hover:bg-white/40"
+                      i === feedIdx % feed.length ? "w-6 bg-[#d9a50a] dark:bg-[#ffb64d]" : "w-2 bg-white/20 hover:bg-white/40"
                     }`}
                   />
                 ))}
@@ -225,10 +237,10 @@ export default function QuestionVerseHero({
                   transition={{ duration: 0.32, ease: "easeOut" }}
                   className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4"
                 >
-                  <span className="shrink-0 font-mono text-[11px] text-[#ffb64d]">$ iq intercept</span>
+                  <span className="shrink-0 font-mono text-[11px] text-[#3f47b8] dark:text-[#ffb64d]">$ iq intercept</span>
                   <Link
                     href={`/interview-question/${current.slug}`}
-                    className="group min-w-0 flex-1 truncate font-extrabold text-white transition-colors hover:text-[#ffe600]"
+                    className="group min-w-0 flex-1 truncate font-extrabold text-white transition-colors hover:text-[#3f47b8] dark:hover:text-[#ffe600]"
                     title={current.title}
                   >
                     {current.title}

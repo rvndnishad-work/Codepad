@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { Plus, Rocket, Zap, Orbit, ChevronDown } from "lucide-react";
 import { TemplateLogo } from "@/lib/icons";
 import StarLottie from "./galaxy/StarLottie";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 const QUICK_TEMPLATES = [
   { id: "react", label: "React Nebula", accent: "#61dafb", angle: -30 },
@@ -21,6 +22,10 @@ const QUICK_TEMPLATES = [
 export default function DashboardHero({ userName }: { userName: string | null }) {
   const firstName = userName?.split(" ")[0];
   const root = useRef<HTMLElement>(null);
+  // Light theme: "clay daylight" (pale sky, navy ink, yellow CTA). Dark keeps
+  // the exact night-sky classes below; `pick` returns them untouched.
+  const light = useIsLightTheme();
+  const pick = (l: string, d: string) => (light ? l : d);
 
   useLayoutEffect(() => {
     if (!root.current) return;
@@ -38,10 +43,10 @@ export default function DashboardHero({ userName }: { userName: string | null })
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="keep-dark gx relative -mx-4 -mt-8 md:-mt-12">
+    <section ref={root} data-dark-hero="dark-only" className="space-hero gx relative -mx-4 -mt-8 md:-mt-12">
       <div className="relative flex min-h-[88vh] items-center overflow-hidden px-4 py-20 md:px-8">
         {/* warm core-light washing the headline from behind */}
-        <div aria-hidden className="pointer-events-none absolute left-[8%] top-1/2 h-[34rem] w-[34rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,232,190,0.09),transparent_62%)] blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute left-[8%] hidden dark:block top-1/2 h-[34rem] w-[34rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,232,190,0.09),transparent_62%)] blur-2xl" />
         {/* twinkling dust */}
         <div aria-hidden className="pointer-events-none absolute inset-0">
           {[
@@ -51,7 +56,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
           ].map((p, i) => (
             <span
               key={i}
-              className="gx-twinkle absolute h-1 w-1 rounded-full bg-white"
+              className={pick("absolute h-[3px] w-[3px] rotate-45 bg-[#0f1730]/55", "gx-twinkle absolute h-1 w-1 rounded-full bg-white")}
               style={{ left: p.l, top: p.t, animationDelay: `${i * 0.6}s` }}
             />
           ))}
@@ -59,7 +64,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
 
         <div className="relative z-10 mx-auto grid w-full max-w-7xl items-center gap-14 lg:grid-cols-[1.25fr_1fr]">
           <div>
-            <p data-gx="eyebrow" className="mb-6 inline-flex items-center gap-2 rounded-full border border-[rgba(255,233,201,0.35)] bg-[rgba(255,233,201,0.06)] px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.28em] text-[#ffe9c9]">
+            <p data-gx="eyebrow" className={`mb-6 inline-flex items-center gap-2 rounded-full border ${pick("border-[#cfdbe3] bg-[#fbfcfd] text-[#3f47b8]", "border-[rgba(255,233,201,0.35)] bg-[rgba(255,233,201,0.06)] text-[#ffe9c9]")} px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.28em]`}>
               <Orbit className="h-3.5 w-3.5" />
               Milky Way Command
             </p>
@@ -71,14 +76,14 @@ export default function DashboardHero({ userName }: { userName: string | null })
                 chart your next build.
               </span>
             </h1>
-            <p data-gx="copy" className="mt-6 max-w-lg text-lg leading-relaxed text-[rgba(238,240,255,0.7)] md:text-xl">
+            <p data-gx="copy" className={`mt-6 max-w-lg text-lg leading-relaxed ${pick("text-muted", "text-[rgba(238,240,255,0.7)]")} md:text-xl`}>
               Your personal observatory for experiments, snippets and social coding — every star is something you shipped.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link
                 data-gx="cta"
                 href="/"
-                className="gx-btn-star gx-pulse-glow inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#ffd166] to-[#ff2fb3] px-7 py-4 text-base font-bold text-[#14092b]"
+                className={`gx-btn-star gx-pulse-glow inline-flex items-center gap-2 rounded-2xl ${pick("bg-[#f5c518] text-[#0f1730]", "bg-gradient-to-r from-[#ffd166] to-[#ff2fb3] text-[#14092b]")} px-7 py-4 text-base font-bold`}
               >
                 <Plus className="h-5 w-5" strokeWidth={3} />
                 Launch Sandbox
@@ -86,7 +91,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
               <Link
                 data-gx="cta"
                 href="/explore"
-                className="gx-btn-star inline-flex items-center gap-2 rounded-2xl border border-[rgba(139,147,255,0.4)] bg-[rgba(13,16,38,0.6)] px-7 py-4 text-base font-bold text-white backdrop-blur"
+                className={`gx-btn-star inline-flex items-center gap-2 rounded-2xl border ${pick("border-[#a3b6c5] bg-[#fbfcfd] text-[#0f1730]", "border-[rgba(139,147,255,0.4)] bg-[rgba(13,16,38,0.6)] text-white")} px-7 py-4 text-base font-bold backdrop-blur`}
               >
                 <Rocket className="h-5 w-5" />
                 Explore the Galaxy
@@ -96,8 +101,8 @@ export default function DashboardHero({ userName }: { userName: string | null })
 
           {/* Launch cluster: lottie heart + orbiting quick-start pods */}
           <div className="relative mx-auto h-80 w-80 sm:h-96 sm:w-96">
-            <div aria-hidden className="gx-spin-slow absolute inset-0 rounded-full border border-dashed border-[rgba(232,238,255,0.25)]" />
-            <div aria-hidden className="absolute inset-8 rounded-full border border-[rgba(255,233,201,0.2)]" />
+            <div aria-hidden className={`gx-spin-slow absolute inset-0 rounded-full border border-dashed ${pick("border-[#0f1730]/25", "border-[rgba(232,238,255,0.25)]")}`} />
+            <div aria-hidden className={`absolute inset-8 rounded-full border ${pick("border-[#0f1730]/15", "border-[rgba(255,233,201,0.2)]")}`} />
             <div className="absolute inset-0 grid place-items-center">
               <StarLottie size={170} />
             </div>
@@ -111,7 +116,7 @@ export default function DashboardHero({ userName }: { userName: string | null })
                   data-gx="pod"
                   href={`/play?template=${t.id}`}
                   title={`Open ${t.label} sandbox`}
-                  className="group absolute flex items-center gap-2 rounded-2xl border border-[rgba(232,238,255,0.22)] bg-[rgba(8,10,26,0.88)] py-2 pl-2 pr-3 backdrop-blur-xl transition-[border-color,box-shadow] duration-300 hover:border-[rgba(255,209,102,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,209,102,0.55)]"
+                  className={`group absolute flex items-center gap-2 rounded-2xl border ${pick("border-[#cfdbe3] bg-[#fbfcfd] text-[#0f1730] hover:border-[#a3b6c5] hover:shadow-[0_10px_28px_-14px_rgba(15,23,48,0.35)]", "border-[rgba(232,238,255,0.22)] bg-[rgba(8,10,26,0.88)] hover:border-[rgba(255,209,102,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,209,102,0.55)]")} py-2 pl-2 pr-3 backdrop-blur-xl transition-[border-color,box-shadow] duration-300`}
                   style={{ left: `calc(50% + ${x.toFixed(1)}px)`, top: `calc(50% + ${y.toFixed(1)}px)`, transform: "translate(-50%,-50%)" }}
                 >
                   <span
@@ -121,11 +126,11 @@ export default function DashboardHero({ userName }: { userName: string | null })
                     <TemplateLogo id={t.id} size={18} />
                   </span>
                   <span className="whitespace-nowrap text-xs font-bold">{t.label}</span>
-                  <Zap className="h-3.5 w-3.5 text-[#ffd166] opacity-0 transition-opacity group-hover:opacity-100" />
+                  <Zap className={`h-3.5 w-3.5 ${pick("text-[#d9a50a]", "text-[#ffd166]")} opacity-0 transition-opacity group-hover:opacity-100`} />
                 </Link>
               );
             })}
-            <p className="absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.3em] text-[rgba(238,240,255,0.4)]">
+            <p className={`absolute -bottom-9 left-1/2 -translate-x-1/2 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.3em] ${pick("text-subtle", "text-[rgba(238,240,255,0.4)]")}`}>
               Quick-launch orbit
             </p>
           </div>
@@ -133,13 +138,13 @@ export default function DashboardHero({ userName }: { userName: string | null })
 
         {/* scroll cue */}
         <div data-gx="cue" className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2">
-          <a href="#gx-deck" aria-label="Scroll to your deck" className="flex flex-col items-center gap-1 text-[rgba(238,240,255,0.5)] transition-colors hover:text-white">
+          <a href="#gx-deck" aria-label="Scroll to your deck" className={`flex flex-col items-center gap-1 ${pick("text-muted hover:text-fg", "text-[rgba(238,240,255,0.5)] hover:text-white")} transition-colors`}>
             <span className="font-mono text-[10px] uppercase tracking-[0.3em]">Your deck</span>
             <ChevronDown className="h-4 w-4 animate-bounce" />
           </a>
         </div>
         {/* bottom fade into the deck */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[#02030a]" />
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-40 dark:block bg-gradient-to-b from-transparent to-[#02030a]" />
       </div>
     </section>
   );

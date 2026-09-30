@@ -89,8 +89,8 @@ export default function RogueHero({
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
-      <div aria-hidden className="rg-bg pointer-events-none absolute inset-0">
+    <section ref={root} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#07070e] dark:text-white">
+      <div aria-hidden className="rg-bg pointer-events-none absolute inset-0 hidden dark:block">
         <div className="absolute right-[-120px] top-[-140px] h-[420px] w-[560px] rounded-full bg-[#8b93ff]/12 blur-[130px]" />
         <div className="absolute bottom-[-160px] left-[-120px] h-[360px] w-[440px] rounded-full bg-[#22d3ee]/10 blur-[120px]" />
         <div className="wow-grid-bg absolute inset-0 opacity-70" />
@@ -99,17 +99,17 @@ export default function RogueHero({
         <RoguePlanet3D paused={paused || scrolling} />
       </div>
       {/* readability: text lives left, fade at the bottom */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#07070e]/85 via-[#07070e]/30 to-transparent" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#07070e]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-[#07070e]/85 via-[#07070e]/30 to-transparent dark:block" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#07070e] dark:block" />
 
       <div className="relative z-20 mx-auto max-w-6xl px-4 pb-14 pt-24 md:pt-32">
         <p className="rg-fade font-mono text-[11px] font-bold uppercase tracking-[0.25em] text-white/45">{todayLabel}</p>
         <p className="rg-fade mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
-          <Telescope className="h-3.5 w-3.5 text-[#8b93ff]" />
+          <Telescope className="h-3.5 w-3.5 text-[#3f47b8] dark:text-[#8b93ff]" />
           Deep field // unknown questions ahead
         </p>
 
-        <h1 className="wow-font-display mt-6 max-w-3xl text-6xl leading-[0.92] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] md:text-8xl">
+        <h1 className="wow-font-display mt-6 max-w-3xl text-6xl leading-[0.92] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] md:text-8xl">
           <span className="block overflow-hidden pb-1"><span className="rg-line block">EXPECT THE</span></span>
           <span className="block overflow-hidden pb-2"><span className="rg-line wow-gradient-text block pb-2">UNEXPECTED.</span></span>
         </h1>
@@ -124,7 +124,7 @@ export default function RogueHero({
           {daily ? (
             <Link
               href={`/challenges/${daily.slug}`}
-              className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-[13px] font-black uppercase tracking-wider text-black shadow-[0_6px_24px_-8px_rgba(255,255,255,0.5)] transition hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-2 rounded-full bg-[#0f1730] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-black dark:shadow-[0_6px_24px_-8px_rgba(255,255,255,0.5)] transition hover:scale-105 active:scale-95"
             >
               <Play className="h-4 w-4 fill-current" />
               {daily.solved ? "Solve it again" : "Solve today's challenge"}
@@ -144,7 +144,7 @@ export default function RogueHero({
         {daily?.solved && nextUnsolved && (
           <p className="rg-fade mt-3 text-xs text-white/50">
             Already done today?{" "}
-            <Link href={`/challenges/${nextUnsolved.slug}`} className="font-bold text-[#ffe600] transition hover:text-white">
+            <Link href={`/challenges/${nextUnsolved.slug}`} className="font-bold text-[#3f47b8] transition hover:text-fg dark:text-[#ffe600] dark:hover:text-white">
               Try “{nextUnsolved.title.length > 40 ? `${nextUnsolved.title.slice(0, 40)}…` : nextUnsolved.title}” →
             </Link>
           </p>

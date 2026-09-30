@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
  * ROGUE PLANET — a starless drifter for the challenges hero: dark cratered
@@ -66,6 +67,62 @@ function useRogueTexture() {
   }, []);
 }
 
+/** Light theme: matte clay periwinkle with baked top-left highlight, no glow. */
+function useClayTexture() {
+  return useMemo(() => {
+    const S = 512;
+    const cv = document.createElement("canvas");
+    cv.width = S;
+    cv.height = S;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return null;
+    const g = ctx.createRadialGradient(S * 0.34, S * 0.3, S * 0.02, S * 0.5, S * 0.5, S * 0.62);
+    g.addColorStop(0, "#c9d0ff");
+    g.addColorStop(0.45, "#9aa2ff");
+    g.addColorStop(1, "#6c74d8");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, S, S);
+    // a few soft pink clay dimples
+    for (let i = 0; i < 14; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = 6 + Math.random() * 22;
+      ctx.fillStyle = "rgba(200,155,194,0.22)";
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, []);
+}
+
+/** Light-theme drifter: shading is baked into a screen-facing sprite so it stays top-left lit. */
+function ClayWorld({ map }: { map: THREE.Texture | null }) {
+  const ref = useRef<THREE.Group>(null);
+  const time = useRef(0);
+  useFrame((_, rawDelta) => {
+    const t = stepTime(time, rawDelta);
+    if (!ref.current) return;
+    ref.current.position.y = -0.9 + Math.sin(t * 0.4) * 0.1;
+  });
+  if (!map) return null;
+  return (
+    <group ref={ref} position={[1.6, -0.9, -1.2]}>
+      <mesh>
+        <circleGeometry args={[1.9, 96]} />
+        <meshBasicMaterial map={map} />
+      </mesh>
+      {/* navy hairline ring */}
+      <mesh rotation={[1.25, 0, 0.25]}>
+        <ringGeometry args={[2.6, 2.62, 160]} />
+        <meshBasicMaterial color="#0f1730" transparent opacity={0.25} side={THREE.DoubleSide} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
 function useAuraTexture() {
   return useMemo(() => {
     const S = 256;
@@ -117,7 +174,7 @@ function RogueWorld({ map, aura }: { map: THREE.Texture | null; aura: THREE.Text
 }
 
 /** Two moonlets on tilted orbits. */
-function Moonlets() {
+function Moonlets({ light = false }: { light?: boolean }) {
   const group = useRef<THREE.Group>(null);
   const time = useRef(0);
   useFrame((_, rawDelta) => {
@@ -127,10 +184,16 @@ function Moonlets() {
   });
   return (
     <group ref={group} position={[1.6, -0.9, -1.2]} rotation={[0.5, 0, 0.25]}>
-      {[
-        { r: 2.9, size: 0.16, speed: 1, color: "#aebadd" },
-        { r: 3.5, size: 0.1, speed: -0.7, color: "#7f8bb0" },
-      ].map((m, i) => (
+      {(light
+        ? [
+            { r: 2.9, size: 0.16, speed: 1, color: "#eac7e5" },
+            { r: 3.5, size: 0.1, speed: -0.7, color: "#83c0d4" },
+          ]
+        : [
+            { r: 2.9, size: 0.16, speed: 1, color: "#aebadd" },
+            { r: 3.5, size: 0.1, speed: -0.7, color: "#7f8bb0" },
+          ]
+      ).map((m, i) => (
         <group key={i} rotation={[0, 0, (i * Math.PI) / 1.3]}>
           <mesh position={[m.r, 0, 0]}>
             <sphereGeometry args={[m.size, 16, 16]} />
@@ -143,7 +206,7 @@ function Moonlets() {
 }
 
 /** Drifting ice crystals catching stray light. */
-function Drift({ count = 160 }: { count?: number }) {
+function Drift({ count = 160, light = false }: { count?: number; light?: boolean }) {
   const ref = useRef<THREE.Points>(null);
   const time = useRef(0);
   const positions = useMemo(() => {
@@ -165,7 +228,11 @@ function Drift({ count = 160 }: { count?: number }) {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.045} color="#bcd6ff" transparent opacity={0.5} sizeAttenuation depthWrite={false} />
+      {light ? (
+        <pointsMaterial size={0.035} color="#0f1730" transparent opacity={0.35} sizeAttenuation depthWrite={false} />
+      ) : (
+        <pointsMaterial size={0.045} color="#bcd6ff" transparent opacity={0.5} sizeAttenuation depthWrite={false} />
+      )}
     </points>
   );
 }
@@ -173,6 +240,8 @@ function Drift({ count = 160 }: { count?: number }) {
 export default function RoguePlanet3D({ paused = false }: { paused?: boolean }) {
   const map = useRogueTexture();
   const aura = useAuraTexture();
+  const clay = useClayTexture();
+  const light = useIsLightTheme();
   return (
     <Canvas
       camera={{ position: [0, 0.4, 9.5], fov: 44 }}
@@ -182,10 +251,20 @@ export default function RoguePlanet3D({ paused = false }: { paused?: boolean }) 
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
-      <Stars radius={60} depth={40} count={800} factor={2.4} saturation={0.2} fade speed={0.3} />
-      <RogueWorld map={map} aura={aura} />
-      <Moonlets />
-      <Drift />
+      {light ? (
+        <>
+          <ClayWorld map={clay} />
+          <Moonlets light />
+          <Drift count={40} light />
+        </>
+      ) : (
+        <>
+          <Stars radius={60} depth={40} count={800} factor={2.4} saturation={0.2} fade speed={0.3} />
+          <RogueWorld map={map} aura={aura} />
+          <Moonlets />
+          <Drift />
+        </>
+      )}
     </Canvas>
   );
 }

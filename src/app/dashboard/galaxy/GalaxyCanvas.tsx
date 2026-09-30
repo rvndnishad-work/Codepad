@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type MutableRefObject, type React
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
  * True Milky Way backdrop, rebuilt from reference photos — not neon blobs.
@@ -409,8 +410,168 @@ function Scene() {
   );
 }
 
+/* ── Light theme: "clay daylight" spiral ─────────────────────────────────
+ * A soft pastel clay galaxy instead of the photographic Milky Way: a golden
+ * clay core, matte pebble stars in pink / sky / periwinkle wound along two
+ * arms, navy hairline orbits and a few tiny navy sparkles. Lit materials,
+ * normal blending only: no additive glow, no white twinkle dots. */
+
+const CLAY = {
+  gold: { base: "#f5c518", emissive: "#fff4c4" },
+  pebbles: ["#eac7e5", "#83c0d4", "#9aa2ff", "#fbe4f5", "#d6eef7", "#c9d0ff", "#c89bc2", "#4b8fa9", "#6c74d8"],
+  navy: "#0f1730",
+  indigo: "#3f47b8",
+};
+
+function useClayPebbles(count: number) {
+  return useMemo(() => {
+    let seed = 42;
+    const rnd = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    const items: { p: [number, number, number]; s: number; c: THREE.Color }[] = [];
+    for (let i = 0; i < count; i++) {
+      const arm = i % 2;
+      const t = Math.pow(rnd(), 0.8);
+      const r = 0.9 + t * 4.3;
+      const a = arm * Math.PI + t * 4.2 + (rnd() - 0.5) * 0.55;
+      const jitter = 0.25 + t * 0.35;
+      items.push({
+        p: [Math.cos(a) * r + (rnd() - 0.5) * jitter, Math.sin(a) * r + (rnd() - 0.5) * jitter, (rnd() - 0.5) * 0.25],
+        s: 0.03 + rnd() * 0.07 * (1.2 - t * 0.6),
+        c: new THREE.Color(CLAY.pebbles[Math.floor(rnd() * CLAY.pebbles.length)]),
+      });
+    }
+    return items;
+  }, [count]);
+}
+
+function ClayPebbles() {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const items = useClayPebbles(220);
+  useEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4();
+    items.forEach((it, i) => {
+      m.makeScale(it.s, it.s, it.s).setPosition(...it.p);
+      mesh.setMatrixAt(i, m);
+      mesh.setColorAt(i, it.c);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  }, [items]);
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, items.length]}>
+      <sphereGeometry args={[1, 18, 14]} />
+      <meshStandardMaterial roughness={0.9} metalness={0} />
+    </instancedMesh>
+  );
+}
+
+function ClayOrbits() {
+  const rings = useMemo(
+    () =>
+      [1.6, 2.8, 4.1, 5.5].map((r, i) => {
+        const pts: THREE.Vector3[] = [];
+        for (let k = 0; k <= 128; k++) {
+          const a = (k / 128) * Math.PI * 2;
+          pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: CLAY.navy, transparent: true, opacity: 0.28 - i * 0.03, depthWrite: false });
+        return new THREE.Line(geo, mat);
+      }),
+    []
+  );
+  useEffect(
+    () => () =>
+      rings.forEach((l) => {
+        l.geometry.dispose();
+        (l.material as THREE.Material).dispose();
+      }),
+    [rings]
+  );
+  return (
+    <group>
+      {rings.map((l, i) => (
+        <primitive key={i} object={l} />
+      ))}
+    </group>
+  );
+}
+
+/** Tiny navy / indigo sparkles (a couple of golden ones) scattered across the sky. */
+function ClaySparkles() {
+  const data = useMemo(() => {
+    const count = 90;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const tones = [new THREE.Color(CLAY.navy), new THREE.Color(CLAY.indigo), new THREE.Color(CLAY.gold.base)];
+    let seed = 11;
+    const rnd = () => {
+      seed = (seed * 16807) % 2147483647;
+      return seed / 2147483647;
+    };
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (rnd() - 0.5) * 26;
+      positions[i * 3 + 1] = (rnd() - 0.5) * 15;
+      positions[i * 3 + 2] = -4 - rnd() * 3;
+      const r = rnd();
+      const c = tones[r < 0.6 ? 0 : r < 0.92 ? 1 : 2];
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+    }
+    return { positions, colors };
+  }, []);
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[data.positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[data.colors, 3]} />
+      </bufferGeometry>
+      <pointsMaterial size={0.05} vertexColors transparent opacity={0.55} sizeAttenuation depthWrite={false} />
+    </points>
+  );
+}
+
+function ClayScene() {
+  const spiral = useRef<THREE.Group>(null);
+  const tilt = useRef<THREE.Group>(null);
+  const time = useRef(0);
+  useFrame((state, rawDelta) => {
+    const t = stepTime(time, rawDelta);
+    if (spiral.current) spiral.current.rotation.z = -t * 0.035;
+    if (tilt.current) {
+      tilt.current.rotation.y = THREE.MathUtils.lerp(tilt.current.rotation.y, -0.35 + state.pointer.x * 0.08, 0.03);
+      tilt.current.rotation.x = THREE.MathUtils.lerp(tilt.current.rotation.x, -1.05 - state.pointer.y * 0.05, 0.03);
+    }
+  });
+  return (
+    <>
+      <hemisphereLight args={["#ffffff", "#c9d0ff", 1.1]} />
+      <directionalLight position={[-6, 8, 7]} intensity={1.6} color="#fffaf0" />
+      <ClaySparkles />
+      <group ref={tilt} position={[3.8, 0.2, -3]} rotation={[-1.05, -0.35, 0]}>
+        <group ref={spiral}>
+          <ClayOrbits />
+          <ClayPebbles />
+          {/* golden clay core with a matte highlight (emissive lifts the shadow side) */}
+          <mesh>
+            <sphereGeometry args={[0.75, 48, 32]} />
+            <meshStandardMaterial color={CLAY.gold.base} emissive="#d9a50a" emissiveIntensity={0.18} roughness={0.85} metalness={0} />
+          </mesh>
+        </group>
+      </group>
+    </>
+  );
+}
+
 export default function GalaxyCanvas({ className }: { className?: string }) {
   const [reduced, setReduced] = useState(false);
+  const light = useIsLightTheme();
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReduced(mq.matches);
@@ -420,7 +581,7 @@ export default function GalaxyCanvas({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div aria-hidden className={className ?? "fixed inset-0 -z-10 overflow-hidden bg-[#02030a]"}>
+    <div aria-hidden className={className ?? `fixed inset-0 -z-10 overflow-hidden ${light ? "bg-bg" : "bg-[#02030a]"}`}>
       <Canvas
         camera={{ position: [0, 0, 9], fov: 55 }}
         dpr={[1, 1.5]}
@@ -429,11 +590,15 @@ export default function GalaxyCanvas({ className }: { className?: string }) {
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
-        <Scene />
+        {light ? <ClayScene /> : <Scene />}
       </Canvas>
-      {/* legibility veils: gentle top shade + bottom fade into the page */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,transparent_45%,rgba(2,3,10,0.6)_100%)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[#02030a]" />
+      {/* legibility veils: gentle top shade + bottom fade into the page (dark only) */}
+      {!light && (
+        <>
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,transparent_45%,rgba(2,3,10,0.6)_100%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-b from-transparent to-[#02030a]" />
+        </>
+      )}
     </div>
   );
 }

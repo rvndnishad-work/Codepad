@@ -55,13 +55,13 @@ export default function TechDossierHero({
   ];
 
   return (
-    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <section ref={root} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#08080f] dark:text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[8%] top-[-140px] h-[340px] w-[560px] rounded-full blur-[120px]" style={{ backgroundColor: hex, opacity: 0.16 }} />
-        <div className="absolute bottom-[-160px] right-[-100px] h-[300px] w-[420px] rounded-full bg-[#8b93ff]/15 blur-[110px]" />
+        <div className="absolute left-[8%] top-[-140px] hidden dark:block h-[340px] w-[560px] rounded-full blur-[120px]" style={{ backgroundColor: hex, opacity: 0.16 }} />
+        <div className="absolute bottom-[-160px] right-[-100px] hidden dark:block h-[300px] w-[420px] rounded-full bg-[#8b93ff]/15 blur-[110px]" />
         <div className="wow-grid-bg absolute inset-0" />
       </div>
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080f]" />
+      <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b dark:block from-transparent via-transparent to-[#08080f]" />
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 pb-10 pt-24 md:pt-28">
         {/* the topic logo in 3D: a small badge on phones, a centrepiece beside the text from md */}
@@ -74,7 +74,7 @@ export default function TechDossierHero({
 
         {/* breadcrumb back to the archive */}
         <nav aria-label="Breadcrumb" className="td-fade flex max-w-[calc(100%-5rem)] items-center md:max-w-none gap-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/45">
-          <Link href="/interview-questions" className="transition-colors hover:text-white">
+          <Link href="/interview-questions" className="transition-colors hover:text-fg dark:hover:text-white">
             Questionverse
           </Link>
           <ChevronRight className="h-3 w-3" />
@@ -86,7 +86,7 @@ export default function TechDossierHero({
           Sector file // {tech}
         </p>
 
-        <h1 className="wow-font-display mt-4 text-5xl md:max-w-[calc(100%-300px)] lg:max-w-[calc(100%-440px)] leading-[0.95] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-6xl md:text-7xl">
+        <h1 className="wow-font-display mt-4 text-5xl md:max-w-[calc(100%-300px)] lg:max-w-[calc(100%-440px)] leading-[0.95] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-6xl md:text-7xl">
           <span className="block overflow-hidden pb-1"><span className="td-line block">{label.toUpperCase()}</span></span>
           <span className="block overflow-hidden pb-2"><span className="td-line wow-gradient-text block pb-2">DECODED.</span></span>
         </h1>
@@ -97,9 +97,9 @@ export default function TechDossierHero({
 
         {/* stat readouts + spectrum */}
         <div className="td-fade mt-7 flex flex-wrap md:max-w-[calc(100%-300px)] lg:max-w-[calc(100%-440px)] items-center gap-x-8 gap-y-3 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55">
-          <span><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-white">{total}</strong> Questions</span>
-          <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" /><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-white">{compactNumber(views)}</strong> Views</span>
-          <span className="inline-flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-white">{compactNumber(likes)}</strong> Upvotes</span>
+          <span><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-fg dark:text-white">{total}</strong> Questions</span>
+          <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" /><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-fg dark:text-white">{compactNumber(views)}</strong> Views</span>
+          <span className="inline-flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /><strong className="wow-font-display text-2xl normal-case tabular-nums tracking-normal text-fg dark:text-white">{compactNumber(likes)}</strong> Upvotes</span>
         </div>
 
         {total > 0 && (

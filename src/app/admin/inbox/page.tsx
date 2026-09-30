@@ -62,7 +62,7 @@ export default async function AdminInboxPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight flex items-center gap-2">
+          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
             <Inbox className="w-5 h-5 text-accent" />
             Moderation inbox
           </h2>
@@ -72,12 +72,12 @@ export default async function AdminInboxPage() {
         </div>
 
         {totalActionable === 0 ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-[10px] font-black uppercase tracking-wider">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-semibold ">
             <CheckCircle2 className="w-3.5 h-3.5" />
             All clear
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-black uppercase tracking-wider">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-semibold ">
             <AlertTriangle className="w-3.5 h-3.5" />
             {totalActionable} pending
           </div>
@@ -106,14 +106,14 @@ export default async function AdminInboxPage() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/admin/blogs?q=${encodeURIComponent(b.slug)}`}
-                      className="font-black text-fg hover:text-accent transition truncate block text-sm"
+                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
                     >
                       {b.title}
                     </Link>
-                    <div className="text-[11px] text-muted mt-1 flex items-center gap-1.5 flex-wrap">
+                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
                       <span>by {b.user.name ?? "Anonymous"}</span>
                       <span className="text-muted/30">·</span>
-                      <span className="font-mono text-[10px]">submitted {relativeTime(b.createdAt)}</span>
+                      <span className="font-mono text-xs">submitted {relativeTime(b.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -121,13 +121,13 @@ export default async function AdminInboxPage() {
                   <Link
                     href={`/blog/${b.slug}`}
                     target="_blank"
-                    className="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border border-border text-muted hover:text-fg hover:bg-panel/40 transition shrink-0"
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-muted hover:text-fg hover:bg-panel/40 transition shrink-0"
                   >
                     Preview
                   </Link>
                   <Link
                     href={`/admin/blogs?q=${encodeURIComponent(b.slug)}`}
-                    className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
+                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
                   >
                     Review
                   </Link>
@@ -155,25 +155,25 @@ export default async function AdminInboxPage() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/admin/challenges/${c.id}/edit`}
-                      className="font-black text-fg hover:text-accent transition truncate block text-sm"
+                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
                     >
                       {c.title}
                     </Link>
-                    <div className="text-[11px] text-muted mt-1 flex items-center gap-1.5 flex-wrap">
+                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
                       <span>by {c.author?.name ?? "Anonymous"}</span>
                       <span className="text-muted/30">·</span>
-                      <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-border bg-panel/40`}>
+                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border border-border bg-panel/40`}>
                         {c.difficulty}
                       </span>
                       <span className="text-muted/30">·</span>
-                      <span className="font-mono text-[10px]">updated {relativeTime(c.updatedAt)}</span>
+                      <span className="font-mono text-xs">updated {relativeTime(c.updatedAt)}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   <Link
                     href={`/admin/challenges/${c.id}/edit`}
-                    className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
+                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
                   >
                     Edit
                   </Link>
@@ -201,21 +201,21 @@ export default async function AdminInboxPage() {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/admin/interviews/${s.id}`}
-                      className="font-black text-fg hover:text-accent transition truncate block text-sm"
+                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
                     >
                       {s.title}
                     </Link>
-                    <div className="text-[11px] text-muted mt-1 flex items-center gap-1.5 flex-wrap">
+                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
                       <span>{s.user.name ?? "Anonymous"}</span>
                       <span className="text-muted/30">·</span>
-                      <span className="font-mono text-[10px]">started {s.startedAt ? relativeTime(s.startedAt) : "—"}</span>
+                      <span className="font-mono text-xs">started {s.startedAt ? relativeTime(s.startedAt) : "—"}</span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   <Link
                     href={`/admin/interviews/${s.id}`}
-                    className="text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
+                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
                   >
                     Inspect
                   </Link>
@@ -256,14 +256,14 @@ function Queue({
       <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 bg-panel/40">
         <div className="flex items-center gap-2.5">
           <Icon className="w-4 h-4 text-muted group-hover/queue:text-accent transition-colors duration-300" />
-          <h3 className="text-sm font-black tracking-tight text-fg">{title}</h3>
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-panel/40 border border-border text-muted">
+          <h3 className="text-sm font-semibold tracking-tight text-fg">{title}</h3>
+          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-panel/40 border border-border text-muted">
             {count}
           </span>
         </div>
         <Link
           href={actionHref}
-          className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg transition-colors"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-fg transition-colors"
         >
           {actionLabel}
           <ArrowRight className="w-3 h-3" />
@@ -275,14 +275,14 @@ function Queue({
           <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mx-auto mb-2" />
           <p className="text-xs text-muted font-medium">{emptyMessage}</p>
           {secondaryNote && (
-            <p className="text-[11px] text-muted/50 mt-2 font-mono">{secondaryNote}</p>
+            <p className="text-xs text-muted/50 mt-2 font-mono">{secondaryNote}</p>
           )}
         </div>
       ) : (
         <div className="relative z-10">
           {children}
           {secondaryNote && (
-            <div className="px-5 py-3 border-t border-border text-[11px] text-muted/70 bg-panel/10 font-mono">
+            <div className="px-5 py-3 border-t border-border text-xs text-muted/70 bg-panel/10 font-mono">
               {secondaryNote}
             </div>
           )}

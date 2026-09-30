@@ -123,7 +123,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("nav")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "nav"
               ? "bg-accent text-bg shadow-sm"
               : "text-muted hover:text-fg hover:bg-elevated"
@@ -135,7 +135,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("billing")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "billing"
               ? "bg-accent text-bg shadow-sm"
               : "text-muted hover:text-fg hover:bg-elevated"
@@ -147,7 +147,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("proctoring")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "proctoring"
               ? "bg-accent text-bg shadow-sm"
               : "text-muted hover:text-fg hover:bg-elevated"
@@ -159,7 +159,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("arena")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "arena"
               ? "bg-accent text-bg shadow-sm"
               : "text-muted hover:text-fg hover:bg-elevated"
@@ -171,7 +171,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("aiassist")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "aiassist"
               ? "bg-accent text-bg shadow-sm"
               : "text-muted hover:text-fg hover:bg-elevated"
@@ -183,7 +183,7 @@ export default function SettingsForm({
         <button
           type="button"
           onClick={() => setActiveTab("maintenance")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold transition ${
             activeTab === "maintenance"
               ? "bg-accent text-bg shadow-sm"
               : maintenance.enabled
@@ -203,7 +203,7 @@ export default function SettingsForm({
       {activeTab === "nav" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-8">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               Navigation Links
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -217,7 +217,7 @@ export default function SettingsForm({
               <div className="p-1.5 rounded-md bg-blue-500/10 text-blue-400">
                 <Globe className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+              <span className="text-xs font-semibold text-muted">
                 General / Site-wide
               </span>
             </div>
@@ -232,7 +232,7 @@ export default function SettingsForm({
               <div className="p-1.5 rounded-md bg-indigo-500/10 text-indigo-400">
                 <UserCircle2 className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+              <span className="text-xs font-semibold text-muted">
                 Candidate-Facing (For Developers)
               </span>
             </div>
@@ -247,7 +247,7 @@ export default function SettingsForm({
               <div className="p-1.5 rounded-md bg-emerald-500/10 text-emerald-400">
                 <Building2 className="w-3.5 h-3.5" />
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted">
+              <span className="text-xs font-semibold text-muted">
                 Recruiter-Facing (For Hiring Teams)
               </span>
             </div>
@@ -262,7 +262,7 @@ export default function SettingsForm({
       {activeTab === "billing" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               SaaS Billing & Limits
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -279,7 +279,7 @@ export default function SettingsForm({
                 </div>
                 <div>
                   <label className="text-sm font-bold text-fg block">Free Plan Seat Limit</label>
-                  <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                  <span className="text-xs text-muted leading-tight block mt-0.5">
                     Max teammate seats in a Free workspace.
                   </span>
                 </div>
@@ -312,7 +312,7 @@ export default function SettingsForm({
                 </div>
                 <div>
                   <label className="text-sm font-bold text-fg block">Growth Plan Seat Pricing</label>
-                  <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                  <span className="text-xs text-muted leading-tight block mt-0.5">
                     Seat cost in USD per month on Growth.
                   </span>
                 </div>
@@ -342,7 +342,7 @@ export default function SettingsForm({
       {activeTab === "proctoring" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               AI Proctoring & Proctor Sensitivity
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -359,7 +359,7 @@ export default function SettingsForm({
                 </div>
                 <div>
                   <label className="text-sm font-bold text-fg block">Global AI Proctoring Telemetry</label>
-                  <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-xl">
+                  <span className="text-xs text-muted leading-relaxed block mt-0.5 max-w-xl">
                     Enable platform-wide candidate focus tracking, paste telemetry, blur timing logs, and suspicious integrity ratings calculations.
                   </span>
                 </div>
@@ -390,7 +390,7 @@ export default function SettingsForm({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-accent" />
-                    <span className="text-xs font-black uppercase tracking-wider text-fg dark:text-[#F3F4F6]">
+                    <span className="text-xs font-semibold text-fg dark:text-[#F3F4F6]">
                       AI Suspicion Sensitivity Threshold
                     </span>
                   </div>
@@ -408,7 +408,7 @@ export default function SettingsForm({
                   />
                 </div>
 
-                <div className="p-3 rounded-lg bg-bg/50 border border-border/40 text-[11px] leading-relaxed">
+                <div className="p-3 rounded-lg bg-bg/50 border border-border/40 text-xs leading-relaxed">
                   <span className="font-bold text-fg block mb-1">Algorithmic Band Status:</span>
                   <span className="text-muted/80">{sensitivityText()}</span>
                 </div>
@@ -423,7 +423,7 @@ export default function SettingsForm({
       {activeTab === "arena" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               Interview Arena Customization
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -440,7 +440,7 @@ export default function SettingsForm({
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-fg">Developer Options (Candidates)</h4>
-                  <span className="text-[10px] text-muted font-semibold tracking-wider uppercase font-mono">PERSONA: candidate</span>
+                  <span className="text-xs text-muted font-semibold font-mono">PERSONA: candidate</span>
                 </div>
               </div>
 
@@ -452,7 +452,7 @@ export default function SettingsForm({
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       Mock Practice Arena
                     </label>
-                    <span className="text-[10px] text-muted leading-tight block">
+                    <span className="text-xs text-muted leading-tight block">
                       Enables self-paced simulated code assessments.
                     </span>
                   </div>
@@ -486,7 +486,7 @@ export default function SettingsForm({
                 </div>
                 <div>
                   <h4 className="text-sm font-bold text-fg">Recruiter Options (Interviewers)</h4>
-                  <span className="text-[10px] text-muted font-semibold tracking-wider uppercase font-mono">PERSONA: recruiter</span>
+                  <span className="text-xs text-muted font-semibold font-mono">PERSONA: recruiter</span>
                 </div>
               </div>
 
@@ -498,7 +498,7 @@ export default function SettingsForm({
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       Mock Practice Arena
                     </label>
-                    <span className="text-[10px] text-muted leading-tight block">
+                    <span className="text-xs text-muted leading-tight block">
                       Enables simulated candidate sandbox evaluation.
                     </span>
                   </div>
@@ -529,7 +529,7 @@ export default function SettingsForm({
                       <Zap className="w-3.5 h-3.5 text-emerald-400" />
                       Live / Scheduled Multiplayer Arena
                     </label>
-                    <span className="text-[10px] text-muted leading-tight block">
+                    <span className="text-xs text-muted leading-tight block">
                       Allows scheduling first-class multiplayer technical sessions.
                     </span>
                   </div>
@@ -563,7 +563,7 @@ export default function SettingsForm({
       {activeTab === "aiassist" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               Playground AI Assist
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -597,7 +597,7 @@ export default function SettingsForm({
                     ? "AI Assist is ON — signed-in users can use it"
                     : "AI Assist is OFF — the sidebar shows disabled"}
                 </label>
-                <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-md">
+                <span className="text-xs text-muted leading-relaxed block mt-0.5 max-w-md">
                   Turning this off blocks new assist calls immediately (in-flight
                   requests finish). The toolbar toggle and sidebar stay visible
                   but explain the state — no dead buttons.
@@ -633,7 +633,7 @@ export default function SettingsForm({
                 <label className="text-sm font-bold text-fg block">
                   Free messages per user per day
                 </label>
-                <span className="text-[11px] text-muted leading-tight block mt-0.5">
+                <span className="text-xs text-muted leading-tight block mt-0.5">
                   Applies the moment you save — no deploy needed. Lower it if
                   model spend spikes; raise it for launch promos.
                 </span>
@@ -679,7 +679,7 @@ export default function SettingsForm({
       {activeTab === "maintenance" && (
         <div className="rounded-2xl border border-border bg-surface p-6 animate-fade-in space-y-6">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-muted mb-1 flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted mb-1 flex items-center gap-2">
               Site-Wide Maintenance
             </h3>
             <p className="text-xs text-muted leading-relaxed">
@@ -714,7 +714,7 @@ export default function SettingsForm({
                     ? "Maintenance mode is ON — site is offline"
                     : "Maintenance mode is OFF — site is live"}
                 </label>
-                <span className="text-[11px] text-muted leading-relaxed block mt-0.5 max-w-md">
+                <span className="text-xs text-muted leading-relaxed block mt-0.5 max-w-md">
                   {maintenance.enabled
                     ? "Logged-out visitors and candidates currently see the maintenance page. Don't forget to turn this off."
                     : "Flip this on during deploys or incidents. Auth, /login and /admin stay reachable so you can get back in."}
@@ -750,7 +750,7 @@ export default function SettingsForm({
             <label className="text-sm font-bold text-fg block">
               Visitor message <span className="text-muted font-normal">(optional)</span>
             </label>
-            <span className="text-[11px] text-muted leading-relaxed block">
+            <span className="text-xs text-muted leading-relaxed block">
               Shown on the maintenance page — e.g. an ETA. Leave blank for the default copy.
             </span>
             <textarea
@@ -766,7 +766,7 @@ export default function SettingsForm({
               placeholder="Back by 3:00 PM UTC — upgrading our servers. Thanks for your patience!"
               className="w-full px-3 py-2 bg-bg border border-border rounded-xl text-sm text-fg focus:outline-none focus:border-accent transition resize-none"
             />
-            <div className="text-[10px] text-muted/60 text-right font-mono">
+            <div className="text-xs text-muted/60 text-right font-mono">
               {maintenance.message.length}/280
             </div>
           </div>
@@ -849,7 +849,7 @@ function NavLinkRow({
           <div className="font-bold text-fg flex items-center gap-2">
             {link.label}
             {protectedRoute && (
-              <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-muted/70 bg-elevated border border-border px-1.5 py-0.5 rounded">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted/70 bg-elevated border border-border px-1.5 py-0.5 rounded">
                 <Lock className="w-2.5 h-2.5" />
                 Always on
               </span>
@@ -891,7 +891,7 @@ function NavLinkRow({
       </div>
 
       {protectedRoute ? (
-        <div className="flex items-start gap-2 text-[11px] text-muted/80 leading-relaxed">
+        <div className="flex items-start gap-2 text-xs text-muted/80 leading-relaxed">
           <Lock className="w-3.5 h-3.5 shrink-0 mt-0.5 text-muted/60" />
           <span>
             This is your public front door, so it can&apos;t be hidden or gated —
@@ -899,7 +899,7 @@ function NavLinkRow({
           </span>
         </div>
       ) : gated && topLevel ? (
-        <div className="flex items-start gap-2 text-[11px] text-amber-500/90 leading-relaxed rounded-lg bg-amber-500/5 border border-amber-500/20 px-3 py-2">
+        <div className="flex items-start gap-2 text-xs text-amber-500/90 leading-relaxed rounded-lg bg-amber-500/5 border border-amber-500/20 px-3 py-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
             Heads up: logged-out visitors (and anyone you share this link with)
@@ -938,7 +938,7 @@ function StatusButton({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       title={disabled ? disabledHint : undefined}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
         disabled
           ? "text-muted/20 border-transparent cursor-not-allowed"
           : active

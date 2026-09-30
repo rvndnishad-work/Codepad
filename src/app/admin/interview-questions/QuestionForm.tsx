@@ -41,9 +41,9 @@ const EMPTY: QuestionInitial = {
 };
 
 const field = "w-full px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:border-accent/50";
-const label = "text-[10px] font-black uppercase tracking-widest text-muted mb-1.5 block";
+const label = "text-xs font-semibold text-muted mb-1.5 block";
 const card = "rounded-2xl border border-border bg-bg/40 p-4 space-y-4";
-const cardTitle = "text-[10px] font-black uppercase tracking-[0.2em] text-muted";
+const cardTitle = "text-xs font-semibold text-muted";
 
 const DIFFICULTY_ACTIVE: Record<string, string> = {
   easy: "bg-emerald-500/15 text-emerald-500 border-emerald-500/40",
@@ -141,7 +141,7 @@ function Segmented({
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
-          className={`px-2 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition ${
+          className={`px-2 py-1.5 rounded-lg border text-xs font-semibold transition ${
             value === o.value
               ? activeClasses[o.value] ?? "bg-accent/15 text-accent border-accent/40"
               : "border-border text-muted hover:text-fg hover:border-border-strong"
@@ -287,7 +287,7 @@ export default function QuestionForm({
         </button>
         <button
           disabled={pending}
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft disabled:opacity-60 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft disabled:opacity-60 transition"
         >
           <Save className="w-3.5 h-3.5" />
           {pending ? "Saving…" : f.id ? "Save" : "Create"}
@@ -339,7 +339,7 @@ export default function QuestionForm({
                 Runnable examples
                 {examples.length > 0 && <span className="ml-2 text-accent">{examples.length}</span>}
               </h3>
-              <p className="text-[10px] text-muted">Interactive playgrounds under the answer.</p>
+              <p className="text-xs text-muted">Interactive playgrounds under the answer.</p>
             </div>
             <ExamplesEditor items={examples} onChange={setExamples} />
           </section>
@@ -354,7 +354,7 @@ export default function QuestionForm({
                 <button
                   type="button"
                   onClick={() => setShowFrameworks(true)}
-                  className="text-[10px] font-black uppercase tracking-wider text-accent hover:underline"
+                  className="text-xs font-semibold text-accent hover:underline"
                 >
                   Add bundles
                 </button>
@@ -362,13 +362,13 @@ export default function QuestionForm({
             </div>
             {showFrameworks ? (
               <>
-                <p className="text-[10px] text-muted -mt-2">
+                <p className="text-xs text-muted -mt-2">
                   Machine-coding only: <code className="text-accent">{'{ react: { answer, files }, vue: …, angular: … }'}</code> swaps the tutorial and runnable solution per framework. The plain answer above stays the React default for SSR/SEO.
                 </p>
                 <JsonField value={frameworks} onChange={setFrameworks} kind="object" minHeight={160} maxHeight={520} />
               </>
             ) : (
-              <p className="text-[10px] text-muted -mt-2">
+              <p className="text-xs text-muted -mt-2">
                 {isMachineCoding
                   ? "No per-framework bundles yet — machine-coding questions usually ship React, Vue and Angular variants."
                   : "Not set. Only used by machine-coding questions."}
@@ -457,14 +457,14 @@ export default function QuestionForm({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={label + " mb-0"}>Title</label>
-                <span className={`text-[10px] tabular-nums ${seoTitleLen > 60 ? "text-amber-500" : "text-muted"}`}>{seoTitleLen}/60</span>
+                <span className={`text-xs tabular-nums ${seoTitleLen > 60 ? "text-amber-500" : "text-muted"}`}>{seoTitleLen}/60</span>
               </div>
               <input value={f.seoTitle} onChange={set("seoTitle")} className={field} placeholder="Defaults to the question title" />
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className={label + " mb-0"}>Description</label>
-                <span className={`text-[10px] tabular-nums ${seoDescLen > 160 ? "text-amber-500" : "text-muted"}`}>{seoDescLen}/160</span>
+                <span className={`text-xs tabular-nums ${seoDescLen > 160 ? "text-amber-500" : "text-muted"}`}>{seoDescLen}/160</span>
               </div>
               <textarea value={f.seoDescription} onChange={set("seoDescription")} rows={3} className={field} placeholder="Defaults to the question body" />
             </div>

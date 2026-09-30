@@ -171,18 +171,18 @@ function RoleCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-bold text-fg">{role.label}</span>
-            <code className="text-[10px] text-muted font-mono">{role.key}</code>
-            <span className={`px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${scopeBadge(role.scope)}`}>
+            <code className="text-xs text-muted font-mono">{role.key}</code>
+            <span className={`px-1.5 py-0.5 rounded border text-xs font-bold ${scopeBadge(role.scope)}`}>
               {role.scope}
             </span>
             {role.isSystem && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-panel/50 text-[9px] font-bold uppercase tracking-wider text-muted">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded border border-border bg-panel/50 text-xs font-bold text-muted">
                 <Lock className="w-2.5 h-2.5" /> System
               </span>
             )}
           </div>
           {role.description && (
-            <p className="text-[11px] text-muted mt-1">{role.description}</p>
+            <p className="text-xs text-muted mt-1">{role.description}</p>
           )}
         </div>
         {editable && (
@@ -200,7 +200,7 @@ function RoleCard({
       <div className="space-y-2">
         {Object.entries(groupsToShow).map(([group, perms]) => (
           <div key={group}>
-            <div className="text-[9px] font-bold uppercase tracking-wider text-muted mb-1">
+            <div className="text-xs font-bold text-muted mb-1">
               {group}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-1">
@@ -209,7 +209,7 @@ function RoleCard({
                 return (
                   <label
                     key={perm}
-                    className={`flex items-center gap-1.5 text-[11px] ${editable ? "cursor-pointer text-fg" : "text-muted"}`}
+                    className={`flex items-center gap-1.5 text-xs ${editable ? "cursor-pointer text-fg" : "text-muted"}`}
                     title={perm}
                   >
                     <input
@@ -231,7 +231,7 @@ function RoleCard({
             <button
               onClick={save}
               disabled={!dirty || saving}
-              className="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+              className="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition-colors disabled:opacity-40"
             >
               {saving ? "Saving…" : "Save permissions"}
             </button>
@@ -242,14 +242,14 @@ function RoleCard({
       {/* Members (global roles only) */}
       {role.scope === "GLOBAL" && (
         <div className="border-t border-border pt-3 space-y-2">
-          <div className="text-[9px] font-bold uppercase tracking-wider text-muted">
+          <div className="text-xs font-bold text-muted">
             Assigned users ({role.members.length})
           </div>
           <div className="flex flex-wrap gap-1.5">
             {role.members.map((m) => (
               <span
                 key={m.userRoleId}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border bg-panel/50 text-[11px] text-fg"
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border border-border bg-panel/50 text-xs text-fg"
               >
                 {m.email || m.name || m.userId}
                 <button
@@ -262,7 +262,7 @@ function RoleCard({
               </span>
             ))}
             {role.members.length === 0 && (
-              <span className="text-[11px] text-muted">No users assigned.</span>
+              <span className="text-xs text-muted">No users assigned.</span>
             )}
           </div>
           <form onSubmit={assign} className="flex items-center gap-2">
@@ -271,11 +271,11 @@ function RoleCard({
               value={assignEmail}
               onChange={(e) => setAssignEmail(e.target.value)}
               placeholder="user@email.com"
-              className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-bg text-fg text-[11px] focus:outline-none focus:border-accent/40"
+              className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
             />
             <button
               type="submit"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border text-muted hover:text-fg hover:bg-panel text-[10px] font-bold uppercase tracking-wider transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-border text-muted hover:text-fg hover:bg-panel text-xs font-bold transition-colors"
             >
               <UserPlus className="w-3 h-3" /> Grant
             </button>
@@ -356,12 +356,12 @@ function CreateRoleForm({ onChanged }: { onChanged: () => void }) {
         <button
           type="submit"
           disabled={creating}
-          className="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-40"
+          className="px-3 py-1.5 rounded-md bg-accent hover:bg-accent-soft text-bg text-xs font-bold transition-colors disabled:opacity-40"
         >
           {creating ? "Creating…" : "Create role"}
         </button>
       </div>
-      <p className="text-[10px] text-muted">
+      <p className="text-xs text-muted">
         New roles start with no permissions — tick them above after creating.
       </p>
     </form>

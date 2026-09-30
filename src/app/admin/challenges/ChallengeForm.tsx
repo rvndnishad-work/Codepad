@@ -413,7 +413,7 @@ export default function ChallengeForm({
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h2 className="text-2xl font-black tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight">
               {mode === "create" ? "New challenge" : "Edit challenge"}
             </h2>
             {mode === "edit" && (
@@ -533,7 +533,7 @@ export default function ChallengeForm({
                 Add another question
               </button>
               <TemplatePicker onPick={applyTemplate} />
-              <span className="text-[10px] text-muted/60 ml-auto">
+              <span className="text-xs text-muted/60 ml-auto">
                 Not sure where to start? Pick a template — it fills in the
                 description, starter, and test scaffolding.
               </span>
@@ -550,7 +550,7 @@ export default function ChallengeForm({
                   key={d}
                   type="button"
                   onClick={() => update("difficulty", d)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${
                     form.difficulty === d
                       ? "bg-accent text-bg border-accent"
                       : "bg-surface text-muted border-border hover:text-fg hover:border-border-strong"
@@ -604,7 +604,7 @@ export default function ChallengeForm({
               />
               Published
             </label>
-            <div className="text-[10px] text-muted/60 mt-1 leading-relaxed">
+            <div className="text-xs text-muted/60 mt-1 leading-relaxed">
               Unpublished challenges are visible only to you (and admins).
             </div>
             {form.published && surface.isAdmin && (
@@ -632,7 +632,7 @@ export default function ChallengeForm({
 
             {form.published && (
               <div className="mt-4 pt-4 border-t border-border space-y-2">
-                <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">
+                <div className="text-xs font-semibold text-muted">
                   Who can see it
                 </div>
                 <label className="flex items-start gap-2 cursor-pointer">
@@ -646,7 +646,7 @@ export default function ChallengeForm({
                   />
                   <div className="text-sm">
                     <div className="font-bold text-fg">Public</div>
-                    <div className="text-[11px] text-muted/70">
+                    <div className="text-xs text-muted/70">
                       Listed on /challenges. Anyone can view and attempt.
                     </div>
                   </div>
@@ -665,7 +665,7 @@ export default function ChallengeForm({
                       <Lock className="w-3 h-3" />
                       Private
                     </div>
-                    <div className="text-[11px] text-muted/70">
+                    <div className="text-xs text-muted/70">
                       Unlisted. Only people you invite can open the link.
                       Manage invitations after creating the challenge.
                     </div>
@@ -716,11 +716,11 @@ function SectionCard({
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.18em] text-muted">
+        <div className="text-xs font-semibold text-muted">
           {label}
         </div>
         {hint && (
-          <div className="text-[10px] text-muted/60 font-mono">{hint}</div>
+          <div className="text-xs text-muted/60 font-mono">{hint}</div>
         )}
       </div>
       {children}
@@ -744,13 +744,13 @@ function Field({
   return (
     <div className={className}>
       <label className="block mb-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted">
+        <span className="text-xs font-bold text-muted">
           {label}
           {required && <span className="text-rose-500 ml-0.5">*</span>}
         </span>
       </label>
       {children}
-      {hint && <p className="text-[11px] text-muted/60 mt-1 font-mono">{hint}</p>}
+      {hint && <p className="text-xs text-muted/60 mt-1 font-mono">{hint}</p>}
     </div>
   );
 }
@@ -791,7 +791,7 @@ function StepRow({
     <div className="rounded-xl border border-border bg-elevated/30">
       {/* Collapsed header — always visible */}
       <div className="flex items-center gap-2 p-3">
-        <div className="w-7 h-7 rounded-md bg-bg/40 border border-border grid place-items-center text-[11px] font-black text-muted shrink-0">
+        <div className="w-7 h-7 rounded-md bg-bg/40 border border-border grid place-items-center text-xs font-semibold text-muted shrink-0">
           {index + 1}
         </div>
         <button
@@ -800,7 +800,7 @@ function StepRow({
           className="flex-1 text-left flex items-center gap-2 min-w-0"
         >
           <span className="font-bold text-fg text-sm truncate">{label}</span>
-          <span className="text-[10px] text-muted shrink-0 tabular-nums">
+          <span className="text-xs text-muted shrink-0 tabular-nums">
             {step.estimatedMinutes}m
           </span>
           <span className="ml-auto text-muted">
@@ -938,11 +938,11 @@ function StepRow({
           <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3 mt-3">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="text-xs font-black uppercase tracking-[0.15em] text-muted inline-flex items-center gap-1.5">
+                <h4 className="text-xs font-semibold text-muted inline-flex items-center gap-1.5">
                   <Award className="w-3.5 h-3.5 text-accent" />
                   Visual Test Cases (Grading Engine)
                 </h4>
-                <p className="text-[10px] text-muted/60 mt-0.5 max-w-xl leading-relaxed">
+                <p className="text-xs text-muted/60 mt-0.5 max-w-xl leading-relaxed">
                   Add structured inputs, outputs, and point weights. When candidates submit their code, the platform grades it automatically against these cases.
                 </p>
               </div>
@@ -963,7 +963,7 @@ function StepRow({
                   ];
                   onUpdate("testCases", newCases);
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition"
               >
                 <Plus className="w-3 h-3" />
                 Add Test Case
@@ -974,7 +974,7 @@ function StepRow({
               <div className="rounded-lg border border-dashed border-border p-6 text-center">
                 <FlaskConical className="w-6 h-6 text-muted/40 mx-auto mb-2" />
                 <div className="text-xs font-bold text-muted/80">No visual test cases defined</div>
-                <div className="text-[10px] text-muted/50 mt-1 max-w-sm mx-auto">
+                <div className="text-xs text-muted/50 mt-1 max-w-sm mx-auto">
                   Click &quot;Add Test Case&quot; to define inputs, expected outputs, and scoring weights for automatic grading.
                 </div>
               </div>
@@ -1007,7 +1007,7 @@ function StepRow({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Input / Arguments</label>
+                        <label className="block text-xs font-semibold text-muted/70 mb-1">Input / Arguments</label>
                         <textarea
                           value={tc.input}
                           onChange={(e) => {
@@ -1020,7 +1020,7 @@ function StepRow({
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Expected Output</label>
+                        <label className="block text-xs font-semibold text-muted/70 mb-1">Expected Output</label>
                         <textarea
                           value={tc.expected}
                           onChange={(e) => {
@@ -1034,7 +1034,7 @@ function StepRow({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-muted">
+                    <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-muted">
                       <label className="flex items-center gap-1.5 cursor-pointer hover:text-fg transition select-none">
                         <input
                           type="checkbox"
@@ -1060,7 +1060,7 @@ function StepRow({
                         </span>
                       </label>
                       <div className="flex items-center gap-1.5 ml-auto">
-                        <span className="text-[9px] font-black uppercase tracking-wider">Score Weight:</span>
+                        <span className="text-xs font-semibold ">Score Weight:</span>
                         <input
                           type="number"
                           min={1}
@@ -1072,7 +1072,7 @@ function StepRow({
                           }}
                           className={`${inputClass} w-16 py-0.5 text-center font-mono`}
                         />
-                        <span className="text-[10px] font-bold">pts</span>
+                        <span className="text-xs font-bold">pts</span>
                       </div>
                     </div>
                   </div>
@@ -1082,7 +1082,7 @@ function StepRow({
           </div>
 
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
-            <div className="text-[10px] text-muted/70 leading-relaxed max-w-md">
+            <div className="text-xs text-muted/70 leading-relaxed max-w-md">
               Spin up a sandbox with this step&apos;s starter + test files.
               Paste your reference solution and confirm every test passes
               before you publish.
@@ -1162,7 +1162,7 @@ const LANG_LABELS: Record<string, string> = {
 function JudgingModeToggle({ value, onChange }: { value: JudgingMode; onChange: (m: JudgingMode) => void }) {
   return (
     <div>
-      <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1.5">How it&apos;s graded</div>
+      <div className="text-xs font-bold text-muted mb-1.5">How it&apos;s graded</div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {JUDGING_MODES.map((m) => (
           <button
@@ -1174,7 +1174,7 @@ function JudgingModeToggle({ value, onChange }: { value: JudgingMode; onChange: 
             }`}
           >
             <div className="text-xs font-bold text-fg">{m.label}</div>
-            <div className="text-[10px] text-muted/70 mt-0.5 leading-snug">{m.blurb}</div>
+            <div className="text-xs text-muted/70 mt-0.5 leading-snug">{m.blurb}</div>
           </button>
         ))}
       </div>
@@ -1258,7 +1258,7 @@ function HarnessEditor({
     <div className="space-y-4">
       {/* Contract */}
       <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">Function contract</div>
+        <div className="text-xs font-semibold text-muted">Function contract</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Field label="Function name" required>
             <input value={step.functionName} onChange={(e) => onUpdate("functionName", e.target.value)} className={`${inputClass} font-mono`} placeholder="twoSum" />
@@ -1270,7 +1270,7 @@ function HarnessEditor({
           </Field>
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted mb-1.5">Parameters</div>
+          <div className="text-xs font-bold text-muted mb-1.5">Parameters</div>
           <div className="space-y-2">
             {step.params.map((p, i) => (
               <div key={i} className="flex items-center gap-2">
@@ -1284,7 +1284,7 @@ function HarnessEditor({
               </div>
             ))}
           </div>
-          <button type="button" onClick={addParam} className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/30 text-accent text-[10px] font-black uppercase tracking-wider hover:bg-accent/20 transition">
+          <button type="button" onClick={addParam} className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/30 text-accent text-xs font-semibold hover:bg-accent/20 transition">
             <Plus className="w-3 h-3" /> Add parameter
           </button>
         </div>
@@ -1292,7 +1292,7 @@ function HarnessEditor({
 
       {/* Languages */}
       <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-2">
-        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">Enabled languages</div>
+        <div className="text-xs font-semibold text-muted">Enabled languages</div>
         <div className="flex flex-wrap gap-1.5">
           {HARNESS_LANGUAGES.map((l) => (
             <button key={l} type="button" onClick={() => toggleLang(l)}
@@ -1307,10 +1307,10 @@ function HarnessEditor({
 
       {/* Reference solutions */}
       <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
-        <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted">
+        <div className="text-xs font-semibold text-muted">
           Reference solutions <span className="text-muted/50 font-normal normal-case">— author-only, never shown to candidates</span>
         </div>
-        <p className="text-[10px] text-muted/60 leading-relaxed">
+        <p className="text-xs text-muted/60 leading-relaxed">
           Provide a reference in at least one enabled language. Validate runs it to generate the expected outputs and cross-checks any other references for agreement.
         </p>
         <div className="space-y-2">
@@ -1318,10 +1318,10 @@ function HarnessEditor({
             <details key={l} className="rounded-lg border border-border bg-elevated/40">
               <summary className="px-3 py-2 text-xs font-bold text-fg cursor-pointer flex items-center gap-2">
                 {LANG_LABELS[l] ?? l}
-                {(step.referenceSolutions[l] ?? "").trim() && <span className="text-[9px] text-emerald-500 font-black uppercase">provided</span>}
-                {agreement?.[l]?.compileError && <span className="text-[9px] text-rose-500 font-black uppercase">compile error</span>}
-                {agreement?.[l] && !agreement[l].ok && !agreement[l].compileError && <span className="text-[9px] text-amber-500 font-black uppercase">{agreement[l].mismatches.length} mismatch(es)</span>}
-                {agreement?.[l]?.ok && <span className="text-[9px] text-emerald-500 font-black uppercase">agrees</span>}
+                {(step.referenceSolutions[l] ?? "").trim() && <span className="text-xs text-emerald-500 font-semibold ">provided</span>}
+                {agreement?.[l]?.compileError && <span className="text-xs text-rose-500 font-semibold ">compile error</span>}
+                {agreement?.[l] && !agreement[l].ok && !agreement[l].compileError && <span className="text-xs text-amber-500 font-semibold ">{agreement[l].mismatches.length} mismatch(es)</span>}
+                {agreement?.[l]?.ok && <span className="text-xs text-emerald-500 font-semibold ">agrees</span>}
               </summary>
               <textarea
                 value={step.referenceSolutions[l] ?? ""}
@@ -1340,20 +1340,20 @@ function HarnessEditor({
       <div className="rounded-xl border border-border bg-surface/50 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.15em] text-muted inline-flex items-center gap-1.5">
+            <div className="text-xs font-semibold text-muted inline-flex items-center gap-1.5">
               <Award className="w-3.5 h-3.5 text-accent" /> Test cases
             </div>
-            <p className="text-[10px] text-muted/60 mt-0.5 max-w-xl leading-relaxed">
+            <p className="text-xs text-muted/60 mt-0.5 max-w-xl leading-relaxed">
               Arguments as a JSON array (one per parameter, in order). Expected outputs are generated by Validate — you don&apos;t type them.
             </p>
           </div>
-          <button type="button" onClick={addTest} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-[10px] font-black uppercase tracking-wider hover:bg-accent-soft transition">
+          <button type="button" onClick={addTest} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition">
             <Plus className="w-3 h-3" /> Add case
           </button>
         </div>
 
         {step.harnessTests.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border p-6 text-center text-[10px] text-muted/60">No test cases yet.</div>
+          <div className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted/60">No test cases yet.</div>
         ) : (
           <div className="space-y-2.5">
             {step.harnessTests.map((tc, i) => (
@@ -1364,21 +1364,21 @@ function HarnessEditor({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Arguments (JSON array)</label>
+                    <label className="block text-xs font-semibold text-muted/70 mb-1">Arguments (JSON array)</label>
                     <input value={tc.argsJson} onChange={(e) => setTest(i, { argsJson: e.target.value })} className={`${inputClass} font-mono text-xs`} placeholder="[[2,7,11,15], 9]" />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-black uppercase tracking-wider text-muted/70 mb-1">Expected (generated)</label>
+                    <label className="block text-xs font-semibold text-muted/70 mb-1">Expected (generated)</label>
                     <input value={tc.expectedJson} readOnly className={`${inputClass} font-mono text-xs ${tc.expectedJson ? "text-emerald-500" : "text-muted/40"}`} placeholder="run Validate →" />
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted">
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input type="checkbox" checked={tc.isHidden} onChange={(e) => setTest(i, { isHidden: e.target.checked })} className="w-3.5 h-3.5 accent-accent" />
                     <span className="inline-flex items-center gap-1">{tc.isHidden ? <><EyeOff className="w-3 h-3 text-amber-500" /> Hidden</> : <><Eye className="w-3 h-3 text-emerald-500" /> Visible</>}</span>
                   </label>
                   <label className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-black uppercase tracking-wider">Match</span>
+                    <span className="text-xs font-semibold ">Match</span>
                     <select value={tc.compare} onChange={(e) => setTest(i, { compare: e.target.value as ChallengeStepInput["harnessTests"][number]["compare"] })} className={`${inputClass} w-28 py-0.5 font-mono`}>
                       <option value="exact">exact</option>
                       <option value="float">float (±1e-6)</option>
@@ -1386,7 +1386,7 @@ function HarnessEditor({
                     </select>
                   </label>
                   <label className="flex items-center gap-1.5 ml-auto">
-                    <span className="text-[9px] font-black uppercase tracking-wider">Weight</span>
+                    <span className="text-xs font-semibold ">Weight</span>
                     <input type="number" min={1} max={100} value={tc.weight} onChange={(e) => setTest(i, { weight: Number(e.target.value) || 0 })} className={`${inputClass} w-16 py-0.5 text-center font-mono`} />
                   </label>
                 </div>
@@ -1396,7 +1396,7 @@ function HarnessEditor({
         )}
 
         <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
-          <div className={`text-[10px] font-bold ${allValidated ? "text-emerald-500" : "text-amber-500"}`}>
+          <div className={`text-xs font-bold ${allValidated ? "text-emerald-500" : "text-amber-500"}`}>
             {allValidated ? "✓ Expected outputs generated — ready to save" : "Run Validate to generate expected outputs before saving"}
           </div>
           <button type="button" onClick={validate} disabled={validating}
@@ -1444,7 +1444,7 @@ function TemplatePicker({
             aria-hidden
           />
           <div className="absolute left-0 top-full mt-1 w-[320px] z-40 rounded-xl border border-border bg-panel shadow-2xl p-1 overflow-hidden">
-            <div className="px-3 pt-2 pb-1 text-[9px] font-black uppercase tracking-[0.18em] text-muted">
+            <div className="px-3 pt-2 pb-1 text-xs font-semibold text-muted">
               Scaffolds
             </div>
             <ul className="max-h-[60vh] overflow-y-auto">
@@ -1459,14 +1459,14 @@ function TemplatePicker({
                     className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-elevated transition"
                   >
                     <div className="text-xs font-bold text-fg">{t.name}</div>
-                    <div className="text-[10px] text-muted/70 mt-0.5 leading-snug">
+                    <div className="text-xs text-muted/70 mt-0.5 leading-snug">
                       {t.blurb}
                     </div>
                   </button>
                 </li>
               ))}
             </ul>
-            <div className="px-3 pt-1 pb-2 border-t border-border text-[9px] text-muted/50 leading-relaxed">
+            <div className="px-3 pt-1 pb-2 border-t border-border text-xs text-muted/50 leading-relaxed">
               Replaces the current question&apos;s description, starter,
               tests, and Sandpack template. Title is preserved.
             </div>

@@ -10,7 +10,7 @@ export const metadata = {
   title: "Workspace AI interviews — Interviewpad Admin",
 };
 
-// AIInterviewSession.status values are uppercase per schema convention.
+// AIInterviewSession.status values are per schema convention.
 const STATUS_BADGES: Record<string, string> = {
   PENDING: "text-amber-600 dark:text-amber-400 bg-amber-500/[0.08] border-amber-500/20",
   IN_PROGRESS: "text-sky-600 dark:text-sky-400 bg-sky-500/[0.08] border-sky-500/20",
@@ -67,7 +67,7 @@ export default async function WorkspaceAIInterviewsPage({ params }: Props) {
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+              <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                 <th className="px-4 py-3 font-semibold">Candidate</th>
                 <th className="px-4 py-3 font-semibold">Position</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
@@ -90,7 +90,7 @@ export default async function WorkspaceAIInterviewsPage({ params }: Props) {
                   <td className="px-4 py-3 text-xs text-muted">{s.positionTitle || "—"}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold ${
                         STATUS_BADGES[s.status] || STATUS_BADGES.PENDING
                       }`}
                     >

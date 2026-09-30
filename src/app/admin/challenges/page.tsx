@@ -39,7 +39,7 @@ export default async function AdminChallengesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Challenges</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Challenges</h2>
           <p className="text-sm text-muted mt-1">
             {rows.length} {rows.length === 1 ? "challenge" : "challenges"} total
           </p>

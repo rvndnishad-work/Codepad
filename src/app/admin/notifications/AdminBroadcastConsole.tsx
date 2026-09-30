@@ -152,7 +152,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted/70">
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted/70">
           <Megaphone className="w-3.5 h-3.5" />
           Internal · Broadcast notifications
         </div>
@@ -186,7 +186,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
           {/* Compose form */}
           <div className="space-y-5 rounded-xl border border-border bg-surface/60 p-5">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 block">
+              <label className="text-xs font-semibold text-muted/70 block">
                 Title
               </label>
               <input
@@ -197,11 +197,11 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                 placeholder="Maintenance window — Sunday 2 AM PT"
                 className="w-full px-3 py-2 bg-bg border border-border rounded-md text-sm text-fg focus:outline-none focus:border-fg"
               />
-              <p className="text-[10px] text-muted/70">{title.length} / 200</p>
+              <p className="text-xs text-muted/70">{title.length} / 200</p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 block">
+              <label className="text-xs font-semibold text-muted/70 block">
                 Body (optional)
               </label>
               <textarea
@@ -212,11 +212,11 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                 placeholder="Brief details. Markdown is not rendered — keep it plain."
                 className="w-full px-3 py-2 bg-bg border border-border rounded-md text-sm text-fg focus:outline-none focus:border-fg resize-y"
               />
-              <p className="text-[10px] text-muted/70">{body.length} / 1000</p>
+              <p className="text-xs text-muted/70">{body.length} / 1000</p>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 block">
+              <label className="text-xs font-semibold text-muted/70 block">
                 Link (optional)
               </label>
               <input
@@ -232,7 +232,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
           {/* Audience picker + preview */}
           <aside className="space-y-4 rounded-xl border border-border bg-surface/60 p-5 h-fit">
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 mb-2">
+              <div className="text-xs font-semibold text-muted/70 mb-2">
                 Audience
               </div>
               <div className="space-y-1.5">
@@ -260,7 +260,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
 
             {needsTarget === "WORKSPACE_ID" && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 block">
+                <label className="text-xs font-semibold text-muted/70 block">
                   Workspace
                 </label>
                 <select
@@ -280,7 +280,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
 
             {needsTarget === "USER_ID" && (
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted/70 block">
+                <label className="text-xs font-semibold text-muted/70 block">
                   User id
                 </label>
                 <input
@@ -290,7 +290,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                   placeholder="cmpjk2htm00007br3qnr6u1mp"
                   className="w-full px-3 py-2 bg-bg border border-border rounded-md text-xs font-mono text-fg focus:outline-none focus:border-fg"
                 />
-                <p className="text-[10px] text-muted/70">
+                <p className="text-xs text-muted/70">
                   Paste the User.id — email lookup ships in a follow-up.
                 </p>
               </div>
@@ -298,7 +298,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
 
             {/* Preview count */}
             <div className="rounded-lg border border-border bg-bg/40 px-3 py-2.5 space-y-1">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/70">
+              <div className="text-xs font-semibold text-muted/70">
                 Will reach
               </div>
               {previewLoading ? (
@@ -325,7 +325,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
               {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
               Send now
             </button>
-            <p className="text-[10px] text-muted/70 leading-relaxed">
+            <p className="text-xs text-muted/70 leading-relaxed">
               Rate-limited to 1 broadcast / 10s per admin. Sends fan-out in
               chunks of 500 — large audiences may take a few seconds.
             </p>
@@ -346,7 +346,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-[11px] text-muted">
+                      <div className="flex items-center gap-2 text-xs text-muted">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sky-500/[0.08] border border-sky-500/30 text-sky-300 font-semibold">
                           <Megaphone className="w-2.5 h-2.5" />
                           {row.audienceLabel}
@@ -372,7 +372,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                       {row.href && (
                         <a
                           href={row.href}
-                          className="inline-flex items-center gap-1 text-[11px] text-sky-400 hover:underline mt-1 font-mono"
+                          className="inline-flex items-center gap-1 text-xs text-sky-400 hover:underline mt-1 font-mono"
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -386,7 +386,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                         type="button"
                         onClick={() => onResend(row.id)}
                         disabled={resending === row.id}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-fg border border-border bg-panel/40 hover:bg-panel disabled:opacity-50"
                       >
                         {resending === row.id ? (
                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -397,7 +397,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                       </button>
                     </div>
                   </div>
-                  <div className="text-[10px] text-muted/70 flex items-center gap-3">
+                  <div className="text-xs text-muted/70 flex items-center gap-3">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       created {new Date(row.createdAt).toLocaleString()}

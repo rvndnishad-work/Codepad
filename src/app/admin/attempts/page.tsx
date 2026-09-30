@@ -109,23 +109,23 @@ export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsP
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Challenge attempts</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Challenge attempts</h2>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <p className="text-sm text-muted">{totalCount.toLocaleString()} total</p>
             {passedCount > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold border border-emerald-500/20">
                 <CheckCircle2 className="w-3 h-3" />
                 {passedCount.toLocaleString()} passed
               </span>
             )}
             {failedCount > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-wider border border-red-500/20">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500/10 text-red-500 text-xs font-semibold border border-red-500/20">
                 <XCircle className="w-3 h-3" />
                 {failedCount.toLocaleString()} failed
               </span>
             )}
             {inProgressCount > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-wider border border-amber-500/20">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold border border-amber-500/20">
                 <AlertCircle className="w-3 h-3" />
                 {inProgressCount.toLocaleString()} live
               </span>
@@ -174,7 +174,7 @@ export default async function AdminAttemptsPage({ searchParams }: AdminAttemptsP
       ) : (
         <>
           <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-            <div className="hidden lg:grid lg:grid-cols-[1.8fr_2.2fr_1.2fr_1fr_1.5fr_1.5fr] lg:items-center lg:px-6 lg:py-4 bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border font-bold">
+            <div className="hidden lg:grid lg:grid-cols-[1.8fr_2.2fr_1.2fr_1fr_1.5fr_1.5fr] lg:items-center lg:px-6 lg:py-4 bg-elevated/50 text-xs text-muted border-b border-border font-bold">
               <div>User</div>
               <div>Challenge</div>
               <div>Status</div>
@@ -211,7 +211,7 @@ function FilterLink({
   return (
     <Link
       href={`/admin/attempts${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
         isActive ? "bg-accent text-bg" : "text-muted hover:text-fg hover:bg-elevated"
       }`}
     >

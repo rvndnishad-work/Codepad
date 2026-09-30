@@ -26,7 +26,7 @@ export default async function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-black tracking-tight">Site Settings</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Site Settings</h2>
         <p className="text-sm text-muted mt-1">Configure global application behavior.</p>
       </div>
 

@@ -50,7 +50,7 @@ export default async function WorkspaceChallengesPage({ params }: Props) {
         </div>
         <Link
           href={`/admin/challenges/new?workspaceId=${id}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-bg text-[11px] font-semibold uppercase tracking-wider hover:bg-accent-soft transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           New challenge
@@ -71,7 +71,7 @@ export default async function WorkspaceChallengesPage({ params }: Props) {
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+              <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                 <th className="px-4 py-3 font-semibold">Title</th>
                 <th className="px-4 py-3 font-semibold">Difficulty</th>
                 <th className="px-4 py-3 font-semibold">Category</th>
@@ -90,11 +90,11 @@ export default async function WorkspaceChallengesPage({ params }: Props) {
                     >
                       {c.title}
                     </Link>
-                    <div className="text-[11px] text-muted/70 font-mono mt-0.5">/{c.slug}</div>
+                    <div className="text-xs text-muted/70 font-mono mt-0.5">/{c.slug}</div>
                   </td>
                   <td className="px-4 py-3 align-middle">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-semibold ${
                         DIFFICULTY_BADGES[c.difficulty] || ""
                       }`}
                     >
@@ -107,19 +107,19 @@ export default async function WorkspaceChallengesPage({ params }: Props) {
                   </td>
                   <td className="px-4 py-3 align-middle">
                     {c.published ? (
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         Published
                       </span>
                     ) : (
-                      <span className="text-[11px] text-muted/60 italic">Draft</span>
+                      <span className="text-xs text-muted/60 italic">Draft</span>
                     )}
                   </td>
                   <td className="px-4 py-3 align-middle text-right">
                     <div className="inline-flex items-center gap-1.5">
                       <Link
                         href={`/admin/challenges/${c.id}/edit`}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[10px] font-semibold uppercase tracking-wider text-muted hover:text-fg transition-colors"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-xs font-semibold text-muted hover:text-fg transition-colors"
                       >
                         <Edit3 className="w-3 h-3" />
                         Edit

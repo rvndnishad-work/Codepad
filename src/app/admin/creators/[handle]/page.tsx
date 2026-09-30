@@ -73,8 +73,8 @@ export default async function AdminCreatorDrillPage({ params }: Props) {
         <div>
           <h1 className="text-xl font-bold text-fg flex items-center gap-2">
             <Store className="w-4 h-4 text-accent" /> {space.name} <span className="text-muted font-mono text-xs">/c/{space.handle}</span>
-            {space.featured && <span className="text-[10px] font-bold uppercase tracking-wider bg-violet-500 text-white rounded-full px-2 py-0.5">Featured</span>}
-            {space.published ? <span className="text-[10px] font-bold uppercase tracking-wider border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 rounded-full px-2 py-0.5">Live</span> : <span className="text-[10px] font-bold uppercase tracking-wider border border-amber-500/30 bg-amber-500/10 text-amber-600 rounded-full px-2 py-0.5">Draft</span>}
+            {space.featured && <span className="text-xs font-bold bg-violet-500 text-white rounded-full px-2 py-0.5">Featured</span>}
+            {space.published ? <span className="text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 rounded-full px-2 py-0.5">Live</span> : <span className="text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-600 rounded-full px-2 py-0.5">Draft</span>}
           </h1>
           <p className="text-xs text-muted mt-0.5">
             Owner: {owner?.name ?? "Unknown"} {owner?.email ? `· ${owner.email}` : ""} · {tiers.length} tiers · {contentCount} content · {views30d} views 30d
@@ -110,7 +110,7 @@ export default async function AdminCreatorDrillPage({ params }: Props) {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted">Payouts</span>
-              <span className={`text-xs font-bold uppercase ${payoutsStatus === "active" ? "text-emerald-600" : payoutsStatus === "incomplete" ? "text-amber-600" : "text-muted"}`}>{payoutsStatus}</span>
+              <span className={`text-xs font-bold ${payoutsStatus === "active" ? "text-emerald-600" : payoutsStatus === "incomplete" ? "text-amber-600" : "text-muted"}`}>{payoutsStatus}</span>
             </div>
             <div className="pt-2 divide-y divide-border/60">
               {earningsList.slice(0, 5).map((e) => (
@@ -135,9 +135,9 @@ export default async function AdminCreatorDrillPage({ params }: Props) {
               <div key={v.id} className="rounded-xl border border-border bg-panel/30 p-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold">{new Date(v.publishedAt).toLocaleString()}</span>
-                  <span className="text-muted font-mono text-[10px]">{v.actorId?.slice(0, 8) ?? "unknown"}</span>
+                  <span className="text-muted font-mono text-xs">{v.actorId?.slice(0, 8) ?? "unknown"}</span>
                 </div>
-                <pre className="mt-2 text-[10px] bg-bg border border-border rounded-lg p-2 overflow-auto max-h-32">{JSON.stringify(v.blocks, null, 2).slice(0, 800)}</pre>
+                <pre className="mt-2 text-xs bg-bg border border-border rounded-lg p-2 overflow-auto max-h-32">{JSON.stringify(v.blocks, null, 2).slice(0, 800)}</pre>
               </div>
             ))}
           </div>
@@ -151,7 +151,7 @@ export default async function AdminCreatorDrillPage({ params }: Props) {
         <div className="mt-3 divide-y divide-border/60">
           {recentEvents.map((e) => (
             <div key={e.id} className="flex items-center gap-3 py-2 text-xs">
-              <span className="inline-flex items-center rounded-full bg-panel border border-border px-2 py-0.5 text-[10px] font-bold">{e.kind}</span>
+              <span className="inline-flex items-center rounded-full bg-panel border border-border px-2 py-0.5 text-xs font-bold">{e.kind}</span>
               <span className="text-muted">
                 {e.contentType ?? "-"} {e.contentId ? e.contentId.slice(0, 6) : ""} {e.userId ? `by ${e.userId.slice(0, 6)}` : ""}
               </span>

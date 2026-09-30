@@ -46,11 +46,11 @@ export default function AdminCommentRow({ comment }: AdminCommentRowProps) {
         >
           {comment.user.name ?? "Anonymous"}
         </Link>
-        <div className="text-[11px] text-muted truncate max-w-[180px]">{comment.user.email}</div>
+        <div className="text-xs text-muted truncate max-w-[180px]">{comment.user.email}</div>
       </td>
       <td className="px-6 py-4 align-top max-w-[420px]">
         {comment.parentId && (
-          <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-muted/60 mb-1">
+          <div className="flex items-center gap-1 text-xs font-semibold text-muted/60 mb-1">
             <CornerDownRight className="w-3 h-3" />
             reply
           </div>
@@ -59,7 +59,7 @@ export default function AdminCommentRow({ comment }: AdminCommentRowProps) {
           {comment.content}
         </p>
         {comment.replyCount > 0 && (
-          <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted">
+          <div className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-muted">
             <MessageCircle className="w-3 h-3" />
             {comment.replyCount} {comment.replyCount === 1 ? "reply" : "replies"}
           </div>
@@ -72,11 +72,11 @@ export default function AdminCommentRow({ comment }: AdminCommentRowProps) {
         >
           {comment.post.title}
         </Link>
-        <div className="text-[11px] text-muted/70 font-mono truncate">/{comment.post.slug}</div>
+        <div className="text-xs text-muted/70 font-mono truncate">/{comment.post.slug}</div>
       </td>
       <td className="px-6 py-4 align-top">
-        <div className="text-[11px] text-muted">{comment.createdAt.toLocaleDateString()}</div>
-        <div className="text-[10px] text-muted/60">
+        <div className="text-xs text-muted">{comment.createdAt.toLocaleDateString()}</div>
+        <div className="text-xs text-muted/60">
           {comment.createdAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </div>
       </td>

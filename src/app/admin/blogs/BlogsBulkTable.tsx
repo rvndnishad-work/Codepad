@@ -183,7 +183,7 @@ export default function BlogsBulkTable({
                   key={a}
                   onClick={() => runAction(a)}
                   disabled={busy !== null}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-semibold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
                 >
                   {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
                   {conf.label}

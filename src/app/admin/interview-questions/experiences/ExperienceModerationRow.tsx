@@ -35,13 +35,13 @@ export default function ExperienceModerationRow({ exp }: { exp: Exp }) {
           <div className="font-extrabold text-sm">
             {exp.companyName ? `${exp.companyName} · ` : ""}{exp.role || "Candidate experience"}
           </div>
-          <div className="text-[11px] text-muted mt-1">
+          <div className="text-xs text-muted mt-1">
             {[exp.experienceLevel, exp.location, exp.year].filter(Boolean).join(" · ")}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {exp.result && <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md border ${resultClasses(exp.result)}`}>{exp.result}</span>}
-          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md border border-border text-muted">{exp.status}</span>
+          {exp.result && <span className={`text-xs font-semibold px-2 py-0.5 rounded-md border ${resultClasses(exp.result)}`}>{exp.result}</span>}
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-md border border-border text-muted">{exp.status}</span>
         </div>
       </div>
 

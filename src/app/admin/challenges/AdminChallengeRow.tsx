@@ -99,20 +99,20 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
       {/* Column 1: Checkbox */}
       <div className="flex items-center lg:justify-center mb-3 lg:mb-0">
         <BulkRowCheckbox id={challenge.id} />
-        <span className="lg:hidden text-[10px] uppercase font-bold text-muted ml-2 tracking-wider">Select Challenge</span>
+        <span className="lg:hidden text-xs font-bold text-muted ml-2 ">Select Challenge</span>
       </div>
 
       {/* Column 2: Title / Slug */}
       <div className="min-w-0 mb-3 lg:mb-0">
         <div className="font-bold text-fg text-sm lg:text-base group-hover:text-accent transition">{challenge.title}</div>
-        <div className="text-[11px] text-muted font-mono">{challenge.slug}</div>
+        <div className="text-xs text-muted font-mono">{challenge.slug}</div>
       </div>
 
       {/* Column 3: Difficulty */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Difficulty:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Difficulty:</span>
         <span
-          className={`inline-block px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+          className={`inline-block px-2 py-0.5 rounded-md border text-xs font-bold ${
             difficultyClass[challenge.difficulty] ?? ""
           }`}
         >
@@ -122,23 +122,23 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
 
       {/* Column 4: Category */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Category:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Category:</span>
         <span className="text-xs font-mono text-muted lg:text-fg">{challenge.category ?? "—"}</span>
       </div>
 
       {/* Column 5: Attempts */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Attempts:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Attempts:</span>
         <span className="text-xs font-mono text-muted lg:text-fg tabular-nums">{challenge.attempts}</span>
       </div>
 
       {/* Column 6: Monetization */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Monetization:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Monetization:</span>
         <button
           onClick={togglePremium}
           disabled={busy}
-          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+          className={`px-2 py-0.5 rounded-md border text-xs font-bold transition disabled:opacity-50 ${
             challenge.premium
               ? "text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 dark:text-amber-400 dark:bg-amber-500/20 dark:border-amber-500/40"
               : "text-muted bg-surface border-border hover:bg-elevated"
@@ -150,11 +150,11 @@ export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
 
       {/* Column 7: Status */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-24 mr-2 block">Status:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Status:</span>
         <button
           onClick={togglePublished}
           disabled={busy}
-          className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+          className={`px-2 py-0.5 rounded-md border text-xs font-bold transition disabled:opacity-50 ${
             challenge.published
               ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20"
               : "text-muted bg-surface border-border hover:bg-elevated"

@@ -80,7 +80,7 @@ export default function AdminSnippetRow({ snippet, overflow }: AdminSnippetRowPr
               {pinned && <Pin className="w-3.5 h-3.5 text-accent fill-accent shrink-0" />}
               {overflow && (
                 <span
-                  className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30"
                   title="Pinned but won't show on homepage — too many pins active."
                 >
                   <AlertTriangle className="w-2.5 h-2.5" />
@@ -100,7 +100,7 @@ export default function AdminSnippetRow({ snippet, overflow }: AdminSnippetRowPr
               {snippet.user.image ? (
                 <Image src={snippet.user.image} alt="" fill className="object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[8px] font-black text-muted">
+                <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-muted">
                   {(snippet.user.name ?? snippet.user.email ?? "?")[0]}
                 </div>
               )}
@@ -130,7 +130,7 @@ export default function AdminSnippetRow({ snippet, overflow }: AdminSnippetRowPr
       <td className="px-6 py-4 text-right">
         <div className="flex items-center justify-end gap-2">
           {error && (
-            <span className="text-[10px] text-rose-500 max-w-[160px] truncate" title={error}>
+            <span className="text-xs text-rose-500 max-w-[160px] truncate" title={error}>
               {error}
             </span>
           )}

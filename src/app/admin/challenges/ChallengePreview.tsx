@@ -103,10 +103,10 @@ export default function ChallengePreview({
       >
         <FlaskConical className="w-4 h-4 text-accent shrink-0" />
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-black text-fg truncate">
+          <div className="text-sm font-semibold text-fg truncate">
             Test this step — {stepLabel}
           </div>
-          <div className="text-[11px] text-muted hidden sm:flex items-center gap-1.5 mt-0.5">
+          <div className="text-xs text-muted hidden sm:flex items-center gap-1.5 mt-0.5">
             <Info className="w-3 h-3 shrink-0" />
             <span className="truncate">
               Paste your reference solution and click Run. Changes here
@@ -119,7 +119,7 @@ export default function ChallengePreview({
           onClick={onClose}
           aria-label="Close preview"
           title="Close (Esc)"
-          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/40 text-rose-500 text-xs font-black hover:bg-rose-500/20 transition"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/40 text-rose-500 text-xs font-semibold hover:bg-rose-500/20 transition"
         >
           <X className="w-3.5 h-3.5" />
           Close

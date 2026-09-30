@@ -923,7 +923,7 @@ export default function FloatingJarvisAgent() {
 
           {/* HUD Header */}
           <div className="px-4 py-3 border-b border-border bg-panel/40 flex items-center justify-between gap-2 relative z-10">
-            <div className="flex items-center gap-1.5 font-mono text-[9px] font-bold text-violet-400 uppercase tracking-widest">
+            <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-violet-400 ">
               <GemmaMark size={14} state={isTyping ? "thinking" : "idle"} />
               Jarvis Companion
             </div>
@@ -948,7 +948,7 @@ export default function FloatingJarvisAgent() {
                 {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
               </button>
 
-              <span className="text-[8px] font-mono font-black px-1.5 py-0.5 rounded bg-violet-500/10 border border-violet-500/25 text-violet-400 uppercase">
+              <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-violet-500/10 border border-violet-500/25 text-violet-400 ">
                 {pathname.split("/").pop() || "CORE"}
               </span>
             </div>
@@ -961,7 +961,7 @@ export default function FloatingJarvisAgent() {
                 key={idx}
                 onClick={() => handleSendPrompt(preset.prompt)}
                 disabled={isTyping}
-                className="text-[8px] font-mono font-bold px-2 py-0.5 rounded bg-panel/50 border border-violet-500/10 hover:border-violet-500/40 text-muted hover:text-fg transition disabled:opacity-50"
+                className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-panel/50 border border-violet-500/10 hover:border-violet-500/40 text-muted hover:text-fg transition disabled:opacity-50"
               >
                 {preset.label}
               </button>
@@ -971,7 +971,7 @@ export default function FloatingJarvisAgent() {
             <button
               onClick={handleScanPage}
               disabled={isTyping}
-              className="text-[8px] font-mono font-bold px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/35 hover:border-violet-500/60 text-violet-400 hover:text-fg transition flex items-center gap-1"
+              className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/35 hover:border-violet-500/60 text-violet-400 hover:text-fg transition flex items-center gap-1"
               title="Ground Jarvis in the active page DOM content"
             >
               <Eye className="w-3 h-3" />
@@ -980,13 +980,13 @@ export default function FloatingJarvisAgent() {
           </div>
 
           {/* Messages Readout Display */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-[11px] text-muted custom-scrollbar relative z-10">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-xs text-muted custom-scrollbar relative z-10">
             {chatHistory.map((msg, idx) => (
               <div 
                 key={idx}
                 className={`flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
-                <span className="text-[8px] text-muted/40 uppercase">
+                <span className="text-xs text-muted/40 ">
                   {msg.role === "user" ? "► directive" : "◀ jarvis"}
                 </span>
                 <div 
@@ -1008,7 +1008,7 @@ export default function FloatingJarvisAgent() {
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
                 <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                <span className="text-[9px] font-mono ml-1">querying contextual RAG...</span>
+                <span className="text-xs font-mono ml-1">querying contextual RAG...</span>
               </div>
             )}
             <div ref={terminalEndRef} />
@@ -1022,8 +1022,8 @@ export default function FloatingJarvisAgent() {
                 <img src={attachedImage.url} alt="Attached telemetry" className="w-full h-full object-cover" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[9px] font-black uppercase text-violet-400">Attached Telemetry</div>
-                <div className="text-[9px] text-muted truncate">Screenshot ready for analysis</div>
+                <div className="text-xs font-semibold text-violet-400">Attached Telemetry</div>
+                <div className="text-xs text-muted truncate">Screenshot ready for analysis</div>
               </div>
               <button
                 onClick={() => setAttachedImage(null)}
@@ -1039,9 +1039,9 @@ export default function FloatingJarvisAgent() {
               the hotkey naturally. Disappears while actively listening to keep
               the UI quiet when the bar is the active surface. */}
           {!isListening && (
-            <div className="px-3 pt-2 pb-1 text-[9px] font-mono text-muted/60 flex items-center gap-1.5 select-none">
+            <div className="px-3 pt-2 pb-1 text-xs font-mono text-muted/60 flex items-center gap-1.5 select-none">
               <span className="opacity-70">Hold</span>
-              <kbd className="px-1.5 py-0.5 rounded border border-border bg-panel/60 text-violet-400 text-[10px] leading-none">`</kbd>
+              <kbd className="px-1.5 py-0.5 rounded border border-border bg-panel/60 text-violet-400 text-xs leading-none">`</kbd>
               <span className="opacity-70">to push-to-talk</span>
             </div>
           )}
@@ -1089,7 +1089,7 @@ export default function FloatingJarvisAgent() {
             <input
               type="text"
               disabled={isTyping}
-              className={`flex-1 bg-bg border border-border focus:border-violet-500 outline-none rounded-xl px-3 py-1.5 text-[11px] font-mono placeholder:text-violet-500/40 disabled:opacity-50 ${
+              className={`flex-1 bg-bg border border-border focus:border-violet-500 outline-none rounded-xl px-3 py-1.5 text-xs font-mono placeholder:text-violet-500/40 disabled:opacity-50 ${
                 isLightTheme ? "text-violet-900" : "text-violet-300"
               }`}
               placeholder={isListening ? "LISTENING DIRECTIVE..." : "COMMAND DIR >_ "}
@@ -1107,7 +1107,7 @@ export default function FloatingJarvisAgent() {
           </form>
 
           {/* Futuristic diagnostic coordinates footer */}
-          <div className="px-3.5 py-1.5 border-t border-border bg-panel/30 flex items-center justify-between font-mono text-[7px] text-muted/30 relative z-10">
+          <div className="px-3.5 py-1.5 border-t border-border bg-panel/30 flex items-center justify-between font-mono text-xs text-muted/30 relative z-10">
             <span>SECURE_RAG_HUD</span>
             <span>TLS_ACTIVE</span>
           </div>

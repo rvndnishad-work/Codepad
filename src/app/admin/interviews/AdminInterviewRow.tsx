@@ -65,7 +65,7 @@ export default function AdminInterviewRow({ session }: AdminInterviewRowProps) {
     <tr className="hover:bg-elevated/40 transition">
       <td className="px-6 py-4 align-top">
         <div className="font-bold text-fg">{session.title}</div>
-        <div className="text-[11px] text-muted/70 mt-0.5 font-mono">
+        <div className="text-xs text-muted/70 mt-0.5 font-mono">
           {session.id.slice(0, 12)}…
         </div>
       </td>
@@ -76,13 +76,13 @@ export default function AdminInterviewRow({ session }: AdminInterviewRowProps) {
         >
           {session.user.name ?? "Anonymous"}
         </Link>
-        <div className="text-[11px] text-muted truncate max-w-[180px]">
+        <div className="text-xs text-muted truncate max-w-[180px]">
           {session.user.email}
         </div>
       </td>
       <td className="px-6 py-4 align-top">
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusClass}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusClass}`}
         >
           {session.status.replace("_", " ")}
         </span>
@@ -91,14 +91,14 @@ export default function AdminInterviewRow({ session }: AdminInterviewRowProps) {
         <div className="text-sm font-bold text-fg tabular-nums">
           {session.challengeCount}
         </div>
-        <div className="text-[10px] text-muted">{formatDuration(session.totalSec)} cap</div>
+        <div className="text-xs text-muted">{formatDuration(session.totalSec)} cap</div>
       </td>
       <td className="px-6 py-4 align-top">
-        <div className="text-[11px] text-muted">
+        <div className="text-xs text-muted">
           {session.createdAt.toLocaleDateString()}
         </div>
         {session.finishedAt && (
-          <div className="text-[10px] text-muted/60">
+          <div className="text-xs text-muted/60">
             done {session.finishedAt.toLocaleDateString()}
           </div>
         )}
@@ -107,7 +107,7 @@ export default function AdminInterviewRow({ session }: AdminInterviewRowProps) {
         <div className="inline-flex items-center gap-1">
           <Link
             href={`/admin/interviews/${session.id}`}
-            className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg hover:bg-elevated transition"
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold text-muted hover:text-fg hover:bg-elevated transition"
           >
             View
           </Link>

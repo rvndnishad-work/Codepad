@@ -52,13 +52,13 @@ export default function JsonField({
     <div className="rounded-xl border border-border overflow-hidden focus-within:border-accent/50 transition-colors">
       <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-border bg-bg/60">
         {empty ? (
-          <span className="text-[10px] font-bold text-muted">Empty</span>
+          <span className="text-xs font-bold text-muted">Empty</span>
         ) : error ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-500">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-500">
             <AlertTriangle className="w-3 h-3" /> {error}
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-500">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-500">
             <CheckCircle2 className="w-3 h-3" /> Valid JSON {kind}
           </span>
         )}
@@ -66,7 +66,7 @@ export default function JsonField({
           type="button"
           onClick={format}
           disabled={empty || Boolean(error)}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg hover:bg-elevated transition disabled:opacity-40"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold text-muted hover:text-fg hover:bg-elevated transition disabled:opacity-40"
         >
           <Braces className="w-3 h-3" /> Format
         </button>

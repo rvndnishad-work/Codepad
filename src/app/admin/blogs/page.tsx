@@ -114,13 +114,13 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-fg">Blogs</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-fg">Blogs</h2>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <p className="text-sm text-muted">
                 {stats.total} total · {stats.published} published
               </p>
               {stats.pending > 0 && (
-                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-semibold uppercase tracking-wide border border-amber-500/20 shadow-sm">
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20 shadow-sm">
                   <Clock className="w-3 h-3" />
                   {stats.pending} Pending
                 </span>
@@ -173,7 +173,7 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
       ) : (
         <BlogsBulkTable>
           <div className="rounded-2xl border border-border bg-panel/30 backdrop-blur-md overflow-hidden shadow-lg">
-            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.5fr_1.2fr_1.5fr_1.8fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-[11px] uppercase tracking-wide text-muted border-b border-border font-semibold">
+            <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.5fr_1.2fr_1.5fr_1.8fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-xs text-muted border-b border-border font-semibold">
               <div className="flex items-center justify-center">
                 <BulkHeaderCheckbox ids={blogs.map((b) => b.id)} />
               </div>
@@ -208,7 +208,7 @@ function FilterLink({ current, value, label }: { current?: string, value: string
   return (
     <Link
       href={`/admin/blogs${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-all duration-200 border ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
         isActive
           ? "bg-elevated text-fg border-border shadow-sm"
           : "border-transparent text-muted hover:text-fg hover:bg-panel/40"

@@ -52,17 +52,17 @@ export default async function AdminInterviewsPage({ searchParams }: AdminIntervi
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Interview sessions</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Interview sessions</h2>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-sm text-muted">{stats.total} total</p>
             {stats.inProgress > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-wider border border-amber-500/20">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 text-xs font-semibold border border-amber-500/20">
                 <Clock className="w-3 h-3" />
                 {stats.inProgress} live
               </span>
             )}
             {stats.completed > 0 && (
-              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-wider border border-emerald-500/20">
+              <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-semibold border border-emerald-500/20">
                 <CheckCircle2 className="w-3 h-3" />
                 {stats.completed} done
               </span>
@@ -109,7 +109,7 @@ export default async function AdminInterviewsPage({ searchParams }: AdminIntervi
         <div className="rounded-2xl border border-border bg-surface overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
-              <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
+              <thead className="bg-elevated/50 text-xs text-muted border-b border-border">
                 <tr>
                   <th className="px-6 py-4 font-bold">Session</th>
                   <th className="px-6 py-4 font-bold">Candidate</th>
@@ -151,7 +151,7 @@ function FilterLink({ current, value, label }: { current?: string; value: string
   return (
     <Link
       href={`/admin/interviews${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
         isActive ? "bg-accent text-bg" : "text-muted hover:text-fg hover:bg-elevated"
       }`}
     >

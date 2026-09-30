@@ -113,7 +113,7 @@ export default async function AdminUsersList({
             <Icon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-fg">{meta.title}</h2>
+            <h2 className="text-2xl font-semibold tracking-tight text-fg">{meta.title}</h2>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <p className="text-sm text-muted">
                 {totalCount} {totalCount === 1 ? "user" : "users"}
@@ -122,7 +122,7 @@ export default async function AdminUsersList({
               {bannedCount > 0 && (
                 <Link
                   href={status === "banned" ? baseUrl : `${baseUrl}?status=banned`}
-                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[11px] font-semibold uppercase tracking-wide border border-red-500/20 hover:bg-red-500/15 transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 text-xs font-semibold border border-red-500/20 hover:bg-red-500/15 transition-all"
                 >
                   <ShieldAlert className="w-3 h-3" />
                   {bannedCount} banned
@@ -170,7 +170,7 @@ export default async function AdminUsersList({
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-panel/30 backdrop-blur-md overflow-hidden shadow-lg">
-          <div className="hidden lg:grid lg:grid-cols-[2.2fr_1fr_1.2fr_1fr_1fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-[11px] uppercase tracking-wide text-muted border-b border-border font-semibold">
+          <div className="hidden lg:grid lg:grid-cols-[2.2fr_1fr_1.2fr_1fr_1fr] lg:items-center lg:px-6 lg:py-4 bg-panel/40 text-xs text-muted border-b border-border font-semibold">
             <div>User</div>
             <div>Role</div>
             <div>Activity</div>
@@ -217,7 +217,7 @@ function FilterLink({
   return (
     <Link
       href={`${baseUrl}${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-all duration-200 border ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
         isActive
           ? "bg-elevated text-fg border-border shadow-sm"
           : "border-transparent text-muted hover:text-fg hover:bg-panel/40"

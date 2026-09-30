@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Menu, X } from "lucide-react";
+import { ArrowLeft, ChevronsLeft, ChevronsRight, Menu, Shield, X } from "lucide-react";
+import { AdminNavCollapsedContext } from "./admin-nav-context";
 import AdminLink from "./AdminLink";
 import AdminPersonaToggle from "./AdminPersonaToggle";
 import type { AdminPersona } from "@/lib/admin-persona";
+
+const STORAGE_KEY = "admin_sidebar_collapsed";
 
 interface AdminSidebarProps {
   session: {
@@ -22,6 +25,28 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  // Desktop icon rail, persisted like the workspace sidebar. The mobile
+  // drawer always shows full labels.
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  useEffect(() => {
+    try {
+      setRailCollapsed(localStorage.getItem(STORAGE_KEY) === "1");
+    } catch {
+      /* storage blocked */
+    }
+  }, []);
+  const toggleCollapsed = () =>
+    setRailCollapsed((c) => {
+      const next = !c;
+      try {
+        localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        /* storage blocked */
+      }
+      return next;
+    });
+  const collapsed = railCollapsed && !isOpen;
 
   // Automatically close mobile menu when path changes
   useEffect(() => {
@@ -40,28 +65,30 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
     };
   }, [isOpen]);
 
-  const initials = (session?.user?.name || session?.user?.email || "A")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
   // Nav is split by persona so the sidebar only shows what's relevant to the
   // admin's current job. "Core" + "System" are always rendered; the middle
-  // section flips based on the toggle.
+  // section flips based on the toggle. Styling mirrors the workspace sidebar
+  // (WorkspaceSidebarNav): sentence-case labels, text-sm rows, quiet groups.
+  const groupLabel = (label: string) =>
+    collapsed ? (
+      <div className="hidden lg:block h-px bg-border w-6 mx-auto my-3" aria-hidden />
+    ) : (
+      <div className="text-xs font-medium text-subtle px-2.5 mt-4 mb-1.5">{label}</div>
+    );
+
   const NavigationLinks = () => (
-    <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-      <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 mb-2">
-        Core
-      </div>
+    <nav aria-label="Admin" className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 flex flex-col gap-0.5 ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
       <AdminLink href="/admin" icon="LayoutDashboard" label="Dashboard" />
       <AdminLink href="/admin/inbox" icon="Inbox" label="Inbox" />
 
       {/* Persona toggle drives which group of links renders below. */}
-      <div className="pt-4">
-        <AdminPersonaToggle initial={persona} />
-      </div>
+      {collapsed ? (
+        <div className="hidden lg:block h-px bg-border w-6 mx-auto my-3" aria-hidden />
+      ) : (
+        <div className="mt-4">
+          <AdminPersonaToggle initial={persona} />
+        </div>
+      )}
 
       {persona === "candidate" ? (
         <>
@@ -70,7 +97,7 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
           <AdminLink href="/admin/blogs" icon="FileText" label="Blogs" />
           <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
           <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
-          <AdminLink href="/admin/interview-questions" icon="HelpCircle" label="Interview Qs" />
+          <AdminLink href="/admin/interview-questions" icon="HelpCircle" label="Interview questions" />
           <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
           <AdminLink href="/admin/creators" icon="Sparkles" label="Creators" />
         </>
@@ -80,14 +107,12 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
           <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
           <AdminLink href="/admin/pricing" icon="CreditCard" label="Pricing" />
           <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
-          <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI Credits" />
+          <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI credits" />
         </>
       )}
 
-      <div className="text-[9px] font-bold tracking-wider text-muted/55 uppercase px-3 pt-4 mb-2">
-        System
-      </div>
-      <AdminLink href="/admin/copilot" icon="GemmaMark" label="Gemma Copilot" />
+      {groupLabel("System")}
+      <AdminLink href="/admin/copilot" icon="GemmaMark" label="Gemma copilot" />
       <AdminLink href="/admin/todos" icon="ClipboardList" label="Todos" />
       <AdminLink href="/admin/notifications" icon="Megaphone" label="Notifications" />
       <AdminLink href="/admin/emails" icon="Mail" label="Emails" />
@@ -96,54 +121,29 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
     </nav>
   );
 
-  const ProfileDetails = () => (
-    <div className="p-4 border-t border-border bg-elevated/20 flex items-center gap-3">
-      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center text-accent font-mono font-bold text-xs uppercase shrink-0">
-        {session?.user?.name?.[0] || session?.user?.email?.[0] || "A"}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-xs font-bold text-fg truncate">
-          {session?.user?.name || "Administrator"}
-        </div>
-        <div className="text-[10px] text-muted truncate leading-none mt-0.5">
-          {session?.user?.email}
-        </div>
-      </div>
-    </div>
-  );
-
   const BrandHeader = () => (
-    <div className="p-5 border-b border-border flex items-center justify-between">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-bg font-black text-sm shrink-0">
-          IP
-        </div>
-        <div>
-          <div className="text-[9px] font-black tracking-[0.2em] text-muted uppercase leading-none">
-            Internal
-          </div>
-          <h1 className="text-sm font-black tracking-tight mt-0.5">Admin Panel</h1>
-        </div>
+    <div className={`h-14 shrink-0 border-b border-border flex items-center gap-2.5 ${collapsed ? "lg:justify-center lg:px-2 px-4" : "px-4"}`}>
+      <div className="w-7 h-7 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+        <Shield className="w-4 h-4" aria-hidden />
       </div>
-      <Link
-        href="/"
-        className="w-7 h-7 rounded-lg bg-surface border border-border flex items-center justify-center text-muted hover:text-fg hover:border-border-strong transition"
-        title="Back to site"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-      </Link>
+      {!collapsed && (
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-fg leading-tight">Admin</div>
+          <div className="text-xs text-subtle truncate leading-tight">{session?.user?.email}</div>
+        </div>
+      )}
     </div>
   );
 
   return (
     <>
       {/* Mobile Top Sticky Bar */}
-      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-panel/90 backdrop-blur-md border-b border-border sticky top-0 w-full z-30">
+      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-bg border-b border-border sticky top-0 w-full z-30">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center text-bg font-black text-xs shrink-0">
-            IP
+          <div className="w-7 h-7 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+            <Shield className="w-4 h-4" aria-hidden />
           </div>
-          <h1 className="text-xs font-black tracking-wider uppercase text-fg">Admin Panel</h1>
+          <span className="text-sm font-semibold text-fg">Admin</span>
         </div>
         <div className="flex items-center gap-2">
           <Link
@@ -172,13 +172,23 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-panel/95 backdrop-blur-xl border-r border-border flex flex-col h-full z-50 transform lg:transform-none transition-transform duration-300 ease-in-out lg:relative lg:z-20 ${
+        className={`fixed inset-y-0 left-0 w-64 ${collapsed ? "lg:w-16" : "lg:w-60"} bg-bg border-r border-border flex flex-col h-full z-50 transform lg:transform-none transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none lg:relative lg:z-20 shrink-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <BrandHeader />
-        <NavigationLinks />
-        <ProfileDetails />
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="hidden lg:flex absolute -right-3 top-[68px] z-40 w-6 h-6 items-center justify-center rounded-full border border-border bg-surface text-subtle hover:text-fg hover:border-border-strong transition-colors"
+        >
+          {collapsed ? <ChevronsRight className="w-3.5 h-3.5" /> : <ChevronsLeft className="w-3.5 h-3.5" />}
+        </button>
+        <AdminNavCollapsedContext.Provider value={collapsed}>
+          <BrandHeader />
+          <NavigationLinks />
+        </AdminNavCollapsedContext.Provider>
       </aside>
     </>
   );

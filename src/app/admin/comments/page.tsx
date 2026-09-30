@@ -66,14 +66,14 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Blog comments</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Blog comments</h2>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <p className="text-sm text-muted">{totalCount.toLocaleString()} total</p>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/10 text-muted text-[10px] font-black uppercase tracking-wider border border-border">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/10 text-muted text-xs font-semibold border border-border">
               <MessageCircle className="w-3 h-3" />
               {topLevelCount.toLocaleString()} top-level
             </span>
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/10 text-muted text-[10px] font-black uppercase tracking-wider border border-border">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/10 text-muted text-xs font-semibold border border-border">
               <CornerDownRight className="w-3 h-3" />
               {replyCount.toLocaleString()} replies
             </span>
@@ -121,7 +121,7 @@ export default async function AdminCommentsPage({ searchParams }: AdminCommentsP
           <div className="rounded-2xl border border-border bg-surface overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
+                <thead className="bg-elevated/50 text-xs text-muted border-b border-border">
                   <tr>
                     <th className="px-6 py-4 font-bold">Author</th>
                     <th className="px-6 py-4 font-bold">Comment</th>
@@ -161,7 +161,7 @@ function FilterLink({
   return (
     <Link
       href={`/admin/comments${value ? `?filter=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
         isActive ? "bg-accent text-bg" : "text-muted hover:text-fg hover:bg-elevated"
       }`}
     >

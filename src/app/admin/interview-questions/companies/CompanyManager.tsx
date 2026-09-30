@@ -19,7 +19,7 @@ export type CompanyRow = {
 };
 
 const field = "w-full px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:border-accent/50";
-const label = "text-[10px] font-black uppercase tracking-widest text-muted mb-1.5 block";
+const label = "text-xs font-semibold text-muted mb-1.5 block";
 
 const blank: CompanyRow = {
   id: "", name: "", slug: "", logo: "", description: "", website: "", industry: "", hiringRoles: "",
@@ -57,7 +57,7 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
     <div className="space-y-5">
       <button
         onClick={() => setEditing({ ...blank })}
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft"
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft"
       >
         <Plus className="w-4 h-4" /> Add company
       </button>
@@ -78,14 +78,14 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
           <div><label className={label}>Frequently asked roles (comma separated)</label><input value={editing.hiringRoles} onChange={setE("hiringRoles")} className={field} placeholder="SDE, Frontend Engineer" /></div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-muted">Cancel</button>
-            <button disabled={pending} className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-black uppercase tracking-wider disabled:opacity-60">{pending ? "Saving…" : "Save"}</button>
+            <button disabled={pending} className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-semibold disabled:opacity-60">{pending ? "Saving…" : "Save"}</button>
           </div>
         </form>
       )}
 
       <div className="rounded-2xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-bg/50 text-[10px] font-black uppercase tracking-wider text-muted">
+          <thead className="bg-bg/50 text-xs font-semibold text-muted">
             <tr>
               <th className="text-left p-3">Company</th>
               <th className="text-left p-3 hidden sm:table-cell">Questions</th>
@@ -98,7 +98,7 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
               <tr key={c.id} className="hover:bg-bg/30">
                 <td className="p-3">
                   <div className="font-bold">{c.name}</div>
-                  <div className="text-[11px] text-muted">/{c.slug}</div>
+                  <div className="text-xs text-muted">/{c.slug}</div>
                 </td>
                 <td className="p-3 hidden sm:table-cell text-muted">{c.questionCount}</td>
                 <td className="p-3 hidden sm:table-cell text-muted">{c.experienceCount}</td>

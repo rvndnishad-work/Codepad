@@ -32,7 +32,7 @@ export default function QuestionAdminRow({ q }: { q: Q }) {
     <tr className={`hover:bg-bg/30 ${pending ? "opacity-50" : ""}`}>
       <td className="p-3">
         <div className="font-bold truncate max-w-[280px]">{q.title}</div>
-        <span className={`inline-block mt-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border ${difficultyClasses(q.difficulty)}`}>{q.difficulty}</span>
+        <span className={`inline-block mt-1 text-xs font-semibold px-1.5 py-0.5 rounded border ${difficultyClasses(q.difficulty)}`}>{q.difficulty}</span>
       </td>
       <td className="p-3 hidden sm:table-cell text-muted">{q.company ?? "—"}</td>
       <td className="p-3 hidden md:table-cell text-muted">{q.technology ?? "—"}</td>
@@ -41,7 +41,7 @@ export default function QuestionAdminRow({ q }: { q: Q }) {
           value={q.status}
           disabled={pending}
           onChange={(e) => start(() => setQuestionStatus(q.id, e.target.value as "draft" | "published" | "archived"))}
-          className={`text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded border bg-transparent cursor-pointer ${STATUS_CLASS[q.status] ?? STATUS_CLASS.draft}`}
+          className={`text-xs font-semibold px-2 py-1 rounded border bg-transparent cursor-pointer ${STATUS_CLASS[q.status] ?? STATUS_CLASS.draft}`}
         >
           <option value="draft">draft</option>
           <option value="published">published</option>

@@ -45,13 +45,13 @@ export default async function AdminSnippetsPage({ searchParams }: AdminSnippetsP
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Trends</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Trends</h2>
           <p className="text-sm text-muted mt-1 max-w-2xl">
             Pin public snippets to feature them in the homepage{" "}
             <strong className="text-fg">Explore Trends</strong> section.
             Up to {HOMEPAGE_SLOTS} appear at a time — pinned ones lead, then top-viewed fill the rest.
           </p>
-          <div className="flex items-center gap-3 mt-3 text-[11px] text-muted">
+          <div className="flex items-center gap-3 mt-3 text-xs text-muted">
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 font-bold">
               <Pin className="w-3 h-3 fill-current" />
               {totalPinned} pinned
@@ -114,7 +114,7 @@ export default async function AdminSnippetsPage({ searchParams }: AdminSnippetsP
         <div className="rounded-2xl border border-border bg-surface overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
-              <thead className="bg-elevated/50 text-[10px] uppercase tracking-[0.15em] text-muted border-b border-border">
+              <thead className="bg-elevated/50 text-xs text-muted border-b border-border">
                 <tr>
                   <th className="px-6 py-4 font-bold">Snippet</th>
                   <th className="px-6 py-4 font-bold">Author</th>
@@ -170,7 +170,7 @@ function FilterLink({
   return (
     <Link
       href={`/admin/snippets${qs ? `?${qs}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
         isActive
           ? "bg-accent text-bg"
           : "text-muted hover:text-fg hover:bg-elevated"

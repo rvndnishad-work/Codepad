@@ -76,13 +76,13 @@ export default async function AdminEmailsPage() {
     <div className="space-y-8">
       <header className="flex items-center justify-between gap-4">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-400 flex items-center gap-1.5">
+          <div className="text-xs font-bold text-violet-400 flex items-center gap-1.5">
             <Mail className="w-3 h-3" /> Transactional email
           </div>
           <h1 className="text-2xl font-semibold tracking-tight mt-1">Emails</h1>
           <p className="text-xs text-muted mt-1">
             Last 100 sends + per-status rollup. Updated by the Resend webhook
-            ({" "}<code className="font-mono text-[11px]">/api/webhooks/resend</code>{" "}).
+            ({" "}<code className="font-mono text-xs">/api/webhooks/resend</code>{" "}).
           </p>
         </div>
       </header>
@@ -94,16 +94,16 @@ export default async function AdminEmailsPage() {
             key={s}
             className={`rounded-xl border p-3 ${STATUS_TONE[s] ?? "border-border"}`}
           >
-            <div className="text-[10px] uppercase tracking-wider font-semibold opacity-80">{s}</div>
+            <div className="text-xs font-semibold opacity-80">{s}</div>
             <div className="text-2xl font-bold tabular-nums mt-0.5">{counts[s] ?? 0}</div>
           </div>
         ))}
       </section>
-      <p className="text-[11px] text-muted -mt-4">{total} total log rows.</p>
+      <p className="text-xs text-muted -mt-4">{total} total log rows.</p>
 
       {/* Log table */}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Recent sends</h2>
+        <h2 className="text-sm font-bold text-muted">Recent sends</h2>
         {logs.length === 0 ? (
           <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
             No emails sent yet.
@@ -112,7 +112,7 @@ export default async function AdminEmailsPage() {
           <div className="rounded-xl border border-border bg-surface overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-elevated/50">
-                <tr className="text-[10px] uppercase tracking-wider text-muted">
+                <tr className="text-xs text-muted">
                   <th className="px-4 py-2.5 font-bold">Status</th>
                   <th className="px-4 py-2.5 font-bold">Template</th>
                   <th className="px-4 py-2.5 font-bold">Recipient</th>
@@ -125,7 +125,7 @@ export default async function AdminEmailsPage() {
                   <tr key={l.id} className="hover:bg-panel/40">
                     <td className="px-4 py-2.5">
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-bold ${
                           STATUS_TONE[l.status] ?? "border-border text-muted"
                         }`}
                         title={l.errorReason ?? undefined}
@@ -133,12 +133,12 @@ export default async function AdminEmailsPage() {
                         {l.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-fg">{l.template}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-fg">{l.template}</td>
                     <td className="px-4 py-2.5 text-xs text-fg truncate max-w-[280px]">
                       {l.recipientEmail}
                     </td>
-                    <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">{timeAgo(l.createdAt)}</td>
-                    <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">{timeAgo(l.lastEventAt)}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(l.createdAt)}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(l.lastEventAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -149,9 +149,9 @@ export default async function AdminEmailsPage() {
 
       {/* Suppression list */}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-muted flex items-center gap-2">
+        <h2 className="text-sm font-bold text-muted flex items-center gap-2">
           <ShieldOff className="w-3.5 h-3.5" /> Suppression list
-          <span className="text-[10px] text-muted/70 normal-case tracking-normal font-normal">
+          <span className="text-xs text-muted/70 normal-case tracking-normal font-normal">
             {suppressionTotal} addresses
           </span>
         </h2>
@@ -163,7 +163,7 @@ export default async function AdminEmailsPage() {
           <div className="rounded-xl border border-border bg-surface overflow-hidden">
             <table className="w-full text-left text-sm">
               <thead className="bg-elevated/50">
-                <tr className="text-[10px] uppercase tracking-wider text-muted">
+                <tr className="text-xs text-muted">
                   <th className="px-4 py-2.5 font-bold">Address</th>
                   <th className="px-4 py-2.5 font-bold">Reason</th>
                   <th className="px-4 py-2.5 font-bold">Added</th>
@@ -173,10 +173,10 @@ export default async function AdminEmailsPage() {
               <tbody className="divide-y divide-border/60">
                 {suppressions.map((s) => (
                   <tr key={s.id} className="hover:bg-panel/40">
-                    <td className="px-4 py-2.5 font-mono text-[11px] text-fg">{s.address}</td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-fg">{s.address}</td>
                     <td className="px-4 py-2.5">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-bold ${
                           s.reason === "complaint"
                             ? "text-rose-300 border-rose-500/30 bg-rose-500/10"
                             : "text-amber-300 border-amber-500/30 bg-amber-500/10"
@@ -186,8 +186,8 @@ export default async function AdminEmailsPage() {
                         {s.reason}
                       </span>
                     </td>
-                    <td className="px-4 py-2.5 text-[11px] text-muted whitespace-nowrap">{timeAgo(s.addedAt)}</td>
-                    <td className="px-4 py-2.5 text-[11px] text-muted truncate max-w-[300px]">{s.note ?? "—"}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(s.addedAt)}</td>
+                    <td className="px-4 py-2.5 text-xs text-muted truncate max-w-[300px]">{s.note ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

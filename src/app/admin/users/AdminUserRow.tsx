@@ -122,7 +122,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
                 className="object-cover"
               />
             ) : (
-              <div className="text-[10px] font-black text-muted group-hover/avatar:text-accent transition">
+              <div className="text-xs font-semibold text-muted group-hover/avatar:text-accent transition">
                 {initials}
               </div>
             )}
@@ -141,21 +141,21 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
         {/* Column 2: Role / Badges */}
         <div className="mt-4 lg:mt-0 flex flex-col gap-2 items-start justify-center">
           <div className="flex items-center justify-between w-full lg:w-auto gap-2">
-            <span className="lg:hidden text-[9px] uppercase tracking-[0.1em] font-black text-muted/50">Role & Status</span>
+            <span className="lg:hidden text-xs font-semibold text-muted/50">Role & Status</span>
             <div className="flex items-center gap-1.5">
               {user.isAdmin ? (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-[9px] font-black uppercase tracking-wider border border-accent/20 shadow-sm">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-semibold border border-accent/20 shadow-sm">
                   <Shield className="w-2.5 h-2.5" />
                   Admin
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-panel/40 text-muted text-[9px] font-black uppercase tracking-wider border border-border">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-panel/40 text-muted text-xs font-semibold border border-border">
                   User
                 </div>
               )}
               
               {user.banned && (
-                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-semibold uppercase tracking-wide border border-red-500/20 shadow-sm">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-xs font-semibold border border-red-500/20 shadow-sm">
                   <ShieldAlert className="w-2.5 h-2.5" />
                   Banned
                 </div>
@@ -171,7 +171,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
                   key={idx}
                   href={`/w/${w.workspace.slug}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/15 text-[9px] font-bold transition"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/15 text-xs font-bold transition"
                 >
                   <span className="capitalize">{w.role.toLowerCase()}</span> in {w.workspace.name}
                 </Link>
@@ -182,29 +182,29 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
 
         {/* Column 3: Activity stats */}
         <div className="mt-4 lg:mt-0 flex flex-col gap-2 lg:flex-row lg:items-center w-full lg:w-auto">
-          <span className="lg:hidden text-[9px] uppercase tracking-[0.1em] font-black text-muted/50">Activity Stats</span>
+          <span className="lg:hidden text-xs font-semibold text-muted/50">Activity Stats</span>
           <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center lg:gap-4 bg-panel/10 lg:bg-transparent border border-border lg:border-none p-2 lg:p-0 rounded-xl w-full lg:w-auto">
             <Link href={`/u/${user.id}`} className="flex flex-col lg:flex-row items-center justify-center gap-1.5 py-1 px-2 rounded-lg hover:bg-panel/40 lg:hover:bg-transparent transition-all group/stat" title="Snippets">
               <Code2 className="w-3.5 h-3.5 text-muted/70 group-hover/stat:text-accent transition" />
-              <span className="text-[10px] font-mono font-bold text-muted/80 group-hover/stat:text-accent transition">{user._count.snippets}</span>
-              <span className="lg:hidden text-[8px] uppercase tracking-wider font-black text-muted/40">Snippets</span>
+              <span className="text-xs font-mono font-bold text-muted/80 group-hover/stat:text-accent transition">{user._count.snippets}</span>
+              <span className="lg:hidden text-xs font-semibold text-muted/40">Snippets</span>
             </Link>
             <div className="flex flex-col lg:flex-row items-center justify-center gap-1.5 py-1 px-2 rounded-lg transition group/stat" title="Challenges">
               <Target className="w-3.5 h-3.5 text-muted/70" />
-              <span className="text-[10px] font-mono font-bold text-muted/80">{user._count.attempts}</span>
-              <span className="lg:hidden text-[8px] uppercase tracking-wider font-black text-muted/40">Attempts</span>
+              <span className="text-xs font-mono font-bold text-muted/80">{user._count.attempts}</span>
+              <span className="lg:hidden text-xs font-semibold text-muted/40">Attempts</span>
             </div>
             <div className="flex flex-col lg:flex-row items-center justify-center gap-1.5 py-1 px-2 rounded-lg transition group/stat" title="Blogs">
               <FileText className="w-3.5 h-3.5 text-muted/70" />
-              <span className="text-[10px] font-mono font-bold text-muted/80">{user._count.blogs}</span>
-              <span className="lg:hidden text-[8px] uppercase tracking-wider font-black text-muted/40">Blogs</span>
+              <span className="text-xs font-mono font-bold text-muted/80">{user._count.blogs}</span>
+              <span className="lg:hidden text-xs font-semibold text-muted/40">Blogs</span>
             </div>
           </div>
         </div>
 
         {/* Column 4: Joined Date */}
         <div className="mt-4 lg:mt-0 flex items-center justify-between lg:justify-start gap-2">
-          <span className="lg:hidden text-[9px] uppercase tracking-[0.1em] font-black text-muted/50">Joined</span>
+          <span className="lg:hidden text-xs font-semibold text-muted/50">Joined</span>
           <div className="text-xs font-mono text-muted/70">
             {new Intl.DateTimeFormat("en-US", {
               month: "short",
@@ -290,7 +290,7 @@ export default function AdminUserRow({ user }: AdminUserRowProps) {
 function UserTypeBadge({ userType }: { userType: string | null }) {
   if (userType === "candidate") {
     return (
-      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-[10px] font-semibold uppercase tracking-wide border border-sky-500/20">
+      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 text-xs font-semibold border border-sky-500/20">
         <GraduationCap className="w-2.5 h-2.5" />
         Candidate
       </div>
@@ -298,7 +298,7 @@ function UserTypeBadge({ userType }: { userType: string | null }) {
   }
   if (userType === "recruiter") {
     return (
-      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold uppercase tracking-wide border border-emerald-500/20">
+      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">
         <Briefcase className="w-2.5 h-2.5" />
         Recruiter
       </div>

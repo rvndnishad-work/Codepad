@@ -1968,7 +1968,8 @@ body.sidebar-collapsed .workspace-content {
    * illegible on black, so within `.ip-on-dark` they take their dark-theme
    * values regardless of which theme the page itself is in. Everything built
    * on tokens — labels, chips, signal nodes, borders — then works unchanged. */
-  .ip-on-dark {
+  .ip-on-dark,
+  .keep-dark {
     --fg: #f5f6f7;
     --c-fg: 245 246 247;
     --muted: #c6c8cb;
@@ -2007,6 +2008,32 @@ body.sidebar-collapsed .workspace-content {
     --danger-rgb: 251, 113, 133;
     --c-danger: 251 113 133;
     --c-danger-solid: 220 38 51; /* solid fill under white text, 4.8:1 */
+  }
+
+  /* `.keep-dark` goes further than `.ip-on-dark`: it is for whole regions
+   * that stay dark in the light theme (the cinematic 3D heroes, the dark code
+   * cards), so it also re-keys the grounds, ink and clay so token-built
+   * children inside them paint dark too. */
+  .keep-dark {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --bg-rgb: 15, 17, 21;
+    --c-bg: 15 17 21;
+    --surface: #16191f;
+    --c-surface: 22 25 31;
+    --panel: #1d2128;
+    --c-panel: 29 33 40;
+    --elevated: #272c34;
+    --c-elevated: 39 44 52;
+    --ink: #f5f6f7;
+    --c-ink: 245 246 247;
+    --ink-fg: #0f1115;
+    --c-ink-fg: 15 17 21;
+    --accent-fill: #FFE600;
+    --accent-2-fill: #8b93ff;
+    --accent-2-soft: #a5b4fc;
+    --c-accent-2-soft: 165 180 252;
+    --shadow-clay: 0 0 0 1px rgba(245, 246, 247, 0.06), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
   }
 
   /* THE INVERTED BAND.
@@ -2175,7 +2202,8 @@ body.sidebar-collapsed .workspace-content {
 /* Floating state (immersive dark-hero routes only): white content over the hero.
    Non-immersive routes keep themed content when stretched so light pages
    stay readable. */
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"],
+.site-nav[data-scrolled="false"][data-hero-dark="true"] {
   --nav-fg: #fff;
   --nav-muted: rgba(255, 255, 255, 0.68);
   --nav-pill-hover: rgba(255, 255, 255, 0.12);
@@ -2194,17 +2222,22 @@ body.sidebar-collapsed .workspace-content {
 }
 
 /* Dynamic logo wordmark follows the bar state (overrides its var(--fg)). */
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-word { color: #fff !important; }
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-word,
+.site-nav[data-scrolled="false"][data-hero-dark="true"] .ld-word { color: #fff !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .ld-sub,
+.site-nav[data-scrolled="false"][data-hero-dark="true"] .ld-sub { color: rgba(255, 255, 255, 0.6) !important; }
 
 /* Utility island + divider adapt to the floating state. */
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-utils button {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-divider,
+.site-nav[data-scrolled="false"][data-hero-dark="true"] .nav-divider { border-color: rgba(255, 255, 255, 0.16) !important; }
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .nav-utils button,
+.site-nav[data-scrolled="false"][data-hero-dark="true"] .nav-utils button {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
 }
-.dark .site-nav[data-scrolled="false"][data-immersive="true"] .mobile-menu-btn {
+.dark .site-nav[data-scrolled="false"][data-immersive="true"] .mobile-menu-btn,
+.site-nav[data-scrolled="false"][data-hero-dark="true"] .mobile-menu-btn {
   border-color: rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.08) !important;
   color: #fff !important;
@@ -2335,4 +2368,21 @@ body.sidebar-collapsed .workspace-content {
   padding: 2px 6px;
   border-radius: 6px;
   top: -1.6em;
+}
+
+/* Light theme over an always-dark hero: the navy Sign in pill would sink into
+   the hero, so it flips to the light pill the dark theme uses there. */
+:root:not(.dark) .site-nav[data-scrolled="false"][data-hero-dark="true"] .nav-signin {
+  background: #f5f6f7;
+  color: #0f1730;
+}
+
+/* Filled accent buttons were written as `bg-accent text-bg` for the dark
+   ground, where `bg` is near-black. In light `bg` is pale, which vanishes on
+   the yellow and periwinkle fills, so the label takes the navy ink instead. */
+:root:not(.dark) .bg-accent:is(.text-bg, .text-white):not(:where(.keep-dark *, .ip-on-dark *, .dark *)) {
+  color: var(--accent-ink);
+}
+:root:not(.dark) .bg-secondary:is(.text-bg, .text-white):not(:where(.keep-dark *, .ip-on-dark *, .dark *)) {
+  color: var(--accent-2-ink);
 }

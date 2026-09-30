@@ -220,7 +220,7 @@ export default function CandidateCockpitClient({
   return (
     <div ref={root} className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
       {/* ── Collision hero ── */}
-      <section data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
+      <section data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
         <div aria-hidden className="ci-bg pointer-events-none absolute inset-0">
           <div className="absolute left-1/2 top-[-180px] h-[420px] w-[820px] -translate-x-1/2 rounded-full bg-[#8b93ff]/15 blur-[130px]" />
           <div className="wow-grid-bg absolute inset-0 opacity-70" />

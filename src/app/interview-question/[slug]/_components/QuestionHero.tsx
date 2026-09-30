@@ -90,7 +90,7 @@ export default function QuestionHero({
     "inline-flex h-11 items-center gap-2 rounded-full border border-white/[0.14] bg-white/[0.06] px-4 text-sm font-medium text-white/85 backdrop-blur-md transition-colors hover:border-white/30 hover:bg-white/[0.1] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
 
   return (
-    <header ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <header ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 right-[8%] h-[440px] w-[520px] rounded-full blur-[130px]" style={{ background: tint(color, 16) }} />
         <div className="absolute -bottom-40 -left-24 h-[360px] w-[420px] rounded-full bg-accent-2/10 blur-[120px]" />

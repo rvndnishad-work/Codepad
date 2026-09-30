@@ -220,7 +220,7 @@ export default async function DashboardPage() {
 
   return (
     // Milky Way command deck is a dark-space experience in every theme.
-    <div className="dark relative min-h-screen bg-[#02030a]">
+    <div className="gx-page dark relative min-h-screen bg-[#02030a]">
       <GalaxyBackdrop />
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:py-12">
         <DashboardHero userName={session.user?.name ?? null} />

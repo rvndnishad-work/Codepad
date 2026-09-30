@@ -76,7 +76,7 @@ export default function ChallengeBriefingHero({
   ];
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-32 right-[6%] h-[420px] w-[640px] rounded-full blur-[140px]" style={{ backgroundColor: tint, opacity: 0.15 }} />
         <div className="absolute -bottom-40 -left-24 h-[340px] w-[460px] rounded-full bg-[#8b93ff]/10 blur-[120px]" />

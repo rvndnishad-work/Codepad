@@ -109,7 +109,7 @@ export default function QuestionVerseHero({
   };
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
+    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
       {/* sun backdrop — half sun low on the left */}
       <div aria-hidden className="qv2-bg pointer-events-none absolute inset-0">
         <div className="qv2-scene absolute inset-0">

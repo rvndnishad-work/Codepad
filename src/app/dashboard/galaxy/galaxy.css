@@ -118,3 +118,9 @@
     transform: none;
   }
 }
+
+/* The dashboard is a night sky in both themes. In light the page ground is
+   pale, and it would show behind the floating header, so paint it dark. */
+body:has(.gx-page) {
+  background: #02030a;
+}

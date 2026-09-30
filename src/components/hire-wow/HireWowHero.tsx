@@ -69,7 +69,7 @@ export default function HireWowHero({
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
+    <section ref={root} data-dark-hero="dark-only" className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-secondary/20 blur-[140px]" />
         <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-accent-4/10 blur-[120px]" />

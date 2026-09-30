@@ -55,7 +55,7 @@ export default function TechDossierHero({
   ];
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
+    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-[8%] top-[-140px] h-[340px] w-[560px] rounded-full blur-[120px]" style={{ backgroundColor: hex, opacity: 0.16 }} />
         <div className="absolute bottom-[-160px] right-[-100px] h-[300px] w-[420px] rounded-full bg-[#8b93ff]/15 blur-[110px]" />

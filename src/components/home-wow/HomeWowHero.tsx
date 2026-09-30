@@ -66,10 +66,10 @@ export default function HomeWowHero({
     { n: stats.sessions, v: formatK(stats.sessions), l: "Interview sessions run" },
   ].filter((s) => s.n > 0);
   const typed = useTypewriter(["solve('lru-cache')", "review(aiPR).findBugs()", "run --tests=hidden", "mock.start('system-design')"]);
-  // Offscreen → loop paused (long-session lag fix). Scrolling → loop frozen:
-  // a live canvas competing with the scroll compositor is what drops frames
-  // on laptop iGPUs. The GSAP parallax is compositor-only, so the frozen
-  // frame keeps gliding and the loop resumes after the scroll settles.
+  // Offscreen → loop paused (long-session lag fix). Scrolling → loop capped
+  // at 30fps (ScrollTicker): a free-running canvas competing with the scroll
+  // compositor drops frames on laptop iGPUs, but a fully frozen one read as
+  // the scene stopping. Full rate resumes after the scroll settles.
   const [paused, setPaused] = useState(false);
   const [scrolling, setScrolling] = useState(false);
 
@@ -122,7 +122,7 @@ export default function HomeWowHero({
       </div>
 
       <div className="wow-hero-3d absolute inset-0 transform-gpu opacity-90 will-change-transform">
-        <CodeVerse3D paused={paused || scrolling} />
+        <CodeVerse3D paused={paused} scrolling={scrolling} />
       </div>
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgb(var(--c-bg)/0.88),transparent_72%)]" />

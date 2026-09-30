@@ -125,7 +125,7 @@ export default function QuestionVerseHero({
       {/* sun backdrop — half sun low on the left */}
       <div aria-hidden className="qv2-bg pointer-events-none absolute inset-0">
         <div className="qv2-scene absolute inset-0">
-          <SunScene3D paused={paused || scrolling} accent={activeDot} />
+          <SunScene3D paused={paused} scrolling={scrolling} accent={activeDot} />
         </div>
       </div>
       {/* readability veils: text lives right, fade at the bottom */}

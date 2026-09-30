@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { ScrollTicker, heroFrameloop } from "@/components/wow/ScrollTicker";
 import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
@@ -341,7 +342,7 @@ function Sparkles() {
   );
 }
 
-export default function CollidingPlanets3D({ paused = false }: { paused?: boolean }) {
+export default function CollidingPlanets3D({ paused = false, scrolling = false }: { paused?: boolean; scrolling?: boolean }) {
   const light = useIsLightTheme();
   const iceTex = useIceTexture();
   const lavaTex = useLavaTexture();
@@ -359,7 +360,7 @@ export default function CollidingPlanets3D({ paused = false }: { paused?: boolea
     <Canvas
       camera={{ position: [0, 0.4, 9.5], fov: 45 }}
       dpr={[1, 1.5]}
-      frameloop={paused ? "never" : "always"}
+      frameloop={heroFrameloop(paused, scrolling)}
       performance={{ min: 0.5 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
@@ -394,6 +395,7 @@ export default function CollidingPlanets3D({ paused = false }: { paused?: boolea
         <Sparks />
       </Rig>
       )}
+      <ScrollTicker active={!paused && scrolling} />
     </Canvas>
   );
 }

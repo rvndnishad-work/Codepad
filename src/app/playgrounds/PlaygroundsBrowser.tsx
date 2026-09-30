@@ -154,7 +154,7 @@ export default function PlaygroundsBrowser({
   const [barStuck, setBarStuck] = useState(false);
   const [chipsOverflow, setChipsOverflow] = useState(false);
 
-  // Black-hole loop freezes offscreen / while scrolling / on reduced motion
+  // Black-hole loop freezes offscreen / on reduced motion, runs at 30fps while scrolling
   // (same perf contract as the other 3D heroes).
   const [paused, setPaused] = useState(false);
   const [scrolling, setScrolling] = useState(false);
@@ -331,7 +331,7 @@ export default function PlaygroundsBrowser({
         <div aria-hidden className="ph-3d absolute inset-0 transform-gpu opacity-100 will-change-transform dark:opacity-90">
           {/* light: sink the hole below the filters so the chips sit on sky, not on the disc */}
           <div className="absolute inset-0 translate-y-[18%] dark:translate-y-0">
-            <BlackHoleScene3D paused={paused || scrolling} />
+            <BlackHoleScene3D paused={paused} scrolling={scrolling} />
           </div>
         </div>
         <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#08080f] dark:block" />

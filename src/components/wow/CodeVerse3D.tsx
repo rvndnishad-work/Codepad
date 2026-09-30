@@ -41,14 +41,15 @@ const PALETTES = {
 } as const;
 
 /** Light theme ("Clay"): the same scene in the reference palette, navy
- *  wireframe over a pale shell, sky/pink/slate cubes. No stars: white
+ *  wireframe over a pale shell, the golden yellow of the light accent
+ *  with sky/pink/slate cubes. No stars: white
  *  points vanish on the light page. */
 type Palette = { core: string; rings: readonly [string, string]; cubes: readonly string[]; dust: string };
 const LIGHT_PALETTES: Record<keyof typeof PALETTES, Palette> = {
   arcade: {
     core: "#27314f",
-    rings: ["#4ba3c7", "#c98bbd"],
-    cubes: ["#4ba3c7", "#eac7e5", "#6679a2", "#83c0d4", "#434f7c"],
+    rings: ["#f5c518", "#4ba3c7"],
+    cubes: ["#f5c518", "#4ba3c7", "#eac7e5", "#6679a2", "#434f7c"],
     dust: "#6679a2",
   },
   boss: {
@@ -179,7 +180,7 @@ export default function CodeVerse3D({ paused = false, tone = "arcade" }: { pause
           subtle shimmer, never a positional snap. */}
       {light ? null : <Stars radius={60} depth={40} count={1200} factor={3.2} saturation={0.4} fade speed={0.5} />}
       <CometField color={p.dust} />
-      <Core color={p.core} shell={light ? "#d3e0e8" : "#0d0d18"} />
+      <Core color={p.core} shell={light ? "#dfe8ee" : "#0d0d18"} />
       <Ring radius={2.55} color={p.rings[0]} speed={0.25} tilt={0.55} />
       <Ring radius={3.2} color={p.rings[1]} speed={-0.16} tilt={0.9} />
       <Satellites colors={p.cubes} />

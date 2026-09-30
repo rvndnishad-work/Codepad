@@ -30,6 +30,28 @@
   background-clip: text;
   color: transparent;
 }
+/* Light theme: yellow cannot carry text on a pale ground, so the accent
+   line becomes navy type on a golden highlighter stroke. The stroke sits
+   across the lower half of the letters and hugs the words (fit-content on
+   block lines, cloned per line on inline spans). */
+:root:not(.dark) .wow-gradient-text {
+  color: rgb(var(--c-fg));
+  background: linear-gradient(
+    to bottom,
+    transparent 52%,
+    rgb(var(--c-accent-fill) / 0.9) 52%,
+    rgb(var(--c-accent-fill) / 0.9) 88%,
+    transparent 88%
+  );
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding-inline: 0.06em;
+}
+:root:not(.dark) .wow-gradient-text.block {
+  width: fit-content;
+}
 /* Hiring gradient: indigo into near-white, static. */
 .wow-gradient-boss {
   background: linear-gradient(100deg, rgb(var(--c-accent-2-soft)) 0%, rgb(var(--c-fg)) 100%);
@@ -96,7 +118,7 @@
 .wow-scroll-hint-line { position: relative; width: 1px; height: 56px; background: rgba(255,255,255,.2); overflow: hidden; }
 .wow-scroll-hint-line::after {
   content: ""; position: absolute; left: 0; top: -40%; width: 100%; height: 40%;
-  background: rgb(var(--c-accent)); animation: wow-scroll-dot 1.8s cubic-bezier(.65,0,.35,1) infinite;
+  background: rgb(var(--c-accent-fill)); animation: wow-scroll-dot 1.8s cubic-bezier(.65,0,.35,1) infinite;
 }
 @keyframes wow-scroll-dot { to { top: 110%; } }
 

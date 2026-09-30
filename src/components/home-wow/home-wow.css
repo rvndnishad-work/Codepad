@@ -9,19 +9,19 @@
 
 :root {
   /* Light values follow the "Clay" palette in globals.css. */
-  --wow-bg: #dbe4ea;
-  --wow-bg-2: #ccdae3;
-  --wow-fg: #1b2440;
-  --wow-muted: rgba(27, 36, 64, 0.72);
-  --wow-faint: rgba(27, 36, 64, 0.58);
-  --wow-card: rgba(244, 247, 249, 0.85);
+  --wow-bg: #e9eff3;
+  --wow-bg-2: #dbe5eb;
+  --wow-fg: #0f1730;
+  --wow-muted: rgba(15, 23, 48, 0.78);
+  --wow-faint: rgba(15, 23, 48, 0.64);
+  --wow-card: rgba(251, 252, 253, 0.9);
   --wow-card-border: rgba(27, 36, 64, 0.12);
-  --wow-chip: rgba(244, 247, 249, 0.9);
-  --wow-stage: rgba(244, 247, 249, 0.6);
+  --wow-chip: rgba(251, 252, 253, 0.92);
+  --wow-stage: rgba(251, 252, 253, 0.6);
   --wow-glow-a: rgba(102, 121, 162, 0.16);
   --wow-glow-b: rgba(75, 163, 199, 0.14);
   --wow-glow-c: rgba(234, 199, 229, 0.3);
-  --wow-img-veil: linear-gradient(to top, rgba(219,228,234,0.96), rgba(219,228,234,0.25));
+  --wow-img-veil: linear-gradient(to top, rgba(233,239,243,0.96), rgba(233,239,243,0.25));
 }
 
 .dark {

@@ -76,15 +76,30 @@ const config: Config = {
         },
       },
 
-      /* Surfaces take the accent's FILL step. On dark it equals --accent;
+      /* Surfaces take the accent's FILL step (secondary likewise). On dark it equals --accent;
          on light it is the golden yellow, while text-accent keeps the deep
          gold text step (see globals.css). Only DEFAULT is overridden, so
          accent-3/4/soft and the opacity modifiers work as before. */
-      backgroundColor: { accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" } },
-      fill: { accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" } },
-      borderColor: { accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" } },
-      ringColor: { accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" } },
-      gradientColorStops: { accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" } },
+      backgroundColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      fill: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      borderColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      ringColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      gradientColorStops: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
       fontFamily: {
         sans: [
           "var(--font-sans)",

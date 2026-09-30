@@ -123,7 +123,7 @@ export default function HireWowHero({
         </p>
 
         <div className="wow-hire-fade mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center">
-          <Link href={ctaHref} className="group flex items-center justify-center gap-2 rounded-full bg-fg px-8 py-4 text-sm font-semibold text-bg transition hover:scale-[1.03]">
+          <Link href={ctaHref} className="group flex items-center justify-center gap-2 rounded-full bg-secondary px-8 py-4 text-sm font-semibold text-secondary-ink transition dark:bg-fg dark:text-bg hover:scale-[1.03]">
             {signedIn ? "Open your workspace" : "Create a workspace"}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>

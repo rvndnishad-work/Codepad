@@ -54,8 +54,8 @@ const LIGHT_PALETTES: Record<keyof typeof PALETTES, Palette> = {
   },
   boss: {
     core: "#434f7c",
-    rings: ["#6679a2", "#4ba3c7"],
-    cubes: ["#434f7c", "#6679a2", "#83c0d4", "#eac7e5", "#9bb0c1"],
+    rings: ["#9aa2ff", "#4ba3c7"],
+    cubes: ["#9aa2ff", "#3f47b8", "#83c0d4", "#eac7e5", "#6679a2"],
     dust: "#6679a2",
   },
 };

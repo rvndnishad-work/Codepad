@@ -1,9 +1,8 @@
 /**
- * Light theme coverage. The light "Clay" palette (globals.css :root) now runs
- * site-wide; the routes below are the deliberate exceptions and are always
- * forced dark. Admin is an internal console that was never reviewed in light.
+ * Light theme coverage. The light "Clay" palette (globals.css :root) runs
+ * site-wide, admin console included; any route listed here is forced dark.
  */
-const DARK_ONLY_PREFIX = ["/admin"];
+const DARK_ONLY_PREFIX: string[] = [];
 
 export function supportsLightTheme(pathname: string | null | undefined): boolean {
   if (!pathname) return false;

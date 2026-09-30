@@ -204,13 +204,13 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
 
       {/* Corporate AI Assessment Telemetry & Session Replay proctoring block */}
       {attempt.integrityReport && (
-        <div className="rounded-3xl border border-indigo-500/20 bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
+        <div className="rounded-3xl border border-indigo-500/20 bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md p-6 flex flex-col gap-6 shadow-xl relative overflow-hidden transition-all hover:border-accent/20">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-2 max-w-xl">
               <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                 <Sparkles className="w-4 h-4 animate-pulse" /> AI Proctoring & Replay Log Auditor
               </h3>
-              <p className="text-sm font-black text-[#F3F4F6]">
+              <p className="text-sm font-black text-fg dark:text-[#F3F4F6]">
                 Risk Assessment Rating:{" "}
                 <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-black uppercase ml-1.5 ${
                   attempt.integrityReport.suspicionScore < 25
@@ -228,7 +228,7 @@ export default async function AdminAttemptDetailPage({ params }: AdminAttemptDet
                 </span>
               </p>
               <p className="text-xs text-muted leading-relaxed">
-                We tracked <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} clipboard pastes captured</span>. Paste is allowed and logged — open the replay to review pasted content and tell external AI code from the candidate moving their own work. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
+                We tracked <span className="text-fg dark:text-[#F3F4F6] font-bold">{attempt.integrityReport.blurCount} browser tab blurs</span> (candidate left screen for <span className="text-fg dark:text-[#F3F4F6] font-bold">{attempt.integrityReport.totalBlurSec} seconds</span>) and <span className="text-fg dark:text-[#F3F4F6] font-bold">{attempt.integrityReport.pasteCount} clipboard pastes captured</span>. Paste is allowed and logged — open the replay to review pasted content and tell external AI code from the candidate moving their own work. Large copy-pastes or high-speed typing bursts indicate external AI code generation.
               </p>
             </div>
 

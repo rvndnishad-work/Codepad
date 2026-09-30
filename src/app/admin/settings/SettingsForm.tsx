@@ -386,11 +386,11 @@ export default function SettingsForm({
 
             {/* Advanced Sensitivity Threshold Slider */}
             {b2bSettings.proctoringEnabled && (
-              <div className="p-5 rounded-xl border border-border bg-[#101424]/40 space-y-4">
+              <div className="p-5 rounded-xl border border-border bg-bg/70 dark:bg-[#101424]/40 space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sliders className="w-4 h-4 text-accent" />
-                    <span className="text-xs font-black uppercase tracking-wider text-[#F3F4F6]">
+                    <span className="text-xs font-black uppercase tracking-wider text-fg dark:text-[#F3F4F6]">
                       AI Suspicion Sensitivity Threshold
                     </span>
                   </div>

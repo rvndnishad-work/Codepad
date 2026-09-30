@@ -168,11 +168,11 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
             Back to Scorecard
           </Link>
-          <h1 className="text-2xl md:text-3xl font-black text-[#F3F4F6] tracking-tight mt-1">
+          <h1 className="text-2xl md:text-3xl font-black text-fg dark:text-[#F3F4F6] tracking-tight mt-1">
             Candidate Session Replay
           </h1>
           <p className="text-xs text-muted leading-relaxed">
-            Reconstructing attempt for candidate <span className="text-[#F3F4F6] font-bold">{attempt.candidateName}</span> solving <span className="text-[#F3F4F6] font-bold">{attempt.challengeTitle}</span>.
+            Reconstructing attempt for candidate <span className="text-fg dark:text-[#F3F4F6] font-bold">{attempt.candidateName}</span> solving <span className="text-fg dark:text-[#F3F4F6] font-bold">{attempt.challengeTitle}</span>.
           </p>
         </div>
         {integrity &&
@@ -198,7 +198,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
         <div className="lg:col-span-8 flex flex-col space-y-4">
           
           {/* File selector tab strip */}
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-t-2xl border border-border bg-[#111625]/60 overflow-x-auto -mb-4 relative z-10">
+          <div className="flex items-center gap-1.5 px-4 py-2 rounded-t-2xl border border-border bg-bg/70 dark:bg-[#111625]/60 overflow-x-auto -mb-4 relative z-10">
             <FileCode className="w-4 h-4 text-accent mr-1.5 shrink-0" />
             {Object.keys(currentFiles).length === 0 ? (
               <span className="text-xs text-muted font-bold font-mono">/index.ts</span>
@@ -223,7 +223,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           </div>
 
           {/* Monaco Editor Container */}
-          <div className="rounded-b-3xl border border-border bg-[#161B2E]/40 backdrop-blur-md p-1 overflow-hidden shadow-2xl relative">
+          <div className="rounded-b-3xl border border-border bg-surface dark:bg-[#161B2E]/40 backdrop-blur-md p-1 overflow-hidden shadow-2xl relative">
             <div className="h-[480px] rounded-2xl overflow-hidden border border-border">
               <MonacoEditor
                 height="100%"
@@ -248,7 +248,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           </div>
 
           {/* Player controls */}
-          <div className="p-4 rounded-3xl border border-border bg-[#161B2E]/60 backdrop-blur-md shadow-lg space-y-4">
+          <div className="p-4 rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md shadow-lg space-y-4">
             
             {/* Timeline Scrubbing Track */}
             <div className="flex items-center gap-3">
@@ -313,7 +313,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                 {/* Thumb playhead circle tracker */}
                 <div
                   style={{ left: `calc(${(playheadMs / maxElapsedMs) * 100}% - 6px)` }}
-                  className="absolute w-3.5 h-3.5 rounded-full bg-accent border-2 border-[#0B0F19] pointer-events-none z-20 shadow-md group-hover/timeline:scale-125 transition-transform"
+                  className="absolute w-3.5 h-3.5 rounded-full bg-accent border-2 border-surface dark:border-[#0B0F19] pointer-events-none z-20 shadow-md group-hover/timeline:scale-125 transition-transform"
                 />
 
                 {/* YouTube-style paste bookmarks pinned on the track */}
@@ -337,7 +337,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                         {/* Bookmark pin */}
                         <span className="block w-2.5 h-2.5 rotate-45 rounded-[2px] bg-amber-400 border border-amber-200 shadow-[0_0_8px_#fbbf24] transition-transform group-hover/mark:scale-150" />
                         {/* Hover tooltip */}
-                        <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 hidden group-hover/mark:flex items-center gap-1 whitespace-nowrap rounded-lg border border-amber-500/30 bg-[#0B0F19] px-2 py-1 text-[9px] font-mono font-bold text-amber-300 shadow-xl">
+                        <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 hidden group-hover/mark:flex items-center gap-1 whitespace-nowrap rounded-lg ip-on-dark border border-amber-500/30 bg-[#0B0F19] px-2 py-1 text-[9px] font-mono font-bold text-amber-300 shadow-xl">
                           <Clipboard className="w-2.5 h-2.5" /> Paste · {chars.toLocaleString()} chars · {formattedTime(pasteEv.t)}
                         </span>
                       </button>
@@ -365,7 +365,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
               </div>
 
               {/* Speed controls */}
-              <div className="flex items-center gap-1 bg-[#111625]/60 border border-border p-1 rounded-xl shrink-0">
+              <div className="flex items-center gap-1 bg-bg/70 dark:bg-[#111625]/60 border border-border p-1 rounded-xl shrink-0">
                 {([1, 2, 5, 10] as const).map((s) => (
                   <button
                     key={s}
@@ -391,25 +391,25 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           
           {/* Bento integrity widgets */}
           {integrity && (
-            <div className="rounded-3xl border border-border bg-[#161B2E]/60 backdrop-blur-md p-6 space-y-5 shadow-2xl">
+            <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md p-6 space-y-5 shadow-2xl">
               <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
                 <Sparkles className="w-4 h-4" /> AI Proctoring Summary
               </h3>
               
               <div className="grid grid-cols-2 gap-3.5">
-                <div className="p-3.5 rounded-2xl border border-border bg-[#0B0F19]/40 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between">
                   <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Tab Blurs
                   </span>
                   <span className="text-xs font-bold text-fg mt-2">{integrity.blurCount} times</span>
                 </div>
-                <div className="p-3.5 rounded-2xl border border-border bg-[#0B0F19]/40 flex flex-col justify-between">
+                <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between">
                   <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-indigo-400" /> Unfocused
                   </span>
                   <span className="text-xs font-bold text-fg mt-2">{integrity.totalBlurSec} seconds</span>
                 </div>
-                <div className="p-3.5 rounded-2xl border border-border bg-[#0B0F19]/40 flex flex-col justify-between col-span-2">
+                <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between col-span-2">
                   <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
                     <Clipboard className="w-3.5 h-3.5 text-amber-400" /> Pastes Captured
                   </span>
@@ -420,16 +420,16 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           )}
 
           {/* Recording + AI Notes — P2-T6 bento */}
-          <div className="rounded-3xl border border-border bg-[#161B2E]/60 backdrop-blur-md p-5 space-y-4">
+          <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md p-5 space-y-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-muted flex items-center gap-2">
               <Video className="w-4 h-4 text-violet-400" /> Recording & AI Notes
             </h3>
-            <div className="aspect-[16/9] rounded-xl border border-border bg-black/40 grid place-items-center text-xs text-muted">
+            <div className="aspect-[16/9] rounded-xl border border-border bg-bg/70 dark:bg-black/40 grid place-items-center text-xs text-muted">
               <span className="inline-flex items-center gap-1.5">
                 <Video className="w-3.5 h-3.5" /> Recording — LiveKit track (stub) · {integrity ? `${integrity.totalBlurSec}s unfocused` : "no data"}
               </span>
             </div>
-            <div className="rounded-xl border border-border bg-[#0B0F19]/40 p-3">
+            <div className="rounded-xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 p-3">
               <div className="text-[11px] font-bold text-fg flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-accent" /> AI Notes (Gemini ADMIN_HELPER)
               </div>
@@ -456,7 +456,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
 
           {/* Paste History Events Feed — full captured content for review */}
           {integrity && integrity.pasteDetails.length > 0 && (
-            <div className="rounded-3xl border border-border bg-[#161B2E]/40 p-5 space-y-3.5 max-h-[28rem] overflow-y-auto">
+            <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/40 p-5 space-y-3.5 max-h-[28rem] overflow-y-auto">
               <h3 className="text-xs font-black uppercase tracking-widest text-muted">Copy-Paste Logs</h3>
               <p className="text-[10px] text-muted leading-relaxed">
                 Captured paste content — review to tell external/AI code from the candidate relocating their own work. Click an entry to jump the replay to that moment.
@@ -468,7 +468,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                     <div
                       key={idx}
                       onClick={() => setPlayheadMs(p.t)}
-                      className="p-3 rounded-xl border border-border bg-[#0B0F19]/40 text-[10px] space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-[#0B0F19]/60 transition"
+                      className="p-3 rounded-xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 text-[10px] space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-bg/70 dark:hover:bg-[#0B0F19]/60 transition"
                     >
                       <div className="flex justify-between items-center text-muted">
                         <span className="font-mono text-amber-400 font-bold flex items-center gap-1">
@@ -493,7 +493,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
 
           {/* Tab Blur Events Feed */}
           {events.some((ev) => ev.type === "blur") && (
-            <div className="rounded-3xl border border-border bg-[#161B2E]/40 p-5 space-y-3.5 max-h-80 overflow-y-auto">
+            <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/40 p-5 space-y-3.5 max-h-80 overflow-y-auto">
               <h3 className="text-xs font-black uppercase tracking-widest text-muted">Unfocused logs</h3>
               <div className="space-y-2">
                 {events

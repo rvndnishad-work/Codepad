@@ -24,8 +24,8 @@ export type DailyPick = {
 /**
  * ROGUE HERO — the drifter hangs right-of-center while copy holds the left:
  * interviews throw unknown questions at you, so you train in the dark.
- * GSAP masked-line entrance + parallax, canvas frozen offscreen / scrolling /
- * reduced-motion. Carries `data-dark-hero` so the navbar floats transparent.
+ * GSAP masked-line entrance + parallax, canvas frozen offscreen /
+ * reduced-motion, 30fps while scrolling. Carries `data-dark-hero` so the navbar floats transparent.
  */
 export default function RogueHero({
   firstName,
@@ -96,7 +96,7 @@ export default function RogueHero({
         <div className="wow-grid-bg absolute inset-0 opacity-70" />
       </div>
       <div aria-hidden className="rg-3d absolute inset-0 transform-gpu will-change-transform">
-        <RoguePlanet3D paused={paused || scrolling} />
+        <RoguePlanet3D paused={paused} scrolling={scrolling} />
       </div>
       {/* readability: text lives left, fade at the bottom */}
       <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-[#07070e]/85 via-[#07070e]/30 to-transparent dark:block" />

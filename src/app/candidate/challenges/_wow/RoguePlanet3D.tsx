@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { ScrollTicker, heroFrameloop } from "@/components/wow/ScrollTicker";
 import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
@@ -237,7 +238,7 @@ function Drift({ count = 160, light = false }: { count?: number; light?: boolean
   );
 }
 
-export default function RoguePlanet3D({ paused = false }: { paused?: boolean }) {
+export default function RoguePlanet3D({ paused = false, scrolling = false }: { paused?: boolean; scrolling?: boolean }) {
   const map = useRogueTexture();
   const aura = useAuraTexture();
   const clay = useClayTexture();
@@ -246,7 +247,7 @@ export default function RoguePlanet3D({ paused = false }: { paused?: boolean }) 
     <Canvas
       camera={{ position: [0, 0.4, 9.5], fov: 44 }}
       dpr={[1, 1.5]}
-      frameloop={paused ? "never" : "always"}
+      frameloop={heroFrameloop(paused, scrolling)}
       performance={{ min: 0.5 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
@@ -265,6 +266,7 @@ export default function RoguePlanet3D({ paused = false }: { paused?: boolean }) 
           <Drift />
         </>
       )}
+      <ScrollTicker active={!paused && scrolling} />
     </Canvas>
   );
 }

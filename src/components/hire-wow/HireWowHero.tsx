@@ -77,7 +77,7 @@ export default function HireWowHero({
       </div>
 
       <div className="absolute inset-0 transform-gpu opacity-80 will-change-transform">
-        <CodeVerse3D paused={paused || scrolling} tone="boss" />
+        <CodeVerse3D paused={paused} scrolling={scrolling} tone="boss" />
       </div>
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_64%_54%_at_50%_44%,rgb(var(--c-bg)/0.9),transparent_72%)]" />

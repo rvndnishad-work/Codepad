@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { ScrollTicker, heroFrameloop } from "@/components/wow/ScrollTicker";
 import { useTheme } from "next-themes";
 
 /**
@@ -163,7 +164,7 @@ function CometField({ count = 140, color }: { count?: number; color: string }) {
   );
 }
 
-export default function CodeVerse3D({ paused = false, tone = "arcade" }: { paused?: boolean; tone?: VerseTone }) {
+export default function CodeVerse3D({ paused = false, scrolling = false, tone = "arcade" }: { paused?: boolean; scrolling?: boolean; tone?: VerseTone }) {
   const { resolvedTheme } = useTheme();
   const light = resolvedTheme === "light";
   const p: Palette = light ? LIGHT_PALETTES[tone] : PALETTES[tone];
@@ -171,7 +172,7 @@ export default function CodeVerse3D({ paused = false, tone = "arcade" }: { pause
     <Canvas
       camera={{ position: [0, 0.4, 8.5], fov: 46 }}
       dpr={[1, 1.25]}
-      frameloop={paused ? "never" : "always"}
+      frameloop={heroFrameloop(paused, scrolling)}
       performance={{ min: 0.5 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
@@ -184,6 +185,7 @@ export default function CodeVerse3D({ paused = false, tone = "arcade" }: { pause
       <Ring radius={2.55} color={p.rings[0]} speed={0.25} tilt={0.55} />
       <Ring radius={3.2} color={p.rings[1]} speed={-0.16} tilt={0.9} />
       <Satellites colors={p.cubes} />
+      <ScrollTicker active={!paused && scrolling} />
     </Canvas>
   );
 }

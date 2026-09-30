@@ -137,7 +137,7 @@ export default function CandidateCockpitClient({
 
   const firstName = userName?.split(" ")[0] ?? "there";
 
-  // Freeze the planets offscreen / while scrolling / on reduced motion.
+  // Freeze the planets offscreen / on reduced motion; 30fps while scrolling.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setPaused(true);
@@ -226,7 +226,7 @@ export default function CandidateCockpitClient({
           <div className="wow-grid-bg absolute inset-0 opacity-30 dark:opacity-70" />
         </div>
         <div aria-hidden data-planets className="ci-3d absolute inset-0 transform-gpu will-change-transform">
-          <CollidingPlanets3D paused={paused || scrolling} />
+          <CollidingPlanets3D paused={paused} scrolling={scrolling} />
         </div>
         <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b dark:block from-[#07070e]/60 via-transparent to-[#07070e]" />
         <div aria-hidden className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_58%_48%_at_50%_42%,rgba(7,7,14,0.82),transparent_70%)]" />

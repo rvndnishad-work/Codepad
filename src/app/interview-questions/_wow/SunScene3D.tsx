@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { ScrollTicker, heroFrameloop } from "@/components/wow/ScrollTicker";
 import { useIsLightTheme } from "@/lib/use-light-theme";
 
 export type SunBand = "all" | "easy" | "medium" | "hard";
@@ -235,13 +236,13 @@ function Rig({ children }: { children: React.ReactNode }) {
   return <group ref={ref}>{children}</group>;
 }
 
-export default function SunScene3D({ paused = false, accent = "#ffb64d" }: { paused?: boolean; accent?: string }) {
+export default function SunScene3D({ paused = false, scrolling = false, accent = "#ffb64d" }: { paused?: boolean; scrolling?: boolean; accent?: string }) {
   const light = useIsLightTheme();
   return (
     <Canvas
       camera={{ position: [0, 0.7, 9.5], fov: 42 }}
       dpr={[1, 1.5]}
-      frameloop={paused ? "never" : "always"}
+      frameloop={heroFrameloop(paused, scrolling)}
       performance={{ min: 0.5 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
@@ -258,6 +259,7 @@ export default function SunScene3D({ paused = false, accent = "#ffb64d" }: { pau
           <gridHelper key="grid-dark" args={[36, 46, "#8b93ff", "#2c2660"]} position={[0, -2.2, -2]} material-transparent material-opacity={0.32} />
         )}
       </Rig>
+      <ScrollTicker active={!paused && scrolling} />
     </Canvas>
   );
 }

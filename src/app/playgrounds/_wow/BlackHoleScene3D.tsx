@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
  * BLACK HOLE SCENE — backdrop for the playgrounds hero. Event-horizon
@@ -200,6 +201,122 @@ function Inflow({ count = 220 }: { count?: number }) {
   );
 }
 
+
+/* ── Light theme ("clay daylight"): matte navy horizon, white rim, pastel
+ * clay accretion ring, a few clay pebbles. Normal blending only, no glow. */
+
+/** Clay ring texture: pink core -> periwinkle tail, golden front edge. */
+function useClayDiskTexture(enabled: boolean) {
+  return useMemo(() => {
+    if (!enabled) return null;
+    const S = 512;
+    const cv = document.createElement("canvas");
+    cv.width = S;
+    cv.height = S;
+    const ctx = cv.getContext("2d");
+    if (!ctx) return null;
+    const cx = S / 2;
+    const g = ctx.createRadialGradient(cx, cx, S * 0.18, cx, cx, S * 0.5);
+    g.addColorStop(0, "rgba(251,228,245,1)");
+    g.addColorStop(0.3, "rgba(234,199,229,0.95)");
+    g.addColorStop(0.65, "rgba(154,162,255,0.7)");
+    g.addColorStop(0.9, "rgba(154,162,255,0.25)");
+    g.addColorStop(1, "rgba(154,162,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, S, S);
+    // soft lanes (lighter, not cut out) for a sculpted clay feel
+    for (const [r, w] of [[0.34, 0.012], [0.44, 0.02], [0.62, 0.012]] as const) {
+      ctx.beginPath();
+      ctx.arc(cx, cx, S * r, 0, Math.PI * 2);
+      ctx.lineWidth = S * w;
+      ctx.strokeStyle = "rgba(108,116,216,0.35)";
+      ctx.stroke();
+    }
+    // golden front edge (bottom of the texture faces the camera once tilted)
+    ctx.globalCompositeOperation = "source-atop";
+    const d = ctx.createLinearGradient(0, S * 0.55, 0, S);
+    d.addColorStop(0, "rgba(245,197,24,0)");
+    d.addColorStop(1, "rgba(245,197,24,0.75)");
+    ctx.fillStyle = d;
+    ctx.fillRect(0, 0, S, S);
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(cx, cx, S * 0.175, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    ctx.fill();
+    const tex = new THREE.CanvasTexture(cv);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }, [enabled]);
+}
+
+function ClaySingularity() {
+  return (
+    <group>
+      <mesh>
+        <sphereGeometry args={[1.5, 48, 48]} />
+        <meshBasicMaterial color="#0f1730" />
+      </mesh>
+      <mesh>
+        <torusGeometry args={[1.58, 0.03, 12, 160]} />
+        <meshBasicMaterial color="#fbfcfd" />
+      </mesh>
+    </group>
+  );
+}
+
+function ClayDisk({ texture }: { texture: THREE.Texture | null }) {
+  const ref = useRef<THREE.Mesh>(null);
+  const time = useRef(0);
+  useFrame((_, rawDelta) => {
+    if (!ref.current) return;
+    ref.current.rotation.z = stepTime(time, rawDelta) * 0.12;
+  });
+  if (!texture) return null;
+  return (
+    <mesh ref={ref} rotation={[-1.25, 0.15, 0]}>
+      <ringGeometry args={[1.7, 4.4, 128, 1]} />
+      <meshBasicMaterial map={texture} transparent side={THREE.DoubleSide} depthWrite={false} />
+    </mesh>
+  );
+}
+
+const PEBBLES = [
+  { r: 2.4, a: 0.6, s: 0.11, c: "#eac7e5" },
+  { r: 3.1, a: 2.3, s: 0.08, c: "#9aa2ff" },
+  { r: 3.7, a: 3.9, s: 0.13, c: "#83c0d4" },
+  { r: 2.8, a: 5.1, s: 0.07, c: "#f5c518" },
+  { r: 4.0, a: 1.4, s: 0.09, c: "#eac7e5" },
+  { r: 3.4, a: 4.6, s: 0.06, c: "#6679a2" },
+] as const;
+
+/** A few clay pebbles drifting around the disk plane. */
+function ClayDebris() {
+  const ref = useRef<THREE.Group>(null);
+  const time = useRef(0);
+  useFrame((_, rawDelta) => {
+    if (!ref.current) return;
+    const t = stepTime(time, rawDelta);
+    const tilt = -1.25;
+    ref.current.children.forEach((m, i) => {
+      const p = PEBBLES[i];
+      const a = p.a + t * (0.5 / p.r);
+      const y0 = Math.sin(a) * p.r;
+      m.position.set(Math.cos(a) * p.r, y0 * Math.cos(tilt), y0 * Math.sin(tilt));
+    });
+  });
+  return (
+    <group ref={ref}>
+      {PEBBLES.map((p, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[p.s, 20, 20]} />
+          <meshStandardMaterial color={p.c} roughness={0.9} metalness={0} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /** Whole-scene mouse parallax. */
 function Rig({ children }: { children: React.ReactNode }) {
   const ref = useRef<THREE.Group>(null);
@@ -213,6 +330,8 @@ function Rig({ children }: { children: React.ReactNode }) {
 
 export default function BlackHoleScene3D({ paused = false }: { paused?: boolean }) {
   const diskTex = useDiskTexture();
+  const light = useIsLightTheme();
+  const clayTex = useClayDiskTexture(light);
   return (
     <Canvas
       camera={{ position: [0, 0.4, 9.5], fov: 45 }}
@@ -222,14 +341,31 @@ export default function BlackHoleScene3D({ paused = false }: { paused?: boolean 
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
-      <Stars radius={60} depth={40} count={900} factor={3} saturation={0.3} fade speed={0.4} />
+      {light ? (
+        <>
+          <ambientLight intensity={0.9} />
+          <directionalLight position={[-4, 5, 6]} intensity={1.4} />
+        </>
+      ) : (
+        <Stars radius={60} depth={40} count={900} factor={3} saturation={0.3} fade speed={0.4} />
+      )}
       <Rig>
         {/* sunk low so the disk smolders behind the search/filters, not the headline */}
         <group position={[0, -1.5, -0.8]}>
-          <Singularity />
-          <AccretionDisk texture={diskTex} />
-          <LensedArc />
-          <Inflow />
+          {light ? (
+            <>
+              <ClaySingularity />
+              <ClayDisk texture={clayTex} />
+              <ClayDebris />
+            </>
+          ) : (
+            <>
+              <Singularity />
+              <AccretionDisk texture={diskTex} />
+              <LensedArc />
+              <Inflow />
+            </>
+          )}
         </group>
       </Rig>
     </Canvas>

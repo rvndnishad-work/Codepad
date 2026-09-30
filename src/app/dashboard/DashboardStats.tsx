@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Box, Newspaper, Trophy, Eye, Star } from "lucide-react";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -24,6 +25,15 @@ const CARDS = [
   { key: "views", label: "Light-Years", sub: "eyeballs travelled", Icon: Eye, accent: "#ff2fb3", viz: "pulse" },
   { key: "pinned", label: "North Stars", sub: "pinned to the sky", Icon: Star, accent: "#fff7e0", viz: "dots" },
 ] as const;
+
+/** Light theme: the neon accents swap for their clay "lo" tones (legible on #fbfcfd). */
+const LIGHT_ACCENT: Record<string, string> = {
+  "#8b93ff": "#6c74d8",
+  "#22d3ee": "#4b8fa9",
+  "#ffd166": "#d9a50a",
+  "#ff2fb3": "#c89bc2",
+  "#fff7e0": "#3f47b8",
+};
 
 type VizKind = (typeof CARDS)[number]["viz"];
 
@@ -46,19 +56,19 @@ function SplitViz({ a, b, accent }: { a: number; b: number; accent: string }) {
   return (
     <div>
       <div className="flex h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="rounded-full bg-gradient-to-r from-[#8b93ff] to-[#22d3ee]" style={{ width: `${pctA}%` }} />
-        <div className="rounded-full bg-gradient-to-r from-[#ffd166] to-[#ff2fb3]" style={{ width: `${100 - pctA}%` }} />
+        <div className="rounded-full bg-[#9aa2ff] dark:bg-gradient-to-r dark:from-[#8b93ff] dark:to-[#22d3ee]" style={{ width: `${pctA}%` }} />
+        <div className="rounded-full bg-[#f5c518] dark:bg-gradient-to-r dark:from-[#ffd166] dark:to-[#ff2fb3]" style={{ width: `${100 - pctA}%` }} />
       </div>
       <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.18em] text-[rgba(238,240,255,0.5)]">
-        <span><span className="font-bold text-[#8b93ff]">{a}</span> public</span>
-        <span><span className="font-bold text-[#ffd166]">{b}</span> private</span>
+        <span><span className="font-bold text-[#6c74d8] dark:text-[#8b93ff]">{a}</span> public</span>
+        <span><span className="font-bold text-[#d9a50a] dark:text-[#ffd166]">{b}</span> private</span>
       </div>
     </div>
   );
 }
 
 /** Orbit dots: one lit star per item, capped at ten. */
-function DotsViz({ value, accent }: { value: number; accent: string }) {
+function DotsViz({ value, accent, light }: { value: number; accent: string; light: boolean }) {
   const lit = Math.min(10, value);
   return (
     <div>
@@ -70,8 +80,8 @@ function DotsViz({ value, accent }: { value: number; accent: string }) {
             className="h-1.5 w-1.5 rounded-full"
             style={
               i < lit
-                ? { background: accent, boxShadow: `0 0 8px ${accent}` }
-                : { background: "rgba(255,255,255,0.12)" }
+                ? light ? { background: accent } : { background: accent, boxShadow: `0 0 8px ${accent}` }
+                : { background: light ? "rgba(15,23,48,0.12)" : "rgba(255,255,255,0.12)" }
             }
           />
         ))}
@@ -113,6 +123,7 @@ function PulseViz({ value, accent, seed }: { value: number; accent: string; seed
  */
 export default function DashboardStats({ stats }: { stats: Stats }) {
   const root = useRef<HTMLDivElement>(null);
+  const light = useIsLightTheme();
   const values: Record<string, number> = {
     total: stats.total,
     blogs: stats.blogsCount,
@@ -171,25 +182,30 @@ export default function DashboardStats({ stats }: { stats: Stats }) {
 
   return (
     <div ref={root} className="gx mb-10 grid grid-cols-2 items-stretch gap-3 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
-      {CARDS.map(({ key, label, sub, Icon, accent, viz }) => {
+      {CARDS.map(({ key, label, sub, Icon, accent: darkAccent, viz }) => {
+        const accent = light ? LIGHT_ACCENT[darkAccent] : darkAccent;
         const value = values[key] ?? 0;
         return (
           <article
             key={key}
             data-gx-card
             className="group relative flex min-h-[218px] flex-col overflow-hidden rounded-[26px] border border-white/10 p-5 transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1.5 hover:border-white/25"
-            style={{ background: `linear-gradient(165deg, ${accent}26 0%, rgba(10,12,30,0.9) 46%, rgba(5,6,18,0.95) 100%)` }}
+            style={
+              light
+                ? { background: "#fbfcfd", borderColor: "#cfdbe3" }
+                : { background: `linear-gradient(165deg, ${accent}26 0%, rgba(10,12,30,0.9) 46%, rgba(5,6,18,0.95) 100%)` }
+            }
           >
             {/* starfield speckle */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 opacity-60"
+              className="pointer-events-none absolute inset-0 hidden opacity-60 dark:block"
               style={{ backgroundImage: "radial-gradient(rgba(255,255,255,0.5) 0.6px, transparent 0.7px)", backgroundSize: "22px 22px" }}
             />
             {/* spectral orb */}
             <div
               aria-hidden
-              className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full blur-2xl transition-opacity duration-500 opacity-50 group-hover:opacity-90"
+              className="pointer-events-none absolute -right-10 -top-10 hidden h-36 w-36 rounded-full blur-2xl dark:block transition-opacity duration-500 opacity-50 group-hover:opacity-90"
               style={{ background: `radial-gradient(circle, ${accent}66, transparent 65%)` }}
             />
             {/* ghost numeral */}
@@ -200,12 +216,12 @@ export default function DashboardStats({ stats }: { stats: Stats }) {
               {value > 999 ? `${Math.floor(value / 1000)}k` : value}
             </span>
             {/* shine sweep */}
-            <span aria-hidden className="gx-shimmer pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <span aria-hidden className="gx-shimmer pointer-events-none hidden dark:block absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
             <div className="relative mb-4 flex items-center justify-between">
-              <span className="relative grid h-12 w-12 place-items-center rounded-full border" style={{ borderColor: `${accent}66`, background: `radial-gradient(circle at 35% 30%, ${accent}33, rgba(0,0,0,0.5) 70%)`, color: accent }}>
+              <span className="relative grid h-12 w-12 place-items-center rounded-full border" style={light ? { borderColor: `${accent}66`, background: `${accent}1f`, color: accent } : { borderColor: `${accent}66`, background: `radial-gradient(circle at 35% 30%, ${accent}33, rgba(0,0,0,0.5) 70%)`, color: accent }}>
                 <Icon className="h-5 w-5" />
-                <span className="gx-twinkle absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full" style={{ background: accent, boxShadow: `0 0 10px ${accent}` }} />
+                <span className={`${light ? "" : "gx-twinkle "}absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full`} style={light ? { background: accent } : { background: accent, boxShadow: `0 0 10px ${accent}` }} />
               </span>
               <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-[rgba(238,240,255,0.4)]">
                 {String(CARDS.findIndex((c) => c.key === key) + 1).padStart(2, "0")} / 05
@@ -220,7 +236,7 @@ export default function DashboardStats({ stats }: { stats: Stats }) {
 
             <div className="relative mt-auto">
               {viz === "split" && <SplitViz a={stats.publicCount} b={stats.privateCount} accent={accent} />}
-              {viz === "dots" && <DotsViz value={value} accent={accent} />}
+              {viz === "dots" && <DotsViz value={value} accent={accent} light={light} />}
               {viz === "pulse" && <PulseViz value={value} accent={accent} seed={11} />}
             </div>
           </article>

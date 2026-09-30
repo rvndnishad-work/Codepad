@@ -47,7 +47,7 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
   const recentTemplate = w.recent ? templatesById[w.recent.template] : undefined;
 
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-white/[0.14] bg-[#08080f]/75 p-3.5 backdrop-blur-md md:h-16 md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-3 md:pr-2">
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-border bg-surface/90 shadow-clay dark:border-white/[0.14] dark:bg-[#08080f]/75 dark:shadow-none p-3.5 backdrop-blur-md md:h-16 md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-3 md:pr-2">
       <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-3.5">
         {w.image ? (
           <Image
@@ -108,7 +108,7 @@ function WelcomeStrip({ w }: { w: NonNullable<Welcome> }) {
 /** Pill on the hero for guests: saving needs an account. */
 function GuestWelcomeStrip() {
   return (
-    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-white/[0.14] bg-[#08080f]/75 p-3.5 backdrop-blur-md md:h-[60px] md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-2.5 md:pr-2">
+    <div className="mx-auto flex max-w-[720px] flex-col gap-3 rounded-[20px] border border-border bg-surface/90 shadow-clay dark:border-white/[0.14] dark:bg-[#08080f]/75 dark:shadow-none p-3.5 backdrop-blur-md md:h-[60px] md:flex-row md:items-center md:gap-3.5 md:rounded-full md:py-0 md:pl-2.5 md:pr-2">
       <div className="flex min-w-0 flex-1 items-center gap-3 md:gap-3.5">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#ffe600]/[0.12]">
           <Bookmark className="h-[18px] w-[18px] text-[#ffe600]" aria-hidden />
@@ -321,22 +321,25 @@ export default function PlaygroundsBrowser({
   return (
     <div className="min-h-screen bg-bg transition-colors">
       {/* ── Dark cinematic hero (starts under the transparent bar) ── */}
-      <header ref={heroRef} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#08080f] text-white">
-        <div aria-hidden className="ph-bg pointer-events-none absolute inset-0">
+      <header ref={heroRef} data-dark-hero="dark-only" className="space-hero wow-noise relative -mt-16 overflow-hidden bg-bg text-fg dark:bg-[#08080f] dark:text-white">
+        <div aria-hidden className="ph-bg pointer-events-none absolute inset-0 hidden dark:block">
           <div className="absolute left-1/2 top-[-200px] h-[480px] w-[860px] -translate-x-1/2 rounded-full bg-[#8b93ff]/20 blur-[130px]" />
           <div className="absolute right-[-140px] top-1/3 h-[380px] w-[380px] rounded-full bg-[#ff2fb3]/10 blur-[110px]" />
           <div className="wow-grid-bg absolute inset-0" />
         </div>
         {/* black-hole backdrop, sunk low behind the search/filters */}
-        <div aria-hidden className="ph-3d absolute inset-0 transform-gpu opacity-90 will-change-transform">
-          <BlackHoleScene3D paused={paused || scrolling} />
+        <div aria-hidden className="ph-3d absolute inset-0 transform-gpu opacity-100 will-change-transform dark:opacity-90">
+          {/* light: sink the hole below the filters so the chips sit on sky, not on the disc */}
+          <div className="absolute inset-0 translate-y-[18%] dark:translate-y-0">
+            <BlackHoleScene3D paused={paused || scrolling} />
+          </div>
         </div>
-        <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08080f]" />
-        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_58%_46%_at_50%_40%,rgba(8,8,15,0.82),transparent_70%)]" />
+        <div aria-hidden className="absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#08080f] dark:block" />
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_58%_46%_at_50%_40%,rgba(233,239,243,0.78),transparent_70%)] dark:bg-[radial-gradient(ellipse_58%_46%_at_50%_40%,rgba(8,8,15,0.82),transparent_70%)]" />
         {/* HUD corners */}
         <div aria-hidden className="pointer-events-none absolute inset-4 z-[5] hidden sm:block">
-          <span className="absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2 border-[#ffb64d]/50" />
-          <span className="absolute right-0 top-0 h-5 w-5 border-r-2 border-t-2 border-[#ffb64d]/50" />
+          <span className="absolute left-0 top-0 h-5 w-5 border-l-2 border-t-2 border-[#0f1730]/25 dark:border-[#ffb64d]/50" />
+          <span className="absolute right-0 top-0 h-5 w-5 border-r-2 border-t-2 border-[#0f1730]/25 dark:border-[#ffb64d]/50" />
           <span className="absolute left-10 top-0.5 font-mono text-[10px] uppercase tracking-[0.3em] text-white/35">
             Singularity // stable
           </span>
@@ -347,7 +350,7 @@ export default function PlaygroundsBrowser({
 
         <div className="relative z-10 mx-auto max-w-3xl px-4 pb-14 pt-24 text-center md:pt-28">
           <p className="ph-fade inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/75 backdrop-blur-md">
-            <FlaskConical className="h-3.5 w-3.5 text-[#8b93ff]" />
+            <FlaskConical className="h-3.5 w-3.5 text-[#3f47b8] dark:text-[#8b93ff]" />
             Zero-install sandboxes
           </p>
           <h1 className="wow-font-display mt-6 text-6xl md:text-8xl">
@@ -356,7 +359,7 @@ export default function PlaygroundsBrowser({
           </h1>
           <p className="ph-fade mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-white/65 md:text-base">
             Pick a sandbox, start coding instantly. Experience zero-latency runs with our new{" "}
-            <strong className="rounded border border-[#8b93ff]/30 bg-[#8b93ff]/15 px-1.5 py-0.5 font-extrabold text-[#c7d2fe]">
+            <strong className="rounded border border-[#3f47b8]/25 bg-[#9aa2ff]/20 px-1.5 py-0.5 font-extrabold text-[#3f47b8] dark:border-[#8b93ff]/30 dark:bg-[#8b93ff]/15 dark:text-[#c7d2fe]">
               AuraSandbox™ JIT Engine
             </strong>{" "}
             for backend systems.
@@ -370,9 +373,9 @@ export default function PlaygroundsBrowser({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search sandboxes…"
-              className="w-full rounded-full border border-white/15 bg-white/[0.06] py-3.5 pl-12 pr-16 text-sm text-white outline-none backdrop-blur-md transition placeholder:text-white/40 hover:border-white/25 focus:border-[#8b93ff]/60 focus:shadow-[0_0_40px_-10px_rgba(139,147,255,0.5)]"
+              className="w-full rounded-full border border-white/15 bg-white/[0.06] py-3.5 pl-12 pr-16 text-sm text-white outline-none backdrop-blur-md transition placeholder:text-white/40 hover:border-white/25 focus:border-[#3f47b8]/50 dark:focus:border-[#8b93ff]/60 dark:focus:shadow-[0_0_40px_-10px_rgba(139,147,255,0.5)]"
             />
-            <kbd className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md bg-black/40 px-2 py-1 font-mono text-[11px] text-white/50 sm:inline-flex">
+            <kbd className="absolute right-4 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md bg-[#0f1730]/[0.06] px-2 dark:bg-black/40 py-1 font-mono text-[11px] text-white/50 sm:inline-flex">
               ⌘K
             </kbd>
           </div>
@@ -381,7 +384,7 @@ export default function PlaygroundsBrowser({
           <div className="ph-fade mt-7 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-8">
             <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.total}+</strong> Sandboxes</span>
             <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-white">{stats.languages}</strong> Languages</span>
-            <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-[#ffe600]">100%</strong> Zero config</span>
+            <span><strong className="wow-font-display text-xl tabular-nums normal-case tracking-normal text-[#3f47b8] dark:text-[#ffe600]">100%</strong> Zero config</span>
           </div>
 
           {/* Category Filters Bar */}
@@ -391,7 +394,7 @@ export default function PlaygroundsBrowser({
                 onClick={() => setFilter("all")}
                 className={`rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition ${
                   filter === "all"
-                    ? "bg-[#ffe600] font-bold text-black shadow-[0_0_30px_-8px_#ffe600]"
+                    ? "bg-[#f5c518] font-bold text-[#0f1730] dark:bg-[#ffe600] dark:text-black dark:shadow-[0_0_30px_-8px_#ffe600]"
                     : "border border-white/15 bg-white/[0.06] text-white/60 backdrop-blur hover:border-white/30 hover:text-white"
                 }`}
               >
@@ -403,7 +406,7 @@ export default function PlaygroundsBrowser({
                   onClick={() => setFilter(g.key)}
                   className={`rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] transition ${
                     filter === g.key
-                      ? "bg-[#ffe600] font-bold text-black shadow-[0_0_30px_-8px_#ffe600]"
+                      ? "bg-[#f5c518] font-bold text-[#0f1730] dark:bg-[#ffe600] dark:text-black dark:shadow-[0_0_30px_-8px_#ffe600]"
                       : "border border-white/15 bg-white/[0.06] text-white/60 backdrop-blur hover:border-white/30 hover:text-white"
                   }`}
                 >
@@ -416,14 +419,14 @@ export default function PlaygroundsBrowser({
               <div className="flex shrink-0 items-center rounded-full border border-white/15 bg-white/[0.06] p-1 backdrop-blur">
                 <button
                   onClick={() => setViewMode("card")}
-                  className={`rounded-full p-1.5 transition ${viewMode === "card" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                  className={`rounded-full p-1.5 transition ${viewMode === "card" ? "bg-[#0f1730] text-[#fbfcfd] dark:bg-white dark:text-black" : "text-white/50 hover:text-white"}`}
                   title="Card View"
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => setViewMode("compact")}
-                  className={`rounded-full p-1.5 transition ${viewMode === "compact" ? "bg-white text-black" : "text-white/50 hover:text-white"}`}
+                  className={`rounded-full p-1.5 transition ${viewMode === "compact" ? "bg-[#0f1730] text-[#fbfcfd] dark:bg-white dark:text-black" : "text-white/50 hover:text-white"}`}
                   title="Compact View"
                 >
                   <List className="h-3.5 w-3.5" />

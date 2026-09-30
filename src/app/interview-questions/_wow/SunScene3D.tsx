@@ -3,6 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 export type SunBand = "all" | "easy" | "medium" | "hard";
 
@@ -22,7 +23,7 @@ function stepTime(time: React.MutableRefObject<number>, rawDelta: number) {
 }
 
 /** Slatted solar disc texture (classic synthwave slits, thicker downward). */
-function useSunTexture() {
+function useSunTexture(light: boolean) {
   return useMemo(() => {
     const S = 512;
     const cv = document.createElement("canvas");
@@ -30,14 +31,26 @@ function useSunTexture() {
     cv.height = S;
     const ctx = cv.getContext("2d");
     if (!ctx) return null;
-    const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
-    g.addColorStop(0, "#fffbeF");
-    g.addColorStop(0.35, "#ffe9a8");
-    g.addColorStop(0.62, "#ffb64d");
-    g.addColorStop(0.85, "#ff7b2e");
-    g.addColorStop(1, "rgba(255,123,46,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, S, S);
+    if (light) {
+      // clay daylight: matte golden disc, baked top-left highlight, hard edge
+      const g = ctx.createRadialGradient(S * 0.36, S * 0.32, 0, S / 2, S / 2, S * 0.49);
+      g.addColorStop(0, "#fff4c4");
+      g.addColorStop(0.45, "#f5c518");
+      g.addColorStop(1, "#d9a50a");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(S / 2, S / 2, S * 0.49, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+      g.addColorStop(0, "#fffbeF");
+      g.addColorStop(0.35, "#ffe9a8");
+      g.addColorStop(0.62, "#ffb64d");
+      g.addColorStop(0.85, "#ff7b2e");
+      g.addColorStop(1, "rgba(255,123,46,0)");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, S, S);
+    }
     // slits — destination-out cuts, growing toward the bottom
     ctx.globalCompositeOperation = "destination-out";
     let y = S * 0.52;
@@ -50,7 +63,7 @@ function useSunTexture() {
     const tex = new THREE.CanvasTexture(cv);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
-  }, []);
+  }, [light]);
 }
 
 /** Soft halo texture (plain radial, no slits). */
@@ -75,11 +88,11 @@ function useGlowTexture() {
 }
 
 /** The sun group — half-dipped below the horizon, gentle breathing pulse. */
-function Sun({ accent }: { accent: string }) {
+function Sun({ accent, light }: { accent: string; light: boolean }) {
   const ref = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Sprite>(null);
   const time = useRef(0);
-  const sunTex = useSunTexture();
+  const sunTex = useSunTexture(light);
   const glowTex = useGlowTexture();
   useFrame((_, rawDelta) => {
     const t = stepTime(time, rawDelta);
@@ -96,9 +109,12 @@ function Sun({ accent }: { accent: string }) {
   return (
     // low + left: the disc sits half under the horizon grid = half sun
     <group ref={ref} position={[-3.6, -1.7, -2.5]}>
-      <sprite ref={glowRef} scale={[11, 11, 1]}>
-        <spriteMaterial map={glowTex} transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </sprite>
+      {/* additive halo is dark-only — light keeps a matte clay disc */}
+      {!light && (
+        <sprite ref={glowRef} scale={[11, 11, 1]}>
+          <spriteMaterial map={glowTex} transparent opacity={0.55} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </sprite>
+      )}
       <mesh>
         <planeGeometry args={[5.4, 5.4]} />
         <meshBasicMaterial map={sunTex} transparent depthWrite={false} />
@@ -106,14 +122,14 @@ function Sun({ accent }: { accent: string }) {
       {/* corona ring picks up the tuned accent */}
       <mesh rotation={[0.2, 0.1, 0]}>
         <torusGeometry args={[3.35, 0.02, 8, 140]} />
-        <meshBasicMaterial color={accent} transparent opacity={0.5} />
+        <meshBasicMaterial color={accent} transparent opacity={light ? 0.35 : 0.5} />
       </mesh>
     </group>
   );
 }
 
 /** Radiating corona ticks, slow rotation. */
-function Corona({ accent }: { accent: string }) {
+function Corona({ accent, light }: { accent: string; light: boolean }) {
   const ref = useRef<THREE.LineSegments>(null);
   const time = useRef(0);
   const geometry = useMemo(() => {
@@ -135,8 +151,37 @@ function Corona({ accent }: { accent: string }) {
   });
   return (
     <lineSegments ref={ref} geometry={geometry} position={[-3.6, -1.7, -2.5]}>
-      <lineBasicMaterial color={accent} transparent opacity={0.55} />
+      <lineBasicMaterial color={accent} transparent opacity={light ? 0.4 : 0.55} />
     </lineSegments>
+  );
+}
+
+/** Light-only: a few tiny navy sparkles (occasional gold) in place of embers. */
+function Sparkles() {
+  const { positions, colors } = useMemo(() => {
+    const N = 40;
+    const positions = new Float32Array(N * 3);
+    const colors = new Float32Array(N * 3);
+    const palette = ["#0f1730", "#3f47b8", "#0f1730", "#3f47b8", "#f5c518"].map((c) => new THREE.Color(c));
+    for (let i = 0; i < N; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 16;
+      positions[i * 3 + 1] = -0.8 + Math.random() * 5.5;
+      positions[i * 3 + 2] = -4 + (Math.random() - 0.5) * 4;
+      const c = palette[i % palette.length];
+      colors[i * 3] = c.r;
+      colors[i * 3 + 1] = c.g;
+      colors[i * 3 + 2] = c.b;
+    }
+    return { positions, colors };
+  }, []);
+  return (
+    <points>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+      </bufferGeometry>
+      <pointsMaterial size={0.035} vertexColors transparent opacity={0.55} sizeAttenuation depthWrite={false} />
+    </points>
   );
 }
 
@@ -191,6 +236,7 @@ function Rig({ children }: { children: React.ReactNode }) {
 }
 
 export default function SunScene3D({ paused = false, accent = "#ffb64d" }: { paused?: boolean; accent?: string }) {
+  const light = useIsLightTheme();
   return (
     <Canvas
       camera={{ position: [0, 0.7, 9.5], fov: 42 }}
@@ -200,12 +246,17 @@ export default function SunScene3D({ paused = false, accent = "#ffb64d" }: { pau
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
-      <fog attach="fog" args={["#07070e", 12, 30]} />
+      <fog attach="fog" args={light ? ["#e9eff3", 12, 30] : ["#07070e", 12, 30]} />
       <Rig>
-        <Sun accent={accent} />
-        <Corona accent={accent} />
-        <Embers accent={accent} />
-        <gridHelper args={[36, 46, "#8b93ff", "#2c2660"]} position={[0, -2.2, -2]} material-transparent material-opacity={0.32} />
+        <Sun accent={accent} light={light} />
+        <Corona accent={accent} light={light} />
+        {light ? <Sparkles /> : <Embers accent={accent} />}
+        {light ? (
+          // navy hairline horizon grid; key forces a fresh helper per theme
+          <gridHelper key="grid-light" args={[36, 46, "#0f1730", "#0f1730"]} position={[0, -2.2, -2]} material-transparent material-opacity={0.2} />
+        ) : (
+          <gridHelper key="grid-dark" args={[36, 46, "#8b93ff", "#2c2660"]} position={[0, -2.2, -2]} material-transparent material-opacity={0.32} />
+        )}
       </Rig>
     </Canvas>
   );

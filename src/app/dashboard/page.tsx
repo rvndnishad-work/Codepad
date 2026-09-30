@@ -219,8 +219,8 @@ export default async function DashboardPage() {
   });
 
   return (
-    // Milky Way command deck is a dark-space experience in every theme.
-    <div className="gx-page dark relative min-h-screen bg-[#02030a]">
+    // Night-sky command deck in dark; pale "clay daylight" sky in light.
+    <div className="gx-page relative min-h-screen dark:bg-[#02030a]">
       <GalaxyBackdrop />
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:py-12">
         <DashboardHero userName={session.user?.name ?? null} />
@@ -232,11 +232,11 @@ export default async function DashboardPage() {
         {/* constellation rule: breathing room between the instruments and the deck */}
         <div aria-hidden className="gx mb-10 flex items-center gap-4 px-1">
           <span className="h-px flex-1 bg-gradient-to-r from-transparent via-[rgba(139,147,255,0.35)] to-[rgba(139,147,255,0.35)]" />
-          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#ffd166]" style={{ boxShadow: "0 0 12px #ffd166" }} />
+          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#f5c518] dark:bg-[#ffd166] dark:shadow-[0_0_12px_#ffd166]" />
           <span className="h-px w-16 bg-[rgba(139,147,255,0.35)]" />
-          <span className="gx-twinkle h-1 w-1 rounded-full bg-white" style={{ animationDelay: "1.2s" }} />
+          <span className="gx-twinkle h-1 w-1 rounded-full bg-[#3f47b8] dark:bg-white" style={{ animationDelay: "1.2s" }} />
           <span className="h-px w-16 bg-[rgba(139,147,255,0.35)]" />
-          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#ff2fb3]" style={{ boxShadow: "0 0 12px #ff2fb3", animationDelay: "0.6s" }} />
+          <span className="gx-twinkle h-1.5 w-1.5 rotate-45 bg-[#eac7e5] dark:bg-[#ff2fb3] dark:shadow-[0_0_12px_#ff2fb3]" style={{ animationDelay: "0.6s" }} />
           <span className="h-px flex-1 bg-gradient-to-l from-transparent via-[rgba(139,147,255,0.35)] to-[rgba(139,147,255,0.35)]" />
         </div>
 

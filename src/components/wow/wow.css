@@ -34,7 +34,7 @@
    line becomes navy type on a golden highlighter stroke. The stroke sits
    across the lower half of the letters and hugs the words (fit-content on
    block lines, cloned per line on inline spans). */
-:root:not(.dark) .wow-gradient-text {
+:root:not(.dark) .wow-gradient-text:not(:where(.keep-dark *, .dark *)) {
   color: rgb(var(--c-fg));
   background: linear-gradient(
     to bottom,
@@ -49,11 +49,11 @@
   box-decoration-break: clone;
   padding-inline: 0.06em;
 }
-:root:not(.dark) .wow-gradient-text.block {
+:root:not(.dark) .wow-gradient-text.block:not(:where(.keep-dark *, .dark *)) {
   width: fit-content;
 }
 /* The hiring side gets the same stroke in its periwinkle. */
-:root:not(.dark) .wow-gradient-boss {
+:root:not(.dark) .wow-gradient-boss:not(:where(.keep-dark *, .dark *)) {
   color: rgb(var(--c-fg));
   background: linear-gradient(
     to bottom,
@@ -68,7 +68,7 @@
   box-decoration-break: clone;
   padding-inline: 0.06em;
 }
-:root:not(.dark) .wow-gradient-boss.block {
+:root:not(.dark) .wow-gradient-boss.block:not(:where(.keep-dark *, .dark *)) {
   width: fit-content;
 }
 /* Hiring gradient: indigo into near-white, static. */

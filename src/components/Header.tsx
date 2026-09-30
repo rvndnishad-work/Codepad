@@ -308,7 +308,7 @@ export default async function Header() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-fg px-5 py-2 text-[13px] font-semibold text-bg transition-colors duration-200 hover:bg-fg/85 active:translate-y-px"
+                className="nav-signin inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-fg px-5 py-2 text-[13px] font-semibold text-bg transition-colors duration-200 hover:bg-fg/85 active:translate-y-px"
               >
                 Sign in
               </Link>

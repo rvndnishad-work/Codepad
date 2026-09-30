@@ -89,7 +89,7 @@ export default function RogueHero({
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
+    <section ref={root} data-dark-hero className="keep-dark wow-noise relative -mt-16 overflow-hidden bg-[#07070e] text-white">
       <div aria-hidden className="rg-bg pointer-events-none absolute inset-0">
         <div className="absolute right-[-120px] top-[-140px] h-[420px] w-[560px] rounded-full bg-[#8b93ff]/12 blur-[130px]" />
         <div className="absolute bottom-[-160px] left-[-120px] h-[360px] w-[440px] rounded-full bg-[#22d3ee]/10 blur-[120px]" />

@@ -1,5 +1,6 @@
 import { siteOrigin } from "@/lib/site-url";
 import "./globals.css";
+import "./light-remap.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono, Fira_Code } from "next/font/google";

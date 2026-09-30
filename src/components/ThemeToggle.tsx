@@ -7,9 +7,8 @@ import { Moon, Sun } from "lucide-react";
 import { supportsLightTheme } from "@/lib/theme-routes";
 
 /**
- * Light / dark switch in the header. Only shown on pages that have been
- * reviewed in the light theme; elsewhere the page is forced dark and a
- * switch would do nothing.
+ * Light / dark switch for the site header and the workspace app bar. Hidden on
+ * the few routes that are forced dark, where a switch would do nothing.
  */
 export default function ThemeToggle() {
   const pathname = usePathname();

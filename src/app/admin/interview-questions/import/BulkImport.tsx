@@ -130,7 +130,7 @@ export default function BulkImport() {
           <button
             onClick={runImport}
             disabled={pending}
-            className="px-4 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft disabled:opacity-60"
+            className="px-4 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft disabled:opacity-60"
           >
             {pending ? "Importing…" : `Import ${items.length}`}
           </button>

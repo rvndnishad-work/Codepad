@@ -152,7 +152,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
   const suspicionScoreColor = (score: number) => {
     if (score < 25) return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
     if (score < 55) return "text-amber-400 bg-amber-500/10 border-amber-500/20";
-    return "text-rose-500 bg-rose-500/10 border-rose-500/20 font-black animate-pulse";
+    return "text-rose-500 bg-rose-500/10 border-rose-500/20 font-semibold animate-pulse";
   };
 
   return (
@@ -168,7 +168,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
             Back to Scorecard
           </Link>
-          <h1 className="text-2xl md:text-3xl font-black text-fg dark:text-[#F3F4F6] tracking-tight mt-1">
+          <h1 className="text-2xl md:text-3xl font-semibold text-fg dark:text-[#F3F4F6] tracking-tight mt-1">
             Candidate Session Replay
           </h1>
           <p className="text-xs text-muted leading-relaxed">
@@ -184,8 +184,8 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                 <span className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4" /> Integrity: {unified.score} — {style.label}
                 </span>
-                {unified.reasons.length > 0 && <span className="text-[10px] font-normal opacity-80">{unified.reasons.join(" · ")}</span>}
-                <span className="text-[10px] font-normal opacity-60">AI Suspicion {integrity.suspicionScore}% · {integrity.blurCount} blurs · {integrity.pasteCount} pastes</span>
+                {unified.reasons.length > 0 && <span className="text-xs font-normal opacity-80">{unified.reasons.join(" · ")}</span>}
+                <span className="text-xs font-normal opacity-60">AI Suspicion {integrity.suspicionScore}% · {integrity.blurCount} blurs · {integrity.pasteCount} pastes</span>
               </div>
             );
           })()}
@@ -252,7 +252,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
             
             {/* Timeline Scrubbing Track */}
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-mono tabular-nums text-muted shrink-0 w-8 text-right">
+              <span className="text-xs font-mono tabular-nums text-muted shrink-0 w-8 text-right">
                 {formattedTime(playheadMs)}
               </span>
               
@@ -337,7 +337,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                         {/* Bookmark pin */}
                         <span className="block w-2.5 h-2.5 rotate-45 rounded-[2px] bg-amber-400 border border-amber-200 shadow-[0_0_8px_#fbbf24] transition-transform group-hover/mark:scale-150" />
                         {/* Hover tooltip */}
-                        <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 hidden group-hover/mark:flex items-center gap-1 whitespace-nowrap rounded-lg ip-on-dark border border-amber-500/30 bg-[#0B0F19] px-2 py-1 text-[9px] font-mono font-bold text-amber-300 shadow-xl">
+                        <span className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 hidden group-hover/mark:flex items-center gap-1 whitespace-nowrap rounded-lg ip-on-dark border border-amber-500/30 bg-[#0B0F19] px-2 py-1 text-xs font-mono font-bold text-amber-300 shadow-xl">
                           <Clipboard className="w-2.5 h-2.5" /> Paste · {chars.toLocaleString()} chars · {formattedTime(pasteEv.t)}
                         </span>
                       </button>
@@ -345,7 +345,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                   })}
               </div>
 
-              <span className="text-[10px] font-mono tabular-nums text-muted shrink-0 w-8">
+              <span className="text-xs font-mono tabular-nums text-muted shrink-0 w-8">
                 {formattedTime(maxElapsedMs)}
               </span>
             </div>
@@ -359,7 +359,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                 >
                   {playing ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current pl-0.5" />}
                 </button>
-                <div className="text-[10px] font-black uppercase text-muted tracking-wider ml-2">
+                <div className="text-xs font-semibold text-muted ml-2">
                   Playback controls
                 </div>
               </div>
@@ -370,7 +370,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                   <button
                     key={s}
                     onClick={() => setSpeed(s)}
-                    className={`px-3 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all border ${
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all border ${
                       speed === s
                         ? "bg-accent/15 border-accent/25 text-accent shadow-sm"
                         : "bg-transparent border-transparent text-muted hover:text-fg hover:bg-surface/30"
@@ -392,25 +392,25 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           {/* Bento integrity widgets */}
           {integrity && (
             <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md p-6 space-y-5 shadow-2xl">
-              <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-xs font-semibold text-indigo-400 flex items-center gap-2">
                 <Sparkles className="w-4 h-4" /> AI Proctoring Summary
               </h3>
               
               <div className="grid grid-cols-2 gap-3.5">
                 <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
+                  <span className="text-xs font-semibold text-muted flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Tab Blurs
                   </span>
                   <span className="text-xs font-bold text-fg mt-2">{integrity.blurCount} times</span>
                 </div>
                 <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
+                  <span className="text-xs font-semibold text-muted flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5 text-indigo-400" /> Unfocused
                   </span>
                   <span className="text-xs font-bold text-fg mt-2">{integrity.totalBlurSec} seconds</span>
                 </div>
                 <div className="p-3.5 rounded-2xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 flex flex-col justify-between col-span-2">
-                  <span className="text-[9px] uppercase font-black tracking-widest text-muted flex items-center gap-1">
+                  <span className="text-xs font-semibold text-muted flex items-center gap-1">
                     <Clipboard className="w-3.5 h-3.5 text-amber-400" /> Pastes Captured
                   </span>
                   <span className="text-xs font-bold text-fg mt-2">{integrity.pasteCount} pastes logged</span>
@@ -421,7 +421,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
 
           {/* Recording + AI Notes — P2-T6 bento */}
           <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/60 backdrop-blur-md p-5 space-y-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-muted flex items-center gap-2">
+            <h3 className="text-xs font-semibold text-muted flex items-center gap-2">
               <Video className="w-4 h-4 text-violet-400" /> Recording & AI Notes
             </h3>
             <div className="aspect-[16/9] rounded-xl border border-border bg-bg/70 dark:bg-black/40 grid place-items-center text-xs text-muted">
@@ -430,7 +430,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
               </span>
             </div>
             <div className="rounded-xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 p-3">
-              <div className="text-[11px] font-bold text-fg flex items-center gap-1.5">
+              <div className="text-xs font-bold text-fg flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-accent" /> AI Notes (Gemini ADMIN_HELPER)
               </div>
               <p className="text-xs text-muted mt-1 leading-relaxed">
@@ -446,7 +446,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                   const el = document.getElementById("ai-notes-drawer");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-panel text-[11px] font-bold hover:border-accent/30"
+                className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-panel text-xs font-bold hover:border-accent/30"
               >
                 <Sparkles className="w-3 h-3" /> Generate notes
               </button>
@@ -457,8 +457,8 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           {/* Paste History Events Feed — full captured content for review */}
           {integrity && integrity.pasteDetails.length > 0 && (
             <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/40 p-5 space-y-3.5 max-h-[28rem] overflow-y-auto">
-              <h3 className="text-xs font-black uppercase tracking-widest text-muted">Copy-Paste Logs</h3>
-              <p className="text-[10px] text-muted leading-relaxed">
+              <h3 className="text-xs font-semibold text-muted">Copy-Paste Logs</h3>
+              <p className="text-xs text-muted leading-relaxed">
                 Captured paste content — review to tell external/AI code from the candidate relocating their own work. Click an entry to jump the replay to that moment.
               </p>
               <div className="space-y-3">
@@ -468,7 +468,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                     <div
                       key={idx}
                       onClick={() => setPlayheadMs(p.t)}
-                      className="p-3 rounded-xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 text-[10px] space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-bg/70 dark:hover:bg-[#0B0F19]/60 transition"
+                      className="p-3 rounded-xl border border-border bg-bg/70 dark:bg-[#0B0F19]/40 text-xs space-y-1.5 hover:border-accent/30 cursor-pointer hover:bg-bg/70 dark:hover:bg-[#0B0F19]/60 transition"
                     >
                       <div className="flex justify-between items-center text-muted">
                         <span className="font-mono text-amber-400 font-bold flex items-center gap-1">
@@ -480,7 +480,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                         {p.snippet || "(empty)"}
                       </pre>
                       {truncated && (
-                        <div className="text-[9px] text-muted/70 font-mono">
+                        <div className="text-xs text-muted/70 font-mono">
                           Showing first {p.snippet.length.toLocaleString()} of {p.length.toLocaleString()} chars
                         </div>
                       )}
@@ -494,7 +494,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
           {/* Tab Blur Events Feed */}
           {events.some((ev) => ev.type === "blur") && (
             <div className="rounded-3xl border border-border bg-surface dark:bg-[#161B2E]/40 p-5 space-y-3.5 max-h-80 overflow-y-auto">
-              <h3 className="text-xs font-black uppercase tracking-widest text-muted">Unfocused logs</h3>
+              <h3 className="text-xs font-semibold text-muted">Unfocused logs</h3>
               <div className="space-y-2">
                 {events
                   .filter((ev) => ev.type === "blur")
@@ -505,7 +505,7 @@ export default function ReplayPlayerClient({ attempt, events, integrity, backUrl
                       <div
                         key={idx}
                         onClick={() => setPlayheadMs(blurEv.t)}
-                        className="flex justify-between items-center p-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 text-[10px] hover:border-rose-500/40 cursor-pointer transition"
+                        className="flex justify-between items-center p-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 text-xs hover:border-rose-500/40 cursor-pointer transition"
                       >
                         <span className="font-bold text-rose-400 flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" /> Tab Blurred

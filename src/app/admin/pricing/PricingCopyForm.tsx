@@ -167,11 +167,11 @@ function priceChanges(before: EffectivePrices, after: EffectivePrices): { label:
 
 const inputCls =
   "w-full px-3 py-2 bg-bg border border-border rounded-xl text-sm text-fg placeholder:text-muted/70 focus:outline-none focus:border-accent transition";
-const sectionTitle = "text-xs font-black uppercase tracking-[0.2em] text-muted";
+const sectionTitle = "text-xs font-semibold text-muted";
 
 function ResetButton({ onClick, label = "Reset" }: { onClick: () => void; label?: string }) {
   return (
-    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 text-[11px] font-bold text-muted transition hover:text-fg">
+    <button type="button" onClick={onClick} className="inline-flex items-center gap-1 text-xs font-bold text-muted transition hover:text-fg">
       <RotateCcw className="h-3 w-3" />
       {label}
     </button>
@@ -200,7 +200,7 @@ function Field({
         {overridden && <ResetButton onClick={onReset} />}
       </div>
       {children}
-      {error ? <p className="text-[11px] font-bold text-danger">{error}</p> : hint ? <p className="text-[11px] text-muted">{hint}</p> : null}
+      {error ? <p className="text-xs font-bold text-danger">{error}</p> : hint ? <p className="text-xs text-muted">{hint}</p> : null}
     </div>
   );
 }
@@ -375,7 +375,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
                 </div>
               ) : (
                 <div className="rounded-xl border border-border bg-bg/50 p-4">
-                  <p className="mb-2 flex items-center gap-1.5 text-[11px] font-bold text-muted">
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted">
                     <Lock className="h-3 w-3" /> Set in code so checkout charges the same
                   </p>
                   <LockedRow label="Monthly" value={`${live.price.monthly} ${live.unit.monthly}`} />
@@ -422,7 +422,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
                   <button
                     type="button"
                     onClick={() => setPlan(key, { includes: def.includes.join("\n") })}
-                    className="text-[11px] font-bold text-accent hover:underline"
+                    className="text-xs font-bold text-accent hover:underline"
                   >
                     Start from the default list
                   </button>
@@ -475,7 +475,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
                         placeholder={String(def.credits)}
                         className={`${inputCls} font-mono tabular-nums ${cErr ? "border-danger" : ""}`}
                       />
-                      {cErr && <p className="mt-1 text-[11px] font-bold text-danger">{cErr}</p>}
+                      {cErr && <p className="mt-1 text-xs font-bold text-danger">{cErr}</p>}
                       {f.credits && <div className="mt-1"><ResetButton onClick={() => setPack(def.id, { credits: "" })} /></div>}
                     </td>
                     <td className="w-36 py-3 pr-3">
@@ -485,7 +485,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
                         placeholder={centsText(def.priceCents)}
                         invalid={!!pErr}
                       />
-                      {pErr && <p className="mt-1 text-[11px] font-bold text-danger">{pErr}</p>}
+                      {pErr && <p className="mt-1 text-xs font-bold text-danger">{pErr}</p>}
                       {f.price && <div className="mt-1"><ResetButton onClick={() => setPack(def.id, { price: "" })} /></div>}
                     </td>
                     <td className="py-3 pr-3 pt-5 font-mono tabular-nums text-muted">
@@ -504,7 +504,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
                         className={`${inputCls} disabled:opacity-50`}
                       />
                       <div className="mt-1 flex items-center gap-3">
-                        <label className="flex items-center gap-1.5 text-[11px] text-muted">
+                        <label className="flex items-center gap-1.5 text-xs text-muted">
                           <input
                             type="checkbox"
                             checked={f.hideBadge}

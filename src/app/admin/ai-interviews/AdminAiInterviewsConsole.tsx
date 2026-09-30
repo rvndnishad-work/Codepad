@@ -102,7 +102,7 @@ export default function AdminAiInterviewsConsole({
     <div className="space-y-8 font-sans">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight text-fg flex items-center gap-2">
             <Coins className="w-7 h-7 text-amber-400" /> AI Screening — Credit Operations
           </h1>
           <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
@@ -145,7 +145,7 @@ export default function AdminAiInterviewsConsole({
       {/* Workspaces table */}
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 border-b border-border">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg">Workspaces</h2>
+          <h2 className="text-sm font-semibold text-fg">Workspaces</h2>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted" />
             <input
@@ -160,7 +160,7 @@ export default function AdminAiInterviewsConsole({
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-bg/50">
-              <tr className="text-left text-muted uppercase tracking-wider">
+              <tr className="text-left text-muted ">
                 <th className="px-4 py-3 font-bold">Workspace</th>
                 <th className="px-4 py-3 font-bold">Plan</th>
                 <th className="px-4 py-3 font-bold text-right">Balance</th>
@@ -185,27 +185,27 @@ export default function AdminAiInterviewsConsole({
                         <Building2 className="w-3.5 h-3.5 text-muted/60 shrink-0" />
                         <div className="min-w-0">
                           <div className="font-bold text-fg truncate">{w.name}</div>
-                          <div className="text-[10px] text-muted/60 font-mono truncate">{w.slug}</div>
+                          <div className="text-xs text-muted/60 font-mono truncate">{w.slug}</div>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-bg text-[9px] font-bold uppercase tracking-wider">
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded border border-border bg-bg text-xs font-bold ">
                         {w.planName}
                       </span>
                     </td>
-                    <td className={`px-4 py-3 text-right tabular-nums font-black ${w.balance <= 0 ? "text-rose-400" : w.balance < 5 ? "text-amber-400" : "text-emerald-400"}`}>
+                    <td className={`px-4 py-3 text-right tabular-nums font-semibold ${w.balance <= 0 ? "text-rose-400" : w.balance < 5 ? "text-amber-400" : "text-emerald-400"}`}>
                       {w.balance}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted">{w.usedThisMonth}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted">{w.sessionCount}</td>
-                    <td className="px-4 py-3 text-muted/70 text-[10px]">
+                    <td className="px-4 py-3 text-muted/70 text-xs">
                       {w.lastActivity ? new Date(w.lastActivity).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => setGrantTarget(w)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 text-accent border border-accent/25 hover:bg-accent/20 text-[10px] font-bold uppercase tracking-wider transition"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-accent/10 text-accent border border-accent/25 hover:bg-accent/20 text-xs font-bold transition"
                       >
                         <Plus className="w-3 h-3" /> Grant
                       </button>
@@ -221,14 +221,14 @@ export default function AdminAiInterviewsConsole({
       {/* Ledger view */}
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg">Credit Ledger</h2>
-          <p className="text-[11px] text-muted/70 mt-0.5">Append-only history. Most recent 50 entries across all workspaces.</p>
+          <h2 className="text-sm font-semibold text-fg">Credit Ledger</h2>
+          <p className="text-xs text-muted/70 mt-0.5">Append-only history. Most recent 50 entries across all workspaces.</p>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-bg/50">
-              <tr className="text-left text-muted uppercase tracking-wider">
+              <tr className="text-left text-muted ">
                 <th className="px-4 py-3 font-bold">When</th>
                 <th className="px-4 py-3 font-bold">Workspace</th>
                 <th className="px-4 py-3 font-bold">Kind</th>
@@ -248,25 +248,25 @@ export default function AdminAiInterviewsConsole({
                   const style = KIND_STYLES[e.kind] || { label: e.kind, cls: "text-muted bg-bg border-border" };
                   return (
                     <tr key={e.id} className="border-t border-border/40">
-                      <td className="px-4 py-3 text-muted/70 text-[10px] whitespace-nowrap">
+                      <td className="px-4 py-3 text-muted/70 text-xs whitespace-nowrap">
                         {new Date(e.createdAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-fg font-bold">{e.workspaceName}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${style.cls}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${style.cls}`}>
                           {style.label}
                         </span>
                       </td>
-                      <td className={`px-4 py-3 text-right tabular-nums font-black ${e.amount > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      <td className={`px-4 py-3 text-right tabular-nums font-semibold ${e.amount > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                         {e.amount > 0 ? "+" : ""}{e.amount}
                       </td>
                       <td className="px-4 py-3 text-muted">
                         {e.candidateName && (
-                          <span className="block text-[10px] text-fg font-mono">
+                          <span className="block text-xs text-fg font-mono">
                             {e.candidateName}
                           </span>
                         )}
-                        {e.note && <span className="block text-[10px] text-muted/70 italic">{e.note}</span>}
+                        {e.note && <span className="block text-xs text-muted/70 italic">{e.note}</span>}
                       </td>
                     </tr>
                   );
@@ -280,14 +280,14 @@ export default function AdminAiInterviewsConsole({
       {/* Recent sessions (forensics) */}
       <section className="rounded-2xl border border-border bg-surface overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="text-sm font-black uppercase tracking-widest text-fg">Recent Sessions</h2>
-          <p className="text-[11px] text-muted/70 mt-0.5">For support and forensics. Refund a credit if a screening was technically broken.</p>
+          <h2 className="text-sm font-semibold text-fg">Recent Sessions</h2>
+          <p className="text-xs text-muted/70 mt-0.5">For support and forensics. Refund a credit if a screening was technically broken.</p>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-bg/50">
-              <tr className="text-left text-muted uppercase tracking-wider">
+              <tr className="text-left text-muted ">
                 <th className="px-4 py-3 font-bold">Candidate</th>
                 <th className="px-4 py-3 font-bold">Workspace</th>
                 <th className="px-4 py-3 font-bold">Status</th>
@@ -310,12 +310,12 @@ export default function AdminAiInterviewsConsole({
                     <tr key={s.id} className="border-t border-border/40">
                       <td className="px-4 py-3">
                         <div className="font-bold text-fg">{s.candidateName}</div>
-                        <div className="text-[10px] text-muted/60 font-mono">{s.candidateEmail}</div>
+                        <div className="text-xs text-muted/60 font-mono">{s.candidateEmail}</div>
                       </td>
                       <td className="px-4 py-3 text-muted">{s.workspaceName}</td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-black uppercase border tracking-wider ${
+                          className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${
                             s.status === "COMPLETED"
                               ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                               : s.status === "ACTIVE"
@@ -329,13 +329,13 @@ export default function AdminAiInterviewsConsole({
                       <td className="px-4 py-3 text-right tabular-nums text-fg font-bold">
                         {s.score !== null ? `${s.score}%` : "—"}
                       </td>
-                      <td className="px-4 py-3 text-muted/70 text-[10px]">
+                      <td className="px-4 py-3 text-muted/70 text-xs">
                         {s.startedAt ? new Date(s.startedAt).toLocaleString() : <span className="italic">never</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setForensicsTarget(s)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-[10px] font-bold uppercase tracking-wider transition"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-border hover:bg-elevated text-muted hover:text-fg text-xs font-bold transition"
                         >
                           Inspect
                           <ChevronDown className="w-3 h-3" />
@@ -343,7 +343,7 @@ export default function AdminAiInterviewsConsole({
                         {wasCharged && (
                           <button
                             onClick={() => setForensicsTarget({ ...s, _action: "refund" } as SessionRow)}
-                            className="ml-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-amber-500/25 text-amber-400 hover:bg-amber-500/10 text-[10px] font-bold uppercase tracking-wider transition"
+                            className="ml-1.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-amber-500/25 text-amber-400 hover:bg-amber-500/10 text-xs font-bold transition"
                           >
                             <RotateCcw className="w-3 h-3" /> Refund
                           </button>
@@ -400,9 +400,9 @@ function StatCard({
         {icon}
       </div>
       <div className="min-w-0">
-        <span className="text-[10px] font-black uppercase tracking-widest text-muted">{label}</span>
-        <div className="text-2xl font-black text-fg mt-0.5 tabular-nums">{value}</div>
-        {sub && <span className="text-[10px] text-muted/70 block">{sub}</span>}
+        <span className="text-xs font-semibold text-muted">{label}</span>
+        <div className="text-2xl font-semibold text-fg mt-0.5 tabular-nums">{value}</div>
+        {sub && <span className="text-xs text-muted/70 block">{sub}</span>}
       </div>
     </div>
   );
@@ -444,7 +444,7 @@ function GrantCreditsModal({
         className="w-full max-w-md bg-surface border border-border rounded-3xl p-6 space-y-5 shadow-2xl"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-widest text-fg flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-fg flex items-center gap-2">
             <Coins className="w-4 h-4 text-amber-400" /> Grant Credits
           </h3>
           <button type="button" onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
@@ -455,14 +455,14 @@ function GrantCreditsModal({
         <div className="rounded-xl border border-border bg-bg p-3 text-xs">
           <div className="text-muted">Workspace</div>
           <div className="font-bold text-fg">{workspace.name}</div>
-          <div className="text-[10px] text-muted/60 font-mono">{workspace.slug} • {workspace.planName}</div>
-          <div className="mt-2 text-[11px]">
-            Current balance: <span className="font-black tabular-nums text-fg">{workspace.balance}</span>
+          <div className="text-xs text-muted/60 font-mono">{workspace.slug} • {workspace.planName}</div>
+          <div className="mt-2 text-xs">
+            Current balance: <span className="font-semibold tabular-nums text-fg">{workspace.balance}</span>
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">Amount</label>
+          <label className="text-xs font-semibold text-muted block">Amount</label>
           <input
             type="number"
             min={1}
@@ -475,7 +475,7 @@ function GrantCreditsModal({
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+          <label className="text-xs font-semibold text-muted block">
             Reason (audit trail, required)
           </label>
           <textarea
@@ -499,7 +499,7 @@ function GrantCreditsModal({
           <button
             type="submit"
             disabled={isPending}
-            className="px-5 py-2 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50"
+            className="px-5 py-2 rounded-xl bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition disabled:opacity-50"
           >
             {isPending ? "Granting..." : `Grant ${amount} credits`}
           </button>
@@ -542,7 +542,7 @@ function SessionForensicsModal({
         className="w-full max-w-lg bg-surface border border-border rounded-3xl p-6 space-y-5 shadow-2xl"
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-black uppercase tracking-widest text-fg">
+          <h3 className="text-sm font-semibold text-fg">
             {isRefundMode ? "Refund Session Credit" : "Session Forensics"}
           </h3>
           <button onClick={onClose} className="p-1 rounded-md hover:bg-elevated text-muted hover:text-fg">
@@ -579,7 +579,7 @@ function SessionForensicsModal({
         {isRefundMode ? (
           <form onSubmit={submitRefund} className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black uppercase text-muted tracking-wider block">
+              <label className="text-xs font-semibold text-muted block">
                 Refund Reason (required)
               </label>
               <textarea
@@ -602,14 +602,14 @@ function SessionForensicsModal({
               <button
                 type="submit"
                 disabled={isPending || !note.trim()}
-                className="px-5 py-2 rounded-xl bg-amber-500 text-bg text-xs font-black uppercase tracking-wider hover:bg-amber-400 transition disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-amber-500 text-bg text-xs font-semibold hover:bg-amber-400 transition disabled:opacity-50"
               >
                 {isPending ? "Refunding..." : "Refund 1 Credit"}
               </button>
             </div>
           </form>
         ) : (
-          <p className="text-[10px] text-muted/70 leading-relaxed">
+          <p className="text-xs text-muted/70 leading-relaxed">
             Deeper inspection (chat replay + file diff) is available from the workspace recruiter console. This admin view is intentionally read-only for audit purposes.
           </p>
         )}

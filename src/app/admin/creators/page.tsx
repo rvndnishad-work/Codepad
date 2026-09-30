@@ -159,7 +159,7 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
             Clear
           </Link>
         )}
-        <span className="ml-auto text-[10px] text-muted">
+        <span className="ml-auto text-xs text-muted">
           {totalSpaces} spaces · page {safePage}/{totalPages}
         </span>
       </form>
@@ -170,7 +170,7 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
           <h2 className="text-sm font-bold text-fg flex items-center gap-2">
             <Store className="w-4 h-4 text-accent" /> Active Creator Pages ({totalSpaces})
           </h2>
-          {totalSpaces > pageSize && <span className="text-[10px] text-muted">20 per page</span>}
+          {totalSpaces > pageSize && <span className="text-xs text-muted">20 per page</span>}
         </div>
 
         {activeSpacesList.length === 0 ? (
@@ -181,7 +181,7 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-border bg-panel/10 text-muted uppercase font-bold tracking-wider">
+                <tr className="border-b border-border bg-panel/10 text-muted font-bold ">
                   <th className="px-5 py-3">Page Name / Handle</th>
                   <th className="px-5 py-3">Owner</th>
                   <th className="px-5 py-3">Subscribers</th>
@@ -200,13 +200,13 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                       <Link href={`/admin/creators/${s.handle}`} className="font-semibold text-fg hover:text-accent hover:underline">
                         {s.name}
                       </Link>
-                      <div className="text-[10px] text-muted font-mono mt-0.5">/c/{s.handle}</div>
+                      <div className="text-xs text-muted font-mono mt-0.5">/c/{s.handle}</div>
                     </td>
 
                     {/* Owner details */}
                     <td className="px-5 py-3.5">
                       <div className="font-medium text-fg">{s.ownerName}</div>
-                      <div className="text-[10px] text-muted mt-0.5">{s.ownerEmail}</div>
+                      <div className="text-xs text-muted mt-0.5">{s.ownerEmail}</div>
                     </td>
 
                     {/* Subscriber count */}
@@ -226,26 +226,26 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                     {/* Health */}
                     <td className="px-5 py-3.5">
                       {s.contentCount === 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-[9px] font-bold text-amber-700">Empty</span>
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-700">Empty</span>
                       ) : s.subscriberCount === 0 ? (
-                        <span className="inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-[9px] font-bold text-blue-700">Needs growth</span>
+                        <span className="inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 text-xs font-bold text-blue-700">Needs growth</span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Healthy</span>
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700">Healthy</span>
                       )}
                     </td>
 
                     {/* Payouts Connect Status */}
                     <td className="px-5 py-3.5">
                       {s.payoutsStatus === "active" ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-500 font-bold uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-500 font-bold ">
                           <CheckCircle className="w-3.5 h-3.5" /> Active
                         </span>
                       ) : s.payoutsStatus === "incomplete" ? (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-amber-500 font-bold uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 text-xs text-amber-500 font-bold ">
                           <AlertTriangle className="w-3.5 h-3.5" /> Incomplete
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[10px] text-muted font-bold uppercase tracking-wider">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted font-bold ">
                           Not Setup
                         </span>
                       )}
@@ -254,7 +254,7 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                     {/* Status live/draft */}
                     <td className="px-5 py-3.5">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[9px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-bold ${
                           s.published
                             ? "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
                             : "text-amber-500 border-amber-500/30 bg-amber-500/10"
@@ -269,13 +269,13 @@ export default async function AdminCreatorsPage({ searchParams }: PageProps) {
                       <a
                         href={`/c/${s.handle}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-panel hover:bg-panel-strong border border-border text-[10px] font-semibold text-fg transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-panel hover:bg-panel-strong border border-border text-xs font-semibold text-fg transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5" /> View
                       </a>
                       <a
                         href={`/creator/${s.handle}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent hover:bg-accent-soft text-[10px] font-bold text-bg transition-colors"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-accent hover:bg-accent-soft text-xs font-bold text-bg transition-colors"
                       >
                         Manage
                       </a>

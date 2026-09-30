@@ -103,7 +103,7 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
     <div className="space-y-6">
       <Link
         href="/admin/interviews"
-        className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-muted hover:text-fg transition"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-fg transition"
       >
         <ArrowLeft className="w-3 h-3" />
         All sessions
@@ -114,13 +114,13 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-2">
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusClass}`}
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${statusClass}`}
               >
                 {session.status.replace("_", " ")}
               </span>
-              <span className="text-[10px] font-mono text-muted/60">{session.id}</span>
+              <span className="text-xs font-mono text-muted/60">{session.id}</span>
             </div>
-            <h2 className="text-2xl font-black tracking-tight truncate">{session.title}</h2>
+            <h2 className="text-2xl font-semibold tracking-tight truncate">{session.title}</h2>
             <div className="mt-2 flex items-center gap-3 text-xs text-muted">
               <Link href={`/u/${session.user.id}`} className="hover:text-accent transition flex items-center gap-1.5">
                 {session.user.name ?? "Anonymous"}
@@ -153,15 +153,15 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
         </div>
 
         <div className="mt-6 rounded-xl border border-border bg-bg p-4">
-          <div className="text-[10px] font-black uppercase tracking-wider text-muted mb-2">
+          <div className="text-xs font-semibold text-muted mb-2">
             Interviewer-view share URL
           </div>
-          <div className="text-[11px] font-mono break-all text-fg/80">{shareUrl}</div>
+          <div className="text-xs font-mono break-all text-fg/80">{shareUrl}</div>
         </div>
       </div>
 
       <div>
-        <h3 className="text-sm font-black uppercase tracking-[0.18em] text-muted mb-3">
+        <h3 className="text-sm font-semibold text-muted mb-3">
           Challenges in this session ({challengeIds.length})
         </h3>
 
@@ -179,11 +179,11 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
                   <div className="px-5 py-4 border-b border-border flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-muted">
+                        <span className="text-xs font-semibold text-muted">
                           #{(i + 1).toString().padStart(2, "0")}
                         </span>
                         {c?.difficulty && (
-                          <span className="text-[10px] font-black uppercase tracking-wider text-accent">
+                          <span className="text-xs font-semibold text-accent">
                             {c.difficulty}
                           </span>
                         )}
@@ -195,7 +195,7 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
                     {c && (
                       <Link
                         href={`/admin/challenges/${c.id}/edit`}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg hover:bg-elevated transition shrink-0"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-muted hover:text-fg hover:bg-elevated transition shrink-0"
                       >
                         Edit
                         <ExternalLink className="w-3 h-3" />
@@ -217,7 +217,7 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
                               className="flex flex-wrap items-center gap-3 px-3 py-2 rounded-lg bg-elevated/40"
                             >
                               <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${aClass}`}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${aClass}`}
                               >
                                 {a.status === "passed" ? (
                                   <CheckCircle2 className="w-3 h-3" />
@@ -229,15 +229,15 @@ export default async function AdminInterviewDetailPage({ params }: AdminIntervie
                                 {a.status.replace("_", " ")}
                               </span>
                               {tests && (
-                                <span className="text-[11px] text-muted">
+                                <span className="text-xs text-muted">
                                   Tests: <span className="font-bold text-fg">{tests.passed}/{tests.total}</span>
                                 </span>
                               )}
-                              <span className="text-[11px] text-muted">
+                              <span className="text-xs text-muted">
                                 Duration:{" "}
                                 <span className="font-bold text-fg">{formatDuration(a.durationSec)}</span>
                               </span>
-                              <span className="text-[11px] text-muted ml-auto font-mono">
+                              <span className="text-xs text-muted ml-auto font-mono">
                                 {a.startedAt.toLocaleString()}
                               </span>
                             </li>
@@ -267,7 +267,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-xl border border-border bg-bg px-3 py-3">
-      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-muted mb-1">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted mb-1">
         <Icon className="w-3 h-3" />
         {label}
       </div>

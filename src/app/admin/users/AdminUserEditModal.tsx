@@ -98,7 +98,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-muted">Name</label>
+                  <label className="text-xs font-semibold text-muted">Name</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -107,7 +107,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-muted">Email</label>
+                  <label className="text-xs font-semibold text-muted">Email</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -118,7 +118,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-muted">Bio</label>
+                <label className="text-xs font-semibold text-muted">Bio</label>
                 <textarea
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
@@ -128,7 +128,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-muted">Hire Me URL</label>
+                <label className="text-xs font-semibold text-muted">Hire Me URL</label>
                 <input
                   type="text"
                   value={formData.hireMeUrl}
@@ -149,7 +149,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
                   <div className={`w-10 h-5 rounded-full border border-border transition-colors relative ${formData.portfolioPublic ? "bg-accent border-accent" : "bg-surface"}`}>
                     <div className={`absolute top-1 left-1 w-2.5 h-2.5 rounded-full transition-transform ${formData.portfolioPublic ? "translate-x-5 bg-bg" : "bg-muted"}`} />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-muted group-hover:text-fg transition">Portfolio Public</span>
+                  <span className="text-xs font-bold text-muted group-hover:text-fg transition">Portfolio Public</span>
                 </label>
 
                 {!user.isAdmin && (
@@ -163,7 +163,7 @@ export default function AdminUserEditModal({ user, onClose }: AdminUserEditModal
                     <div className={`w-10 h-5 rounded-full border border-border transition-colors relative ${formData.banned ? "bg-red-500 border-red-500" : "bg-surface"}`}>
                       <div className={`absolute top-1 left-1 w-2.5 h-2.5 rounded-full transition-transform ${formData.banned ? "translate-x-5 bg-bg" : "bg-muted"}`} />
                     </div>
-                    <span className="text-[11px] font-bold uppercase tracking-wide text-red-500/80 group-hover:text-red-500 transition">Banned</span>
+                    <span className="text-xs font-bold text-red-500/80 group-hover:text-red-500 transition">Banned</span>
                   </label>
                 )}
               </div>

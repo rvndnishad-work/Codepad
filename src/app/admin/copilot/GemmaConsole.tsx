@@ -684,19 +684,19 @@ export default function GemmaConsole({
           {/* Brand glyph — reacts to copilot state. Idle drifts, thinking spins, speaking pulses. */}
           <GemmaMark size={52} state={consoleState === "thinking" ? "thinking" : consoleState === "speaking" ? "speaking" : "idle"} />
           <div>
-            <div className="text-[9px] font-black uppercase tracking-[0.25em] text-violet-400">Autonomous Operations active</div>
-            <h2 className="text-xl font-black tracking-tight text-fg mt-0.5">Gemma Autonomous Command Room</h2>
+            <div className="text-xs font-semibold text-violet-400">Autonomous Operations active</div>
+            <h2 className="text-xl font-semibold tracking-tight text-fg mt-0.5">Gemma Autonomous Command Room</h2>
             <p className="text-xs text-muted mt-0.5">Real-time database querying, telemetry anomaly detection, and HITL execution.</p>
           </div>
         </div>
         
         {alerts.length === 0 ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/35 text-emerald-400 text-[10px] font-black uppercase tracking-wider shrink-0 relative z-10">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/35 text-emerald-400 text-xs font-semibold shrink-0 relative z-10">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Platform Fully Stable
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/35 text-amber-400 text-[10px] font-black uppercase tracking-wider shrink-0 relative z-10">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/35 text-amber-400 text-xs font-semibold shrink-0 relative z-10">
             <AlertTriangle className="w-3.5 h-3.5" />
             {alerts.length} Intervention Proposals
           </div>
@@ -709,41 +709,41 @@ export default function GemmaConsole({
         {/* System Health */}
         <div className="rounded-xl border border-border bg-panel/30 backdrop-blur-sm p-4 relative group hover:border-violet-500/25 transition duration-300">
           <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Health Telemetry</span>
+            <span className="text-xs font-bold ">Health Telemetry</span>
             <Activity className="w-4 h-4 text-violet-400" />
           </div>
-          <div className="text-2xl font-black tracking-tight text-fg">{telemetry.healthyRate}%</div>
-          <div className="text-[10px] text-muted mt-1">active sessions optimal</div>
+          <div className="text-2xl font-semibold tracking-tight text-fg">{telemetry.healthyRate}%</div>
+          <div className="text-xs text-muted mt-1">active sessions optimal</div>
         </div>
 
         {/* Proctoring Anomalies */}
         <div className="rounded-xl border border-border bg-panel/30 backdrop-blur-sm p-4 relative group hover:border-red-500/25 transition duration-300">
           <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Proctoring Flags</span>
+            <span className="text-xs font-bold ">Proctoring Flags</span>
             <ShieldAlert className="w-4 h-4 text-red-400" />
           </div>
-          <div className="text-2xl font-black tracking-tight text-fg">{telemetry.suspiciousAttemptsCount}</div>
-          <div className="text-[10px] text-muted mt-1">integrity violations (score &gt;= 60)</div>
+          <div className="text-2xl font-semibold tracking-tight text-fg">{telemetry.suspiciousAttemptsCount}</div>
+          <div className="text-xs text-muted mt-1">integrity violations (score &gt;= 60)</div>
         </div>
 
         {/* Content Reviews */}
         <div className="rounded-xl border border-border bg-panel/30 backdrop-blur-sm p-4 relative group hover:border-amber-500/25 transition duration-300">
           <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Pending Blogs</span>
+            <span className="text-xs font-bold ">Pending Blogs</span>
             <FileText className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-black tracking-tight text-fg">{telemetry.pendingBlogsCount}</div>
-          <div className="text-[10px] text-muted mt-1">submissions awaiting review</div>
+          <div className="text-2xl font-semibold tracking-tight text-fg">{telemetry.pendingBlogsCount}</div>
+          <div className="text-xs text-muted mt-1">submissions awaiting review</div>
         </div>
 
         {/* Stalled Sessions */}
         <div className="rounded-xl border border-border bg-panel/30 backdrop-blur-sm p-4 relative group hover:border-blue-500/25 transition duration-300">
           <div className="flex items-center justify-between text-muted mb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider">Stalled Sessions</span>
+            <span className="text-xs font-bold ">Stalled Sessions</span>
             <Archive className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="text-2xl font-black tracking-tight text-fg">{telemetry.stalledSessionsCount}</div>
-          <div className="text-[10px] text-muted mt-1">sessions stuck &gt; 6 hours</div>
+          <div className="text-2xl font-semibold tracking-tight text-fg">{telemetry.stalledSessionsCount}</div>
+          <div className="text-xs text-muted mt-1">sessions stuck &gt; 6 hours</div>
         </div>
 
       </div>
@@ -755,8 +755,8 @@ export default function GemmaConsole({
         <div className="lg:col-span-7 space-y-5">
           <div className="flex items-center gap-2 border-b border-border pb-3">
             <Shield className="w-4 h-4 text-violet-400" />
-            <h3 className="text-sm font-black uppercase tracking-wider text-fg">Intervention Control Center</h3>
-            <span className="text-[10px] font-mono bg-panel border px-2 py-0.5 rounded-full text-muted ml-auto">
+            <h3 className="text-sm font-semibold text-fg">Intervention Control Center</h3>
+            <span className="text-xs font-mono bg-panel border px-2 py-0.5 rounded-full text-muted ml-auto">
               {alerts.length} Proposals
             </span>
           </div>
@@ -783,10 +783,10 @@ export default function GemmaConsole({
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[8px] font-black tracking-wider px-1.5 py-0.5 rounded border uppercase ${severityBadge(alert.severity)}`}>
+                        <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border ${severityBadge(alert.severity)}`}>
                           {alert.severity}
                         </span>
-                        <span className="text-[10px] text-muted font-mono">Type: {alert.type}</span>
+                        <span className="text-xs text-muted font-mono">Type: {alert.type}</span>
                       </div>
                       <h4 className="text-sm font-bold text-fg">{alert.title}</h4>
                       <p className="text-xs text-muted leading-relaxed whitespace-pre-wrap">{alert.body}</p>
@@ -804,7 +804,7 @@ export default function GemmaConsole({
                   {/* Actions mapping based on Proposed Interventions */}
                   {alert.proposedAction && (
                     <div className="mt-4 pt-4 border-t border-border flex flex-col gap-3">
-                      <div className="text-[10px] text-violet-400 font-bold flex items-center gap-1.5">
+                      <div className="text-xs text-violet-400 font-bold flex items-center gap-1.5">
                         <Sparkles className="w-3.5 h-3.5" />
                         Gemma Action Proposal: Approval Required (HITL)
                       </div>
@@ -821,13 +821,13 @@ export default function GemmaConsole({
                           <div className="flex gap-2 justify-end">
                             <button
                               onClick={() => setShowRejectForm(null)}
-                              className="px-3 py-1.5 rounded-lg border border-border text-[10px] font-bold text-muted uppercase hover:text-fg transition"
+                              className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-muted hover:text-fg transition"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleRejectBlog(alert)}
-                              className="px-3 py-1.5 rounded-lg bg-red-500 text-bg text-[10px] font-black uppercase hover:opacity-90 transition"
+                              className="px-3 py-1.5 rounded-lg bg-red-500 text-bg text-xs font-semibold hover:opacity-90 transition"
                             >
                               Dispatch Reject
                             </button>
@@ -838,7 +838,7 @@ export default function GemmaConsole({
                           {alert.proposedAction.actionType === "BAN_USER" && (
                             <button
                               onClick={() => handleApproveAction(alert)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-xs font-semibold transition-all"
                             >
                               <Ban className="w-3.5 h-3.5" />
                               Approve User Ban
@@ -848,7 +848,7 @@ export default function GemmaConsole({
                           {alert.proposedAction.actionType === "ARCHIVE_SESSION" && (
                             <button
                               onClick={() => handleApproveAction(alert)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/35 hover:bg-amber-500 text-amber-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/35 hover:bg-amber-500 text-amber-400 hover:text-bg text-xs font-semibold transition-all"
                             >
                               <Archive className="w-3.5 h-3.5" />
                               Approve Session Archive
@@ -859,21 +859,21 @@ export default function GemmaConsole({
                             <>
                               <button
                                 onClick={() => setCompareAlertId(alert.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/35 hover:bg-violet-500 text-violet-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/35 hover:bg-violet-500 text-violet-400 hover:text-bg text-xs font-semibold transition-all"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                                 Review Post
                               </button>
                               <button
                                 onClick={() => handleApproveAction(alert)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/35 hover:bg-emerald-500 text-emerald-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/35 hover:bg-emerald-500 text-emerald-400 hover:text-bg text-xs font-semibold transition-all"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 Approve & Publish
                               </button>
                               <button
                                 onClick={() => setShowRejectForm(alert.id)}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-xs font-semibold transition-all"
                               >
                                 <X className="w-3.5 h-3.5" />
                                 Needs Changes
@@ -884,7 +884,7 @@ export default function GemmaConsole({
                           {alert.proposedAction.actionType === "CREATE_TODO" && (
                             <button
                               onClick={() => handleApproveAction(alert)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/35 hover:bg-violet-500 text-violet-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all"
+                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/35 hover:bg-violet-500 text-violet-400 hover:text-bg text-xs font-semibold transition-all"
                             >
                               <ClipboardList className="w-3.5 h-3.5" />
                               Convert to Operations Ticket
@@ -973,7 +973,7 @@ export default function GemmaConsole({
 
                           <button
                             onClick={() => handleDismissAlert(alert.id)}
-                            className="px-3.5 py-2 rounded-xl border border-border hover:bg-panel text-muted hover:text-fg text-[10px] font-black uppercase tracking-wider transition"
+                            className="px-3.5 py-2 rounded-xl border border-border hover:bg-panel text-muted hover:text-fg text-xs font-semibold transition"
                           >
                             Dismiss Proposal
                           </button>
@@ -1003,7 +1003,7 @@ export default function GemmaConsole({
 
           {/* HUD Header */}
           <div className="px-4 py-3 border-b border-border bg-panel/30 flex items-center justify-between gap-2 relative z-10">
-            <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-violet-400 uppercase tracking-widest">
+            <div className="flex items-center gap-2 font-mono text-xs font-bold text-violet-400 ">
               <Cpu className="w-3.5 h-3.5 text-violet-400" />
               Gemma NeuroCore v2.5
             </div>
@@ -1018,7 +1018,7 @@ export default function GemmaConsole({
                       onClick={() => setActiveModel(opt.id)}
                       disabled={isTyping}
                       title={`${opt.label} — ${opt.tier === "free" ? "Free tier (default)" : "Credit-based"}`}
-                      className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold transition disabled:opacity-50 ${
                         active
                           ? "bg-violet-500/20 text-violet-300 border border-violet-500/40 shadow-[0_0_6px_rgba(139,92,246,0.3)]"
                           : "text-muted hover:text-fg"
@@ -1047,7 +1047,7 @@ export default function GemmaConsole({
                 key={idx}
                 onClick={() => handleSendPrompt(preset.prompt)}
                 disabled={isTyping}
-                className="text-[8px] font-mono font-bold px-2 py-1 rounded bg-panel/60 border border-violet-500/10 hover:border-violet-500/40 text-muted hover:text-fg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                className="text-xs font-mono font-bold px-2 py-1 rounded bg-panel/60 border border-violet-500/10 hover:border-violet-500/40 text-muted hover:text-fg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
                 {preset.label}
               </button>
@@ -1059,20 +1059,20 @@ export default function GemmaConsole({
             
             {showHistoryDrawer ? (
               // Cognitive Log History Drawer
-              <div className="flex-1 flex flex-col h-full font-mono text-[11px] text-muted space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-                <div className="flex items-center gap-2 border-b border-border/40 pb-1.5 text-[9px] text-violet-400 font-bold uppercase tracking-wider">
+              <div className="flex-1 flex flex-col h-full font-mono text-xs text-muted space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                <div className="flex items-center gap-2 border-b border-border/40 pb-1.5 text-xs text-violet-400 font-bold ">
                   <History className="w-3 h-3" />
                   Cognitive Log Feed
                   <button 
                     onClick={() => setShowHistoryDrawer(false)}
-                    className="ml-auto text-muted hover:text-fg text-[9px]"
+                    className="ml-auto text-muted hover:text-fg text-xs"
                   >
                     [Close]
                   </button>
                 </div>
                 {chatHistory.map((msg, idx) => (
                   <div key={idx} className="space-y-1">
-                    <div className="text-[9px] font-bold text-muted/40 uppercase">
+                    <div className="text-xs font-bold text-muted/40 ">
                       {msg.role === "user" ? "► directive" : "◀ neural_feedback"}
                     </div>
                     <div className={`p-2.5 rounded-xl border leading-relaxed ${
@@ -1155,8 +1155,8 @@ export default function GemmaConsole({
 
                 {/* Holographic Output Readout display */}
                 <div className="w-full text-center space-y-1 z-10 max-h-[140px] overflow-y-auto px-2 custom-scrollbar">
-                  <div className="text-[9px] font-mono font-bold tracking-widest text-violet-400 uppercase">System Vocalization</div>
-                  <p className="text-xs font-mono font-black text-fg text-center leading-relaxed antialiased">
+                  <div className="text-xs font-mono font-bold text-violet-400 ">System Vocalization</div>
+                  <p className="text-xs font-mono font-semibold text-fg text-center leading-relaxed antialiased">
                     {isTyping 
                       ? "Cognitive networks parsing SQLite logs... Executing read-only diagnostics..."
                       : activeAssistantMessage || "Operations unit online. Fully synchronized."
@@ -1194,7 +1194,7 @@ export default function GemmaConsole({
           </div>
 
           {/* Futuristic diagnostic coordinates footer */}
-          <div className="px-4 py-2 border-t border-border bg-panel/30 flex items-center justify-between font-mono text-[8px] text-muted/40">
+          <div className="px-4 py-2 border-t border-border bg-panel/30 flex items-center justify-between font-mono text-xs text-muted/40">
             <span>GRID_LOC: SUB_SYS_OP_CENTER</span>
             <span>SECURE_SHELL_TLS_AES256</span>
           </div>
@@ -1343,10 +1343,10 @@ function BlogComparisonModal({
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="w-4 h-4 text-violet-400 shrink-0" />
             <div className="min-w-0">
-              <div className="text-[9px] font-black uppercase tracking-[0.25em] text-violet-400">
+              <div className="text-xs font-semibold text-violet-400">
                 Moderation review
               </div>
-              <h2 className="text-base font-black tracking-tight text-fg truncate">
+              <h2 className="text-base font-semibold tracking-tight text-fg truncate">
                 {data?.post.title ?? alert.title}
               </h2>
             </div>
@@ -1372,7 +1372,7 @@ function BlogComparisonModal({
             <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-border">
               {/* Left: original post */}
               <div className="p-6 space-y-4 max-h-[60vh] lg:max-h-[68vh] overflow-y-auto">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-muted">
+                <div className="flex items-center gap-2 text-xs font-semibold text-muted">
                   <FileText className="w-3.5 h-3.5" />
                   Original submission
                   <a
@@ -1385,7 +1385,7 @@ function BlogComparisonModal({
                   </a>
                 </div>
                 {data.post.author && (
-                  <div className="text-[11px] text-muted">
+                  <div className="text-xs text-muted">
                     by{" "}
                     <span className="text-fg font-bold">
                       {data.post.author.name || data.post.author.email}
@@ -1405,7 +1405,7 @@ function BlogComparisonModal({
 
               {/* Right: Gemma audit */}
               <div className="p-6 space-y-4 max-h-[60vh] lg:max-h-[68vh] overflow-y-auto bg-bg/40">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-violet-400">
+                <div className="flex items-center gap-2 text-xs font-semibold text-violet-400">
                   <Sparkles className="w-3.5 h-3.5" />
                   Gemma compliance audit
                 </div>
@@ -1422,18 +1422,18 @@ function BlogComparisonModal({
                       key={i}
                       className={`rounded-xl border px-3 py-2 ${severityChip(f.severity)}`}
                     >
-                      <div className="text-[10px] font-black uppercase tracking-wider">{f.label}</div>
-                      <div className="text-[11px] mt-0.5 text-fg/85">{f.detail}</div>
+                      <div className="text-xs font-semibold ">{f.label}</div>
+                      <div className="text-xs mt-0.5 text-fg/85">{f.detail}</div>
                     </div>
                   ))}
                 </div>
 
                 {data.audit.affiliateHints.length > 0 && (
-                  <details className="text-[11px]">
+                  <details className="text-xs">
                     <summary className="cursor-pointer text-muted hover:text-fg">
                       Affiliate-style links ({data.audit.affiliateHints.length})
                     </summary>
-                    <ul className="mt-2 space-y-1 font-mono text-[10px] text-amber-300/90">
+                    <ul className="mt-2 space-y-1 font-mono text-xs text-amber-300/90">
                       {data.audit.affiliateHints.map((u, i) => (
                         <li key={i} className="truncate">{u}</li>
                       ))}
@@ -1442,10 +1442,10 @@ function BlogComparisonModal({
                 )}
 
                 <div className="pt-3 border-t border-border space-y-2">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-muted">
+                  <div className="text-xs font-semibold text-muted">
                     Alert summary
                   </div>
-                  <p className="text-[11px] text-fg/75 whitespace-pre-wrap leading-relaxed">
+                  <p className="text-xs text-fg/75 whitespace-pre-wrap leading-relaxed">
                     {alert.body}
                   </p>
                 </div>
@@ -1469,14 +1469,14 @@ function BlogComparisonModal({
                 <button
                   onClick={() => setShowRejectInline(false)}
                   disabled={inProgress}
-                  className="px-3 py-1.5 rounded-lg border border-border text-[10px] font-bold text-muted uppercase hover:text-fg transition disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-lg border border-border text-xs font-bold text-muted hover:text-fg transition disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => onReject(rejectNotes)}
                   disabled={inProgress}
-                  className="px-3 py-1.5 rounded-lg bg-red-500 text-bg text-[10px] font-black uppercase hover:opacity-90 transition disabled:opacity-50 inline-flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-red-500 text-bg text-xs font-semibold hover:opacity-90 transition disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
                   {inProgress && <Loader2 className="w-3 h-3 animate-spin" />}
                   Dispatch Reject
@@ -1487,14 +1487,14 @@ function BlogComparisonModal({
             <div className="flex flex-wrap items-center gap-2 justify-end">
               <button
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-lg border border-border text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg transition"
+                className="px-3 py-1.5 rounded-lg border border-border text-xs font-semibold text-muted hover:text-fg transition"
               >
                 Close
               </button>
               <button
                 onClick={() => setShowRejectInline(true)}
                 disabled={inProgress || !data}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/35 hover:bg-red-500 text-red-400 hover:text-bg text-xs font-semibold transition-all disabled:opacity-50"
               >
                 <X className="w-3.5 h-3.5" />
                 Needs Changes
@@ -1502,7 +1502,7 @@ function BlogComparisonModal({
               <button
                 onClick={onApprove}
                 disabled={inProgress || !data}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/35 hover:bg-emerald-500 text-emerald-400 hover:text-bg text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/35 hover:bg-emerald-500 text-emerald-400 hover:text-bg text-xs font-semibold transition-all disabled:opacity-50"
               >
                 {inProgress ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                 Approve & Publish
@@ -1519,8 +1519,8 @@ function BlogComparisonModal({
 function AuditStat({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg border border-border bg-panel/40 px-2.5 py-2 text-center">
-      <div className="text-lg font-black tabular-nums text-fg">{value}</div>
-      <div className="text-[9px] font-bold uppercase tracking-wider text-muted">{label}</div>
+      <div className="text-lg font-semibold tabular-nums text-fg">{value}</div>
+      <div className="text-xs font-bold text-muted">{label}</div>
     </div>
   );
 }
@@ -1553,7 +1553,7 @@ function ProposalButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all ${toneClass}`}
+      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-semibold transition-all ${toneClass}`}
     >
       {icon}
       {children}

@@ -138,7 +138,7 @@ export default async function InterviewQuestionsAdmin({
           <Link href="/admin/interview-questions/import" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-xs font-bold hover:border-accent/40 transition">
             <Upload className="w-4 h-4" /> Bulk import
           </Link>
-          <Link href="/admin/interview-questions/new" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition">
+          <Link href="/admin/interview-questions/new" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition">
             <Plus className="w-4 h-4" /> New question
           </Link>
         </div>
@@ -149,11 +149,11 @@ export default async function InterviewQuestionsAdmin({
         {metrics.map((m) => {
           const card = (
             <div className={`p-4 rounded-2xl border bg-bg/40 ${m.alert ? "border-amber-500/40" : "border-border"} h-full`}>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted">
                 <m.icon className="w-3.5 h-3.5" /> {m.label}
               </div>
-              <div className={`text-2xl font-black mt-2 ${m.alert ? "text-amber-500" : ""}`}>{m.value}</div>
-              {m.sub && <div className="text-[10px] text-muted mt-0.5">{m.sub}</div>}
+              <div className={`text-2xl font-semibold mt-2 ${m.alert ? "text-amber-500" : ""}`}>{m.value}</div>
+              {m.sub && <div className="text-xs text-muted mt-0.5">{m.sub}</div>}
             </div>
           );
           return m.href ? (
@@ -173,14 +173,14 @@ export default async function InterviewQuestionsAdmin({
       {/* Questions */}
       <div className="space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
+          <h2 className="text-xs font-semibold text-muted">
             Questions{filtering ? ` — ${filteredQ} match${filteredQ === 1 ? "" : "es"}` : ""}
           </h2>
           <QuestionsFilterBar q={q} tech={tech} status={status} per={perPage} sort={sort} />
         </div>
         <div className="rounded-2xl border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-bg/50 text-[10px] font-black uppercase tracking-wider text-muted">
+            <thead className="bg-bg/50 text-xs font-semibold text-muted">
               <tr>
                 <th className="text-left p-3">Title</th>
                 <th className="text-left p-3 hidden sm:table-cell">Company</th>

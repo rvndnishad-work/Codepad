@@ -56,7 +56,7 @@ export default function WorkspaceTabs({ workspaceId, counts }: Props) {
             <span>{tab.label}</span>
             {tab.count !== null && (
               <span
-                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums ${
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-xs font-semibold tabular-nums ${
                   isActive
                     ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300"
                     : "bg-panel/60 text-muted"

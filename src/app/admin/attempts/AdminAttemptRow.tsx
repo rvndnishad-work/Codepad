@@ -89,7 +89,7 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
         >
           {attempt.user.name ?? "Anonymous"}
         </Link>
-        <div className="text-[11px] text-muted truncate">{attempt.user.email}</div>
+        <div className="text-xs text-muted truncate">{attempt.user.email}</div>
       </div>
 
       {/* Column 2: Challenge */}
@@ -97,10 +97,10 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
         <div className="font-bold text-fg text-sm truncate">
           {attempt.challenge.title}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-[11px] text-muted">
+        <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-xs text-muted">
           <span className="font-mono">/{attempt.challenge.slug}</span>
           <span className="text-muted/30">·</span>
-          <span className="uppercase tracking-wider text-[9px]">{attempt.challenge.difficulty}</span>
+          <span className="text-xs">{attempt.challenge.difficulty}</span>
           {attempt.step && (
             <>
               <span className="text-muted/30">·</span>
@@ -116,7 +116,7 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
             <Link
               href={`/w/${attempt.takeHomeWorkspace.slug}`}
               target="_blank"
-              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 hover:bg-purple-500/15 text-[9px] font-black uppercase tracking-wider border border-purple-500/20 shadow-sm transition-all duration-200"
+              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 hover:bg-purple-500/15 text-xs font-semibold border border-purple-500/20 shadow-sm transition-all duration-200"
             >
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
@@ -130,9 +130,9 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
 
       {/* Column 3: Status */}
       <div className="mt-3 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Status:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-20 mr-2 block">Status:</span>
         <span
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${badge.color}`}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.color}`}
         >
           <Icon className="w-3 h-3" />
           {attempt.status.replace("_", " ")}
@@ -141,7 +141,7 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
 
       {/* Column 4: Tests */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block lg:text-center">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Tests:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-20 mr-2 block">Tests:</span>
         {testRatio ? (
           <span className="text-sm font-mono font-bold text-fg tabular-nums">{testRatio}</span>
         ) : (
@@ -151,12 +151,12 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
 
       {/* Column 5: Duration / Started */}
       <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-[9px] uppercase tracking-wider font-bold text-muted w-20 mr-2 block">Started:</span>
+        <span className="lg:hidden text-xs font-bold text-muted w-20 mr-2 block">Started:</span>
         <div>
           <div className="text-sm font-mono font-bold text-fg tabular-nums inline-block lg:block mr-2 lg:mr-0">
             {formatDuration(attempt.durationSec)}
           </div>
-          <div className="text-[10px] text-muted inline-block lg:block">
+          <div className="text-xs text-muted inline-block lg:block">
             {new Date(attempt.startedAt).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
@@ -179,7 +179,7 @@ export default function AdminAttemptRow({ attempt }: AdminAttemptRowProps) {
         )}
         <Link
           href={`/admin/attempts/${attempt.id}`}
-          className="p-2 px-3 rounded-lg border border-border-strong bg-bg hover:bg-elevated text-[10px] font-black uppercase tracking-wider text-muted hover:text-fg hover:border-border-strong transition"
+          className="p-2 px-3 rounded-lg border border-border-strong bg-bg hover:bg-elevated text-xs font-semibold text-muted hover:text-fg hover:border-border-strong transition"
         >
           View
         </Link>

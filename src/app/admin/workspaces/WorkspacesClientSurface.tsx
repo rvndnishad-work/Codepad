@@ -157,7 +157,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
 
         {/* Plan Filters dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black uppercase tracking-wider text-muted hidden sm:inline">
+          <span className="text-xs font-semibold text-muted hidden sm:inline">
             Plan Tier:
           </span>
           <div className="relative flex items-center">
@@ -187,7 +187,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
           <div className="absolute inset-0 bg-bg/75 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-3xl animate-in fade-in duration-200">
             <div className="flex flex-col items-center gap-3 bg-surface border border-border p-6 rounded-2xl shadow-2xl backdrop-blur-lg">
               <RefreshCw className="w-6 h-6 text-accent animate-spin" />
-              <div className="text-[10px] font-black uppercase tracking-widest text-muted">Updating DB state...</div>
+              <div className="text-xs font-semibold text-muted">Updating DB state...</div>
             </div>
           </div>
         )}
@@ -195,7 +195,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-sm">
             <thead>
-              <tr className="bg-elevated/60 border-b border-border text-muted uppercase font-semibold text-[10px] tracking-[0.14em]">
+              <tr className="bg-elevated/60 border-b border-border text-muted font-semibold text-xs ">
                 <th className="px-6 py-3.5 font-semibold">Corporate Tenant</th>
                 <th className="px-6 py-3.5 font-semibold">Billing Plan</th>
                 <th className="px-6 py-3.5 font-semibold">Assets &amp; Seats</th>
@@ -248,7 +248,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                             </button>
                             <div
                               onClick={() => setExpandedWorkspaceId(isExpanded ? null : ws.id)}
-                              className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-semibold text-[11px] shrink-0 select-none group-hover:border-indigo-500/30 transition-colors cursor-pointer"
+                              className="w-9 h-9 rounded-lg bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-semibold text-xs shrink-0 select-none group-hover:border-indigo-500/30 transition-colors cursor-pointer"
                             >
                               {ws.name.substring(0, 2).toUpperCase()}
                             </div>
@@ -259,7 +259,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                               >
                                 {ws.name}
                               </Link>
-                              <div className="text-[11px] text-muted/70 font-mono mt-0.5 truncate">
+                              <div className="text-xs text-muted/70 font-mono mt-0.5 truncate">
                                 /{ws.slug}
                               </div>
                             </div>
@@ -268,7 +268,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
 
                         {/* Billing Plan */}
                         <td className="px-6 py-4 align-middle">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md border text-[10px] font-semibold uppercase tracking-wider ${PLAN_BADGES[ws.planName] || PLAN_BADGES.FREE}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md border text-xs font-semibold ${PLAN_BADGES[ws.planName] || PLAN_BADGES.FREE}`}>
                             {ws.planName}
                           </span>
                         </td>
@@ -300,13 +300,13 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                             <Link
                               href={`https://dashboard.stripe.com/customers/${ws.stripeCustomerId}`}
                               target="_blank"
-                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/[0.06] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors font-mono text-[11px] font-medium"
+                              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/[0.06] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/10 transition-colors font-mono text-xs font-medium"
                             >
                               <Globe className="w-3 h-3 opacity-70" />
                               <span className="truncate max-w-[140px]">{ws.stripeCustomerId}</span>
                             </Link>
                           ) : (
-                            <span className="text-[11px] text-muted/60 font-medium italic select-none">
+                            <span className="text-xs text-muted/60 font-medium italic select-none">
                               Trial account
                             </span>
                           )}
@@ -320,13 +320,13 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                               <div className="flex items-center gap-1.5 animate-in slide-in-from-right-2 duration-200">
                                 <button
                                   onClick={() => handleDeleteWorkspace(ws.id)}
-                                  className="px-3 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white font-semibold uppercase text-[10px] tracking-wider transition-colors shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
+                                  className="px-3 py-1.5 rounded-md bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition-colors shadow-sm active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                   Confirm
                                 </button>
                                 <button
                                   onClick={() => setConfirmDeleteId(null)}
-                                  className="px-3 py-1.5 rounded-md bg-panel border border-border text-muted font-semibold uppercase text-[10px] tracking-wider hover:text-fg transition-colors active:scale-95 cursor-pointer whitespace-nowrap"
+                                  className="px-3 py-1.5 rounded-md bg-panel border border-border text-muted font-semibold text-xs hover:text-fg transition-colors active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                   Cancel
                                 </button>
@@ -336,7 +336,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                                 <button
                                   data-plan-trigger
                                   onClick={(e) => togglePlanMenu(ws.id, e.currentTarget)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-[11px] font-semibold uppercase tracking-wider text-muted hover:text-fg hover:bg-elevated transition-colors active:scale-95 cursor-pointer whitespace-nowrap"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-panel/40 border border-border hover:border-accent/40 text-xs font-semibold text-muted hover:text-fg hover:bg-elevated transition-colors active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                   <span>Manage plan</span>
                                   <ChevronDown className="w-3.5 h-3.5 text-muted/50 shrink-0" />
@@ -368,14 +368,14 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                             <div className="space-y-5 animate-in slide-in-from-top-3 duration-250">
 
                               {/* Metadata strip */}
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted/70 font-mono pb-4 border-b border-border">
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted/70 font-mono pb-4 border-b border-border">
                                 <span className="inline-flex items-center gap-1.5">
-                                  <span className="text-muted/45 uppercase tracking-wider text-[10px]">ID</span>
+                                  <span className="text-muted/45 text-xs">ID</span>
                                   <span>{ws.id}</span>
                                 </span>
                                 <span className="text-muted/25">·</span>
                                 <span className="inline-flex items-center gap-1.5">
-                                  <span className="text-muted/45 uppercase tracking-wider text-[10px]">Created</span>
+                                  <span className="text-muted/45 text-xs">Created</span>
                                   <span>{createdDate}</span>
                                 </span>
                               </div>
@@ -384,7 +384,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
 
                               {/* Left: Teammates */}
                               <div className="space-y-2.5">
-                                <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted flex items-center gap-2">
+                                <h4 className="text-xs font-semibold text-muted flex items-center gap-2">
                                   <Users className="w-3.5 h-3.5 text-indigo-500/80" />
                                   Teammates &amp; seats
                                   <span className="text-muted/50 font-medium normal-case tracking-normal">({ws.members.length})</span>
@@ -397,9 +397,9 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                                       <div key={idx} className="px-3.5 py-2.5 flex items-center justify-between gap-3 hover:bg-panel/30 transition-colors">
                                         <div className="min-w-0">
                                           <div className="font-semibold text-fg text-sm truncate">{m.name || "Anonymous Recruiter"}</div>
-                                          <div className="text-[11px] text-muted/65 font-mono mt-0.5 truncate">{m.email}</div>
+                                          <div className="text-xs text-muted/65 font-mono mt-0.5 truncate">{m.email}</div>
                                         </div>
-                                        <span className="px-2 py-0.5 rounded-md bg-panel/50 border border-border text-[10px] font-semibold uppercase tracking-wider text-muted shrink-0">
+                                        <span className="px-2 py-0.5 rounded-md bg-panel/50 border border-border text-xs font-semibold text-muted shrink-0">
                                           {m.role}
                                         </span>
                                       </div>
@@ -410,7 +410,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
 
                               {/* Right: Integrations + Billing */}
                               <div className="space-y-2.5">
-                                <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted flex items-center gap-2">
+                                <h4 className="text-xs font-semibold text-muted flex items-center gap-2">
                                   <Globe className="w-3.5 h-3.5 text-indigo-500/80" />
                                   Integrations &amp; billing
                                 </h4>
@@ -419,21 +419,21 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                                   <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                                     <span className="text-xs text-muted">ATS connection</span>
                                     {ws.atsProvider ? (
-                                      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                                         {ws.atsProvider}
                                       </span>
                                     ) : (
-                                      <span className="text-[11px] text-muted/60 italic">None configured</span>
+                                      <span className="text-xs text-muted/60 italic">None configured</span>
                                     )}
                                   </div>
                                   <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                                     <span className="text-xs text-muted">Private challenges</span>
-                                    <span className="text-[11px] font-semibold text-fg tabular-nums">{ws.challengeCount}</span>
+                                    <span className="text-xs font-semibold text-fg tabular-nums">{ws.challengeCount}</span>
                                   </div>
                                   <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
                                     <span className="text-xs text-muted">Take-home assignments</span>
-                                    <span className="text-[11px] font-semibold text-fg tabular-nums">
+                                    <span className="text-xs font-semibold text-fg tabular-nums">
                                       {ws.completedTakeHomes}<span className="text-muted/50 font-medium"> / {ws.takeHomeCount}</span>
                                     </span>
                                   </div>
@@ -443,18 +443,18 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                                       <Link
                                         href={`https://dashboard.stripe.com/customers/${ws.stripeCustomerId}`}
                                         target="_blank"
-                                        className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline truncate"
+                                        className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline truncate"
                                       >
                                         <Globe className="w-3 h-3 opacity-60 shrink-0" />
                                         <span className="truncate">{ws.stripeCustomerId}</span>
                                       </Link>
                                     ) : (
-                                      <span className="text-[11px] text-muted/60 italic">No subscription bound</span>
+                                      <span className="text-xs text-muted/60 italic">No subscription bound</span>
                                     )}
                                   </div>
                                 </div>
 
-                                <p className="text-[11px] text-muted/70 leading-relaxed px-1">
+                                <p className="text-xs text-muted/70 leading-relaxed px-1">
                                   {ws.stripeCustomerId ? (
                                     <>Configured for <span className="text-fg font-semibold">{ws.memberCount} seat{ws.memberCount === 1 ? "" : "s"}</span> on the {ws.planName.toLowerCase()} metered pricing plan.</>
                                   ) : (
@@ -489,7 +489,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
             className="fixed w-40 rounded-lg border border-border bg-elevated shadow-2xl ring-1 ring-black/5 dark:ring-white/5 z-50 text-left animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden"
             style={{ top: menuPos.top, right: menuPos.right }}
           >
-            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted/70 px-3 pt-2.5 pb-1.5 border-b border-border/60">
+            <div className="text-xs font-semibold text-muted/70 px-3 pt-2.5 pb-1.5 border-b border-border/60">
               Set plan
             </div>
             <div className="p-1">
@@ -499,7 +499,7 @@ export default function WorkspacesClientSurface({ workspaces }: Props) {
                   <button
                     key={tier}
                     onClick={() => handleUpdatePlan(targetWs.id, tier)}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-colors cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                       isCurrent
                         ? "bg-violet-500/15 text-violet-600 dark:text-violet-400 hover:bg-violet-500/25"
                         : "text-muted hover:text-fg hover:bg-indigo-500/10 dark:hover:bg-indigo-500/15"

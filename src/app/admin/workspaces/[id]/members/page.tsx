@@ -45,7 +45,7 @@ export default async function WorkspaceMembersPage({ params }: Props) {
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+              <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                 <th className="px-4 py-3 font-semibold">Name</th>
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Role</th>
@@ -57,9 +57,9 @@ export default async function WorkspaceMembersPage({ params }: Props) {
                   <td className="px-4 py-3 align-middle">
                     <div className="font-semibold text-fg">{m.user.name || "Anonymous"}</div>
                   </td>
-                  <td className="px-4 py-3 align-middle font-mono text-[11px] text-muted">{m.user.email || "—"}</td>
+                  <td className="px-4 py-3 align-middle font-mono text-xs text-muted">{m.user.email || "—"}</td>
                   <td className="px-4 py-3 align-middle">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-[10px] font-semibold uppercase tracking-wider text-muted">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-panel/50 border border-border text-xs font-semibold text-muted">
                       {m.role}
                     </span>
                   </td>

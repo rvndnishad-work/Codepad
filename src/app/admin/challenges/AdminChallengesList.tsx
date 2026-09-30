@@ -139,7 +139,7 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
       <button
         type="button"
         onClick={() => handleSort(field)}
-        className={`flex items-center gap-1 hover:text-fg transition font-bold uppercase tracking-wider text-[10px] ${
+        className={`flex items-center gap-1 hover:text-fg transition font-bold text-xs ${
           active ? "text-accent" : "text-muted"
         }`}
       >
@@ -164,13 +164,13 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
         {/* Card 1: Total & Status */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#131522] border border-slate-100 dark:border-transparent flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center justify-between text-muted text-[10px] font-black uppercase tracking-wider">
+            <div className="flex items-center justify-between text-muted text-xs font-semibold ">
               <span>Catalog size</span>
               <Layers className="w-3.5 h-3.5" />
             </div>
-            <div className="text-2xl font-black font-mono text-fg mt-2 tabular-nums">{totalCount}</div>
+            <div className="text-2xl font-semibold font-mono text-fg mt-2 tabular-nums">{totalCount}</div>
           </div>
-          <div className="text-[10px] font-bold text-muted flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-border/10">
+          <div className="text-xs font-bold text-muted flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-border/10">
             <span className="text-emerald-500 font-mono">{publishedCount} Published</span>
             <span className="text-muted/40">•</span>
             <span className="text-amber-500 font-mono">{draftCount} Drafts</span>
@@ -180,16 +180,16 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
         {/* Card 2: Monetization ratio */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#131522] border border-slate-100 dark:border-transparent flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center justify-between text-muted text-[10px] font-black uppercase tracking-wider">
+            <div className="flex items-center justify-between text-muted text-xs font-semibold ">
               <span>Monetization Mix</span>
               <DollarSign className="w-3.5 h-3.5" />
             </div>
-            <div className="text-2xl font-black font-mono text-fg mt-2 tabular-nums">
+            <div className="text-2xl font-semibold font-mono text-fg mt-2 tabular-nums">
               {premiumCount} <span className="text-xs font-bold text-muted">Premium</span>
             </div>
           </div>
           <div className="mt-3 space-y-1.5 pt-3 border-t border-slate-100 dark:border-border/10">
-            <div className="flex justify-between text-[9px] font-bold text-muted">
+            <div className="flex justify-between text-xs font-bold text-muted">
               <span>PREMIUM RATIO</span>
               <span className="font-mono text-accent">{premiumPercentage}%</span>
             </div>
@@ -205,13 +205,13 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
         {/* Card 3: Engagements */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#131522] border border-slate-100 dark:border-transparent flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center justify-between text-muted text-[10px] font-black uppercase tracking-wider">
+            <div className="flex items-center justify-between text-muted text-xs font-semibold ">
               <span>Platform Engagements</span>
               <Activity className="w-3.5 h-3.5" />
             </div>
-            <div className="text-2xl font-black font-mono text-fg mt-2 tabular-nums">{totalAttempts}</div>
+            <div className="text-2xl font-semibold font-mono text-fg mt-2 tabular-nums">{totalAttempts}</div>
           </div>
-          <div className="text-[10px] font-bold text-muted mt-4 pt-3 border-t border-slate-100 dark:border-border/10 flex items-center justify-between">
+          <div className="text-xs font-bold text-muted mt-4 pt-3 border-t border-slate-100 dark:border-border/10 flex items-center justify-between">
             <span>Avg attempts / challenge</span>
             <span className="font-mono text-fg">{averageAttempts}</span>
           </div>
@@ -220,15 +220,15 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
         {/* Card 4: Difficulties */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#131522] border border-slate-100 dark:border-transparent flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center justify-between text-muted text-[10px] font-black uppercase tracking-wider">
+            <div className="flex items-center justify-between text-muted text-xs font-semibold ">
               <span>Difficulty Spread</span>
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </div>
-            <div className="text-2xl font-black font-mono text-fg mt-2 tabular-nums">
+            <div className="text-2xl font-semibold font-mono text-fg mt-2 tabular-nums">
               {hardCount} <span className="text-xs font-bold text-rose-500">Hard</span>
             </div>
           </div>
-          <div className="text-[10px] font-bold text-muted mt-4 pt-3 border-t border-slate-100 dark:border-border/10 flex justify-between gap-1 flex-wrap font-mono">
+          <div className="text-xs font-bold text-muted mt-4 pt-3 border-t border-slate-100 dark:border-border/10 flex justify-between gap-1 flex-wrap font-mono">
             <span className="text-emerald-500">E: {easyCount}</span>
             <span className="text-amber-500">M: {mediumCount}</span>
             <span className="text-rose-500">H: {hardCount}</span>
@@ -253,13 +253,13 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
 
             {/* Monetization Select Gutter */}
             <div className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-[#131625] border border-slate-200 dark:border-transparent p-1 shadow-sm">
-              <span className="px-2 text-[9px] font-black uppercase tracking-wider text-muted/60">Tier</span>
+              <span className="px-2 text-xs font-semibold text-muted/60">Tier</span>
               {(["all", "premium", "free"] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => setMonetization(m)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold transition uppercase ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                     monetization === m
                       ? "bg-accent text-bg"
                       : "text-muted hover:text-fg hover:bg-slate-100 dark:hover:bg-black/20"
@@ -272,13 +272,13 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
 
             {/* Difficulty Select Gutter */}
             <div className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-[#131625] border border-slate-200 dark:border-transparent p-1 shadow-sm">
-              <span className="px-2 text-[9px] font-black uppercase tracking-wider text-muted/60">Diff</span>
+              <span className="px-2 text-xs font-semibold text-muted/60">Diff</span>
               {(["all", "easy", "medium", "hard"] as const).map((d) => (
                 <button
                   key={d}
                   type="button"
                   onClick={() => setDifficulty(d)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold transition uppercase ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                     difficulty === d
                       ? "bg-accent text-bg"
                       : "text-muted hover:text-fg hover:bg-slate-100 dark:hover:bg-black/20"
@@ -291,13 +291,13 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
 
             {/* Status Select Gutter */}
             <div className="inline-flex items-center gap-1 rounded-xl bg-white dark:bg-[#131625] border border-slate-200 dark:border-transparent p-1 shadow-sm">
-              <span className="px-2 text-[9px] font-black uppercase tracking-wider text-muted/60">Status</span>
+              <span className="px-2 text-xs font-semibold text-muted/60">Status</span>
               {(["all", "published", "draft"] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => setStatus(s)}
-                  className={`px-3 py-1 rounded-lg text-[10px] font-bold transition uppercase ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                     status === s
                       ? "bg-accent text-bg"
                       : "text-muted hover:text-fg hover:bg-slate-100 dark:hover:bg-black/20"
@@ -318,7 +318,7 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
       {/* Database grid panel bulk table wrapper */}
       <ChallengesBulkTable>
         <div className="rounded-2xl border border-slate-200 dark:border-[#1d2035] bg-white dark:bg-[#0c0d15] overflow-hidden shadow-sm transition-all duration-300">
-          <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4 bg-slate-50/60 dark:bg-[#121422] text-[10px] uppercase tracking-[0.15em] text-muted border-b border-slate-100 dark:border-border/10 font-bold select-none">
+          <div className="hidden lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4 bg-slate-50/60 dark:bg-[#121422] text-xs text-muted border-b border-slate-100 dark:border-border/10 font-bold select-none">
             <div className="flex items-center justify-center">
               <BulkHeaderCheckbox ids={paginatedRows.map((r) => r.id)} />
             </div>
@@ -408,11 +408,11 @@ export default function AdminChallengesList({ rows }: { rows: AdminChallengeList
               </div>
 
               <div className="text-xs font-bold text-muted font-mono">
-                Showing <span className="text-fg font-black">{(activePage - 1) * pageSize + 1}</span> to{" "}
-                <span className="text-fg font-black">
+                Showing <span className="text-fg font-semibold">{(activePage - 1) * pageSize + 1}</span> to{" "}
+                <span className="text-fg font-semibold">
                   {Math.min(activePage * pageSize, totalItems)}
                 </span>{" "}
-                of <span className="text-fg font-black">{totalItems}</span> challenges
+                of <span className="text-fg font-semibold">{totalItems}</span> challenges
               </div>
 
               <div className="flex items-center gap-1">

@@ -68,7 +68,7 @@ export default async function WorkspaceCandidatesPage({ params }: Props) {
         <div className="rounded-xl border border-border bg-surface overflow-hidden">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="bg-elevated/60 border-b border-border text-muted uppercase text-[10px] tracking-[0.14em]">
+              <tr className="bg-elevated/60 border-b border-border text-muted text-xs ">
                 <th className="px-4 py-3 font-semibold">Candidate</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Source</th>
@@ -92,7 +92,7 @@ export default async function WorkspaceCandidatesPage({ params }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wide ${
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full border text-xs font-semibold ${
                         STATUS_BADGES[c.status] || STATUS_BADGES.active
                       }`}
                     >

@@ -235,9 +235,16 @@ export default function RoundsTimeline({
           </span>
         </h2>
         {canEdit && !adding && (
-          <Btn icon={Plus} onClick={() => setAdding(true)}>
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="inline-flex items-center gap-2 h-9 pl-1.5 pr-3.5 rounded-lg border border-secondary/45 bg-secondary/15 text-[13px] font-semibold text-secondary transition hover:bg-secondary/25 hover:border-secondary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60"
+          >
+            <span className="w-6 h-6 rounded-md bg-secondary text-secondary-ink flex items-center justify-center" aria-hidden>
+              <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+            </span>
             Add a round
-          </Btn>
+          </button>
         )}
       </div>
 

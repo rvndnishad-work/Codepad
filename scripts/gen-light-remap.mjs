@@ -142,7 +142,6 @@ function walk(dir, out = []) {
 const rules = new Map(); // key: media -> Set(rule)
 let count = 0;
 for (const file of walk(SRC)) {
-  if (file.includes(`${path.sep}admin${path.sep}`)) continue; // admin stays dark
   const text = fs.readFileSync(file, "utf8");
   for (const m of text.matchAll(CLASS_RE)) {
     const [full, variantStr, bang, prop, color, shade, a] = m;

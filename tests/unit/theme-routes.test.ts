@@ -10,9 +10,12 @@ describe("supportsLightTheme", () => {
     expect(supportsLightTheme("/administrator-guide")).toBe(true);
   });
 
-  it("keeps admin dark", () => {
-    expect(supportsLightTheme("/admin")).toBe(false);
-    expect(supportsLightTheme("/admin/users")).toBe(false);
+  it("includes the admin console", () => {
+    expect(supportsLightTheme("/admin")).toBe(true);
+    expect(supportsLightTheme("/admin/users")).toBe(true);
+  });
+
+  it("stays dark before the path is known", () => {
     expect(supportsLightTheme(null)).toBe(false);
   });
 });

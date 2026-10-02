@@ -6,16 +6,17 @@
  * to the same Notification table; broadcastId discriminates.
  *
  * Audience semantics:
- *   ALL              — every user with a userType set (excludes legacy nulls)
+ *   ALL              — every user, including legacy rows with userType null
  *   ALL_CANDIDATES   — User.userType === "candidate"
  *   ALL_RECRUITERS   — User.userType === "recruiter"
  *   WORKSPACE        — every member of WorkspaceMember.workspaceId === target
  *   USER             — single user by id
  *
- * Banned users are always excluded.
+ * Banned and soft-deleted users are always excluded.
  *
- * Fan-out strategy: chunked batches of CHUNK_SIZE so "to all" doesn't lock
- * the DB in one massive transaction. Per-recipient row is created via
+ * Fan-out strategy: recipients are paged by id cursor in batches of
+ * CHUNK_SIZE (never loaded all at once) and each page is inserted with one
+ * createMany, so "to all" doesn't lock the DB in one massive transaction. Per-recipient row is created via
  * createMany (no returning rows needed). On any chunk failure, the
  * broadcast's `sentAt` stays null so a retry can resume — but we don't
  * implement resume here (idempotent retry requires per-recipient state;
@@ -27,8 +28,11 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { rateLimit } from "@/lib/rate-limit";
+import { logAdminAction } from "@/lib/admin/audit";
+import type { Prisma } from "@prisma/client";
 import {
   AUDIENCE_TYPES,
+  broadcastHrefError,
   type AudienceType,
   type DispatchBroadcastInput,
   type DispatchBroadcastResult,
@@ -45,48 +49,52 @@ async function assertAdmin() {
   if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Platform administrator access required.");
   }
-  return { userId: session!.user!.id! };
+  return { userId: session!.user!.id!, email: session?.user?.email ?? null };
 }
 
 /**
- * Resolve the audience to a set of userIds, deduplicated, banned-excluded.
- * Returns userIds in a stable order (id ASC) so chunking is deterministic.
+ * Resolve the audience to a Prisma `where` over User. USER targets accept a
+ * user id or an email (case-insensitive). Banned and soft-deleted users are
+ * always excluded.
  */
-async function resolveAudience(
+async function audienceWhere(
   audienceType: AudienceType,
   audienceTarget: string | null | undefined,
-): Promise<string[]> {
+): Promise<Prisma.UserWhereInput> {
+  const base: Prisma.UserWhereInput = { banned: false, deletedAt: null };
   if (audienceType === "USER") {
-    if (!audienceTarget) throw new Error("USER audience requires a userId target.");
-    const u = await prisma.user.findUnique({
-      where: { id: audienceTarget },
-      select: { id: true, banned: true },
-    });
-    if (!u || u.banned) return [];
-    return [u.id];
+    const t = audienceTarget?.trim();
+    if (!t) throw new Error("USER audience requires a user id or email.");
+    return t.includes("@")
+      ? { ...base, email: { equals: t, mode: "insensitive" } }
+      : { ...base, id: t };
   }
-
   if (audienceType === "WORKSPACE") {
     if (!audienceTarget) throw new Error("WORKSPACE audience requires a workspaceId target.");
-    const members = await prisma.workspaceMember.findMany({
-      where: { workspaceId: audienceTarget, user: { banned: false } },
-      select: { userId: true },
-      orderBy: { userId: "asc" },
-    });
-    return Array.from(new Set(members.map((m) => m.userId)));
+    return { ...base, workspaces: { some: { workspaceId: audienceTarget } } };
   }
+  if (audienceType === "ALL_CANDIDATES") return { ...base, userType: "candidate" };
+  if (audienceType === "ALL_RECRUITERS") return { ...base, userType: "recruiter" };
+  // ALL: every user, including legacy rows whose userType was never set.
+  return base;
+}
 
-  const where: Record<string, unknown> = { banned: false };
-  if (audienceType === "ALL_CANDIDATES") where.userType = "candidate";
-  else if (audienceType === "ALL_RECRUITERS") where.userType = "recruiter";
-  else if (audienceType === "ALL") where.userType = { not: null };
-
-  const users = await prisma.user.findMany({
-    where,
-    select: { id: true },
-    orderBy: { id: "asc" },
-  });
-  return users.map((u) => u.id);
+/** Page through matching user ids in stable id order, CHUNK_SIZE at a time. */
+async function* audienceIdPages(where: Prisma.UserWhereInput): AsyncGenerator<string[]> {
+  let cursor: string | undefined;
+  while (true) {
+    const page = await prisma.user.findMany({
+      where,
+      select: { id: true },
+      orderBy: { id: "asc" },
+      take: CHUNK_SIZE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+    if (page.length === 0) return;
+    yield page.map((u) => u.id);
+    if (page.length < CHUNK_SIZE) return;
+    cursor = page[page.length - 1].id;
+  }
 }
 
 export async function previewAudienceCountAction(
@@ -94,14 +102,13 @@ export async function previewAudienceCountAction(
   audienceTarget?: string | null,
 ): Promise<number> {
   await assertAdmin();
-  const ids = await resolveAudience(audienceType, audienceTarget);
-  return ids.length;
+  return prisma.user.count({ where: await audienceWhere(audienceType, audienceTarget) });
 }
 
 export async function dispatchBroadcastAction(
   input: DispatchBroadcastInput,
 ): Promise<DispatchBroadcastResult> {
-  const { userId } = await assertAdmin();
+  const { userId, email: actorEmail } = await assertAdmin();
 
   // Rate limit on the admin user so a runaway script can't fan out repeatedly.
   // 1 broadcast / 10s per admin.
@@ -119,6 +126,8 @@ export async function dispatchBroadcastAction(
   if (body && body.length > MAX_BODY) throw new Error(`Body must be ${MAX_BODY} characters or fewer.`);
   const href = input.href?.trim() ? input.href.trim() : null;
   if (href && href.length > MAX_HREF) throw new Error("href too long.");
+  const hrefError = href ? broadcastHrefError(href) : null;
+  if (hrefError) throw new Error(hrefError);
 
   if (!AUDIENCE_TYPES.includes(input.audienceType)) {
     throw new Error("Unknown audience type.");
@@ -128,10 +137,11 @@ export async function dispatchBroadcastAction(
       ? input.audienceTarget ?? null
       : null;
 
-  // Resolve recipients BEFORE creating the broadcast row so we don't leave
-  // an empty stub if the audience resolution fails.
-  const recipients = await resolveAudience(input.audienceType, audienceTarget);
-  if (recipients.length === 0) {
+  // Count recipients BEFORE creating the broadcast row so we don't leave
+  // an empty stub if the audience is empty.
+  const where = await audienceWhere(input.audienceType, audienceTarget);
+  const expected = await prisma.user.count({ where });
+  if (expected === 0) {
     throw new Error("Audience matched zero users. Nothing to send.");
   }
 
@@ -148,8 +158,7 @@ export async function dispatchBroadcastAction(
 
   // Fan-out in chunks. createMany is one bulk insert per chunk.
   let inserted = 0;
-  for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
-    const chunk = recipients.slice(i, i + CHUNK_SIZE);
+  for await (const chunk of audienceIdPages(where)) {
     await prisma.notification.createMany({
       data: chunk.map((rid) => ({
         userId: rid,
@@ -166,6 +175,23 @@ export async function dispatchBroadcastAction(
   const finalised = await prisma.broadcastNotification.update({
     where: { id: broadcast.id },
     data: { recipientCount: inserted, sentAt: new Date() },
+  });
+
+  await logAdminAction({
+    actor: { id: userId, email: actorEmail },
+    action: "broadcast.send",
+    targetType: "broadcast",
+    targetId: finalised.id,
+    targetLabel: title,
+    after: {
+      audienceType: input.audienceType,
+      audienceTarget,
+      title,
+      body,
+      href,
+      recipientCount: finalised.recipientCount,
+    },
+    note: input.resendOf ? `Resend of ${input.resendOf}` : null,
   });
 
   return {
@@ -276,5 +302,6 @@ export async function resendBroadcastAction(
     title: original.title,
     body: original.body ?? undefined,
     href: original.href ?? undefined,
+    resendOf: broadcastId,
   });
 }

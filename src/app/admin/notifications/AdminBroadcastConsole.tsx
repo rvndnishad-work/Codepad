@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import {
   AUDIENCE_TYPES,
+  broadcastHrefError,
   type AudienceType,
   type SentBroadcastRow,
 } from "@/lib/notifications/broadcast-types";
@@ -53,6 +54,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [href, setHref] = useState("");
+  const hrefError = broadcastHrefError(href);
   const [previewCount, setPreviewCount] = useState<number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
@@ -105,6 +107,10 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
   function onSend() {
     if (!title.trim()) {
       toast.error("Title is required.");
+      return;
+    }
+    if (hrefError) {
+      toast.error(hrefError);
       return;
     }
     startSending(async () => {
@@ -224,8 +230,16 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
                 value={href}
                 onChange={(e) => setHref(e.target.value)}
                 placeholder="/some/path or https://…"
-                className="w-full px-3 py-2 bg-bg border border-border rounded-md text-sm font-mono text-fg/90 focus:outline-none focus:border-fg"
+                aria-invalid={Boolean(hrefError)}
+                className={`w-full px-3 py-2 bg-bg border rounded-md text-sm font-mono text-fg/90 focus:outline-none ${
+                  hrefError ? "border-rose-500/60" : "border-border focus:border-fg"
+                }`}
               />
+              {hrefError ? (
+                <p className="text-xs text-rose-700 dark:text-rose-400">{hrefError}</p>
+              ) : (
+                <p className="text-xs text-muted">A path on this site (/pricing) or an https:// link.</p>
+              )}
             </div>
           </div>
 
@@ -319,7 +333,7 @@ export default function AdminBroadcastConsole({ initialSent, workspaces }: Props
             <button
               type="button"
               onClick={onSend}
-              disabled={sending || !title.trim() || previewCount === 0}
+              disabled={sending || !title.trim() || previewCount === 0 || Boolean(hrefError)}
               className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-md bg-fg text-bg text-xs font-semibold hover:opacity-90 disabled:opacity-50"
             >
               {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

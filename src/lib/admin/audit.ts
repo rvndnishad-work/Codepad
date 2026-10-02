@@ -84,6 +84,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "workspace.unlock": "Unlocked workspace",
   "workspace.delete.schedule": "Scheduled workspace deletion",
   "workspace.seats.sync": "Synced seats",
+  "stripe.sync": "Synced Stripe",
   "workspace.video": "Changed video add-on",
   "workspace.view_as": "Viewed as owner",
   "user.update": "Edited user",

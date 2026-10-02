@@ -1,172 +1,163 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
-import { notFound, redirect } from "next/navigation";
-import { 
-  Building2, 
-  Users, 
-  CreditCard, 
-  Clock, 
-  ArrowLeft,
-  Search,
-  Filter,
-  Trash2,
-  Lock,
-  Globe,
-  Plus,
-  Trophy,
-  ExternalLink,
-  ShieldCheck,
-  ChevronDown
-} from "lucide-react";
-import Link from "next/link";
-import WorkspacesClientSurface from "./WorkspacesClientSurface";
+import type { Prisma } from "@prisma/client";
+import { requireAdminAccess } from "@/lib/permissions/staff";
+import { pageOf } from "@/lib/admin/workspace-actions";
+import { Kpi, Pager, fmtDate, fmtUsd, one, urlWith } from "./[id]/_ui";
+import WorkspacesClientSurface, { type WorkspaceRow } from "./WorkspacesClientSurface";
 
-export const metadata = {
-  title: "B2B Workspaces & SaaS Subscriptions Operations — Interviewpad",
-};
+export const metadata = { title: "Workspaces — Interviewpad Admin" };
 
-export default async function AdminWorkspacesPage() {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) notFound();
+const PAGE_SIZE = 25;
 
-  // 1. Fetch all workspaces globally with counts & relationships
+const STATUS_FILTERS = [
+  { id: "past_due", label: "Past due" },
+  { id: "trial", label: "On trial" },
+  { id: "paying", label: "Paying" },
+  { id: "locked", label: "Locked" },
+  { id: "deleting", label: "Deletion scheduled" },
+] as const;
+
+const PLAN_FILTERS = ["FREE", "STARTER", "GROWTH", "ENTERPRISE"];
+
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+function statusWhere(status: string | undefined, now: Date): Prisma.WorkspaceWhereInput {
+  switch (status) {
+    case "past_due":
+      return { stripeStatus: { in: ["past_due", "unpaid"] } };
+    case "trial":
+      return { planName: "FREE", stripeSubscriptionId: null, trialEndsAt: { gt: now } };
+    case "paying":
+      return { stripeSubscriptionId: { not: null } };
+    case "locked":
+      return { lockedAt: { not: null } };
+    case "deleting":
+      return { deletionScheduledAt: { not: null } };
+    default:
+      return {};
+  }
+}
+
+export default async function AdminWorkspacesPage({ searchParams }: Props) {
+  await requireAdminAccess("platform:admin");
+  const sp = await searchParams;
+  const q = one(sp.q)?.trim() ?? "";
+  const plan = PLAN_FILTERS.includes(one(sp.plan) ?? "") ? one(sp.plan)! : "";
+  const status = STATUS_FILTERS.some((s) => s.id === one(sp.status)) ? one(sp.status)! : "";
+  const now = new Date();
+
+  const where: Prisma.WorkspaceWhereInput = {
+    ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { slug: { contains: q, mode: "insensitive" } }] } : {}),
+    ...(plan ? { planName: plan } : {}),
+    ...statusWhere(status, now),
+  };
+
+  const [total, all, paying, pastDue, locked, mrr] = await Promise.all([
+    prisma.workspace.count({ where }),
+    prisma.workspace.count(),
+    prisma.workspace.count({ where: { stripeSubscriptionId: { not: null } } }),
+    prisma.workspace.count({ where: { stripeStatus: { in: ["past_due", "unpaid"] } } }),
+    prisma.workspace.count({ where: { lockedAt: { not: null } } }),
+    prisma.workspace.aggregate({ where: { stripeSubscriptionId: { not: null } }, _sum: { stripeMrrCents: true }, _max: { stripeSyncedAt: true } }),
+  ]);
+  const paging = pageOf(one(sp.page), total, PAGE_SIZE);
   const workspaces = await prisma.workspace.findMany({
-    include: {
-      members: {
-        include: {
-          user: { select: { name: true, email: true, image: true } }
-        }
-      },
-      challenges: { select: { id: true, title: true } },
-      takeHomes: { select: { id: true, status: true } },
-      atsIntegration: { select: { id: true, provider: true } }
+    where,
+    orderBy: { createdAt: "desc" },
+    skip: paging.skip,
+    take: PAGE_SIZE,
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      planName: true,
+      createdAt: true,
+      trialEndsAt: true,
+      stripeSubscriptionId: true,
+      stripeStatus: true,
+      stripePastDueSince: true,
+      stripeSeatQuantity: true,
+      stripeMrrCents: true,
+      lockedAt: true,
+      deletionScheduledAt: true,
+      _count: { select: { members: true } },
     },
-    orderBy: { createdAt: "desc" }
   });
+  const ids = workspaces.map((w) => w.id);
+  const [balances, activity] = ids.length
+    ? await Promise.all([
+        prisma.aIInterviewCreditLedger.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _sum: { amount: true } }),
+        prisma.workspaceMember.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _max: { lastActiveAt: true } }),
+      ])
+    : [[], []];
+  const balanceOf = new Map(balances.map((b) => [b.workspaceId, b._sum.amount ?? 0]));
+  const activeOf = new Map(activity.map((a) => [a.workspaceId, a._max.lastActiveAt]));
 
-  // 2. Fetch platform global counts to double-validate metrics
-  const totalTakeHomesCount = await prisma.takeHomeAssignment.count();
-
-  // 3. Compute SaaS Telemetry Statistics
-  const totalWorkspaces = workspaces.length;
-  const growthWorkspaces = workspaces.filter(w => w.planName === "GROWTH").length;
-  const enterpriseWorkspaces = workspaces.filter(w => w.planName === "ENTERPRISE").length;
-  const lockedWorkspaces = workspaces.filter(w => w.planName === "LOCKED").length;
-
-  // Metered paid seats count (members enrolled in paid workspaces)
-  const paidSeatsCount = workspaces
-    .filter(w => w.planName === "GROWTH" || w.planName === "ENTERPRISE")
-    .reduce((acc, w) => acc + w.members.length, 0);
-
-  // MRR estimation: paid seats * $49/month
-  const estimatedMRR = paidSeatsCount * 49;
-
-  // Format workspaces for interactive client-side rendering
-  const formattedWorkspaces = workspaces.map((w) => ({
+  const rows: WorkspaceRow[] = workspaces.map((w) => ({
     id: w.id,
     name: w.name,
     slug: w.slug,
-    stripeCustomerId: w.stripeCustomerId,
-    stripeSubscriptionId: w.stripeSubscriptionId,
     planName: w.planName,
-    createdAt: w.createdAt.toISOString(),
-    memberCount: w.members.length,
-    challengeCount: w.challenges.length,
-    takeHomeCount: w.takeHomes.length,
-    completedTakeHomes: w.takeHomes.filter(t => t.status === "SUBMITTED").length,
-    atsProvider: w.atsIntegration?.provider || null,
-    members: w.members.map(m => ({
-      name: m.user.name,
-      email: m.user.email,
-      role: m.role
-    }))
+    createdAt: w.createdAt,
+    trialEndsAt: w.trialEndsAt,
+    stripeSubscriptionId: w.stripeSubscriptionId,
+    stripeStatus: w.stripeStatus,
+    stripePastDueSince: w.stripePastDueSince,
+    lockedAt: w.lockedAt,
+    deletionScheduledAt: w.deletionScheduledAt,
+    members: w._count.members,
+    seatsBilled: w.stripeSeatQuantity,
+    mrrCents: w.stripeMrrCents,
+    credits: balanceOf.get(w.id) ?? 0,
+    lastActive: activeOf.get(w.id) ?? null,
   }));
 
+  const synced = mrr._max.stripeSyncedAt;
+
   return (
-    <div className="space-y-8">
-      {/* 1. Header Navigation Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <div className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
-            <Building2 className="w-3.5 h-3.5" /> Platform Monetization
-          </div>
-          <h2 className="text-2xl font-semibold tracking-tight mt-1 text-fg">Corporate Hubs</h2>
-          <p className="text-sm text-muted mt-1">Audit multi-tenant recruitment spaces and seat-based subscriptions.</p>
-        </div>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1 className="text-[22px] font-semibold tracking-tight text-fg">Workspaces</h1>
+        <p className="text-sm text-muted">Hiring teams, their plans and their Stripe state.</p>
       </div>
 
-      {/* 2. SaaS Telemetry KPI Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        
-        {/* Paid Seat License MRR */}
-        <div className="p-5 rounded-2xl border border-indigo-500/15 bg-gradient-to-br from-indigo-500/[0.07] via-panel/30 to-panel/20 backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/35 transition-all">
-          <div className="flex items-center justify-between text-muted mb-3">
-            <span className="text-xs font-semibold text-fg">Estimated MRR</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <CreditCard className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-1">
-            <div className="text-2xl font-semibold text-indigo-400 font-mono">${estimatedMRR.toLocaleString()}</div>
-            <div className="text-xs text-muted">/month</div>
-          </div>
-          <div className="text-xs text-muted leading-relaxed mt-2.5 pt-2.5 border-t border-border">
-            Based on paid metered seat quotas.
-          </div>
-        </div>
-
-        {/* Paid Teammate Seat Licences */}
-        <div className="p-5 rounded-2xl border border-violet-500/15 bg-gradient-to-br from-violet-500/[0.07] via-panel/30 to-panel/20 backdrop-blur-md relative overflow-hidden group hover:border-violet-500/35 transition-all">
-          <div className="flex items-center justify-between text-muted mb-3">
-            <span className="text-xs font-semibold text-fg">Seats Leased</span>
-            <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
-              <Users className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg font-mono">{paidSeatsCount}</div>
-          <div className="text-xs text-muted leading-relaxed mt-2.5 pt-2.5 border-t border-border">
-            Total active reviewers on paid plans.
-          </div>
-        </div>
-
-        {/* Corporate Tenant Workspaces */}
-        <div className="p-5 rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-emerald-500/[0.07] via-panel/30 to-panel/20 backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/35 transition-all">
-          <div className="flex items-center justify-between text-muted mb-3">
-            <span className="text-xs font-semibold text-fg">Active Tenants</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-              <Building2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <div className="text-2xl font-semibold text-fg font-mono">{totalWorkspaces}</div>
-            <div className="text-xs text-muted font-mono font-semibold">
-              ({growthWorkspaces}G / {enterpriseWorkspaces}E)
-            </div>
-          </div>
-          <div className="text-xs text-muted leading-relaxed mt-2.5 pt-2.5 border-t border-border">
-            {lockedWorkspaces} locked workspaces.
-          </div>
-        </div>
-
-        {/* Global Candidate Evaluations */}
-        <div className="p-5 rounded-2xl border border-amber-500/15 bg-gradient-to-br from-amber-500/[0.07] via-panel/30 to-panel/20 backdrop-blur-md relative overflow-hidden group hover:border-amber-500/35 transition-all">
-          <div className="flex items-center justify-between text-muted mb-3">
-            <span className="text-xs font-semibold text-fg">Take-Homes Scheduled</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-semibold text-fg font-mono">{totalTakeHomesCount}</div>
-          <div className="text-xs text-muted leading-relaxed mt-2.5 pt-2.5 border-t border-border">
-            Completed assessments: {workspaces.reduce((acc, w) => acc + w.takeHomes.filter(t => t.status === "SUBMITTED").length, 0)}
-          </div>
-        </div>
-
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Kpi label="Workspaces" value={all} />
+        <Kpi label="Paying" value={paying} hint={pastDue ? `${pastDue} past due` : "None past due"} />
+        <Kpi label="MRR" value={fmtUsd(mrr._sum.stripeMrrCents ?? 0)} hint={synced ? `From Stripe, synced ${fmtDate(synced, true)} UTC` : "From Stripe, not synced yet"} />
+        <Kpi label="Locked" value={locked} />
       </div>
 
-      {/* 3. Interactive Client-Side Search Ledger Surface */}
-      <WorkspacesClientSurface workspaces={formattedWorkspaces} />
+      <section className="rounded-xl border border-border bg-surface">
+        <form className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-border" role="search">
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Search name or slug"
+            aria-label="Search workspaces"
+            className="h-9 flex-1 min-w-[220px] max-w-sm rounded-lg border border-border bg-bg px-3 text-[13px] text-fg placeholder:text-subtle focus:outline-none focus:border-secondary/60"
+          />
+          <select name="plan" defaultValue={plan} aria-label="Plan" className="h-9 rounded-lg border border-border bg-bg px-2.5 text-[13px] text-fg">
+            <option value="">All plans</option>
+            {PLAN_FILTERS.map((p) => (
+              <option key={p} value={p}>
+                {p.charAt(0) + p.slice(1).toLowerCase()}
+              </option>
+            ))}
+          </select>
+          <select name="status" defaultValue={status} aria-label="Status" className="h-9 rounded-lg border border-border bg-bg px-2.5 text-[13px] text-fg">
+            <option value="">Any status</option>
+            {STATUS_FILTERS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <button className="h-9 px-3.5 rounded-lg border border-border bg-surface text-[13px] font-medium text-fg hover:bg-panel">Apply</button>
+        </form>
+        <WorkspacesClientSurface rows={rows} filtered={!!(q || plan || status)} />
+        <Pager page={paging.page} pages={paging.pages} total={total} href={(p) => urlWith("/admin/workspaces", { q, plan, status, page: p })} />
+      </section>
     </div>
   );
 }

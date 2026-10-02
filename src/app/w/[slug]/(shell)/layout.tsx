@@ -9,6 +9,8 @@ import { signedOutPath } from "@/lib/workspace/security";
 import { canMember } from "@/lib/permissions";
 import WorkspaceShell from "./WorkspaceShell";
 import DeletionScheduledScreen from "./DeletionScheduledScreen";
+import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
+import { workspaceIsLocked } from "@/lib/workspace/lock";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
 
@@ -58,6 +60,9 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     const email = session.user.email ?? "";
     redirect(email && canJoinWithoutInvite(settings, email) && !slug.startsWith("__") ? "/w" : "/dashboard");
   }
+
+  // Locked by an Interviewpad admin: members are refused, data is kept.
+  if (workspaceIsLocked(activeWorkspace)) return <WorkspaceLockedNotice name={activeWorkspace.name} />;
 
   // Settings > Security: a sign-in older than the workspace allows, or from
   // before "Sign out everyone", has to sign in again.

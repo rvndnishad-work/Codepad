@@ -1,167 +1,117 @@
-import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Users, Target, Briefcase, FileVideo, Globe, Clock, CheckCircle2 } from "lucide-react";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { requireAdminAccess } from "@/lib/permissions/staff";
+import { planLabel } from "@/lib/admin/workspace-actions";
+import { getAdminWorkspace } from "./_data";
+import { Card, Kpi, Kv, Pill, fmtDate, fmtUsd } from "./_ui";
 
-type Props = {
-  params: Promise<{ id: string }>;
-};
+export const metadata = { title: "Workspace overview — Interviewpad Admin" };
 
-export const metadata = {
-  title: "Workspace overview — Interviewpad Admin",
-};
+const DAY = 86_400_000;
+
+type Props = { params: Promise<{ id: string }> };
 
 export default async function WorkspaceOverviewPage({ params }: Props) {
+  await requireAdminAccess("platform:admin");
   const { id } = await params;
-
-  const ws = await prisma.workspace.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      createdAt: true,
-      stripeCustomerId: true,
-      stripeSubscriptionId: true,
-      planName: true,
-      _count: {
-        select: {
-          members: true,
-          challenges: true,
-          sessions: true,
-          takeHomes: true,
-        },
-      },
-      atsIntegration: { select: { provider: true } },
-      takeHomes: { select: { status: true } },
-    },
-  });
-
+  const ws = await getAdminWorkspace(id);
   if (!ws) notFound();
 
-  const completedTakeHomes = ws.takeHomes.filter((t) => t.status === "SUBMITTED").length;
-  const createdDate = ws.createdAt.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-
-  const stats = [
-    { label: "Members", value: ws._count.members, icon: Users, accent: "indigo" },
-    { label: "Challenges", value: ws._count.challenges, icon: Target, accent: "amber" },
-    { label: "Interviews", value: ws._count.sessions, icon: Briefcase, accent: "violet" },
-    { label: "Replays", value: ws._count.takeHomes, icon: FileVideo, accent: "purple" },
-  ];
-
-  const accentClasses: Record<string, string> = {
-    indigo: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20",
-    amber: "text-amber-500 bg-amber-500/10 border-amber-500/20",
-    violet: "text-violet-500 bg-violet-500/10 border-violet-500/20",
-    purple: "text-purple-500 bg-purple-500/10 border-purple-500/20",
-  };
+  const now = new Date();
+  const since30 = new Date(now.getTime() - 30 * DAY);
+  const [balance, screenings30, takeHomes30, interviews30, lastActive, ats, lockedBy, deletionBy] = await Promise.all([
+    prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: id }, _sum: { amount: true } }),
+    prisma.aIInterviewSession.count({ where: { workspaceId: id, createdAt: { gte: since30 } } }),
+    prisma.interviewSession.count({ where: { workspaceId: id, type: "take-home", createdAt: { gte: since30 } } }),
+    prisma.interviewSession.count({ where: { workspaceId: id, type: { not: "take-home" }, createdAt: { gte: since30 } } }),
+    prisma.workspaceMember.aggregate({ where: { workspaceId: id }, _max: { lastActiveAt: true } }),
+    prisma.atsIntegration.findUnique({ where: { workspaceId: id }, select: { provider: true } }),
+    ws.lockedById ? prisma.user.findUnique({ where: { id: ws.lockedById }, select: { name: true, email: true } }) : null,
+    ws.deletionRequestedById ? prisma.user.findUnique({ where: { id: ws.deletionRequestedById }, select: { name: true, email: true } }) : null,
+  ]);
+  const credits = balance._sum.amount ?? 0;
+  const yes = (b: boolean) => <Pill tone={b ? "ok" : "off"}>{b ? "On" : "Off"}</Pill>;
 
   return (
-    <div className="space-y-6">
-      {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <div key={s.label} className="p-4 rounded-xl border border-border bg-surface">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-muted">{s.label}</span>
-                <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${accentClasses[s.accent]}`}>
-                  <Icon className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div className="text-2xl font-semibold text-fg tabular-nums">{s.value}</div>
-            </div>
-          );
-        })}
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+        <Kpi label="Members" value={ws.counts.members} hint={ws.counts.pendingInvites ? `${ws.counts.pendingInvites} invites pending` : "No pending invites"} />
+        <Kpi label="Candidates" value={ws.counts.candidates} />
+        <Kpi label="AI screenings" value={ws.counts.aiScreenings} hint={`${screenings30} in 30 days`} />
+        <Kpi label="Take homes" value={ws.counts.takeHomes} hint={`${takeHomes30} in 30 days`} />
+        <Kpi label="Interviews" value={ws.counts.interviews} hint={`${interviews30} in 30 days`} />
+        <Kpi label="AI credits" value={credits} hint={`${Math.min(ws.includedCreditsLeft, Math.max(0, credits))} included`} />
       </div>
 
-      {/* Two-column detail */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Metadata */}
-        <div className="rounded-xl border border-border bg-surface">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-xs font-semibold text-muted">Workspace metadata</h3>
-          </div>
-          <dl className="divide-y divide-border text-sm">
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">ID</dt>
-              <dd className="font-mono text-xs text-fg truncate">{ws.id}</dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">Created</dt>
-              <dd className="text-xs text-fg">{createdDate}</dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">Plan</dt>
-              <dd className="text-xs font-semibold text-fg">{ws.planName}</dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">Completed replays</dt>
-              <dd className="text-xs font-semibold text-fg tabular-nums">
-                <CheckCircle2 className="inline w-3 h-3 text-emerald-500 mr-1" />
-                {completedTakeHomes}
-                <span className="text-muted/60 font-medium"> / {ws._count.takeHomes}</span>
-              </dd>
-            </div>
-          </dl>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <Card title="Plan and billing">
+          <Kv k="Plan">{planLabel(ws.planName)}</Kv>
+          <Kv k="Stripe status">{ws.stripeStatus ?? <span className="text-muted">None</span>}</Kv>
+          <Kv k="MRR">{ws.stripeMrrCents != null ? fmtUsd(ws.stripeMrrCents) : <span className="text-muted">Not synced</span>}</Kv>
+          <Kv k="Seats billed">{ws.stripeSeatQuantity ?? <span className="text-muted">Not synced</span>}</Kv>
+          <Kv k="Trial ends">{ws.trialEndsAt ? fmtDate(ws.trialEndsAt) : <span className="text-muted">No trial</span>}</Kv>
+          <Kv k="Trial ended (recorded)">{ws.trialEndedAt ? fmtDate(ws.trialEndedAt) : <span className="text-muted">No</span>}</Kv>
+          <Kv k="Included credits left">{ws.includedCreditsLeft}</Kv>
+          <Kv k="Last monthly grant">
+            {ws.includedCreditsGrantedAt ? `${ws.includedCreditsLastGrant} on ${fmtDate(ws.includedCreditsGrantedAt)}` : <span className="text-muted">Never</span>}
+          </Kv>
+          <Kv k="Low credit threshold">{ws.lowCreditThreshold ?? <span className="text-muted">Off</span>}</Kv>
+          <Kv k="Video add-on">{ws.videoEnabled ? `On since ${fmtDate(ws.videoEnabledAt)}` : "Off"}</Kv>
+        </Card>
 
-        {/* Integrations & billing */}
-        <div className="rounded-xl border border-border bg-surface">
-          <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-xs font-semibold text-muted">Integrations &amp; billing</h3>
-          </div>
-          <dl className="divide-y divide-border text-sm">
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">ATS connection</dt>
-              <dd>
-                {ws.atsIntegration ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    {ws.atsIntegration.provider}
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted/60 italic">None configured</span>
-                )}
-              </dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">Stripe customer</dt>
-              <dd>
-                {ws.stripeCustomerId ? (
-                  <Link
-                    href={`https://dashboard.stripe.com/customers/${ws.stripeCustomerId}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1.5 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
-                  >
-                    <Globe className="w-3 h-3 opacity-60" />
-                    <span className="truncate max-w-[180px]">{ws.stripeCustomerId}</span>
-                  </Link>
-                ) : (
-                  <span className="text-xs text-muted/60 italic">No subscription bound</span>
-                )}
-              </dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted">Subscription</dt>
-              <dd className="text-xs font-mono text-fg truncate max-w-[180px]">
-                {ws.stripeSubscriptionId ?? <span className="text-muted/60 italic font-sans">—</span>}
-              </dd>
-            </div>
-            <div className="px-4 py-2.5 flex items-center justify-between gap-3">
-              <dt className="text-xs text-muted flex items-center gap-1.5">
-                <Clock className="w-3 h-3" />
-                Take-home pipeline
-              </dt>
-              <dd className="text-xs font-semibold text-fg tabular-nums">
-                {completedTakeHomes}<span className="text-muted/60 font-medium"> / {ws._count.takeHomes}</span>
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <Card title="Access and security">
+          <Kv k="Locked">
+            {ws.lockedAt ? (
+              <span>
+                <Pill tone="bad">Locked</Pill> {fmtDate(ws.lockedAt)}
+                {lockedBy ? ` by ${lockedBy.name ?? lockedBy.email}` : ""}
+              </span>
+            ) : (
+              "No"
+            )}
+          </Kv>
+          {ws.lockedReason && <Kv k="Lock reason">{ws.lockedReason}</Kv>}
+          <Kv k="Deletion scheduled">
+            {ws.deletionScheduledAt ? (
+              <span>
+                <Pill tone="bad">Erased {fmtDate(new Date(ws.deletionScheduledAt.getTime() + 30 * DAY))}</Pill>
+                {deletionBy ? ` by ${deletionBy.name ?? deletionBy.email}` : ""}
+              </span>
+            ) : (
+              "No"
+            )}
+          </Kv>
+          <Kv k="Two-factor for everyone">
+            {yes(ws.require2faForAll)}
+            {ws.require2faForAll && ws.require2faFrom ? ` from ${fmtDate(ws.require2faFrom)}` : ""}
+          </Kv>
+          <Kv k="Allowed email domains">{ws.allowedEmailDomains.length ? ws.allowedEmailDomains.join(", ") : <span className="text-muted">Any</span>}</Kv>
+          <Kv k="Join without invite">{ws.joinWithoutInvite ? `Yes, as ${ws.joinRole.toLowerCase()}` : "No"}</Kv>
+          <Kv k="Sign-in lasts">{ws.sessionMaxAgeDays ? `${ws.sessionMaxAgeDays} days` : <span className="text-muted">Site default</span>}</Kv>
+          <Kv k="External tools in screenings">{yes(ws.allowExternalMcp)}</Kv>
+        </Card>
+
+        <Card title="Activity">
+          <Kv k="Last member activity">{lastActive._max.lastActiveAt ? fmtDate(lastActive._max.lastActiveAt, true) : <span className="text-muted">Never</span>}</Kv>
+          <Kv k="ATS">{ats?.provider ?? <span className="text-muted">Not connected</span>}</Kv>
+          <Kv k="Hiring type">{ws.hiringType.replace("_", " ")}</Kv>
+          <Kv k="Recordings">{ws.counts.recordings}</Kv>
+          <Kv k="Workspace questions">
+            <Link className="text-secondary-soft hover:underline" href={`/admin/workspaces/${id}/challenges`}>
+              {ws.counts.challenges}
+            </Link>
+          </Kv>
+          <Kv k="Question attempts">
+            <Link className="text-secondary-soft hover:underline" href={`/admin/workspaces/${id}/attempts`}>
+              {ws.counts.attempts}
+            </Link>
+          </Kv>
+          <Kv k="Stripe customer">{ws.stripeCustomerId ? <span className="font-mono text-xs">{ws.stripeCustomerId}</span> : <span className="text-muted">None</span>}</Kv>
+          <Kv k="Stripe subscription">
+            {ws.stripeSubscriptionId ? <span className="font-mono text-xs">{ws.stripeSubscriptionId}</span> : <span className="text-muted">None</span>}
+          </Kv>
+        </Card>
       </div>
     </div>
   );

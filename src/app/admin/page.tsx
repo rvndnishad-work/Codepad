@@ -1,557 +1,464 @@
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  Users, FileText, Plus, Sparkles, Building2, BookOpenCheck,
-  Briefcase, Bug, MessageSquareCode, Map, Code2, Newspaper, Eye, Heart,
-  ListTodo, BellRing, UserPlus, ArrowRight, Activity, Trophy,
-} from "lucide-react";
-import { requireAdminAccess } from "@/lib/permissions/staff";
-import { techLabel, compactNumber } from "@/lib/interview-questions/shared";
+import { Activity, CheckCircle2, Clock, Code2, Building2, Mail, Wrench, AlertTriangle } from "lucide-react";
+import { Prisma } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { loadUserPermissions } from "@/lib/permissions/access";
+import { actionLabel } from "@/lib/admin/audit";
+import { getAllSwitches, switchDef, type SwitchValue } from "@/lib/admin/switches";
+import { addDays, sumDailyStats, utcDay } from "@/lib/admin/stats/daily-rollup";
+import { jobsSummary, loadEmail24h, loadJobStatuses, loadMaintenance, loadServices, type Tone } from "./jobs/health";
+import { Pill, btnCls, cardCls, timeAgo } from "./jobs/ui";
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function formatRelativeTime(date: Date): string {
-  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHr = Math.floor(diffMin / 60);
-  const diffDays = Math.floor(diffHr / 24);
-  if (diffSec < 60) return "Just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${diffDays}d ago`;
-}
-
-const TREND_DAYS = 14;
-
-/** Bucket timestamps into ascending daily counts over the last TREND_DAYS. */
-function bucketByDay(dates: Date[]): number[] {
-  const buckets = new Array(TREND_DAYS).fill(0);
-  const dayMs = 24 * 60 * 60 * 1000;
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const windowStart = startOfToday.getTime() - (TREND_DAYS - 1) * dayMs;
-  for (const d of dates) {
-    const idx = Math.floor((d.getTime() - windowStart) / dayMs);
-    if (idx >= 0 && idx < TREND_DAYS) buckets[idx]++;
-  }
-  return buckets;
-}
-
-function trendWindowStart(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (TREND_DAYS - 1));
-  return d;
-}
-
-function renderSparkline(data: number[], strokeColor: string, gradId: string) {
-  const maxVal = Math.max(...data, 1);
-  const points = data.map((val, i) => ({
-    x: (i / (data.length - 1)) * 100,
-    y: 28 - (val / maxVal) * 24,
-  }));
-  const linePath = `M ${points.map((p) => `${p.x},${p.y}`).join(" L ")}`;
-  const areaPath = `${linePath} L 100,32 L 0,32 Z`;
-  return (
-    <svg className="w-full h-10 overflow-visible mt-3" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden>
-      <defs>
-        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={strokeColor} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={areaPath} fill={`url(#${gradId})`} />
-      <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+export const metadata = {
+  title: "Home — Interviewpad Admin",
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-dynamic";
 
 /**
- * Uniform KPI card: header, value line and footer sit at fixed positions and
- * the middle band has a constant height whether it holds a sparkline or not,
- * so the four cards line up regardless of content.
+ * Admin home. Any staff role lands here: everyone sees the queues their
+ * permissions let them act on; platform admins also get health, both sides
+ * in brief (from the nightly AdminDailyStat roll-up) and recent admin
+ * activity. Every number is a count, aggregate or roll-up read.
  */
-function KpiCard({
-  icon: Icon,
-  iconClass,
-  title,
-  badge,
-  value,
-  suffix,
-  middle,
-  footerLeft,
-  footerRight,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  iconClass: string;
-  title: string;
-  badge: string;
-  value: string;
-  suffix: string;
-  middle: React.ReactNode;
-  footerLeft: React.ReactNode;
-  footerRight: React.ReactNode;
-}) {
+
+type Queue = { key: string; count: number; label: string; href: string };
+
+const LOW_CREDIT_THRESHOLD = 10;
+
+async function lowCreditWorkspaces(): Promise<number> {
+  const rows = await prisma.$queryRaw<{ n: bigint }[]>(Prisma.sql`
+    SELECT count(*) AS n FROM "Workspace" w
+    WHERE EXISTS (SELECT 1 FROM "AIScreeningBatch" b WHERE b."workspaceId" = w.id AND b.status = 'ACTIVE')
+      AND COALESCE((SELECT sum(l.amount) FROM "AIInterviewCreditLedger" l WHERE l."workspaceId" = w.id), 0) < ${LOW_CREDIT_THRESHOLD}`);
+  return Number(rows[0]?.n ?? 0);
+}
+
+async function loadQueues(can: (p: string) => boolean, isAdmin: boolean): Promise<Queue[]> {
+  const zero = Promise.resolve(0);
+  const moderate = can("content:moderate") || can("content:curate");
+  const [blogs, experiences, creators, reports, lowCredits, pastDue] = await Promise.all([
+    moderate ? prisma.blogPost.count({ where: { status: "PENDING" } }) : zero,
+    can("content:moderate") ? prisma.prepExperience.count({ where: { status: "pending" } }) : zero,
+    can("creator:review") ? prisma.creatorApplication.count({ where: { status: "PENDING" } }) : zero,
+    can("comment:moderate") || can("content:moderate") ? prisma.contentReport.count({ where: { status: "open" } }) : zero,
+    isAdmin ? lowCreditWorkspaces() : zero,
+    isAdmin ? prisma.workspace.count({ where: { stripeStatus: "past_due" } }) : zero,
+  ]);
+  const out: Queue[] = [];
+  if (moderate) out.push({ key: "blogs", count: blogs, label: "Blogs awaiting review", href: "/admin/blogs?status=PENDING" });
+  if (can("content:moderate"))
+    out.push({ key: "exp", count: experiences, label: "Experiences to moderate", href: "/admin/interview-questions/experiences?status=pending" });
+  if (can("creator:review")) out.push({ key: "creators", count: creators, label: "Creator applications", href: "/admin/creators?status=PENDING" });
+  if (can("comment:moderate") || can("content:moderate"))
+    out.push({ key: "reports", count: reports, label: "Open content reports", href: "/admin/inbox#reports" });
+  if (isAdmin) {
+    out.push({ key: "credits", count: lowCredits, label: "Workspaces low on credits", href: "/admin/workspaces?filter=low-credits" });
+    out.push({ key: "pastdue", count: pastDue, label: "Payment past due", href: "/admin/workspaces?filter=past-due" });
+  }
+  return out;
+}
+
+const SIDE_METRICS = [
+  "signups",
+  "playground_runs",
+  "playground_errors",
+  "challenge_attempts",
+  "challenge_passed",
+  "ai_credits_used",
+  "ai_credits_bought",
+  "ai_credits_included",
+  "live_interviews",
+  "recording_seconds",
+] as const;
+type SideSums = Record<(typeof SIDE_METRICS)[number], number>;
+
+/** Live fallback for a fresh install, before the first nightly roll-up. */
+async function liveSums(from: Date, to: Date): Promise<SideSums> {
+  const range = { gte: from, lt: to };
+  const [signups, runs, errors, attempts, passed, ledger, live, rec] = await Promise.all([
+    prisma.user.count({ where: { createdAt: range } }),
+    prisma.activityEvent.count({ where: { kind: "playground_run", createdAt: range } }),
+    prisma.activityEvent.count({ where: { kind: "playground_run", ok: false, createdAt: range } }),
+    prisma.challengeAttempt.count({ where: { startedAt: range } }),
+    prisma.challengeAttempt.count({ where: { startedAt: range, status: "passed" } }),
+    prisma.aIInterviewCreditLedger.groupBy({
+      by: ["kind"],
+      where: { createdAt: range, kind: { in: ["CONSUMPTION", "PURCHASE", "INCLUDED", "TRIAL"] } },
+      _sum: { amount: true },
+    }),
+    prisma.interviewSession.count({ where: { startedAt: range, workspaceId: { not: null }, type: { not: "take-home" } } }),
+    prisma.interviewRecording.aggregate({ where: { startedAt: range }, _sum: { seconds: true } }),
+  ]);
+  const k = (kind: string) => ledger.find((l) => l.kind === kind)?._sum.amount ?? 0;
+  return {
+    signups,
+    playground_runs: runs,
+    playground_errors: errors,
+    challenge_attempts: attempts,
+    challenge_passed: passed,
+    ai_credits_used: -k("CONSUMPTION"),
+    ai_credits_bought: k("PURCHASE"),
+    ai_credits_included: k("INCLUDED") + k("TRIAL"),
+    live_interviews: live,
+    recording_seconds: rec._sum.seconds ?? 0,
+  };
+}
+
+async function loadSides(now: Date) {
+  const today = utcDay(now);
+  const from = addDays(today, -30);
+  const prevFrom = addDays(today, -60);
+  const [cur, prev, mrr] = await Promise.all([
+    sumDailyStats(from, today, SIDE_METRICS),
+    sumDailyStats(prevFrom, from, ["signups"]),
+    prisma.workspace.aggregate({
+      where: { stripeStatus: { in: ["active", "past_due"] } },
+      _sum: { stripeMrrCents: true },
+      _count: { _all: true },
+    }),
+  ]);
+  const fromRollup = cur.days > 0;
+  const sums: SideSums = fromRollup ? (cur.sums as SideSums) : await liveSums(new Date(now.getTime() - 30 * 86_400_000), now);
+  const prevSignups = fromRollup
+    ? prev.days > 0
+      ? prev.sums.signups
+      : null
+    : await prisma.user.count({
+        where: { createdAt: { gte: new Date(now.getTime() - 60 * 86_400_000), lt: new Date(now.getTime() - 30 * 86_400_000) } },
+      });
+  return { sums, prevSignups, fromRollup, mrrCents: mrr._sum.stripeMrrCents, paid: mrr._count._all };
+}
+
+const STATE_TONE: Record<string, Tone> = { on: "ok", read_only: "warn", off: "off" };
+const STATE_WORD: Record<string, string> = { on: "on", read_only: "read only", off: "off" };
+
+function switchPills(all: SwitchValue[], featured: string[], side: "hiring" | "developer") {
+  const keys = new Set(featured);
+  // Featured switches, plus any other switch on this side that is not fully on.
+  for (const s of all) if (s.state !== "on" && switchDef(s.key)?.side === side) keys.add(s.key);
+  return all.filter((s) => keys.has(s.key));
+}
+
+const nf = new Intl.NumberFormat("en-US");
+const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+function pct(n: number, d: number): string {
+  if (d === 0) return "0%";
+  const v = (n / d) * 100;
+  return `${v < 10 && v > 0 ? v.toFixed(1) : Math.round(v)}%`;
+}
+
+export default async function AdminHomePage() {
+  const session = await auth().catch(() => null);
+  const perms = session?.user?.id ? await loadUserPermissions(session.user.id) : new Set<string>();
+  const has = perms as ReadonlySet<string>;
+  const can = (p: string) => has.has("*") || has.has(p) || has.has("platform:admin");
+  const isAdmin = has.has("*") || has.has("platform:admin");
+  const now = new Date();
+  const today = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+
+  if (!isAdmin) {
+    const queues = await loadQueues(can, false);
+    const waiting = queues.reduce((a, q) => a + q.count, 0);
+    return (
+      <div className="flex flex-col gap-6">
+        <header className="flex flex-col gap-1">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Home</h1>
+          <p className="text-sm text-muted">
+            {today}. {waiting === 0 ? "Nothing is waiting for you." : `${nf.format(waiting)} item${waiting === 1 ? "" : "s"} waiting for you.`}
+          </p>
+        </header>
+        <QueueChips queues={queues} />
+        <Link href="/admin/inbox" className="text-sm text-secondary-soft hover:underline underline-offset-2 self-start">
+          Open the inbox
+        </Link>
+      </div>
+    );
+  }
+
+  const [queues, statuses, email, maintenance, services, sides, switches, recent] = await Promise.all([
+    loadQueues(can, true),
+    loadJobStatuses(now),
+    loadEmail24h(),
+    loadMaintenance(now),
+    loadServices(),
+    loadSides(now),
+    getAllSwitches(),
+    prisma.adminAuditLog.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+  ]);
+  const jobs = jobsSummary(statuses);
+  const down = services.filter((s) => s.tone === "bad");
+  const notSet = services.filter((s) => s.tone === "off");
+  const servicesTone: Tone = down.length > 0 ? "bad" : notSet.length > 0 ? "warn" : "ok";
+  const servicesText =
+    down.length > 0
+      ? `${down.map((s) => s.name).join(", ")} down`
+      : notSet.length > 0
+        ? `${notSet.map((s) => s.name).join(", ")} not configured`
+        : `${services.map((s) => s.name).join(", ")} ok`;
+
+  const actorIds = [...new Set(recent.map((r) => r.actorId).filter((x): x is string => !!x))];
+  const actors = actorIds.length
+    ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, name: true, email: true } })
+    : [];
+  const actorName = new Map(actors.map((a) => [a.id, a.name?.trim() || a.email || "Someone"]));
+
+  const needs = jobs.failing;
+  const siteLine = maintenance.tone === "ok" ? "Site is live" : maintenance.label;
+  const jobLine = needs === 0 ? "all jobs ok" : needs === 1 ? "one job needs you" : `${needs} jobs need you`;
+
+  const s = sides.sums;
+  const signupChange =
+    sides.prevSignups && sides.prevSignups > 0 ? Math.round(((s.signups - sides.prevSignups) / sides.prevSignups) * 100) : null;
+
   return (
-    <div className="rounded-2xl border border-border bg-bg/40 p-5 flex flex-col h-full">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 ${iconClass}`}>
-            <Icon className="w-3.5 h-3.5" />
-          </div>
-          <span className="text-xs font-semibold text-muted whitespace-nowrap truncate">{title}</span>
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Home</h1>
+          <p className="text-sm text-muted">
+            {today}. {siteLine}, {jobLine}.
+          </p>
         </div>
-        <span className="text-xs font-mono font-bold text-muted border border-border px-1.5 py-0.5 rounded-full whitespace-nowrap shrink-0">{badge}</span>
-      </div>
-      <div className="flex items-baseline gap-2 min-w-0">
-        <span className="text-3xl font-semibold tabular-nums shrink-0">{value}</span>
-        <span className="text-xs text-muted whitespace-nowrap truncate">{suffix}</span>
-      </div>
-      {/* Fixed-height middle band — sparkline (40px + 12px gap) or equivalent. */}
-      <div className="h-[52px] flex items-end">{middle}</div>
-      <div className="mt-3 pt-3 border-t border-border flex items-center justify-between gap-2 text-xs text-muted">
-        <span className="min-w-0 truncate">{footerLeft}</span>
-        <span className="whitespace-nowrap shrink-0">{footerRight}</span>
-      </div>
+        <div className="flex gap-2">
+          <Link href="/admin/assistant" className={btnCls("ghost", "md")}>
+            Ask the assistant
+          </Link>
+          <Link href="/admin/maintenance" className={btnCls("primary", "md")}>
+            Schedule maintenance
+          </Link>
+        </div>
+      </header>
+
+      <section aria-label="Health" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+        <HealthCard icon={Wrench} tone={maintenance.tone} label="Site" href="/admin/maintenance">
+          {maintenance.tone === "ok" ? "Live, no maintenance" : maintenance.label}
+        </HealthCard>
+        <HealthCard icon={Clock} tone={jobs.tone} label="Scheduled jobs" href="/admin/jobs">
+          {jobs.ran} of {jobs.total} ok
+          {jobs.failing > 0 && <span className="text-danger">, {jobs.failing} failing</span>}
+          {jobs.failing === 0 && jobs.late > 0 && <span className="text-warning">, {jobs.late} late</span>}
+        </HealthCard>
+        <HealthCard icon={Mail} tone={email.tone} label="Email, 24 h" href="/admin/emails">
+          {nf.format(email.total)} sent, {nf.format(email.failed)} failed or bounced
+        </HealthCard>
+        <HealthCard icon={Activity} tone={servicesTone} label="Services" href="/admin/jobs">
+          {servicesText}
+        </HealthCard>
+      </section>
+
+      <QueueChips queues={queues} />
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <SideCard
+          icon={Building2}
+          title="Recruiters, last 30 days"
+          href="/admin/recruiters"
+          stats={[
+            {
+              label: "Revenue a month",
+              value: sides.mrrCents == null ? "—" : money.format(sides.mrrCents / 100),
+              sub: sides.mrrCents == null ? "Stripe not synced yet" : `from Stripe, ${nf.format(sides.paid)} paid`,
+            },
+            {
+              label: "AI credits used",
+              value: nf.format(s.ai_credits_used),
+              sub: `${nf.format(s.ai_credits_included)} included, ${nf.format(s.ai_credits_bought)} bought`,
+            },
+            {
+              label: "Live interviews",
+              value: nf.format(s.live_interviews),
+              sub: `${nf.format(Math.round(s.recording_seconds / 3600))} h recorded`,
+            },
+          ]}
+          switches={switchPills(switches, ["ai-screening", "take-home", "live-interviews", "video-addon"], "hiring")}
+        />
+        <SideCard
+          icon={Code2}
+          title="Developers, last 30 days"
+          href="/admin/developers"
+          stats={[
+            {
+              label: "Sign-ups",
+              value: nf.format(s.signups),
+              sub: signupChange == null ? "No earlier month to compare" : `${signupChange >= 0 ? "+" : ""}${signupChange}% on the month before`,
+            },
+            {
+              label: "Playground runs",
+              value: nf.format(s.playground_runs),
+              sub: `${pct(s.playground_errors, s.playground_runs)} failed in Piston`,
+            },
+            {
+              label: "Challenge pass rate",
+              value: pct(s.challenge_passed, s.challenge_attempts),
+              sub: `${nf.format(s.challenge_attempts)} attempts`,
+            },
+          ]}
+          switches={switchPills(switches, ["playground-run", "challenges", "prompt-arena", "creator-checkout"], "developer")}
+        />
+      </section>
+      {!sides.fromRollup && (
+        <p className="-mt-3 text-[13px] text-subtle">Counted live: the nightly roll-up has not run yet.</p>
+      )}
+
+      <section aria-label="Recent admin activity" className={`${cardCls} overflow-hidden`}>
+        <div className="px-4 py-3 border-b border-border flex items-center gap-3">
+          <h2 className="text-[15px] font-semibold text-fg flex-1">Recent admin activity</h2>
+          <Link href="/admin/audit" className="text-[13px] text-secondary-soft hover:underline underline-offset-2">
+            Full audit log
+          </Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className="px-4 py-8 text-center text-[13px] text-muted">No admin actions recorded yet.</p>
+        ) : (
+          <ul>
+            {recent.map((r, i) => {
+              const who =
+                r.via === "system" ? "System" : (r.actorId && actorName.get(r.actorId)) || r.actorEmail || "Someone";
+              return (
+                <li
+                  key={r.id}
+                  className={`grid grid-cols-[1fr_auto] sm:grid-cols-[110px_1fr_150px] gap-x-4 gap-y-1 items-center px-4 py-2.5 text-sm ${i === 0 ? "" : "border-t border-border"}`}
+                >
+                  <span className="text-[13px] text-subtle order-2 sm:order-none">{timeAgo(r.createdAt, now.getTime())}</span>
+                  <span className="min-w-0 text-fg">
+                    <span className="font-medium">{who}</span>
+                    {r.via === "assistant" && <span className="text-muted"> via the assistant</span>}{" "}
+                    <span className="text-muted">{actionLabel(r.action).toLowerCase()}</span>
+                    {r.targetLabel && <span> {r.targetLabel}</span>}
+                    {r.note && <span className="text-muted">, note: {r.note.length > 80 ? `${r.note.slice(0, 80)}…` : r.note}</span>}
+                  </span>
+                  <span className="hidden sm:flex justify-end">
+                    <Pill tone={r.via === "system" ? "off" : "info"}>{actionGroup(r.action)}</Pill>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
 
-const SESSION_STATUS_META: Record<string, { label: string; dot: string }> = {
-  scheduled: { label: "Scheduled", dot: "bg-sky-400" },
-  in_progress: { label: "In progress", dot: "bg-amber-400" },
-  completed: { label: "Completed", dot: "bg-emerald-400" },
-  abandoned: { label: "Abandoned", dot: "bg-rose-400" },
-  PENDING: { label: "Pending", dot: "bg-sky-400" },
-  ACTIVE: { label: "Active", dot: "bg-amber-400" },
-  COMPLETED: { label: "Completed", dot: "bg-emerald-400" },
+const GROUP_LABEL: Record<string, string> = {
+  switch: "Feature switch",
+  maintenance: "Maintenance",
+  workspace: "Workspace",
+  user: "User",
+  role: "Roles",
+  setting: "Settings",
+  pricing: "Pricing",
+  content: "Content",
+  broadcast: "Notification",
+  email: "Email",
+  job: "Jobs",
+  audit: "Audit log",
 };
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+function actionGroup(action: string): string {
+  if (action.startsWith("workspace.credits")) return "Credits";
+  const g = action.split(".")[0];
+  return GROUP_LABEL[g] ?? g;
+}
 
-export default async function AdminDashboardPage() {
-  await requireAdminAccess();
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const since = trendWindowStart();
+const TILE: Record<Tone, string> = {
+  ok: "bg-success/15 text-success",
+  warn: "bg-warning/15 text-warning",
+  bad: "bg-danger/15 text-danger",
+  off: "bg-panel text-muted",
+};
 
-  const [
-    // People
-    totalUsers, bannedUsers, newUsers7d, recentUsers,
-    // Question bank
-    totalQuestions, publishedQuestions, questionAgg, questionsByTech, topQuestions, companies, pendingExperiences,
-    // Practice surfaces
-    totalChallenges, challengeAttempts, passedAttempts,
-    reviewChallenges, reviewAttempts, promptScenarios, promptAttempts, journeys,
-    // Hiring
-    workspaces, candidates, liveByStatus, aiByStatus, activeBatches,
-    // Community
-    totalBlogs, pendingBlogs, totalSnippets, snippetViews, blogViews,
-    // Ops queues
-    pendingCreatorApps, unresolvedAlerts, openTodos,
-    // Trends (raw timestamps, bucketed below)
-    userDates, challengeAttemptDates, reviewAttemptDates, promptAttemptDates, liveSessionDates, aiSessionDates,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.user.count({ where: { banned: true } }),
-    prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 6,
-      select: { id: true, name: true, email: true, image: true, createdAt: true },
-    }),
-
-    prisma.prepQuestion.count(),
-    prisma.prepQuestion.count({ where: { status: "published" } }),
-    prisma.prepQuestion.aggregate({ _sum: { views: true, likes: true } }),
-    prisma.prepQuestion.groupBy({
-      by: ["technology"],
-      where: { status: "published" },
-      _count: { _all: true },
-      _sum: { views: true },
-    }),
-    prisma.prepQuestion.findMany({
-      where: { status: "published" },
-      orderBy: { views: "desc" },
-      take: 5,
-      select: { id: true, title: true, slug: true, views: true, likes: true, technology: true },
-    }),
-    prisma.company.count(),
-    prisma.prepExperience.count({ where: { status: "pending" } }),
-
-    prisma.challenge.count(),
-    prisma.challengeAttempt.count(),
-    prisma.challengeAttempt.count({ where: { status: "passed" } }),
-    prisma.reviewChallenge.count(),
-    prisma.reviewAttempt.count(),
-    prisma.promptScenario.count(),
-    prisma.promptAttempt.count(),
-    prisma.prepJourney.count(),
-
-    prisma.workspace.count(),
-    prisma.candidate.count(),
-    prisma.interviewSession.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.aIInterviewSession.groupBy({ by: ["status"], _count: { _all: true } }),
-    prisma.aIScreeningBatch.count({ where: { status: "ACTIVE" } }),
-
-    prisma.blogPost.count(),
-    prisma.blogPost.count({ where: { status: "PENDING" } }),
-    prisma.snippet.count(),
-    prisma.snippet.aggregate({ _sum: { viewCount: true } }),
-    prisma.blogPost.aggregate({ _sum: { viewCount: true } }),
-
-    prisma.creatorApplication.count({ where: { status: "PENDING" } }),
-    prisma.gemmaAlert.count({ where: { status: "UNRESOLVED" } }),
-    prisma.adminTodo.count({ where: { status: { not: "DONE" } } }),
-
-    prisma.user.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-    prisma.challengeAttempt.findMany({ where: { startedAt: { gte: since } }, select: { startedAt: true } }),
-    prisma.reviewAttempt.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-    prisma.promptAttempt.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-    prisma.interviewSession.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-    prisma.aIInterviewSession.findMany({ where: { createdAt: { gte: since } }, select: { createdAt: true } }),
-  ]);
-
-  // Derived numbers
-  const questionViews = questionAgg._sum.views ?? 0;
-  const questionLikes = questionAgg._sum.likes ?? 0;
-  const contentViews = (snippetViews._sum.viewCount ?? 0) + (blogViews._sum.viewCount ?? 0) + questionViews;
-  const practiceAttempts = challengeAttempts + reviewAttempts + promptAttempts;
-  const passRate = challengeAttempts > 0 ? Math.round((passedAttempts / challengeAttempts) * 100) : 0;
-  const liveTotal = liveByStatus.reduce((s, r) => s + r._count._all, 0);
-  const aiTotal = aiByStatus.reduce((s, r) => s + r._count._all, 0);
-
-  const techRows = questionsByTech
-    .map((r) => ({
-      slug: r.technology ?? "",
-      label: r.technology ? techLabel(r.technology) : "Untagged",
-      count: r._count._all,
-      views: r._sum.views ?? 0,
-    }))
-    .sort((a, b) => b.count - a.count);
-  const maxTechCount = Math.max(...techRows.map((t) => t.count), 1);
-
-  // Trend series (14-day daily buckets)
-  const usersTrend = bucketByDay(userDates.map((r) => r.createdAt));
-  const practiceTrend = bucketByDay([
-    ...challengeAttemptDates.map((r) => r.startedAt),
-    ...reviewAttemptDates.map((r) => r.createdAt),
-    ...promptAttemptDates.map((r) => r.createdAt),
-  ]);
-  const hiringTrend = bucketByDay([
-    ...liveSessionDates.map((r) => r.createdAt),
-    ...aiSessionDates.map((r) => r.createdAt),
-  ]);
-  const practice14d = practiceTrend.reduce((a, b) => a + b, 0);
-  const hiring14d = hiringTrend.reduce((a, b) => a + b, 0);
-
-  // Ops queues — rendered only when non-empty.
-  const queues = [
-    { count: pendingBlogs, label: "Blogs awaiting review", href: "/admin/blogs?status=PENDING", icon: Newspaper },
-    { count: pendingExperiences, label: "Experiences to moderate", href: "/admin/interview-questions/experiences", icon: MessageSquareCode },
-    { count: pendingCreatorApps, label: "Creator applications", href: "/admin/creators", icon: UserPlus },
-    { count: unresolvedAlerts, label: "Unresolved Gemma alerts", href: "/admin/copilot", icon: BellRing },
-    { count: openTodos, label: "Open tickets", href: "/admin/todos", icon: ListTodo },
-  ].filter((item) => item.count > 0);
-
-  const surfaces = [
-    { icon: FileText, label: "Interview questions", value: publishedQuestions, sub: `${techRows.length} technologies`, href: "/admin/interview-questions" },
-    { icon: Code2, label: "Coding challenges", value: totalChallenges, sub: `${compactNumber(challengeAttempts)} attempts`, href: "/admin/challenges" },
-    { icon: Bug, label: "Review-the-AI-code", value: reviewChallenges, sub: `${compactNumber(reviewAttempts)} attempts`, href: "/interview/ai-code-review" },
-    { icon: Sparkles, label: "Prompt arena", value: promptScenarios, sub: `${compactNumber(promptAttempts)} attempts`, href: "/interview/prompt-practice" },
-    { icon: Map, label: "Prep journeys", value: journeys, sub: "guided plans", href: "/interview" },
-    { icon: Building2, label: "Companies", value: companies, sub: "question index", href: "/admin/interview-questions/companies" },
-  ];
-
-  const card = "rounded-2xl border border-border bg-bg/40";
-  const cardHead = "px-5 py-3.5 border-b border-border flex items-center gap-2";
-  const cardTitle = "text-xs font-semibold text-muted";
-
+function HealthCard({
+  icon: Icon,
+  tone,
+  label,
+  href,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  tone: Tone;
+  label: string;
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="text-xs font-semibold text-accent">Internal operations</div>
-          <h2 className="text-2xl font-semibold tracking-tight mt-1 text-fg">Mission Control</h2>
-          <p className="text-sm text-muted mt-1">Everything the platform is doing, at a glance.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/interview-questions/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-border text-xs font-bold hover:border-accent/40 transition"
-          >
-            <Plus className="w-3.5 h-3.5" /> Question
+    <Link
+      href={href}
+      className={`${cardCls} px-4 py-3.5 flex items-center gap-3 hover:bg-panel/60 transition ${tone === "bad" ? "border-danger/40" : ""}`}
+    >
+      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${TILE[tone]}`}>
+        {tone === "bad" ? <AlertTriangle className="w-3.5 h-3.5" /> : tone === "ok" && label === "Site" ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold text-subtle">{label}</span>
+        <span className="block text-sm font-medium text-fg truncate">{children}</span>
+      </span>
+    </Link>
+  );
+}
+
+function QueueChips({ queues }: { queues: Queue[] }) {
+  if (queues.length === 0) return null;
+  return (
+    <section aria-label="Queues" className="flex flex-wrap gap-2.5">
+      {queues.map((q) => (
+        <Link
+          key={q.key}
+          href={q.href}
+          className={`${cardCls} flex items-center gap-3 px-3.5 py-2.5 min-w-[200px] hover:bg-panel/60 transition`}
+        >
+          <span className={`text-[22px] font-semibold tabular-nums ${q.count === 0 ? "text-subtle" : "text-fg"}`}>{nf.format(q.count)}</span>
+          <span className="text-[13px] text-muted">{q.label}</span>
+        </Link>
+      ))}
+    </section>
+  );
+}
+
+function SideCard({
+  icon: Icon,
+  title,
+  href,
+  stats,
+  switches,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  href: string;
+  stats: { label: string; value: string; sub: string }[];
+  switches: SwitchValue[];
+}) {
+  return (
+    <div className={`${cardCls} p-5 flex flex-col gap-4`}>
+      <div className="flex items-center gap-2.5">
+        <span className="w-7 h-7 rounded-lg bg-panel text-muted flex items-center justify-center shrink-0">
+          <Icon className="w-3.5 h-3.5" />
+        </span>
+        <h2 className="text-[15px] font-semibold text-fg flex-1">{title}</h2>
+        <Link href={href} className="text-[13px] text-secondary-soft hover:underline underline-offset-2">
+          Open dashboard
+        </Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {stats.map((st) => (
+          <div key={st.label} className="min-w-0">
+            <div className="text-xs font-semibold text-subtle">{st.label}</div>
+            <div className="text-[22px] font-semibold tabular-nums text-fg">{st.value}</div>
+            <div className="text-[13px] text-muted">{st.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {switches.map((sw) => (
+          <Link key={sw.key} href="/admin/switches" title={sw.message || undefined}>
+            <Pill tone={STATE_TONE[sw.state] ?? "off"}>
+              {switchDef(sw.key)?.label ?? sw.key} {STATE_WORD[sw.state] ?? sw.state}
+            </Pill>
           </Link>
-          <Link
-            href="/admin/challenges/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" /> Challenge
-          </Link>
-        </div>
-      </div>
-
-      {/* ── Needs attention ────────────────────────────────────────────────── */}
-      {queues.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {queues.map((queue) => (
-            <Link
-              key={queue.label}
-              href={queue.href}
-              className="group flex items-center gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/[0.04] hover:border-amber-500/50 transition w-full sm:w-auto sm:min-w-[220px]"
-            >
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0">
-                <queue.icon className="w-4 h-4" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-lg font-semibold leading-none tabular-nums text-amber-500">{queue.count}</div>
-                <div className="text-xs font-bold text-muted truncate group-hover:text-fg transition-colors">{queue.label}</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      {/* ── KPIs ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
-        <KpiCard
-          icon={Users}
-          iconClass="bg-accent/10 border-accent/20 text-accent"
-          title="Community"
-          badge="14d"
-          value={compactNumber(totalUsers)}
-          suffix="users"
-          middle={renderSparkline(usersTrend, "#FFE600", "grad-users")}
-          footerLeft={<span className="font-bold text-emerald-500">+{newUsers7d} this week</span>}
-          footerRight={<span className={bannedUsers > 0 ? "text-rose-400 font-bold" : ""}>{bannedUsers} banned</span>}
-        />
-        <KpiCard
-          icon={BookOpenCheck}
-          iconClass="bg-sky-500/10 border-sky-500/20 text-sky-400"
-          title="Questions"
-          badge={`${techRows.length} techs`}
-          value={compactNumber(publishedQuestions)}
-          suffix={`published${totalQuestions > publishedQuestions ? ` · ${totalQuestions - publishedQuestions} draft` : ""}`}
-          middle={
-            <div className="w-full flex items-center gap-4 pb-2 text-xs text-muted">
-              <span className="inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> {compactNumber(questionViews)} views</span>
-              <span className="inline-flex items-center gap-1.5"><Heart className="w-3.5 h-3.5" /> {compactNumber(questionLikes)} likes</span>
-            </div>
-          }
-          footerLeft={<>Top: {techRows[0] ? `${techRows[0].label} (${techRows[0].count})` : "—"}</>}
-          footerRight={
-            <Link href="/admin/interview-questions" className="font-semibold text-xs text-sky-400 hover:underline">Manage →</Link>
-          }
-        />
-        <KpiCard
-          icon={Activity}
-          iconClass="bg-violet-500/10 border-violet-500/20 text-violet-400"
-          title="Practice"
-          badge="14d"
-          value={compactNumber(practiceAttempts)}
-          suffix="attempts all-time"
-          middle={renderSparkline(practiceTrend, "#A78BFA", "grad-practice")}
-          footerLeft={<>{practice14d} in the last 14 days</>}
-          footerRight={<span className="font-bold text-violet-400">{passRate}% pass rate</span>}
-        />
-        <KpiCard
-          icon={Briefcase}
-          iconClass="bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-          title="Hiring"
-          badge="14d"
-          value={compactNumber(liveTotal + aiTotal)}
-          suffix={`interviews · ${liveTotal} live · ${aiTotal} AI`}
-          middle={renderSparkline(hiringTrend, "#34D399", "grad-hiring")}
-          footerLeft={<>{workspaces} workspaces · {compactNumber(candidates)} candidates</>}
-          footerRight={<span className="font-bold text-emerald-400">{hiring14d} new / 14d</span>}
-        />
-      </div>
-
-      {/* ── Content arsenal + hiring pipeline ─────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr),340px] gap-4 items-stretch">
-        <div className="flex flex-col gap-4 min-w-0">
-          {/* Question bank by technology */}
-          <div className={card}>
-            <div className={cardHead}>
-              <BookOpenCheck className="w-4 h-4 text-sky-400" />
-              <h3 className={cardTitle}>Question bank by technology</h3>
-              <Link href="/admin/interview-questions" className="ml-auto text-xs font-semibold text-muted hover:text-accent inline-flex items-center gap-1 transition-colors">
-                Manage <ArrowRight className="w-3 h-3" />
-              </Link>
-            </div>
-            <div className="p-5 space-y-2.5">
-              {techRows.map((tech) => (
-                <Link
-                  key={tech.slug || "untagged"}
-                  href={tech.slug ? `/admin/interview-questions?tech=${tech.slug}` : "/admin/interview-questions"}
-                  className="group grid grid-cols-[minmax(0,150px),1fr,auto] sm:grid-cols-[180px,1fr,150px] items-center gap-3"
-                >
-                  <span className="text-xs font-bold truncate group-hover:text-accent transition-colors">{tech.label}</span>
-                  <div className="h-2 rounded-full bg-bg border border-border overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-500/80 to-sky-400/50 group-hover:from-sky-400 group-hover:to-sky-300/70 transition-colors"
-                      style={{ width: `${Math.max((tech.count / maxTechCount) * 100, 4)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono text-muted text-right tabular-nums whitespace-nowrap">
-                    <span className="font-semibold text-fg">{tech.count}</span> · {compactNumber(tech.views)} views
-                  </span>
-                </Link>
-              ))}
-              {techRows.length === 0 && <p className="text-xs text-muted">No published questions yet.</p>}
-            </div>
-          </div>
-
-          {/* Prep surfaces */}
-          <div className="flex-1 grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-3">
-            {surfaces.map((s) => (
-              <Link key={s.label} href={s.href} className={`${card} p-4 hover:border-accent/40 transition group`}>
-                <div className="flex items-center gap-2 text-muted">
-                  <s.icon className="w-3.5 h-3.5" />
-                  <span className="text-xs font-semibold truncate">{s.label}</span>
-                </div>
-                <div className="text-2xl font-semibold tabular-nums mt-2 group-hover:text-accent transition-colors">{compactNumber(s.value)}</div>
-                <div className="text-xs text-muted mt-0.5">{s.sub}</div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Right rail: hiring pipeline + top questions */}
-        <div className="flex flex-col gap-4">
-          <div className={card}>
-            <div className={cardHead}>
-              <Briefcase className="w-4 h-4 text-emerald-400" />
-              <h3 className={cardTitle}>Hiring pipeline</h3>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <div className="text-xs font-semibold text-muted mb-2">Live interviews</div>
-                <div className="space-y-1.5">
-                  {liveByStatus.map((row) => {
-                    const meta = SESSION_STATUS_META[row.status] ?? { label: row.status, dot: "bg-zinc-400" };
-                    return (
-                      <div key={row.status} className="flex items-center gap-2 text-xs">
-                        <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                        <span className="text-muted flex-1">{meta.label}</span>
-                        <span className="font-mono font-semibold tabular-nums">{row._count._all}</span>
-                      </div>
-                    );
-                  })}
-                  {liveByStatus.length === 0 && <p className="text-xs text-muted">No sessions yet.</p>}
-                </div>
-              </div>
-              <div className="pt-3 border-t border-border">
-                <div className="text-xs font-semibold text-muted mb-2">AI screenings</div>
-                <div className="space-y-1.5">
-                  {aiByStatus.map((row) => {
-                    const meta = SESSION_STATUS_META[row.status] ?? { label: row.status, dot: "bg-zinc-400" };
-                    return (
-                      <div key={row.status} className="flex items-center gap-2 text-xs">
-                        <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
-                        <span className="text-muted flex-1">{meta.label}</span>
-                        <span className="font-mono font-semibold tabular-nums">{row._count._all}</span>
-                      </div>
-                    );
-                  })}
-                  {aiByStatus.length === 0 && <p className="text-xs text-muted">No AI sessions yet.</p>}
-                </div>
-                <div className="flex items-center justify-between mt-3 text-xs">
-                  <span className="text-muted">Active batches</span>
-                  <span className="font-mono font-semibold">{activeBatches}</span>
-                </div>
-              </div>
-              <Link href="/admin/ai-interviews" className="block text-center text-xs font-semibold text-emerald-400 hover:underline pt-1">
-                Open console →
-              </Link>
-            </div>
-          </div>
-
-          <div className={`${card} flex-1`}>
-            <div className={cardHead}>
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <h3 className={cardTitle}>Most-viewed questions</h3>
-            </div>
-            <div className="p-3 space-y-1">
-              {topQuestions.map((question, i) => (
-                <Link
-                  key={question.id}
-                  href={`/interview-question/${question.slug}`}
-                  target="_blank"
-                  className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-elevated/50 transition group"
-                >
-                  <span className="text-xs font-mono font-semibold text-muted w-4 text-right shrink-0 mt-0.5">{i + 1}</span>
-                  <span className="text-xs font-bold leading-snug line-clamp-2 flex-1 group-hover:text-accent transition-colors">{question.title}</span>
-                  <span className="text-xs font-mono text-muted shrink-0 inline-flex items-center gap-1 mt-0.5">
-                    <Eye className="w-3 h-3" />{compactNumber(question.views)}
-                  </span>
-                </Link>
-              ))}
-              {topQuestions.length === 0 && <p className="text-xs text-muted p-2">No published questions yet.</p>}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── People & community ────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-        <div className={card}>
-          <div className={cardHead}>
-            <UserPlus className="w-4 h-4 text-indigo-400" />
-            <h3 className={cardTitle}>Recent signups</h3>
-            <Link href="/admin/users" className="ml-auto text-xs font-semibold text-muted hover:text-accent inline-flex items-center gap-1 transition-colors">
-              All users <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          <div className="p-3 space-y-1">
-            {recentUsers.map((user) => (
-              <div key={user.id} className="p-2 rounded-xl hover:bg-elevated/50 transition flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full overflow-hidden bg-bg border border-border flex items-center justify-center relative shrink-0">
-                  {user.image ? (
-                    <Image src={user.image} alt="" fill className="object-cover" />
-                  ) : (
-                    <span className="text-xs font-semibold text-muted">{(user.name || "?")[0].toUpperCase()}</span>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs font-bold truncate">{user.name || "New developer"}</div>
-                  <div className="text-xs text-muted truncate mt-0.5">{user.email}</div>
-                </div>
-                <span className="text-xs font-mono text-muted shrink-0">{formatRelativeTime(user.createdAt)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={`${card} flex flex-col`}>
-          <div className={cardHead}>
-            <Newspaper className="w-4 h-4 text-rose-400" />
-            <h3 className={cardTitle}>Community content</h3>
-          </div>
-          <div className="p-4 flex-1 grid grid-cols-2 gap-3 content-start">
-            <Link href="/admin/blogs" className="p-3 rounded-xl border border-border hover:border-accent/40 transition group">
-              <div className="text-xl font-semibold tabular-nums group-hover:text-accent transition-colors">{compactNumber(totalBlogs)}</div>
-              <div className="text-xs text-muted">blog posts{pendingBlogs > 0 ? ` · ${pendingBlogs} pending` : ""}</div>
-            </Link>
-            <Link href="/admin/snippets" className="p-3 rounded-xl border border-border hover:border-accent/40 transition group">
-              <div className="text-xl font-semibold tabular-nums group-hover:text-accent transition-colors">{compactNumber(totalSnippets)}</div>
-              <div className="text-xs text-muted">snippets</div>
-            </Link>
-            <Link href="/admin/comments" className="p-3 rounded-xl border border-border hover:border-accent/40 transition group">
-              <div className="text-xl font-semibold tabular-nums group-hover:text-accent transition-colors">{compactNumber(questionLikes)}</div>
-              <div className="text-xs text-muted">question likes</div>
-            </Link>
-            <div className="p-3 rounded-xl border border-border">
-              <div className="text-xl font-semibold tabular-nums">{compactNumber(companies)}</div>
-              <div className="text-xs text-muted">companies indexed</div>
-            </div>
-            <div className="col-span-2 self-end pt-3 border-t border-border flex items-center justify-between text-xs">
-              <span className="text-muted inline-flex items-center gap-1.5"><Eye className="w-3.5 h-3.5" /> Total content views</span>
-              <span className="font-mono font-semibold">{compactNumber(contentViews)}</span>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

@@ -20,12 +20,24 @@
       "schedule": "15 * * * *"
     },
     {
+      "path": "/api/cron/take-home-expiry",
+      "schedule": "5 * * * *"
+    },
+    {
       "path": "/api/cron/scorecard-reminders",
       "schedule": "40 * * * *"
     },
     {
       "path": "/api/cron/round-nudges",
       "schedule": "50 * * * *"
+    },
+    {
+      "path": "/api/cron/recordings",
+      "schedule": "20 * * * *"
+    },
+    {
+      "path": "/api/cron/trial-expiry",
+      "schedule": "0 1 * * *"
     },
     {
       "path": "/api/cron/data-retention",
@@ -40,8 +52,28 @@
       "schedule": "10 3 * * *"
     },
     {
-      "path": "/api/cron/recordings",
-      "schedule": "20 * * * *"
+      "path": "/api/cron/notifications/ai-credits-sweep",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/notifications/stale-scorecards",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/notifications/take-home-expiring",
+      "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/cron/admin-daily-stats",
+      "schedule": "20 0 * * *"
+    },
+    {
+      "path": "/api/cron/admin-housekeeping",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/stripe-sync",
+      "schedule": "0 4 * * *"
     }
   ]
 }

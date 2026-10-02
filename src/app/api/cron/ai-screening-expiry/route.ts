@@ -1,7 +1,7 @@
 import { configuredOrigin, originFromHeaders, siteOrigin } from "@/lib/site-url";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { gradeSessionById } from "@/lib/ai-interview/grade";
 import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
 import { reminderDue } from "@/lib/ai-interview/console";
@@ -31,9 +31,7 @@ import { deliverInvite } from "@/lib/ai-interview/invites";
  * Recommended cadence: every 5 minutes. Auth: `X-Cron-Secret` or
  * `Authorization: Bearer` (assertCronAuth).
  */
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const origin = configuredOrigin() ?? originFromHeaders(req.headers) ?? siteOrigin();
   const now = Date.now();
@@ -122,3 +120,7 @@ export async function POST(req: NextRequest) {
     reminded,
   });
 }
+
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("ai-screening-expiry", run);
+export const GET = POST;

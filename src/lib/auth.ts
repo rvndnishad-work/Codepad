@@ -14,6 +14,10 @@ import {
   verifyTotpCode,
 } from "@/lib/totp";
 import { rateLimitDistributed } from "@/lib/rate-limit";
+import { signInVerdict, sessionVerdict } from "@/lib/auth-gate";
+import { getSessionStatus, invalidateSessionStatus } from "@/lib/auth-session-status";
+import { trackActivity } from "@/lib/admin/activity";
+import { logAdminAction } from "@/lib/admin/audit";
 
 /**
  * IP-42 P5: credentials login enforces TOTP when the user has it enabled.
@@ -41,6 +45,13 @@ class TotpInvalid extends CredentialsSignin {
  *  an account in the window — brute-force protection. */
 class TotpRateLimited extends CredentialsSignin {
   code = "TotpRateLimited";
+}
+/** Admin console: the account is suspended (ban active) or soft deleted. */
+class AccountSuspended extends CredentialsSignin {
+  code = "AccountSuspended";
+}
+class AccountDeleted extends CredentialsSignin {
+  code = "AccountDeleted";
 }
 
 // Per-account cap on TOTP/backup verification attempts. 6-digit TOTP has 1e6
@@ -137,11 +148,22 @@ const credentialsProvider = Credentials({
         totpSecret: true,
         totpEnabledAt: true,
         totpBackupCodes: true,
+        banned: true,
+        bannedUntil: true,
+        deletedAt: true,
       },
     });
     if (!user || !user.passwordHash) return null;
     const passwordOk = await bcrypt.compare(password, user.passwordHash);
     if (!passwordOk) return null;
+
+    // Suspended / deleted accounts are told so only after the password is
+    // proven, so the status of an account is not leaked to strangers.
+    // An expired suspension passes here and is cleared in `signIn` below.
+    const verdict = signInVerdict(user);
+    if (!verdict.allow) {
+      throw verdict.reason === "deleted" ? new AccountDeleted() : new AccountSuspended();
+    }
 
     // 2FA gate. Once `totpEnabledAt` is set, the user CANNOT sign in with
     // just a password — `TotpRequired` makes the form prompt for the code;
@@ -241,15 +263,54 @@ export const {
     },
   },
   pages: { signIn: "/login" },
+  events: {
+    async signIn({ user, account }) {
+      if (!user.id) return;
+      trackActivity({ kind: "sign_in", userId: user.id, label: account?.provider ?? null });
+      await prisma.user
+        .update({ where: { id: user.id }, data: { lastSignInAt: new Date() } })
+        .catch((err) => console.error("[auth] lastSignInAt write failed:", err));
+    },
+    async createUser({ user }) {
+      // OAuth account creation (credentials sign-ups are tracked in
+      // /api/auth/register).
+      if (user.id) trackActivity({ kind: "signup", userId: user.id, label: "oauth" });
+    },
+  },
   callbacks: {
     async signIn({ user }) {
+      // No id yet = brand-new OAuth user about to be created: nothing to gate.
       if (!user.id) return true;
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { banned: true },
+        select: { banned: true, bannedUntil: true, bannedReason: true, deletedAt: true, email: true },
       });
-      if (dbUser?.banned) {
-        throw new Error("Your account has been suspended.");
+      if (!dbUser) return true;
+      const verdict = signInVerdict(dbUser);
+      if (!verdict.allow) {
+        // Credentials sign-ins are refused earlier in authorize() with a code
+        // the form understands; this redirect is what OAuth sign-ins see.
+        return `/login?reason=${verdict.reason}`;
+      }
+      if (verdict.clearExpiredBan) {
+        // The suspension had an end date that has passed: lift it now. The
+        // record of it stays in the admin audit log.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { banned: false, bannedReason: null, bannedUntil: null, bannedAt: null, bannedById: null },
+        });
+        invalidateSessionStatus(user.id);
+        await logAdminAction({
+          actor: null,
+          via: "system",
+          action: "user.unsuspend",
+          targetType: "user",
+          targetId: user.id,
+          targetLabel: dbUser.email,
+          before: { banned: true, bannedUntil: dbUser.bannedUntil, bannedReason: dbUser.bannedReason },
+          after: { banned: false },
+          note: "Suspension ended; lifted at sign-in",
+        });
       }
       return true;
     },
@@ -260,9 +321,11 @@ export const {
       // navigation latency. Instead we read userType from the DB only when the
       // token is first minted (sign-in) or explicitly refreshed via
       // updateSession() (see /api/me/user-type after a UserTypeChooser change).
-      // Steady-state reads do zero DB work.
+      // Steady-state reads only do the revocation check below, which is
+      // cached per user for 30 s (src/lib/auth-session-status.ts).
       if (user?.id) {
         token.uid = user.id;
+        delete token.authAt;
         // When this sign-in started. Workspaces with a sign-in length or a
         // "sign out everyone" check it (Settings > Security). Only set here,
         // never on update(), so a client cannot refresh its own sign-in.
@@ -272,7 +335,19 @@ export const {
           select: { userType: true },
         });
         token.userType = dbUser?.userType ?? null;
-      } else if (trigger === "update" && token.uid) {
+      } else if (token.uid) {
+        // Revocation gate (ban, soft delete, force sign-out). The anchor is the
+        // sign-in moment, never `iat`: NextAuth re-signs the token on every
+        // session read, so `iat` keeps moving forward. Tokens minted before
+        // `signedInAt` existed get their first-seen `iat` frozen into `authAt`.
+        if (typeof token.signedInAt !== "number" && typeof token.authAt !== "number" && typeof token.iat === "number") {
+          token.authAt = token.iat * 1000;
+        }
+        const issuedAt = typeof token.signedInAt === "number" ? token.signedInAt : token.authAt;
+        const status = await getSessionStatus(token.uid);
+        if (!sessionVerdict(status, issuedAt)) return null;
+      }
+      if (!user?.id && trigger === "update" && token.uid) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.uid as string },
           select: { userType: true },

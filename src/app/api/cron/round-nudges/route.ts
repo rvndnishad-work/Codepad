@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { sendRoundNudges } from "@/lib/interview/round-nudges-server";
 
 /**
@@ -10,14 +10,11 @@ import { sendRoundNudges } from "@/lib/interview/round-nudges-server";
  * Cadence: hourly (vercel.json). Auth: `X-Cron-Secret` or
  * `Authorization: Bearer <CRON_SECRET>`.
  */
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
   const res = await sendRoundNudges();
   return NextResponse.json({ ok: true, ...res });
 }
 
-// GET for Vercel Cron and curl, same auth.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("round-nudges", run);
+export const GET = POST;

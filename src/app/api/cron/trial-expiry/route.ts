@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { planDisplayName } from "@/lib/billing/usage";
@@ -18,9 +18,7 @@ import { planDisplayName } from "@/lib/billing/usage";
  */
 const MAX_BATCH = 200;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
 
@@ -86,3 +84,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, expired, notified, ranAt: now.toISOString() });
 }
+
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("trial-expiry", run);
+export const GET = POST;

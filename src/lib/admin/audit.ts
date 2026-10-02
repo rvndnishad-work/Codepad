@@ -105,4 +105,5 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "broadcast.send": "Sent notification",
   "email.resend": "Resent email",
   "email.unsuppress": "Lifted email suppression",
+  "job.run": "Ran a job",
 };

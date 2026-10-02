@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -66,6 +67,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  // Feature switch "challenges" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("challenges");
+  if (featurePaused) return featurePaused;
   const { slug } = await params;
   const body = await req.json().catch(() => null);
   const parsed = submitSchema.safeParse(body);

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { featurePausedPage } from "@/components/FeaturePaused";
 import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
 import { parseTheorySettings } from "@/lib/ai-interview/theory";
@@ -99,6 +100,12 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
   });
 
   if (!session) notFound();
+
+  // Feature switches: the candidate link itself, and starting a new screening.
+  const paused =
+    (await featurePausedPage("candidate-pages")) ??
+    (!session.startedAt ? await featurePausedPage("ai-screening", "not_on") : null);
+  if (paused) return paused;
 
   // IP-38: mobile-handoff lobby, before any state changes, so a mobile
   // candidate never burns a credit on a screening they cannot finish. Theory

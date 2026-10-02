@@ -25,6 +25,7 @@ import { render } from "@react-email/render";
 import * as React from "react";
 import { TEMPLATES, type TemplateName, type TemplateProps } from "@/emails";
 import { prisma } from "@/lib/prisma";
+import { isFeatureOn } from "@/lib/admin/switches";
 import { loadCandidateEmailContext } from "@/lib/candidate-email";
 import { unsubscribeUrl } from "@/lib/email-unsubscribe";
 import {
@@ -56,6 +57,16 @@ export type SendEmailInput<T extends TemplateName> = {
   /** Files to attach. `content` is base64. */
   attachments?: { filename: string; content: string }[];
 };
+
+/** Sign-in and address-confirm codes still go out while "email-send" is paused. */
+const AUTH_TEMPLATES = new Set<string>(["otp-verification", "reply-to-confirm"]);
+const PAUSED_REASON = "Outgoing email is paused (admin feature switch)";
+
+/** True when the email-send switch is not on and the template is not a sign-in email. */
+async function emailPaused(template: string): Promise<boolean> {
+  if (AUTH_TEMPLATES.has(template)) return false;
+  return !(await isFeatureOn("email-send"));
+}
 
 function normalizeAddress(addr: string): string {
   return addr.trim().toLowerCase();
@@ -147,6 +158,23 @@ export async function sendEmail<T extends TemplateName>(
   const recipients = Array.isArray(input.to) ? input.to.filter(Boolean) : [input.to];
   if (recipients.length === 0) {
     return { sent: false, reason: "Missing recipient" };
+  }
+
+  // Feature switch "email-send": skip and log as skipped.
+  if (await emailPaused(input.template)) {
+    await prisma.emailLog
+      .create({
+        data: {
+          template: input.template,
+          recipientEmail: normalizeAddress(recipients[0]),
+          workspaceId: input.workspaceId ?? null,
+          sessionId: input.sessionId ?? null,
+          status: "skipped",
+          errorReason: PAUSED_REASON,
+        },
+      })
+      .catch(() => null);
+    return { sent: false, reason: PAUSED_REASON };
   }
 
   // Suppression check (IP-25 AC #4). Done BEFORE rendering / dispatching so a
@@ -330,6 +358,22 @@ export async function sendTemplatedBatch<T extends TemplateName>(
     | undefined;
   if (!def) return { total: items.length, sent: 0, suppressed: 0, failed: items.length, outcomes: items.map(() => ({ status: "failed", reason: "Unknown template" })) };
   if (items.length === 0) return { total: 0, sent: 0, suppressed: 0, failed: 0, outcomes: [] };
+  // Feature switch "email-send": skip every item and log it as skipped.
+  if (await emailPaused(template)) {
+    await prisma.emailLog
+      .createMany({
+        data: items.map((i) => ({
+          template,
+          recipientEmail: normalizeAddress(i.to),
+          workspaceId: i.workspaceId ?? null,
+          sessionId: i.sessionId ?? null,
+          status: "skipped",
+          errorReason: PAUSED_REASON,
+        })),
+      })
+      .catch(() => null);
+    return { total: items.length, sent: 0, suppressed: 0, failed: items.length, outcomes: items.map(() => ({ status: "failed", reason: PAUSED_REASON })) };
+  }
   const outcomes: BatchOutcome[] = items.map(() => ({ status: "failed", reason: "not sent" }));
 
   // One suppression query for the whole batch.

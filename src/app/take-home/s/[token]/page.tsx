@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { featurePausedPage } from "@/components/FeaturePaused";
 import Link from "next/link";
 import { headers } from "next/headers";
 import {
@@ -166,6 +167,12 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
       </div>
     );
   }
+
+  // Feature switches: the candidate link itself, and starting a take-home.
+  const paused =
+    (await featurePausedPage("candidate-pages")) ??
+    (session.status === "scheduled" ? await featurePausedPage("take-home", "not_on") : null);
+  if (paused) return paused;
 
   // Build the ordered checklist (DSA → playgrounds → prompts, preserving curation order within each).
   type Row = { key: string; kind: "challenge" | "playground" | "prompt"; title: string; minutes: number; done: boolean; href: string | null; runnable: boolean };

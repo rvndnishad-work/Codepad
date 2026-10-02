@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { parseJsonArray, TECHNOLOGIES } from "@/lib/interview-questions/shared";
@@ -92,6 +93,7 @@ export default async function InterviewQuestionsPage() {
   return (
     <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)]">
       <ScrollProgressBar />
+      <FeaturePaused featureKey="interview-questions" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
 
       {/* Hero (starts under the transparent bar) */}
       <QuestionVerseHero

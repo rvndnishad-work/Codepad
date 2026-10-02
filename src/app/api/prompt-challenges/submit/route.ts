@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,9 @@ import { PROMPT_PRACTICE_PASS_SCORE } from "@/lib/prep-journey/shared";
 // Auth required — grading hits the Gemini quota, so the attempt is always
 // attributed to the authenticated user (never a client-supplied id).
 export async function POST(req: NextRequest) {
+  // Feature switch "prompt-arena" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("prompt-arena");
+  if (featurePaused) return featurePaused;
   try {
     const session = await auth().catch(() => null);
     const userId = session?.user?.id;

@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -9,6 +10,9 @@ type Ctx = { params: Promise<{ slug: string }> };
 
 /** Post a discussion comment on a published interview question. Auth required. */
 export async function POST(req: Request, { params }: Ctx) {
+  // Feature switch "interview-questions" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("interview-questions");
+  if (featurePaused) return featurePaused;
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

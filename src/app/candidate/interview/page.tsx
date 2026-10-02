@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
@@ -29,6 +30,7 @@ export default async function CandidateInterviewPage() {
 
   return (
     <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
+      <FeaturePaused featureKey="mock-interviews" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
       <CandidateCockpitClient
         userId={userId}
         userName={session.user?.name ?? null}

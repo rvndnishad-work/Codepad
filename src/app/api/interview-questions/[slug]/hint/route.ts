@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateHint } from "@/lib/interview-questions/ai-hint";
@@ -8,6 +9,9 @@ import { generateHint } from "@/lib/interview-questions/ai-hint";
  * configured so the UI can degrade gracefully.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  // Feature switch "interview-questions" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("interview-questions");
+  if (featurePaused) return featurePaused;
   const { slug } = await params;
   const q = await prisma.prepQuestion.findFirst({
     where: { slug, status: "published" },

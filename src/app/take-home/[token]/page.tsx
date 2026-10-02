@@ -7,6 +7,8 @@ import StartButton from "./StartButton";
 import MobileLobby from "@/components/MobileLobby";
 import { shouldRenderMobileLobby } from "@/lib/device";
 import { loadCandidatePageSettings } from "@/lib/candidate-page-brand";
+import { isWorkspaceLocked } from "@/lib/workspace/lock";
+import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
 import { CandidateBrandMark, CandidateHelpLine } from "@/components/candidate/CandidateBrand";
 
 type Props = {
@@ -44,6 +46,8 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
     include: { challenge: { include: { steps: { orderBy: { position: "asc" } } } } },
   });
   if (!assignment) notFound();
+  // Admin lock on the workspace: the link shows a notice, nothing changes.
+  if (await isWorkspaceLocked({ id: assignment.workspaceId })) return <WorkspaceLockedNotice audience="candidate" />;
 
   const now = new Date();
   if (assignment.status === "PENDING" && now > assignment.expiresAt) {

@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { isWorkspaceLocked } from "@/lib/workspace/lock";
+import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
@@ -99,6 +101,8 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
   });
 
   if (!session) notFound();
+  // Admin lock on the workspace: the link shows a notice and no credit is charged.
+  if (await isWorkspaceLocked({ id: session.workspaceId })) return <WorkspaceLockedNotice audience="candidate" />;
 
   // IP-38: mobile-handoff lobby, before any state changes, so a mobile
   // candidate never burns a credit on a screening they cannot finish. Theory

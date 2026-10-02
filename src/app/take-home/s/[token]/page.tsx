@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { isWorkspaceLocked } from "@/lib/workspace/lock";
+import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -56,6 +58,8 @@ export default async function TakeHomeSessionRunner({ params, searchParams }: Pr
     },
   });
   if (!session) notFound();
+  // Admin lock on the workspace: the link shows a notice, nothing changes.
+  if (await isWorkspaceLocked({ id: session.workspaceId })) return <WorkspaceLockedNotice audience="candidate" />;
   // Workspace logo, colour, help contact and privacy notice (Settings > Candidate experience).
   const page = session.workspace ? candidatePageSettings(session.workspace) : null;
   const brandColor = page?.brand.color ?? null;

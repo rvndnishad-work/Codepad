@@ -1,6 +1,7 @@
 import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 export const metadata = {
@@ -16,6 +17,14 @@ export default async function EmbedPage({
   const snippet = await prisma.snippet.findUnique({ where: { slug: id } });
   if (!snippet) notFound();
   if (snippet.visibility !== "public") notFound();
+
+  // Count the view after the response is sent (never blocks render). Raw
+  // SQL so the @updatedAt column is not bumped by a view.
+  const snippetId = snippet.id;
+  after(() =>
+    prisma.$executeRaw`UPDATE "Snippet" SET "viewCount" = "viewCount" + 1 WHERE "id" = ${snippetId}`
+      .then(() => undefined, () => undefined),
+  );
 
   const files = JSON.parse(snippet.files) as SandpackFiles;
   return (

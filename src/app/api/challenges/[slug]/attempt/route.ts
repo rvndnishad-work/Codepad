@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { runUnitJs } from "@/lib/judge/unit-js";
 import { PistonUnavailableError } from "@/lib/piston";
+import { trackActivity } from "@/lib/admin/activity";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 
@@ -177,6 +178,8 @@ export async function POST(
       const isTs = [...Object.keys(judged), ...Object.keys(hiddenTests)].some(
         (p) => p.endsWith(".ts") || p.endsWith(".tsx")
       );
+      const judgeStartedAt = Date.now();
+      const judgeLabel = isTs ? "typescript" : "javascript";
       try {
         const result = await runUnitJs({
           sourceFiles: judged,
@@ -189,6 +192,7 @@ export async function POST(
             ? "passed"
             : "failed";
         score = result.score;
+        trackActivity({ kind: "judge_run", userId: candidateUserId, label: judgeLabel, durationMs: Date.now() - judgeStartedAt, ok: true, targetId: challenge.id });
         testResults = {
           passed: result.passed,
           total: result.total,
@@ -200,6 +204,7 @@ export async function POST(
           })),
         };
       } catch (err) {
+        trackActivity({ kind: "judge_run", userId: candidateUserId, label: judgeLabel, durationMs: Date.now() - judgeStartedAt, ok: false, targetId: challenge.id });
         if (!(err instanceof PistonUnavailableError)) {
           console.error("[attempt] server judge failed:", err);
         }

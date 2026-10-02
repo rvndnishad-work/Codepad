@@ -16,6 +16,7 @@ import {
   type PistonExtraFile,
 } from "@/lib/run-payload";
 import { logEvent, runOutcome } from "@/lib/obs";
+import { trackActivity } from "@/lib/admin/activity";
 
 // Compile (10s) + run (3s) budgets plus client ceiling need headroom —
 // without this, serverless platforms may kill long runs with a bare 504.
@@ -68,9 +69,11 @@ async function execute(
 export async function POST(req: Request) {
   // Tracked for the 503 log only; the request may fail before validation.
   let obsLanguage: string | undefined;
+  let userId: string | undefined;
+  let runStartedAt = 0;
   try {
     const session = await auth().catch(() => null);
-    const userId = session?.user?.id;
+    userId = session?.user?.id;
 
     const { language, code, stdin = "", speculative = false, files } =
       await req.json();
@@ -161,20 +164,29 @@ export async function POST(req: Request) {
     const cached = await takeCachedResult(cacheKey);
     if (cached) {
       logEvent("execute", { language, ms: 0, cacheHit: true, truncated: false, files: extraFiles.length, outcome: "ok" });
+      trackActivity({ kind: "playground_run", userId, label: language.toLowerCase(), durationMs: cached.timeMs ?? 0, ok: !cached.signal });
       return NextResponse.json({ ...cached, cacheHit: true });
     }
 
+    runStartedAt = Date.now();
     const result = await execute(language, code, safeStdin, extraFiles);
+    // Admin activity (Piston health): ok=false only for executor failures and
+    // timeouts/kills (signal). Compile or runtime errors in user code are ok runs.
+    trackActivity({ kind: "playground_run", userId, label: language.toLowerCase(), durationMs: Date.now() - runStartedAt, ok: !result.signal });
     logEvent("execute", { language: language.toLowerCase(), ms: result.timeMs, cacheHit: false, truncated: !!result.truncated, files: extraFiles.length, outcome: runOutcome(result) });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof PistonUnavailableError) {
       logEvent("execute", { language: typeof obsLanguage === "string" ? obsLanguage.toLowerCase() : "unknown", outcome: "unavailable", files: 0 });
+      trackActivity({ kind: "playground_run", userId, label: obsLanguage?.toLowerCase() ?? null, durationMs: runStartedAt ? Date.now() - runStartedAt : null, ok: false });
       console.error("Executor unavailable:", err.message);
       return NextResponse.json(
         { error: "Code execution is temporarily unavailable. Please try again shortly." },
         { status: 503 }
       );
+    }
+    if (runStartedAt) {
+      trackActivity({ kind: "playground_run", userId, label: obsLanguage?.toLowerCase() ?? null, durationMs: Date.now() - runStartedAt, ok: false });
     }
     console.error("Execute route error:", err);
     return NextResponse.json({ error: "Failed to run code." }, { status: 500 });

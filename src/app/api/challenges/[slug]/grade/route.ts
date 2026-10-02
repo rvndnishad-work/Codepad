@@ -10,6 +10,7 @@ import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 import { hasHarness } from "@/lib/judge/harness";
 import { runUnitJs } from "@/lib/judge/unit-js";
 import { PistonUnavailableError } from "@/lib/piston";
+import { trackActivity } from "@/lib/admin/activity";
 import type { Contract } from "@/lib/judge/types";
 
 // Server-authoritative grading. The client sends its code (harness: a single
@@ -266,6 +267,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       return NextResponse.json({ error: "This challenge type is not auto-graded." }, { status: 400 });
     }
   } catch (err) {
+    // Admin activity: the judge itself failed (executor down or crashed).
+    trackActivity({ kind: "judge_run", userId: candidateUserId, label: language ?? step.judgingMode, durationMs: Date.now() - t0, ok: false, targetId: challenge.id });
     if (err instanceof PistonUnavailableError) {
       return NextResponse.json(
         { error: "Code execution is temporarily unavailable. Please try again shortly." },
@@ -288,6 +291,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       `dryRun=${Boolean(dryRun)} ${graded.passed}/${graded.total} score=${graded.score} ` +
       `compileErr=${graded.compileError} ms=${Date.now() - t0}`
   );
+  // Admin activity: the judge ran to completion (failing tests or a compile
+  // error in the candidate code still count as an ok run).
+  trackActivity({ kind: "judge_run", userId: candidateUserId, label: language ?? step.judgingMode, durationMs: Date.now() - t0, ok: true, targetId: challenge.id });
 
   // ── Dry run ("Run sample tests"): judge only, never persist ──
   if (dryRun) {

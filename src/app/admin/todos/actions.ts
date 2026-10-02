@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { logAdminAction, type AdminActor } from "@/lib/admin/audit";
 
 export type TodoStatus = "BACKLOG" | "TODO" | "IN_PROGRESS" | "DONE";
 export type TodoPriority = "LOW" | "MEDIUM" | "HIGH";
@@ -13,12 +14,18 @@ export type TodoPriority = "LOW" | "MEDIUM" | "HIGH";
 // lives in AdminTodosConsole's COLUMNS constant.
 const STATUSES: readonly TodoStatus[] = ["BACKLOG", "TODO", "IN_PROGRESS", "DONE"];
 
-async function assertAdminUser(): Promise<{ email: string | null }> {
+async function assertAdminUser(): Promise<AdminActor & { email: string | null }> {
   const session = await auth().catch(() => null);
   if (!(await staffCan(session, "platform:admin"))) {
     throw new Error("Unauthorized: Admin privilege required.");
   }
-  return { email: session?.user?.email ?? null };
+  return { id: session?.user?.id ?? null, email: session?.user?.email ?? null };
+}
+
+/** The todo board and the admin home (open-todo count) both read AdminTodo. */
+function revalidateTodos() {
+  revalidatePath("/admin/todos");
+  revalidatePath("/admin");
 }
 
 function sanitizeStatus(raw: unknown): TodoStatus {
@@ -39,7 +46,8 @@ export async function createTodoAction(input: {
   priority?: TodoPriority;
   category?: string;
 }) {
-  const { email } = await assertAdminUser();
+  const actor = await assertAdminUser();
+  const { email } = actor;
 
   const title = input.title?.trim() ?? "";
   if (!title) throw new Error("Title is required.");
@@ -76,13 +84,27 @@ export async function createTodoAction(input: {
     return { row, ticketKey };
   });
 
-  revalidatePath("/admin/todos");
+  await logAdminAction({
+    actor,
+    action: "todo.create",
+    targetType: "todo",
+    targetId: row.id,
+    targetLabel: `${ticketKey} ${title}`,
+    after: { title, priority: row.priority, category },
+  });
+  revalidateTodos();
   return { success: true, id: row.id, ticketKey };
 }
 
 export async function updateTodoStatusAction(id: string, status: TodoStatus) {
-  await assertAdminUser();
+  const actor = await assertAdminUser();
   const safe = sanitizeStatus(status);
+
+  const before = await prisma.adminTodo.findUnique({
+    where: { id },
+    select: { status: true, title: true, ticketKey: true },
+  });
+  if (!before) throw new Error("Todo not found.");
 
   await prisma.adminTodo.update({
     where: { id },
@@ -93,7 +115,18 @@ export async function updateTodoStatusAction(id: string, status: TodoStatus) {
     },
   });
 
-  revalidatePath("/admin/todos");
+  if (before.status !== safe) {
+    await logAdminAction({
+      actor,
+      action: "todo.status",
+      targetType: "todo",
+      targetId: id,
+      targetLabel: [before.ticketKey, before.title].filter(Boolean).join(" "),
+      before: { status: before.status },
+      after: { status: safe },
+    });
+  }
+  revalidateTodos();
   return { success: true };
 }
 
@@ -110,7 +143,7 @@ export async function updateTodoAction(
     ownerNotes?: string | null;
   }
 ) {
-  await assertAdminUser();
+  const actor = await assertAdminUser();
 
   const data: Record<string, unknown> = {};
   if (input.title !== undefined) {
@@ -148,12 +181,26 @@ export async function updateTodoAction(
       input.ownerNotes && input.ownerNotes.trim() ? input.ownerNotes.trim() : null;
   }
 
+  const fields = Object.keys(data);
+  const before = await prisma.adminTodo.findUnique({ where: { id } });
+  if (!before) throw new Error("Todo not found.");
+
   await prisma.adminTodo.update({
     where: { id },
     data,
   });
 
-  revalidatePath("/admin/todos");
+  const prev = before as unknown as Record<string, unknown>;
+  await logAdminAction({
+    actor,
+    action: "todo.update",
+    targetType: "todo",
+    targetId: id,
+    targetLabel: [before.ticketKey, before.title].filter(Boolean).join(" "),
+    before: Object.fromEntries(fields.map((k) => [k, prev[k] ?? null])),
+    after: data,
+  });
+  revalidateTodos();
   return { success: true };
 }
 
@@ -167,11 +214,11 @@ export async function toggleAcceptanceCriterionAction(
   index: number,
   done: boolean
 ) {
-  await assertAdminUser();
+  const actor = await assertAdminUser();
 
   const row = await prisma.adminTodo.findUnique({
     where: { id },
-    select: { acceptanceCriteria: true },
+    select: { acceptanceCriteria: true, title: true, ticketKey: true },
   });
   if (!row) throw new Error("Todo not found.");
 
@@ -187,6 +234,7 @@ export async function toggleAcceptanceCriterionAction(
     throw new Error("Criterion index out of range.");
   }
 
+  const wasDone = !!list[index]?.done;
   list[index] = { text: String(list[index]?.text ?? ""), done: !!done };
 
   await prisma.adminTodo.update({
@@ -194,13 +242,35 @@ export async function toggleAcceptanceCriterionAction(
     data: { acceptanceCriteria: JSON.stringify(list) },
   });
 
-  revalidatePath("/admin/todos");
+  await logAdminAction({
+    actor,
+    action: "todo.criterion",
+    targetType: "todo",
+    targetId: id,
+    targetLabel: [row.ticketKey, row.title].filter(Boolean).join(" "),
+    before: { index, text: list[index].text, done: wasDone },
+    after: { index, text: list[index].text, done: !!done },
+  });
+  revalidateTodos();
   return { success: true };
 }
 
 export async function deleteTodoAction(id: string) {
-  await assertAdminUser();
+  const actor = await assertAdminUser();
+  const before = await prisma.adminTodo.findUnique({
+    where: { id },
+    select: { title: true, ticketKey: true, status: true, priority: true },
+  });
+  if (!before) throw new Error("Todo not found.");
   await prisma.adminTodo.delete({ where: { id } });
-  revalidatePath("/admin/todos");
+  await logAdminAction({
+    actor,
+    action: "todo.delete",
+    targetType: "todo",
+    targetId: id,
+    targetLabel: [before.ticketKey, before.title].filter(Boolean).join(" "),
+    before,
+  });
+  revalidateTodos();
   return { success: true };
 }

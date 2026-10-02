@@ -2,6 +2,7 @@ import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 
@@ -43,6 +44,17 @@ export default async function SavedPlaygroundPage({
 
   if (!isOwner && !viaInterviewToken && snippet.visibility !== "public") {
     notFound();
+  }
+
+  // Public views by anyone but the owner count towards Snippet.viewCount.
+  if (!isOwner && snippet.visibility === "public") {
+    // Count the view after the response is sent (never blocks render). Raw
+    // SQL so the @updatedAt column is not bumped by a view.
+    const snippetId = snippet.id;
+    after(() =>
+      prisma.$executeRaw`UPDATE "Snippet" SET "viewCount" = "viewCount" + 1 WHERE "id" = ${snippetId}`
+        .then(() => undefined, () => undefined),
+    );
   }
 
   const files = JSON.parse(snippet.files) as SandpackFiles;

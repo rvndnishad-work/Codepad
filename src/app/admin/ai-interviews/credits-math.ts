@@ -6,7 +6,7 @@
 import type { Tone } from "../interviews/_components/list";
 
 /** Ledger kinds the page knows. ADJUST is written by the admin adjust action. */
-export const LEDGER_KINDS = ["GRANT", "PURCHASE", "INCLUDED", "TRIAL", "CONSUMPTION", "REFUND", "ADJUST", "INCLUDED_EXPIRED"] as const;
+export const LEDGER_KINDS = ["GRANT", "PURCHASE", "INCLUDED", "TRIAL", "CONSUMPTION", "REFUND", "ADJUSTMENT", "INCLUDED_EXPIRED"] as const;
 export type LedgerKindId = (typeof LEDGER_KINDS)[number];
 
 export const KIND_META: Record<string, { label: string; tone: Tone }> = {
@@ -58,7 +58,7 @@ export function creditTotals(rows: KindSum[]): CreditTotals {
     used: Math.max(0, -s("CONSUMPTION") - refunded),
     refunded,
     expired: -s("INCLUDED_EXPIRED"),
-    adjusted: s("ADJUST"),
+    adjusted: s("ADJUSTMENT"),
   };
 }
 

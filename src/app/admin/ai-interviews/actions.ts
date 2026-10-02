@@ -72,7 +72,7 @@ export async function adjustCreditsAction(workspaceId: string, amount: number, n
       const before = agg._sum.amount ?? 0;
       const err = adjustError(amount, before);
       if (err) throw new UserError(err);
-      await tx.aIInterviewCreditLedger.create({ data: { workspaceId, kind: "ADJUST", amount, adminUserId: who.id, note: n } });
+      await tx.aIInterviewCreditLedger.create({ data: { workspaceId, kind: "ADJUSTMENT", amount, adminUserId: who.id, note: n } });
       const after = before + amount;
       const includedNow = includedAfter(ws.includedCreditsLeft, after);
       if (includedNow !== ws.includedCreditsLeft) {

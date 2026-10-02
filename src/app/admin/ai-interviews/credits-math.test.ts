@@ -10,7 +10,7 @@ describe("creditTotals", () => {
     { kind: "CONSUMPTION", sum: -120, count: 90 },
     { kind: "REFUND", sum: 6, count: 3 },
     { kind: "INCLUDED_EXPIRED", sum: -8, count: 1 },
-    { kind: "ADJUST", sum: -5, count: 1 },
+    { kind: "ADJUSTMENT", sum: -5, count: 1 },
   ];
   it("lifetime granted is grants plus purchases only", () => {
     expect(creditTotals(rows).lifetimeGranted).toBe(250);

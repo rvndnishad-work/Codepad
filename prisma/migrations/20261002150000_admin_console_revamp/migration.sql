@@ -252,3 +252,10 @@ CREATE INDEX "AssistantMessage_conversationId_createdAt_idx" ON "AssistantMessag
 -- AddForeignKey
 ALTER TABLE "AssistantMessage" ADD CONSTRAINT "AssistantMessage_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "AssistantConversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- Workspaces that used the old "LOCKED" plan name become real locks.
+UPDATE "Workspace"
+SET "lockedAt" = CURRENT_TIMESTAMP,
+    "lockedReason" = 'Locked before the admin console revamp',
+    "planName" = 'FREE'
+WHERE "planName" = 'LOCKED';

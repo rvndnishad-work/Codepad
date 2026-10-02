@@ -38,16 +38,11 @@ const ACTION_CONFIG: Record<
   delete: { label: "Delete", icon: Trash2, tone: "danger" },
 };
 
-const TONE_CLASS: Record<string, string> = {
-  default: "bg-surface border-border text-muted hover:text-fg hover:bg-elevated",
-  success: "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/15",
-  danger: "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/15",
-  warning: "bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/15",
-  accent: "bg-accent/10 border-accent/30 text-accent hover:bg-accent/15",
-};
 
 const BAR_ACTIONS: BulkAction[] = [
   "publish",
+  "unpublish",
+  "mark-pending",
   "feature",
   "unfeature",
   "needs-changes",
@@ -134,27 +129,41 @@ export default function BlogsBulkTable({
     [selected],
   );
 
+  const [confirming, setConfirming] = useState<BulkAction | null>(null);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const needsReason = (a: BulkAction) => a === "reject" || a === "needs-changes";
+  const needsConfirm = (a: BulkAction) => a === "delete" || needsReason(a);
+
   async function runAction(action: BulkAction) {
     if (selected.size === 0) return;
-    const count = selected.size;
-    if (action === "delete" && !confirm(`Delete ${count} blog post${count === 1 ? "" : "s"}? This action can't be undone.`)) {
+    if (needsConfirm(action) && confirming !== action) {
+      setConfirming(action);
+      setReason("");
+      setError(null);
+      return;
+    }
+    if (needsReason(action) && !reason.trim()) {
+      setError("Add a reason. Each author gets it in a notification.");
       return;
     }
     setBusy(action);
+    setError(null);
     try {
       const res = await fetch(apiPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: Array.from(selected), action }),
+        body: JSON.stringify({ ids: Array.from(selected), action, reason: reason.trim() || undefined }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data?.error || `Failed: ${action}`);
+        throw new Error(typeof data?.error === "string" ? data.error : `Failed: ${action}`);
       }
       setSelected(new Set());
+      setConfirming(null);
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Bulk action failed.");
+      setError(err instanceof Error ? err.message : "Bulk action failed.");
     } finally {
       setBusy(null);
     }
@@ -166,39 +175,66 @@ export default function BlogsBulkTable({
 
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 pointer-events-none">
-          <div className="pointer-events-auto bg-bg/95 backdrop-blur border border-border rounded-2xl shadow-2xl px-4 py-3 flex flex-wrap items-center gap-2 max-w-[920px]">
-            <div className="flex items-center gap-2 pr-3 border-r border-border">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-accent text-bg text-xs font-bold tabular-nums">
-                {selected.size}
-              </span>
-              <span className="text-xs font-semibold text-fg">selected</span>
+          <div className="pointer-events-auto bg-surface border border-border rounded-xl shadow-lg px-4 py-3 flex flex-col gap-2 max-w-[920px]">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="pr-3 border-r border-border text-sm text-fg tabular-nums">{selected.size} selected</span>
+              {BAR_ACTIONS.map((a) => {
+                const conf = ACTION_CONFIG[a];
+                const Icon = conf.icon;
+                return (
+                  <button
+                    key={a}
+                    onClick={() => runAction(a)}
+                    disabled={busy !== null}
+                    className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-xs font-medium transition disabled:opacity-50 ${
+                      confirming === a ? "border-border-strong bg-panel text-fg" : "border-border bg-surface text-fg hover:bg-panel"
+                    } ${conf.tone === "danger" ? "text-danger" : ""}`}
+                  >
+                    {busy === a ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
+                    {conf.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => {
+                  setSelected(new Set());
+                  setConfirming(null);
+                }}
+                disabled={busy !== null}
+                className="ml-1 p-1.5 rounded-md text-muted hover:text-fg hover:bg-panel transition disabled:opacity-50"
+                title="Clear selection"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-
-            {BAR_ACTIONS.map((a) => {
-              const conf = ACTION_CONFIG[a];
-              const Icon = conf.icon;
-              const isBusy = busy === a;
-              return (
+            {confirming && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
+                {needsReason(confirming) ? (
+                  <input
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    autoFocus
+                    placeholder="Reason for the authors (required)"
+                    className="flex-1 min-w-[220px] h-8 rounded-md border border-border bg-bg px-2.5 text-sm text-fg focus:outline-none focus:border-border-strong"
+                  />
+                ) : (
+                  <span className="text-sm text-fg">
+                    Delete {selected.size} post{selected.size === 1 ? "" : "s"} and their comments? This cannot be undone.
+                  </span>
+                )}
                 <button
-                  key={a}
-                  onClick={() => runAction(a)}
+                  onClick={() => runAction(confirming)}
                   disabled={busy !== null}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition disabled:opacity-50 ${TONE_CLASS[conf.tone]}`}
+                  className="h-8 px-3 rounded-md border border-danger/30 text-danger text-sm font-medium hover:bg-danger/[0.08] disabled:opacity-50"
                 >
-                  {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Icon className="w-3.5 h-3.5" />}
-                  {conf.label}
+                  Confirm {ACTION_CONFIG[confirming].label.toLowerCase()}
                 </button>
-              );
-            })}
-
-            <button
-              onClick={() => setSelected(new Set())}
-              disabled={busy !== null}
-              className="ml-1 p-1.5 rounded-lg text-muted hover:text-fg hover:bg-elevated transition disabled:opacity-50"
-              title="Clear selection"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+                <button onClick={() => setConfirming(null)} className="h-8 px-2 text-sm text-muted hover:text-fg">
+                  Cancel
+                </button>
+              </div>
+            )}
+            {error && <p className="text-xs text-danger">{error}</p>}
           </div>
         </div>
       )}

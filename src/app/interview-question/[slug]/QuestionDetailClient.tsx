@@ -582,6 +582,7 @@ export default function QuestionDetailClient({
               isAdmin={isAdmin}
               postUrl={`/api/interview-questions/${q.slug}/comments`}
               deleteUrlBase="/api/interview-questions/comments"
+              reportType="question_comment"
               placeholder="Share your approach, another answer, or a follow-up you were asked…"
               bare
               emptyText="No comments yet. Share how you would answer it."

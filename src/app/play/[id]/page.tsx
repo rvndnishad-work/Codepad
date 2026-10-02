@@ -1,4 +1,5 @@
 import PlaygroundLoader from "@/components/PlaygroundLoader";
+import ReportButton from "@/components/ReportButton";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
@@ -71,6 +72,17 @@ export default async function SavedPlaygroundPage({
 
   if (previewOnly) {
     return <div className="fixed inset-0 flex">{inner}</div>;
+  }
+  // Signed-in visitors can report someone else's public snippet.
+  if (userId && !isOwner && snippet.visibility === "public") {
+    return (
+      <>
+        {inner}
+        <div className="fixed bottom-3 left-3 z-40 rounded-md border border-border bg-surface px-2 py-1">
+          <ReportButton targetType="snippet" targetId={snippet.id} label up />
+        </div>
+      </>
+    );
   }
   return inner;
 }

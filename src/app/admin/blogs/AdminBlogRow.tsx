@@ -29,6 +29,7 @@ interface AdminBlogRowProps {
     status: string;
     featured: boolean;
     adminNotes: string | null;
+    scheduledAt?: Date | null;
     createdAt: Date;
     viewCount: number;
     user: {
@@ -114,6 +115,11 @@ export default function AdminBlogRow({ blog }: AdminBlogRowProps) {
             <config.icon className="w-3 h-3" />
             {config.label}
           </div>
+          {blog.scheduledAt && (
+            <div className="text-xs text-muted mt-1">
+              Scheduled {new Date(blog.scheduledAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+            </div>
+          )}
         </div>
 
         {/* Column 5: Stats */}

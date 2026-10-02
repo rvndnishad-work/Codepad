@@ -8,6 +8,7 @@ import {
   type ChallengeStepInput,
 } from "../../challenge-form-types";
 import { requireAdminAccess } from "@/lib/permissions/staff";
+import ChallengeStats from "./ChallengeStats";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -16,7 +17,10 @@ export default async function EditChallengePage({ params }: Props) {
   const { id } = await params;
   const challenge = await prisma.challenge.findUnique({
     where: { id },
-    include: { steps: { orderBy: { position: "asc" } } },
+    include: {
+      steps: { orderBy: { position: "asc" } },
+      _count: { select: { attempts: true, takeHomeAssignments: true } },
+    },
   });
   if (!challenge) notFound();
 
@@ -61,9 +65,17 @@ export default async function EditChallengePage({ params }: Props) {
     featured: challenge.featured,
     premium: challenge.premium,
     steps,
+    scheduledAt: challenge.scheduledAt?.toISOString() ?? "",
+    archived: challenge.archivedAt !== null,
+    historyCount: challenge._count.attempts + challenge._count.takeHomeAssignments,
   };
 
   return (
+    <div className="space-y-6">
+    <ChallengeStats
+      challengeId={challenge.id}
+      steps={challenge.steps.map((s) => ({ id: s.id, position: s.position, title: s.title }))}
+    />
     <ChallengeForm
       mode="edit"
       initial={initial}
@@ -74,6 +86,7 @@ export default async function EditChallengePage({ params }: Props) {
         isAdmin: true,
       }}
     />
+    </div>
   );
 }
 

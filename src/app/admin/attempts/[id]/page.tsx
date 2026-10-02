@@ -82,7 +82,7 @@ function formatDuration(sec: number | null | undefined): string {
 }
 
 export default async function AdminAttemptDetailPage({ params }: AdminAttemptDetailPageProps) {
-  await requireAdminAccess();
+  await requireAdminAccess("platform:admin");
   const { id } = await params;
 
   const attempt = await prisma.challengeAttempt.findUnique({

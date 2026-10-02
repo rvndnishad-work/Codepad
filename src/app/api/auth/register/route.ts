@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
+import { trackActivity } from "@/lib/admin/activity";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
@@ -192,7 +193,7 @@ export async function POST(req: Request) {
         } as any,
       });
     } else {
-      await prisma.user.create({
+      const created = await prisma.user.create({
         data: {
           email,
           name: name ?? email.split("@")[0],
@@ -204,7 +205,9 @@ export async function POST(req: Request) {
             jobTitle,
           } : {}),
         } as any,
+        select: { id: true },
       });
+      trackActivity({ kind: "signup", userId: created.id, label: "credentials" });
     }
 
     return NextResponse.json({ ok: true });

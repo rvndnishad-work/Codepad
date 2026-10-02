@@ -2,8 +2,11 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { Pencil, Trash2, ExternalLink } from "lucide-react";
+import { Pencil, ExternalLink } from "lucide-react";
 import { setQuestionStatus, deleteQuestion } from "./actions";
+import ConfirmButton from "../content/_components/ConfirmButton";
+import Pill from "../content/_components/Pill";
+import { formatWhen } from "../content/_lib/schedule";
 import { difficultyClasses } from "@/lib/interview-questions/shared";
 
 type Q = {
@@ -15,6 +18,7 @@ type Q = {
   technology: string | null;
   views: number;
   company: string | null;
+  scheduledAt: string | null;
 };
 
 const STATUS_CLASS: Record<string, string> = {
@@ -27,6 +31,7 @@ export default function QuestionAdminRow({ q }: { q: Q }) {
   const [pending, start] = useTransition();
   const [removed, setRemoved] = useState(false);
   if (removed) return null;
+  const remove = deleteQuestion.bind(null, q.id);
 
   return (
     <tr className={`hover:bg-bg/30 ${pending ? "opacity-50" : ""}`}>
@@ -47,6 +52,11 @@ export default function QuestionAdminRow({ q }: { q: Q }) {
           <option value="published">published</option>
           <option value="archived">archived</option>
         </select>
+        {q.scheduledAt && q.status === "draft" && (
+          <div className="mt-1">
+            <Pill tone="info" title="Publishes automatically">Scheduled {formatWhen(q.scheduledAt)}</Pill>
+          </div>
+        )}
       </td>
       <td className="p-3">
         <div className="flex items-center justify-end gap-1.5">
@@ -56,20 +66,17 @@ export default function QuestionAdminRow({ q }: { q: Q }) {
           <Link href={`/admin/interview-questions/${q.id}`} className="p-1.5 rounded-md hover:bg-bg text-muted hover:text-accent" title="Edit">
             <Pencil className="w-3.5 h-3.5" />
           </Link>
-          <button
-            disabled={pending}
-            onClick={() => {
-              if (!confirm(`Delete “${q.title}”? This cannot be undone.`)) return;
-              start(async () => {
-                await deleteQuestion(q.id);
-                setRemoved(true);
-              });
+          <ConfirmButton
+            action={async () => {
+              const res = await remove();
+              if (res.ok) setRemoved(true);
+              return res;
             }}
-            className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted hover:text-rose-500"
-            title="Delete"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
+            label="Delete"
+            confirmLabel="Delete question"
+            prompt={`Delete "${q.title}"? This cannot be undone.`}
+            tone="danger"
+          />
         </div>
       </td>
     </tr>

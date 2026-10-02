@@ -8,6 +8,7 @@ import {
   syncMembershipStatus,
 } from "@/lib/marketplace/fulfillment";
 import { syncConnectAccountFromStripe } from "@/lib/marketplace/connect";
+import { recordCreatorPayoutEvent } from "@/lib/marketplace/payouts";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS, type WorkspaceAuditAction } from "@/lib/workspace-audit";
@@ -241,6 +242,19 @@ export async function POST(req: Request) {
         const account = event.data.object as Stripe.Account;
         await syncConnectAccountFromStripe(account.id);
         console.log(`Connect account ${account.id} synced.`);
+        break;
+      }
+
+      // Connect: creator payouts (on the connected account) and transfers to it.
+      case "payout.created":
+      case "payout.updated":
+      case "payout.paid":
+      case "payout.failed":
+      case "payout.canceled":
+      case "transfer.created":
+      case "transfer.reversed": {
+        const r = await recordCreatorPayoutEvent(event);
+        if (!r.stored) console.log(`Stripe webhook: ${eventType} skipped (${r.reason}).`);
         break;
       }
 

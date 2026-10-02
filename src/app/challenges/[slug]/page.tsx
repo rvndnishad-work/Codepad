@@ -173,6 +173,8 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
   // Mirrors the gating on /tracks/[slug] before Tracks were folded in.
   const isOwner = !!userId && challenge.authorId === userId;
   const callerIsAdmin = await staffCan(session, "content:curate");
+  // Archived challenges are gone for everyone but staff (attempts are kept).
+  if (challenge.archivedAt && !callerIsAdmin) notFound();
   let canView = isOwner || callerIsAdmin;
 
   if (!canView) {

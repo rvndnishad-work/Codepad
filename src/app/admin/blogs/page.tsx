@@ -7,6 +7,7 @@ import Link from "next/link";
 import Pagination from "../Pagination";
 import SortSelect from "./SortSelect";
 import { requireAdminAccess } from "@/lib/permissions/staff";
+import ContentTabs from "../content/_components/ContentTabs";
 
 interface AdminBlogsPageProps {
   searchParams: Promise<{ q?: string; status?: string; page?: string; sortBy?: string }>;
@@ -24,12 +25,14 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
     AND: [
       q ? {
         OR: [
-          { title: { contains: q } },
-          { slug: { contains: q } },
+          { title: { contains: q, mode: "insensitive" as const } },
+          { slug: { contains: q, mode: "insensitive" as const } },
         ],
       } : {},
       status === "FEATURED"
         ? { featured: true }
+        : status === "SCHEDULED"
+        ? { scheduledAt: { not: null } }
         : status
         ? { status }
         : {},
@@ -67,37 +70,24 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
     };
   }
 
-  const totalCount = await prisma.blogPost.count({
-    where: whereClause
-  });
-
-  const blogs = await prisma.blogPost.findMany({
-    where: whereClause,
-    orderBy,
-    skip,
-    take: ITEMS_PER_PAGE,
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-        },
+  const [totalCount, blogs, allBlogsCount, pendingCount, publishedCount, featuredCount, scheduledCount] = await Promise.all([
+    prisma.blogPost.count({ where: whereClause }),
+    prisma.blogPost.findMany({
+      where: whereClause,
+      orderBy,
+      skip,
+      take: ITEMS_PER_PAGE,
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+        _count: { select: { reactions: true, comments: true } },
       },
-      _count: {
-        select: {
-          reactions: true,
-          comments: true,
-        },
-      },
-    },
-  });
-
-  const allBlogsCount = await prisma.blogPost.count();
-  const pendingCount = await prisma.blogPost.count({ where: { status: "PENDING" } });
-  const publishedCount = await prisma.blogPost.count({ where: { status: "PUBLISHED" } });
-  const featuredCount = await prisma.blogPost.count({ where: { featured: true } });
+    }),
+    prisma.blogPost.count(),
+    prisma.blogPost.count({ where: { status: "PENDING" } }),
+    prisma.blogPost.count({ where: { status: "PUBLISHED" } }),
+    prisma.blogPost.count({ where: { featured: true } }),
+    prisma.blogPost.count({ where: { scheduledAt: { not: null } } }),
+  ]);
 
   const stats = {
     total: allBlogsCount,
@@ -108,13 +98,14 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
 
   return (
     <div className="space-y-6">
+      <ContentTabs active="blogs" />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-panel/40 border border-border flex items-center justify-center text-muted shrink-0 mt-0.5">
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-fg">Blogs</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-fg">Blogs</h2>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <p className="text-sm text-muted">
                 {stats.total} total · {stats.published} published
@@ -140,17 +131,20 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
                 placeholder="Search blogs..."
                 className="w-full bg-panel/20 border border-border backdrop-blur-md rounded-xl py-2 pl-10 pr-4 text-sm text-fg placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition"
               />
+              {status && <input type="hidden" name="status" value={status} />}
+              {sortBy && <input type="hidden" name="sortBy" value={sortBy} />}
             </form>
 
             <SortSelect />
           </div>
           
           <div className="flex items-center gap-1 bg-panel/20 border border-border backdrop-blur-md rounded-xl p-1 shadow-inner w-fit">
-            <FilterLink current={status} value="" label="All" />
-            <FilterLink current={status} value="PENDING" label="Pending" />
-            <FilterLink current={status} value="PUBLISHED" label="Published" />
-            <FilterLink current={status} value="FEATURED" label="Featured" />
-            <FilterLink current={status} value="NEEDS_CHANGES" label="Changes" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="" label="All" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="PENDING" label="Pending" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="PUBLISHED" label="Published" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="FEATURED" label="Featured" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="NEEDS_CHANGES" label="Changes" />
+            <FilterLink current={status} q={q} sortBy={sortBy} value="SCHEDULED" label={`Scheduled${scheduledCount ? ` ${scheduledCount}` : ""}`} />
           </div>
         </div>
       </div>
@@ -203,15 +197,18 @@ export default async function AdminBlogsPage({ searchParams }: AdminBlogsPagePro
   );
 }
 
-function FilterLink({ current, value, label }: { current?: string, value: string, label: string }) {
+function FilterLink({ current, q, sortBy, value, label }: { current?: string; q?: string; sortBy?: string; value: string; label: string }) {
   const isActive = (current || "") === value;
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (value) params.set("status", value);
+  if (sortBy) params.set("sortBy", sortBy);
+  const qs = params.toString();
   return (
     <Link
-      href={`/admin/blogs${value ? `?status=${value}` : ""}`}
-      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
-        isActive
-          ? "bg-elevated text-fg border-border shadow-sm"
-          : "border-transparent text-muted hover:text-fg hover:bg-panel/40"
+      href={`/admin/blogs${qs ? `?${qs}` : ""}`}
+      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition border ${
+        isActive ? "bg-surface text-fg border-border" : "border-transparent text-muted hover:text-fg hover:bg-panel"
       }`}
     >
       {label}

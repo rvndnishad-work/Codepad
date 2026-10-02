@@ -9,6 +9,7 @@ import { DIFFICULTIES, ROUNDS, EXPERIENCE_LEVELS, TECHNOLOGIES } from "@/lib/int
 import MarkdownField from "./editor/MarkdownField";
 import JsonField, { validateJson } from "./editor/JsonField";
 import ExamplesEditor, { parseExamples, serializeExamples, type ExampleItem } from "./editor/ExamplesEditor";
+import ScheduleField from "../content/_components/ScheduleField";
 
 export type QuestionInitial = {
   id?: string;
@@ -32,6 +33,8 @@ export type QuestionInitial = {
   examplesData: string;
   /** Raw JSON map of per-framework bundles: { react|vue|angular: { answer, files } }. */
   frameworksData: string;
+  /** ISO time the housekeeping cron publishes a draft at; "" for none. */
+  scheduledAt?: string;
 };
 
 const EMPTY: QuestionInitial = {
@@ -225,6 +228,7 @@ export default function QuestionForm({
           seoDescription: f.seoDescription || undefined,
           examplesData: ex.value,
           frameworksData: frameworks,
+          scheduledAt: f.status === "draft" ? f.scheduledAt || "" : "",
         });
         initialSnapshot.current = snapshot(); // saved — no beforeunload nag on redirect
         router.push("/admin/interview-questions");
@@ -391,6 +395,17 @@ export default function QuestionForm({
               onChange={(v) => setF((p) => ({ ...p, status: v }))}
               activeClasses={STATUS_ACTIVE}
             />
+            {f.status === "draft" && (
+              <div className="space-y-1.5">
+                <label className={label} htmlFor="q-schedule">Schedule publish</label>
+                <ScheduleField
+                  id="q-schedule"
+                  value={f.scheduledAt || null}
+                  onChange={(iso) => setF((p) => ({ ...p, scheduledAt: iso }))}
+                />
+                <p className="text-xs text-muted">Goes live within about ten minutes of this time.</p>
+              </div>
+            )}
           </div>
 
           <div className={card}>

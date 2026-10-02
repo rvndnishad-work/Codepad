@@ -1,77 +1,91 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
+import { logAdminAction } from "@/lib/admin/audit";
+import { staffContext } from "@/app/admin/content/_lib/guard";
+import { notifyBlogAuthor } from "../_shared";
 
 const schema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(200),
-  action: z.enum([
-    "publish",
-    "unpublish",
-    "feature",
-    "unfeature",
-    "reject",
-    "mark-pending",
-    "needs-changes",
-    "delete",
-  ]),
+  action: z.enum(["publish", "unpublish", "feature", "unfeature", "reject", "mark-pending", "needs-changes", "delete"]),
+  /** Required for reject and needs-changes; sent to each author. */
+  reason: z.string().max(4000).optional(),
 });
 
 export async function POST(req: Request) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "content:curate"))) {
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  }
+  const ctx = await staffContext("content:curate");
+  if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
-  const body = await req.json().catch(() => null);
-  const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { ids, action } = parsed.data;
+  const reason = parsed.data.reason?.trim() || "";
+  if ((action === "reject" || action === "needs-changes") && !reason) {
+    return NextResponse.json({ error: "Add a reason for the authors." }, { status: 400 });
+  }
+
+  const posts = await prisma.blogPost.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, title: true, slug: true, userId: true, status: true, published: true, featured: true },
+  });
+  const found = posts.map((p) => p.id);
 
   try {
+    let count: number;
     if (action === "delete") {
-      const result = await prisma.blogPost.deleteMany({ where: { id: { in: ids } } });
-      return NextResponse.json({ ok: true, count: result.count });
+      count = (await prisma.blogPost.deleteMany({ where: { id: { in: found } } })).count;
+    } else {
+      const data: Record<string, unknown> = {};
+      switch (action) {
+        case "publish":
+          Object.assign(data, { status: "PUBLISHED", published: true, scheduledAt: null });
+          break;
+        case "unpublish":
+          Object.assign(data, { status: "DRAFT", published: false, scheduledAt: null });
+          break;
+        case "reject":
+          Object.assign(data, { status: "REJECTED", published: false, scheduledAt: null, adminNotes: reason });
+          break;
+        case "mark-pending":
+          // Pending means "waiting for review", so it must come off the site too.
+          Object.assign(data, { status: "PENDING", published: false, scheduledAt: null });
+          break;
+        case "needs-changes":
+          Object.assign(data, { status: "NEEDS_CHANGES", published: false, scheduledAt: null, adminNotes: reason });
+          break;
+        case "feature":
+          data.featured = true;
+          break;
+        case "unfeature":
+          data.featured = false;
+          break;
+      }
+      count = await prisma.$transaction(async (tx) => {
+        const r = await tx.blogPost.updateMany({ where: { id: { in: found } }, data });
+        if (action === "publish") {
+          await tx.blogPost.updateMany({ where: { id: { in: found }, publishedAt: null }, data: { publishedAt: new Date() } });
+        }
+        return r.count;
+      });
     }
 
-    const data: Record<string, unknown> = {};
-    switch (action) {
-      case "publish":
-        data.status = "PUBLISHED";
-        data.published = true;
-        break;
-      case "unpublish":
-        data.status = "DRAFT";
-        data.published = false;
-        break;
-      case "reject":
-        data.status = "REJECTED";
-        data.published = false;
-        break;
-      case "mark-pending":
-        data.status = "PENDING";
-        break;
-      case "needs-changes":
-        data.status = "NEEDS_CHANGES";
-        data.published = false;
-        break;
-      case "feature":
-        data.featured = true;
-        break;
-      case "unfeature":
-        data.featured = false;
-        break;
-    }
-
-    const result = await prisma.blogPost.updateMany({
-      where: { id: { in: ids } },
-      data,
-    });
-    return NextResponse.json({ ok: true, count: result.count });
+    await Promise.all(
+      posts.map(async (p) => {
+        await logAdminAction({
+          actor: ctx.actor,
+          action: `content.blog.${action}`,
+          targetType: "blog",
+          targetId: p.id,
+          targetLabel: p.title,
+          before: { status: p.status, published: p.published, featured: p.featured },
+          note: reason || null,
+        });
+        if (action === "reject" && p.status !== "REJECTED") await notifyBlogAuthor(p, "REJECTED", reason);
+        if (action === "needs-changes" && p.status !== "NEEDS_CHANGES") await notifyBlogAuthor(p, "NEEDS_CHANGES", reason);
+      }),
+    );
+    return NextResponse.json({ ok: true, count });
   } catch (error) {
     console.error("Bulk blog action error:", error);
     return NextResponse.json({ error: "bulk action failed" }, { status: 500 });

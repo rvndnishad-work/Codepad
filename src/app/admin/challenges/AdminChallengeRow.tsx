@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Edit3, Trash2, ExternalLink } from "lucide-react";
+import { Edit3, ExternalLink } from "lucide-react";
 import { BulkRowCheckbox } from "./ChallengesBulkTable";
+import Pill from "../content/_components/Pill";
 
-type Row = {
+export type AdminChallengeRowData = {
   id: string;
   slug: string;
   title: string;
@@ -15,182 +16,172 @@ type Row = {
   category: string | null;
   published: boolean;
   premium: boolean;
+  featured: boolean;
   attempts: number;
+  takeHomes: number;
+  archivedAt: string | null;
+  scheduledAt: string | null;
+  updatedAt: string;
 };
 
-const difficultyClass: Record<string, string> = {
-  easy: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30",
-  medium: "text-amber-500 bg-amber-500/10 border-amber-500/30",
-  hard: "text-rose-500 bg-rose-500/10 border-rose-500/30",
-};
+const DIFFICULTY_TONE = { easy: "ok", medium: "warn", hard: "bad" } as const;
 
-export default function AdminChallengeRow({ challenge }: { challenge: Row }) {
+export default function AdminChallengeRow({ challenge: c }: { challenge: AdminChallengeRowData }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState<"archive" | "delete" | null>(null);
+  const hasHistory = c.attempts > 0 || c.takeHomes > 0;
 
-  async function handleDelete() {
-    if (!confirm(`Delete "${challenge.title}"? This also removes all attempts.`)) {
-      return;
-    }
+  async function call(init: RequestInit, done: string) {
     setBusy(true);
     try {
-      const res = await fetch(`/api/admin/challenges/${challenge.id}`, {
-        method: "DELETE",
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      toast.success("Challenge deleted");
+      const res = await fetch(`/api/admin/challenges/${c.id}`, { ...init, cache: "no-store" });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? `HTTP ${res.status}`);
+      }
+      toast.success(done);
+      setConfirm(null);
       router.refresh();
     } catch (err) {
-      toast.error("Delete failed", {
-        description: err instanceof Error ? err.message : String(err),
-      });
+      toast.error("Update failed", { description: err instanceof Error ? err.message : String(err) });
     } finally {
       setBusy(false);
     }
   }
+  const patch = (body: object, done: string) =>
+    call({ method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, done);
 
-  async function togglePublished() {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/challenges/${challenge.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ published: !challenge.published }),
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      toast.success(challenge.published ? "Unpublished" : "Published");
-      router.refresh();
-    } catch (err) {
-      toast.error("Update failed", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function togglePremium() {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/admin/challenges/${challenge.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ premium: !challenge.premium }),
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error((await res.text()) || `HTTP ${res.status}`);
-      toast.success(challenge.premium ? "Marked as Free" : "Marked as Premium");
-      router.refresh();
-    } catch (err) {
-      toast.error("Update failed", {
-        description: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div 
-      className={`group transition-all duration-200 border-b border-border last:border-b-0 hover:bg-panel/5 p-5 lg:p-0 lg:grid lg:grid-cols-[40px_3fr_1.2fr_1.2fr_1fr_1.2fr_1.2fr_2.5fr] lg:items-center lg:px-6 lg:py-4`}
-    >
-      {/* Column 1: Checkbox */}
-      <div className="flex items-center lg:justify-center mb-3 lg:mb-0">
-        <BulkRowCheckbox id={challenge.id} />
-        <span className="lg:hidden text-xs font-bold text-muted ml-2 ">Select Challenge</span>
-      </div>
-
-      {/* Column 2: Title / Slug */}
-      <div className="min-w-0 mb-3 lg:mb-0">
-        <div className="font-bold text-fg text-sm lg:text-base group-hover:text-accent transition">{challenge.title}</div>
-        <div className="text-xs text-muted font-mono">{challenge.slug}</div>
-      </div>
-
-      {/* Column 3: Difficulty */}
-      <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Difficulty:</span>
-        <span
-          className={`inline-block px-2 py-0.5 rounded-md border text-xs font-bold ${
-            difficultyClass[challenge.difficulty] ?? ""
-          }`}
-        >
-          {challenge.difficulty}
-        </span>
-      </div>
-
-      {/* Column 4: Category */}
-      <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Category:</span>
-        <span className="text-xs font-mono text-muted lg:text-fg">{challenge.category ?? "—"}</span>
-      </div>
-
-      {/* Column 5: Attempts */}
-      <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Attempts:</span>
-        <span className="text-xs font-mono text-muted lg:text-fg tabular-nums">{challenge.attempts}</span>
-      </div>
-
-      {/* Column 6: Monetization */}
-      <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Monetization:</span>
-        <button
-          onClick={togglePremium}
-          disabled={busy}
-          className={`px-2 py-0.5 rounded-md border text-xs font-bold transition disabled:opacity-50 ${
-            challenge.premium
-              ? "text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 dark:text-amber-400 dark:bg-amber-500/20 dark:border-amber-500/40"
-              : "text-muted bg-surface border-border hover:bg-elevated"
-          }`}
-        >
-          {challenge.premium ? "Premium" : "Free"}
-        </button>
-      </div>
-
-      {/* Column 7: Status */}
-      <div className="mt-2 lg:mt-0 flex items-center lg:block">
-        <span className="lg:hidden text-xs font-bold text-muted w-24 mr-2 block">Status:</span>
-        <button
-          onClick={togglePublished}
-          disabled={busy}
-          className={`px-2 py-0.5 rounded-md border text-xs font-bold transition disabled:opacity-50 ${
-            challenge.published
-              ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20"
-              : "text-muted bg-surface border-border hover:bg-elevated"
-          }`}
-        >
-          {challenge.published ? "Published" : "Draft"}
-        </button>
-      </div>
-
-      {/* Column 8: Actions */}
-      <div className="mt-4 lg:mt-0 flex items-center justify-end gap-2 border-t border-border pt-3 lg:border-none lg:pt-0">
-        <Link
-          href={`/challenges/${challenge.slug}`}
-          target="_blank"
-          className="p-2 rounded-lg border border-border bg-bg hover:bg-elevated flex items-center justify-center text-muted hover:text-fg hover:border-border-strong transition"
-          title="View public page"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-        <Link
-          href={`/admin/challenges/${challenge.id}/edit`}
-          className="p-2 rounded-lg border border-border bg-bg hover:bg-elevated flex items-center justify-center text-muted hover:text-fg hover:border-border-strong transition"
-          title="Edit"
-        >
-          <Edit3 className="w-3.5 h-3.5" />
-        </Link>
-        <button
-          onClick={handleDelete}
-          disabled={busy}
-          className="p-2 rounded-lg border border-rose-500/30 bg-bg hover:bg-rose-500/10 flex items-center justify-center text-rose-500 transition disabled:opacity-50"
-          title="Delete"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    </div>
+  const status = c.archivedAt ? (
+    <Pill tone="off">Archived</Pill>
+  ) : c.published ? (
+    <Pill tone="ok">Published</Pill>
+  ) : c.scheduledAt ? (
+    <Pill tone="info" title={new Date(c.scheduledAt).toLocaleString()}>
+      Scheduled {new Date(c.scheduledAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+    </Pill>
+  ) : (
+    <Pill tone="off">Draft</Pill>
   );
 
+  return (
+    <tr className="hover:bg-panel/60 align-middle">
+      <td className="pl-4 pr-2 py-3 w-8">
+        <BulkRowCheckbox id={c.id} />
+      </td>
+      <td className="px-3 py-3 min-w-[220px]">
+        <Link href={`/admin/challenges/${c.id}/edit`} className="font-medium text-fg hover:underline">
+          {c.title}
+        </Link>
+        <div className="text-xs text-muted font-mono">{c.slug}</div>
+      </td>
+      <td className="px-3 py-3">
+        <Pill tone={DIFFICULTY_TONE[c.difficulty as keyof typeof DIFFICULTY_TONE] ?? "off"}>{c.difficulty}</Pill>
+      </td>
+      <td className="px-3 py-3 text-muted hidden lg:table-cell">{c.category ?? "—"}</td>
+      <td className="px-3 py-3 text-right tabular-nums">{c.attempts.toLocaleString()}</td>
+      <td className="px-3 py-3">
+        <button
+          type="button"
+          onClick={() => patch({ premium: !c.premium }, c.premium ? "Marked free" : "Marked premium")}
+          disabled={busy}
+          title="Click to switch"
+          className="disabled:opacity-50"
+        >
+          <Pill tone={c.premium ? "warn" : "off"}>{c.premium ? "Premium" : "Free"}</Pill>
+        </button>
+      </td>
+      <td className="px-3 py-3">
+        <div className="flex items-center gap-1.5">
+          {status}
+          {c.featured && <Pill tone="info">Featured</Pill>}
+        </div>
+      </td>
+      <td className="px-3 py-3 pr-4">
+        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+          {confirm ? (
+            <>
+              <span className="text-xs text-muted max-w-[220px]">
+                {confirm === "archive"
+                  ? "Hide it everywhere and keep its attempts?"
+                  : "Delete for good? It has no attempts."}
+              </span>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  confirm === "archive"
+                    ? patch({ archived: true }, "Archived")
+                    : call({ method: "DELETE" }, "Deleted")
+                }
+                className="h-7 px-2.5 rounded-md border border-danger/30 text-danger text-xs font-medium hover:bg-danger/[0.08] disabled:opacity-50"
+              >
+                {confirm === "archive" ? "Archive" : "Delete"}
+              </button>
+              <button type="button" onClick={() => setConfirm(null)} className="h-7 px-2 text-xs text-muted hover:text-fg">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              {c.archivedAt ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => patch({ archived: false }, "Restored as a draft")}
+                  className="h-7 px-2.5 rounded-md border border-border text-xs font-medium hover:bg-panel disabled:opacity-50"
+                >
+                  Restore
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => patch({ published: !c.published }, c.published ? "Unpublished" : "Published")}
+                  className="h-7 px-2.5 rounded-md border border-border text-xs font-medium hover:bg-panel disabled:opacity-50"
+                >
+                  {c.published ? "Unpublish" : "Publish"}
+                </button>
+              )}
+              {!c.archivedAt && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setConfirm("archive")}
+                  className="h-7 px-2.5 rounded-md border border-border text-xs font-medium hover:bg-panel disabled:opacity-50"
+                >
+                  Archive
+                </button>
+              )}
+              {!hasHistory && (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setConfirm("delete")}
+                  className="h-7 px-2.5 rounded-md border border-danger/30 text-danger text-xs font-medium hover:bg-danger/[0.08] disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              )}
+              <Link
+                href={`/challenges/${c.slug}`}
+                target="_blank"
+                className="p-1.5 rounded-md text-muted hover:text-fg hover:bg-panel"
+                title="View public page"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href={`/admin/challenges/${c.id}/edit`}
+                className="p-1.5 rounded-md text-muted hover:text-fg hover:bg-panel"
+                title="Edit"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </Link>
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
 }

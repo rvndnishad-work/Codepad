@@ -5,10 +5,12 @@ import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
 import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
+import { logAdminAction } from "@/lib/admin/audit";
 
 const patchSchema = z.object({
   status: z.enum(["scheduled", "in_progress", "completed", "abandoned"]).optional(),
   regenerateShareToken: z.boolean().optional(),
+  note: z.string().max(500).optional(),
 });
 
 async function ensureAdmin() {
@@ -19,7 +21,7 @@ async function ensureAdmin() {
   if (!(await staffCan(session, "platform:admin"))) {
     return { error: "forbidden" as const, status: 403 };
   }
-  return { ok: true as const };
+  return { ok: true as const, actor: { id: session.user.id, email: session.user.email ?? null } };
 }
 
 export async function PATCH(
@@ -50,11 +52,28 @@ export async function PATCH(
   }
 
   try {
+    const before = await prisma.interviewSession.findUnique({ where: { id }, select: { title: true, status: true } });
+    if (!before) return NextResponse.json({ error: "not found" }, { status: 404 });
     const updated = await prisma.interviewSession.update({
       where: { id },
       data,
       select: { id: true, status: true, shareToken: true },
     });
+    if (parsed.data.status !== undefined) {
+      await logAdminAction({
+        actor: guard.actor,
+        action: "interview.status",
+        targetType: "interview",
+        targetId: id,
+        targetLabel: before.title,
+        before: { status: before.status },
+        after: { status: updated.status },
+        note: parsed.data.note ?? null,
+      });
+    }
+    if (parsed.data.regenerateShareToken) {
+      await logAdminAction({ actor: guard.actor, action: "interview.share_token.rotate", targetType: "interview", targetId: id, targetLabel: before.title, note: parsed.data.note ?? null });
+    }
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -72,9 +91,12 @@ export async function DELETE(
   }
 
   try {
+    const before = await prisma.interviewSession.findUnique({ where: { id }, select: { title: true, type: true, status: true, workspaceId: true } });
+    if (!before) return NextResponse.json({ error: "not found" }, { status: 404 });
     const recordingKeys = await collectRecordingKeys({ interviewSessionIds: [id] });
     await prisma.interviewSession.delete({ where: { id } });
     await deleteRecordingKeys(recordingKeys);
+    await logAdminAction({ actor: guard.actor, action: "interview.delete", targetType: "interview", targetId: id, targetLabel: before.title, before });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "not found" }, { status: 404 });

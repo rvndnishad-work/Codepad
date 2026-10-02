@@ -125,8 +125,9 @@ async function checkPiston(): Promise<ServiceCheck> {
       value = res.ok
         ? { name: "Piston", tone: ms > 1500 ? "warn" : "ok", detail: `${ms} ms` }
         : { name: "Piston", tone: "bad", detail: `HTTP ${res.status}` };
-    } catch {
-      value = { name: "Piston", tone: "bad", detail: "No answer in 3 s" };
+    } catch (err) {
+      const timedOut = (err as Error)?.name === "TimeoutError";
+      value = { name: "Piston", tone: "bad", detail: timedOut ? "No answer in 3 s" : "Not reachable" };
     }
   }
   pistonCache = { at: Date.now(), value };

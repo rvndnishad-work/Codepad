@@ -13,10 +13,11 @@ export const metadata = {
 
 const SEVERITY_RANK: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
+/** "zai-org/GLM-5.3-Flash" reads as "GLM 5.3 Flash"; anything else shows as is. */
 function modelLabel(model: string): string {
-  const m = model.match(/^gemini-(\d+(?:\.\d+)?)-(flash|pro)(-lite)?/i);
+  const m = model.replace(/^.*\//, "").match(/^GLM-(\d+(?:\.\d+)?)(?:-(\w+))?$/i);
   if (!m) return model;
-  return `Gemini ${m[1]} ${m[2].charAt(0).toUpperCase()}${m[2].slice(1)}${m[3] ? " Lite" : ""}`;
+  return `GLM ${m[1]}${m[2] ? ` ${m[2].charAt(0).toUpperCase()}${m[2].slice(1)}` : ""}`;
 }
 
 export default async function AssistantPage({ searchParams }: { searchParams: Promise<{ c?: string }> }) {

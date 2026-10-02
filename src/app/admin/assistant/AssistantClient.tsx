@@ -368,7 +368,7 @@ export default function AssistantClient({
           {!status.configured && (
             <div className="rounded-xl border border-border bg-panel px-4 py-3 text-sm text-fg">
               <span className={`mr-2 inline-flex items-center h-6 px-2 rounded-full text-xs font-medium ${pill.bad}`}>Not configured</span>
-              Assistant is not configured: set GEMINI_API_KEY.
+              Assistant is not configured: set GLM_API_KEY.
             </div>
           )}
           {loadingConv && (

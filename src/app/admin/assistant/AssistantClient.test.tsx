@@ -38,7 +38,7 @@ function setup() {
       initialConversations={[{ id: "c1", title: "Northwind credits", updatedAt: new Date().toISOString() }]}
       initialConversation="c1"
       initialMessages={[{ id: "m1", role: "user", content: "What is up with Northwind?", toolCalls: [], proposal: null, createdAt: new Date().toISOString() }, proposalMsg]}
-      status={{ configured: true, paused: null, model: "Gemini 2.5 Flash" }}
+      status={{ configured: true, paused: null, model: "GLM 5.3 Flash" }}
       alerts={[]}
     />,
   );
@@ -82,11 +82,11 @@ describe("AssistantClient", () => {
   });
 
   it("shows a model error as an error and keeps the question", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "Assistant is not configured: set GEMINI_API_KEY" }), { status: 503 })));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "Assistant is not configured: set GLM_API_KEY" }), { status: 503 })));
     setup();
     fireEvent.change(screen.getByLabelText("Ask the assistant"), { target: { value: "hello" } });
     fireEvent.click(screen.getByRole("button", { name: /Send/ }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Assistant is not configured: set GEMINI_API_KEY"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Assistant is not configured: set GLM_API_KEY"));
     expect(screen.getByLabelText("Ask the assistant")).toHaveValue("hello");
   });
 });

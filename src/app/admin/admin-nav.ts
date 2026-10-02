@@ -46,7 +46,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: "/admin/interview-questions",
         icon: "FileText",
         label: "Content",
-        permission: "content:moderate",
+        permission: "content:curate",
         match: ["/admin/challenges", "/admin/blogs", "/admin/snippets", "/admin/content"],
       },
       {

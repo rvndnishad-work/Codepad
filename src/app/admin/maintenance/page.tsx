@@ -146,13 +146,13 @@ async function PagesTab({ sp }: { sp: SP }) {
           <span className="text-sm text-muted">Areas cover every route under them. A page rule wins over its area.</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[640px] table-fixed text-sm">
             <thead>
               <tr className="bg-panel text-left text-xs font-semibold text-muted">
-                <th className="px-4 py-2.5">Area or page</th>
-                <th className="px-4 py-2.5">State</th>
+                <th className="px-4 py-2.5 w-[34%]">Area or page</th>
+                <th className="px-4 py-2.5 w-[120px]">State</th>
                 <th className="px-4 py-2.5">Message shown</th>
-                <th className="px-4 py-2.5 w-[170px]" />
+                <th className="px-4 py-2.5 w-[130px]" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

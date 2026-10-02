@@ -70,7 +70,7 @@ function NeedsAttention({ items }: { items: AttentionItem[] }) {
             {items.map((it) => (
               <li key={`${it.kind}-${it.workspaceId}`} className="flex items-center gap-3 px-4 py-3">
                 <div className="min-w-0 flex-1">
-                  <Link href={`/admin/workspaces/${it.workspaceId}?tab=billing`} className="block truncate text-sm text-fg hover:underline">
+                  <Link href={`/admin/workspaces/${it.workspaceId}/billing`} className="block truncate text-sm text-fg hover:underline">
                     {it.name}
                   </Link>
                   <div className="truncate text-xs text-muted">
@@ -102,7 +102,7 @@ function NeedsAttention({ items }: { items: AttentionItem[] }) {
                 {items.map((it) => (
                   <tr key={`${it.kind}-${it.workspaceId}`} className="border-t border-border">
                     <td className="max-w-[180px] truncate px-5 py-2.5">
-                      <Link href={`/admin/workspaces/${it.workspaceId}?tab=billing`} className="text-secondary hover:underline">
+                      <Link href={`/admin/workspaces/${it.workspaceId}/billing`} className="text-secondary hover:underline">
                         {it.name}
                       </Link>
                     </td>

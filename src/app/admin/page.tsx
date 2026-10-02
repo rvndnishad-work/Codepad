@@ -54,8 +54,8 @@ async function loadQueues(can: (p: string) => boolean, isAdmin: boolean): Promis
   if (can("comment:moderate") || can("content:moderate"))
     out.push({ key: "reports", count: reports, label: "Open content reports", href: "/admin/inbox#reports" });
   if (isAdmin) {
-    out.push({ key: "credits", count: lowCredits, label: "Workspaces low on credits", href: "/admin/workspaces?filter=low-credits" });
-    out.push({ key: "pastdue", count: pastDue, label: "Payment past due", href: "/admin/workspaces?filter=past-due" });
+    out.push({ key: "credits", count: lowCredits, label: "Workspaces low on credits", href: "/admin/recruiters#needs-attention" });
+    out.push({ key: "pastdue", count: pastDue, label: "Payment past due", href: "/admin/workspaces?status=past_due" });
   }
   return out;
 }

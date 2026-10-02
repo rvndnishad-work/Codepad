@@ -417,7 +417,7 @@ export function formatBytes(bytes: number): string {
   return `${bytes} B`;
 }
 
-const billingHref = (id: string) => `/admin/workspaces/${id}?tab=billing`;
+const billingHref = (id: string) => `/admin/workspaces/${id}/billing`;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "29 Sep" in UTC. */
 export function shortDate(d: Date): string {
@@ -530,7 +530,7 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
       reason: d <= 1 ? "Trial ends today" : `Trial ends in ${d} days`,
       detail: `${runs} ${runs === 1 ? "screening" : "screenings"} run`,
       at: w.trialEndsAt.toISOString(),
-      action: { label: "Extend trial", href: `${billingHref(w.id)}&action=extend-trial` },
+      action: { label: "Extend trial", href: `${billingHref(w.id)}?action=extend-trial` },
     });
   }
   for (const w of low) {
@@ -545,7 +545,7 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
       reason: `${w.balance} ${w.balance === 1 ? "credit" : "credits"} left`,
       detail: waitingN > 0 ? `${waitingN} ${waitingN === 1 ? "invite" : "invites"} waiting in active batches` : `${batches} active ${batches === 1 ? "batch" : "batches"}`,
       at: now.toISOString(),
-      action: { label: "Grant credits", href: `${billingHref(w.id)}&action=grant-credits` },
+      action: { label: "Grant credits", href: `${billingHref(w.id)}?action=grant-credits` },
     });
   }
   for (const g of expiringTop) {

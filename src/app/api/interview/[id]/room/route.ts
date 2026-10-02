@@ -12,6 +12,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { roomViewerFromRequest, ROOM_SELECT } from "@/lib/interview/room-access";
 import { parseRound } from "@/lib/interview/room";
 
@@ -47,6 +48,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const a = parsed.data;
 
   if (a.type === "start") {
+    if (s.status === "scheduled") {
+      const featurePaused = await featureBlockedResponse("live-interviews");
+      if (featurePaused) return featurePaused;
+    }
     if (s.status === "in_progress") return NextResponse.json({ status: s.status, startedAt: s.startedAt?.toISOString() ?? null });
     if (s.status !== "scheduled") return NextResponse.json({ error: "This interview has ended." }, { status: 409 });
     const now = new Date();

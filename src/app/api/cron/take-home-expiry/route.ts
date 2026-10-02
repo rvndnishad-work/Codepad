@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 
 /**
  * Durable take-home expiry (IP-88 convergence).
@@ -20,9 +20,7 @@ import { assertCronAuth } from "@/lib/cron-auth";
  * Idempotent by construction (status-guarded updateMany). Recommended
  * cadence: hourly. Auth: `X-Cron-Secret` or `Authorization: Bearer`.
  */
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
 
@@ -44,3 +42,7 @@ export async function POST(req: NextRequest) {
     ranAt: now.toISOString(),
   });
 }
+
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("take-home-expiry", run);
+export const GET = POST;

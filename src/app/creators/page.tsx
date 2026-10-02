@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import Link from "next/link";
 import { Store, Heart, Users, LayoutGrid, Sparkles, BadgeCheck, ArrowRight, Gift, UsersRound } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -58,6 +59,7 @@ export default async function CreatorsDirectoryPage({ searchParams }: Props) {
 
   return (
     <div className="relative overflow-hidden">
+      <FeaturePaused featureKey="creator-checkout" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
       {/* Ambient hero glow (matches /become-creator language) */}
       <div className="absolute inset-x-0 top-0 h-[420px] bg-hero-glow pointer-events-none" aria-hidden />
       <div

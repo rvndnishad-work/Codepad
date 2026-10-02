@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import InvitationManager from "@/components/InvitationManager";
 import MonacoFileEditor from "@/components/MonacoFileEditor";
 import ChallengePreview from "./ChallengePreview";
+import ScheduleField from "../content/_components/ScheduleField";
 import { TEMPLATES, type ChallengeTemplate } from "./challenge-templates";
 import {
   ArrowDown,
@@ -238,6 +239,7 @@ export default function ChallengeForm({
     }
 
     const stepsPayload: {
+      id?: string;
       title?: string;
       description: string;
       template: string;
@@ -283,6 +285,7 @@ export default function ChallengeForm({
           return;
         }
         stepsPayload.push({
+          id: step.id,
           title: step.title.trim() || undefined,
           description: step.description,
           template: "node",
@@ -314,6 +317,7 @@ export default function ChallengeForm({
         return;
       }
       stepsPayload.push({
+        id: step.id,
         title: step.title.trim() || undefined,
         description: step.description,
         template: step.template,
@@ -342,6 +346,14 @@ export default function ChallengeForm({
       published: form.published,
       visibility: form.visibility,
       steps: stepsPayload,
+      // Admin-only flags: sent so a save keeps them (they used to reset to false).
+      ...(surface.isAdmin
+        ? {
+            featured: form.featured,
+            premium: form.premium,
+            scheduledAt: form.published ? null : form.scheduledAt || null,
+          }
+        : {}),
     };
 
     setSubmitting(true);
@@ -372,22 +384,44 @@ export default function ChallengeForm({
     }
   }
 
+  // Admins archive anything with history; only an untouched challenge can be
+  // deleted. The confirm is a second click on the same button.
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const canHardDelete = !surface.isAdmin || (form.historyCount ?? 0) === 0;
+  const removeLabel = canHardDelete ? "Delete" : form.archived ? "Restore" : "Archive";
+
   async function handleDelete() {
     if (!form.id) return;
-    if (!confirm(`Delete "${form.title}"? This also removes all attempts.`))
+    if (!confirmRemove && removeLabel !== "Restore") {
+      setConfirmRemove(true);
       return;
+    }
+    setConfirmRemove(false);
     setDeleting(true);
     try {
-      const res = await fetch(surface.itemEndpoint, {
-        method: "DELETE",
-        cache: "no-store",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      toast.success("Challenge deleted");
-      router.push(surface.redirectTo);
-      router.refresh();
+      const res =
+        removeLabel === "Delete"
+          ? await fetch(surface.itemEndpoint, { method: "DELETE", cache: "no-store" })
+          : await fetch(surface.itemEndpoint, {
+              method: "PATCH",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ archived: removeLabel === "Archive" }),
+              cache: "no-store",
+            });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(body?.error ?? `HTTP ${res.status}`);
+      }
+      toast.success(removeLabel === "Delete" ? "Challenge deleted" : removeLabel === "Archive" ? "Challenge archived" : "Restored as a draft");
+      if (removeLabel === "Restore") {
+        setForm((f) => ({ ...f, archived: false, published: false }));
+        router.refresh();
+      } else {
+        router.push(surface.redirectTo);
+        router.refresh();
+      }
     } catch (err) {
-      toast.error("Delete failed", {
+      toast.error(`${removeLabel} failed`, {
         description: err instanceof Error ? err.message : String(err),
       });
     } finally {
@@ -432,7 +466,13 @@ export default function ChallengeForm({
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/15 text-rose-500 text-xs font-bold transition disabled:opacity-50"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              {deleting ? "Deleting…" : "Delete"}
+              {deleting
+                ? "Working…"
+                : confirmRemove
+                  ? removeLabel === "Delete"
+                    ? "Click again to delete for good"
+                    : "Click again to archive"
+                  : removeLabel}
             </button>
           )}
           <button
@@ -595,10 +635,16 @@ export default function ChallengeForm({
             )}
 
           <SectionCard label="Visibility">
+            {form.archived && (
+              <div className="mb-3 text-xs text-muted leading-relaxed">
+                Archived: hidden from every list and page, attempts and take-homes kept. Restore it to publish again.
+              </div>
+            )}
             <label className="flex items-center gap-2 cursor-pointer text-sm">
               <input
                 type="checkbox"
                 checked={form.published}
+                disabled={form.archived}
                 onChange={(e) => update("published", e.target.checked)}
                 className="w-4 h-4 accent-accent"
               />
@@ -607,6 +653,13 @@ export default function ChallengeForm({
             <div className="text-xs text-muted/60 mt-1 leading-relaxed">
               Unpublished challenges are visible only to you (and admins).
             </div>
+            {!form.published && !form.archived && surface.isAdmin && (
+              <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+                <div className="text-xs font-semibold text-muted">Schedule publish</div>
+                <ScheduleField value={form.scheduledAt || null} onChange={(iso) => update("scheduledAt", iso)} />
+                <div className="text-xs text-muted/70">Goes live within about ten minutes of this time.</div>
+              </div>
+            )}
             {form.published && surface.isAdmin && (
               <div className="flex flex-col gap-3 mt-3 pt-3 border-t border-border">
                 <label className="flex items-center gap-2 cursor-pointer text-sm">

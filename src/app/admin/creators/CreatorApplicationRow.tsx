@@ -33,7 +33,10 @@ export default function CreatorApplicationRow({ app }: { app: AppRow }) {
   const decided = app.status !== "PENDING";
 
   async function decide(kind: "approve" | "reject") {
-    if (kind === "reject" && !note.trim() && !window.confirm("Reject without a note?")) return;
+    if (kind === "reject" && !note.trim()) {
+      toast.error("Add a reason. The applicant sees it.");
+      return;
+    }
     setBusy(true);
     try {
       if (kind === "approve") await approveCreatorApplicationAction(app.id, note || undefined);
@@ -74,7 +77,7 @@ export default function CreatorApplicationRow({ app }: { app: AppRow }) {
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional note (shown to applicant)"
+            placeholder="Note for the applicant (required to reject)"
             className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
           />
           <button onClick={() => decide("reject")} disabled={busy} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 text-xs font-bold disabled:opacity-50">

@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ExternalLink, Loader2, Lock, RotateCcw, Save } from "lucide-react";
-import { PLAN_ORDER, formatUsd, type WorkspacePlanKey } from "@/lib/billing/plans";
+import { PLAN_ORDER, STARTER_SEAT_PRICE, formatUsd, type WorkspacePlanKey } from "@/lib/billing/plans";
 import { PRICING_COPY_LIMITS, applyPricingCopy, type PricingCopy } from "@/lib/billing/pricing-copy";
 import { DEFAULT_PRICES, PRICE_BOUNDS, resolvePrices, type EffectivePrices, type PriceOverrides } from "@/lib/billing/prices";
 import { PUBLIC_CREDIT_PACKS, PUBLIC_PLANS } from "@/lib/billing/public-pricing";
 import { resetPricingCopy, savePricingCopy } from "./actions";
+import type { StarterOverride } from "@/lib/billing/pricing-copy-store";
 
 /* ------------------------------------------------------------------ */
 /* Form state: plain strings, "" means "use the default".             */
@@ -23,6 +24,8 @@ type FormState = {
   growthAnnual: string;
   videoMonthly: string;
   videoAnnual: string;
+  starterMonthly: string;
+  starterAnnual: string;
   packs: Record<string, PackFields>;
 };
 
@@ -32,7 +35,7 @@ const DEFAULT_BADGES = Object.fromEntries(PUBLIC_CREDIT_PACKS.map((p) => [p.id, 
 
 const centsText = (c: number | undefined) => (c === undefined ? "" : (c / 100).toFixed(c % 100 === 0 ? 0 : 2));
 
-function toState(copy: PricingCopy, prices: PriceOverrides): FormState {
+function toState(copy: PricingCopy, prices: PriceOverrides, starter: StarterOverride = {}): FormState {
   const plans = {} as Record<WorkspacePlanKey, PlanFields>;
   for (const key of PLAN_ORDER) {
     const c = copy.plans?.[key];
@@ -56,6 +59,8 @@ function toState(copy: PricingCopy, prices: PriceOverrides): FormState {
     growthAnnual: centsText(prices.growth?.annualMonthlyCents),
     videoMonthly: centsText(prices.videoAddon?.monthlyCents),
     videoAnnual: centsText(prices.videoAddon?.annualCents),
+    starterMonthly: centsText(starter.monthlyCents),
+    starterAnnual: centsText(starter.annualMonthlyCents),
     packs,
   };
 }
@@ -78,7 +83,7 @@ function inBounds(v: number | undefined, b: { min: number; max: number }) {
   return v === undefined || (Number.isInteger(v) && v >= b.min && v <= b.max);
 }
 
-type Built = { copy: PricingCopy; prices: PriceOverrides; errors: Record<string, string> };
+type Built = { copy: PricingCopy; prices: PriceOverrides; starter: StarterOverride; errors: Record<string, string> };
 
 function build(s: FormState): Built {
   const errors: Record<string, string> = {};
@@ -137,14 +142,30 @@ function build(s: FormState): Built {
   if (Object.keys(video).length) prices.videoAddon = video;
   if (Object.keys(packPrices).length) prices.packs = packPrices;
 
+  const sm = parseDollars(s.starterMonthly);
+  const sa = parseDollars(s.starterAnnual);
+  if (!inBounds(sm, PRICE_BOUNDS.seatCents)) errors.starterMonthly = range(PRICE_BOUNDS.seatCents);
+  if (!inBounds(sa, PRICE_BOUNDS.seatCents)) errors.starterAnnual = range(PRICE_BOUNDS.seatCents);
+  if (!errors.starterMonthly && !errors.starterAnnual && (sa ?? STARTER_SEAT_PRICE.annualMonthlyCents) > (sm ?? STARTER_SEAT_PRICE.monthlyCents)) {
+    errors.starterAnnual = "Cannot be more than the monthly price.";
+  }
+  const starter: StarterOverride = {};
+  if (sm !== undefined && !errors.starterMonthly) starter.monthlyCents = sm;
+  if (sa !== undefined && !errors.starterAnnual) starter.annualMonthlyCents = sa;
+
   const copy: PricingCopy = {};
   if (Object.keys(copyPlans).length) copy.plans = copyPlans;
   if (Object.keys(packBadges).length) copy.packBadges = packBadges;
-  return { copy, prices, errors };
+  return { copy, prices, starter, errors };
 }
 
 /** Every effective price that differs between two sets, as "label: old -> new". */
-function priceChanges(before: EffectivePrices, after: EffectivePrices): { label: string; from: string; to: string }[] {
+function priceChanges(
+  before: EffectivePrices,
+  after: EffectivePrices,
+  starterBefore: StarterOverride = {},
+  starterAfter: StarterOverride = {},
+): { label: string; from: string; to: string }[] {
   const out: { label: string; from: string; to: string }[] = [];
   const add = (label: string, a: number, b: number, fmt: (n: number) => string = formatUsd) => {
     if (a !== b) out.push({ label, from: fmt(a), to: fmt(b) });
@@ -153,6 +174,12 @@ function priceChanges(before: EffectivePrices, after: EffectivePrices): { label:
   add("Growth seat, yearly (per month)", before.growth.annualMonthlyCents, after.growth.annualMonthlyCents);
   add("Video add-on, monthly", before.videoAddon.monthlyCents, after.videoAddon.monthlyCents);
   add("Video add-on, yearly", before.videoAddon.annualCents, after.videoAddon.annualCents);
+  add("Starter seat, monthly", starterBefore.monthlyCents ?? STARTER_SEAT_PRICE.monthlyCents, starterAfter.monthlyCents ?? STARTER_SEAT_PRICE.monthlyCents);
+  add(
+    "Starter seat, yearly (per month)",
+    starterBefore.annualMonthlyCents ?? STARTER_SEAT_PRICE.annualMonthlyCents,
+    starterAfter.annualMonthlyCents ?? STARTER_SEAT_PRICE.annualMonthlyCents,
+  );
   before.packs.forEach((p, i) => {
     const q = after.packs[i];
     add(`${p.label} pack price`, p.priceCents, q.priceCents);
@@ -231,9 +258,21 @@ function LockedRow({ label, value }: { label: string; value: string }) {
 
 /* ------------------------------------------------------------------ */
 
-export default function PricingCopyForm({ initialCopy, initialPrices }: { initialCopy: PricingCopy; initialPrices: PriceOverrides }) {
+export default function PricingCopyForm({
+  initialCopy,
+  initialPrices,
+  initialStarter,
+  initialVersion,
+}: {
+  initialCopy: PricingCopy;
+  initialPrices: PriceOverrides;
+  initialStarter: StarterOverride;
+  initialVersion: string;
+}) {
   const router = useRouter();
-  const [saved, setSaved] = useState(() => toState(initialCopy, initialPrices));
+  const [saved, setSaved] = useState(() => toState(initialCopy, initialPrices, initialStarter));
+  const [version, setVersion] = useState(initialVersion);
+  const [note, setNote] = useState("");
   const [state, setState] = useState(saved);
   const [busy, setBusy] = useState<"save" | "reset" | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -243,12 +282,16 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
   const built = useMemo(() => build(state), [state]);
   const savedBuilt = useMemo(() => build(saved), [saved]);
   const hasErrors = Object.keys(built.errors).length > 0;
-  const dirty = JSON.stringify([built.copy, built.prices]) !== JSON.stringify([savedBuilt.copy, savedBuilt.prices]);
-  const anyOverride = Object.keys(savedBuilt.copy).length > 0 || Object.keys(savedBuilt.prices).length > 0;
+  const dirty = JSON.stringify([built.copy, built.prices, built.starter]) !== JSON.stringify([savedBuilt.copy, savedBuilt.prices, savedBuilt.starter]);
+  const anyOverride = Object.keys(savedBuilt.copy).length > 0 || Object.keys(savedBuilt.prices).length > 0 || Object.keys(savedBuilt.starter).length > 0;
+  const hasNote = note.trim().length > 0;
 
   const effective = useMemo(() => resolvePrices(built.prices), [built.prices]);
   const preview = useMemo(() => applyPricingCopy(built.copy, effective), [built.copy, effective]);
-  const changes = useMemo(() => priceChanges(resolvePrices(savedBuilt.prices), effective), [savedBuilt.prices, effective]);
+  const changes = useMemo(
+    () => priceChanges(resolvePrices(savedBuilt.prices), effective, savedBuilt.starter, built.starter),
+    [savedBuilt.prices, savedBuilt.starter, effective, built.starter],
+  );
 
   const setPlan = (key: WorkspacePlanKey, patch: Partial<PlanFields>) =>
     setState((s) => ({ ...s, plans: { ...s.plans, [key]: { ...s.plans[key], ...patch } } }));
@@ -260,14 +303,16 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
     setBusy("save");
     setMessage(null);
     try {
-      const res = await savePricingCopy({ ...built.copy, prices: built.prices });
+      const res = await savePricingCopy({ ...built.copy, prices: built.prices, starter: built.starter }, note, version);
       if (!res.ok) {
         setMessage({ type: "error", text: res.error });
         return;
       }
-      const next = toState(res.copy, res.prices);
+      const next = toState(res.copy, res.prices, res.starter);
       setSaved(next);
       setState(next);
+      setVersion(res.version);
+      setNote("");
       setConfirming(false);
       setMessage({ type: "success", text: changes.length ? "Saved. New prices apply to new checkouts." : "Saved. /pricing now shows the new wording." });
       router.refresh();
@@ -280,6 +325,10 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
 
   const onSave = () => {
     if (!dirty || hasErrors) return;
+    if (!hasNote) {
+      setMessage({ type: "error", text: "Add a note saying what changed and why." });
+      return;
+    }
     if (changes.length) setConfirming(true);
     else void doSave();
   };
@@ -288,10 +337,16 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
     setBusy("reset");
     setMessage(null);
     try {
-      await resetPricingCopy();
+      const res = await resetPricingCopy({ confirm: true, version, note });
+      if (!res.ok) {
+        setMessage({ type: "error", text: res.error });
+        return;
+      }
       const next = toState({}, {});
       setSaved(next);
       setState(next);
+      setVersion(res.version);
+      setNote("");
       setConfirmReset(false);
       setMessage({ type: "success", text: "Everything is back to the defaults in code." });
       router.refresh();
@@ -562,6 +617,63 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
         </div>
       </section>
 
+      {/* Starter (legacy) */}
+      <section className="space-y-4 rounded-2xl border border-border bg-surface p-6">
+        <div>
+          <h3 className={sectionTitle}>Starter seat (legacy)</h3>
+          <p className="mt-1 text-xs text-muted">
+            Not on /pricing, but the seat checkout still sells it when asked for. Existing Starter subscriptions keep their price.
+          </p>
+        </div>
+        <div className="grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field
+            label="Monthly, per seat"
+            overridden={!!state.starterMonthly}
+            onReset={() => set({ starterMonthly: "" })}
+            error={built.errors.starterMonthly}
+            hint="Charged every month for each seat."
+          >
+            <DollarInput
+              value={state.starterMonthly}
+              onChange={(v) => set({ starterMonthly: v })}
+              placeholder={centsText(STARTER_SEAT_PRICE.monthlyCents)}
+              invalid={!!built.errors.starterMonthly}
+            />
+          </Field>
+          <Field
+            label="Yearly, per seat per month"
+            overridden={!!state.starterAnnual}
+            onReset={() => set({ starterAnnual: "" })}
+            error={built.errors.starterAnnual}
+            hint={`Charged once a year: ${formatUsd((built.starter.annualMonthlyCents ?? STARTER_SEAT_PRICE.annualMonthlyCents) * 12)} per seat.`}
+          >
+            <DollarInput
+              value={state.starterAnnual}
+              onChange={(v) => set({ starterAnnual: v })}
+              placeholder={centsText(STARTER_SEAT_PRICE.annualMonthlyCents)}
+              invalid={!!built.errors.starterAnnual}
+            />
+          </Field>
+        </div>
+      </section>
+
+      {/* Note for the change history */}
+      <section className="space-y-2 rounded-2xl border border-border bg-surface p-6">
+        <label htmlFor="pricing-note" className="text-sm font-bold text-fg">
+          Note for the change history (required)
+        </label>
+        <textarea
+          id="pricing-note"
+          rows={2}
+          maxLength={500}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Raise Growth to $55 from October, agreed with finance"
+          className={`${inputCls} resize-y`}
+        />
+        <p className="text-xs text-muted">Saved with every save and reset, next to who made it and what changed.</p>
+      </section>
+
       {/* Confirm price changes */}
       {confirming && (
         <section role="alertdialog" aria-labelledby="confirm-prices" className="space-y-4 rounded-2xl border border-warning/50 bg-surface p-6">
@@ -617,11 +729,13 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
         <div className="flex flex-wrap items-center gap-3">
           {confirmReset ? (
             <>
-              <span className="text-xs text-muted">Reset all wording and prices to the defaults?</span>
+              <span className="text-xs text-muted">
+                {hasNote ? "Reset all wording and prices to the defaults?" : "Add a note above first, then reset."}
+              </span>
               <button
                 type="button"
                 onClick={doReset}
-                disabled={busy !== null}
+                disabled={busy !== null || !hasNote}
                 className="flex items-center gap-2 rounded-xl border border-danger/50 px-4 py-2.5 text-sm font-bold text-danger transition hover:bg-danger/10 disabled:opacity-50"
               >
                 {busy === "reset" && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -645,7 +759,7 @@ export default function PricingCopyForm({ initialCopy, initialPrices }: { initia
           <button
             type="button"
             onClick={onSave}
-            disabled={!dirty || hasErrors || busy !== null || confirming}
+            disabled={!dirty || hasErrors || busy !== null || confirming || !hasNote}
             className="flex items-center gap-2 rounded-xl bg-fg px-6 py-2.5 text-sm font-bold text-bg shadow-soft transition hover:bg-fg/90 active:scale-95 disabled:opacity-50"
           >
             {busy === "save" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

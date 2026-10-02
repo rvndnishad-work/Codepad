@@ -6,8 +6,7 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft, ChevronsLeft, ChevronsRight, Menu, Shield, X } from "lucide-react";
 import { AdminNavCollapsedContext } from "./admin-nav-context";
 import AdminLink from "./AdminLink";
-import AdminPersonaToggle from "./AdminPersonaToggle";
-import type { AdminPersona } from "@/lib/admin-persona";
+import type { AdminNavGroup } from "./admin-nav";
 
 const STORAGE_KEY = "admin_sidebar_collapsed";
 
@@ -19,10 +18,11 @@ interface AdminSidebarProps {
       image?: string | null;
     } | null;
   } | null;
-  persona: AdminPersona;
+  nav: AdminNavGroup[];
+  badges?: Record<string, { count: number; tone: "warn" | "bad" }>;
 }
 
-export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
+export default function AdminSidebar({ session, nav, badges }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
@@ -65,10 +65,9 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
     };
   }, [isOpen]);
 
-  // Nav is split by persona so the sidebar only shows what's relevant to the
-  // admin's current job. "Core" + "System" are always rendered; the middle
-  // section flips based on the toggle. Styling mirrors the workspace sidebar
-  // (WorkspaceSidebarNav): sentence-case labels, text-sm rows, quiet groups.
+  // Groups come from admin-nav.ts, already filtered to the permissions this
+  // person holds. Styling mirrors the workspace sidebar (WorkspaceSidebarNav):
+  // sentence-case labels, text-sm rows, quiet groups.
   const groupLabel = (label: string) =>
     collapsed ? (
       <div className="hidden lg:block h-px bg-border w-6 mx-auto my-3" aria-hidden />
@@ -78,46 +77,22 @@ export default function AdminSidebar({ session, persona }: AdminSidebarProps) {
 
   const NavigationLinks = () => (
     <nav aria-label="Admin" className={`flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 flex flex-col gap-0.5 ${collapsed ? "lg:px-2 px-3" : "px-3"}`}>
-      <AdminLink href="/admin" icon="LayoutDashboard" label="Dashboard" />
-      <AdminLink href="/admin/inbox" icon="Inbox" label="Inbox" />
-
-      {/* Persona toggle drives which group of links renders below. */}
-      {collapsed ? (
-        <div className="hidden lg:block h-px bg-border w-6 mx-auto my-3" aria-hidden />
-      ) : (
-        <div className="mt-4">
-          <AdminPersonaToggle initial={persona} />
+      {nav.map((group, i) => (
+        <div key={group.label ?? i} className="flex flex-col gap-0.5">
+          {group.label && groupLabel(group.label)}
+          {group.links.map((l) => (
+            <AdminLink
+              key={l.href}
+              href={l.href}
+              icon={l.icon}
+              label={l.label}
+              exact={l.exact}
+              match={l.match}
+              badge={badges?.[l.href]}
+            />
+          ))}
         </div>
-      )}
-
-      {persona === "candidate" ? (
-        <>
-          <AdminLink href="/admin/users" icon="Users" label="Users" />
-          <AdminLink href="/admin/snippets" icon="Pin" label="Trends" />
-          <AdminLink href="/admin/blogs" icon="FileText" label="Blogs" />
-          <AdminLink href="/admin/comments" icon="MessageCircle" label="Comments" />
-          <AdminLink href="/admin/challenges" icon="Target" label="Challenges" />
-          <AdminLink href="/admin/interview-questions" icon="HelpCircle" label="Interview questions" />
-          <AdminLink href="/admin/attempts" icon="Code2" label="Attempts" />
-          <AdminLink href="/admin/creators" icon="Sparkles" label="Creators" />
-        </>
-      ) : (
-        <>
-          <AdminLink href="/admin/users/recruiters" icon="Users" label="Users" />
-          <AdminLink href="/admin/workspaces" icon="Building2" label="Workspaces" />
-          <AdminLink href="/admin/pricing" icon="CreditCard" label="Pricing" />
-          <AdminLink href="/admin/interviews" icon="Briefcase" label="Interviews" />
-          <AdminLink href="/admin/ai-interviews" icon="Coins" label="AI credits" />
-        </>
-      )}
-
-      {groupLabel("System")}
-      <AdminLink href="/admin/copilot" icon="GemmaMark" label="Gemma copilot" />
-      <AdminLink href="/admin/todos" icon="ClipboardList" label="Todos" />
-      <AdminLink href="/admin/notifications" icon="Megaphone" label="Notifications" />
-      <AdminLink href="/admin/emails" icon="Mail" label="Emails" />
-      <AdminLink href="/admin/roles" icon="ShieldCheck" label="Roles" />
-      <AdminLink href="/admin/settings" icon="Settings" label="Settings" />
+      ))}
     </nav>
   );
 

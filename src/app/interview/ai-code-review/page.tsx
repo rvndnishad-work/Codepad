@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
@@ -69,10 +70,13 @@ export default async function ReviewCodePage() {
   }));
 
   return (
+    <>
+    <FeaturePaused featureKey="ai-code-review" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
     <ReviewLabClient
       userId={userId}
       challenges={mappedChallenges}
       attemptSummaries={attemptSummaries}
     />
+    </>
   );
 }

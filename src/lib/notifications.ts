@@ -30,6 +30,8 @@ export const NOTIFICATION_TYPES = {
   CREATOR_STATUS: "CREATOR_STATUS",
   CREATOR_PUBLISH: "CREATOR_PUBLISH",
   CREATOR_NEW_FOLLOWER: "CREATOR_NEW_FOLLOWER",
+  /** A moderator published, rejected or asked for changes on your blog or experience. */
+  CONTENT_STATUS: "CONTENT_STATUS",
 } as const;
 
 export type NotificationType =

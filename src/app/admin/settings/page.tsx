@@ -1,44 +1,60 @@
 import {
   getNavLinks,
-  getB2bSettings,
   getInterviewArenaSettings,
-  getMaintenanceSettings,
   getPlaygroundAssistSettings,
 } from "@/lib/settings";
-import SettingsForm from "./SettingsForm";
+import SettingsForm, { type SettingsTab } from "./SettingsForm";
+import UnderlineTabs from "@/app/w/[slug]/(shell)/_components/UnderlineTabs";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 
 export const metadata = {
   title: "Settings — Admin",
 };
 
-export default async function SettingsPage() {
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: "nav", label: "Navigation" },
+  { id: "arena", label: "Interview arena" },
+  { id: "aiassist", label: "Playground AI assist" },
+];
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
   await requireAdminAccess();
-  const [links, b2bSettings, arenaSettings, maintenance, assistSettings] =
-    await Promise.all([
-      getNavLinks(),
-      getB2bSettings(),
-      getInterviewArenaSettings(),
-      getMaintenanceSettings(),
-      getPlaygroundAssistSettings(),
-    ]);
+  const { tab } = await searchParams;
+  const active: SettingsTab = TABS.some((t) => t.id === tab) ? (tab as SettingsTab) : "nav";
+
+  const [links, arenaSettings, assistSettings] = await Promise.all([
+    getNavLinks(),
+    getInterviewArenaSettings(),
+    getPlaygroundAssistSettings(),
+  ]);
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold tracking-tight">Site Settings</h2>
-        <p className="text-sm text-muted mt-1">Configure global application behavior.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold tracking-tight text-fg">Site settings</h2>
+        <p className="text-sm text-muted mt-1">
+          Navigation gating and per-surface options. Every save is recorded in the audit log.
+        </p>
       </div>
 
+      <UnderlineTabs
+        label="Settings sections"
+        active={active}
+        scroll={false}
+        tabs={TABS.map((t) => ({ ...t, href: `/admin/settings?tab=${t.id}` }))}
+      />
+
       <SettingsForm
+        key={active}
+        tab={active}
         initialLinks={links}
-        initialB2bSettings={b2bSettings}
         initialArenaSettings={arenaSettings}
-        initialMaintenance={maintenance}
         initialAssistSettings={assistSettings}
       />
     </div>
   );
 }
-
-

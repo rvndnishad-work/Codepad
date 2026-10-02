@@ -8,6 +8,7 @@
  * interview uses built-in video, it has not ended, and LiveKit is set up.
  * The token names the interview's room only and lasts four hours.
  */
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -17,6 +18,9 @@ import { liveKitConfig, videoJoinToken, videoRoomName } from "@/lib/video/liveki
 import { videoIdentity, videoJoinRefusal } from "@/lib/video/room-video";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Feature switch "video-addon" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("video-addon");
+  if (featurePaused) return featurePaused;
   const { id } = await params;
   const [session, s] = await Promise.all([
     auth().catch(() => null),

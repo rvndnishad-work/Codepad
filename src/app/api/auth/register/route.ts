@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { z } from "zod";
@@ -5,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
+import { trackActivity } from "@/lib/admin/activity";
 
 const schema = z.object({
   name: z.string().trim().min(1).max(80).optional(),
@@ -18,6 +20,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Feature switch "developer-signup" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("developer-signup");
+  if (featurePaused) return featurePaused;
   // 5 attempts per 5 min per IP — sign-up + OTP-guess abuse guard (production
   // only). Distributed so the cap holds across serverless instances.
   if (process.env.NODE_ENV === "production") {
@@ -192,7 +197,7 @@ export async function POST(req: Request) {
         } as any,
       });
     } else {
-      await prisma.user.create({
+      const created = await prisma.user.create({
         data: {
           email,
           name: name ?? email.split("@")[0],
@@ -204,7 +209,9 @@ export async function POST(req: Request) {
             jobTitle,
           } : {}),
         } as any,
+        select: { id: true },
       });
+      trackActivity({ kind: "signup", userId: created.id, label: "credentials" });
     }
 
     return NextResponse.json({ ok: true });

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
+import { requireAdminAccess, staffCan } from "@/lib/permissions/staff";
 import ReplayPlayerClient from "./ReplayPlayerClient";
 import Link from "next/link";
 import { ArrowLeft, Play } from "lucide-react";
@@ -11,10 +11,14 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Props) {
+  // Metadata runs on its own, so it must check access before reading the
+  // attempt; otherwise the candidate name leaks into the <title>.
+  const session = await auth().catch(() => null);
+  if (!(await staffCan(session, "platform:admin"))) return { title: "Not found", robots: { index: false } };
   const { id } = await params;
   const attempt = await prisma.challengeAttempt.findUnique({
     where: { id },
-    include: { user: { select: { name: true } } },
+    select: { user: { select: { name: true } } },
   });
   return {
     title: attempt ? `Session Replay: ${attempt.user.name || "Candidate"} — Interviewpad` : "Replay not found",
@@ -24,11 +28,8 @@ export async function generateMetadata({ params }: Props) {
 export default async function AdminSessionReplayPage({ params }: Props) {
   const { id } = await params;
   
-  // Authorize: Only administrator review panels can audit session replays
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    redirect("/login?next=" + encodeURIComponent(`/admin/attempts/${id}/replay`));
-  }
+  // Only platform admins can watch replays (they show candidate code).
+  await requireAdminAccess("platform:admin");
 
   const attempt = await prisma.challengeAttempt.findUnique({
     where: { id },

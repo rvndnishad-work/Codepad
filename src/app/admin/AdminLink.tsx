@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail, ShieldCheck, CreditCard } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail, ShieldCheck, CreditCard, BarChart3, UserCog, Wrench, ToggleRight, ScrollText } from "lucide-react";
 import type { ComponentType } from "react";
 import GemmaMark from "./copilot/GemmaMark";
 import { useAdminNavCollapsed } from "./admin-nav-context";
@@ -33,6 +33,11 @@ const iconsMap: Record<string, NavIcon> = {
   Mail,
   ShieldCheck,
   CreditCard,
+  BarChart3,
+  UserCog,
+  Wrench,
+  ToggleRight,
+  ScrollText,
   // Custom brand glyph — used for the Gemma Copilot row.
   GemmaMark,
 };
@@ -47,6 +52,8 @@ export default function AdminLink({
   disabled,
   exact,
   nested,
+  match,
+  badge,
 }: {
   href: string;
   icon: IconName;
@@ -58,16 +65,21 @@ export default function AdminLink({
   exact?: boolean;
   /** Render as an indented sub-link under a parent group. */
   nested?: boolean;
+  /** Extra path prefixes that also light this link. */
+  match?: string[];
+  /** Small count shown at the end of the row. */
+  badge?: { count: number; tone: "warn" | "bad" };
 }) {
   const pathname = usePathname();
   const Icon = iconsMap[icon];
 
   // /admin is always exact (otherwise every admin route would match it).
   // Callers also opt into exact for parents that now have child routes.
+  const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
   const isActive =
     href === "/admin" || exact
       ? pathname === href
-      : pathname.startsWith(href);
+      : under(href) || (match ?? []).some(under);
 
   const collapsed = useAdminNavCollapsed();
   const iconClass = `w-4 h-4 shrink-0 ${isActive ? "text-secondary" : "text-subtle"}`;
@@ -108,6 +120,15 @@ export default function AdminLink({
       {isActive && <span aria-hidden className="absolute -left-3 top-2 bottom-2 w-[3px] rounded-r bg-secondary" />}
       {Icon && <Icon className={iconClass} size={16} />}
       <span className="flex-1 truncate">{label}</span>
+      {badge && badge.count > 0 && (
+        <span
+          className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-medium tabular-nums inline-flex items-center justify-center ${
+            badge.tone === "bad" ? "bg-rose-500/15 text-rose-700 dark:text-rose-300" : "bg-amber-500/15 text-amber-800 dark:text-amber-300"
+          }`}
+        >
+          {badge.count}
+        </span>
+      )}
     </Link>
   );
 }

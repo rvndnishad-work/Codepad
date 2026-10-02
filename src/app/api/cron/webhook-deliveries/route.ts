@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { drainDueDeliveries } from "@/lib/events/deliver";
 
 /**
@@ -13,13 +13,11 @@ import { drainDueDeliveries } from "@/lib/events/deliver";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
   const result = await drainDueDeliveries(100);
   return NextResponse.json({ success: true, ...result });
 }
 
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("webhook-deliveries", run);
+export const GET = POST;

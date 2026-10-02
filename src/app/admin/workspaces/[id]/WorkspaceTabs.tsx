@@ -1,76 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Briefcase, FileVideo, Users, CreditCard, UserSquare, Sparkles, Code2 } from "lucide-react";
+import UnderlineTabs from "@/app/w/[slug]/(shell)/_components/UnderlineTabs";
 
-type Props = {
-  workspaceId: string;
-  counts: {
-    members: number;
-    challenges: number;
-    interviews: number;
-    replays: number;
-    candidates: number;
-    aiInterviews: number;
-    attempts: number;
-  };
+type Counts = {
+  members: number;
+  candidates: number;
+  aiScreenings: number;
+  takeHomes: number;
+  interviews: number;
+  recordings: number;
 };
 
-export default function WorkspaceTabs({ workspaceId, counts }: Props) {
+export default function WorkspaceTabs({ workspaceId, counts }: { workspaceId: string; counts: Counts }) {
   const pathname = usePathname();
   const base = `/admin/workspaces/${workspaceId}`;
-
-  // Tab order mirrors the recruiter mental model: data first (candidates +
-  // their challenges), then activity (interviews, AI screens, attempts,
-  // replays), then admin (members, billing). New tabs inserted next to the
-  // most-related existing tab; nothing was reordered.
   const tabs = [
-    { href: base, label: "Overview", icon: LayoutDashboard, count: null as number | null },
-    { href: `${base}/challenges`, label: "Challenges", icon: Target, count: counts.challenges },
-    { href: `${base}/candidates`, label: "Candidates", icon: UserSquare, count: counts.candidates },
-    { href: `${base}/interviews`, label: "Interviews", icon: Briefcase, count: counts.interviews },
-    { href: `${base}/ai-interviews`, label: "AI Interviews", icon: Sparkles, count: counts.aiInterviews },
-    { href: `${base}/attempts`, label: "Attempts", icon: Code2, count: counts.attempts },
-    { href: `${base}/replays`, label: "Replays", icon: FileVideo, count: counts.replays },
-    { href: `${base}/members`, label: "Members", icon: Users, count: counts.members },
-    { href: `${base}/billing`, label: "Billing", icon: CreditCard, count: null },
+    { id: "overview", label: "Overview", href: base },
+    { id: "members", label: "Members", href: `${base}/members`, count: counts.members },
+    { id: "billing", label: "Billing and credits", href: `${base}/billing` },
+    { id: "candidates", label: "Candidates", href: `${base}/candidates`, count: counts.candidates },
+    { id: "ai-interviews", label: "AI screenings", href: `${base}/ai-interviews`, count: counts.aiScreenings },
+    { id: "takehomes", label: "Take homes", href: `${base}/takehomes`, count: counts.takeHomes },
+    { id: "interviews", label: "Interviews", href: `${base}/interviews`, count: counts.interviews },
+    { id: "recordings", label: "Recordings", href: `${base}/recordings`, count: counts.recordings },
+    { id: "settings", label: "Settings", href: `${base}/settings` },
   ];
-
-  return (
-    <nav className="flex items-center gap-1 border-b border-border overflow-x-auto -mx-1 px-1" aria-label="Workspace sections">
-      {tabs.map((tab) => {
-        const isActive = tab.href === base ? pathname === base : pathname.startsWith(tab.href);
-        const Icon = tab.icon;
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 text-[12px] font-semibold transition-colors whitespace-nowrap ${
-              isActive
-                ? "text-fg"
-                : "text-muted hover:text-fg"
-            }`}
-          >
-            <Icon className={`w-3.5 h-3.5 ${isActive ? "text-indigo-500" : "text-muted/60"}`} />
-            <span>{tab.label}</span>
-            {tab.count !== null && (
-              <span
-                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-xs font-semibold tabular-nums ${
-                  isActive
-                    ? "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300"
-                    : "bg-panel/60 text-muted"
-                }`}
-              >
-                {tab.count}
-              </span>
-            )}
-            {isActive && (
-              <span className="absolute inset-x-2 -bottom-px h-[2px] bg-indigo-500 rounded-full" />
-            )}
-          </Link>
-        );
-      })}
-    </nav>
-  );
+  const rest = pathname.slice(base.length).split("/")[1] ?? "";
+  const active = tabs.find((t) => t.id === rest)?.id ?? (rest ? "" : "overview");
+  return <UnderlineTabs tabs={tabs} active={active} label="Workspace sections" />;
 }

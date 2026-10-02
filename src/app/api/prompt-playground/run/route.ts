@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { rateLimitDistributed } from "@/lib/rate-limit";
@@ -30,6 +31,9 @@ const MAX_PROMPT_CHARS = 32_000; // ~8k tokens; comfortably under context limits
 const MAX_SYSTEM_CHARS = 4_000;
 
 export async function POST(req: NextRequest) {
+  // Feature switch "prompt-arena" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("prompt-arena");
+  if (featurePaused) return featurePaused;
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return new Response(JSON.stringify({ error: "Sign in to use the playground." }), {

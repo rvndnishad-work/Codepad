@@ -24,3 +24,6 @@ export const SORT_OPTIONS = [
   { value: "difficulty-desc", label: "Hard → Easy" },
 ] as const;
 export type SortKey = (typeof SORT_OPTIONS)[number]["value"];
+
+/** Bulk import refuses files bigger than this, so one request stays one transaction. */
+export const IMPORT_ROW_CAP = 500;

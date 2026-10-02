@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { appOrigin } from "@/lib/interview/links";
 import { autoRemindScorecards } from "@/lib/interview/scorecard-server";
 import { SCORECARD_REMINDER_STALE_DAYS, scorecardReminderState } from "@/lib/workspace/screening-defaults";
@@ -19,9 +19,7 @@ import { SCORECARD_REMINDER_STALE_DAYS, scorecardReminderState } from "@/lib/wor
 const MAX_BATCH = 100;
 const DAY_MS = 86_400_000;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   // Longest wait (48 hours) plus the stale window, with room for long interviews.
@@ -67,7 +65,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, checked: rows.length, reminded: sent, emails, dropped });
 }
 
-// GET for Vercel Cron and curl, same auth.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("scorecard-reminders", run);
+export const GET = POST;

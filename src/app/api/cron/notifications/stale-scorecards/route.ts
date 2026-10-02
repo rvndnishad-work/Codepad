@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { notifyScorecardRequested } from "@/lib/notifications/triggers";
 
 /**
@@ -17,9 +17,7 @@ import { notifyScorecardRequested } from "@/lib/notifications/triggers";
 const STALE_AFTER_MS = 60 * 60 * 1000; // 1 hour
 const MAX_BATCH = 200;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const cutoff = new Date(Date.now() - STALE_AFTER_MS);
   const candidates = await prisma.interviewSession.findMany({
@@ -63,6 +61,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("notify-stale-scorecards", run);
+export const GET = POST;

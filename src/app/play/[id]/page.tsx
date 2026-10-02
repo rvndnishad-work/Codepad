@@ -1,7 +1,9 @@
 import PlaygroundLoader from "@/components/PlaygroundLoader";
+import ReportButton from "@/components/ReportButton";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 
@@ -45,6 +47,17 @@ export default async function SavedPlaygroundPage({
     notFound();
   }
 
+  // Public views by anyone but the owner count towards Snippet.viewCount.
+  if (!isOwner && snippet.visibility === "public") {
+    // Count the view after the response is sent (never blocks render). Raw
+    // SQL so the @updatedAt column is not bumped by a view.
+    const snippetId = snippet.id;
+    after(() =>
+      prisma.$executeRaw`UPDATE "Snippet" SET "viewCount" = "viewCount" + 1 WHERE "id" = ${snippetId}`
+        .then(() => undefined, () => undefined),
+    );
+  }
+
   const files = JSON.parse(snippet.files) as SandpackFiles;
   const previewOnly = view === "preview";
   const tags = parseTags(snippet.tags);
@@ -71,6 +84,17 @@ export default async function SavedPlaygroundPage({
 
   if (previewOnly) {
     return <div className="fixed inset-0 flex">{inner}</div>;
+  }
+  // Signed-in visitors can report someone else's public snippet.
+  if (userId && !isOwner && snippet.visibility === "public") {
+    return (
+      <>
+        {inner}
+        <div className="fixed bottom-3 left-3 z-40 rounded-md border border-border bg-surface px-2 py-1">
+          <ReportButton targetType="snippet" targetId={snippet.id} label up />
+        </div>
+      </>
+    );
   }
   return inner;
 }

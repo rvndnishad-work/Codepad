@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePageAccess } from "@/lib/settings";
@@ -51,6 +52,8 @@ export default async function PromptLabPage() {
   ]);
 
   return (
+    <>
+    <FeaturePaused featureKey="prompt-arena" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
     <PromptLabClient
       userId={userId}
       scenarios={scenarios.map((s) => ({
@@ -94,5 +97,6 @@ export default async function PromptLabPage() {
       }))}
       initialUpvotedIds={upvoted.map((u) => u.attemptId)}
     />
+    </>
   );
 }

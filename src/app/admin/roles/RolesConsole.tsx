@@ -89,6 +89,11 @@ function RoleCard({
   const [selected, setSelected] = useState<Set<string>>(new Set(effective));
   const [saving, setSaving] = useState(false);
   const [assignEmail, setAssignEmail] = useState("");
+  // Inline confirm steps (no window.confirm): the member pending removal, and
+  // whether the delete-role confirm is open.
+  const [pendingRemove, setPendingRemove] = useState<Member | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const editable = !role.isSystem;
 
   const dirty =
@@ -121,7 +126,7 @@ function RoleCard({
   }
 
   async function remove() {
-    if (!window.confirm(`Delete the "${role.label}" role?`)) return;
+    setConfirmDelete(false);
     try {
       await deleteRoleAction(role.id);
       toast.success("Role deleted.");
@@ -148,15 +153,19 @@ function RoleCard({
     }
   }
 
-  async function unassign(userRoleId: string) {
+  async function unassign(member: Member) {
+    setRemoving(true);
     try {
-      await unassignRoleAction(userRoleId);
+      await unassignRoleAction(member.userRoleId);
       toast.success("Role removed.");
+      setPendingRemove(null);
       onChanged();
     } catch (err) {
       toast.error("Failed to remove role", {
         description: err instanceof Error ? err.message : String(err),
       });
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -185,14 +194,31 @@ function RoleCard({
             <p className="text-xs text-muted mt-1">{role.description}</p>
           )}
         </div>
-        {editable && (
+        {editable && !confirmDelete && (
           <button
-            onClick={remove}
+            onClick={() => setConfirmDelete(true)}
             className="w-7 h-7 rounded-md text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center justify-center shrink-0"
             title="Delete role"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+        )}
+        {editable && confirmDelete && (
+          <div className="flex items-center gap-2 shrink-0 text-xs">
+            <span className="text-muted">Delete this role?</span>
+            <button
+              onClick={remove}
+              className="px-2 py-1 rounded-md border border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 font-medium"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setConfirmDelete(false)}
+              className="px-2 py-1 rounded-md border border-border text-muted hover:text-fg hover:bg-panel"
+            >
+              Cancel
+            </button>
+          </div>
         )}
       </div>
 
@@ -253,9 +279,10 @@ function RoleCard({
               >
                 {m.email || m.name || m.userId}
                 <button
-                  onClick={() => unassign(m.userRoleId)}
+                  onClick={() => setPendingRemove(m)}
                   className="text-muted hover:text-rose-500"
                   title="Remove"
+                  aria-label={`Remove ${m.email || m.name || m.userId}`}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -265,6 +292,33 @@ function RoleCard({
               <span className="text-xs text-muted">No users assigned.</span>
             )}
           </div>
+          {pendingRemove && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-panel px-3 py-2 text-xs">
+              <span className="text-fg">
+                Remove <span className="font-medium">{role.label}</span> from{" "}
+                <span className="font-medium">
+                  {pendingRemove.email || pendingRemove.name || pendingRemove.userId}
+                </span>
+                ?
+              </span>
+              <span className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() => unassign(pendingRemove)}
+                  disabled={removing}
+                  className="px-2 py-1 rounded-md border border-rose-500/40 text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 font-medium disabled:opacity-50"
+                >
+                  {removing ? "Removing…" : "Remove"}
+                </button>
+                <button
+                  onClick={() => setPendingRemove(null)}
+                  disabled={removing}
+                  className="px-2 py-1 rounded-md border border-border text-muted hover:text-fg hover:bg-surface"
+                >
+                  Cancel
+                </button>
+              </span>
+            </div>
+          )}
           <form onSubmit={assign} className="flex items-center gap-2">
             <input
               type="email"

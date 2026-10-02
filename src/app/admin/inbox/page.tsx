@@ -1,293 +1,260 @@
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import {
-  FileText,
-  Target,
-  Briefcase,
-  ArrowRight,
-  Clock,
-  CheckCircle2,
-  Inbox,
-  AlertTriangle,
-} from "lucide-react";
-import { requireAdminAccess } from "@/lib/permissions/staff";
+import { notFound } from "next/navigation";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isStaff } from "@/lib/permissions/staff";
+import { loadUserPermissions } from "@/lib/permissions/access";
+import { Pill, cardCls, timeAgo } from "../jobs/ui";
 
+export const metadata = {
+  title: "Inbox — Interviewpad Admin",
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-dynamic";
+
+/**
+ * Everything waiting on a decision, oldest first. Open to any staff role;
+ * each queue shows only when the person's permissions let them act on it.
+ */
+
+const TAKE = 25;
 const STALE_SESSION_HOURS = 6;
 
-function relativeTime(date: Date): string {
-  const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diffSec < 60) return "just now";
-  const min = Math.floor(diffSec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const d = Math.floor(hr / 24);
-  return `${d}d ago`;
-}
+type Item = { id: string; title: string; meta: string; href: string; external?: boolean; tag?: string };
 
 export default async function AdminInboxPage() {
-  await requireAdminAccess();
-  const staleCutoff = new Date(Date.now() - STALE_SESSION_HOURS * 60 * 60 * 1000);
+  const session = await auth().catch(() => null);
+  if (!(await isStaff(session))) notFound();
+  const perms = session?.user?.id ? ((await loadUserPermissions(session.user.id)) as ReadonlySet<string>) : new Set<string>();
+  const isAdmin = perms.has("*") || perms.has("platform:admin");
+  const can = (p: string) => isAdmin || perms.has(p);
 
-  const [pendingBlogs, communityDraftChallenges, staleSessions, needsChangesBlogs] =
+  const moderate = can("content:moderate") || can("content:curate");
+  const staleCutoff = new Date(Date.now() - STALE_SESSION_HOURS * 3600_000);
+  const none = Promise.resolve(null);
+
+  const [blogs, blogCount, needsChanges, experiences, expCount, challenges, challengeCount, apps, appCount, reports, reportCount, stale, staleCount] =
     await Promise.all([
-      prisma.blogPost.findMany({
-        where: { status: "PENDING" },
-        orderBy: { createdAt: "asc" },
-        take: 25,
-        include: { user: { select: { id: true, name: true, email: true } } },
-      }),
-      prisma.challenge.findMany({
-        where: { published: false, authorId: { not: null } },
-        orderBy: { updatedAt: "desc" },
-        take: 25,
-        include: { author: { select: { id: true, name: true, email: true } } },
-      }),
-      prisma.interviewSession.findMany({
-        where: {
-          status: "in_progress",
-          startedAt: { lt: staleCutoff },
-        },
-        orderBy: { startedAt: "asc" },
-        take: 25,
-        include: { user: { select: { id: true, name: true, email: true } } },
-      }),
-      prisma.blogPost.count({ where: { status: "NEEDS_CHANGES" } }),
+      moderate
+        ? prisma.blogPost.findMany({
+            where: { status: "PENDING" },
+            orderBy: { createdAt: "asc" },
+            take: TAKE,
+            select: { id: true, slug: true, title: true, createdAt: true, user: { select: { name: true } } },
+          })
+        : none,
+      moderate ? prisma.blogPost.count({ where: { status: "PENDING" } }) : none,
+      moderate ? prisma.blogPost.count({ where: { status: "NEEDS_CHANGES" } }) : none,
+      can("content:moderate")
+        ? prisma.prepExperience.findMany({
+            where: { status: "pending" },
+            orderBy: { createdAt: "asc" },
+            take: TAKE,
+            select: { id: true, companyName: true, role: true, createdAt: true, company: { select: { name: true } } },
+          })
+        : none,
+      can("content:moderate") ? prisma.prepExperience.count({ where: { status: "pending" } }) : none,
+      can("content:moderate")
+        ? prisma.challenge.findMany({
+            where: { published: false, authorId: { not: null }, archivedAt: null },
+            orderBy: { updatedAt: "asc" },
+            take: TAKE,
+            select: { id: true, title: true, difficulty: true, updatedAt: true, author: { select: { name: true } } },
+          })
+        : none,
+      can("content:moderate") ? prisma.challenge.count({ where: { published: false, authorId: { not: null }, archivedAt: null } }) : none,
+      can("creator:review")
+        ? prisma.creatorApplication.findMany({
+            where: { status: "PENDING" },
+            orderBy: { createdAt: "asc" },
+            take: TAKE,
+            select: { id: true, platform: true, followerCount: true, createdAt: true, userId: true },
+          })
+        : none,
+      can("creator:review") ? prisma.creatorApplication.count({ where: { status: "PENDING" } }) : none,
+      can("comment:moderate") || can("content:moderate")
+        ? prisma.contentReport.findMany({
+            where: { status: "open" },
+            orderBy: { createdAt: "asc" },
+            take: TAKE,
+            select: { id: true, targetType: true, targetId: true, reason: true, detail: true, createdAt: true },
+          })
+        : none,
+      can("comment:moderate") || can("content:moderate") ? prisma.contentReport.count({ where: { status: "open" } }) : none,
+      isAdmin
+        ? prisma.interviewSession.findMany({
+            where: { status: "in_progress", startedAt: { lt: staleCutoff } },
+            orderBy: { startedAt: "asc" },
+            take: TAKE,
+            select: { id: true, title: true, startedAt: true, user: { select: { name: true } } },
+          })
+        : none,
+      isAdmin ? prisma.interviewSession.count({ where: { status: "in_progress", startedAt: { lt: staleCutoff } } }) : none,
     ]);
 
-  const totalActionable =
-    pendingBlogs.length + communityDraftChallenges.length + staleSessions.length;
+  // Applicant names in one query.
+  const applicantIds = apps?.map((a) => a.userId) ?? [];
+  const applicants = applicantIds.length
+    ? await prisma.user.findMany({ where: { id: { in: applicantIds } }, select: { id: true, name: true, email: true } })
+    : [];
+  const applicantName = new Map(applicants.map((u) => [u.id, u.name?.trim() || u.email || "Someone"]));
+
+  const sections: { id: string; title: string; total: number; href: string; action: string; note?: string; empty: string; items: Item[] }[] = [];
+  if (blogs)
+    sections.push({
+      id: "blogs",
+      title: "Blogs awaiting review",
+      total: blogCount ?? 0,
+      href: "/admin/blogs?status=PENDING",
+      action: "Review all",
+      note: needsChanges ? `${needsChanges} more marked "Needs changes" are waiting on their authors.` : undefined,
+      empty: "No blogs waiting for review.",
+      items: blogs.map((b) => ({
+        id: b.id,
+        title: b.title,
+        meta: `by ${b.user.name ?? "Anonymous"}, submitted ${timeAgo(b.createdAt).toLowerCase()}`,
+        href: `/admin/blogs?q=${encodeURIComponent(b.slug)}`,
+      })),
+    });
+  if (experiences)
+    sections.push({
+      id: "experiences",
+      title: "Experiences to moderate",
+      total: expCount ?? 0,
+      href: "/admin/interview-questions/experiences?status=pending",
+      action: "Moderate",
+      empty: "No interview experiences waiting.",
+      items: experiences.map((e) => ({
+        id: e.id,
+        title: [e.company?.name ?? e.companyName ?? "Unknown company", e.role].filter(Boolean).join(", "),
+        meta: `submitted ${timeAgo(e.createdAt).toLowerCase()}`,
+        href: "/admin/interview-questions/experiences?status=pending",
+      })),
+    });
+  if (reports)
+    sections.push({
+      id: "reports",
+      title: "Open content reports",
+      total: reportCount ?? 0,
+      href: "/admin/community",
+      action: "Open community",
+      empty: "No open reports.",
+      items: reports.map((r) => ({
+        id: r.id,
+        title: r.reason,
+        meta: `${r.targetType.replace(/_/g, " ")}${r.detail ? `: ${r.detail.slice(0, 120)}` : ""}, reported ${timeAgo(r.createdAt).toLowerCase()}`,
+        href: "/admin/community",
+        tag: r.targetType.replace(/_/g, " "),
+      })),
+    });
+  if (challenges)
+    sections.push({
+      id: "challenges",
+      title: "Community challenges awaiting review",
+      total: challengeCount ?? 0,
+      href: "/admin/challenges",
+      action: "See all",
+      empty: "No community challenges waiting.",
+      items: challenges.map((c) => ({
+        id: c.id,
+        title: c.title,
+        meta: `by ${c.author?.name ?? "Anonymous"}, updated ${timeAgo(c.updatedAt).toLowerCase()}`,
+        href: `/admin/challenges/${c.id}/edit`,
+        tag: c.difficulty,
+      })),
+    });
+  if (apps)
+    sections.push({
+      id: "creators",
+      title: "Creator applications",
+      total: appCount ?? 0,
+      href: "/admin/creators?status=PENDING",
+      action: "Review",
+      empty: "No applications waiting.",
+      items: apps.map((a) => ({
+        id: a.id,
+        title: applicantName.get(a.userId) ?? "Someone",
+        meta: `${a.platform}, ${a.followerCount.toLocaleString()} followers, applied ${timeAgo(a.createdAt).toLowerCase()}`,
+        href: "/admin/creators?status=PENDING",
+      })),
+    });
+  if (stale)
+    sections.push({
+      id: "sessions",
+      title: `Interview sessions in progress for over ${STALE_SESSION_HOURS} h`,
+      total: staleCount ?? 0,
+      href: "/admin/interviews?status=in_progress",
+      action: "All sessions",
+      empty: "No stalled sessions.",
+      items: stale.map((s) => ({
+        id: s.id,
+        title: s.title,
+        meta: `${s.user.name ?? "Anonymous"}, started ${s.startedAt ? timeAgo(s.startedAt).toLowerCase() : "at an unknown time"}`,
+        href: `/admin/interviews/${s.id}`,
+      })),
+    });
+
+  const waiting = sections.reduce((a, s) => a + s.total, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <Inbox className="w-5 h-5 text-accent" />
-            Moderation inbox
-          </h2>
-          <p className="text-sm text-muted mt-1">
-            Items waiting on a decision. Sorted oldest first within each queue.
-          </p>
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em] text-fg">Inbox</h1>
+          <p className="text-sm text-muted">Items waiting on a decision, oldest first in each queue.</p>
         </div>
+        {sections.length > 0 && (waiting === 0 ? <Pill tone="ok">All clear</Pill> : <Pill tone="warn">{waiting.toLocaleString()} waiting</Pill>)}
+      </header>
 
-        {totalActionable === 0 ? (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 text-xs font-semibold ">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            All clear
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-semibold ">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            {totalActionable} pending
-          </div>
-        )}
-      </div>
-
-      <Queue
-        title="Pending blogs"
-        icon={FileText}
-        emptyMessage="No blogs waiting for review."
-        count={pendingBlogs.length}
-        secondaryNote={
-          needsChangesBlogs > 0
-            ? `${needsChangesBlogs} blog${needsChangesBlogs === 1 ? "" : "s"} marked “Needs changes” awaiting the author.`
-            : null
-        }
-        actionLabel="Review all"
-        actionHref="/admin/blogs?status=PENDING"
-      >
-        {pendingBlogs.length === 0 ? null : (
-          <ul className="divide-y divide-border">
-            {pendingBlogs.map((b) => (
-              <li key={b.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-panel/20 transition-all duration-200">
-                <div className="flex items-start gap-3 min-w-0">
-                  <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/admin/blogs?q=${encodeURIComponent(b.slug)}`}
-                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
-                    >
-                      {b.title}
-                    </Link>
-                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span>by {b.user.name ?? "Anonymous"}</span>
-                      <span className="text-muted/30">·</span>
-                      <span className="font-mono text-xs">submitted {relativeTime(b.createdAt)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Link
-                    href={`/blog/${b.slug}`}
-                    target="_blank"
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-border text-muted hover:text-fg hover:bg-panel/40 transition shrink-0"
-                  >
-                    Preview
-                  </Link>
-                  <Link
-                    href={`/admin/blogs?q=${encodeURIComponent(b.slug)}`}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
-                  >
-                    Review
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Queue>
-
-      <Queue
-        title="Community challenges awaiting review"
-        icon={Target}
-        emptyMessage="No community-authored draft challenges."
-        count={communityDraftChallenges.length}
-        actionLabel="See all"
-        actionHref="/admin/challenges"
-      >
-        {communityDraftChallenges.length === 0 ? null : (
-          <ul className="divide-y divide-border">
-            {communityDraftChallenges.map((c) => (
-              <li key={c.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-panel/20 transition-all duration-200">
-                <div className="flex items-start gap-3 min-w-0">
-                  <Target className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/admin/challenges/${c.id}/edit`}
-                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
-                    >
-                      {c.title}
-                    </Link>
-                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span>by {c.author?.name ?? "Anonymous"}</span>
-                      <span className="text-muted/30">·</span>
-                      <span className={`text-xs font-semibold px-1.5 py-0.5 rounded border border-border bg-panel/40`}>
-                        {c.difficulty}
-                      </span>
-                      <span className="text-muted/30">·</span>
-                      <span className="font-mono text-xs">updated {relativeTime(c.updatedAt)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Link
-                    href={`/admin/challenges/${c.id}/edit`}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
-                  >
-                    Edit
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Queue>
-
-      <Queue
-        title={`Stalled interview sessions (in-progress for >${STALE_SESSION_HOURS}h)`}
-        icon={Briefcase}
-        emptyMessage="No stalled sessions."
-        count={staleSessions.length}
-        actionLabel="All sessions"
-        actionHref="/admin/interviews?status=in_progress"
-      >
-        {staleSessions.length === 0 ? null : (
-          <ul className="divide-y divide-border">
-            {staleSessions.map((s) => (
-              <li key={s.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-panel/20 transition-all duration-200">
-                <div className="flex items-start gap-3 min-w-0">
-                  <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href={`/admin/interviews/${s.id}`}
-                      className="font-semibold text-fg hover:text-accent transition truncate block text-sm"
-                    >
-                      {s.title}
-                    </Link>
-                    <div className="text-xs text-muted mt-1 flex items-center gap-1.5 flex-wrap">
-                      <span>{s.user.name ?? "Anonymous"}</span>
-                      <span className="text-muted/30">·</span>
-                      <span className="font-mono text-xs">started {s.startedAt ? relativeTime(s.startedAt) : "—"}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Link
-                    href={`/admin/interviews/${s.id}`}
-                    className="text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-accent text-bg hover:opacity-90 transition shrink-0"
-                  >
-                    Inspect
-                  </Link>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Queue>
-    </div>
-  );
-}
-
-function Queue({
-  title,
-  icon: Icon,
-  count,
-  emptyMessage,
-  secondaryNote,
-  actionLabel,
-  actionHref,
-  children,
-}: {
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  count: number;
-  emptyMessage: string;
-  secondaryNote?: string | null;
-  actionLabel: string;
-  actionHref: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-2xl border border-border bg-panel/30 backdrop-blur-md shadow-lg overflow-hidden group/queue relative">
-      {/* Background ambient spotlight card glows */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-accent/[0.01] rounded-full blur-2xl pointer-events-none" />
-      
-      <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3 bg-panel/40">
-        <div className="flex items-center gap-2.5">
-          <Icon className="w-4 h-4 text-muted group-hover/queue:text-accent transition-colors duration-300" />
-          <h3 className="text-sm font-semibold tracking-tight text-fg">{title}</h3>
-          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-panel/40 border border-border text-muted">
-            {count}
-          </span>
-        </div>
-        <Link
-          href={actionHref}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-fg transition-colors"
-        >
-          {actionLabel}
-          <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
-
-      {count === 0 ? (
-        <div className="px-5 py-10 text-center relative z-10">
-          <CheckCircle2 className="w-8 h-8 text-emerald-500/40 mx-auto mb-2" />
-          <p className="text-xs text-muted font-medium">{emptyMessage}</p>
-          {secondaryNote && (
-            <p className="text-xs text-muted/50 mt-2 font-mono">{secondaryNote}</p>
-          )}
-        </div>
-      ) : (
-        <div className="relative z-10">
-          {children}
-          {secondaryNote && (
-            <div className="px-5 py-3 border-t border-border text-xs text-muted/70 bg-panel/10 font-mono">
-              {secondaryNote}
-            </div>
-          )}
+      {sections.length === 0 && (
+        <div className={`${cardCls} px-6 py-12 text-center text-[13px] text-muted`}>
+          Your role has no review queues. Ask a platform admin if you expected to see some here.
         </div>
       )}
-    </section>
+
+      {sections.map((s) => (
+        <section key={s.id} id={s.id} aria-label={s.title} className={`${cardCls} overflow-hidden scroll-mt-6`}>
+          <div className="px-4 py-3 border-b border-border bg-panel flex items-center gap-3">
+            <h2 className="text-sm font-semibold text-fg flex-1">
+              {s.title} <span className="ml-1 text-muted font-normal tabular-nums">{s.total.toLocaleString()}</span>
+            </h2>
+            <Link href={s.href} className="inline-flex items-center gap-1 text-[13px] text-secondary-soft hover:underline underline-offset-2">
+              {s.action}
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden />
+            </Link>
+          </div>
+          {s.items.length === 0 ? (
+            <div className="px-4 py-8 flex flex-col items-center gap-2 text-center">
+              <CheckCircle2 className="w-5 h-5 text-success" aria-hidden />
+              <p className="text-[13px] text-muted">{s.empty}</p>
+              {s.note && <p className="text-[13px] text-subtle">{s.note}</p>}
+            </div>
+          ) : (
+            <>
+              <ul>
+                {s.items.map((it, i) => (
+                  <li key={it.id} className={`px-4 py-2.5 flex items-center gap-3 hover:bg-panel/60 ${i === 0 ? "" : "border-t border-border"}`}>
+                    <div className="min-w-0 flex-1">
+                      <Link href={it.href} className="block text-sm font-medium text-fg truncate hover:underline underline-offset-2">
+                        {it.title}
+                      </Link>
+                      <p className="text-[13px] text-muted truncate">{it.meta}</p>
+                    </div>
+                    {it.tag && <Pill tone="off">{it.tag}</Pill>}
+                  </li>
+                ))}
+              </ul>
+              {(s.note || s.total > s.items.length) && (
+                <div className="px-4 py-2.5 border-t border-border text-[13px] text-subtle">
+                  {s.total > s.items.length && `Showing the oldest ${s.items.length} of ${s.total.toLocaleString()}. `}
+                  {s.note}
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      ))}
+    </div>
   );
 }

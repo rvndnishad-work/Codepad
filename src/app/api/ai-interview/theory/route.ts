@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { prisma } from "@/lib/prisma";
 import { authorizeTheoryRound } from "@/lib/ai-interview/theory-server";
 import { consumeCreditIfFirstTurn, ConsentRequiredError, InsufficientCreditsError } from "@/lib/ai-interview/credits";
@@ -42,6 +43,11 @@ export async function POST(req: NextRequest) {
   const cadence = rateLimit(`ai-theory:${session.id}`, 1, 800);
   if (!cadence.ok) return NextResponse.json({ error: "Slow down a moment." }, { status: 429 });
 
+  // Feature switch "ai-screening": no new screening starts while paused.
+  if (!session.startedAt) {
+    const featurePaused = await featureBlockedResponse("ai-screening");
+    if (featurePaused) return featurePaused;
+  }
   // The first question starts the screening, like the first chat message does.
   try {
     await consumeCreditIfFirstTurn(session.id);

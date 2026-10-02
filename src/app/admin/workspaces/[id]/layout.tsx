@@ -1,109 +1,86 @@
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
-import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Building2 } from "lucide-react";
+import { notFound } from "next/navigation";
+import { requireAdminAccess } from "@/lib/permissions/staff";
+import { planLabel, workspaceStatusPills } from "@/lib/admin/workspace-actions";
+import { getAdminWorkspace } from "./_data";
+import { Pill, fmtDate } from "./_ui";
+import { Btn } from "@/app/w/[slug]/(shell)/candidates/_components/ui";
 import WorkspaceTabs from "./WorkspaceTabs";
+import WorkspaceAction from "./WorkspaceAction";
 
 type Props = {
   params: Promise<{ id: string }>;
   children: React.ReactNode;
 };
 
-const PLAN_BADGES: Record<string, string> = {
-  FREE: "text-amber-600 dark:text-amber-400 border-amber-500/25 bg-amber-500/[0.06]",
-  GROWTH: "text-indigo-600 dark:text-indigo-300 border-indigo-500/25 bg-indigo-500/[0.08]",
-  ENTERPRISE: "text-emerald-600 dark:text-emerald-400 border-emerald-500/25 bg-emerald-500/[0.06]",
-  LOCKED: "text-rose-600 dark:text-rose-400 border-rose-500/25 bg-rose-500/[0.06]",
-};
-
 export default async function WorkspaceDetailLayout({ params, children }: Props) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) notFound();
-
+  await requireAdminAccess("platform:admin");
   const { id } = await params;
+  const ws = await getAdminWorkspace(id);
+  if (!ws) notFound();
 
-  // Fetch the workspace metadata + counts for every tab in one round-trip.
-  // The attempts count is a cross-table join (no direct workspaceId on
-  // ChallengeAttempt) so it needs its own query — both run in parallel.
-  const [workspace, attemptCount] = await Promise.all([
-    prisma.workspace.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        planName: true,
-        createdAt: true,
-        _count: {
-          select: {
-            members: true,
-            challenges: true,
-            takeHomes: true,
-            sessions: true,
-            candidates: true,
-            aiInterviewSessions: true,
-          },
-        },
-      },
-    }),
-    prisma.challengeAttempt.count({
-      where: { challenge: { workspaceId: id } },
-    }),
-  ]);
-
-  if (!workspace) notFound();
+  const pills = workspaceStatusPills(ws);
+  const n = ws.counts.members;
 
   return (
-    <div className="space-y-6">
-      {/* Back link */}
-      <Link
-        href="/admin/workspaces"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-fg transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        All workspaces
-      </Link>
+    <div className="flex flex-col gap-5">
+      <nav aria-label="Breadcrumb" className="text-sm text-muted">
+        <Link href="/admin/workspaces" className="hover:text-fg">
+          Workspaces
+        </Link>{" "}
+        / <span className="text-fg">{ws.name}</span>
+      </nav>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-semibold text-sm shrink-0 select-none">
-            {workspace.name.substring(0, 2).toUpperCase()}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div
+            aria-hidden
+            className="w-11 h-11 shrink-0 rounded-[10px] bg-secondary/15 text-secondary-soft flex items-center justify-center font-semibold text-base select-none"
+          >
+            {ws.name.trim().charAt(0).toUpperCase() || "W"}
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-semibold text-indigo-500/80 flex items-center gap-1.5">
-              <Building2 className="w-3 h-3" /> Corporate workspace
+            <h1 className="flex flex-wrap items-center gap-2 text-[22px] font-semibold tracking-tight text-fg">
+              <span className="truncate">{ws.name}</span>
+              <Pill tone="info">{planLabel(ws.planName)}</Pill>
+              {pills.map((p) => (
+                <Pill key={p.label} tone={p.tone}>
+                  {p.label}
+                </Pill>
+              ))}
+            </h1>
+            <div className="text-sm text-muted">
+              <span className="font-mono text-[13px]">{ws.slug}</span> · created {fmtDate(ws.createdAt)}
+              {ws.owner && (
+                <>
+                  {" "}
+                  · owner {ws.owner.name ?? ws.owner.email}
+                </>
+              )}{" "}
+              · {n === 1 ? "1 member" : `${n} members`}
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-fg mt-0.5 truncate">{workspace.name}</h2>
-            <div className="text-xs text-muted font-mono mt-1">/{workspace.slug}</div>
           </div>
         </div>
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-md border text-xs font-semibold shrink-0 ${
-            PLAN_BADGES[workspace.planName] || PLAN_BADGES.FREE
-          }`}
-        >
-          {workspace.planName}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <Btn href={`/admin/workspaces/${ws.id}/view-as`}>View as owner</Btn>
+          <Btn href={`/admin/audit?targetType=workspace&targetId=${ws.id}`}>Audit log</Btn>
+          <WorkspaceAction kind="plan" workspaceId={ws.id} label="Change plan" currentPlan={ws.planName} />
+          {ws.lockedAt ? (
+            <WorkspaceAction kind="unlock" workspaceId={ws.id} label="Unlock" />
+          ) : (
+            <WorkspaceAction kind="lock" workspaceId={ws.id} label="Lock workspace" variant="danger" />
+          )}
+        </div>
       </div>
 
-      {/* Tab navigation */}
-      <WorkspaceTabs
-        workspaceId={workspace.id}
-        counts={{
-          members: workspace._count.members,
-          challenges: workspace._count.challenges,
-          interviews: workspace._count.sessions,
-          replays: workspace._count.takeHomes,
-          candidates: workspace._count.candidates,
-          aiInterviews: workspace._count.aiInterviewSessions,
-          attempts: attemptCount,
-        }}
-      />
+      {ws.lockedAt && (
+        <div className="rounded-xl border border-danger/40 bg-surface px-4 py-3 text-sm text-fg">
+          Locked on {fmtDate(ws.lockedAt, true)}
+          {ws.lockedReason ? `: ${ws.lockedReason}` : ""}. Members are refused and candidate links show a notice.
+        </div>
+      )}
 
-      {/* Tab content */}
+      <WorkspaceTabs workspaceId={ws.id} counts={ws.counts} />
       <div>{children}</div>
     </div>
   );

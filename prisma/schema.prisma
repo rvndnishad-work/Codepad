@@ -28,6 +28,18 @@ model User {
   portfolioPublic      Boolean               @default(false)
   /// Whether the user is banned from the platform.
   banned               Boolean               @default(false)
+  /// Admin console: why the person was suspended, until when (null = no end)
+  /// and by whom. `banned` stays the sign-in gate.
+  bannedReason         String?
+  bannedUntil          DateTime?
+  bannedAt             DateTime?
+  bannedById           String?
+  /// Soft delete from the admin console. Sign-in is refused once set.
+  deletedAt            DateTime?
+  /// Last time the person signed in (written by the auth signIn event).
+  lastSignInAt         DateTime?
+  /// JWTs issued before this moment are rejected (force sign-out).
+  sessionsRevokedAt    DateTime?
   createdAt            DateTime              @default(now())
   /// User type — "candidate" (job seeker), "recruiter" (hiring), or null
   /// for legacy accounts that haven't been migrated to the new taxonomy.
@@ -369,6 +381,11 @@ model Snippet {
 /// A coding challenge with starter code + hidden tests.
 /// Difficulty: "easy" | "medium" | "hard". Stored as string for SQLite portability.
 model Challenge {
+  /// Admin console: archived challenges are hidden everywhere but keep
+  /// their attempts and take-homes. Replaces hard delete.
+  archivedAt          DateTime?
+  publishedAt         DateTime?
+  scheduledAt         DateTime?
   id                  String                @id @default(cuid())
   slug                String                @unique
   title               String
@@ -878,6 +895,10 @@ model TakeHomeTemplate {
 }
 
 model BlogPost {
+  /// When the post went live; set on the first publish.
+  publishedAt DateTime?
+  /// Admin console scheduled publish. A cron publishes it at this time.
+  scheduledAt DateTime?
   id         String         @id @default(cuid())
   slug       String         @unique
   title      String
@@ -1008,6 +1029,26 @@ model Workspace {
   /// GROWTH-level access regardless of planName.
   trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
+
+  // ── Admin console: Stripe snapshot (synced nightly + by webhook) ───────
+  /// Stripe subscription status: active, trialing, past_due, canceled, unpaid…
+  stripeStatus         String?
+  /// Seat quantity on the Stripe subscription.
+  stripeSeatQuantity   Int?
+  /// Monthly recurring revenue in cents, normalised (annual / 12).
+  stripeMrrCents       Int?
+  /// "month" or "year".
+  stripeInterval       String?
+  stripeCurrentPeriodEnd DateTime?
+  stripePastDueSince   DateTime?
+  stripeSyncedAt       DateTime?
+
+  // ── Admin console: lock ───────────────────────────────────────────────
+  /// While set, members cannot sign in to the workspace and candidate links
+  /// stop working. Data is kept.
+  lockedAt             DateTime?
+  lockedReason         String?
+  lockedById           String?
 
   // ── Included AI credits (credits come with each paid seat) ─────────────
   /// Included credits still unused. They sit in the ledger balance too; this
@@ -2913,6 +2954,8 @@ model Company {
 
 /// One interview-prep question. May be tied to a company and/or a technology.
 model PrepQuestion {
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
   id              String   @id @default(cuid())
   title           String
   slug            String   @unique
@@ -3215,4 +3258,205 @@ model InterviewCalendarEvent {
   connection   CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 
   @@index([connectionId])
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// Admin console revamp (2026-10)
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Every action taken in /admin or by the admin assistant.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  /// User id of the admin. Null for system jobs.
+  actorId    String?
+  actorEmail String?
+  /// "admin" | "assistant" | "system"
+  via        String   @default("admin")
+  /// Dotted action key, e.g. "workspace.credits.grant", "switch.set".
+  action     String
+  /// "workspace" | "user" | "blog" | "challenge" | "switch" | "maintenance" | "role" | "setting" | "pricing" | …
+  targetType String?
+  targetId   String?
+  /// Human label of the target at the time ("Northwind", "jane@x.com").
+  targetLabel String?
+  before     Json?
+  after      Json?
+  note       String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+}
+
+/// One switch per product function. Code reads it with featureState(key).
+model FeatureSwitch {
+  key         String    @id
+  /// "on" | "read_only" | "off"
+  state       String    @default("on")
+  /// Message shown where the function would be, while not "on".
+  message     String?
+  /// Switch back to "on" automatically at this time.
+  resumeAt    DateTime?
+  updatedById String?
+  updatedNote String?
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+}
+
+/// Page- or area-level maintenance. The proxy reads active rules.
+model MaintenanceRule {
+  id          String    @id @default(cuid())
+  /// Area key from the registry ("site", "hiring", "dev", "playground", …) or "custom".
+  area        String
+  /// Path prefixes covered, one per entry. Custom rules set these by hand.
+  paths       String[]
+  message     String
+  /// Null = starts now.
+  startsAt    DateTime?
+  /// Null = until someone brings it back.
+  endsAt      DateTime?
+  /// Hours before startsAt to show a banner on the covered pages. 0 = none.
+  bannerHours Int       @default(24)
+  /// Role keys that get through (PLATFORM_ADMIN always does).
+  bypassRoles String[]  @default([])
+  /// Set when someone ends it early.
+  endedAt     DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([area])
+  @@index([startsAt, endsAt])
+}
+
+/// Raw product activity used by the admin dashboards. Kept 90 days, rolled up nightly.
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  /// "sign_in" | "playground_run" | "question_view" | "judge_run" | …
+  kind      String
+  userId    String?
+  /// Free label: language for runs, technology for views, provider for sign-ins.
+  label     String?
+  /// Milliseconds, for runs.
+  durationMs Int?
+  ok        Boolean  @default(true)
+  targetId  String?
+  createdAt DateTime @default(now())
+
+  @@index([kind, createdAt])
+  @@index([userId, createdAt])
+}
+
+/// Nightly roll-up of metrics per day, so long ranges read few rows.
+model AdminDailyStat {
+  id     String   @id @default(cuid())
+  /// UTC midnight of the day.
+  day    DateTime
+  metric String
+  /// Optional breakdown (language, provider, plan…). "" = total.
+  dim    String   @default("")
+  value  Float
+
+  @@unique([day, metric, dim])
+  @@index([metric, day])
+}
+
+/// One row per scheduled job run.
+model CronRun {
+  id         String    @id @default(cuid())
+  job        String
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  ok         Boolean?
+  error      String?
+  /// Short summary the job returns ("expired 3 sessions").
+  summary    String?
+
+  @@index([job, startedAt])
+}
+
+/// Every change made in /admin/pricing.
+model PricingChange {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actorEmail String?
+  before    Json
+  after     Json
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// A user report on community content (comments, question comments, blogs, snippets).
+model ContentReport {
+  id          String    @id @default(cuid())
+  /// "blog_comment" | "question_comment" | "blog" | "snippet" | "experience"
+  targetType  String
+  targetId    String
+  reporterId  String?
+  reason      String
+  detail      String?
+  /// "open" | "hidden" | "deleted" | "dismissed"
+  status      String    @default("open")
+  resolvedById String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+/// Stripe Connect payouts and transfers to creators.
+model CreatorPayout {
+  id               String   @id @default(cuid())
+  creatorUserId    String
+  stripeAccountId  String
+  /// Stripe payout or transfer id.
+  stripeId         String   @unique
+  /// "payout" | "transfer"
+  kind             String
+  amountCents      Int
+  currency         String   @default("usd")
+  /// "pending" | "in_transit" | "paid" | "failed" | "canceled"
+  status           String
+  failureMessage   String?
+  arrivalDate      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([creatorUserId, createdAt])
+  @@index([status])
+}
+
+/// Admin assistant conversations.
+model AssistantConversation {
+  id        String             @id @default(cuid())
+  userId    String
+  title     String             @default("New conversation")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  messages  AssistantMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model AssistantMessage {
+  id             String                @id @default(cuid())
+  conversationId String
+  /// "user" | "assistant" | "tool"
+  role           String
+  content        String
+  /// Tool calls made for this turn: [{ name, args, summary }].
+  toolCalls      Json?
+  /// Proposed action awaiting approval: { kind, args, summary, status }.
+  proposal       Json?
+  createdAt      DateTime              @default(now())
+  conversation   AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

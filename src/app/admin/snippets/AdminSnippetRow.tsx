@@ -1,19 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  AlertTriangle,
-  Code2,
-  ExternalLink,
-  Eye,
-  Loader2,
-  Pin,
-  PinOff,
-} from "lucide-react";
+import { ExternalLink, Loader2, Pin, PinOff } from "lucide-react";
 import RelativeTime from "@/components/RelativeTime";
+import ConfirmButton from "../content/_components/ConfirmButton";
+import Pill from "../content/_components/Pill";
+import { deleteSnippet, unlistSnippet } from "./actions";
 
 interface AdminSnippetRowProps {
   snippet: {
@@ -22,19 +16,13 @@ interface AdminSnippetRowProps {
     title: string;
     template: string;
     pinned: boolean;
-    viewCount: number;
     updatedAt: string;
-    user: {
-      id: string;
-      name: string | null;
-      email: string | null;
-      image: string | null;
-    } | null;
+    openReports: number;
+    user: { id: string; name: string | null; email: string | null } | null;
   };
-  overflow?: boolean;
 }
 
-export default function AdminSnippetRow({ snippet, overflow }: AdminSnippetRowProps) {
+export default function AdminSnippetRow({ snippet }: AdminSnippetRowProps) {
   const router = useRouter();
   const [pinned, setPinned] = useState(snippet.pinned);
   const [pending, startTransition] = useTransition();
@@ -64,103 +52,64 @@ export default function AdminSnippetRow({ snippet, overflow }: AdminSnippetRowPr
   }
 
   return (
-    <tr className="group hover:bg-elevated/30 transition-colors">
-      <td className="px-6 py-4 max-w-md">
-        <div className="flex items-center gap-3">
-          <div
-            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border ${
-              pinned ? "bg-accent/10 border-accent/30" : "bg-muted/10 border-border"
-            }`}
-          >
-            <Code2 className={`w-5 h-5 ${pinned ? "text-accent" : "text-muted"}`} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-fg truncate block">{snippet.title}</span>
-              {pinned && <Pin className="w-3.5 h-3.5 text-accent fill-accent shrink-0" />}
-              {overflow && (
-                <span
-                  className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30"
-                  title="Pinned but won't show on homepage — too many pins active."
-                >
-                  <AlertTriangle className="w-2.5 h-2.5" />
-                  Overflow
-                </span>
-              )}
-            </div>
-            <div className="text-xs text-muted truncate font-mono">/{snippet.slug}</div>
-          </div>
+    <tr className="hover:bg-panel/60 align-top">
+      <td className="px-4 py-3 min-w-[220px]">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-fg">{snippet.title}</span>
+          {pinned && <Pill tone="info">Pinned</Pill>}
+          {snippet.openReports > 0 && (
+            <Link href={`/admin/community?tab=reports&type=snippet`}>
+              <Pill tone="bad">{snippet.openReports} open report{snippet.openReports === 1 ? "" : "s"}</Pill>
+            </Link>
+          )}
         </div>
+        <div className="text-xs text-muted font-mono">/{snippet.slug} · {snippet.template}</div>
       </td>
-
-      <td className="px-6 py-4">
+      <td className="px-4 py-3">
         {snippet.user ? (
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-6 h-6 rounded-full overflow-hidden bg-muted relative shrink-0">
-              {snippet.user.image ? (
-                <Image src={snippet.user.image} alt="" fill className="object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-muted">
-                  {(snippet.user.name ?? snippet.user.email ?? "?")[0]}
-                </div>
-              )}
-            </div>
-            <span className="text-xs font-medium text-muted truncate max-w-[140px]">
-              {snippet.user.name ?? snippet.user.email}
-            </span>
-          </div>
+          <Link href={`/admin/users/${snippet.user.id}`} className="text-sm text-fg hover:underline">
+            {snippet.user.name ?? snippet.user.email}
+          </Link>
         ) : (
-          <span className="text-xs text-muted/50 italic">anonymous</span>
+          <span className="text-sm text-subtle">Anonymous</span>
         )}
       </td>
-
-      <td className="px-6 py-4">
-        <div className="flex items-center justify-center gap-1.5 text-muted">
-          <Eye className="w-3.5 h-3.5" />
-          <span className="text-xs font-mono font-bold tabular-nums">
-            {snippet.viewCount}
-          </span>
-        </div>
-      </td>
-
-      <td className="px-6 py-4 text-xs text-muted whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
         <RelativeTime iso={snippet.updatedAt} />
       </td>
-
-      <td className="px-6 py-4 text-right">
-        <div className="flex items-center justify-end gap-2">
-          {error && (
-            <span className="text-xs text-rose-500 max-w-[160px] truncate" title={error}>
-              {error}
-            </span>
-          )}
+      <td className="px-4 py-3">
+        <div className="flex items-start justify-end gap-1.5 flex-wrap">
+          {error && <span className="text-xs text-danger max-w-[160px]">{error}</span>}
           <button
             type="button"
             onClick={togglePin}
             disabled={pending}
-            className={`p-2 rounded-lg border transition disabled:opacity-50 disabled:cursor-not-allowed ${
-              pinned
-                ? "bg-accent/10 border-accent/40 text-accent hover:bg-accent/20"
-                : "bg-surface border-border text-muted hover:text-fg hover:border-border-strong"
-            }`}
-            title={pinned ? "Unpin from homepage" : "Pin to homepage"}
-            aria-label={pinned ? "Unpin from homepage" : "Pin to homepage"}
+            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-border text-xs font-medium hover:bg-panel disabled:opacity-50"
           >
-            {pending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : pinned ? (
-              <Pin className="w-4 h-4 fill-current" />
-            ) : (
-              <PinOff className="w-4 h-4" />
-            )}
+            {pending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : pinned ? <PinOff className="w-3.5 h-3.5" /> : <Pin className="w-3.5 h-3.5" />}
+            {pinned ? "Unpin" : "Pin"}
           </button>
+          <ConfirmButton
+            action={unlistSnippet.bind(null, snippet.id)}
+            label="Make private"
+            prompt="Take it off Explore and stop the link working for others. The owner keeps it."
+            requireNote
+          />
+          <ConfirmButton
+            action={deleteSnippet.bind(null, snippet.id)}
+            label="Delete"
+            confirmLabel="Delete for good"
+            prompt="Delete this snippet for its owner too? This cannot be undone."
+            requireNote
+            tone="danger"
+          />
           <Link
             href={`/play/${snippet.slug}`}
             target="_blank"
-            className="p-2 rounded-lg bg-surface border border-border text-muted hover:text-fg hover:border-border-strong transition opacity-0 group-hover:opacity-100"
+            className="p-1.5 rounded-md text-muted hover:text-fg hover:bg-panel"
             title="Open snippet"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>
       </td>

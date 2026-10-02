@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 import { bulkImportQuestions } from "../actions";
+import { IMPORT_ROW_CAP } from "../list-params";
 
 const SAMPLE = `[
   {
@@ -94,7 +95,7 @@ export default function BulkImport() {
   }
 
   function runImport() {
-    if (!items) return;
+    if (!items || items.length > IMPORT_ROW_CAP) return;
     start(async () => {
       const res = await bulkImportQuestions(items);
       setResult(res);
@@ -126,10 +127,16 @@ export default function BulkImport() {
       )}
       {items && !parseError && (
         <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-surface/40">
-          <span className="text-sm text-muted">Parsed <b className="text-fg">{items.length}</b> question{items.length === 1 ? "" : "s"} ready to import.</span>
+          <span className="text-sm text-muted">
+            {items.length > IMPORT_ROW_CAP ? (
+              <span className="text-danger">{items.length} rows is over the limit of {IMPORT_ROW_CAP}. Split the file.</span>
+            ) : (
+              <>Parsed <b className="text-fg">{items.length}</b> question{items.length === 1 ? "" : "s"}. All rows import together, or none do if any row is invalid.</>
+            )}
+          </span>
           <button
             onClick={runImport}
-            disabled={pending}
+            disabled={pending || items.length > IMPORT_ROW_CAP}
             className="px-4 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft disabled:opacity-60"
           >
             {pending ? "Importing…" : `Import ${items.length}`}
@@ -144,8 +151,7 @@ export default function BulkImport() {
           </div>
           {result.errors.length > 0 && (
             <div className="text-xs text-rose-500 space-y-0.5">
-              <div className="font-bold">{result.errors.length} skipped:</div>
-              {result.errors.slice(0, 10).map((er, i) => <div key={i}>· {er}</div>)}
+              {result.errors.slice(0, 20).map((er, i) => <div key={i}>· {er}</div>)}
             </div>
           )}
         </div>

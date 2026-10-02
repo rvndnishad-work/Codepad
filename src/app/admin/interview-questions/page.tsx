@@ -10,12 +10,14 @@ import QuestionAdminRow from "./QuestionAdminRow";
 import QuestionsFilterBar from "./QuestionsFilterBar";
 import { PAGE_SIZES, DEFAULT_PAGE_SIZE, SORT_OPTIONS, FILTER_COOKIE, PERSISTED_KEYS, type SortKey } from "./list-params";
 import Pagination from "../Pagination";
+import ContentTabs from "../content/_components/ContentTabs";
 
-export const metadata = { title: "Interview Questions — Admin", robots: { index: false } };
+export const metadata = { title: "Content — Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 const ROW_SELECT = {
   id: true, title: true, slug: true, status: true, difficulty: true, technology: true, views: true,
+  scheduledAt: true,
   company: { select: { name: true } },
 } as const;
 
@@ -104,7 +106,7 @@ export default async function InterviewQuestionsAdmin({
     prisma.prepQuestion.count({ where: { status: "published" } }),
     prisma.prepQuestion.count({ where: { status: "draft" } }),
     prisma.prepExperience.count(),
-    prisma.prepExperience.count({ where: { status: "pending" } }),
+    prisma.prepExperience.count({ where: { status: { in: ["pending", "approved"] } } }),
     prisma.prepQuestion.count({ where }),
     sort
       ? findSortedByDifficulty(where, sort === "difficulty-asc" ? "asc" : "desc", (page - 1) * perPage, perPage)
@@ -129,11 +131,9 @@ export default async function InterviewQuestionsAdmin({
 
   return (
     <div className="space-y-8">
+      <ContentTabs active="questions" />
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Interview Questions</h1>
-          <p className="text-sm text-muted mt-1">Manage the company-indexed question bank and experiences.</p>
-        </div>
+        <p className="text-sm text-muted">The company-indexed question bank and candidate experiences.</p>
         <div className="flex items-center gap-2">
           <Link href="/admin/interview-questions/import" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-xs font-bold hover:border-accent/40 transition">
             <Upload className="w-4 h-4" /> Bulk import
@@ -191,7 +191,7 @@ export default async function InterviewQuestionsAdmin({
             </thead>
             <tbody className="divide-y divide-border">
               {questions.map((row) => (
-                <QuestionAdminRow key={row.id} q={{ ...row, company: row.company?.name ?? null }} />
+                <QuestionAdminRow key={row.id} q={{ ...row, company: row.company?.name ?? null, scheduledAt: row.scheduledAt?.toISOString() ?? null }} />
               ))}
               {questions.length === 0 && (
                 <tr>

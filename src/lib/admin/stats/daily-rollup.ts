@@ -8,7 +8,7 @@
  * a breakdown value that disappears does not linger.
  *
  * Metrics (dim "" is the total; other dims are breakdowns):
- *   signups (dim: sign-in provider), sign_ins (dim: provider label),
+ *   signups (developer accounts only; dim: sign-in provider), sign_ins (dim: provider label),
  *   active_users, playground_runs (dim: language), playground_errors
  *   (dim: language), question_views (dim: technology), judge_runs,
  *   challenge_attempts, challenge_passed, ai_credits_used, ai_credits_bought,
@@ -16,6 +16,7 @@
  *   ai_screenings, take_homes, live_interviews, recording_seconds.
  */
 import { Prisma } from "@prisma/client";
+import { developerUserSql } from "@/lib/users/user-type";
 import { prisma } from "@/lib/prisma";
 
 export const DAY_MS = 86_400_000;
@@ -123,8 +124,8 @@ export async function computeDailyStats(from: Date, to: Date): Promise<RawStat[]
   const [signupsTotal, signupsByProvider, activity, active, challenges, ledger, screenings, takeHomes, live, recording] =
     await Promise.all([
       prisma.$queryRaw<Row[]>(Prisma.sql`
-        SELECT date_trunc('day', "createdAt") AS day, '' AS dim, count(*) AS value
-        FROM "User" WHERE "createdAt" >= ${from} AND "createdAt" < ${to} GROUP BY 1`),
+        SELECT date_trunc('day', u."createdAt") AS day, '' AS dim, count(*) AS value
+        FROM "User" u WHERE u."createdAt" >= ${from} AND u."createdAt" < ${to} AND ${developerUserSql} GROUP BY 1`),
       prisma.$queryRaw<Row[]>(Prisma.sql`
         SELECT date_trunc('day', u."createdAt") AS day,
           COALESCE(
@@ -132,7 +133,7 @@ export async function computeDailyStats(from: Date, to: Date): Promise<RawStat[]
             CASE WHEN u."passwordHash" IS NOT NULL THEN 'credentials' ELSE 'email' END
           ) AS dim,
           count(*) AS value
-        FROM "User" u WHERE u."createdAt" >= ${from} AND u."createdAt" < ${to} GROUP BY 1, 2`),
+        FROM "User" u WHERE u."createdAt" >= ${from} AND u."createdAt" < ${to} AND ${developerUserSql} GROUP BY 1, 2`),
       prisma.$queryRaw<ActivityRow[]>(Prisma.sql`
         SELECT date_trunc('day', "createdAt") AS day, kind, label, ok, count(*) AS n
         FROM "ActivityEvent"

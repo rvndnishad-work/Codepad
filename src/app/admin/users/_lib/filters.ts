@@ -3,9 +3,10 @@
  * prisma client import) so it can be unit tested and shared by the pages and
  * the CSV export route.
  */
+import { developerUserWhere, SCREENED_USER_TYPE } from "@/lib/users/user-type";
 import type { Prisma } from "@prisma/client";
 
-export type UserSide = "developers" | "recruiters";
+export type UserSide = "developers" | "recruiters" | "candidates";
 export type StatusFilter = "" | "active" | "suspended" | "deleted" | "unverified";
 export type SortKey = "newest" | "last_sign_in" | "name";
 
@@ -66,9 +67,13 @@ export function listQuery(p: UserListParams, over: Partial<UserListParams> = {})
 
 export function sideWhere(side: UserSide): Prisma.UserWhereInput {
   // Developer accounts include legacy users that never picked a type.
-  return side === "recruiters"
-    ? { userType: "recruiter" }
-    : { OR: [{ userType: "candidate" }, { userType: null }] };
+  if (side === "recruiters") return { userType: "recruiter" };
+  if (side === "candidates") return { userType: SCREENED_USER_TYPE };
+  return developerUserWhere;
+}
+
+export function parseSide(raw: string | string[] | undefined): UserSide {
+  return raw === "recruiters" || raw === "candidates" ? raw : "developers";
 }
 
 /** Status clause. "" (all) hides deleted accounts; "deleted" shows only them. */

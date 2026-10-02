@@ -8,6 +8,7 @@ import { actionLabel } from "@/lib/admin/audit";
 import { getAllSwitches, switchDef, type SwitchValue } from "@/lib/admin/switches";
 import { addDays, sumDailyStats, utcDay } from "@/lib/admin/stats/daily-rollup";
 import { jobsSummary, loadEmail24h, loadJobStatuses, loadMaintenance, loadServices, type Tone } from "./jobs/health";
+import { developerUserWhere } from "@/lib/users/user-type";
 import { Pill, btnCls, cardCls, timeAgo } from "./jobs/ui";
 
 export const metadata = {
@@ -78,7 +79,7 @@ type SideSums = Record<(typeof SIDE_METRICS)[number], number>;
 async function liveSums(from: Date, to: Date): Promise<SideSums> {
   const range = { gte: from, lt: to };
   const [signups, runs, errors, attempts, passed, ledger, live, rec] = await Promise.all([
-    prisma.user.count({ where: { createdAt: range } }),
+    prisma.user.count({ where: { createdAt: range, ...developerUserWhere } }),
     prisma.activityEvent.count({ where: { kind: "playground_run", createdAt: range } }),
     prisma.activityEvent.count({ where: { kind: "playground_run", ok: false, createdAt: range } }),
     prisma.challengeAttempt.count({ where: { startedAt: range } }),
@@ -126,7 +127,10 @@ async function loadSides(now: Date) {
       ? prev.sums.signups
       : null
     : await prisma.user.count({
-        where: { createdAt: { gte: new Date(now.getTime() - 60 * 86_400_000), lt: new Date(now.getTime() - 30 * 86_400_000) } },
+        where: {
+          createdAt: { gte: new Date(now.getTime() - 60 * 86_400_000), lt: new Date(now.getTime() - 30 * 86_400_000) },
+          ...developerUserWhere,
+        },
       });
   return { sums, prevSignups, fromRollup, mrrCents: mrr._sum.stripeMrrCents, paid: mrr._count._all };
 }

@@ -17,6 +17,7 @@ import { rateLimitDistributed } from "@/lib/rate-limit";
 import { signInVerdict, sessionVerdict } from "@/lib/auth-gate";
 import { getSessionStatus, invalidateSessionStatus } from "@/lib/auth-session-status";
 import { trackActivity } from "@/lib/admin/activity";
+import { SCREENED_USER_TYPE } from "@/lib/users/user-type";
 import { logAdminAction } from "@/lib/admin/audit";
 
 /**
@@ -270,6 +271,12 @@ export const {
       await prisma.user
         .update({ where: { id: user.id }, data: { lastSignInAt: new Date() } })
         .catch((err) => console.error("[auth] lastSignInAt write failed:", err));
+      if (account && account.type !== "credentials") {
+        // A take-home candidate who now signs in with OAuth is a developer.
+        await prisma.user
+          .updateMany({ where: { id: user.id, userType: SCREENED_USER_TYPE }, data: { userType: "candidate" } })
+          .catch((err) => console.error("[auth] userType promotion failed:", err));
+      }
     },
     async createUser({ user }) {
       // OAuth account creation (credentials sign-ups are tracked in

@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { sendEmail } from "@/lib/email";
+import { SCREENED_USER_TYPE } from "@/lib/users/user-type";
 import { trackActivity } from "@/lib/admin/activity";
 
 const schema = z.object({
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
 
     const existing = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, passwordHash: true },
+      select: { id: true, passwordHash: true, userType: true },
     });
     if (existing?.passwordHash) {
       return NextResponse.json(
@@ -188,7 +189,12 @@ export async function POST(req: Request) {
         data: {
           passwordHash,
           ...(name ? { name } : {}),
-          ...(userType ? { userType } : {}),
+          // A take-home candidate signing up for real becomes a developer.
+          ...(userType
+            ? { userType }
+            : existing.userType === SCREENED_USER_TYPE
+              ? { userType: "candidate" }
+              : {}),
           ...(userType === "recruiter" ? {
             companyName,
             companySize,

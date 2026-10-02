@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUserOrderBy, buildUserWhere, csvCell, listQuery, parseListParams, statusWhere } from "./filters";
+import { buildUserOrderBy, buildUserWhere, csvCell, listQuery, parseListParams, parseSide, sideWhere, statusWhere } from "./filters";
 
 const now = new Date("2026-10-02T12:00:00Z");
 
@@ -84,5 +84,20 @@ describe("csvCell", () => {
   it("defuses spreadsheet formulas", () => {
     expect(csvCell("=HYPERLINK(1)")).toBe("'=HYPERLINK(1)");
     expect(csvCell("+1")).toBe("'+1");
+  });
+});
+
+describe("sideWhere", () => {
+  it("keeps take-home candidates out of developer accounts", () => {
+    expect(sideWhere("developers")).toEqual({ OR: [{ userType: "candidate" }, { userType: null }] });
+    expect(sideWhere("candidates")).toEqual({ userType: "screened" });
+    expect(sideWhere("recruiters")).toEqual({ userType: "recruiter" });
+  });
+
+  it("parses the side from a query value", () => {
+    expect(parseSide("candidates")).toBe("candidates");
+    expect(parseSide("recruiters")).toBe("recruiters");
+    expect(parseSide("anything")).toBe("developers");
+    expect(parseSide(undefined)).toBe("developers");
   });
 });

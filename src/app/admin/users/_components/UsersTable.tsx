@@ -81,7 +81,7 @@ export default function UsersTable({
                 <input type="checkbox" aria-label="Select all on this page" checked={allOn} onChange={toggleAll} className="accent-[rgb(var(--c-accent-2))]" />
               </th>
               <th className="px-3 py-2.5 font-medium">Name</th>
-              {side === "developers" ? (
+              {side !== "recruiters" ? (
                 <>
                   <th className="px-3 py-2.5 font-medium">Joined</th>
                   <th className="px-3 py-2.5 font-medium">Last sign-in</th>
@@ -121,7 +121,7 @@ export default function UsersTable({
                       <span className="block text-xs text-muted truncate max-w-[280px]">{r.email ?? "No email"}</span>
                     </Link>
                   </td>
-                  {side === "developers" ? (
+                  {side !== "recruiters" ? (
                     <>
                       <td className="px-3 py-2.5 text-muted whitespace-nowrap">{fmtDay(r.createdAt)}</td>
                       <td className="px-3 py-2.5 text-muted whitespace-nowrap">{fmtAgo(r.lastSignInAt, now) || <span className="text-subtle">Never</span>}</td>

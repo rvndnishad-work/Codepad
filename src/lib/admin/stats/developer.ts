@@ -16,6 +16,7 @@
  */
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { developerUserSql, developerUserWhere } from "@/lib/users/user-type";
 import {
   type Bucket,
   type Comparison,
@@ -157,7 +158,7 @@ async function signupSeries(w: RangeWindow): Promise<BucketRow[]> {
     SELECT date_trunc(${truncUnit(w.bucket)}, u."createdAt") AS "at", COUNT(*)::int AS "value"
     FROM "User" u
     WHERE u."createdAt" >= ${w.start} AND u."createdAt" < ${w.end}
-      AND (u."userType" IS NULL OR u."userType" <> 'recruiter')
+      AND ${developerUserSql}
     GROUP BY 1 ORDER BY 1`;
 }
 
@@ -168,7 +169,7 @@ async function signupProviders(w: RangeWindow): Promise<{ provider: string | nul
     ) AS "provider", COUNT(*)::int AS "count"
     FROM "User" u
     WHERE u."createdAt" >= ${w.start} AND u."createdAt" < ${w.end}
-      AND (u."userType" IS NULL OR u."userType" <> 'recruiter')
+      AND ${developerUserSql}
     GROUP BY 1`;
 }
 
@@ -279,7 +280,7 @@ async function computeDeveloperStats(range: DevRange): Promise<DeveloperStats> {
   const now = new Date();
   const w = rangeWindow(range, now);
   const inRange = { gte: w.start, lt: w.end };
-  const devUser = { OR: [{ userType: null }, { userType: { not: "recruiter" } }] };
+  const devUser = developerUserWhere;
 
   const [
     signupRows, providerRows, signupsPrev,

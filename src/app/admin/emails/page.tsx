@@ -1,200 +1,336 @@
 /**
- * Admin email observability (IP-25 AC #6).
- *
- * Shows:
- *   - last 100 EmailLog rows with status, template, recipient, age
- *   - per-status counts across the most-recent rows
- *   - the EmailSuppression list (hard bounces + complaints from Resend webhook)
- *
- * Read-only for now. Admin-only via the parent /admin layout (which already
- * 404s non-admins). 2FA enrollment is also required (IP-42 AC #6 gate).
+ * Admin email log: every transactional email across workspaces, with
+ * filters (template, status, workspace, date, recipient), server paging,
+ * resend for invites that did not arrive, and the suppression list with a
+ * way to lift a block. Counts say what they count: all time, or the rows
+ * matching the current filters.
  */
+import Link from "next/link";
+import type { Prisma } from "@prisma/client";
+import { Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { Mail, AlertTriangle, ShieldOff } from "lucide-react";
 import { requireAdminAccess } from "@/lib/permissions/staff";
+import UnderlineTabs from "@/app/w/[slug]/(shell)/_components/UnderlineTabs";
+import { canOfferResend, problemExplanation, statusChip, templateLabel, type StatusTone } from "@/lib/workspace/email-activity";
+import { Empty, FilterField, PageHeader, Pager, Pill, Segments, Table, buttonCls, inputCls, tdCls, thCls, type Tone } from "../interviews/_components/list";
+import { dayParam, dayRange, hrefWith, one, pageParam, pageWindow, pick, utcStamp, type SearchParams } from "../interviews/_components/params";
+import ConfirmAction from "../interviews/_components/ConfirmAction";
+import { liftSuppressionAction, resendEmailAction } from "./actions";
 
-export const metadata = {
-  title: "Emails — Interviewpad Admin",
-  robots: { index: false, follow: false },
-};
+export const metadata = { title: "Emails — Admin", robots: { index: false, follow: false } };
 
-const STATUS_TONE: Record<string, string> = {
-  queued: "text-muted bg-muted/10 border-muted/20",
-  sent: "text-sky-300 bg-sky-500/10 border-sky-500/25",
-  delivered: "text-emerald-300 bg-emerald-500/10 border-emerald-500/25",
-  opened: "text-emerald-300 bg-emerald-500/15 border-emerald-500/30",
-  clicked: "text-emerald-200 bg-emerald-500/20 border-emerald-500/40",
-  bounced: "text-rose-300 bg-rose-500/10 border-rose-500/25",
-  complained: "text-rose-300 bg-rose-500/15 border-rose-500/30",
-  failed: "text-amber-300 bg-amber-500/10 border-amber-500/25",
-  suppressed: "text-muted bg-panel border-border",
-};
+const PAGE_SIZE = 25;
+const BASE = "/admin/emails";
+const STATUSES = ["queued", "sent", "delivered", "opened", "clicked", "bounced", "complained", "failed", "suppressed"] as const;
+const REASONS = ["hard_bounce", "complaint", "unsubscribe", "manual"] as const;
+const TONE: Record<StatusTone, Tone> = { ok: "ok", bad: "bad", warn: "warn", neutral: "off" };
 
-function timeAgo(d: Date | string | null | undefined): string {
-  if (!d) return "—";
-  const t = typeof d === "string" ? new Date(d) : d;
-  const s = Math.max(0, Math.floor((Date.now() - t.getTime()) / 1000));
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
-
-export default async function AdminEmailsPage() {
+export default async function AdminEmailsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireAdminAccess();
-  const [logs, statusCounts, suppressions, suppressionTotal] = await Promise.all([
-    prisma.emailLog.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-      select: {
-        id: true,
-        template: true,
-        recipientEmail: true,
-        status: true,
-        errorReason: true,
-        providerId: true,
-        createdAt: true,
-        lastEventAt: true,
-      },
-    }),
-    prisma.emailLog.groupBy({
-      by: ["status"],
-      _count: { status: true },
-    }),
-    prisma.emailSuppression.findMany({
-      orderBy: { addedAt: "desc" },
-      take: 50,
-      select: { id: true, address: true, reason: true, addedAt: true, note: true },
-    }),
-    prisma.emailSuppression.count(),
-  ]);
-
-  const counts = Object.fromEntries(statusCounts.map((c) => [c.status, c._count.status]));
-  const total = statusCounts.reduce((acc, c) => acc + c._count.status, 0);
+  const sp = await searchParams;
+  const tab = one(sp.tab) === "suppressed" ? "suppressed" : "log";
+  const [allTime, suppressedTotal] = await Promise.all([prisma.emailLog.count(), prisma.emailSuppression.count()]);
 
   return (
-    <div className="space-y-8">
-      <header className="flex items-center justify-between gap-4">
-        <div>
-          <div className="text-xs font-bold text-violet-400 flex items-center gap-1.5">
-            <Mail className="w-3 h-3" /> Transactional email
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight mt-1">Emails</h1>
-          <p className="text-xs text-muted mt-1">
-            Last 100 sends + per-status rollup. Updated by the Resend webhook
-            ({" "}<code className="font-mono text-xs">/api/webhooks/resend</code>{" "}).
-          </p>
-        </div>
-      </header>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        title="Emails"
+        description={
+          <>
+            Every transactional email, updated by the Resend webhook. Invites that failed or bounced can be resent; a blocked
+            address can be unblocked. Times are UTC.
+          </>
+        }
+      />
+      <UnderlineTabs
+        label="Email sections"
+        active={tab}
+        tabs={[
+          { id: "log", label: "Sent emails", href: BASE, count: allTime },
+          { id: "suppressed", label: "Suppression list", href: `${BASE}?tab=suppressed`, count: suppressedTotal },
+        ]}
+      />
+      {tab === "log" ? <LogTab sp={sp} allTime={allTime} /> : <SuppressedTab sp={sp} />}
+    </div>
+  );
+}
 
-      {/* Status rollup */}
-      <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {["queued", "sent", "delivered", "opened", "bounced", "complained", "failed", "suppressed"].map((s) => (
-          <div
-            key={s}
-            className={`rounded-xl border p-3 ${STATUS_TONE[s] ?? "border-border"}`}
-          >
-            <div className="text-xs font-semibold opacity-80">{s}</div>
-            <div className="text-2xl font-bold tabular-nums mt-0.5">{counts[s] ?? 0}</div>
-          </div>
-        ))}
-      </section>
-      <p className="text-xs text-muted -mt-4">{total} total log rows.</p>
+/* ── Sent emails ─────────────────────────────────────────────────────────── */
 
-      {/* Log table */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-muted">Recent sends</h2>
-        {logs.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface p-8 text-center text-sm text-muted">
-            No emails sent yet.
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-elevated/50">
-                <tr className="text-xs text-muted">
-                  <th className="px-4 py-2.5 font-bold">Status</th>
-                  <th className="px-4 py-2.5 font-bold">Template</th>
-                  <th className="px-4 py-2.5 font-bold">Recipient</th>
-                  <th className="px-4 py-2.5 font-bold">Sent</th>
-                  <th className="px-4 py-2.5 font-bold">Last event</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {logs.map((l) => (
-                  <tr key={l.id} className="hover:bg-panel/40">
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-md border text-xs font-bold ${
-                          STATUS_TONE[l.status] ?? "border-border text-muted"
-                        }`}
-                        title={l.errorReason ?? undefined}
-                      >
-                        {l.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-fg">{l.template}</td>
-                    <td className="px-4 py-2.5 text-xs text-fg truncate max-w-[280px]">
-                      {l.recipientEmail}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(l.createdAt)}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(l.lastEventAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+async function LogTab({ sp, allTime }: { sp: SearchParams; allTime: number }) {
+  const f = {
+    q: one(sp.q).slice(0, 120),
+    template: /^[a-z0-9_-]{1,60}$/.test(one(sp.template)) ? one(sp.template) : "",
+    status: pick(one(sp.status), STATUSES),
+    ws: one(sp.ws).slice(0, 80),
+    from: dayParam(one(sp.from)),
+    to: dayParam(one(sp.to)),
+  };
+  const filters = { ...f, page: String(pageParam(sp)) };
 
-      {/* Suppression list */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-muted flex items-center gap-2">
-          <ShieldOff className="w-3.5 h-3.5" /> Suppression list
-          <span className="text-xs text-muted/70 normal-case tracking-normal font-normal">
-            {suppressionTotal} addresses
+  // EmailLog.workspaceId has no relation, so the workspace filter resolves
+  // names to ids first (capped; a vaguer search should be narrowed).
+  const wsMatches = f.ws
+    ? await prisma.workspace.findMany({
+        where: { OR: [{ id: f.ws }, { name: { contains: f.ws, mode: "insensitive" } }, { slug: { contains: f.ws.toLowerCase() } }] },
+        select: { id: true },
+        take: 200,
+      })
+    : [];
+
+  const and: Prisma.EmailLogWhereInput[] = [];
+  if (f.q) and.push({ recipientEmail: { contains: f.q.toLowerCase(), mode: "insensitive" } });
+  if (f.template) and.push({ template: f.template });
+  if (f.ws) and.push({ workspaceId: { in: wsMatches.map((w) => w.id) } });
+  const created = dayRange(f.from, f.to);
+  if (created) and.push({ createdAt: created });
+  const base: Prisma.EmailLogWhereInput = and.length ? { AND: and } : {};
+  const where: Prisma.EmailLogWhereInput = f.status ? { AND: [...and, { status: f.status }] } : base;
+
+  const [byStatus, templates] = await Promise.all([
+    prisma.emailLog.groupBy({ by: ["status"], where: base, _count: { _all: true } }),
+    prisma.emailLog.groupBy({ by: ["template"], _count: { _all: true }, orderBy: { template: "asc" } }),
+  ]);
+  const counts = Object.fromEntries(byStatus.map((r) => [r.status, r._count._all]));
+  const matching = byStatus.reduce((n, r) => n + r._count._all, 0);
+  const total = f.status ? (counts[f.status] ?? 0) : matching;
+  const win = pageWindow(pageParam(sp), total, PAGE_SIZE);
+
+  const rows = total
+    ? await prisma.emailLog.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: win.skip,
+        take: win.take,
+        select: { id: true, template: true, recipientEmail: true, workspaceId: true, sessionId: true, providerId: true, status: true, errorReason: true, createdAt: true, lastEventAt: true },
+      })
+    : [];
+  const wsIds = [...new Set(rows.map((r) => r.workspaceId).filter((x): x is string => Boolean(x)))];
+  const addrs = [...new Set(rows.map((r) => r.recipientEmail.trim().toLowerCase()))];
+  const [wsRows, blocked] = await Promise.all([
+    wsIds.length ? prisma.workspace.findMany({ where: { id: { in: wsIds } }, select: { id: true, name: true } }) : Promise.resolve([]),
+    addrs.length ? prisma.emailSuppression.findMany({ where: { address: { in: addrs } }, select: { id: true, address: true, reason: true } }) : Promise.resolve([]),
+  ]);
+  const wsName = new Map(wsRows.map((w) => [w.id, w.name]));
+  const blockBy = new Map(blocked.map((b) => [b.address, b]));
+  const filtered = Boolean(f.q || f.template || f.ws || f.from || f.to || f.status);
+  const scope = filtered && (f.q || f.template || f.ws || f.from || f.to) ? "matching the filters" : "all time";
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form method="get" action={BASE} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3">
+        {f.status && <input type="hidden" name="status" value={f.status} />}
+        <FilterField label="Recipient" className="min-w-[200px] flex-1">
+          <span className="relative">
+            <Search aria-hidden className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-subtle" />
+            <input name="q" defaultValue={f.q} placeholder="Email address" className={`${inputCls} w-full pl-8`} />
           </span>
-        </h2>
-        {suppressions.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface p-6 text-center text-xs text-muted">
-            No suppressed addresses. (Resend webhook auto-adds hard bounces + complaints.)
-          </div>
-        ) : (
-          <div className="rounded-xl border border-border bg-surface overflow-hidden">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-elevated/50">
-                <tr className="text-xs text-muted">
-                  <th className="px-4 py-2.5 font-bold">Address</th>
-                  <th className="px-4 py-2.5 font-bold">Reason</th>
-                  <th className="px-4 py-2.5 font-bold">Added</th>
-                  <th className="px-4 py-2.5 font-bold">Note</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {suppressions.map((s) => (
-                  <tr key={s.id} className="hover:bg-panel/40">
-                    <td className="px-4 py-2.5 font-mono text-xs text-fg">{s.address}</td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-bold ${
-                          s.reason === "complaint"
-                            ? "text-rose-300 border-rose-500/30 bg-rose-500/10"
-                            : "text-amber-300 border-amber-500/30 bg-amber-500/10"
-                        }`}
-                      >
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        {s.reason}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted whitespace-nowrap">{timeAgo(s.addedAt)}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted truncate max-w-[300px]">{s.note ?? "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+        </FilterField>
+        <FilterField label="Template">
+          <select name="template" defaultValue={f.template} className={`${inputCls} w-52`}>
+            <option value="">All templates</option>
+            {templates.map((t) => (
+              <option key={t.template} value={t.template}>
+                {templateLabel(t.template)} ({t._count._all.toLocaleString("en-US")})
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Workspace">
+          <input name="ws" defaultValue={f.ws} placeholder="Name or slug" className={`${inputCls} w-40`} />
+        </FilterField>
+        <FilterField label="From">
+          <input type="date" name="from" defaultValue={f.from} className={`${inputCls} w-40`} />
+        </FilterField>
+        <FilterField label="To">
+          <input type="date" name="to" defaultValue={f.to} className={`${inputCls} w-40`} />
+        </FilterField>
+        <button type="submit" className={buttonCls}>Apply</button>
+        {filtered && <Link href={BASE} className="inline-flex h-9 items-center px-2 text-sm text-muted hover:text-fg">Clear</Link>}
+      </form>
+
+      <div className="flex flex-col gap-2">
+        <Segments
+          label="Filter by status"
+          items={[
+            { label: "All", href: hrefWith(BASE, filters, { status: "" }), on: !f.status, count: matching },
+            ...STATUSES.filter((s) => counts[s] !== undefined || f.status === s).map((s) => ({
+              label: statusChip(s).label,
+              href: hrefWith(BASE, filters, { status: s }),
+              on: f.status === s,
+              count: counts[s] ?? 0,
+            })),
+          ]}
+        />
+        <p className="text-xs text-muted">
+          Counts are {scope}. {allTime.toLocaleString("en-US")} emails logged all time.
+        </p>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty title={filtered ? "No emails match" : "No emails logged yet"} />
+      ) : (
+        <Table
+          minWidth={1000}
+          head={
+            <>
+              <th className={thCls}>Sent (UTC)</th>
+              <th className={thCls}>Recipient</th>
+              <th className={thCls}>Template</th>
+              <th className={thCls}>Workspace</th>
+              <th className={thCls}>Status</th>
+              <th className={thCls}><span className="sr-only">Actions</span></th>
+            </>
+          }
+        >
+          {rows.map((r) => {
+            const chip = statusChip(r.status);
+            const why = problemExplanation(r.status, r.errorReason);
+            const block = blockBy.get(r.recipientEmail.trim().toLowerCase());
+            const resendable = canOfferResend(r) && Boolean(r.workspaceId);
+            return (
+              <tr key={r.id} className="align-top">
+                <td className={`${tdCls} whitespace-nowrap text-muted`}>
+                  {utcStamp(r.createdAt).replace(" UTC", "")}
+                  {r.lastEventAt && <div className="text-xs text-subtle">last event {utcStamp(r.lastEventAt).replace(" UTC", "")}</div>}
+                </td>
+                <td className={`${tdCls} max-w-[260px] break-all text-fg`}>
+                  {r.recipientEmail}
+                  {block && <div className="mt-1"><Pill tone="bad">Blocked, {block.reason.replace(/_/g, " ")}</Pill></div>}
+                </td>
+                <td className={tdCls}>
+                  <div className="text-fg">{templateLabel(r.template)}</div>
+                  <div className="font-mono text-xs text-subtle">{r.template}</div>
+                </td>
+                <td className={tdCls}>
+                  {r.workspaceId ? (
+                    <Link href={`/admin/workspaces/${r.workspaceId}`} className="hover:underline underline-offset-2">{wsName.get(r.workspaceId) ?? "Deleted workspace"}</Link>
+                  ) : (
+                    <span className="text-subtle">None</span>
+                  )}
+                </td>
+                <td className={`${tdCls} max-w-[280px]`}>
+                  <Pill tone={TONE[chip.tone]}>{chip.label}</Pill>
+                  {why && <div className="mt-1 text-xs text-muted">{why}</div>}
+                </td>
+                <td className={`${tdCls} text-right`}>
+                  <div className="flex flex-col items-end gap-1.5">
+                    {resendable && (
+                      <ConfirmAction
+                        small
+                        label="Resend"
+                        title={`Resend this ${templateLabel(r.template).toLowerCase()}?`}
+                        body={block ? `${r.recipientEmail} is blocked. Lift the block first or the resend will be refused.` : `A fresh copy goes to the candidate, from ${wsName.get(r.workspaceId!) ?? "the workspace"}.`}
+                        noteLabel="Why"
+                        notePlaceholder="Candidate asked, address fixed…"
+                        confirmLabel="Resend"
+                        run={resendEmailAction.bind(null, r.id)}
+                      />
+                    )}
+                    {block && (
+                      <ConfirmAction
+                        small
+                        label="Lift block"
+                        title={`Unblock ${block.address}?`}
+                        body="Mail will go to this address again. If it still bounces, the webhook blocks it again."
+                        noteLabel="Why"
+                        confirmLabel="Lift block"
+                        run={liftSuppressionAction.bind(null, block.id)}
+                      />
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </Table>
+      )}
+      <Pager win={win} noun="emails" href={(p) => hrefWith(BASE, filters, { page: p })} />
+    </div>
+  );
+}
+
+/* ── Suppression list ────────────────────────────────────────────────────── */
+
+async function SuppressedTab({ sp }: { sp: SearchParams }) {
+  const f = { tab: "suppressed", q: one(sp.q).slice(0, 120), reason: pick(one(sp.reason), REASONS) };
+  const filters = { ...f, page: String(pageParam(sp)) };
+  const where: Prisma.EmailSuppressionWhereInput = {
+    ...(f.q ? { address: { contains: f.q.toLowerCase() } } : {}),
+    ...(f.reason ? { reason: f.reason } : {}),
+  };
+  const [count, byReason] = await Promise.all([
+    prisma.emailSuppression.count({ where }),
+    prisma.emailSuppression.groupBy({ by: ["reason"], _count: { _all: true } }),
+  ]);
+  const win = pageWindow(pageParam(sp), count, PAGE_SIZE);
+  const rows = count
+    ? await prisma.emailSuppression.findMany({ where, orderBy: [{ addedAt: "desc" }, { id: "desc" }], skip: win.skip, take: win.take })
+    : [];
+  const reasonCount = Object.fromEntries(byReason.map((r) => [r.reason, r._count._all]));
+
+  return (
+    <div className="flex flex-col gap-4">
+      <form method="get" action={BASE} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-surface p-3">
+        <input type="hidden" name="tab" value="suppressed" />
+        <FilterField label="Address" className="min-w-[220px] flex-1">
+          <input name="q" defaultValue={f.q} placeholder="Email address" className={`${inputCls} w-full`} />
+        </FilterField>
+        <FilterField label="Reason">
+          <select name="reason" defaultValue={f.reason} className={`${inputCls} w-48`}>
+            <option value="">All reasons</option>
+            {REASONS.map((r) => (
+              <option key={r} value={r}>
+                {r.replace(/_/g, " ")} ({(reasonCount[r] ?? 0).toLocaleString("en-US")} all time)
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <button type="submit" className={buttonCls}>Apply</button>
+      </form>
+      <p className="text-sm text-muted">
+        The Resend webhook blocks addresses that hard bounce or mark mail as spam. Nothing is sent to a blocked address until the block is lifted.
+      </p>
+
+      {rows.length === 0 ? (
+        <Empty title={f.q || f.reason ? "No blocked addresses match" : "No blocked addresses"} />
+      ) : (
+        <Table
+          minWidth={760}
+          head={
+            <>
+              <th className={thCls}>Address</th>
+              <th className={thCls}>Reason</th>
+              <th className={thCls}>Blocked (UTC)</th>
+              <th className={thCls}>Note</th>
+              <th className={thCls}><span className="sr-only">Actions</span></th>
+            </>
+          }
+        >
+          {rows.map((s) => (
+            <tr key={s.id} className="align-top">
+              <td className={`${tdCls} break-all font-mono text-xs text-fg`}>
+                <Link href={hrefWith(BASE, { q: s.address })} className="hover:underline">{s.address}</Link>
+              </td>
+              <td className={tdCls}><Pill tone={s.reason === "complaint" || s.reason === "hard_bounce" ? "bad" : "off"}>{s.reason.replace(/_/g, " ")}</Pill></td>
+              <td className={`${tdCls} whitespace-nowrap text-muted`}>{utcStamp(s.addedAt).replace(" UTC", "")}</td>
+              <td className={`${tdCls} max-w-[300px] break-words text-muted`}>{s.note ?? ""}</td>
+              <td className={`${tdCls} text-right`}>
+                <ConfirmAction
+                  small
+                  label="Lift block"
+                  title={`Unblock ${s.address}?`}
+                  body={s.reason === "complaint" ? "This person marked our mail as spam. Only unblock if they asked for it." : "Mail will go to this address again. If it still bounces, the webhook blocks it again."}
+                  noteLabel="Why"
+                  confirmLabel="Lift block"
+                  run={liftSuppressionAction.bind(null, s.id)}
+                />
+              </td>
+            </tr>
+          ))}
+        </Table>
+      )}
+      <Pager win={win} noun="addresses" href={(p) => hrefWith(BASE, filters, { page: p })} />
     </div>
   );
 }

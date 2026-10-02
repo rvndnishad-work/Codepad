@@ -6,7 +6,6 @@
  */
 import { prisma } from "@/lib/prisma";
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { headers } from "next/headers";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -30,6 +29,9 @@ export type AdminAuditInput = {
 
 async function requestIp(): Promise<string | null> {
   try {
+    // Loaded lazily: auth.ts imports this file, and some client bundles pull
+    // auth.ts in transitively, where a static next/headers import fails.
+    const { headers } = await import("next/headers");
     const h = await headers();
     return h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
   } catch {

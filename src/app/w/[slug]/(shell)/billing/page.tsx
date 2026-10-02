@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -130,6 +131,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
   }
 
   return (
+    <>
+    <FeaturePaused featureKey="credit-checkout" wrapperClassName="mb-4" />
     <BillingClient
       slug={slug}
       tab={tab}
@@ -170,5 +173,6 @@ export default async function BillingPage({ params, searchParams }: Props) {
         rows: planComparison(pricing.videoAddon.monthlyCents),
       }}
     />
+    </>
   );
 }

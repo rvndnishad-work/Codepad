@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse, after } from "next/server";
 import { createHash } from "crypto";
 import { auth } from "@/lib/auth";
@@ -67,6 +68,9 @@ async function execute(
 }
 
 export async function POST(req: Request) {
+  // Feature switch "playground-run" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("playground-run");
+  if (featurePaused) return featurePaused;
   // Tracked for the 503 log only; the request may fail before validation.
   let obsLanguage: string | undefined;
   let userId: string | undefined;

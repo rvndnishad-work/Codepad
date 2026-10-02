@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +10,9 @@ import { gradeAttempt, type Mark } from "@/lib/review-challenges/grader";
 // planted findings and returns the full reveal (all findings + per-finding
 // result). No LLM involved. Anonymous submissions are graded but not saved.
 export async function POST(req: NextRequest) {
+  // Feature switch "ai-code-review" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("ai-code-review");
+  if (featurePaused) return featurePaused;
   try {
     const session = await auth().catch(() => null);
     const userId = session?.user?.id ?? null;

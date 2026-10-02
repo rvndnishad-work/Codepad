@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getJourneyOverview } from "@/lib/prep-journey/query";
@@ -19,6 +20,7 @@ export default async function PrepPage() {
 
   return (
     <div className="min-h-screen bg-bg text-fg">
+      <FeaturePaused featureKey="journeys" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
       <PrepTrackerClient overview={overview} />
     </div>
   );

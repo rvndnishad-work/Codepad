@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -12,6 +13,9 @@ const createSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Feature switch "recruiter-signup" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("recruiter-signup");
+  if (featurePaused) return featurePaused;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -9,6 +9,7 @@ import { linkSessionsToRounds } from "@/lib/interview/round-send-server";
 import { appOrigin } from "@/lib/interview/links";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertFeatureOn, FeaturePausedError } from "@/lib/admin/switches";
 import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { revalidatePath } from "next/cache";
 import { normalizeEngagementLevel } from "@/lib/ai-interview/credits";
@@ -44,7 +45,7 @@ async function theoryQuestionsFor(rounds: RoundSpecInput[], workspaceId: string)
 }
 
 function fail(err: unknown): { ok: false; error: string } {
-  if (err instanceof ActionError) return { ok: false, error: err.message };
+  if (err instanceof ActionError || err instanceof FeaturePausedError) return { ok: false, error: err.message };
   console.error("[ai-screening action]", err);
   return { ok: false, error: "Something went wrong. Try again." };
 }
@@ -206,6 +207,7 @@ export async function createScreeningAction(
 ): Promise<Result<{ batchId: string; sent: number; failed: number; invited: number }>> {
   try {
     const w = await assertWorkspaceWriter(slug);
+    await assertFeatureOn("ai-screening");
     const positionTitle = input.positionTitle?.trim();
     if (!positionTitle) throw new ActionError("Give the role a name.");
     if (positionTitle.length > 120) throw new ActionError("The role name is too long.");
@@ -332,6 +334,7 @@ export async function addToScreeningAction(
 ): Promise<Result<{ invited: number; sent: number; failed: number; skipped: number }>> {
   try {
     const w = await assertWorkspaceWriter(slug);
+    await assertFeatureOn("ai-screening");
     const batch = await prisma.aIScreeningBatch.findFirst({
       where: { id: batchId, workspaceId: w.workspace.id },
       include: { roundSpecs: { orderBy: { order: "asc" } }, sessions: { select: { candidateId: true, candidateEmail: true } } },

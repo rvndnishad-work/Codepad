@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { redirect } from "next/navigation";
 import { loadAiAccess } from "./_lib";
 import {
@@ -65,6 +66,7 @@ export default async function AiScreeningReviewPage({ params, searchParams }: Pr
 
   return (
     <div className="flex flex-col gap-5">
+      <FeaturePaused featureKey="ai-screening" />
       <AiHeader
         slug={slug}
         active="review"

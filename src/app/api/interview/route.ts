@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -77,6 +78,8 @@ export async function POST(req: Request) {
   }
 
   const type = parsed.data.type ?? "mock";
+  const featurePaused = await featureBlockedResponse(type === "live" ? "live-interviews" : "mock-interviews");
+  if (featurePaused) return featurePaused;
   const result = await createInterviewSession({
     ownerId: session.user.id,
     actor: { id: session.user.id, email: session.user.email ?? null },

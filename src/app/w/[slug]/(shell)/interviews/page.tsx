@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { prisma } from "@/lib/prisma";
 import { loadTakeHomeAccess } from "../take-homes/_lib";
 import { formatOf, isInterviewerFor, parsePanel, questionState } from "@/lib/interview/wizard";
@@ -184,7 +185,12 @@ export default async function InterviewsPage({ params, searchParams }: Props) {
     };
   }
 
-  return <InterviewsList slug={slug} rows={rows} people={personRounds} due={due} view={sp.view ?? "all"} q={(sp.q ?? "").trim()} />;
+  return (
+    <>
+      <FeaturePaused featureKey="live-interviews" wrapperClassName="mb-4" />
+      <InterviewsList slug={slug} rows={rows} people={personRounds} due={due} view={sp.view ?? "all"} q={(sp.q ?? "").trim()} />
+    </>
+  );
 }
 
 /** The recruiter's next step on this interview's round, and the round after it. */

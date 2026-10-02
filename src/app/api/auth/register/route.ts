@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { z } from "zod";
@@ -19,6 +20,9 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Feature switch "developer-signup" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("developer-signup");
+  if (featurePaused) return featurePaused;
   // 5 attempts per 5 min per IP — sign-up + OTP-guess abuse guard (production
   // only). Distributed so the cap holds across serverless instances.
   if (process.env.NODE_ENV === "production") {

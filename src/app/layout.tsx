@@ -10,6 +10,7 @@ import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
 import FooterShell from "@/components/FooterShell";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -99,6 +100,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <Suspense fallback={null}>
             <RouteProgress />
+          </Suspense>
+          <Suspense fallback={null}>
+            <MaintenanceBanner />
           </Suspense>
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>

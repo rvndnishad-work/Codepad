@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { getMaintenanceConfig, maintenanceHtml } from "@/lib/maintenance";
-import { isAdminEmail } from "@/lib/admin";
+import { maintenanceHtml } from "@/lib/maintenance";
+import {
+  areaDef,
+  canBypass,
+  getActiveRules,
+  isExemptPath,
+  matchRule,
+  retryAfterSeconds,
+} from "@/lib/admin/maintenance-rules";
 import { guardFor, STAFF_SENTINEL } from "@/lib/permissions/route-guards";
 import { resolveUserPermissionsUncached } from "@/lib/permissions/access";
 import { PLATFORM_PERMISSIONS } from "@/lib/permissions/permissions";
@@ -10,32 +17,19 @@ import { REQUEST_PATH_HEADER } from "@/lib/workspace/screening-defaults";
 // Next.js 16 "Proxy" (formerly Middleware) — runs on the Node.js runtime by
 // default, so Prisma + next-auth JWT decoding work here directly.
 
-// Paths that stay reachable during maintenance so admins can sign in and turn
-// it back off, and so auth/static assets keep working. Matched as exact or
-// prefix (`/x` also covers `/x/...`).
-const ALLOWLIST = [
-  "/login",
-  "/api/auth", // NextAuth sign-in & callbacks
-  "/admin", // admin panel — to toggle maintenance off
-  "/api/admin", // admin APIs
-  "/api/webhooks", // payment & email delivery webhooks (Stripe, Resend)
-  "/robots.txt",
-  "/sitemap.xml",
-  "/favicon.ico",
-];
-
-const RETRY_AFTER = "3600"; // seconds — hint for crawlers/clients
-
-function isAllowlisted(pathname: string): boolean {
-  if (
-    ALLOWLIST.some(
-      (p) => pathname === p || pathname.startsWith(p + "/")
-    )
-  ) {
-    return true;
-  }
-  // Static-looking assets (the matcher already drops /_next/static & images).
-  return /\.[a-z0-9]+$/i.test(pathname);
+/** Decode the session JWT once per request (no DB). */
+function uidReader(req: NextRequest) {
+  let read: Promise<string | undefined> | null = null;
+  return () => {
+    read ??= getToken({
+      req,
+      secret: process.env.AUTH_SECRET,
+      secureCookie: req.nextUrl.protocol === "https:",
+    })
+      .then((t) => (typeof t?.uid === "string" ? t.uid : undefined))
+      .catch(() => undefined);
+    return read;
+  };
 }
 
 /**
@@ -43,25 +37,19 @@ function isAllowlisted(pathname: string): boolean {
  * APIs). Resolves the caller's permissions from the DB (Node runtime → Prisma
  * works here, always fresh — no JWT staleness) and enforces the declarative
  * ROUTE_GUARDS map. Per-page guards remain as defense-in-depth; this is the
- * primary front door. Returns a response to short-circuit, or null to continue.
+ * primary front door. Runs on every request, maintenance or not. Returns a
+ * response to short-circuit, or null to continue.
  */
-async function enforceRouteGuard(req: NextRequest): Promise<NextResponse | null> {
+async function enforceRouteGuard(
+  req: NextRequest,
+  uid: () => Promise<string | undefined>,
+): Promise<NextResponse | null> {
   const { pathname } = req.nextUrl;
   const guard = guardFor(pathname);
   if (!guard) return null;
 
   const isApi = pathname.startsWith("/api");
-  let userId: string | undefined;
-  try {
-    const token = await getToken({
-      req,
-      secret: process.env.AUTH_SECRET,
-      secureCookie: req.nextUrl.protocol === "https:",
-    });
-    userId = typeof token?.uid === "string" ? token.uid : undefined;
-  } catch {
-    userId = undefined;
-  }
+  const userId = await uid();
 
   if (!userId) {
     if (isApi) {
@@ -88,12 +76,12 @@ async function enforceRouteGuard(req: NextRequest): Promise<NextResponse | null>
 }
 
 /**
- * Continue to the page. Workspace pages also get the path they were asked
- * for, so an old workspace web address can open the same page at the new
- * one (see the /w/[slug] layouts).
+ * Continue to the page. Pages also get the path they were asked for: the
+ * /w/[slug] layouts use it to open the same page at a moved workspace
+ * address, and the maintenance banner uses it to find the rule for the page.
  */
 function passThrough(req: NextRequest): NextResponse {
-  if (!req.nextUrl.pathname.startsWith("/w/")) return NextResponse.next();
+  if (req.nextUrl.pathname.startsWith("/api")) return NextResponse.next();
   const headers = new Headers(req.headers);
   headers.set(REQUEST_PATH_HEADER, req.nextUrl.pathname + req.nextUrl.search);
   return NextResponse.next({ request: { headers } });
@@ -101,44 +89,50 @@ function passThrough(req: NextRequest): NextResponse {
 
 export async function proxy(req: NextRequest) {
   try {
-    const cfg = await getMaintenanceConfig();
-    if (!cfg.enabled) return (await enforceRouteGuard(req)) ?? passThrough(req);
+    const uid = uidReader(req);
+    const blocked = await enforceRouteGuard(req, uid);
+    if (blocked) return blocked;
 
     const { pathname } = req.nextUrl;
-    if (isAllowlisted(pathname)) return NextResponse.next();
+    if (isExemptPath(pathname)) return passThrough(req);
 
-    // Admin bypass — decode the session JWT (no DB) and check the email against
-    // the ADMIN_EMAILS allowlist, so admins can browse/verify while down.
-    try {
-      const token = await getToken({
-        req,
-        secret: process.env.AUTH_SECRET,
-        secureCookie: req.nextUrl.protocol === "https:",
-      });
-      const email =
-        typeof token?.email === "string" ? token.email : null;
-      if (isAdminEmail(email)) return passThrough(req);
-    } catch {
-      // Couldn't decode the session — treat as anonymous. Admins can still
-      // reach /admin & /login via the allowlist to lift maintenance.
-    }
+    const rules = await getActiveRules();
+    if (!rules.length) return passThrough(req);
+    const rule = matchRule(pathname, rules);
+    if (!rule) return passThrough(req);
 
-    // Everyone else gets a proper 503 (not a 404) so crawlers know it's
-    // temporary and don't de-index the site.
+    // Who gets through: platform admins always, plus the rule's roles.
+    if (await canBypass(await uid(), rule)) return passThrough(req);
+
+    // Everyone else gets a proper 503 (not a 404) so crawlers know it is
+    // temporary and do not de-index the site.
+    const retryAfter = String(retryAfterSeconds(rule.endsAt));
     if (pathname.startsWith("/api")) {
       return NextResponse.json(
-        { error: "Service temporarily unavailable for scheduled maintenance." },
-        { status: 503, headers: { "Retry-After": RETRY_AFTER } }
+        {
+          error: rule.message || "Service temporarily unavailable for scheduled maintenance.",
+          maintenance: true,
+          endsAt: rule.endsAt?.toISOString() ?? null,
+        },
+        { status: 503, headers: { "Retry-After": retryAfter, "Cache-Control": "no-store" } },
       );
     }
-    return new NextResponse(maintenanceHtml(cfg.message), {
-      status: 503,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-        "Retry-After": RETRY_AFTER,
-        "Cache-Control": "no-store",
+    const area = areaDef(rule.area);
+    return new NextResponse(
+      maintenanceHtml(rule.message, {
+        title: area?.pausedTitle ?? "This page is paused for maintenance",
+        endsAt: rule.endsAt,
+        elsewhere: area?.elsewhere,
+      }),
+      {
+        status: 503,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "Retry-After": retryAfter,
+          "Cache-Control": "no-store",
+        },
       },
-    });
+    );
   } catch {
     // Fail OPEN: a bug in the proxy must never take the whole site down.
     return NextResponse.next();
@@ -146,7 +140,7 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except Next internals and static files; the allowlist
-  // above handles the dynamic exceptions (auth, admin, etc).
+  // Run on everything except Next internals and static files; isExemptPath
+  // handles the dynamic exceptions (auth, admin, crons, webhooks).
   matcher: ["/((?!_next/static|_next/image|_next/data).*)"],
 };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { logAdminAction } from "@/lib/admin/audit";
-import { csvCell, parseListParams, type RawParams, type UserSide } from "@/app/admin/users/_lib/filters";
+import { csvCell, parseListParams, parseSide, type RawParams, type UserSide } from "@/app/admin/users/_lib/filters";
 import { loadUserRows, type UserRowData } from "@/app/admin/users/_lib/load";
 
 /** Hard cap on one export. Narrow the filters for more. */
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   }
   const url = new URL(req.url);
   const raw: RawParams = Object.fromEntries(url.searchParams.entries());
-  const side: UserSide = raw.side === "recruiters" ? "recruiters" : "developers";
+  const side: UserSide = parseSide(raw.side);
   const p = parseListParams(raw);
   const ids = (url.searchParams.get("ids") ?? "")
     .split(",")
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     actor: { id: session?.user?.id, email: session?.user?.email },
     action: "user.export",
     targetType: "user",
-    targetLabel: side === "recruiters" ? "Recruiter accounts" : "Developer accounts",
+    targetLabel: side === "recruiters" ? "Recruiter accounts" : side === "candidates" ? "Candidate accounts" : "Developer accounts",
     after: { rows: rows.length, selection: ids.length || null, filters: { q: p.q, status: p.status, from: p.from, to: p.to } },
   });
 

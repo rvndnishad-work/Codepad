@@ -160,35 +160,36 @@ describe("proposal guards", () => {
 });
 
 describe("parseResponse", () => {
-  it("reads every part: text and several function calls", () => {
+  it("reads the text and every tool call, and drops inline reasoning", () => {
     const parsed = parseResponse({
-      candidates: [
+      choices: [
         {
-          finishReason: "STOP",
-          content: {
-            role: "model",
-            parts: [
-              { text: "Let me check. " },
-              { thought: true, text: "internal" },
-              { functionCall: { name: "find_workspace", args: { query: "Northwind" } }, thoughtSignature: "sig" },
-              { text: "And the jobs." },
-              { functionCall: { name: "list_failed_jobs", id: "c2" } },
+          finish_reason: "tool_calls",
+          message: {
+            role: "assistant",
+            content: "<think>internal</think>Let me check.",
+            tool_calls: [
+              { id: "c1", type: "function", function: { name: "find_workspace", arguments: '{"query":"Northwind"}' } },
+              { id: "c2", type: "function", function: { name: "list_failed_jobs", arguments: "" } },
+              { id: "c3", type: "function", function: { name: "bad_args", arguments: "{not json" } },
             ],
           },
         },
       ],
     });
-    expect(parsed.text).toBe("Let me check. And the jobs.");
+    expect(parsed.text).toBe("Let me check.");
     expect(parsed.calls).toEqual([
-      { name: "find_workspace", args: { query: "Northwind" } },
+      { name: "find_workspace", args: { query: "Northwind" }, id: "c1" },
       { name: "list_failed_jobs", args: {}, id: "c2" },
+      { name: "bad_args", args: {}, id: "c3" },
     ]);
-    expect(parsed.content?.parts).toHaveLength(5);
-    expect((parsed.content?.parts[2] as { thoughtSignature?: string }).thoughtSignature).toBe("sig");
+    expect(parsed.message?.role).toBe("assistant");
+    expect(parsed.message?.tool_calls?.map((t) => t.id)).toEqual(["c1", "c2", "c3"]);
+    expect(parsed.finishReason).toBe("tool_calls");
   });
 
-  it("handles blocked and empty responses", () => {
-    expect(parseResponse({ promptFeedback: { blockReason: "SAFETY" } })).toMatchObject({ text: "", calls: [], finishReason: "BLOCKED_SAFETY" });
+  it("handles empty responses", () => {
+    expect(parseResponse({ choices: [] })).toMatchObject({ text: "", calls: [], message: null });
     expect(parseResponse(null)).toMatchObject({ text: "", calls: [] });
   });
 });
@@ -196,30 +197,57 @@ describe("parseResponse", () => {
 describe("model client", () => {
   const env = { ...process.env };
   beforeEach(() => {
-    process.env.GEMINI_API_KEY = "test-key";
+    process.env.GLM_API_KEY = "test-key";
+    delete process.env.TOGETHER_API_KEY;
     delete process.env.ADMIN_ASSISTANT_MODEL;
+    delete process.env.AI_INTERVIEW_TOGETHER_MODEL;
+    delete process.env.TOGETHER_BASE_URL;
   });
   afterEach(() => {
     process.env = { ...env };
   });
 
-  const reply = (parts: unknown[]) =>
-    new Response(JSON.stringify({ candidates: [{ content: { role: "model", parts }, finishReason: "STOP" }] }), { status: 200 });
+  type Call = { id: string; name: string; args: Record<string, unknown> };
+  const reply = (content: string | null, calls: Call[] = [], finish = "stop") =>
+    new Response(
+      JSON.stringify({
+        choices: [
+          {
+            finish_reason: finish,
+            message: {
+              role: "assistant",
+              content,
+              ...(calls.length
+                ? { tool_calls: calls.map((c) => ({ id: c.id, type: "function", function: { name: c.name, arguments: JSON.stringify(c.args) } })) }
+                : {}),
+            },
+          },
+        ],
+      }),
+      { status: 200 },
+    );
 
-  it("runs parallel calls, sends functionResponses back, and returns the final text", async () => {
-    const bodies: { contents: { role: string; parts: Record<string, unknown>[] }[]; toolConfig?: unknown }[] = [];
+  it("runs parallel calls, sends tool results back by id, and returns the final text", async () => {
+    const bodies: { model: string; messages: Record<string, unknown>[]; tool_choice?: string }[] = [];
     const urls: string[] = [];
     const fetchImpl = vi.fn(async (url: string, init: RequestInit) => {
       urls.push(url);
       bodies.push(JSON.parse(String(init.body)));
       return bodies.length === 1
-        ? reply([{ text: "Checking." }, { functionCall: { name: "a", args: { x: 1 } } }, { functionCall: { name: "b", args: {} } }])
-        : reply([{ text: "Northwind is past due." }]);
+        ? reply("Checking.", [
+            { id: "x1", name: "a", args: { x: 1 } },
+            { id: "x2", name: "b", args: {} },
+          ])
+        : reply("Northwind is past due.");
     }) as unknown as typeof fetch;
     const executed: string[] = [];
     const out = await runToolLoop({
       system: "sys",
-      contents: [{ role: "user", parts: [{ text: "hi" }] }],
+      contents: [
+        { role: "user", parts: [{ text: "earlier" }] },
+        { role: "model", parts: [{ text: "earlier answer" }] },
+        { role: "user", parts: [{ text: "hi" }] },
+      ],
       tools: [],
       fetchImpl,
       execute: async (c) => {
@@ -229,29 +257,27 @@ describe("model client", () => {
     });
     expect(out).toEqual({ text: "Northwind is past due.", rounds: 1 });
     expect(executed).toEqual(["a", "b"]);
-    expect(urls[0]).toContain("/models/gemini-2.5-flash:generateContent");
-    const second = bodies[1].contents;
-    expect(second).toHaveLength(3);
-    expect(second[1].role).toBe("model");
-    expect(second[2]).toEqual({
-      role: "user",
-      parts: [
-        { functionResponse: { name: "a", response: { result: "a" } } },
-        { functionResponse: { name: "b", response: { result: "b" } } },
-      ],
-    });
+    expect(urls[0]).toBe("https://api.together.xyz/v1/chat/completions");
+    expect(bodies[0].model).toBe("zai-org/GLM-5.3-Flash");
+    const first = bodies[0].messages;
+    expect(first.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
+    const second = bodies[1].messages;
+    expect(second).toHaveLength(7);
+    expect(second[4]).toMatchObject({ role: "assistant", content: "Checking." });
+    expect(second[5]).toEqual({ role: "tool", tool_call_id: "x1", content: JSON.stringify({ result: "a" }) });
+    expect(second[6]).toEqual({ role: "tool", tool_call_id: "x2", content: JSON.stringify({ result: "b" }) });
   });
 
   it("stops after the round limit and asks for a closing answer with tools off", async () => {
     let n = 0;
-    const modes: unknown[] = [];
+    const choices: unknown[] = [];
     const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
       n++;
       const body = JSON.parse(String(init.body));
-      modes.push(body.toolConfig?.functionCallingConfig?.mode);
-      return body.toolConfig?.functionCallingConfig?.mode === "NONE"
-        ? reply([{ text: "Here is what I found." }])
-        : reply([{ functionCall: { name: "loop", args: {} } }]);
+      choices.push(body.tool_choice);
+      return body.tool_choice === "none"
+        ? reply("Here is what I found.")
+        : reply(null, [{ id: `l${n}`, name: "loop", args: {} }], "tool_calls");
     }) as unknown as typeof fetch;
     const out = await runToolLoop({
       system: "s",
@@ -262,15 +288,16 @@ describe("model client", () => {
     });
     expect(out.text).toBe("Here is what I found.");
     expect(n).toBe(MAX_TOOL_ROUNDS + 1);
-    expect(modes[MAX_TOOL_ROUNDS]).toBe("NONE");
+    expect(choices[0]).toBe("auto");
+    expect(choices[MAX_TOOL_ROUNDS]).toBe("none");
   });
 
   it("surfaces API errors instead of a canned answer", async () => {
     const fetchImpl = vi.fn(async () =>
-      new Response(JSON.stringify({ error: { message: "Function calling is not enabled for this model" } }), { status: 400 }),
+      new Response(JSON.stringify({ error: { message: "tools are not supported for this model" } }), { status: 400 }),
     ) as unknown as typeof fetch;
-    await expect(callModel({ system: "s", contents: [], tools: [], fetchImpl })).rejects.toThrow(
-      "The model rejected the request (400): Function calling is not enabled for this model",
+    await expect(callModel({ messages: [], tools: [], fetchImpl })).rejects.toThrow(
+      "The model rejected the request (400): tools are not supported for this model",
     );
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
@@ -279,30 +306,31 @@ describe("model client", () => {
     let n = 0;
     const fetchImpl = vi.fn(async () => {
       n++;
-      return n === 1 ? new Response("{}", { status: 503 }) : reply([]);
+      return n === 1 ? new Response("{}", { status: 503 }) : reply("");
     }) as unknown as typeof fetch;
     await expect(
       runToolLoop({ system: "s", contents: [], tools: [], fetchImpl, execute: async () => ({}) }),
-    ).rejects.toThrow("The model returned no answer (finish reason STOP).");
+    ).rejects.toThrow("The model returned no answer (finish reason stop).");
     expect(n).toBe(2);
   });
 
   it("says it is not configured without a key", async () => {
-    delete process.env.GEMINI_API_KEY;
-    delete process.env.GOOGLE_API_KEY;
-    await expect(callModel({ system: "s", contents: [], tools: [] })).rejects.toThrow(NOT_CONFIGURED);
+    delete process.env.GLM_API_KEY;
+    await expect(callModel({ messages: [], tools: [] })).rejects.toThrow(NOT_CONFIGURED);
   });
 
-  it("uses GOOGLE_API_KEY and ADMIN_ASSISTANT_MODEL when set", async () => {
-    delete process.env.GEMINI_API_KEY;
-    process.env.GOOGLE_API_KEY = "g";
-    process.env.ADMIN_ASSISTANT_MODEL = "gemini-2.5-pro";
+  it("uses TOGETHER_API_KEY, ADMIN_ASSISTANT_MODEL and TOGETHER_BASE_URL when set", async () => {
+    delete process.env.GLM_API_KEY;
+    process.env.TOGETHER_API_KEY = "t";
+    process.env.ADMIN_ASSISTANT_MODEL = "zai-org/GLM-5.3";
+    process.env.TOGETHER_BASE_URL = "https://proxy.example/v1/";
     const fetchImpl = vi.fn(async (url: string, init: RequestInit) => {
-      expect(url).toContain("gemini-2.5-pro:generateContent");
-      expect((init.headers as Record<string, string>)["x-goog-api-key"]).toBe("g");
-      return reply([{ text: "ok" }]);
+      expect(url).toBe("https://proxy.example/v1/chat/completions");
+      expect((init.headers as Record<string, string>).Authorization).toBe("Bearer t");
+      expect(JSON.parse(String(init.body)).model).toBe("zai-org/GLM-5.3");
+      return reply("ok");
     }) as unknown as typeof fetch;
-    await expect(callModel({ system: "s", contents: [], tools: [], fetchImpl })).resolves.toMatchObject({ text: "ok" });
+    await expect(callModel({ messages: [], tools: [], fetchImpl })).resolves.toMatchObject({ text: "ok" });
   });
 });
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SCREENED_USER_TYPE } from "@/lib/users/user-type";
 
 /**
  * Shared resolver for the candidate User behind a take-home token.
@@ -41,6 +42,8 @@ export async function findOrCreateUserByEmail(
         email: canonical,
         name: name?.trim() || canonical.split("@")[0],
         portfolioPublic: false,
+        // Made for a recruiter's take-home, not a developer sign-up.
+        userType: SCREENED_USER_TYPE,
       },
       select: { id: true },
     });

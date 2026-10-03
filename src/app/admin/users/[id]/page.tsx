@@ -10,6 +10,7 @@ import { fmtAgo, fmtDay, fmtDayTime } from "../_lib/format";
 import { hardDeleteBlockerFor } from "../_lib/ops";
 import { screeningsSentBy } from "../_lib/load";
 import UserActionsBar from "./UserActionsBar";
+import { SCREENED_USER_TYPE } from "@/lib/users/user-type";
 import ProfileForm from "./ProfileForm";
 
 type Props = { params: Promise<{ id: string }> };
@@ -145,8 +146,8 @@ export default async function AdminUserDetailPage({ params }: Props) {
 
   const now = Date.now();
   const state = accountState(user);
-  const side = user.userType === "recruiter" ? "recruiters" : "developers";
-  const backHref = side === "recruiters" ? "/admin/users/recruiters" : "/admin/users";
+  const side = user.userType === "recruiter" ? "recruiters" : user.userType === SCREENED_USER_TYPE ? "candidates" : "developers";
+  const backHref = side === "recruiters" ? "/admin/users/recruiters" : side === "candidates" ? "/admin/users/candidates" : "/admin/users";
   const providers = [...new Set(user.accounts.map((a) => a.provider))];
   if (user.passwordHash) providers.unshift("password");
 
@@ -163,7 +164,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
   return (
     <div className="space-y-5 max-w-6xl">
       <Link href={backHref} className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-fg">
-        <ArrowLeft className="w-4 h-4" /> {side === "recruiters" ? "Recruiter accounts" : "Developer accounts"}
+        <ArrowLeft className="w-4 h-4" /> {side === "recruiters" ? "Recruiter accounts" : side === "candidates" ? "Candidate accounts" : "Developer accounts"}
       </Link>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

@@ -136,7 +136,7 @@ async function seedUser(key: string, name: string, email: string, password?: str
       name,
       email,
       emailVerified: at(-40),
-      userType: "company",
+      userType: "recruiter",
       ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
     },
   });

@@ -1,10 +1,10 @@
 /**
- * Shared types for the admin assistant: tool declarations (Gemini function
+ * Shared types for the admin assistant: tool declarations (OpenAI-style function
  * declarations), tool call records shown as trace chips, and proposals shown
  * as approval cards.
  */
 
-/** JSON schema subset Gemini accepts for function parameters. */
+/** JSON schema subset the model accepts for function parameters. */
 export type ParamSchema =
   | { type: "string"; description?: string; enum?: string[]; maxLength?: number; format?: "date-time" }
   | { type: "integer" | "number"; description?: string; minimum?: number; maximum?: number }

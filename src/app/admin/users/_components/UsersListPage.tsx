@@ -18,6 +18,11 @@ const META: Record<UserSide, { title: string; subtitle: string; base: string }> 
     subtitle: "People on the hiring side: their workspaces, interviews and AI screenings.",
     base: "/admin/users/recruiters",
   },
+  candidates: {
+    title: "Candidate accounts",
+    subtitle: "Made when a candidate starts a recruiter's take-home. They never signed up, so they are not counted as developers. Signing up later moves them to developer accounts.",
+    base: "/admin/users/candidates",
+  },
 };
 
 const fieldCls =

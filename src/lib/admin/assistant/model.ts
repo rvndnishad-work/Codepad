@@ -1,28 +1,35 @@
 /**
- * Gemini client for the admin assistant: REST generateContent with real
- * function calling.
+ * GLM client for the admin assistant: Together's OpenAI-compatible Chat
+ * Completions API with real function calling. Uses the same GLM key and model
+ * as the AI interviewer (see lib/ai-interview/together.ts).
  *
- * - Reads every part of a response: text parts are joined, every functionCall
- *   part is collected (Gemini can ask for several calls at once), and the
- *   model's content goes back into the history unchanged so thought
- *   signatures survive the round trip.
+ * - Reads the whole reply: the text and every tool call (GLM can ask for
+ *   several at once). Reasoning is dropped, never shown as the answer.
  * - Runs at most MAX_TOOL_ROUNDS rounds of tool calls, then asks once more
- *   with tools disabled so the admin always gets an answer.
+ *   with tool calls turned off so the admin always gets an answer.
  * - Failures are thrown as AssistantError. There is no canned fallback: a bad
  *   key, a 400 or a timeout reaches the admin as an error.
  */
 import type { ToolDeclaration } from "./types";
 
 export const MAX_TOOL_ROUNDS = 8;
-const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models";
+const DEFAULT_MODEL = "zai-org/GLM-5.3-Flash";
 const TIMEOUT_MS = 60_000;
 
+function baseUrl(): string {
+  return (process.env.TOGETHER_BASE_URL?.trim() || "https://api.together.xyz/v1").replace(/\/+$/, "");
+}
+
 export function assistantModel(): string {
-  return process.env.ADMIN_ASSISTANT_MODEL?.trim() || "gemini-2.5-flash";
+  return (
+    process.env.ADMIN_ASSISTANT_MODEL?.trim() ||
+    process.env.AI_INTERVIEW_TOGETHER_MODEL?.trim() ||
+    DEFAULT_MODEL
+  );
 }
 
 export function assistantApiKey(): string | null {
-  return process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim() || null;
+  return process.env.GLM_API_KEY?.trim() || process.env.TOGETHER_API_KEY?.trim() || null;
 }
 
 export class AssistantError extends Error {
@@ -32,71 +39,99 @@ export class AssistantError extends Error {
   }
 }
 
-export const NOT_CONFIGURED = "Assistant is not configured: set GEMINI_API_KEY";
+export const NOT_CONFIGURED = "Assistant is not configured: set GLM_API_KEY";
 
 export type FunctionCall = { name: string; args: Record<string, unknown>; id?: string };
 
-export type Part = {
-  text?: string;
-  thought?: boolean;
-  functionCall?: { name: string; args?: Record<string, unknown>; id?: string };
-  functionResponse?: { name: string; id?: string; response: Record<string, unknown> };
-  [k: string]: unknown;
-};
-
+/** Stored conversation turns, as conversations.ts builds them. */
+export type Part = { text?: string };
 export type Content = { role: "user" | "model"; parts: Part[] };
+
+export type ChatMessage =
+  | { role: "system" | "user"; content: string }
+  | {
+      role: "assistant";
+      content: string | null;
+      tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[];
+    }
+  | { role: "tool"; tool_call_id: string; content: string };
 
 export type ParsedResponse = {
   text: string;
   calls: FunctionCall[];
-  /** The model turn, unchanged, to append to the history. */
-  content: Content | null;
+  /** The assistant turn, to append to the history before the tool results. */
+  message: Extract<ChatMessage, { role: "assistant" }> | null;
   finishReason: string | null;
 };
 
-/** Pull every text and functionCall part out of a generateContent response. */
+/** Some GLM builds inline their reasoning as <think>...</think>; it is not the answer. */
+function stripThinking(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*?<\/think>/i, "").trim();
+}
+
+/** Pull the text and every tool call out of a chat completion. */
 export function parseResponse(body: unknown): ParsedResponse {
   const b = (body ?? {}) as {
-    candidates?: { content?: { role?: string; parts?: Part[] }; finishReason?: string }[];
-    promptFeedback?: { blockReason?: string };
+    choices?: {
+      message?: {
+        content?: string | null;
+        tool_calls?: { id?: string; function?: { name?: string; arguments?: string } }[];
+      };
+      finish_reason?: string | null;
+    }[];
   };
-  const cand = b.candidates?.[0];
-  if (!cand) {
-    const reason = b.promptFeedback?.blockReason;
-    return { text: "", calls: [], content: null, finishReason: reason ? `BLOCKED_${reason}` : null };
-  }
-  const parts = Array.isArray(cand.content?.parts) ? cand.content!.parts! : [];
-  const texts: string[] = [];
+  const choice = b.choices?.[0];
+  if (!choice?.message) return { text: "", calls: [], message: null, finishReason: choice?.finish_reason ?? null };
+  const text = typeof choice.message.content === "string" ? stripThinking(choice.message.content) : "";
   const calls: FunctionCall[] = [];
-  for (const p of parts) {
-    if (!p || typeof p !== "object") continue;
-    if (typeof p.text === "string" && !p.thought) texts.push(p.text);
-    if (p.functionCall && typeof p.functionCall.name === "string") {
-      const args = p.functionCall.args && typeof p.functionCall.args === "object" ? p.functionCall.args : {};
-      calls.push({ name: p.functionCall.name, args, ...(p.functionCall.id ? { id: p.functionCall.id } : {}) });
+  const toolCalls: NonNullable<Extract<ChatMessage, { role: "assistant" }>["tool_calls"]> = [];
+  (choice.message.tool_calls ?? []).forEach((tc, i) => {
+    const name = tc?.function?.name;
+    if (typeof name !== "string" || !name) return;
+    let args: Record<string, unknown> = {};
+    try {
+      const parsed = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) args = parsed;
+    } catch {
+      // Malformed arguments reach the tool as {} and fail its validation, which the model sees.
     }
-  }
+    const id = tc.id || `call_${i}_${name}`;
+    calls.push({ name, args, id });
+    toolCalls.push({ id, type: "function", function: { name, arguments: JSON.stringify(args) } });
+  });
   return {
-    text: texts.join("").trim(),
+    text,
     calls,
-    content: parts.length ? { role: "model", parts } : null,
-    finishReason: cand.finishReason ?? null,
+    message: text || toolCalls.length ? { role: "assistant", content: text || null, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) } : null,
+    finishReason: choice.finish_reason ?? null,
   };
 }
 
 function errorMessage(status: number, body: unknown): string {
-  const msg = (body as { error?: { message?: string } })?.error?.message;
+  const e = (body as { error?: { message?: string } | string })?.error;
+  const msg = typeof e === "string" ? e : e?.message;
+  if (status === 401) return "The model rejected the API key (401). Check GLM_API_KEY.";
   if (status === 400 || status === 403) return `The model rejected the request (${status}): ${msg ?? "bad request"}`;
   if (status === 429) return "The model is rate limited. Try again in a minute.";
   return `The model failed (${status})${msg ? `: ${msg}` : ""}`;
 }
 
+/** Stored turns to chat messages: "model" turns become "assistant". */
+export function toMessages(system: string, contents: Content[]): ChatMessage[] {
+  const out: ChatMessage[] = [{ role: "system", content: system }];
+  for (const c of contents) {
+    const text = c.parts.map((p) => p.text ?? "").join("");
+    if (c.role === "model") out.push({ role: "assistant", content: text });
+    else out.push({ role: "user", content: text });
+  }
+  return out;
+}
+
 export type CallOptions = {
-  system: string;
-  contents: Content[];
+  messages: ChatMessage[];
   tools: ToolDeclaration[];
-  /** "NONE" turns function calling off for the closing answer. */
-  mode?: "AUTO" | "NONE";
+  /** "none" turns tool calls off for the closing answer. */
+  toolChoice?: "auto" | "none";
   fetchImpl?: typeof fetch;
 };
 
@@ -105,24 +140,25 @@ export async function callModel(opts: CallOptions): Promise<ParsedResponse> {
   if (!key) throw new AssistantError(NOT_CONFIGURED, 503);
   const doFetch = opts.fetchImpl ?? fetch;
   const body = {
-    systemInstruction: { parts: [{ text: opts.system }] },
-    contents: opts.contents,
+    model: assistantModel(),
+    messages: opts.messages,
     ...(opts.tools.length
       ? {
-          tools: [{ functionDeclarations: opts.tools }],
-          toolConfig: { functionCallingConfig: { mode: opts.mode ?? "AUTO" } },
+          tools: opts.tools.map((t) => ({ type: "function", function: t })),
+          tool_choice: opts.toolChoice ?? "auto",
         }
       : {}),
-    generationConfig: { temperature: 0.2, maxOutputTokens: 4096 },
+    temperature: 0.2,
+    max_tokens: 4096,
   };
 
   let lastErr: AssistantError | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     let res: Response;
     try {
-      res = await doFetch(`${ENDPOINT}/${encodeURIComponent(assistantModel())}:generateContent`, {
+      res = await doFetch(`${baseUrl()}/chat/completions`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
@@ -140,8 +176,6 @@ export async function callModel(opts: CallOptions): Promise<ParsedResponse> {
   throw lastErr ?? new AssistantError("The model failed.");
 }
 
-export type ExecutedCall = { call: FunctionCall; response: Record<string, unknown> };
-
 export type LoopResult = { text: string; rounds: number };
 
 /**
@@ -158,18 +192,16 @@ export async function runToolLoop(opts: {
   maxRounds?: number;
 }): Promise<LoopResult> {
   const max = opts.maxRounds ?? MAX_TOOL_ROUNDS;
-  const contents = [...opts.contents];
+  const messages = toMessages(opts.system, opts.contents);
   const earlier: string[] = [];
   for (let round = 0; round <= max; round++) {
     const closing = round === max;
     const res = await callModel({
-      system: opts.system,
-      contents,
+      messages,
       tools: opts.tools,
-      mode: closing ? "NONE" : "AUTO",
+      toolChoice: closing ? "none" : "auto",
       fetchImpl: opts.fetchImpl,
     });
-    if (res.content) contents.push(res.content);
     if (res.calls.length === 0 || closing) {
       const text = res.text || earlier.join("\n\n");
       if (!text) {
@@ -179,13 +211,11 @@ export async function runToolLoop(opts: {
       }
       return { text, rounds: round };
     }
+    if (res.message) messages.push(res.message);
     if (res.text) earlier.push(res.text);
     const responses = await Promise.all(res.calls.map((c) => opts.execute(c)));
-    contents.push({
-      role: "user",
-      parts: res.calls.map((c, i) => ({
-        functionResponse: { name: c.name, ...(c.id ? { id: c.id } : {}), response: responses[i] },
-      })),
+    res.calls.forEach((c, i) => {
+      messages.push({ role: "tool", tool_call_id: c.id!, content: JSON.stringify(responses[i]) });
     });
   }
   throw new AssistantError("The assistant stopped without an answer.");

@@ -82,7 +82,7 @@ Generate every secret fresh — **do not reuse local dev values**.
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from an Upstash Redis DB — distributed rate limiting + execute cache. Without it each Vercel instance has its own in-memory limiter. |
 
 ### Optional (set per feature you enable)
-- **AI/voice:** `GEMINI_API_KEY` (+ `AI_INTERVIEW_GEMINI_MODEL`, `ADMIN_ASSISTANT_MODEL`),
+- **AI/voice:** `GLM_API_KEY` (+ `AI_INTERVIEW_TOGETHER_MODEL`, `ADMIN_ASSISTANT_MODEL` for the admin assistant), `GEMINI_API_KEY`,
   `OPENAI_API_KEY` (+ `OPENAI_TTS_MODEL`/`OPENAI_TTS_VOICE`),
   `ELEVENLABS_API_KEY`/`ELEVENLABS_VOICE_ID`/`ELEVENLABS_MODEL`,
   `LIVEKIT_API_KEY`/`LIVEKIT_API_SECRET`.

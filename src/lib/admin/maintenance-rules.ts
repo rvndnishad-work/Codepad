@@ -186,6 +186,8 @@ export const ALWAYS_EXEMPT = [
   "/robots.txt",
   "/sitemap.xml",
   "/favicon.ico",
+  // App store listings link here; it must stay up during maintenance.
+  "/gps-camera",
 ];
 
 export function isExemptPath(pathname: string): boolean {

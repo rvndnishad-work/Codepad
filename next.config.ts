@@ -35,6 +35,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "picsum.photos" },
     ],
   },
+  async rewrites() {
+    return [
+      // Privacy policy for the separate GPS Camera mobile app. Served as the
+      // raw static file in public/, outside every Codepad layout and theme.
+      { source: "/gps-camera/privacy", destination: "/gps-camera/privacy.html" },
+    ];
+  },
   async redirects() {
     return [
       {

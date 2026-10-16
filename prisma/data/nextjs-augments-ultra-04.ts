@@ -3,6 +3,7 @@
  * memoization, Full Route Cache, Router/Client Cache, Next 15 caching defaults, unstable_cache vs React cache).
  * Generated from markdown sources by a build script; Verified blocks are real output from a Next.js 16.3.4 lab (next build /
  * next start, a hit-counting test API, and a real browser session for the client cache).
+ * Reviewed 2026-10-16 against the Next.js 16.4.2 docs; additions verified on a 16.4.2 lab are labelled 16.4.2, older blocks keep 16.3.4.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +30,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -93,7 +94,7 @@ Server-side fetching removes the browser round trip, but it does not remove wate
 
 ## 4. Load data where you use it
 
-Because identical \`fetch\` calls are memoized for the duration of one render and \`React.cache\` does the same for other functions, you do not have to fetch once at the top and pass data down through five levels. Each component can ask for what it needs; the lab below shows three identical fetches producing one real request. Caching across requests is a separate topic: see [fetch caching](/interview-question/how-does-fetch-caching-work-in-the-next-js-app-router-force-cache-no-store-reval) and [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor).
+Because identical \`fetch\` calls are memoized for the duration of one render and \`React.cache\` does the same for other functions, you do not have to fetch once at the top and pass data down through five levels. Each component can ask for what it needs; the lab below shows three identical fetches producing one real request. Caching across requests is a separate topic: see [fetch caching](/interview-question/how-does-fetch-caching-work-in-the-next-js-app-router-force-cache-no-store-reval) and [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor). It matters more since 16.4, because \`create-next-app\` now enables Cache Components for new App Router apps: in that model an uncached \`fetch\` or database call outside a Suspense boundary fails the build unless it is cached with 'use cache' (the exact error is quoted in [the PPR question](/interview-question/what-is-partial-prerendering-ppr-in-next-js)). For database access, the connection-pool side is covered in [using Prisma without exhausting connections](/interview-question/how-do-you-use-a-database-like-prisma-in-next-js-without-exhausting-connections).
 
 ## 5. Verified — Timings and Request Counts (Next.js 16.3.4, next start)
 
@@ -116,7 +117,7 @@ real API calls for this one request: /memo 1, /memo?v=2 1
 ## 6. Common Pitfalls
 
 - **Accidental waterfalls.** Two independent awaits in a row doubled the time in the lab. Start both, then await.
-- **Fetching your own Route Handler from a Server Component.** It adds an HTTP hop to your own server; call the underlying function directly.
+- **Fetching your own Route Handler from a Server Component.** It adds an HTTP hop to your own server; call the underlying function directly. If you need the incoming cookies or headers for that call, read them with [cookies() and headers()](/interview-question/how-do-you-read-cookies-and-headers-in-next-js-cookies-headers) and pass the values.
 - **Fetching everything in the page and prop-drilling it.** Memoization makes it cheap to fetch in the component that needs the data.
 - **Assuming fetch results are cached across requests.** In Next.js 15 and 16 they are not, unless you opt in; a static route only looks cached because it was rendered at build time.
 - **Blocking the whole page on the slowest request.** Put slow, non-essential parts behind Suspense so the rest streams first.
@@ -245,7 +246,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -318,9 +319,9 @@ Most caching bugs come from invalidating the wrong layer. A revalidateTag clears
 | Full Route Cache | Server (build output) | Until revalidated or redeploy | Automatic for static routes | \`revalidatePath\`, time, redeploy |
 | Router / Client Cache | Browser memory | Session; dynamic pages 0 s by default | Automatic | \`router.refresh()\`, revalidation from a Server Action, reload |
 
-## 4. How the 16.3 docs name them
+## 4. How the 16.3 and 16.4 docs name them
 
-The 16.3 docs file this four-layer model under "Caching (Previous Model)", for projects not using Cache Components. The glossary keeps "Memoization" and "Client Cache"; "Data Cache" and "Full Route Cache" are not glossary terms any more, because with Cache Components you decide what is cached per function or component with 'use cache' and \`cacheLife\`. Interviewers still use the old names, so know both. Details for each layer: [memoization](/interview-question/what-is-request-memoization-in-next-js), [fetch caching](/interview-question/how-does-fetch-caching-work-in-the-next-js-app-router-force-cache-no-store-reval), [Full Route Cache](/interview-question/what-is-the-full-route-cache-in-next-js), [Router Cache](/interview-question/what-is-the-router-cache-in-next-js-and-what-are-its-implications).
+The 16.3 docs, and the 16.4.2 docs unchanged, file this four-layer model under "Caching (Previous Model)", for projects not using Cache Components. The glossary keeps "Memoization" and "Client Cache"; "Data Cache" and "Full Route Cache" are not glossary terms any more, because with Cache Components you decide what is cached per function or component with 'use cache' and \`cacheLife\`. Interviewers still use the old names, so know both. Since 16.4, \`create-next-app\` starts new App Router projects with \`cacheComponents: true\`, so this four-layer model now describes existing apps that have not adopted Cache Components rather than new ones. Details for each layer: [memoization](/interview-question/what-is-request-memoization-in-next-js), [fetch caching](/interview-question/how-does-fetch-caching-work-in-the-next-js-app-router-force-cache-no-store-reval), [Full Route Cache](/interview-question/what-is-the-full-route-cache-in-next-js), [Router Cache](/interview-question/what-is-the-router-cache-in-next-js-and-what-are-its-implications).
 
 ## 5. Verified — Each Layer Observed (Next.js 16.3.4, without Cache Components)
 
@@ -386,7 +387,7 @@ click "to s" again     NAV-S static                                 none
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
-<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">The 16.3 docs call this the previous model; with Cache Components you opt parts in with 'use cache' and <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">cacheLife</code> instead.</span>
+<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">The 16.3 and 16.4 docs call this the previous model; with Cache Components, the default for new apps since 16.4, you opt parts in with 'use cache' and <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">cacheLife</code> instead.</span>
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
@@ -486,7 +487,7 @@ export async function productChanged() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -562,7 +563,7 @@ The surprising row is the first one: an uncached fetch still produced a page tha
 
 ## 4. Beyond fetch
 
-The options only apply to \`fetch\`. For ORM calls and SDKs you used \`unstable_cache\` in the previous model; in Next.js 16 its docs say it "has been replaced by use cache". See [unstable_cache vs cache](/interview-question/unstable-cache-vs-cache-react-which-dedupes-what) and [on-demand revalidation](/interview-question/what-is-on-demand-revalidation-in-next-js-revalidatepath-revalidatetag).
+The options only apply to \`fetch\`. For ORM calls and SDKs you used \`unstable_cache\` in the previous model; in Next.js 16 its docs say it "has been replaced by use cache", although the 16.4 Cache Components migration guide adds that \`unstable_cache\` keeps working with Cache Components and migrating it is optional. See [unstable_cache vs cache](/interview-question/unstable-cache-vs-cache-react-which-dedupes-what) and [on-demand revalidation](/interview-question/what-is-on-demand-revalidation-in-next-js-revalidatepath-revalidatetag).
 
 ## 5. Verified — API Calls per Fetch Style (Next.js 16.3.4, next start)
 
@@ -715,7 +716,7 @@ export default async function Page() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -801,7 +802,7 @@ Memoization is about one render, not about caching. It is what lets you fetch da
 
 ## 4. Doing the same for other functions
 
-For an ORM query, wrap the loader once at module level with \`cache\` from React and call it wherever you need it. The docs note that \`React.cache\` "is scoped to the current request only", so it cannot leak one user data to another. See also [fetching data in Server Components](/interview-question/how-do-you-fetch-data-in-next-js-server-components).
+For an ORM query, wrap the loader once at module level with \`cache\` from React and call it wherever you need it. The docs note that \`React.cache\` "is scoped to the current request only", so it cannot leak one user data to another. One limit the 16.4 docs add: each 'use cache' function gets its own isolated \`React.cache\` scope, so two cached functions calling the same \`React.cache\` loader do not share its result (measured in [the unstable_cache vs cache question](/interview-question/unstable-cache-vs-cache-react-which-dedupes-what)). ORM loaders are the usual case for this wrapper; [the Prisma question](/interview-question/how-do-you-use-a-database-like-prisma-in-next-js-without-exhausting-connections) covers the client setup. See also [fetching data in Server Components](/interview-question/how-do-you-fetch-data-in-next-js-server-components).
 
 ## 5. Verified — Counting Real Calls (Next.js 16.3.4, next start)
 
@@ -945,7 +946,7 @@ export const getUser = cache(async (id: string) => {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1082,7 +1083,7 @@ each route requested 3 times after next build; the API counts how often it was r
 
 - **A route turning static by accident.** Removing the last \`cookies()\` call can move a page from ƒ to ○, and it then shows build-time data forever.
 - **Revalidating a tag but not the page.** With no tag on the fetch and no revalidate time, the stored page does not change.
-- **Expecting the cache to survive differently per instance.** Self-hosted setups with several instances need a shared cache handler, otherwise each instance regenerates on its own.
+- **Expecting the cache to survive differently per instance.** Self-hosted setups with several instances need a shared cache handler, otherwise each instance regenerates on its own (see [self-hosting across instances](/interview-question/how-do-you-self-host-next-js-across-multiple-instances-cache-handlers-isr-build-)).
 - **Using it for per-user content.** Anything user-specific must be dynamic or inside a Suspense hole.
 - **Assuming \`next dev\` shows it.** In development routes render on every request; test caching with \`next build\` and \`next start\`.
 
@@ -1203,7 +1204,7 @@ export async function publish() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1289,7 +1290,7 @@ Stale data after Back is not a server problem. The server was never asked; the b
 
 ## 4. Implications
 
-It makes navigation fast, but it means a mutation must be followed by an invalidation that reaches the browser. Revalidating inside the Server Action is the clean way: the action response tells the router to drop and refetch. A mutation made through a plain fetch to a Route Handler cannot do that, so the client must call \`router.refresh()\`. The Next.js 16 behaviour, including prefetching, is covered in [prefetching and navigation caching](/interview-question/how-does-prefetching-and-navigation-caching-work-in-next-js-16).
+It makes navigation fast, but it means a mutation must be followed by an invalidation that reaches the browser. Revalidating inside the Server Action is the clean way: the action response tells the router to drop and refetch. A mutation made through a plain fetch to a Route Handler cannot do that, so the client must call \`router.refresh()\`. The Next.js 16 behaviour, including prefetching, is covered in [prefetching and navigation caching](/interview-question/how-does-prefetching-and-navigation-caching-work-in-next-js-16). Note that the browser session below ran without Cache Components. With Cache Components and Partial Prefetching, the \`create-next-app\` default since 16.4, the 16.4 docs say a default \`<Link>\` prefetches only the route's shared App Shell, and \`<Link prefetch={true}>\` is needed to prefetch URL-specific content; that variant was not re-run here. When a navigation does have to wait, [useLinkStatus](/interview-question/how-do-you-show-navigation-loading-feedback-with-uselinkstatus-in-next-js) is the hook for showing pending feedback on the clicked link.
 
 ## 5. Verified — A Real Browser Session (Next.js 16.3.4, next start)
 
@@ -1432,7 +1433,7 @@ export function LegacySave({ id }: { id: string }) {
 - GET Route Handlers are no longer cached by default; opt in with \`export const dynamic = 'force-static'\`.
 - The client Router Cache no longer reuses pages of dynamic routes on navigation: \`staleTimes.dynamic\` went from 30 s to 0 s.
 - Static pages, layouts, loading states and back/forward navigation are still reused.
-- Next.js 16 keeps these defaults and adds Cache Components, where everything is dynamic unless marked with 'use cache'.
+- Next.js 16 keeps these defaults and adds Cache Components, where data is uncached unless marked with 'use cache'; since 16.4, \`create-next-app\` enables it for new App Router apps.
 
 **Clarifying questions expected:**
 - "Which pages relied on implicit caching?" — they may get slower or hit the API more after the upgrade.
@@ -1442,7 +1443,7 @@ export function LegacySave({ id }: { id: string }) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1507,7 +1508,7 @@ None of these changes break code; they change how often it runs. After an upgrad
 
 ## 4. Why the change
 
-Implicit caching made the common case confusing: data looked stale and the reason was invisible. Making caching explicit means reading the code tells you what is cached. Next.js 16 takes the same direction further with Cache Components, where nothing is cached unless you write 'use cache'. For the layer-by-layer view see [the caching layers](/interview-question/what-are-the-caching-layers-in-next-js-request-memoization-data-cache-full-route) and [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor).
+Implicit caching made the common case confusing: data looked stale and the reason was invisible. Making caching explicit means reading the code tells you what is cached. Next.js 16 takes the same direction further with Cache Components, where nothing is cached unless you write 'use cache'. Since 16.4 that is also the starting point of every new App Router app: \`create-next-app@16.4.2 --yes\` wrote \`cacheComponents: true\` and \`partialPrefetching: true\` into the generated \`next.config.ts\` in a test run, so the opt-backs below matter mainly for upgraded apps. For the layer-by-layer view see [the caching layers](/interview-question/what-are-the-caching-layers-in-next-js-request-memoization-data-cache-full-route) and [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor).
 
 ## 5. Verified — The Defaults on Next.js 16.3.4
 
@@ -1657,7 +1658,7 @@ export default nextConfig;`,
 - React \`cache()\` memoizes a function for one server request: duplicate calls in the same render run once, and the next request starts fresh.
 - \`unstable_cache\` from next/cache stores the result across requests (and deployments) with \`revalidate\` and \`tags\`, like the Data Cache for non-fetch functions.
 - They solve different problems and can be combined: persistence plus per-request dedupe.
-- In Next.js 16 the unstable_cache docs say it "has been replaced by use cache"; with Cache Components you mark the function with 'use cache' and use \`cacheLife\` and \`cacheTag\`.
+- In Next.js 16 the unstable_cache docs say it "has been replaced by use cache" (the 16.4 migration guide adds that it keeps working, so migrating is optional); with Cache Components you mark the function with 'use cache' and use \`cacheLife\` and \`cacheTag\`.
 - Never persist per-user results in a shared cache unless the user id is part of the key.
 
 **Clarifying questions expected:**
@@ -1668,7 +1669,7 @@ export default nextConfig;`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1730,7 +1731,7 @@ The question in the title has a crisp answer: React cache dedupes within a reque
 | Survives the request | No | Yes | Yes |
 | Invalidation | Not needed | \`revalidate\`, \`revalidateTag\` | \`cacheLife\`, \`cacheTag\`, \`revalidateTag\`, \`updateTag\` |
 | Keys | Function arguments | keyParts plus arguments | Generated by the compiler |
-| Status | Stable React API | Replaced in 16 | Current model (needs \`cacheComponents\`) |
+| Status | Stable React API | Replaced in 16, still works (migration optional per the 16.4 guide) | Current model (needs \`cacheComponents\`) |
 
 ## 4. Choosing
 
@@ -1755,13 +1756,31 @@ request 2: call=1 computedAt=2026-09-23T05:51:50.123Z rendered=2026-09-23T05:51:
 request 3: call=1 computedAt=2026-09-23T05:51:50.123Z rendered=2026-09-23T05:51:50.757Z
 \`\`\`
 
-The page rendered on every request (its \`rendered\` time moves) while the cached function ran once. From the unstable_cache docs shipped with 16.3.4: "This API has been replaced by use cache in Next.js 16."
+The page rendered on every request (its \`rendered\` time moves) while the cached function ran once. From the unstable_cache docs shipped with 16.3.4: "This API has been replaced by use cache in Next.js 16." The 16.4.2 docs keep that sentence, and the 16.4 migration guide adds that \`unstable_cache\` "continues to work with Cache Components".
+
+How the two interact under Cache Components (Next.js 16.4.2, \`next start\`). The 16.4 docs say each 'use cache' function has an isolated \`React.cache\` scope. Two dynamic routes call one \`React.cache\`-wrapped loader with the same argument: \`/rc-direct\` from two plain Server Components, \`/rc-cachefns\` from two different 'use cache' functions (each given a per-request id so neither is a cache hit). Each route was requested twice:
+
+\`\`\`
+DIRECT: --- request ---
+DIRECT: getShared(1) execution #1
+CACHE-FNS: --- request ---
+CACHE-FNS: getShared(1) execution #1
+CACHE-FNS: getShared(1) execution #2
+DIRECT: --- request ---
+DIRECT: getShared(1) execution #2
+CACHE-FNS: --- request ---
+CACHE-FNS: getShared(1) execution #3
+CACHE-FNS: getShared(1) execution #4
+\`\`\`
+
+Plain components shared one execution per request; the two 'use cache' functions ran the loader once each. So \`React.cache\` dedupes within one render scope, and a 'use cache' function starts a new scope. When work must be shared across cached functions that read request data, the docs point to 'use cache: private' instead.
 
 ## 6. Common Pitfalls
 
 - **Persisting per-user data.** A shared cache keyed without the user id serves one user data to everyone. Use React \`cache()\` for per-request user data.
 - **Creating the wrapper inside a component.** Both wrappers must be created once at module level, or nothing is shared.
-- **Missing inputs in the key.** With unstable_cache, anything the function reads from outside its arguments is not part of the key.
+- **Missing inputs in the key.** With unstable_cache, anything the function reads from outside its arguments is not part of the key. It also cannot call \`cookies()\`, \`headers()\` or \`connection()\` inside (the 16.4 docs list these as unsupported): read them first and pass the values as arguments.
+- **Expecting React \`cache()\` to dedupe across 'use cache' functions.** Each cached function has its own scope; in the 16.4.2 lab two of them ran the same loader twice per request.
 - **Starting new code on unstable_cache in Next.js 16.** It still works, as the lab shows, but the docs point to 'use cache'.
 - **Expecting React \`cache()\` to reduce database load over time.** It only merges duplicates inside one request.
 

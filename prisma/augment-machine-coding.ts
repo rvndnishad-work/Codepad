@@ -2,6 +2,9 @@
  * Augment Frontend Machine Coding (technology='machine-coding') questions with a
  * TUTORIAL-style answer + a self-contained runnable React solution.
  *
+ * Files load in name order, so the machine-coding-augments-ultra-*.ts rewrites
+ * override the older per-topic files for the same title.
+ *
  * Source files: prisma/data/machine-coding-augments*.ts — each a module with
  *   `export default [ { title, answer?, examples?: [{label,code,runnable?}] } ]`
  * (TS modules + double-quoted "\n"-joined `answer` so markdown ```jsx fences work;
@@ -23,6 +26,9 @@ const prisma = new PrismaClient();
 type FrameworkBundle = { answer: string; files: Record<string, string> };
 type Augment = {
   title: string;
+  description?: string;
+  seoDescription?: string;
+  difficulty?: "easy" | "medium" | "hard";
   answer?: string;
   examples?: { label?: string; code?: string; files?: Record<string, string>; runnable?: boolean }[];
   frameworks?: { react?: FrameworkBundle; vue?: FrameworkBundle; angular?: FrameworkBundle };
@@ -66,6 +72,9 @@ async function main() {
     let data: Record<string, unknown> = {
       ...(a.answer ? { answer: a.answer } : {}),
       ...(a.examples ? { examplesData: JSON.stringify(a.examples) } : {}),
+      ...(a.description ? { description: a.description } : {}),
+      ...(a.seoDescription ? { seoDescription: a.seoDescription } : {}),
+      ...(a.difficulty ? { difficulty: a.difficulty } : {}),
     };
 
     // Per-framework bundles: store the whole map, and mirror the default

@@ -16,6 +16,12 @@ export type FrameworkBundle = {
 
 export type MachineCodingAugment = {
   title: string;
+  /** Question Body (CLAUDE.md §6). Renders WITHOUT rehype-raw: plain markdown only, no HTML/SVG. */
+  description?: string;
+  /** One plain sentence, <=155 chars, used as the page meta description. */
+  seoDescription?: string;
+  /** Corrects the stored difficulty when the original label was wrong. */
+  difficulty?: "easy" | "medium" | "hard";
   /**
    * Per-framework bundles. When present, the detail page shows a framework
    * selector (React / Vue / Angular) that swaps BOTH the tutorial and the

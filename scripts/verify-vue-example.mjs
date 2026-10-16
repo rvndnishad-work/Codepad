@@ -90,7 +90,7 @@ await build({
 
 if (!ssr) {
   const dom = new JSDOM('<!doctype html><html><body><div id="app"></div></body></html>', { pretendToBeVisual: true, url: "http://localhost/" });
-  for (const k of ["window", "document", "navigator", "Node", "Element", "HTMLElement", "SVGElement", "Event", "MouseEvent", "KeyboardEvent", "CustomEvent", "InputEvent", "FocusEvent", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MutationObserver", "HTMLInputElement", "Text", "Comment", "DocumentFragment"]) {
+  for (const k of ["window", "document", "Document", "ShadowRoot", "navigator", "Node", "Element", "HTMLElement", "SVGElement", "Event", "MouseEvent", "KeyboardEvent", "CustomEvent", "InputEvent", "FocusEvent", "getComputedStyle", "requestAnimationFrame", "cancelAnimationFrame", "MutationObserver", "HTMLInputElement", "Text", "Comment", "DocumentFragment"]) {
     try { globalThis[k] = dom.window[k]; } catch {}
   }
 }

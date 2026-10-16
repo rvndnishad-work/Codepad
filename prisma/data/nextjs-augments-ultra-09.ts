@@ -3,6 +3,8 @@
  * next.config, redirects and rewrites, i18n, instrumentation.
  * Generated from markdown sources by a build script; Verified blocks are real output from a Next.js 16.3.4 lab (standalone and static
  * export builds, both routers in one app, proxy-based locale detection, instrumentation hooks, and real browser sessions).
+ * Reviewed against 16.4.2: the custom-webpack check and the cacheComponents/partialPrefetching warning were re-run on 16.4.2 and
+ * are labelled so; the other blocks keep their 16.3.4 labels.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +31,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -104,7 +106,7 @@ The trade is not features for price but responsibility. Self-hosting keeps every
 
 ## 4. Self-hosting checklist
 
-Build once and promote the same artefact; set \`deploymentId\` to avoid version skew; put static files (\`/_next/static\`) behind a CDN; configure a shared cache handler when running more than one instance; forward the real host and protocol headers from your proxy (Server Actions compare Origin and Host); collect logs and traces with instrumentation. See [standalone output](/interview-question/what-is-the-output-standalone-build-in-next-js-and-when-do-you-use-it) and [instrumentation](/interview-question/how-do-you-handle-instrumentation-and-observability-in-next-js-instrumentation-t).
+Build once and promote the same artefact; set \`deploymentId\` to avoid version skew; put static files (\`/_next/static\`) behind a CDN; configure a shared cache handler when running more than one instance (the details are in [self-hosting across multiple instances](/interview-question/how-do-you-self-host-next-js-across-multiple-instances-cache-handlers-isr-build-)); forward the real host and protocol headers from your proxy (Server Actions compare Origin and Host); collect logs and traces with instrumentation. A static host is only an option within the limits of [static export](/interview-question/what-is-static-export-output-export-in-next-js-and-what-does-it-not-support), and a large app can also be split into separately deployed [multi-zones](/interview-question/what-are-multi-zones-in-next-js-and-when-would-you-split-an-app-into-zones). See [standalone output](/interview-question/what-is-the-output-standalone-build-in-next-js-and-when-do-you-use-it) and [instrumentation](/interview-question/how-do-you-handle-instrumentation-and-observability-in-next-js-instrumentation-t).
 
 ## 5. Verified — Standalone and Static Export Builds (Next.js 16.3.4)
 
@@ -143,7 +145,7 @@ Error: Failed to collect page data for /api/time
 - **Forgetting static files with standalone.** \`.next/static\` and \`public\` must be copied next to server.js, or served by a CDN.
 - **Choosing static export for an app with server features.** The build fails or silently drops redirects and rewrites.
 - **Rebuilding per environment.** NEXT_PUBLIC_ values are baked in; build once and inject server-side values at runtime.
-- **Proxies that change the host.** Server Actions compare Origin and Host; configure forwarded headers or \`serverActions.allowedOrigins\`.
+- **Proxies that change the host.** Server Actions compare Origin and Host; forward the public host in \`x-forwarded-host\`, or list it in \`experimental.serverActions.allowedOrigins\`.
 
 ## 7. How to Answer in an Interview
 
@@ -264,7 +266,7 @@ CMD ["node", "server.js"]`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -349,7 +351,7 @@ Standalone is about the server side only. The browser still needs the static fil
 
 ## 4. Tracing edge cases
 
-If a package reads files at runtime that are not imported (templates, fonts, binaries), tracing can miss them; add them with \`outputFileTracingIncludes\`. Monorepos may need \`outputFileTracingRoot\` pointing at the repository root. Deployment in general: [deploying Next.js](/interview-question/how-do-you-deploy-a-next-js-app-vercel-vs-self-hosted).
+If a package reads files at runtime that are not imported (templates, fonts, binaries), tracing can miss them; add them with \`outputFileTracingIncludes\`. Monorepos may need \`outputFileTracingRoot\` pointing at the repository root. Deployment in general: [deploying Next.js](/interview-question/how-do-you-deploy-a-next-js-app-vercel-vs-self-hosted); running several standalone containers behind a load balancer: [self-hosting across multiple instances](/interview-question/how-do-you-self-host-next-js-across-multiple-instances-cache-handlers-isr-build-).
 
 ## 5. Verified — A Standalone Build Run Directly (Next.js 16.3.4)
 
@@ -486,7 +488,7 @@ PORT=3000 HOSTNAME=0.0.0.0 node server.js`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -560,7 +562,7 @@ The safest place for an authorization check is the one that cannot be skipped: t
 
 ## 4. Sessions
 
-Stateless sessions (an encrypted JWT in an HttpOnly, Secure, SameSite cookie) are simple and scale well, but revocation is hard. Database sessions store an id in the cookie and look it up, which allows logout everywhere. Either way, set cookies from Server Actions or Route Handlers, and never expose tokens to client code. Related: [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do) and [Server Action security](/interview-question/what-are-the-security-considerations-for-server-actions-in-next-js).
+Stateless sessions (an encrypted JWT in an HttpOnly, Secure, SameSite cookie) are simple and scale well, but revocation is hard. Database sessions store an id in the cookie and look it up, which allows logout everywhere. Either way, set cookies from Server Actions or Route Handlers, and never expose tokens to client code; reading them on the server is covered in [cookies() and headers()](/interview-question/how-do-you-read-cookies-and-headers-in-next-js-cookies-headers). The \`cache()\` wrapper around \`verifySession\` only deduplicates within one React render: the 16.4.2 authentication guide adds that Server Actions and Route Handlers are not part of a render pass, so there every call runs the check again. Keep the DAL module behind \`import "server-only"\` ([keeping server code out of the client](/interview-question/how-do-you-keep-secrets-and-server-code-out-of-the-client-bundle-in-next-js-serv)), and with the experimental \`authInterrupts\` flag a failed check can throw [unauthorized() or forbidden()](/interview-question/what-are-forbidden-and-unauthorized-in-next-js) to render a 401 or 403 page. Related: [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do) and [Server Action security](/interview-question/what-are-the-security-considerations-for-server-actions-in-next-js).
 
 ## 5. Verified — A Layout-Only Guard (Next.js 16.3.4, real browser)
 
@@ -719,7 +721,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -787,7 +789,7 @@ The App Router moves data fetching from a page-level hook into the components th
 
 ## 4. What the user gets
 
-In the Pages Router the whole props object is serialized into the HTML, and the component code ships to the browser. In the App Router only Client Components ship code and only their props are serialized. Migration steps are in [Pages to App Router migration](/interview-question/how-do-you-migrate-from-the-pages-router-to-the-app-router-in-next-js).
+In the Pages Router the whole props object is serialized into the HTML, and the component code ships to the browser. In the App Router only Client Components ship code and only their props are serialized. What the App Router sends instead of props is explained in [the RSC payload](/interview-question/what-is-the-rsc-payload-and-how-does-next-js-stream-it-to-the-browser), and the request data that makes a route dynamic in [cookies() and headers()](/interview-question/how-do-you-read-cookies-and-headers-in-next-js-cookies-headers). One 16.x caveat for the mapping table: with [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor) enabled (the create-next-app default since 16.4), the \`revalidate\` and \`dynamicParams\` segment exports are removed, so the getStaticProps rows map to \`'use cache'\` with \`cacheLife\` instead. Migration steps are in [Pages to App Router migration](/interview-question/how-do-you-migrate-from-the-pages-router-to-the-app-router-in-next-js).
 
 ## 5. Verified — Both Routers in One Build (Next.js 16.3.4)
 
@@ -929,7 +931,7 @@ export default async function Product({ params }: { params: Promise<{ id: string
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1017,7 +1019,7 @@ The cost of a half-migrated app is full page loads at every router boundary. Pla
 
 ## 4. Order of work
 
-Upgrade to the latest version first, add \`app/layout.tsx\`, then move routes starting with the simplest, keeping the old page until the new one works (they must not both exist for one path). Move groups of pages that link to each other together, because each router crossing is a full load. See [getServerSideProps vs App Router data](/interview-question/what-is-the-difference-between-getserversideprops-getstaticprops-and-app-router-) and [what breaks in Next.js 16](/interview-question/what-breaks-when-you-upgrade-to-next-js-16-and-how-do-you-migrate).
+Upgrade to the latest version first, add \`app/layout.tsx\`, then move routes starting with the simplest, keeping the old page until the new one works (they must not both exist for one path). Move groups of pages that link to each other together, because each router crossing is a full load. The pieces you will rebuild have their own pages: [nested layouts](/interview-question/what-are-layouts-in-next-js-and-how-do-nested-layouts-work) for what _app did, the [URL hooks](/interview-question/how-do-you-read-the-current-url-in-a-next-js-client-component-usepathname-usesea) that replace next/router fields like \`query\` and \`asPath\`, and [project organisation](/interview-question/how-do-you-organize-a-large-next-js-app-router-project-colocation-private-folder) for where colocated files now go. See [getServerSideProps vs App Router data](/interview-question/what-is-the-difference-between-getserversideprops-getstaticprops-and-app-router-) and [what breaks in Next.js 16](/interview-question/what-breaks-when-you-upgrade-to-next-js-16-and-how-do-you-migrate).
 
 ## 5. Verified — Both Routers Side by Side (Next.js 16.3.4)
 
@@ -1171,7 +1173,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1250,19 +1252,19 @@ Most of next.config is about the edges of your app: what it may load, how reques
 | \`output\` | \`"standalone"\` or \`"export"\` |
 | \`serverExternalPackages\` | Packages loaded from node_modules at runtime |
 | \`turbopack\` | Loader rules, aliases, root |
-| \`cacheComponents\`, \`cacheLife\` | The Next.js 16 caching model |
+| \`cacheComponents\`, \`partialPrefetching\`, \`cacheLife\` | The Next.js 16 caching model; since 16.4 set \`partialPrefetching\` explicitly next to \`cacheComponents\` or the build warns |
 | \`reactCompiler\` | Enable the React Compiler |
 | \`experimental.staleTimes\` | Client cache lifetimes |
 | \`basePath\`, \`trailingSlash\` | URL shape |
-| \`serverActions.allowedOrigins\` / \`bodySizeLimit\` | Server Action limits |
+| \`experimental.serverActions\` (\`allowedOrigins\`, \`bodySizeLimit\`) | Server Action limits |
 
 ## 4. Validation and phases
 
-Next.js checks the config at startup and prints warnings for unknown keys, often with the replacement name. A function config receives the phase constant, useful for development-only settings. Detail on routing rules: [redirects and rewrites](/interview-question/how-do-you-handle-redirects-and-rewrites-in-next-js).
+Next.js checks the config at startup and prints warnings for unknown keys, often with the replacement name. A function config receives the phase constant, useful for development-only settings. Detail on routing rules: [redirects and rewrites](/interview-question/how-do-you-handle-redirects-and-rewrites-in-next-js); on the \`output\` modes: [static export](/interview-question/what-is-static-export-output-export-in-next-js-and-what-does-it-not-support) and [standalone output](/interview-question/what-is-the-output-standalone-build-in-next-js-and-when-do-you-use-it).
 
-## 5. Verified — Config Behaviour in Builds (Next.js 16.3.4)
+## 5. Verified — Config Behaviour in Builds (Next.js 16.3.4 and 16.4.2)
 
-An old key in \`experimental\`:
+An old key in \`experimental\` (16.3.4):
 
 \`\`\`
 app/ext/page.tsx imports { marker } from "lab-marker-pkg" (a package whose code contains LAB_EXTERNAL_PACKAGE_MARKER_77)
@@ -1278,7 +1280,7 @@ with the old  experimental: { serverComponentsExternalPackages: [...] }:
   ⚠ \`experimental.serverComponentsExternalPackages\` has been moved to \`serverExternalPackages\`. Please update your next.config.ts file accordingly.
 \`\`\`
 
-Routing options from the same config, on \`next start\`:
+Routing options from the same config, on \`next start\` (16.3.4):
 
 \`\`\`
 next.config.ts: redirects /old-blog/:slug -> /blog/:slug (permanent), /temp -> /about (temporary), /docs/:path* with ?v=1 -> /about;
@@ -1294,28 +1296,34 @@ headers /blog/:path* -> x-lab-header
 /no-such-page-xyz        -> 200  body: about (route group, URL has no group)
 \`\`\`
 
-And a custom \`webpack\` function under the default Turbopack build:
+A custom \`webpack\` function under the default Turbopack build, re-run on Next.js 16.4.2:
 
 \`\`\`
-the same lab app (about 60 routes), Next.js 16.3.4, this machine; wall-clock times, so treat them as ratios, not benchmarks
-
-next build (Turbopack is the default; the header prints "Next.js 16.3.4 (Turbopack)")
-  run 1: Turbopack 13.97 s total, compiled in 6.7 s   |   next build --webpack 46.40 s total, compiled in 22.0 s
-  run 2: Turbopack 12.82 s total, compiled in 6.3 s   |   next build --webpack 32.04 s total, compiled in 14.4 s
-
-next dev (fresh cache each time)
-  Turbopack: Ready in 1082 ms, first request /css-demo 3712 ms, first request /dyn-import 634 ms
-  Webpack:   Ready in  780 ms, first request /css-demo 6684 ms, first request /dyn-import 2072 ms
-
 next.config.ts with a custom  webpack: () => { throw new Error("CUSTOM WEBPACK FUNCTION RAN") }
-  next build            -> exit 0, the error never appears, no warning printed (the function is not called)
-  next build --webpack  -> exit 1, "CUSTOM WEBPACK FUNCTION RAN"
+  no turbopack key, plain next build          -> exit 1, before compiling:
+    ⨯ ERROR: This build is using Turbopack, with a \`webpack\` config and no \`turbopack\` config.
+       This may be a mistake.
+    (trimmed: it suggests passing --turbopack or --webpack, or adding an empty turbopack: {} to silence it)
+  with a turbopack key (here turbopack.root)  -> exit 0, no warning (the function is not called)
+  next build --webpack                        -> exit 1, "Error: CUSTOM WEBPACK FUNCTION RAN"
+\`\`\`
+
+And a 16.4 addition: \`cacheComponents: true\` on its own now prints a warning (the message is not in the 16.3.4 package):
+
+\`\`\`
+Next.js 16.4.2, next.config.ts = { cacheComponents: true }, next build (exit 0):
+⚠ \`cacheComponents\` is enabled without a corresponding \`partialPrefetching\` option. Set \`partialPrefetching\` to either \`true\` or \`false\`.
+
+The only reason to set \`partialPrefetching\` to \`false\` is if you're migrating an older Cache Components app. The initial release of Cache Components did not include Partial Prefetching. New projects should enable both Cache Components and Partial Prefetching.
+
+Both Cache Components and Partial Prefetching will be enabled everywhere in the next major release, and the old configurations will be removed.
+(trimmed: a Learn more link)
 \`\`\`
 
 ## 6. Common Pitfalls
 
 - **Ignoring warnings.** Unknown keys are reported but the build may continue; the setting may not do what you think.
-- **Assuming webpack() still applies.** It is ignored under Turbopack, the Next.js 16 default.
+- **Assuming webpack() still applies.** Turbopack, the Next.js 16 default, never calls it: with no \`turbopack\` key the build stops with an error, and with one the function is skipped silently.
 - **Secrets in next.config.** The file is not sent to the browser, but values you pass to \`env\` are inlined into client code.
 - **Copying config from older versions.** Keys like \`images.domains\` and experimental PPR flags are deprecated or removed.
 - **Heavy logic in the config.** It runs at every start and build; keep it declarative.
@@ -1341,7 +1349,7 @@ next.config.ts with a custom  webpack: () => { throw new Error("CUSTOM WEBPACK F
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
-<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">A custom webpack function is ignored by the default Turbopack build in Next.js 16.</span>
+<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">The default Turbopack build never calls a custom webpack function: without a turbopack key it stops with an error, with one it skips the function silently.</span>
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
@@ -1404,6 +1412,7 @@ const nextConfig: NextConfig = {
   images: { remotePatterns: [{ protocol: "https", hostname: "cdn.example.com" }] },
   serverExternalPackages: ["@acme/native-pdf"],
   cacheComponents: true,
+  partialPrefetching: true, // 16.4 warns when cacheComponents is set without it
   async redirects() {
     return [{ source: "/old-blog/:slug", destination: "/blog/:slug", permanent: true }];
   },
@@ -1439,7 +1448,7 @@ export default nextConfig;`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1507,7 +1516,7 @@ Choose by what the user should see in the address bar. Redirects change it and t
 
 ## 4. Order of evaluation
 
-headers, then redirects, then Proxy, then beforeFiles rewrites, then filesystem routes (public, _next/static, pages), then afterFiles rewrites, then dynamic routes, then fallback rewrites. That order explains why a fallback rewrite never overrides a real page. Related: [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do).
+headers, then redirects, then Proxy, then beforeFiles rewrites, then filesystem routes (public, _next/static, pages), then afterFiles rewrites, then dynamic routes, then fallback rewrites. That order explains why a fallback rewrite never overrides a real page. Rewrites to another deployment are also how [multi-zones](/interview-question/what-are-multi-zones-in-next-js-and-when-would-you-split-an-app-into-zones) stitch several apps under one domain, and host-based rewrites in Proxy are the core of [multi-tenant subdomain routing](/interview-question/how-do-you-build-a-multi-tenant-next-js-app-with-subdomain-routing). Related: [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do).
 
 ## 5. Verified — Rules on next start (Next.js 16.3.4)
 
@@ -1652,7 +1661,7 @@ export async function placeOrder(formData: FormData) {
 - Detect the preferred locale in Proxy from the Accept-Language header or a cookie, and redirect \`/\` to \`/en\`, \`/de\` and so on.
 - Load translation dictionaries in Server Components, so translations do not ship as client JavaScript.
 - Use \`generateStaticParams\` for the locales so each language is prerendered, and \`dynamicParams = false\` to reject unknown ones.
-- Next.js 16 adds \`next/root-params\` to read the root \`lang\` param anywhere in Server Components; set \`html lang\` and \`alternates.languages\` for SEO.
+- Next.js 16.3 added \`next/root-params\` to read the root \`lang\` param anywhere in Server Components (not in Client Components, Server Actions or Route Handlers); set \`html lang\` and \`alternates.languages\` for SEO.
 
 **Clarifying questions expected:**
 - "Sub-paths or domains per locale?" — both work with Proxy.
@@ -1662,7 +1671,7 @@ export async function placeOrder(formData: FormData) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1744,12 +1753,12 @@ The framework provides the building blocks (dynamic segments, Proxy, static para
 | \`getDictionary(lang)\` | Server-only import of the JSON for that locale |
 | \`generateStaticParams\` | Prerender each locale |
 | \`dynamicParams = false\` | Unknown locales become 404 |
-| \`next/root-params\` | Read \`lang\` in any Server Component without prop drilling |
+| \`next/root-params\` (16.3+) | Read \`lang\` in any Server Component without prop drilling; not available in Server Actions or Route Handlers |
 | Metadata \`alternates.languages\` | hreflang links for SEO |
 
 ## 4. Libraries
 
-Libraries such as next-intl add message formatting, plurals and typed keys on top of the same structure. Formatting dates and numbers can use \`Intl\` with the locale on the server. Proxy details are in [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do).
+Libraries such as next-intl add message formatting, plurals and typed keys on top of the same structure. Formatting dates and numbers can use \`Intl\` with the locale on the server. Proxy details are in [Middleware and Proxy](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do); a domain per locale uses the same host-based routing as a [multi-tenant app](/interview-question/how-do-you-build-a-multi-tenant-next-js-app-with-subdomain-routing), and the root \`[lang]\` segment is where a [root layout](/interview-question/what-are-layouts-in-next-js-and-how-do-nested-layouts-work) sets \`html lang\`.
 
 ## 5. Verified — Locale Detection and Pages (Next.js 16.3.4)
 
@@ -1904,7 +1913,7 @@ export const config = { matcher: ["/((?!_next|api|favicon.ico).*)"] };`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1988,7 +1997,7 @@ The hooks separate setup from reporting: initialize tooling once, then receive a
 
 ## 4. Tracing
 
-Next.js creates spans for incoming requests, rendering and fetches. Install \`@vercel/otel\` (or the OpenTelemetry SDK) and call \`registerOTel({ serviceName })\` inside \`register()\`; the exporter sends spans to your collector. Guard Node-only SDKs with \`process.env.NEXT_RUNTIME === "nodejs"\`. Error UI for users is covered in [error.js](/interview-question/what-is-error-js-in-next-js-and-how-does-error-handling-work-in-the-app-router).
+Next.js creates spans for incoming requests, rendering and fetches. Install \`@vercel/otel\` (or the OpenTelemetry SDK) and call \`registerOTel({ serviceName })\` inside \`register()\`; the exporter sends spans to your collector. Guard Node-only SDKs with \`process.env.NEXT_RUNTIME === "nodejs"\`. For per-request logging or analytics that should not delay the response, schedule the work with [after()](/interview-question/what-is-after-in-next-js-and-when-should-you-use-it). Error UI for users is covered in [error.js](/interview-question/what-is-error-js-in-next-js-and-how-does-error-handling-work-in-the-app-router).
 
 ## 5. Verified — Hooks on next start (Next.js 16.3.4)
 

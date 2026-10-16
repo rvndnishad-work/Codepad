@@ -3,6 +3,7 @@
  * variables, serverExternalPackages, Turbopack vs Webpack.
  * Generated from markdown sources by a build script; Verified blocks are real output from a Next.js 16.3.4 lab (next build / next
  * start / next dev, with and without --webpack, and real browser sessions for script order, lazy chunks and env hydration).
+ * Reviewed against 16.4.2: the bundle analyzer commands and the custom-webpack check were re-run on 16.4.2 and are labelled so.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +30,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -102,7 +103,7 @@ The strategy is a statement about priority. Everything that does not need to run
 
 ## 4. Callbacks and inline scripts
 
-\`onLoad\` runs after the script loads, \`onReady\` after load and on every remount, \`onError\` on failure; they are functions, so the Script must be in a Client Component. Inline scripts need an \`id\` so Next.js can track them. Scripts run once per document: client-side navigation does not run them again. For your own heavy code, prefer code splitting: [next/dynamic](/interview-question/how-does-code-splitting-and-next-dynamic-work-in-next-js).
+\`onLoad\` runs after the script loads, \`onReady\` after load and on every remount, \`onError\` on failure; they are functions, so the Script must be in a Client Component. Inline scripts need an \`id\` so Next.js can track them. Scripts run once per document: client-side navigation does not run them again. Under a nonce-based CSP, pass the nonce to each Script with the \`nonce\` prop, as described in [security headers and CSP](/interview-question/how-do-you-set-security-headers-and-a-nonce-based-content-security-policy-in-nex). For your own heavy code, prefer code splitting: [next/dynamic](/interview-question/how-does-code-splitting-and-next-dynamic-work-in-next-js).
 
 ## 5. Verified — Run Order in a Real Browser (Next.js 16.3.4, next start)
 
@@ -254,7 +255,7 @@ export function Chat() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -339,7 +340,7 @@ The initial bundle only grows with what the first view needs. Everything behind 
 
 ## 4. Measuring
 
-Next.js 16 no longer prints size and First Load JS in \`next build\`; use the Turbopack bundle analyzer (\`next experimental-analyze\`), Lighthouse, or the network panel to see what loads. See [bundle size](/interview-question/how-do-you-analyze-and-reduce-bundle-size-in-next-js).
+Next.js 16 no longer prints size and First Load JS in \`next build\`; use the Turbopack bundle analyzer (\`next analyze\`, named \`next experimental-analyze\` before 16.4, which is still accepted as an alias), Lighthouse, or the network panel to see what loads. See [bundle size](/interview-question/how-do-you-analyze-and-reduce-bundle-size-in-next-js).
 
 ## 5. Verified — When the Chunk Loads (Next.js 16.3.4, real browser)
 
@@ -493,7 +494,7 @@ async function exportCsv(rows: string[][]) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -704,7 +705,7 @@ export default function Pricing() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Easy
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -762,7 +763,7 @@ The trade-off is between a URL that never changes and content that never changes
 
 | File | Location | Why |
 | :--- | :--- | :--- |
-| favicon.ico, robots.txt, site verification files | \`public/\` or app file conventions | Must live at a known URL |
+| favicon.ico, robots.txt, site verification files | \`public/\` or app [metadata files](/interview-question/how-do-metadata-files-like-favicon-ico-icon-opengraph-image-and-manifest-work-in) | Must live at a known URL |
 | Images used in components | Import | Hashing, dimensions, blur placeholder |
 | Fonts | \`next/font\` | Self-hosting, preload, fallback metrics |
 | Files linked from emails or other sites | \`public/\` | Their URL must not change |
@@ -889,7 +890,7 @@ export function Header() {
 "Lighthouse flags too much JavaScript on our product pages. How do you find out what is in the bundle, and what are your main levers to reduce it in a Next.js app?"
 
 **What a strong answer should cover:**
-- Next.js 16 removed the size and First Load JS columns from \`next build\`; measure with the Turbopack bundle analyzer (\`next experimental-analyze\`, 16.1+), \`@next/bundle-analyzer\` for Webpack builds, and Lighthouse.
+- Next.js 16 removed the size and First Load JS columns from \`next build\`; measure with the Turbopack bundle analyzer (\`next analyze\` since 16.4; \`next experimental-analyze\` in 16.1 to 16.3, still an alias), \`@next/bundle-analyzer\` for Webpack builds, and Lighthouse.
 - Biggest lever: keep code in Server Components, which ship no client JavaScript, and push 'use client' down to small leaves.
 - Import only what you use: per-function imports or \`optimizePackageImports\` for large libraries.
 - Lazy load heavy client code with next/dynamic or \`import()\` in handlers.
@@ -903,7 +904,7 @@ export function Header() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -970,7 +971,7 @@ The framework cost is fixed; what you control is what you add on top. One import
 
 ## 4. Measuring in Next.js 16
 
-Run \`npx next experimental-analyze\` to inspect Turbopack server and client modules with import tracing; with \`--webpack\` builds use \`@next/bundle-analyzer\`. The docs recommend Lighthouse or real-user metrics for route performance, because the old build numbers were inaccurate with Server Components. Related: [code splitting](/interview-question/how-does-code-splitting-and-next-dynamic-work-in-next-js).
+Run \`npx next analyze\` to inspect Turbopack server and client modules with import tracing (16.4 renamed it from \`next experimental-analyze\`, which still works as an alias, added \`next build --analyze\`, and added \`next analyze export\` to stream a saved snapshot as JSON Lines for scripts or AI tools); with \`--webpack\` builds use \`@next/bundle-analyzer\`. Server-only modules that leak into client imports are a bundle problem and a security problem at once, see [keeping server code out of the client bundle](/interview-question/how-do-you-keep-secrets-and-server-code-out-of-the-client-bundle-in-next-js-serv). The docs recommend Lighthouse or real-user metrics for route performance, because the old build numbers were inaccurate with Server Components. Related: [code splitting](/interview-question/how-does-code-splitting-and-next-dynamic-work-in-next-js).
 
 ## 5. Verified — One Import, Two Costs (Next.js 16.3.4)
 
@@ -985,6 +986,18 @@ JavaScript files referenced by each page's HTML (sizes from the build output fol
 \`\`\`
 
 The build output itself has no size column in Next.js 16; the upgrade notes say the numbers were removed because they were inaccurate in server-driven architectures.
+
+The 16.4 analyzer commands, run on Next.js 16.4.2 against a small two-route lab app:
+
+\`\`\`
+npx next analyze --output --snapshot v2
+  ✓ Analyze completed in 3.4s. Results written to <app>/.next/diagnostics/analyze.
+  To explore the analyze results interactively, run \`next analyze\` without \`--output\`.
+npx next analyze export --snapshot v2 > graph.jsonl        (exit 0, no rebuild)
+  2243 JSON lines: 1 meta, 2 route, 814 module, 283 output, 1121 part, 22 group records
+npx next experimental-analyze --help
+  Usage: next analyze|experimental-analyze [options] [command] [directory]
+\`\`\`
 
 ## 6. Common Pitfalls
 
@@ -1003,7 +1016,7 @@ The build output itself has no size column in Next.js 16; the upgrade notes say 
 <div style="color:#e0a83e;font-size:0.8em;font-weight:bold;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 10px 0;">The 60-Second Answer</div>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
-<strong style="color:#ffca28;">1. The one-line answer:</strong> <span style="color:#f0e2c8;">Measure first: Next.js 16 removed bundle sizes from next build, so use <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">next experimental-analyze</code>, <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">@next/bundle-analyzer</code> or Lighthouse.</span>
+<strong style="color:#ffca28;">1. The one-line answer:</strong> <span style="color:#f0e2c8;">Measure first: Next.js 16 removed bundle sizes from next build, so use <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">next analyze</code> (16.4; formerly experimental-analyze), <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">@next/bundle-analyzer</code> or Lighthouse.</span>
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
@@ -1082,8 +1095,9 @@ const onSearch2 = debounce(search, 300);
 const nextConfig = { experimental: { optimizePackageImports: ["@acme/icons"] } };
 export default nextConfig;
 
-// Terminal (Next.js 16.1+, Turbopack):
-//   npx next experimental-analyze`,
+// Terminal (Turbopack): Next.js 16.4+
+//   npx next analyze                      (16.1 to 16.3: npx next experimental-analyze)
+//   npx next analyze --output --snapshot before && npx next analyze export --snapshot before > graph.jsonl`,
       },
     ],
   },
@@ -1110,7 +1124,7 @@ export default nextConfig;
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Easy
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1181,7 +1195,7 @@ The rule to remember is about time, not only about prefixes: public values and s
 
 ## 4. Patterns
 
-Put secrets in modules that start with \`import "server-only"\`. When a public value must differ per environment without rebuilding (for example the same Docker image in staging and production), read an unprefixed variable in a dynamic Server Component and pass it as a prop or through context. For tools outside Next.js (an ORM config, a test runner), load \`.env\` files with \`@next/env\`. See [deployment](/interview-question/how-do-you-deploy-a-next-js-app-vercel-vs-self-hosted).
+Put secrets in modules that start with \`import "server-only"\` (more in [keeping secrets out of the client bundle](/interview-question/how-do-you-keep-secrets-and-server-code-out-of-the-client-bundle-in-next-js-serv)). When a public value must differ per environment without rebuilding (for example the same Docker image in staging and production, a common [self-hosting](/interview-question/how-do-you-self-host-next-js-across-multiple-instances-cache-handlers-isr-build-) setup), read an unprefixed variable in a dynamic Server Component and pass it as a prop or through context. For tools outside Next.js (an ORM config, a test runner), load \`.env\` files with \`@next/env\`. See [deployment](/interview-question/how-do-you-deploy-a-next-js-app-vercel-vs-self-hosted).
 
 ## 5. Verified — Build-Time and Run-Time Values (Next.js 16.3.4)
 
@@ -1337,7 +1351,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1407,7 +1421,7 @@ Externalizing does not change what the code does, only where it is loaded from. 
 const nextConfig = { serverExternalPackages: ["@acme/native-pdf"] };
 \`\`\`
 
-Next.js keeps many packages external by default (the docs list includes Prisma, sharp, bcrypt and others). The option applies to Server Components, Route Handlers and Server Actions; Client Components are bundled for the browser regardless. In standalone output, externalized packages are copied through output file tracing, which the lab trace file showed. See [standalone output](/interview-question/what-is-the-output-standalone-build-in-next-js-and-when-do-you-use-it).
+Next.js keeps many packages external by default (the docs list includes Prisma, sharp, bcrypt and others); connection handling for Prisma itself is a separate topic, see [Prisma without exhausting connections](/interview-question/how-do-you-use-a-database-like-prisma-in-next-js-without-exhausting-connections). The option applies to Server Components, Route Handlers and Server Actions; Client Components are bundled for the browser regardless. In standalone output, externalized packages are copied through output file tracing, which the lab trace file showed. See [standalone output](/interview-question/what-is-the-output-standalone-build-in-next-js-and-when-do-you-use-it).
 
 ## 5. Verified — Bundled vs External (Next.js 16.3.4)
 
@@ -1538,8 +1552,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 - Turbopack is an incremental bundler written in Rust, built into Next.js; since Next.js 16 it is the default for both \`next dev\` and \`next build\`.
 - Its speed comes from incremental computation and caching at the function level, so changes recompute only what depends on them.
 - Webpack is still available with \`--webpack\`.
-- A custom \`webpack()\` function in next.config is not used by Turbopack: common needs have built-in support or \`turbopack.rules\` for Webpack loaders; Webpack plugins are not supported.
-- Configure it under the \`turbopack\` key (for example \`rules\`, \`resolveAlias\`, \`root\`); file-system caching speeds up restarts.
+- A custom \`webpack()\` function in next.config is never called by Turbopack, and a plain \`next build\` that finds one with no \`turbopack\` key stops with an error rather than ignoring it: common needs have built-in support or \`turbopack.rules\` for Webpack loaders; Webpack plugins are not supported.
+- Configure it under the \`turbopack\` key (for example \`rules\`, \`resolveAlias\`, \`root\`); file-system caching, on by default for dev since 16.1 and for builds since 16.3, speeds up restarts.
 
 **Clarifying questions expected:**
 - "Does next.config have a webpack function or plugins?" — those need a migration or \`--webpack\`.
@@ -1549,7 +1563,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1597,11 +1611,11 @@ Webpack is a printing press that reprints the whole page when you fix one typo, 
   <g opacity="0">
     <animate attributeName="opacity" from="0" to="1" begin="1.3s" dur="0.6s" fill="freeze"/>
     <rect class="d-box-muted" x="24" y="206" width="612" height="44" rx="10"/>
-    <text class="d-sub" x="330" y="233" text-anchor="middle">a throwing webpack function did not stop the Turbopack build, but failed next build --webpack</text>
+    <text class="d-sub" x="330" y="233" text-anchor="middle">a webpack function is never called by Turbopack, but ran and failed next build --webpack</text>
   </g>
 </svg>
 
-The speed difference is real, but the migration risk is in configuration: Turbopack silently skips a custom webpack function, so check what it was doing.
+The speed difference is real, but the migration risk is in configuration: Turbopack never calls a custom webpack function. A plain \`next build\` refuses to start when it finds one without a \`turbopack\` key, but once any \`turbopack\` key or the \`--turbopack\` flag is present the function is skipped silently, so check what it was doing.
 
 ## 3. Comparison
 
@@ -1618,7 +1632,7 @@ The speed difference is real, but the migration risk is in configuration: Turbop
 
 List what the \`webpack()\` function does. Aliases move to \`turbopack.resolveAlias\`; loaders like SVGR move to \`turbopack.rules\`; built-in features (CSS, Sass, TypeScript) need nothing. Anything relying on Webpack plugins or loader APIs Turbopack does not support needs \`--webpack\` for now. The Next.js 16 upgrade is covered in [what breaks when upgrading to Next.js 16](/interview-question/what-breaks-when-you-upgrade-to-next-js-16-and-how-do-you-migrate).
 
-## 5. Verified — Timings and Config Behaviour (Next.js 16.3.4)
+## 5. Verified — Timings (Next.js 16.3.4) and Config Behaviour (Next.js 16.4.2)
 
 \`\`\`
 the same lab app (about 60 routes), Next.js 16.3.4, this machine; wall-clock times, so treat them as ratios, not benchmarks
@@ -1631,16 +1645,30 @@ next dev (fresh cache each time)
   Turbopack: Ready in 1082 ms, first request /css-demo 3712 ms, first request /dyn-import 634 ms
   Webpack:   Ready in  780 ms, first request /css-demo 6684 ms, first request /dyn-import 2072 ms
 
+\`
+\`
+\`
+
+The custom-webpack check, re-run on Next.js 16.4.2 with a minimal app:
+
+\`
+\`
+\`
 next.config.ts with a custom  webpack: () => { throw new Error("CUSTOM WEBPACK FUNCTION RAN") }
-  next build            -> exit 0, the error never appears, no warning printed (the function is not called)
-  next build --webpack  -> exit 1, "CUSTOM WEBPACK FUNCTION RAN"
+  no turbopack key, plain next build          -> exit 1, before compiling:
+    ⨯ ERROR: This build is using Turbopack, with a \`webpack\` config and no \`turbopack\` config.
+       This may be a mistake.
+    (trimmed: it suggests passing --turbopack or --webpack, or adding an empty turbopack: {} to silence it)
+  with a turbopack key (here turbopack.root)  -> exit 0, the error never appears, no warning (the function is not called)
+  the same config plus --turbopack            -> exit 0
+  next build --webpack                        -> exit 1, "Error: CUSTOM WEBPACK FUNCTION RAN"
 \`\`\`
 
-The absolute numbers depend on the machine and the app; the ratios and the silent skipping of the webpack function are the useful parts.
+The absolute numbers depend on the machine and the app; the ratios are the useful part. The original 16.3.4 run reported exit 0 for a plain build; the error check (in \`lib/turbopack-warning.js\`, identical in 16.3.4 and 16.4.2) only fires when there is no \`turbopack\` key and no explicit bundler flag, so that lab config evidently had a \`turbopack\` key.
 
 ## 6. Common Pitfalls
 
-- **Assuming the webpack function still runs.** Under Turbopack it is not called and no warning was printed in the lab; move its logic to turbopack options or build with \`--webpack\`.
+- **Assuming the webpack function still runs.** Under Turbopack it is never called; without a \`turbopack\` key the build stops with an error, and with one (even \`turbopack: {}\`) it is skipped with no warning. Move its logic to turbopack options or build with \`--webpack\`.
 - **Webpack plugins.** They are not supported by Turbopack; find built-in equivalents or keep Webpack.
 - **Old flags.** \`next dev --turbo\` or \`--turbopack\` are no longer needed; Turbopack is the default.
 - **Loader features Turbopack does not implement.** Loaders using \`emitFile\` or \`loadModule\` do not work; test each loader.
@@ -1667,7 +1695,7 @@ The absolute numbers depend on the machine and the app; the ratios and the silen
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
-<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">A custom webpack() function is silently ignored under Turbopack: a throwing one did not affect the build at all.</span>
+<strong style="color:#ffca28;">4. The detail to add:</strong> <span style="color:#f0e2c8;">Turbopack never calls a custom webpack() function: with no turbopack key the build stops with an error, and with one a throwing function is skipped silently.</span>
 </blockquote>
 
 <blockquote style="border-left:3px solid #f9a825;margin:10px 0;padding:2px 0 2px 14px;color:#f0e2c8;">
@@ -1687,7 +1715,7 @@ The absolute numbers depend on the machine and the app; the ratios and the silen
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">What happens to next.config webpack customizations?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0 0 14px 0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Turbopack does not call the function. The lab proved it by making the function throw: the Turbopack build passed, the Webpack build failed.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Turbopack does not call the function. The lab made it throw: with a turbopack key the Turbopack build passed and the Webpack build failed; with no turbopack key the default build stopped with an error asking you to choose.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
@@ -1716,7 +1744,7 @@ The absolute numbers depend on the machine and the app; the ratios and the silen
 | **Incremental build** | Recomputing only what changed |
 
 ---
-**Conclusion:** Turbopack is now simply how Next.js builds: default for dev and production, and clearly faster in the lab. The migration risk is not speed but configuration, because a custom webpack function is silently skipped. Audit what that function did, move loaders and aliases to the turbopack options, and keep --webpack only for plugins Turbopack cannot replace.`,
+**Conclusion:** Turbopack is now simply how Next.js builds: default for dev and production, and clearly faster in the lab. The migration risk is not speed but configuration, because a custom webpack function is never called by Turbopack (and is skipped silently once a turbopack key exists). Audit what that function did, move loaders and aliases to the turbopack options, and keep --webpack only for plugins Turbopack cannot replace.`,
     examples: [
       {
         label: "Moving an SVG loader from webpack() to turbopack.rules",

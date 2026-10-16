@@ -3,6 +3,8 @@
  * next/font + next/image for Core Web Vitals.
  * Generated from markdown sources by a build script; Verified blocks are real output from a Next.js 16.3.4 lab (next build /
  * next start, head tags, streaming metadata per user agent, the OG PNG, image optimizer bytes, generated font CSS, jsdom parsing).
+ * Reviewed against the 16.4.2 docs: no metadata, image or font behaviour in these answers changed between 16.3.4 and 16.4.2, so the
+ * Verified blocks keep their 16.3.4 labels.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +31,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -115,7 +117,7 @@ Layouts provide the defaults and the shape, pages provide the specifics, and Nex
 
 ## 4. Streaming metadata
 
-When \`generateMetadata\` is slow on a dynamic page, Next.js sends the page first and appends the metadata to the body when it resolves; browsers and JavaScript-running crawlers like Googlebot handle that. For HTML-limited bots (Twitterbot, Slackbot, Bingbot, facebookexternalhit and others in the \`htmlLimitedBots\` list) it still blocks and puts the tags in the head. For social image files see [dynamic Open Graph images](/interview-question/how-do-you-implement-dynamic-open-graph-images-in-next-js-imageresponse).
+When \`generateMetadata\` is slow on a dynamic page, Next.js sends the page first and appends the metadata to the body when it resolves; browsers and JavaScript-running crawlers like Googlebot handle that. For HTML-limited bots (Twitterbot, Slackbot, Bingbot, facebookexternalhit and others in the \`htmlLimitedBots\` list) it still blocks and puts the tags in the head. For social image files see [dynamic Open Graph images](/interview-question/how-do-you-implement-dynamic-open-graph-images-in-next-js-imageresponse); for file-based metadata such as favicon.ico, icon, apple-icon and manifest see [metadata files](/interview-question/how-do-metadata-files-like-favicon-ico-icon-opengraph-image-and-manifest-work-in).
 
 ## 5. Verified — Tags in the Real Head (Next.js 16.3.4, next start)
 
@@ -158,7 +160,7 @@ facebookexternalhit : body content at  1209 ms, title at  1209 ms, title inside 
 
 - **Missing metadataBase.** Relative Open Graph URLs fall back to \`http://localhost:3000\`; the build warns, and social previews break in production.
 - **Fetching twice.** Use the same fetch or a \`React.cache\` function in generateMetadata and the page; do not build a separate query.
-- **Title template in the same segment.** A template applies to children, not to the layout own page; set the page title explicitly.
+- **Title template in the same segment.** A template applies to children, not to the layout's own page; set the page title explicitly.
 - **Expecting every crawler to wait.** Browsers and Googlebot get streamed metadata; only the listed HTML-limited bots get it in the head.
 - **Mixing metadata with manual head tags.** Next.js manages the head; add tags through the Metadata API so they merge correctly.
 
@@ -291,7 +293,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -376,7 +378,7 @@ The file convention does two jobs at once: it creates the image endpoint and wir
 
 ## 4. Constraints
 
-Only flexbox layout and a subset of CSS are supported; fonts must be loaded (for example from a file with \`readFile\` or fetched) and passed in the \`fonts\` option. Keep images small and avoid heavy data fetching, because crawlers request them on share. For titles and descriptions, see [the Metadata API](/interview-question/how-does-the-metadata-api-work-in-next-js-static-and-generatemetadata).
+Only flexbox layout and a subset of CSS are supported; fonts must be loaded (for example from a file with \`readFile\` or fetched) and passed in the \`fonts\` option. Keep images small and avoid heavy data fetching, because crawlers request them on share. For titles and descriptions, see [the Metadata API](/interview-question/how-does-the-metadata-api-work-in-next-js-static-and-generatemetadata); opengraph-image is one of several [metadata files](/interview-question/how-do-metadata-files-like-favicon-ico-icon-opengraph-image-and-manifest-work-in), next to icon, apple-icon and manifest.
 
 ## 5. Verified — The Generated Image and Tags (Next.js 16.3.4, next start)
 
@@ -532,7 +534,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Easy
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -598,7 +600,7 @@ These are ordinary route handlers in disguise: typed objects in, standard format
 
 ## 4. Keep them consistent
 
-Anything disallowed in robots.txt should not appear in the sitemap, and pages you do not want indexed should also carry \`robots: { index: false }\` metadata, because robots.txt blocks crawling, not indexing of links found elsewhere. For page-level tags see [the Metadata API](/interview-question/how-does-the-metadata-api-work-in-next-js-static-and-generatemetadata).
+Anything disallowed in robots.txt should not appear in the sitemap, and pages you do not want indexed should also carry \`robots: { index: false }\` metadata, because robots.txt blocks crawling, not indexing of links found elsewhere. For page-level tags see [the Metadata API](/interview-question/how-does-the-metadata-api-work-in-next-js-static-and-generatemetadata). sitemap and robots are two of the [metadata files](/interview-question/how-do-metadata-files-like-favicon-ico-icon-opengraph-image-and-manifest-work-in) Next.js recognises; since 16.3 a robots rule also accepts an \`other\` field for non-standard per-agent directives (per the robots.ts version history in the 16.4.2 docs; not exercised in the lab).
 
 ## 5. Verified — The Generated Files (Next.js 16.3.4, next start)
 
@@ -764,7 +766,7 @@ export default function robots(): MetadataRoute.Robots {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -824,7 +826,7 @@ SEO is mostly about the first response. Everything the crawler needs should alre
 | :--- | :--- | :--- |
 | Content in first HTML | No | Yes, for Server Components and SSR'd Client Components |
 | Title and meta tags | Set by JavaScript | In the head (Metadata API) |
-| Social previews | Often broken | og:image and tags from the server |
+| Social previews | Often broken | og:image and tags from the server ([metadata files](/interview-question/how-do-metadata-files-like-favicon-ico-icon-opengraph-image-and-manifest-work-in)) |
 | Sitemap, robots | Manual files | \`sitemap.ts\`, \`robots.ts\` |
 | Performance (Core Web Vitals) | Slower first paint | Faster, with image and font optimisation |
 
@@ -1006,7 +1008,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1218,7 +1220,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1475,7 +1477,7 @@ export default function Home() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1710,7 +1712,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Easy
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 

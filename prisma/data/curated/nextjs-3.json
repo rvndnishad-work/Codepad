@@ -1,0 +1,312 @@
+[
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "setup",
+      "app-router",
+      "project-structure"
+    ],
+    "title": "How do you create a new Next.js app, and what is in the project structure?",
+    "description": "Scaffolding with create-next-app and what each generated file and folder is for."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "app-router",
+      "layouts"
+    ],
+    "title": "What are layouts in Next.js and how do nested layouts work?",
+    "description": "Layouts wrap pages, persist across navigation and nest by folder."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "navigation",
+      "hooks",
+      "client-components"
+    ],
+    "title": "How do you read the current URL in a Next.js Client Component (usePathname, useSearchParams, useParams)?",
+    "description": "The next/navigation hooks that expose the path, query string and dynamic params in Client Components."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "cli",
+      "build",
+      "tooling"
+    ],
+    "title": "What happens when you run next dev, next build and next start?",
+    "description": "What each Next.js CLI command does, and how to read the build output table."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "metadata",
+      "seo",
+      "file-conventions"
+    ],
+    "title": "How do metadata files like favicon.ico, icon, opengraph-image and manifest work in Next.js?",
+    "description": "File conventions that generate icons, Open Graph images and the web manifest automatically."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "nextjs",
+      "forms",
+      "navigation"
+    ],
+    "title": "What is the next/form Form component and when would you use it?",
+    "description": "The Form component that turns a GET form into a client-side navigation with prefetching."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "cookies",
+      "headers",
+      "dynamic-rendering"
+    ],
+    "title": "How do you read cookies and headers in Next.js (cookies(), headers())?",
+    "description": "The async cookies() and headers() APIs, where you can set cookies, and how they make a route dynamic."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "static-export",
+      "deployment",
+      "next-config"
+    ],
+    "title": "What is static export (output: 'export') in Next.js and what does it not support?",
+    "description": "Building a Next.js app to plain HTML/CSS/JS files, and the server features you give up."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "search-params",
+      "pagination",
+      "app-router"
+    ],
+    "title": "How do you implement search, filtering and pagination with URL search params in the App Router?",
+    "description": "Keeping list state in the URL with searchParams, Server Components and client-side updates."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "navigation",
+      "loading-ui",
+      "hooks"
+    ],
+    "title": "How do you show navigation loading feedback with useLinkStatus in Next.js?",
+    "description": "Per-link pending state during navigation, and how it relates to loading.js."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "after",
+      "server",
+      "performance"
+    ],
+    "title": "What is after() in Next.js and when should you use it?",
+    "description": "Running work after the response has been sent, such as logging and analytics."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "auth",
+      "errors",
+      "file-conventions"
+    ],
+    "title": "What are forbidden() and unauthorized() in Next.js?",
+    "description": "Throwing 403 and 401 responses from server code, with forbidden.js and unauthorized.js pages."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "draft-mode",
+      "cms",
+      "preview"
+    ],
+    "title": "What is Draft Mode in Next.js and how does it work with a headless CMS?",
+    "description": "Previewing unpublished CMS content on statically rendered pages."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "security",
+      "server-components",
+      "data-access-layer"
+    ],
+    "title": "How do you keep secrets and server code out of the client bundle in Next.js (server-only, taint, Data Access Layer)?",
+    "description": "The server-only package, React taint APIs, NEXT_PUBLIC_ rules and a Data Access Layer."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "uploads",
+      "server-actions",
+      "route-handlers"
+    ],
+    "title": "How do you handle file uploads in Next.js with Server Actions and Route Handlers?",
+    "description": "Accepting files with FormData, body size limits and streaming to storage."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "testing",
+      "vitest",
+      "playwright"
+    ],
+    "title": "How do you test a Next.js app (unit tests, Server Components, end-to-end)?",
+    "description": "Unit, component and end-to-end testing for App Router code, and what each layer can and cannot test."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "project-structure",
+      "app-router",
+      "architecture"
+    ],
+    "title": "How do you organize a large Next.js App Router project (colocation, private folders, route groups)?",
+    "description": "Project structure conventions that keep a big App Router codebase navigable."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "nextjs",
+      "database",
+      "prisma",
+      "serverless"
+    ],
+    "title": "How do you use a database like Prisma in Next.js without exhausting connections?",
+    "description": "The client singleton pattern, connection pooling and serverless considerations."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "rsc",
+      "streaming",
+      "internals"
+    ],
+    "title": "What is the RSC payload and how does Next.js stream it to the browser?",
+    "description": "What the React Server Components payload contains and how HTML and RSC data stream together."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "security",
+      "csp",
+      "headers"
+    ],
+    "title": "How do you set security headers and a nonce-based Content Security Policy in Next.js?",
+    "description": "Security headers in next.config and proxy.ts, and a per-request CSP nonce."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "streaming",
+      "route-handlers",
+      "sse"
+    ],
+    "title": "How do you stream responses and Server-Sent Events from a Route Handler?",
+    "description": "Returning a ReadableStream from a Route Handler for streaming text and SSE."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "multi-tenant",
+      "proxy",
+      "architecture"
+    ],
+    "title": "How do you build a multi-tenant Next.js app with subdomain routing?",
+    "description": "Mapping hosts or subdomains to tenants with proxy.ts rewrites and tenant-aware data."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "self-hosting",
+      "caching",
+      "deployment"
+    ],
+    "title": "How do you self-host Next.js across multiple instances (cache handlers, ISR, build IDs)?",
+    "description": "What changes when several Next.js servers share traffic: caches, ISR, Server Action keys and deploys."
+  },
+  {
+    "technology": "nextjs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "nextjs",
+      "multi-zones",
+      "micro-frontends",
+      "architecture"
+    ],
+    "title": "What are Multi-Zones in Next.js and when would you split an app into zones?",
+    "description": "Serving one domain from several Next.js apps with rewrites and assetPrefix."
+  }
+]

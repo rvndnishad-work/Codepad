@@ -3,6 +3,8 @@
  * Route Handlers vs Pages API routes, Middleware/Proxy, runtimes.
  * Generated from markdown sources by a build script; Verified blocks are real output from a Next.js 16.3.4 lab (next build /
  * next start, curl against Route Handlers, proxy.ts and action ids, and a real browser session for useOptimistic).
+ * Reviewed against 16.4.2: the action-id curl calls, the Edge/middleware builds and the Cache Components segment-config errors were
+ * re-run on a 16.4.2 lab, and those blocks are labelled 16.4.2.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +31,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -114,31 +116,38 @@ A Server Action removes the hand-written API layer, not the API itself. The endp
 
 ## 4. What the action should do
 
-Validate the input (it arrives from the network), check the session, perform the mutation, then call \`revalidatePath\`, \`revalidateTag\`, \`updateTag\` or \`redirect\`. The revalidation rides back in the same response, so the UI updates without a second request. Security details are in [Server Action security](/interview-question/what-are-the-security-considerations-for-server-actions-in-next-js), and the comparison with endpoints you write yourself in [Server Actions vs Route Handlers](/interview-question/how-do-server-actions-differ-from-route-handlers-in-next-js).
+Validate the input (it arrives from the network), check the session, perform the mutation, then call \`revalidatePath\`, \`updateTag\`, \`refresh\` or \`redirect\`. Those ride back in the same response as a fresh [RSC payload](/interview-question/what-is-the-rsc-payload-and-how-does-next-js-stream-it-to-the-browser), so the UI updates without a second request; \`revalidateTag\` with a stale-while-revalidate profile is the exception the 16.4.2 docs call out, because it refreshes in the background and does not re-render in the action response. Request bodies are capped at 1 MB by default, which matters for [file uploads](/interview-question/how-do-you-handle-file-uploads-in-next-js-with-server-actions-and-route-handlers). Security details are in [Server Action security](/interview-question/what-are-the-security-considerations-for-server-actions-in-next-js), and the comparison with endpoints you write yourself in [Server Actions vs Route Handlers](/interview-question/how-do-server-actions-differ-from-route-handlers-in-next-js).
 
-## 5. Verified — What Travels Over the Network (Next.js 16.3.4, next start)
+## 5. Verified — What Travels Over the Network (Next.js 16.3.4 and 16.4.2, next start)
 
-A click that called a \`useActionState\` action produced one POST to the page URL; its response body was an RSC stream with the return value on row 1:
+On 16.3.4, a click that called a \`useActionState\` action produced one POST to the page URL; its response body was an RSC stream with the return value on row 1:
 
 \`\`\`
 0:{"a":"$@1","f":"","q":"","i":false,"b":"3kud7HFKojFa3yG3hwQ0L"}
 1:{"count":1}
 \`\`\`
 
-The action is reachable by its id alone: the id of \`deleteItem\` was read from a public client chunk and called with \`curl\`:
+The action is reachable by its id alone. Re-run on 16.4.2 with curl (row 0 here has no empty \`"f"\` field, unlike the 16.3.4 browser call above; the return-value row has the same shape):
 
 \`\`\`
-action id of deleteItem, read from a public client chunk: 40f4f5e2ef4b... (42 hex chars)
-curl, no cookies, no UI (deleteItem('1'))    -> HTTP 200  "deleted":true,"remaining":1
-same request, Origin: https://evil.example   -> HTTP 500  the body is only an error row E{"digest":...}; the action did not run
-same request, Origin: http://localhost:4100  -> HTTP 200  "deleted":false,"remaining":1
+Next.js 16.4.2, next start. deleteItem: its action id (42 hex chars) is present in a public client chunk; called with curl
+(Next-Action header, no cookies, no UI), argument "1":
+no Origin header                 -> HTTP 200  1:{"deleted":true,"remaining":1}
+Origin: https://evil.example     -> HTTP 500  1:E{"digest":"4236103766"}
+Origin: http://localhost:4220    -> HTTP 200  1:{"deleted":false,"remaining":1}
+row 0 of each response: 0:{"a":"$@1","q":"","i":false,"b":"xvAl-xu1Nn2ggEa0crYx2"}
 
-server log for the two requests:
-⚠ Missing \`origin\` header from a forwarded Server Actions request.        (the curl call without Origin: it still ran)
-\`x-forwarded-host\` header with value \`localhost:4100\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+server log: nothing for the call without Origin; for the foreign Origin:
+\`x-forwarded-host\` header with value \`localhost:4220\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+⨯ Error: Invalid Server Actions request.
+
+the no-JavaScript form path (a multipart POST of the $ACTION_ID_<id> field) of a form action that logs when it runs:
+no Origin header                 -> HTTP 200, the action ran, and the log printed:
+  ⚠ Missing \`origin\` header from a forwarded Server Actions request.
+Origin: https://evil.example     -> HTTP 500, "Aborting the action." logged, the action did not run
 \`\`\`
 
-And form actions work before any JavaScript runs:
+And form actions work before any JavaScript runs (16.3.4 run; a 16.4.2 form rendered the same \`<form action="" encType="multipart/form-data" method="POST">\` tag with the same hidden \`$ACTION_ID_<id>\` field):
 
 \`\`\`
 GET /actions (server-rendered HTML, no JavaScript involved), the first form:
@@ -156,7 +165,7 @@ the second form uses an inline action that closes over a server variable (closur
 - **Treating an action as private.** It is an HTTP endpoint; the lab called one with curl and no session. Check authentication and authorisation inside every action.
 - **Trusting argument types.** Arguments are deserialized from the request; validate them (for example with zod) before use.
 - **Using actions for reads.** The client runs them one at a time; parallel data loading belongs in Server Components or Route Handlers.
-- **Returning sensitive data.** The return value is sent to the browser; return only what the UI needs.
+- **Returning sensitive data.** The return value is sent to the browser; return only what the UI needs, and see [keeping secrets out of the client](/interview-question/how-do-you-keep-secrets-and-server-code-out-of-the-client-bundle-in-next-js-serv) for taint and a Data Access Layer.
 - **Forgetting to revalidate.** Without revalidatePath or a tag call, the page keeps showing the old data.
 
 ## 7. How to Answer in an Interview
@@ -214,7 +223,7 @@ the second form uses an inline action that closes over a server variable (closur
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">Why is there a request body size limit?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Actions parse the request body on the server; the default limit is 1 MB and can be raised with <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">serverActions.bodySizeLimit</code> in next.config.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Actions parse the request body on the server; the default limit is 1 MB and can be raised with <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">experimental.serverActions.bodySizeLimit</code> in next.config.</span>
 </div>
 
 </div>
@@ -285,7 +294,7 @@ export default function Posts() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -370,7 +379,7 @@ The HTML the server sends is already a working form. JavaScript turns a page rel
 
 ## 4. Validation
 
-Always validate in the action: the no-JavaScript path skips any client code, and anyone can call the action directly. A schema library like zod keeps the rules in one place; add HTML attributes like \`required\` and \`type="email"\` for instant browser feedback. For the underlying mechanism see [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work).
+Always validate in the action: the no-JavaScript path skips any client code, and anyone can call the action directly. A schema library like zod keeps the rules in one place; add HTML attributes like \`required\` and \`type="email"\` for instant browser feedback. For the underlying mechanism see [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work). Two neighbours: a search or filter form that only changes the URL with GET is a job for [next/form](/interview-question/what-is-the-next-form-form-component-and-when-would-you-use-it), and a form with a file input is covered in [file uploads](/interview-question/how-do-you-handle-file-uploads-in-next-js-with-server-actions-and-route-handlers).
 
 ## 5. Verified — Submitting Without JavaScript (Next.js 16.3.4, next start)
 
@@ -531,7 +540,7 @@ export function SignupForm() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -764,13 +773,13 @@ export function LikeButton({ postId, initial }: { postId: string; initial: numbe
 
 **Clarifying questions expected:**
 - "Where is authentication checked today: in the page or in the action?" — it must be in the action.
-- "Is the app behind a reverse proxy?" — the Origin check may need \`serverActions.allowedOrigins\`.
+- "Is the app behind a reverse proxy?" — the Origin check may need \`experimental.serverActions.allowedOrigins\`.
 
 **Code / implementation expected:** Yes — an action with authentication, authorisation and validation.`,
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -837,26 +846,33 @@ The framework stops other websites from triggering your actions through a user b
 
 ## 4. Organising it
 
-Put actions in dedicated files with 'use server' and a data-access layer that performs auth checks close to the data, so a page that forgets to check cannot expose anything. Configure \`serverActions.allowedOrigins\` if a reverse proxy changes the host, and raise \`bodySizeLimit\` only where uploads need it. Related: [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work) and [authentication](/interview-question/how-do-you-handle-authentication-in-next-js).
+Put actions in dedicated files with 'use server' and a [data-access layer](/interview-question/how-do-you-keep-secrets-and-server-code-out-of-the-client-bundle-in-next-js-serv) that performs auth checks close to the data, so a page that forgets to check cannot expose anything. With the experimental \`authInterrupts\` flag an action can throw [forbidden() or unauthorized()](/interview-question/what-are-forbidden-and-unauthorized-in-next-js) instead of a plain error. Configure \`experimental.serverActions.allowedOrigins\` only if a reverse proxy forwards its own host instead of the public one in \`x-forwarded-host\` (the 16.4.2 docs document \`*\` for one host label and \`**\` for several), and raise \`bodySizeLimit\` only where [uploads](/interview-question/how-do-you-handle-file-uploads-in-next-js-with-server-actions-and-route-handlers) need it. Related: [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work) and [authentication](/interview-question/how-do-you-handle-authentication-in-next-js).
 
-## 5. Verified — Calling an Action Directly (Next.js 16.3.4, next start)
+## 5. Verified — Calling an Action Directly (Next.js 16.4.2 and 16.3.4, next start)
 
-The id of \`deleteItem\` was found in a client chunk served to every visitor, then used with \`curl\`:
+The id of \`deleteItem\` was found in a client chunk served to every visitor, then used with \`curl\` (re-run on 16.4.2):
 
 \`\`\`
-action id of deleteItem, read from a public client chunk: 40f4f5e2ef4b... (42 hex chars)
-curl, no cookies, no UI (deleteItem('1'))    -> HTTP 200  "deleted":true,"remaining":1
-same request, Origin: https://evil.example   -> HTTP 500  the body is only an error row E{"digest":...}; the action did not run
-same request, Origin: http://localhost:4100  -> HTTP 200  "deleted":false,"remaining":1
+Next.js 16.4.2, next start. deleteItem: its action id (42 hex chars) is present in a public client chunk; called with curl
+(Next-Action header, no cookies, no UI), argument "1":
+no Origin header                 -> HTTP 200  1:{"deleted":true,"remaining":1}
+Origin: https://evil.example     -> HTTP 500  1:E{"digest":"4236103766"}
+Origin: http://localhost:4220    -> HTTP 200  1:{"deleted":false,"remaining":1}
+row 0 of each response: 0:{"a":"$@1","q":"","i":false,"b":"xvAl-xu1Nn2ggEa0crYx2"}
 
-server log for the two requests:
-⚠ Missing \`origin\` header from a forwarded Server Actions request.        (the curl call without Origin: it still ran)
-\`x-forwarded-host\` header with value \`localhost:4100\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+server log: nothing for the call without Origin; for the foreign Origin:
+\`x-forwarded-host\` header with value \`localhost:4220\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+⨯ Error: Invalid Server Actions request.
+
+the no-JavaScript form path (a multipart POST of the $ACTION_ID_<id> field) of a form action that logs when it runs:
+no Origin header                 -> HTTP 200, the action ran, and the log printed:
+  ⚠ Missing \`origin\` header from a forwarded Server Actions request.
+Origin: https://evil.example     -> HTTP 500, "Aborting the action." logged, the action did not run
 \`\`\`
 
-Two conclusions: the direct call without cookies succeeded (no UI, no session), and the Origin check stopped the cross-site variant. A request with no Origin header at all was logged as a warning but still executed, which is exactly the case of a script calling your endpoint directly rather than a browser, so the Origin check is a CSRF defence, not authentication.
+Two conclusions: the direct call without cookies succeeded (no UI, no session), and the Origin check stopped the cross-site variant. A request with no Origin header at all still executed: the fetch-style call logged nothing, and the \`Missing origin\` warning appeared only on the no-JavaScript form path. That is exactly the case of a script calling your endpoint directly rather than a browser, so the Origin check is a CSRF defence, not authentication.
 
-Inline actions keep captured server values out of the HTML:
+Inline actions keep captured server values out of the HTML (16.3.4 run):
 
 \`\`\`
 GET /actions (server-rendered HTML, no JavaScript involved), the first form:
@@ -998,7 +1014,7 @@ export async function deletePost(raw: unknown) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1066,11 +1082,11 @@ The choice is about the caller. If the only caller is your React UI, an action s
 
 ## 4. Choosing
 
-A form that creates a post: action. A Stripe webhook: Route Handler (Stripe needs a URL and raw body). A mobile app endpoint: Route Handler. A CSV download: Route Handler with the right headers. Details on each: [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work) and [Route Handlers](/interview-question/what-are-route-handlers-in-next-js-and-how-do-they-differ-from-pages-api-routes).
+A form that creates a post: action. A Stripe webhook: Route Handler (Stripe needs a URL and raw body). A mobile app endpoint: Route Handler. A CSV download: Route Handler with the right headers. A streamed body or Server-Sent Events: Route Handler, see [streaming and SSE](/interview-question/how-do-you-stream-responses-and-server-sent-events-from-a-route-handler). A file upload from your own form can use either; the trade-offs are in [file uploads](/interview-question/how-do-you-handle-file-uploads-in-next-js-with-server-actions-and-route-handlers). Details on each: [Server Actions](/interview-question/what-are-server-actions-in-next-js-and-how-do-they-work) and [Route Handlers](/interview-question/what-are-route-handlers-in-next-js-and-how-do-they-differ-from-pages-api-routes).
 
-## 5. Verified — Both Kinds of Endpoint in One Lab App (Next.js 16.3.4)
+## 5. Verified — Both Kinds of Endpoint in One Lab App (Next.js 16.3.4 and 16.4.2)
 
-Route Handlers answered with the methods, status codes and headers they were written with:
+Route Handlers answered with the methods, status codes and headers they were written with (16.3.4):
 
 \`\`\`
 GET /api/items/42?fields=name,price (cookie theme=dark) -> 200 x-lab: route-handler  {"id":"42","fields":"name,price","theme":"dark","ua":"node"}
@@ -1082,17 +1098,24 @@ POST /api/echo form -> 200 {"gotForm":{"name":"ana"}}
 POST /api/legacy?x=1 (pages/api, same app) -> 200 {"router":"pages","method":"POST","query":{"x":"1"}}
 \`\`\`
 
-The Server Action endpoint is the page URL itself, reached with a POST and a Next-Action header:
+The Server Action endpoint is the page URL itself, reached with a POST and a Next-Action header (re-run on 16.4.2):
 
 \`\`\`
-action id of deleteItem, read from a public client chunk: 40f4f5e2ef4b... (42 hex chars)
-curl, no cookies, no UI (deleteItem('1'))    -> HTTP 200  "deleted":true,"remaining":1
-same request, Origin: https://evil.example   -> HTTP 500  the body is only an error row E{"digest":...}; the action did not run
-same request, Origin: http://localhost:4100  -> HTTP 200  "deleted":false,"remaining":1
+Next.js 16.4.2, next start. deleteItem: its action id (42 hex chars) is present in a public client chunk; called with curl
+(Next-Action header, no cookies, no UI), argument "1":
+no Origin header                 -> HTTP 200  1:{"deleted":true,"remaining":1}
+Origin: https://evil.example     -> HTTP 500  1:E{"digest":"4236103766"}
+Origin: http://localhost:4220    -> HTTP 200  1:{"deleted":false,"remaining":1}
+row 0 of each response: 0:{"a":"$@1","q":"","i":false,"b":"xvAl-xu1Nn2ggEa0crYx2"}
 
-server log for the two requests:
-⚠ Missing \`origin\` header from a forwarded Server Actions request.        (the curl call without Origin: it still ran)
-\`x-forwarded-host\` header with value \`localhost:4100\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+server log: nothing for the call without Origin; for the foreign Origin:
+\`x-forwarded-host\` header with value \`localhost:4220\` does not match \`origin\` header with value \`evil.example\` from a forwarded Server Actions request. Aborting the action.
+⨯ Error: Invalid Server Actions request.
+
+the no-JavaScript form path (a multipart POST of the $ACTION_ID_<id> field) of a form action that logs when it runs:
+no Origin header                 -> HTTP 200, the action ran, and the log printed:
+  ⚠ Missing \`origin\` header from a forwarded Server Actions request.
+Origin: https://evil.example     -> HTTP 500, "Aborting the action." logged, the action did not run
 \`\`\`
 
 ## 6. Common Pitfalls
@@ -1216,7 +1239,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 - A Route Handler is a \`route.ts\` file in \`app/\` that exports functions named after HTTP methods (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS).
 - It uses the Web standard \`Request\` and \`Response\` (plus \`NextRequest\` and \`NextResponse\` helpers), not Node-style \`req\` and \`res\`.
 - Unexported methods return 405 automatically; dynamic segments arrive as an awaited \`params\` Promise in the second argument.
-- GET handlers are dynamic by default since Next.js 15; opt into static output with \`export const dynamic = 'force-static'\`.
+- GET handlers are dynamic by default since Next.js 15; without Cache Components you opt into static output with \`export const dynamic = 'force-static'\`. With Cache Components (the create-next-app default in 16.4) that export is a build error: a GET is prerendered when it reads no request or uncached data, and \`'use cache'\` caches the rest.
 - Pages API routes still work side by side; there is one default-exported \`handler(req, res)\` per file with a method switch.
 
 **Clarifying questions expected:**
@@ -1227,7 +1250,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1296,9 +1319,11 @@ The move is mostly mechanical: split the method switch into exports and return R
 
 ## 4. Things to watch
 
-A \`route.ts\` cannot sit in the same segment as a \`page.tsx\`. GET handlers are not cached unless you opt in. Memoization of fetch does not apply inside Route Handlers, because they are not part of the React tree. For choosing between endpoints and actions see [Server Actions vs Route Handlers](/interview-question/how-do-server-actions-differ-from-route-handlers-in-next-js).
+A \`route.ts\` cannot sit in the same segment as a \`page.tsx\`. GET handlers are not cached unless you opt in. Memoization of fetch does not apply inside Route Handlers, because they are not part of the React tree. For choosing between endpoints and actions see [Server Actions vs Route Handlers](/interview-question/how-do-server-actions-differ-from-route-handlers-in-next-js); for streamed bodies see [streaming and Server-Sent Events](/interview-question/how-do-you-stream-responses-and-server-sent-events-from-a-route-handler), and for multipart bodies [file uploads](/interview-question/how-do-you-handle-file-uploads-in-next-js-with-server-actions-and-route-handlers).
 
-## 5. Verified — Route Handlers and a Pages API Route Side by Side (Next.js 16.3.4)
+One 16.x change to plan for: new apps from create-next-app 16.4 enable [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor) by default. Under it the \`dynamic\`, \`revalidate\`, \`dynamicParams\` and \`fetchCache\` exports are removed, so a ported \`force-static\` handler fails the build (see Verified). A GET handler follows the page model instead: it is prerendered when it touches no request data or uncached I/O, and \`'use cache'\` lets cached data into the static response.
+
+## 5. Verified — Route Handlers and a Pages API Route Side by Side (Next.js 16.3.4, one 16.4.2 re-run)
 
 Build output (both routers in one project):
 
@@ -1329,10 +1354,20 @@ two GET requests 1.1 s apart
 /api/time-static   first 2026-09-23T05:51:35.925Z  second 2026-09-23T05:51:35.925Z  same: true  cache-control: s-maxage=31536000
 \`\`\`
 
+The same \`force-static\` handler in a 16.4.2 lab with \`cacheComponents: true\` and \`partialPrefetching: true\`:
+
+\`\`\`
+next build:
+Error: Route segment config "dynamic" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
+
+with the export removed (the handler returns new Date()), the build succeeded and listed:
+└ ƒ /api/time-static
+\`\`\`
+
 ## 6. Common Pitfalls
 
 - **Forgetting to await params.** \`ctx.params\` is a Promise since Next.js 15.
-- **Expecting cached GET responses.** Since 15 they are dynamic unless you export \`dynamic = 'force-static'\` or a revalidate time.
+- **Expecting cached GET responses.** Since 15 they are dynamic unless you export \`dynamic = 'force-static'\` or a revalidate time; with Cache Components those exports fail the build, and \`'use cache'\` is the tool.
 - **Porting res helpers.** There is no \`res\`; build and return a Response.
 - **Parsing JSON without a try.** Malformed bodies throw; return a 400 as in the lab.
 - **Putting route.ts next to page.tsx.** One segment cannot be both a page and an endpoint.
@@ -1457,7 +1492,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1542,7 +1577,7 @@ Everything the proxy does happens before rendering starts, which is what makes i
 
 ## 4. Next.js 16: middleware becomes proxy
 
-Rename the file to \`proxy.ts\` and the function to \`proxy\` (codemod: \`middleware-to-proxy\`). Proxy runs on Node.js by default and the \`runtime\` option is not available in it. The full migration is covered in [proxy.ts in Next.js 16](/interview-question/what-is-proxy-ts-in-next-js-16-and-how-do-you-migrate-from-middleware-ts); authentication patterns in [authentication in Next.js](/interview-question/how-do-you-handle-authentication-in-next-js).
+Rename the file to \`proxy.ts\` and the function to \`proxy\` (codemod: \`middleware-to-proxy\`). Proxy runs on Node.js by default and the \`runtime\` option is not available in it. The full migration is covered in [proxy.ts in Next.js 16](/interview-question/what-is-proxy-ts-in-next-js-16-and-how-do-you-migrate-from-middleware-ts); authentication patterns in [authentication in Next.js](/interview-question/how-do-you-handle-authentication-in-next-js). Three common proxy jobs have their own pages: [a nonce-based Content Security Policy](/interview-question/how-do-you-set-security-headers-and-a-nonce-based-content-security-policy-in-nex), [subdomain routing for a multi-tenant app](/interview-question/how-do-you-build-a-multi-tenant-next-js-app-with-subdomain-routing), and reading what the proxy set with [cookies() and headers()](/interview-question/how-do-you-read-cookies-and-headers-in-next-js-cookies-headers).
 
 ## 5. Verified — proxy.ts on Next.js 16.3.4 (next start)
 
@@ -1569,6 +1604,8 @@ Error: A Node.js API is used (process.versions at line: 4) which is not supporte
 
 as proxy.ts, the same line ran on Node.js: GET /p/who -> {"runtimeNode":"24.19.0","sawCookie":"dark"}
 \`\`\`
+
+Re-run on Next.js 16.4.2: the same deprecation warning (now followed by a \`To migrate automatically, run:\` line and a Learn more link), the same Edge Runtime build error for \`process.versions\`, and, as proxy.ts, the same JSON from \`/p/who\` (that lab ran on Node.js 22.22.0).
 
 ## 6. Common Pitfalls
 
@@ -1682,7 +1719,7 @@ export const config = {
   // ══════════════════════════════════════════════════════════════════════════
   {
     title: "What runtimes does Next.js support (Node.js vs Edge runtime)?",
-    seoDescription: "Next.js runs server code on Node.js by default; the Edge runtime is deprecated in Next 16 and disables static generation. Build output from 16.3.4.",
+    seoDescription: "Next.js runs server code on Node.js by default; the Edge runtime is deprecated since 16.3 and disables static generation. Builds on 16.3.4 and 16.4.2.",
     description: `**Question presented to candidate:**
 "What is the difference between the Node.js and Edge runtimes in Next.js, when would you have chosen Edge, and what is the recommendation today?"
 
@@ -1690,7 +1727,7 @@ export const config = {
 - Node.js runtime: the default for pages, layouts, Route Handlers and, in Next.js 16, Proxy; full Node APIs and npm compatibility.
 - Edge runtime: a smaller runtime based on Web APIs, historically chosen for low latency and fast cold starts close to users.
 - Edge limits: no Node built-ins such as \`fs\`, restricted packages, size limits; the lab showed \`process.versions\` missing.
-- In Next.js 16.3.4 the Edge runtime is deprecated: the build warns, and on a page it disables static generation.
+- The Edge runtime is deprecated (16.3.4 and 16.4.2 both warn at build time), and on a page it disables static generation; with Cache Components any \`runtime\` export, even \`'nodejs'\`, fails the build.
 - The recommendation is the Node.js runtime everywhere, including proxy.ts, which now runs on Node by default.
 
 **Clarifying questions expected:**
@@ -1701,17 +1738,17 @@ export const config = {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block says which version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
-Think of two kitchens. The Node.js kitchen is a full restaurant kitchen with every appliance. The Edge kitchen was a food truck parked near each neighbourhood: quick to reach, but with a small menu because there is no room for the big appliances. Next.js 16 is retiring the food trucks and recommending the full kitchen, with caching to make the food arrive quickly anyway.
+Think of two kitchens. The Node.js kitchen is a full restaurant kitchen with every appliance. The Edge kitchen was a food truck parked near each neighbourhood: quick to reach, but with a small menu because there is no room for the big appliances. Next.js 16.3 started retiring the food trucks and recommending the full kitchen, with caching to make the food arrive quickly anyway.
 
 ## 2. The Core Idea
 
 📌 **Interview term: Node.js runtime** — the default server runtime in Next.js with the full Node.js API and npm ecosystem.
 
-📌 **Interview term: Edge runtime** — a lightweight Web-API-based runtime with a limited API surface; deprecated in Next.js 16.
+📌 **Interview term: Edge runtime** — a lightweight Web-API-based runtime with a limited API surface; deprecated in the Next.js 16.3 release line (the warning text links to the edge-runtime-deprecated docs page).
 
 📌 **Interview term: runtime export** — the route segment config that selects the runtime for a page, layout or Route Handler; not available in proxy.ts.
 
@@ -1759,18 +1796,19 @@ For most apps the question is no longer which runtime to pick, but how to remove
 
 | | Node.js runtime | Edge runtime |
 | :--- | :--- | :--- |
-| Status in 16.3.4 | Default, recommended | Deprecated |
+| Status in 16.3.4 and 16.4.2 | Default, recommended | Deprecated |
 | APIs | Full Node.js (\`fs\`, \`crypto\`, streams, native addons) | Web APIs (\`fetch\`, \`Request\`, Web Crypto) |
 | npm packages | All | Only those without Node dependencies |
 | Static generation of a page | Yes | Disabled (build warning) |
 | Proxy (middleware) | Default in 16 | Only via the deprecated middleware.ts |
 | Selected with | Nothing (default) | \`export const runtime = "edge"\` |
+| With Cache Components | The only runtime; remove even \`runtime = "nodejs"\` | Build error |
 
 ## 4. Migrating off Edge
 
-Remove \`export const runtime = "edge"\` from routes, and rename middleware.ts to proxy.ts. Check that the code no longer needs Edge-specific workarounds (for example Web Crypto instead of \`crypto\`), and use caching or static rendering for latency. See [route segment config](/interview-question/what-is-the-route-segment-config-in-next-js-dynamic-revalidate-runtime) and [Middleware](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do).
+Remove \`export const runtime = "edge"\` from routes, and rename middleware.ts to proxy.ts. Check that the code no longer needs Edge-specific workarounds (for example Web Crypto instead of \`crypto\`), and use caching or static rendering for latency. If the app enables [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor) (the create-next-app default since 16.4), delete every \`runtime\` export, including \`'nodejs'\`: Cache Components does not support the option at all. See [route segment config](/interview-question/what-is-the-route-segment-config-in-next-js-dynamic-revalidate-runtime) and [Middleware](/interview-question/what-is-middleware-in-next-js-and-what-can-it-do).
 
-## 5. Verified — Edge on Next.js 16.3.4
+## 5. Verified — Edge on Next.js 16.3.4 and 16.4.2
 
 A page and a Route Handler with \`export const runtime = "edge"\`:
 
@@ -1780,6 +1818,18 @@ next build with  export const runtime = "edge"  in app/edge-page/page.tsx and ap
 ⚠ Using edge runtime on a page currently disables static generation for that page
 build table:  ƒ /api/edge-time   ƒ /edge-page
 GET /api/edge-time -> {"at":"2026-09-23T06:03:14.300Z","hasProcessVersions":false}   (no Node process.versions in the edge sandbox)
+\`\`\`
+
+The same two files on 16.4.2 printed the same two warnings and the same \`ƒ\` rows, and \`/api/edge-time\` again returned \`"hasProcessVersions":false\`. With \`cacheComponents: true\` added, the build stopped instead:
+
+\`\`\`
+Next.js 16.4.2, cacheComponents: true, the same runtime = "edge" exports:
+Error: Turbopack build failed with 2 errors:
+./app/api/edge-time/route.ts:1:14
+Error: Route segment config "runtime" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
+./app/edge-page/page.tsx:1:14
+Error: Route segment config "runtime" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
+(code frames trimmed; the lab path prefix shortened to ./app)
 \`\`\`
 
 Node APIs in Proxy, which now defaults to Node.js, versus the old middleware.ts that still uses Edge:
@@ -1866,12 +1916,12 @@ as proxy.ts, the same line ran on Node.js: GET /p/who -> {"runtimeNode":"24.19.0
 | Term | Plain meaning |
 | :--- | :--- |
 | **Node.js runtime** | Default server runtime with full Node APIs |
-| **Edge runtime** | Web-API runtime, deprecated in 16 |
+| **Edge runtime** | Web-API runtime, deprecated since 16.3 |
 | **runtime export** | Segment config choosing the runtime |
 | **Cold start** | Delay when a server function starts fresh |
 
 ---
-**Conclusion:** Next.js supports two server runtimes, but in 16.3.4 only one is recommended: Node.js, now also for proxy.ts. The Edge runtime still works for existing code, with a deprecation warning and no static generation for pages. For latency, rely on caching and prerendering rather than a smaller runtime.`,
+**Conclusion:** Next.js supports two server runtimes, but in 16.3.4 and 16.4.2 only one is recommended: Node.js, now also for proxy.ts. The Edge runtime still works for existing code, with a deprecation warning and no static generation for pages. For latency, rely on caching and prerendering rather than a smaller runtime.`,
     examples: [
       {
         label: "Removing the edge runtime and moving middleware to proxy",

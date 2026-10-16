@@ -3,6 +3,7 @@
  * async params, cacheLife/cacheTag, choosing PPR vs ISR vs SSR, client-side fetching.
  * Generated from markdown sources by a build script; Verified blocks are real output from Next.js 16.3.4 lab apps (with and
  * without cacheComponents), a hit-counting test API, and a real browser session for SWR.
+ * Reviewed 2026-10-16 against the Next.js 16.4.2 docs; additions verified on a 16.4.2 lab are labelled 16.4.2, older blocks keep 16.3.4.
  */
 import type { NextAugment } from "./nextjs-augments.types";
 
@@ -29,7 +30,7 @@ const augments: NextAugment[] = [
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -110,11 +111,11 @@ ISR trades a bounded amount of staleness for static speed. The important detail 
 | One data source refreshes every 60 s | \`fetch(url, { next: { revalidate: 60 } })\` |
 | Refresh immediately when content changes | \`revalidatePath('/blog/slug')\` or \`revalidateTag('posts', 'max')\` in a Server Action or webhook |
 | Build only the popular pages | Return those from \`generateStaticParams\`; others are generated on first visit |
-| Cache Components enabled | \`cacheLife\` on 'use cache' functions instead of \`revalidate\` exports |
+| Cache Components enabled | \`cacheLife\` on 'use cache' functions instead of \`revalidate\` exports; keep \`generateStaticParams\` and return at least one real param, because removing it opts the route out of ISR (16.4 docs) and an empty list fails the build |
 
 ## 4. Hosting
 
-ISR needs a server that can regenerate pages: \`next start\`, a Docker image, or a platform with ISR support. A static export (\`output: 'export'\`) cannot regenerate. With several server instances, configure a shared cache handler so they do not each keep their own copy. See [on-demand revalidation](/interview-question/what-is-on-demand-revalidation-in-next-js-revalidatepath-revalidatetag) and [generateStaticParams](/interview-question/what-is-generatestaticparams-in-next-js-and-how-does-it-enable-ssg-for-dynamic-r).
+ISR needs a server that can regenerate pages: \`next start\`, a Docker image, or a platform with ISR support. A [static export (\`output: 'export'\`)](/interview-question/what-is-static-export-output-export-in-next-js-and-what-does-it-not-support) cannot regenerate. With several server instances, configure a shared cache handler so they do not each keep their own copy ([self-hosting across instances](/interview-question/how-do-you-self-host-next-js-across-multiple-instances-cache-handlers-isr-build-)). See [on-demand revalidation](/interview-question/what-is-on-demand-revalidation-in-next-js-revalidatepath-revalidatetag) and [generateStaticParams](/interview-question/what-is-generatestaticparams-in-next-js-and-how-does-it-enable-ssg-for-dynamic-r).
 
 ## 5. Verified — The Regeneration Sequence (Next.js 16.3.4, next start)
 
@@ -266,7 +267,7 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -332,7 +333,7 @@ Paths are how routes are stored; tags are how data is shared. Pick the one that 
 
 ## 4. Tagging
 
-With fetch, add \`next: { tags: ['posts'] }\`. With Cache Components, call \`cacheTag('posts')\` inside a 'use cache' function. Next.js also gives every route implicit tags such as \`_N_T_/blog\`, which is what \`revalidatePath\` uses. For the differences with \`refresh()\` see [revalidateTag, updateTag and refresh](/interview-question/what-is-the-difference-between-revalidatetag-updatetag-and-refresh-in-next-js-16).
+With fetch, add \`next: { tags: ['posts'] }\`. With Cache Components, call \`cacheTag('posts')\` inside a 'use cache' function. Next.js also gives every route implicit tags such as \`_N_T_/blog\`, which is what \`revalidatePath\` uses. Editors who want to see unpublished content before it goes live need a different tool, [draft mode](/interview-question/what-is-draft-mode-in-next-js-and-how-does-it-work-with-a-headless-cms), which bypasses the cache for their browser only. For the differences with \`refresh()\` see [revalidateTag, updateTag and refresh](/interview-question/what-is-the-difference-between-revalidatetag-updatetag-and-refresh-in-next-js-16).
 
 ## 5. Verified — Each Call Against a Tagged Fetch (Next.js 16.3.4, next start)
 
@@ -485,7 +486,7 @@ export async function savePost(formData: FormData) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -564,12 +565,16 @@ generateStaticParams decides what is ready before the first user arrives; dynami
 | :--- | :--- | :--- |
 | Small, fixed set (docs pages) | Every value | \`false\` for a strict 404 |
 | Large catalogue | The top N by traffic | \`true\` (default) |
-| Nothing at build, cache on first visit | \`[]\` | \`true\` |
+| Nothing at build, cache on first visit | \`[]\` (not allowed with Cache Components: the build fails) | \`true\` |
 | Nested segments \`[category]/[id]\` | Objects with both keys, or parents pass params down | as needed |
 
 ## 4. With Cache Components
 
-\`dynamicParams\` is not available when Cache Components is enabled (the docs say so explicitly). Unlisted params are then rendered on request, and what can be cached is controlled with 'use cache'. See [ISR](/interview-question/what-is-isr-incremental-static-regeneration-in-next-js-and-how-do-you-implement-) for how on-demand pages are refreshed afterwards.
+\`dynamicParams\` is not available when Cache Components is enabled (the docs say so explicitly). Unlisted params are then rendered on request (and can still get an ISR entry, see the last point), and what can be cached is controlled with 'use cache'. Three rules from the 16.4 docs matter here, and Cache Components is the default for new apps since 16.4:
+
+- \`generateStaticParams\` must return at least one param, because the build uses it to check that the route does not read request data where it should not. An empty array is a build error (verified below).
+- Keep the export: the 16.4 migration guide says removing it opts the route out of ISR, so the page renders on every request even when its data uses 'use cache'.
+- For unlisted paths, where you await \`params\` decides what the first visitor gets. With Partial Prefetching on, await it inside \`<Suspense>\` and Next.js can serve the fallback immediately while it renders and stores the page. Without Partial Prefetching, await it outside any Suspense boundary (including one from \`loading.tsx\`), so the first request waits and an ISR entry is created for that URL. And with \`export const ensureStatic = 'navigation'\` (16.4), every returned object must contain all dynamic params of the route. See [ISR](/interview-question/what-is-isr-incremental-static-regeneration-in-next-js-and-how-do-you-implement-) for how on-demand pages are refreshed afterwards.
 
 ## 5. Verified — Listed, Unlisted and Strict Params (Next.js 16.3.4)
 
@@ -595,8 +600,16 @@ generateStaticParams returns a and b; /gsp-strict also sets dynamicParams = fals
 /gsp-strict/zzz    HTTP 404  x-nextjs-cache: HIT    (not found)
 \`\`\`
 
+The empty list under Cache Components (Next.js 16.4.2, \`next build\`, \`app/p/[slug]/page.tsx\` returning \`[]\`):
+
+\`\`\`
+Error: When using Cache Components, all \`generateStaticParams\` functions must return at least one result. This is to ensure that we can perform build-time validation that there is no other dynamic accesses that would cause a runtime error.
+Learn more: https://nextjs.org/docs/messages/empty-generate-static-params
+\`\`\`
+
 ## 6. Common Pitfalls
 
+- **Returning \`[]\` after enabling Cache Components.** The build stops with the error above; return at least one real value.
 - **Prerendering everything.** 50,000 pages at build time makes deploys slow; build the popular subset.
 - **Setting dynamicParams = false with growing data.** New ids created after the build return 404 until the next deploy.
 - **Returning numbers.** Params are strings; return \`{ id: String(p.id) }\`.
@@ -709,7 +722,7 @@ export default async function Product({ params }: { params: Promise<{ id: string
 - The classic set: \`dynamic\`, \`dynamicParams\`, \`revalidate\`, \`fetchCache\`, \`runtime\`, \`preferredRegion\`, \`maxDuration\`.
 - \`dynamic\` forces static or dynamic rendering (\`'force-dynamic'\`, \`'force-static'\`, \`'error'\`); \`revalidate\` sets the ISR lifetime.
 - In Next.js 16, with Cache Components enabled, \`dynamic\`, \`dynamicParams\`, \`revalidate\` and \`fetchCache\` are removed (the build rejects them); caching moves to 'use cache' and \`cacheLife\`.
-- \`runtime = 'edge'\` and \`preferredRegion\` are deprecated in 16; the default Node.js runtime is the recommendation.
+- \`runtime = 'edge'\` and \`preferredRegion\` are deprecated in 16; the default Node.js runtime is the recommendation. With Cache Components any \`runtime\` export must go, even \`'nodejs'\`, and 16.4 adds \`ensureStatic\` to require a page or layout to stay static.
 
 **Clarifying questions expected:**
 - "Is Cache Components enabled in this project?" — it changes which exports are allowed.
@@ -719,7 +732,7 @@ export default async function Product({ params }: { params: Promise<{ id: string
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -775,16 +788,17 @@ The shift is from configuring caching per file to declaring it where the data is
 
 ## 3. The options
 
-| Export | Values | Status in 16.3.4 |
+| Export | Values | Status (16.3.4, re-checked on 16.4.2) |
 | :--- | :--- | :--- |
 | \`dynamic\` | \`'auto'\`, \`'force-dynamic'\`, \`'force-static'\`, \`'error'\` | Previous model; rejected with Cache Components |
 | \`revalidate\` | \`false\`, \`0\`, seconds | Previous model; rejected with Cache Components |
 | \`fetchCache\` | \`'auto'\`, \`'force-cache'\`, \`'force-no-store'\`, ... | Previous model; removed with Cache Components |
 | \`dynamicParams\` | \`true\`, \`false\` | Current; not available with Cache Components |
-| \`runtime\` | \`'nodejs'\` (default), \`'edge'\` | \`'edge'\` deprecated |
+| \`runtime\` | \`'nodejs'\` (default), \`'edge'\` | \`'edge'\` deprecated; any \`runtime\` export, even \`'nodejs'\`, rejected with Cache Components |
 | \`preferredRegion\` | \`'auto'\`, \`'global'\`, \`'home'\`, region ids | Deprecated |
 | \`maxDuration\` | seconds | Current |
-| \`instant\`, \`prefetch\` | route-specific | New, Cache Components only |
+| \`instant\`, \`prefetch\` | route-specific | Stabilized in 16.3, Cache Components only |
+| \`ensureStatic\` | \`'auto'\`, \`'shell'\`, \`'prefetch'\`, \`'navigation'\`, \`false\` | New in 16.4, pages and layouts, Cache Components only |
 
 ## 4. What the dynamic values mean
 
@@ -817,6 +831,21 @@ next build, cacheComponents: true, with a segment config export:
 Error: Route segment config "revalidate" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
 Error: Route segment config "dynamic" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
 \`\`\`
+
+The 16.4 additions, built on Next.js 16.4.2 (one lab app per case):
+
+\`\`\`
+cacheComponents: true, app/rt/page.tsx has  export const runtime = "nodejs":
+Error: Route segment config "runtime" is not compatible with \`nextConfig.cacheComponents\`. Please remove it.
+
+no cacheComponents, app/es/page.tsx has  export const ensureStatic = "navigation":
+Error: Route "/es/page" cannot use \`export const ensureStatic = ...\` without enabling \`cacheComponents\`.
+
+cacheComponents: true, the same export on a page that reads cookies() inside <Suspense>:
+Error: Route "/es": Next.js encountered uncached or runtime data on a route that must be fully static.
+\`\`\`
+
+The \`runtime = "nodejs"\` case failed the same way on 16.3.4; the 16.4 docs only made the rule explicit. \`ensureStatic\` is the Cache Components answer to \`dynamic = 'error'\`: it does not blank out request APIs, it fails the build when the route cannot be fully static.
 
 ## 6. Common Pitfalls
 
@@ -881,7 +910,7 @@ Error: Route segment config "dynamic" is not compatible with \`nextConfig.cacheC
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">What are <code style="background:#4a3418;color:#ffe0b2;padding:1px 5px;border-radius:3px;">instant</code> and <code style="background:#4a3418;color:#ffe0b2;padding:1px 5px;border-radius:3px;">prefetch</code>?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Segment options introduced for Cache Components: <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">instant = false</code> allows a route to block on request data instead of prerendering a shell, and <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">prefetch</code> controls how links to the route are prefetched.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Segment options for Cache Components, stable since 16.3: <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">instant = false</code> allows a route to block on request data instead of prerendering a shell, and <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">prefetch</code> controls how links to the route are prefetched.</span>
 </div>
 
 </div>
@@ -906,6 +935,7 @@ Error: Route segment config "dynamic" is not compatible with \`nextConfig.cacheC
 export const revalidate = 600;            // ISR lifetime for this route
 export const dynamic = "force-static";    // or "force-dynamic" / "error"
 export const maxDuration = 30;            // platform limit for server work
+// With cacheComponents (16.4+): export const ensureStatic = "navigation"; requires fully static output
 
 // With cacheComponents: true, drop dynamic/revalidate and cache the data instead:
 import { cacheLife } from "next/cache";
@@ -940,7 +970,7 @@ async function getCatalogue() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1006,9 +1036,10 @@ The layout row is the one that surprises people. Dynamic-ness flows down the tre
 
 | Trigger | Example | Notes |
 | :--- | :--- | :--- |
-| \`cookies()\` | \`(await cookies()).get("theme")\` | Also in a layout |
+| \`cookies()\` | \`(await cookies()).get("theme")\` | Also in a layout ([reading cookies and headers](/interview-question/how-do-you-read-cookies-and-headers-in-next-js-cookies-headers)) |
 | \`headers()\` | \`(await headers()).get("user-agent")\` | Also in a layout |
-| \`searchParams\` | \`await searchParams\` in a page | \`useSearchParams\` in a client component needs Suspense instead |
+| \`searchParams\` | \`await searchParams\` in a page | \`useSearchParams\` in a client component needs Suspense instead ([search params patterns](/interview-question/how-do-you-implement-search-filtering-and-pagination-with-url-search-params-in-t)) |
+| \`draftMode()\` | \`(await draftMode()).isEnabled\` | Reads the preview cookie ([draft mode](/interview-question/what-is-draft-mode-in-next-js-and-how-does-it-work-with-a-headless-cms)) |
 | \`connection()\` | \`await connection()\` | For code that must run per request, such as random values |
 | Uncached fetch | \`{ cache: 'no-store' }\` or \`revalidate: 0\` | Plain fetch without options does not |
 | Segment config | \`export const dynamic = 'force-dynamic'\` | Previous model only |
@@ -1040,10 +1071,10 @@ For comparison, static routes answered with \`s-maxage\`:
 
 ## 6. Common Pitfalls
 
-- **Reading cookies in the root layout.** For example for a theme or locale: every page of the app becomes dynamic.
+- **Reading cookies in the root [layout](/interview-question/what-are-layouts-in-next-js-and-how-do-nested-layouts-work).** For example for a theme or locale: every page of the app becomes dynamic.
 - **Assuming a plain fetch makes a route dynamic.** It does not; the lab page with a plain fetch stayed static and was fetched once at build.
 - **Using \`Math.random()\` or \`Date.now()\` and expecting fresh values.** In a static route they run once at build; use \`connection()\` if they must be per request.
-- **\`useSearchParams\` in a client component without Suspense.** It forces client-side rendering up to the nearest Suspense boundary; wrap it.
+- **\`useSearchParams\` in a client component without Suspense.** It forces client-side rendering up to the nearest Suspense boundary; wrap it ([the URL hooks](/interview-question/how-do-you-read-the-current-url-in-a-next-js-client-component-usepathname-usesea)).
 - **Fixing it with force-static.** That silences request data (empty cookies) instead of removing the dependency.
 
 ## 7. How to Answer in an Interview
@@ -1080,7 +1111,7 @@ For comparison, static routes answered with \`s-maxage\`:
 <span style="color:#ff8a65;font-weight:bold;">❓ Q:</span> <span style="color:#ffe0b2;">How do you find the cause when a page is unexpectedly dynamic?</span>
 </div>
 <div style="background:#151a15;border:1px solid #f9a825;border-top:none;border-radius:0 0 8px 8px;padding:10px 16px;margin:0 0 14px 0;">
-<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Look for request-time APIs in the page and in every layout above it, and for no-store fetches. Enabling <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">dynamic = 'error'</code> temporarily makes the build point at the offending code.</span>
+<span style="color:#66bb6a;font-weight:bold;">💡 A:</span> <span style="color:#d8d8d8;">Look for request-time APIs in the page and in every layout above it, and for no-store fetches. Enabling <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">dynamic = 'error'</code> temporarily makes the build point at the offending code. With Cache Components the build already names the route, and since 16.4 <code style="background:#332310;color:#ffca28;padding:1px 5px;border-radius:3px;">ensureStatic = 'navigation'</code> keeps a page that must stay static from regressing.</span>
 </div>
 
 <div style="background:#3d2810;border-radius:8px 8px 0 0;padding:10px 16px;margin:0;">
@@ -1168,7 +1199,7 @@ export default function Page() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1227,9 +1258,9 @@ The change looks like ceremony, but it is what allows a page to start streaming 
 | Place | Before (14) | Now (15 and 16) |
 | :--- | :--- | :--- |
 | Page | \`({ params }: { params: { id: string } })\` | \`({ params }: { params: Promise<{ id: string }> })\` then \`await params\` |
-| searchParams | \`searchParams.q\` | \`(await searchParams).q\` |
+| searchParams | \`searchParams.q\` | \`(await searchParams).q\` ([search and pagination with searchParams](/interview-question/how-do-you-implement-search-filtering-and-pagination-with-url-search-params-in-t)) |
 | Route Handler | \`(req, { params })\` with \`params.id\` | \`(await params).id\` |
-| Client Component page | \`params.id\` | \`use(params).id\`, or \`useParams()\` |
+| Client Component page | \`params.id\` | \`use(params).id\`, or \`useParams()\` ([client URL hooks](/interview-question/how-do-you-read-the-current-url-in-a-next-js-client-component-usepathname-usesea)) |
 | cookies / headers | \`cookies().get(...)\` | \`(await cookies()).get(...)\` |
 
 ## 4. Why it helps rendering
@@ -1367,7 +1398,7 @@ export default function Tool({ params }: { params: Promise<{ id: string }> }) {
 - Built-in profiles: \`default\`, \`seconds\`, \`minutes\`, \`hours\`, \`days\`, \`weeks\`, \`max\`; custom ones go in \`cacheLife\` in next.config.ts.
 - \`cacheTag('name')\` labels the entry; \`revalidateTag('name', 'max')\` or \`updateTag('name')\` invalidates it.
 - The build table shows each route revalidate and expire times, and responses get a matching \`s-maxage\` and \`stale-while-revalidate\`.
-- Short lifetimes (under 30 s stale, such as \`seconds\`) are excluded from prerendering and must sit inside Suspense.
+- Short lifetimes are excluded from prerendering and must sit inside Suspense: \`revalidate\` of 0, \`expire\` under 5 minutes or \`stale\` under 30 s. Of the built-in profiles only \`seconds\` qualifies, because of its 1-minute expire.
 
 **Clarifying questions expected:**
 - "How stale may this data be, and for whom?" — decides the profile; per-user data should not be cached this way at all.
@@ -1377,7 +1408,7 @@ export default function Tool({ params }: { params: Promise<{ id: string }> }) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Hard
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1431,7 +1462,7 @@ Think of labels on food in a shop fridge. stale is how long the shelf staff may 
 
 Two of the three times are for the server and one is for the browser. Most bugs come from picking a profile by its name without reading its three numbers.
 
-## 3. Built-in profiles (from the 16.3.4 docs)
+## 3. Built-in profiles (from the 16.3.4 docs, unchanged in 16.4.2)
 
 | Profile | stale | revalidate | expire |
 | :--- | :--- | :--- | :--- |
@@ -1444,6 +1475,8 @@ Two of the three times are for the server and one is for the browser. Most bugs 
 | \`max\` | 5 minutes | 30 days | 1 year |
 
 ## 4. Custom profiles and tags
+
+The docs give the exact prerender rule: an entry with \`revalidate\` of 0 or \`expire\` under 5 minutes becomes a dynamic hole, one with \`stale\` under 30 seconds is excluded because a prefetch would expire before the click, and one with \`stale\` between 30 seconds and 5 minutes is prerendered but kept out of the App Shell. Of the presets, only \`seconds\` crosses a threshold, and it does so through its 1-minute \`expire\`, not its 30-second \`stale\`.
 
 Define a profile once in next.config.ts under \`cacheLife\` and use it by name, so lifetimes are reviewed in one place. Add \`cacheTag\` for every entity the entry depends on (for example \`product-42\` and \`products\`), then invalidate from a Server Action with \`updateTag\` or from a webhook with \`revalidateTag(tag, 'max')\`. See [Cache Components](/interview-question/what-are-cache-components-in-next-js-16-and-how-does-the-use-cache-directive-wor) and [on-demand revalidation](/interview-question/what-is-on-demand-revalidation-in-next-js-revalidatepath-revalidatetag).
 
@@ -1618,7 +1651,7 @@ export async function saveProduct(id: string) {
 - Dynamic (SSR): content depends on the request and must be exact; every request renders, and the first byte waits for data unless you stream.
 - PPR: mostly shared content with a few personal parts; the shell is prerendered and the personal holes stream in the same response.
 - Streaming with loading.js or Suspense improves dynamic pages when PPR is not available.
-- In Next.js 16, PPR comes with Cache Components (\`cacheComponents: true\`), no longer an experimental flag.
+- In Next.js 16, PPR comes with Cache Components (\`cacheComponents: true\`), no longer an experimental flag; since 16.4 new create-next-app projects have it on, with \`partialPrefetching\`.
 
 **Clarifying questions expected:**
 - "Which parts of the page differ per user?" — those decide whether the page needs holes.
@@ -1628,7 +1661,7 @@ export async function saveProduct(id: string) {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1702,7 +1735,7 @@ The strategies differ less in total time than in when the user sees the first co
 
 ## 4. Mixing is normal
 
-These are per-route choices, and with PPR they become per-component. In Next.js 16 with Cache Components, the default is dynamic and you opt parts into caching with 'use cache', which makes the "mostly static page with a few personal parts" the natural shape. See [PPR](/interview-question/what-is-partial-prerendering-ppr-in-next-js), [ISR](/interview-question/what-is-isr-incremental-static-regeneration-in-next-js-and-how-do-you-implement-) and [static versus dynamic](/interview-question/what-is-the-difference-between-static-and-dynamic-rendering-in-the-next-js-app-r).
+These are per-route choices, and with PPR they become per-component. In Next.js 16 with Cache Components (which \`create-next-app\` enables, together with \`partialPrefetching\`, for new App Router apps since 16.4), data is uncached by default and you opt parts into caching with 'use cache', which makes the "mostly static page with a few personal parts" the natural shape. See [PPR](/interview-question/what-is-partial-prerendering-ppr-in-next-js), [ISR](/interview-question/what-is-isr-incremental-static-regeneration-in-next-js-and-how-do-you-implement-) and [static versus dynamic](/interview-question/what-is-the-difference-between-static-and-dynamic-rendering-in-the-next-js-app-r).
 
 ## 5. Verified — The Same Work, Four Ways (Next.js 16.3.4, next start)
 
@@ -1865,7 +1898,7 @@ export default function Product() {
     answer: `**Target Audience:** Frontend engineers preparing for Next.js interviews — assumes basic React and App Router familiarity.
 **Difficulty:** Medium
 
-> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js 16.3.4 docs shipped with the package and, in the **Verified** section, against real output from a build or a running server.
+> **How to read this doc:** Each idea is explained in plain language first, then tagged with \`📌 Interview term:\`. Every behaviour claim was checked against the Next.js docs shipped with the package (written on 16.3.4, re-reviewed against 16.4.2) and, in the **Verified** section, against real output from a build or a running server; each Verified block names the version it ran on.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -1925,8 +1958,8 @@ The two approaches are complements, not rivals: the server gives the first pictu
 | :--- | :--- |
 | Initial page data, SEO | Server Component fetch |
 | Server data, but render in a client component | Pass the Promise, \`use()\` it inside Suspense |
-| Data that changes while open (notifications, prices) | SWR or TanStack Query with polling or focus revalidation |
-| Search as you type, filters in client state | SWR or TanStack Query keyed by the filter |
+| Data that changes while open (notifications, prices) | SWR or TanStack Query with polling or focus revalidation, or a server push stream ([Server-Sent Events from a Route Handler](/interview-question/how-do-you-stream-responses-and-server-sent-events-from-a-route-handler)) |
+| Search as you type, filters in client state | SWR or TanStack Query keyed by the filter; keep shareable filters in the URL ([search params](/interview-question/how-do-you-implement-search-filtering-and-pagination-with-url-search-params-in-t)) |
 | Mutations with optimistic UI | Server Actions with \`useOptimistic\`, or a library mutation |
 
 ## 4. Combining them

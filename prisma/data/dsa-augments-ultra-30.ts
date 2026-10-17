@@ -5470,7 +5470,7 @@ for m in range(1, 1 << n):
             group[m] = s
         s = (s - 1) & m
 print("total weight " + str(load[full]) + ", limit " + str(LIMIT) + " per trip")
-print("fewest trips: " + str(dp[full]))  # 3
+print("fewest trips: " + str(dp[full]))
 m = full
 while m:
     g = group[m]

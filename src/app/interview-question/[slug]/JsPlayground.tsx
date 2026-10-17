@@ -196,12 +196,10 @@ self.onmessage = async function(e) {
         let passed = false;
         let errorMsg = null;
         try {
-          const res = await pyodide.runPythonAsync(t.expression);
-          if (res !== undefined && res !== null) {
-            actualVal = String(res);
-          } else {
-            actualVal = "None";
-          }
+          // Capture what print() shows for the expression, so True, 3.0,
+          // None and multi-argument prints compare exactly as they printed.
+          const wrapped = "import io as __io, contextlib as __cl\\n__buf = __io.StringIO()\\nwith __cl.redirect_stdout(__buf):\\n    print(" + t.expression + ")\\n__buf.getvalue()[:-1]";
+          actualVal = String(await pyodide.runPythonAsync(wrapped));
           
           const cleanExpected = t.expected.replace(/^["']|["']$/g, '');
           passed = (actualVal === t.expected || 

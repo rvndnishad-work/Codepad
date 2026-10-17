@@ -9167,12 +9167,12 @@ def fmt(xs):
 
 tw = Twitter()
 tw.post_tweet(1, 5)
-print(fmt(tw.get_news_feed(1)))  # [5]
+print(fmt(tw.get_news_feed(1)))
 tw.follow(1, 2)
 tw.post_tweet(2, 6)
-print(fmt(tw.get_news_feed(1)))  # [6, 5]
+print(fmt(tw.get_news_feed(1)))
 tw.unfollow(1, 2)
-print(fmt(tw.get_news_feed(1)))  # [5]
+print(fmt(tw.get_news_feed(1)))
 
 tw = Twitter()
 for i in range(1, 13):

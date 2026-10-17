@@ -4,8 +4,9 @@
  * Answers are markdown (may embed inline <svg class='iq-diagram'> theme-aware
  * diagrams + GFM tables + `<code>` tags). Code examples for AI Engineering are
  * ALWAYS rendered as static, syntax-highlighted code (the QuestionDetailClient
- * `isRunnable` list does not include 'ai-engineering') — so set `runnable: false`
- * on every example. Use `tech: 'ts'`/'python' for SDK snippets, `tech: 'bash'`
+ * `isRunnable` list does not include 'ai-engineering'). Legacy files set
+ * `runnable: false` on every example; ultra files (bottom of this file) run
+ * offline and keep "Run Playground" (the /play hand-off). Use `tech: 'ts'`/'python' for SDK snippets, `tech: 'bash'`
  * for CLI/config snippets.
  */
 export type AiVariant = {

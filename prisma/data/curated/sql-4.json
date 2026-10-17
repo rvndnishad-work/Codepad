@@ -1,0 +1,132 @@
+[
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "duplicates",
+      "group-by"
+    ],
+    "title": "How do you find duplicate rows in a table?",
+    "description": "Find duplicates with GROUP BY ... HAVING COUNT(*) > 1 and with window functions, and return the full duplicate rows."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "duplicates",
+      "delete"
+    ],
+    "title": "How do you delete duplicate rows but keep one?",
+    "description": "Delete duplicates while keeping the lowest id, using ROW_NUMBER, a self join or NOT IN over a grouped subquery."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "null",
+      "anti-join"
+    ],
+    "title": "What is the difference between NOT IN and NOT EXISTS when NULLs are involved?",
+    "description": "Why NOT IN returns no rows when the subquery contains NULL, and why NOT EXISTS or an anti-join is the safe form."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "window-functions",
+      "analytics"
+    ],
+    "title": "How do you calculate a running total or moving average?",
+    "description": "Running totals and moving averages with SUM/AVG OVER (ORDER BY ... ROWS BETWEEN ...), and the RANGE vs ROWS difference."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "window-functions",
+      "gaps-and-islands"
+    ],
+    "title": "How do you solve gaps-and-islands problems in SQL?",
+    "description": "Group consecutive rows (streaks, sessions, date ranges) with the ROW_NUMBER difference trick and LAG-based session starts."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "security",
+      "injection"
+    ],
+    "title": "What is SQL injection and how do parameterized queries prevent it?",
+    "description": "How string-built SQL is exploited, why placeholders keep data out of the query text, and what parameters cannot protect (identifiers)."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "design",
+      "denormalization"
+    ],
+    "title": "What is denormalization and when should you use it?",
+    "description": "Trading write complexity for read speed: duplicated columns, summary tables, materialized views, and keeping them consistent."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "joins"
+    ],
+    "title": "What is a CROSS JOIN and when is it useful?",
+    "description": "The Cartesian product, generating combinations and calendars, and the accidental cross join bug."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "joins",
+      "left-join"
+    ],
+    "title": "Does a filter in the ON clause behave differently from WHERE in a LEFT JOIN?",
+    "description": "Why a condition on the right table in WHERE turns a LEFT JOIN into an inner join, and when it belongs in ON."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "constraints"
+    ],
+    "title": "What are NOT NULL, DEFAULT and other column constraints?",
+    "description": "NOT NULL, DEFAULT, UNIQUE, CHECK, PRIMARY KEY and FOREIGN KEY as column rules the database enforces."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "design",
+      "analytics"
+    ],
+    "title": "What is the difference between OLTP and OLAP databases?",
+    "description": "Transactional row stores versus analytical column stores: workloads, schemas (normalized vs star), and examples."
+  },
+  {
+    "technology": "sql",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "window-functions",
+      "analytics"
+    ],
+    "title": "How do you calculate year-over-year or month-over-month growth in SQL?",
+    "description": "Period-over-period growth with LAG over grouped periods, handling missing months and division by zero."
+  }
+]

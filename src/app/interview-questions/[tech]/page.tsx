@@ -215,7 +215,7 @@ export default async function TechnologyPage({
 
       <div className="bg-bg">
         <div className="mx-auto max-w-[1280px] px-4 pt-4 md:px-6 md:pt-8">
-          {tech === "machine-coding" && <FrameworkPreference />}
+          {(tech === "machine-coding" || tech === "dsa") && <FrameworkPreference tech={tech} />}
 
           <div className="mt-4 md:hidden">
             <ProgressPanel ordered={ordered} total={total} variant="strip" />

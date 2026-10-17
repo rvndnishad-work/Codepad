@@ -51,3 +51,43 @@ export type DsaAugment = {
   answer?: string;
   examples?: DsaExample[];
 };
+
+// ── Per-language "ultra" answers (prisma/data/dsa-augments-ultra-NN.ts) ──────
+
+/** The four languages the DSA pages support, in selector order. */
+export type DsaLanguage = "python" | "javascript" | "java" | "cpp";
+export const DSA_LANGUAGES: DsaLanguage[] = ["python", "javascript", "java", "cpp"];
+
+/**
+ * One language's complete version of a question: the Question Body, the
+ * tutorial answer and the runnable examples are all written for THAT language
+ * (its idioms, its standard library, its pitfalls) and its output is quoted
+ * from a real run.
+ *
+ * Example code conventions, so every example runs in the site's runners:
+ *  - python      plain script, prints with print(); `print(x)  # expected`
+ *                comments become in-page tests
+ *  - javascript  plain browser-safe script (no require/process/fs), prints with
+ *                console.log; `console.log(x); // expected` becomes a test
+ *  - java        one file with `public class Main` and static helpers/classes
+ *  - cpp         one file with `int main()`, C++17, standard library only
+ */
+export type DsaLanguageBundle = {
+  /** Question Body (CLAUDE.md §6) for this language. Plain markdown, no HTML. */
+  description: string;
+  /** The tutorial answer for this language (markdown + inline SVG allowed). */
+  answer: string;
+  /** Runnable examples in this language (tech is implied by the bundle key). */
+  examples: { label: string; code: string; runnable?: boolean }[];
+};
+
+export type DsaUltraAugment = {
+  /** Exact PrepQuestion.title (technology='dsa'). */
+  title: string;
+  /** Corrects the stored difficulty when the original label was wrong. */
+  difficulty?: "easy" | "medium" | "hard";
+  /** One plain sentence, <=155 chars, used as the page meta description. */
+  seoDescription: string;
+  /** One bundle per language; all four are required. */
+  languages: Record<DsaLanguage, DsaLanguageBundle>;
+};

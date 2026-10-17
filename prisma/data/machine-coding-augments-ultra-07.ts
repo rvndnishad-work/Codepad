@@ -167,7 +167,8 @@ useEffect(() => {
     if (!rootRef.current.contains(e.target)) close(false);
   }
   document.addEventListener("pointerdown", onPointerDown);
-  return () => document.removeEventListener("pointerdown", onPointerDown);
+  return () =>
+    document.removeEventListener("pointerdown", onPointerDown);
 }, [open]);
 ~~~
 
@@ -185,9 +186,16 @@ In development the solution runs inside \`<StrictMode>\`, which mounts, unmounts
 
 ~~~jsx
 function onTriggerKeyDown(e) {
-  // Enter and Space already fire a click on a button, so only arrows here.
-  if (e.key === "ArrowDown") { e.preventDefault(); openAt(0); }
-  if (e.key === "ArrowUp") { e.preventDefault(); openAt(items.length - 1); }
+  // Enter and Space already fire a click
+  // on a button, so only arrows here.
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    openAt(0);
+  }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    openAt(items.length - 1);
+  }
 }
 
 function onMenuKeyDown(e) {
@@ -198,10 +206,15 @@ function onMenuKeyDown(e) {
     Home: 0,
     End: last,
   }[e.key];
-  if (next !== undefined) { e.preventDefault(); setActive(next); }
-  else if (e.key === "Escape") { e.preventDefault(); close(true); }
-  else if (e.key === "Tab") {
-    // Park focus on the trigger first; the browser's own Tab then moves on from there.
+  if (next !== undefined) {
+    e.preventDefault();
+    setActive(next);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    close(true);
+  } else if (e.key === "Tab") {
+    // Park focus on the trigger first; the
+    // browser's own Tab then moves on from there.
     triggerRef.current.focus();
     close(false);
   }
@@ -235,14 +248,22 @@ A few choices worth saying out loud in the interview:
     {label} <span aria-hidden="true">▾</span>
   </button>
   {open && (
-    <ul id={menuId} role="menu" aria-label={label} className="dropdown-menu" onKeyDown={onMenuKeyDown}>
+    <ul
+      id={menuId}
+      role="menu"
+      aria-label={label}
+      className="dropdown-menu"
+      onKeyDown={onMenuKeyDown}
+    >
       {items.map((item, i) => (
         <li key={item.id} role="none">
           <button
             type="button"
             role="menuitem"
             tabIndex={i === active ? 0 : -1}
-            ref={(el) => { itemRefs.current[i] = el; }}
+            ref={(el) => {
+              itemRefs.current[i] = el;
+            }}
             onClick={() => choose(item)}
             onMouseEnter={() => setActive(i)}
           >
@@ -263,7 +284,7 @@ A few choices worth saying out loud in the interview:
 
 The solution files were mounted exactly as the playground mounts them (\`createRoot(#root).render(<StrictMode><App /></StrictMode>)\`) in jsdom and driven by a script that clicks, presses keys and fires a \`pointerdown\` outside the widget. jsdom does not run the browser's default actions, so the driver dispatches events and reads \`document.activeElement\`:
 
-~~~
+~~~text
 [react] RENDERED: Dropdown menuActions ▾Last action: noneClick anywhere outside the menu to close it.Reset
 [react] initial      : expanded=false menu=closed focus=BODY
 [react] click trigger: expanded=true menu=open focus=Edit items=Edit|Duplicate|Share|Delete
@@ -284,7 +305,7 @@ The "press on menu" line shows the \`contains()\` check at work: a press on the 
 
 Things jsdom cannot show (real Tab default action, real layout) were checked in Chromium 141 with the same files and the stylesheet:
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] Tab          : expanded=false menu=closed focus=trigger
 [chromium:react] Enter        : expanded=true menu=open focus=Edit
@@ -412,10 +433,25 @@ export default function App() {
   return (
     <main className="page">
       <h1>Dropdown menu</h1>
-      <Dropdown label="Actions" items={ITEMS} onSelect={(item) => setLast(item.label)} />
-      <p data-testid="status" aria-live="polite">Last action: {last}</p>
-      <p data-testid="outside" className="hint">Click anywhere outside the menu to close it.</p>
-      <button type="button" data-testid="reset" className="reset" onClick={() => setLast("none")}>Reset</button>
+      <Dropdown
+        label="Actions"
+        items={ITEMS}
+        onSelect={(item) => setLast(item.label)}
+      />
+      <p data-testid="status" aria-live="polite">
+        Last action: {last}
+      </p>
+      <p data-testid="outside" className="hint">
+        Click anywhere outside the menu to close it.
+      </p>
+      <button
+        type="button"
+        data-testid="reset"
+        className="reset"
+        onClick={() => setLast("none")}
+      >
+        Reset
+      </button>
     </main>
   );
 }
@@ -459,8 +495,14 @@ export default function Dropdown({ label, items, onSelect }) {
 
   function onTriggerKeyDown(e) {
     // Enter and Space already fire a click on a button, so only arrows here.
-    if (e.key === "ArrowDown") { e.preventDefault(); openAt(0); }
-    if (e.key === "ArrowUp") { e.preventDefault(); openAt(items.length - 1); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      openAt(0);
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      openAt(items.length - 1);
+    }
   }
 
   function onMenuKeyDown(e) {
@@ -471,10 +513,15 @@ export default function Dropdown({ label, items, onSelect }) {
       Home: 0,
       End: last,
     }[e.key];
-    if (next !== undefined) { e.preventDefault(); setActive(next); }
-    else if (e.key === "Escape") { e.preventDefault(); close(true); }
-    else if (e.key === "Tab") {
-      // Park focus on the trigger first; the browser's own Tab then moves on from there.
+    if (next !== undefined) {
+      e.preventDefault();
+      setActive(next);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      close(true);
+    } else if (e.key === "Tab") {
+      // Park focus on the trigger first; the
+      // browser's own Tab then moves on from there.
       triggerRef.current.focus();
       close(false);
     }
@@ -501,14 +548,22 @@ export default function Dropdown({ label, items, onSelect }) {
         {label} <span aria-hidden="true">▾</span>
       </button>
       {open && (
-        <ul id={menuId} role="menu" aria-label={label} className="dropdown-menu" onKeyDown={onMenuKeyDown}>
+        <ul
+          id={menuId}
+          role="menu"
+          aria-label={label}
+          className="dropdown-menu"
+          onKeyDown={onMenuKeyDown}
+        >
           {items.map((item, i) => (
             <li key={item.id} role="none">
               <button
                 type="button"
                 role="menuitem"
                 tabIndex={i === active ? 0 : -1}
-                ref={(el) => { itemRefs.current[i] = el; }}
+                ref={(el) => {
+                  itemRefs.current[i] = el;
+                }}
                 onClick={() => choose(item)}
                 onMouseEnter={() => setActive(i)}
               >
@@ -522,17 +577,81 @@ export default function Dropdown({ label, items, onSelect }) {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; margin: 0 0 16px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
-.dropdown { position: relative; display: inline-block; }
-.dropdown-trigger { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.dropdown-trigger:focus-visible, .dropdown-menu button:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; min-width: 180px; margin: 0; padding: 6px; list-style: none; background: #1d222b; border: 1px solid #3a4250; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
-.dropdown-menu button { display: block; width: 100%; text-align: left; font: inherit; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
-.dropdown-menu button:focus { background: #2b3342; }
-.reset { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #3a4250; background: transparent; color: inherit; cursor: pointer; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-trigger {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.dropdown-trigger:focus-visible,
+.dropdown-menu button:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.dropdown-menu button:focus {
+  background: #2b3342;
+}
+.reset {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
 `,
         },
       },
@@ -571,20 +690,14 @@ A dropdown menu is that lift, in the browser. Drawing a list under a button take
 ### Step 1 — Props, emits and state
 
 ~~~vue
-const props = defineProps({
-  label: { type: String, required: true },
-  items: { type: Array, required: true },
-});
-const emit = defineEmits(["select"]);
-
-const open = ref(false);
-// Index of the item that owns focus (roving tabindex). -1 = none.
-const active = ref(-1);
-const root = useTemplateRef("root");
-const trigger = useTemplateRef("trigger");
-// Function refs keep the array in source order (v-for ref arrays do not promise that).
-const itemEls = [];
-const menuId = useId();
+const props = defineProps({ label: { type: String, required: true },
+items: { type: Array, required: true }, }); const emit =
+defineEmits(["select"]); const open = ref(false); // Index of the item
+that owns focus (roving tabindex). -1 = none. const active = ref(-1);
+const root = useTemplateRef("root"); const trigger =
+useTemplateRef("trigger"); // Function refs keep the array in source
+order (v-for ref arrays do not promise that). const itemEls = []; const
+menuId = useId();
 ~~~
 
 \`itemEls\` is a plain array, not reactive: it only holds element handles, and nothing in the template reads it. It is filled with a **function ref** on each item, \`:ref="(el) => (itemEls[i] = el)"\`. A string \`ref\` inside \`v-for\` also gives you an array, but Vue does not promise that array is in the same order as the source list, and roving focus depends on index \`i\` meaning item \`i\`.
@@ -593,9 +706,8 @@ const menuId = useId();
 
 ~~~vue
 // flush: "post" runs after Vue has patched the DOM, so the item exists.
-watch([open, active], ([isOpen, index]) => {
-  if (isOpen && index >= 0) itemEls[index]?.focus();
-}, { flush: "post" });
+watch([open, active], ([isOpen, index]) => { if (isOpen && index >= 0)
+itemEls[index]?.focus(); }, { flush: "post" });
 ~~~
 
 📌 **Interview term: Watcher flush timing** — when a watcher callback runs relative to Vue's DOM patch. The default (\`"pre"\`) runs before the DOM is updated, so on the click that opens the menu the \`<li>\` buttons do not exist yet. \`flush: "post"\` runs the callback after the patch, when they do. More in [watch flush timing in 3.5](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5).
@@ -606,14 +718,11 @@ watch([open, active], ([isOpen, index]) => {
 
 ~~~vue
 // Close on a pointer press outside the widget. Listen only while open.
-watch(open, (isOpen) => {
-  if (!isOpen) return;
-  const onPointerDown = (e) => {
-    if (!root.value.contains(e.target)) close(false);
-  };
-  document.addEventListener("pointerdown", onPointerDown);
-  onWatcherCleanup(() => document.removeEventListener("pointerdown", onPointerDown));
-});
+watch(open, (isOpen) => { if (!isOpen) return; const onPointerDown = (e)
+=> { if (!root.value.contains(e.target)) close(false); };
+document.addEventListener("pointerdown", onPointerDown);
+onWatcherCleanup(() => document.removeEventListener("pointerdown",
+onPointerDown)); });
 ~~~
 
 📌 **Interview term: onWatcherCleanup** — registers a function that Vue runs before the watcher fires again and when the watcher stops (for a component watcher, on unmount). It is the Vue twin of an effect cleanup: the listener is added when \`open\` turns true and removed when it turns false, so it exists only while the menu is open.
@@ -623,30 +732,18 @@ The check \`root.value.contains(e.target)\` ignores presses inside the widget. L
 ### Step 4 — Keyboard rules
 
 ~~~vue
-function onTriggerKeyDown(e) {
-  // Enter and Space already fire a click on a button, so only arrows here.
-  if (e.key === "ArrowDown") { e.preventDefault(); openAt(0); }
-  if (e.key === "ArrowUp") { e.preventDefault(); openAt(props.items.length - 1); }
-}
-
-function onMenuKeyDown(e) {
-  const last = props.items.length - 1;
-  const next = {
-    ArrowDown: active.value === last ? 0 : active.value + 1,
-    ArrowUp: active.value <= 0 ? last : active.value - 1,
-    Home: 0,
-    End: last,
-  }[e.key];
-  if (next !== undefined) { e.preventDefault(); active.value = next; }
-  else if (e.key === "Escape") { e.preventDefault(); close(true); }
-  else if (e.key === "Tab") {
-    // Park focus on the trigger first; the browser's own Tab then moves on from there.
-    trigger.value.focus();
-    close(false);
-  }
-}
-
-function choose(item) {
+function onTriggerKeyDown(e) { // Enter and Space already fire a click
+on a button, so only arrows here. if (e.key === "ArrowDown") {
+e.preventDefault(); openAt(0); } if (e.key === "ArrowUp") {
+e.preventDefault(); openAt(props.items.length - 1); } } function
+onMenuKeyDown(e) { const last = props.items.length - 1; const next = {
+ArrowDown: active.value === last ? 0 : active.value + 1, ArrowUp:
+active.value <= 0 ? last : active.value - 1, Home: 0, End: last,
+}[e.key]; if (next !== undefined) { e.preventDefault(); active.value =
+next; } else if (e.key === "Escape") { e.preventDefault(); close(true);
+} else if (e.key === "Tab") { // Park focus on the trigger first; the
+browser's own Tab then moves on from there. trigger.value.focus();
+close(false); } } function choose(item) {
 ~~~
 
 Enter and Space are left to the native \`<button>\`, which turns them into a click. On Tab the trigger is focused first and then the menu closes, without \`preventDefault()\`, so the browser's own Tab moves on from the trigger to the next control.
@@ -668,7 +765,14 @@ Enter and Space are left to the native \`<button>\`, which turns them into a cli
   >
     {{ label }} <span aria-hidden="true">▾</span>
   </button>
-  <ul v-if="open" :id="menuId" role="menu" :aria-label="label" class="dropdown-menu" @keydown="onMenuKeyDown">
+  <ul
+    v-if="open"
+    :id="menuId"
+    role="menu"
+    :aria-label="label"
+    class="dropdown-menu"
+    @keydown="onMenuKeyDown"
+  >
     <li v-for="(item, i) in items" :key="item.id" role="none">
       <button
         :ref="(el) => (itemEls[i] = el)"
@@ -691,7 +795,7 @@ Enter and Space are left to the native \`<button>\`, which turns them into a cli
 
 Compiled with \`@vue/compiler-sfc\`, mounted with \`createApp(App).mount("#app")\` in jsdom and driven by the same script as the React and Angular versions. The driver fires real \`click\`, \`keydown\` and \`pointerdown\` events and reads \`document.activeElement\`:
 
-~~~
+~~~text
 [vue] RENDERED: Dropdown menuActions ▾Last action: noneClick anywhere outside the menu to close it.Reset
 [vue] initial      : expanded=false menu=closed focus=BODY
 [vue] click trigger: expanded=true menu=open focus=Edit items=Edit|Duplicate|Share|Delete
@@ -710,7 +814,7 @@ Compiled with \`@vue/compiler-sfc\`, mounted with \`createApp(App).mount("#app")
 
 In real Chromium 141 with the scoped styles applied, real Enter opened the menu, Tab inside it moved on to the Reset button that follows the trigger, and the menu rendered 6 px below the trigger:
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] Tab          : expanded=false menu=closed focus=trigger
 [chromium:vue] Enter        : expanded=true menu=open focus=Edit
@@ -827,19 +931,54 @@ const last = ref("none");
 <template>
   <main class="page">
     <h1>Dropdown menu</h1>
-    <DropdownMenu label="Actions" :items="items" @select="(item) => (last = item.label)" />
+    <DropdownMenu
+      label="Actions"
+      :items="items"
+      @select="(item) => (last = item.label)"
+    />
     <p data-testid="status" aria-live="polite">Last action: {{ last }}</p>
-    <p data-testid="outside" class="hint">Click anywhere outside the menu to close it.</p>
-    <button type="button" data-testid="reset" class="reset" @click="last = 'none'">Reset</button>
+    <p
+      data-testid="outside"
+      class="hint"
+    >Click anywhere outside the menu to close it.</p>
+    <button
+      type="button"
+      data-testid="reset"
+      class="reset"
+      @click="last = 'none'"
+    >Reset</button>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; margin: 0 0 16px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
-.reset { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #3a4250; background: transparent; color: inherit; cursor: pointer; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.reset {
+  font: inherit;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/components/DropdownMenu.vue": `<script setup>
@@ -856,14 +995,19 @@ const open = ref(false);
 const active = ref(-1);
 const root = useTemplateRef("root");
 const trigger = useTemplateRef("trigger");
-// Function refs keep the array in source order (v-for ref arrays do not promise that).
+// Function refs keep the array in source order
+// (v-for ref arrays do not promise that).
 const itemEls = [];
 const menuId = useId();
 
 // flush: "post" runs after Vue has patched the DOM, so the item exists.
-watch([open, active], ([isOpen, index]) => {
-  if (isOpen && index >= 0) itemEls[index]?.focus();
-}, { flush: "post" });
+watch(
+  [open, active],
+  ([isOpen, index]) => {
+    if (isOpen && index >= 0) itemEls[index]?.focus();
+  },
+  { flush: "post" },
+);
 
 // Close on a pointer press outside the widget. Listen only while open.
 watch(open, (isOpen) => {
@@ -872,7 +1016,9 @@ watch(open, (isOpen) => {
     if (!root.value.contains(e.target)) close(false);
   };
   document.addEventListener("pointerdown", onPointerDown);
-  onWatcherCleanup(() => document.removeEventListener("pointerdown", onPointerDown));
+  onWatcherCleanup(() =>
+    document.removeEventListener("pointerdown", onPointerDown),
+  );
 });
 
 function openAt(index) {
@@ -888,8 +1034,14 @@ function close(returnFocus) {
 
 function onTriggerKeyDown(e) {
   // Enter and Space already fire a click on a button, so only arrows here.
-  if (e.key === "ArrowDown") { e.preventDefault(); openAt(0); }
-  if (e.key === "ArrowUp") { e.preventDefault(); openAt(props.items.length - 1); }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    openAt(0);
+  }
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    openAt(props.items.length - 1);
+  }
 }
 
 function onMenuKeyDown(e) {
@@ -900,10 +1052,15 @@ function onMenuKeyDown(e) {
     Home: 0,
     End: last,
   }[e.key];
-  if (next !== undefined) { e.preventDefault(); active.value = next; }
-  else if (e.key === "Escape") { e.preventDefault(); close(true); }
-  else if (e.key === "Tab") {
-    // Park focus on the trigger first; the browser's own Tab then moves on from there.
+  if (next !== undefined) {
+    e.preventDefault();
+    active.value = next;
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    close(true);
+  } else if (e.key === "Tab") {
+    // Park focus on the trigger first; the
+    // browser's own Tab then moves on from there.
     trigger.value.focus();
     close(false);
   }
@@ -930,7 +1087,14 @@ function choose(item) {
     >
       {{ label }} <span aria-hidden="true">▾</span>
     </button>
-    <ul v-if="open" :id="menuId" role="menu" :aria-label="label" class="dropdown-menu" @keydown="onMenuKeyDown">
+    <ul
+      v-if="open"
+      :id="menuId"
+      role="menu"
+      :aria-label="label"
+      class="dropdown-menu"
+      @keydown="onMenuKeyDown"
+    >
       <li v-for="(item, i) in items" :key="item.id" role="none">
         <button
           :ref="(el) => (itemEls[i] = el)"
@@ -948,12 +1112,53 @@ function choose(item) {
 </template>
 
 <style scoped>
-.dropdown { position: relative; display: inline-block; }
-.dropdown-trigger { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.dropdown-trigger:focus-visible, .dropdown-menu button:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; min-width: 180px; margin: 0; padding: 6px; list-style: none; background: #1d222b; border: 1px solid #3a4250; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
-.dropdown-menu button { display: block; width: 100%; text-align: left; font: inherit; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
-.dropdown-menu button:focus { background: #2b3342; }
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-trigger {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.dropdown-trigger:focus-visible,
+.dropdown-menu button:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.dropdown-menu button:focus {
+  background: #2b3342;
+}
 </style>
 `,
         },
@@ -997,7 +1202,9 @@ The playground compiles components at runtime, where signal \`input()\` and \`vi
 @Output() itemSelect = new EventEmitter<MenuItem>();
 
 @ViewChild("trigger") trigger!: ElementRef<HTMLButtonElement>;
-@ViewChildren("item") itemEls!: QueryList<ElementRef<HTMLButtonElement>>;
+@ViewChildren("item") itemEls!: QueryList<
+  ElementRef<HTMLButtonElement>
+>;
 
 readonly open = signal(false);
 // Index of the item that owns focus (roving tabindex). -1 = none.
@@ -1013,10 +1220,12 @@ private cdr = inject(ChangeDetectorRef);
 
 ~~~ts
 constructor() {
-  // Runs after Angular has rendered, so the focused item exists in the DOM.
+  // Runs after Angular has rendered, so
+  // the focused item exists in the DOM.
   afterRenderEffect(() => {
     const index = this.active();
-    if (this.open() && index >= 0) this.itemEls.get(index)?.nativeElement.focus();
+    if (this.open() && index >= 0)
+      this.itemEls.get(index)?.nativeElement.focus();
   });
 }
 ~~~
@@ -1031,7 +1240,8 @@ constructor() {
 // Close on a pointer press outside the widget.
 @HostListener("document:pointerdown", ["$event"])
 onDocumentPointerDown(e: PointerEvent) {
-  if (this.open() && !this.host.contains(e.target as Node)) this.close(false);
+  if (this.open() && !this.host.contains(e.target as Node))
+    this.close(false);
 }
 ~~~
 
@@ -1043,16 +1253,28 @@ onDocumentPointerDown(e: PointerEvent) {
 onMenuKeyDown(e: KeyboardEvent) {
   const last = this.items.length - 1;
   const a = this.active();
-  const moves: Record<string, number> = { ArrowDown: a === last ? 0 : a + 1, ArrowUp: a <= 0 ? last : a - 1, Home: 0, End: last };
+  const moves: Record<string, number> = {
+    ArrowDown: a === last ? 0 : a + 1,
+    ArrowUp: a <= 0 ? last : a - 1,
+    Home: 0,
+    End: last,
+  };
   const next = moves[e.key];
-  if (next !== undefined) { e.preventDefault(); this.active.set(next); }
-  else if (e.key === "Escape") { e.preventDefault(); this.close(true); }
-  else if (e.key === "Tab") {
-    // Park focus on the trigger first; the browser's own Tab then moves on from there.
+  if (next !== undefined) {
+    e.preventDefault();
+    this.active.set(next);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    this.close(true);
+  } else if (e.key === "Tab") {
+    // Park focus on the trigger first; the
+    // browser's own Tab then moves on from there.
     this.trigger.nativeElement.focus();
     this.close(false);
-    // Zoneless Angular renders after this handler returns, but the browser runs its
-    // default Tab action first. Render now so the menu is gone before Tab moves focus.
+    // Zoneless Angular renders after this
+    // handler returns, but the browser runs its
+    // default Tab action first. Render now so
+    // the menu is gone before Tab moves focus.
     this.cdr.detectChanges();
   }
 }
@@ -1089,7 +1311,7 @@ The Tab branch has one line the React and Vue versions do not need. In Chromium 
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, in jsdom, once compiled ahead of time with \`strictTemplates\` and once with runtime JIT. Both printed the same lines; this is the JIT (playground) run:
 
-~~~
+~~~text
 [angular:playground] RENDERED: Dropdown menu Actions ▾Last action: noneClick anywhere outside the menu to close it.Reset
 [angular:playground] initial      : expanded=false menu=closed focus=BODY
 [angular:playground] click trigger: expanded=true menu=open focus=Edit items=Edit|Duplicate|Share|Delete
@@ -1108,7 +1330,7 @@ Booted with \`bootstrapApplication(AppComponent)\` and no providers, in jsdom, o
 
 In real Chromium 141 (runtime JIT, styles applied), real Enter opened the menu, real Tab inside it moved on to the Reset button after the trigger, and the menu sat 6 px below the trigger:
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] Tab          : expanded=false menu=closed focus=trigger
 [chromium:angular] Enter        : expanded=true menu=open focus=Edit
@@ -1218,22 +1440,37 @@ import { DropdownComponent, MenuItem } from "./dropdown.component";
   template: \`
     <main class="page">
       <h1>Dropdown menu</h1>
-      <app-dropdown label="Actions" [items]="items" (itemSelect)="last.set($event.label)" />
+      <app-dropdown
+        label="Actions"
+        [items]="items"
+        (itemSelect)="last.set($event.label)"
+      />
       <p data-testid="status" aria-live="polite">Last action: {{ last() }}</p>
-      <p data-testid="outside" class="hint">Click anywhere outside the menu to close it.</p>
-      <button type="button" data-testid="reset" class="reset" (click)="last.set('none')">Reset</button>
+      <p
+        data-testid="outside"
+        class="hint"
+      >Click anywhere outside the menu to close it.</p>
+      <button
+        type="button"
+        data-testid="reset"
+        class="reset"
+        (click)="last.set('none')"
+      >Reset</button>
     </main>
   \`,
-  // Global (unencapsulated) so the body reset applies; every rule is prefixed by app-root.
+  // Global (unencapsulated) so the body reset
+  // applies; every rule is prefixed by app-root.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
     app-root .page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
     app-root h1 { font-size: 1.3rem; margin: 0 0 16px; }
     app-root .hint { color: #9aa3b2; font-size: 0.9rem; }
     app-root .reset { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid #3a4250; background: transparent; color: inherit; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   items: MenuItem[] = [
@@ -1246,11 +1483,25 @@ export class AppComponent {
 }
 `,
           "/src/app/dropdown.component.ts": `import {
-  ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, Output, QueryList,
-  ViewChild, ViewChildren, afterRenderEffect, inject, signal,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+  afterRenderEffect,
+  inject,
+  signal,
 } from "@angular/core";
 
-export interface MenuItem { id: string; label: string; }
+export interface MenuItem {
+  id: string;
+  label: string;
+}
 
 let nextId = 0;
 
@@ -1271,7 +1522,13 @@ let nextId = 0;
       {{ label }} <span aria-hidden="true">▾</span>
     </button>
     @if (open()) {
-      <ul [id]="menuId" role="menu" [attr.aria-label]="label" class="dropdown-menu" (keydown)="onMenuKeyDown($event)">
+      <ul
+        [id]="menuId"
+        role="menu"
+        [attr.aria-label]="label"
+        class="dropdown-menu"
+        (keydown)="onMenuKeyDown($event)"
+      >
         @for (item of items; track item.id; let i = $index) {
           <li role="none">
             <button
@@ -1289,14 +1546,57 @@ let nextId = 0;
       </ul>
     }
   \`,
-  styles: [\`
-    :host { position: relative; display: inline-block; }
-    .dropdown-trigger { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-    .dropdown-trigger:focus-visible, .dropdown-menu button:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-    .dropdown-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 10; min-width: 180px; margin: 0; padding: 6px; list-style: none; background: #1d222b; border: 1px solid #3a4250; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45); }
-    .dropdown-menu button { display: block; width: 100%; text-align: left; font: inherit; padding: 8px 10px; border: 0; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
-    .dropdown-menu button:focus { background: #2b3342; }
-  \`],
+  styles: [
+    \`
+      :host {
+        position: relative;
+        display: inline-block;
+      }
+      .dropdown-trigger {
+        font: inherit;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid #3a4250;
+        background: #1d222b;
+        color: inherit;
+        cursor: pointer;
+      }
+      .dropdown-trigger:focus-visible,
+      .dropdown-menu button:focus-visible {
+        outline: 2px solid #6ea8fe;
+        outline-offset: 2px;
+      }
+      .dropdown-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 10;
+        min-width: 180px;
+        margin: 0;
+        padding: 6px;
+        list-style: none;
+        background: #1d222b;
+        border: 1px solid #3a4250;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      }
+      .dropdown-menu button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font: inherit;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+      }
+      .dropdown-menu button:focus {
+        background: #2b3342;
+      }
+    \`,
+  ],
 })
 export class DropdownComponent {
   @Input({ required: true }) label = "";
@@ -1317,7 +1617,8 @@ export class DropdownComponent {
     // Runs after Angular has rendered, so the focused item exists in the DOM.
     afterRenderEffect(() => {
       const index = this.active();
-      if (this.open() && index >= 0) this.itemEls.get(index)?.nativeElement.focus();
+      if (this.open() && index >= 0)
+        this.itemEls.get(index)?.nativeElement.focus();
     });
   }
 
@@ -1340,23 +1641,41 @@ export class DropdownComponent {
 
   onTriggerKeyDown(e: KeyboardEvent) {
     // Enter and Space already fire a click on a button, so only arrows here.
-    if (e.key === "ArrowDown") { e.preventDefault(); this.openAt(0); }
-    if (e.key === "ArrowUp") { e.preventDefault(); this.openAt(this.items.length - 1); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.openAt(0);
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.openAt(this.items.length - 1);
+    }
   }
 
   onMenuKeyDown(e: KeyboardEvent) {
     const last = this.items.length - 1;
     const a = this.active();
-    const moves: Record<string, number> = { ArrowDown: a === last ? 0 : a + 1, ArrowUp: a <= 0 ? last : a - 1, Home: 0, End: last };
+    const moves: Record<string, number> = {
+      ArrowDown: a === last ? 0 : a + 1,
+      ArrowUp: a <= 0 ? last : a - 1,
+      Home: 0,
+      End: last,
+    };
     const next = moves[e.key];
-    if (next !== undefined) { e.preventDefault(); this.active.set(next); }
-    else if (e.key === "Escape") { e.preventDefault(); this.close(true); }
-    else if (e.key === "Tab") {
-      // Park focus on the trigger first; the browser's own Tab then moves on from there.
+    if (next !== undefined) {
+      e.preventDefault();
+      this.active.set(next);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      this.close(true);
+    } else if (e.key === "Tab") {
+      // Park focus on the trigger first; the
+      // browser's own Tab then moves on from there.
       this.trigger.nativeElement.focus();
       this.close(false);
-      // Zoneless Angular renders after this handler returns, but the browser runs its
-      // default Tab action first. Render now so the menu is gone before Tab moves focus.
+      // Zoneless Angular renders after this
+      // handler returns, but the browser runs its
+      // default Tab action first. Render now so
+      // the menu is gone before Tab moves focus.
       this.cdr.detectChanges();
     }
   }
@@ -1468,7 +1787,12 @@ The modal is a child of \`App\` in the React tree, so it reads \`App\` state and
 
 ~~~jsx
 return createPortal(
-  <div className="backdrop" data-testid="backdrop" onMouseDown={onBackdropMouseDown} onClick={onBackdropClick}>
+  <div
+    className="backdrop"
+    data-testid="backdrop"
+    onMouseDown={onBackdropMouseDown}
+    onClick={onBackdropClick}
+  >
     <div
       ref={dialogRef}
       className="dialog"
@@ -1478,7 +1802,13 @@ return createPortal(
       aria-describedby={descId}
       tabIndex={-1}
     >
-      <button type="button" className="icon-btn" aria-label="Close" data-testid="close" onClick={() => onClose("close")}>
+      <button
+        type="button"
+        className="icon-btn"
+        aria-label="Close"
+        data-testid="close"
+        onClick={() => onClose("close")}
+      >
         ×
       </button>
       <h2 id={titleId}>{title}</h2>
@@ -1486,7 +1816,7 @@ return createPortal(
       <div className="actions">{children}</div>
     </div>
   </div>,
-  document.body
+  document.body,
 );
 ~~~
 
@@ -1497,13 +1827,15 @@ The backdrop is \`position: fixed; inset: 0\` with a high \`z-index\` and centre
 ### Step 2 — Close on the overlay, but only on the overlay
 
 ~~~jsx
-// Close only when the press both started and ended on the backdrop itself, so a text
+// Close only when the press both started and
+// ended on the backdrop itself, so a text
 // selection dragged out of the panel does not dismiss the dialog.
 function onBackdropMouseDown(e) {
   pressStartedOnBackdrop.current = e.target === e.currentTarget;
 }
 function onBackdropClick(e) {
-  if (pressStartedOnBackdrop.current && e.target === e.currentTarget) onClose("backdrop");
+  if (pressStartedOnBackdrop.current && e.target === e.currentTarget)
+    onClose("backdrop");
   pressStartedOnBackdrop.current = false;
 }
 ~~~
@@ -1515,7 +1847,8 @@ The second check is subtle and a favourite follow-up. If you press inside the pa
 ### Step 3 — Escape, with an Effect Event
 
 ~~~jsx
-// An Effect Event always sees the latest onClose without re-subscribing the listener.
+// An Effect Event always sees the latest
+// onClose without re-subscribing the listener.
 const onEscape = useEffectEvent(() => onClose("escape"));
 
 useEffect(() => {
@@ -1535,7 +1868,8 @@ The listener is on \`document\`, not on the dialog, so Escape works wherever foc
 ### Step 4 — Initial focus and focus return
 
 ~~~jsx
-// Move focus into the dialog when it opens: the [data-autofocus] element, else the dialog.
+// Move focus into the dialog when it opens: the
+// [data-autofocus] element, else the dialog.
 useEffect(() => {
   if (!open) return;
   const dialog = dialogRef.current;
@@ -1550,8 +1884,13 @@ On close, \`App\` puts focus back on the button that opened the dialog:
 ~~~jsx
 function close(reason) {
   setOpen(false);
-  setResult(reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")");
-  triggerRef.current.focus(); // give focus back to the button that opened the dialog
+  setResult(
+    reason === "confirm"
+      ? "project deleted"
+      : "kept (" + REASONS[reason] + ")",
+  );
+  // give focus back to the button that opened the dialog
+  triggerRef.current.focus();
 }
 ~~~
 
@@ -1567,7 +1906,7 @@ The panel has \`role="dialog"\`, \`aria-modal="true"\`, \`aria-labelledby\` poin
 
 Mounted the way the playground does (\`<StrictMode><App /></StrictMode>\`) in jsdom. A real press is \`mousedown\` then \`click\`, so the driver dispatches both, and reads \`document.activeElement\` after each step:
 
-~~~
+~~~text
 [react] RENDERED: Modal dialogProject: apollo-webDelete projectResult: nothing yet
 [react] initial      : closed focus=BODY | Result: nothing yet
 [react] opened       : open focus=cancel
@@ -1586,7 +1925,7 @@ The portal line confirms the dialog's top-level node is a direct child of \`body
 
 In real Chromium 141 with the stylesheet, at 800 x 600:
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] opened       : open focus=cancel | Result: nothing yet
 [chromium:react] layout       : backdrop 0,0 800x600 | dialog centre 400,300 | element at (40,40): backdrop
@@ -1702,7 +2041,12 @@ The backdrop covers the whole viewport and the panel is centred at 400,300. A re
           "/App.js": `import { useRef, useState } from "react";
 import Modal from "./src/Modal";
 
-const REASONS = { escape: "Escape key", backdrop: "backdrop click", close: "close button", cancel: "Cancel button" };
+const REASONS = {
+  escape: "Escape key",
+  backdrop: "backdrop click",
+  close: "close button",
+  cancel: "Cancel button",
+};
 
 export default function App() {
   const [open, setOpen] = useState(false);
@@ -1711,26 +2055,56 @@ export default function App() {
 
   function close(reason) {
     setOpen(false);
-    setResult(reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")");
-    triggerRef.current.focus(); // give focus back to the button that opened the dialog
+    setResult(
+      reason === "confirm"
+        ? "project deleted"
+        : "kept (" + REASONS[reason] + ")",
+    );
+    // give focus back to the button that opened the dialog
+    triggerRef.current.focus();
   }
 
   return (
     <main className="page">
       <h1>Modal dialog</h1>
-      <p>Project: <strong>apollo-web</strong></p>
-      <button ref={triggerRef} type="button" className="btn danger" data-testid="open" onClick={() => setOpen(true)}>
+      <p>
+        Project: <strong>apollo-web</strong>
+      </p>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="btn danger"
+        data-testid="open"
+        onClick={() => setOpen(true)}
+      >
         Delete project
       </button>
-      <p data-testid="result" aria-live="polite">Result: {result}</p>
+      <p data-testid="result" aria-live="polite">
+        Result: {result}
+      </p>
       <Modal
         open={open}
         title="Delete apollo-web?"
         description="This removes the project and its 14 deployments. You cannot undo this."
         onClose={close}
       >
-        <button type="button" className="btn" data-autofocus data-testid="cancel" onClick={() => close("cancel")}>Cancel</button>
-        <button type="button" className="btn danger" data-testid="confirm" onClick={() => close("confirm")}>Delete</button>
+        <button
+          type="button"
+          className="btn"
+          data-autofocus
+          data-testid="cancel"
+          onClick={() => close("cancel")}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn danger"
+          data-testid="confirm"
+          onClick={() => close("confirm")}
+        >
+          Delete
+        </button>
       </Modal>
     </main>
   );
@@ -1745,7 +2119,8 @@ export default function Modal({ open, title, description, onClose, children }) {
   const titleId = useId();
   const descId = useId();
 
-  // An Effect Event always sees the latest onClose without re-subscribing the listener.
+  // An Effect Event always sees the latest
+  // onClose without re-subscribing the listener.
   const onEscape = useEffectEvent(() => onClose("escape"));
 
   useEffect(() => {
@@ -1757,7 +2132,8 @@ export default function Modal({ open, title, description, onClose, children }) {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // Move focus into the dialog when it opens: the [data-autofocus] element, else the dialog.
+  // Move focus into the dialog when it opens: the
+  // [data-autofocus] element, else the dialog.
   useEffect(() => {
     if (!open) return;
     const dialog = dialogRef.current;
@@ -1766,18 +2142,25 @@ export default function Modal({ open, title, description, onClose, children }) {
 
   if (!open) return null;
 
-  // Close only when the press both started and ended on the backdrop itself, so a text
+  // Close only when the press both started and
+  // ended on the backdrop itself, so a text
   // selection dragged out of the panel does not dismiss the dialog.
   function onBackdropMouseDown(e) {
     pressStartedOnBackdrop.current = e.target === e.currentTarget;
   }
   function onBackdropClick(e) {
-    if (pressStartedOnBackdrop.current && e.target === e.currentTarget) onClose("backdrop");
+    if (pressStartedOnBackdrop.current && e.target === e.currentTarget)
+      onClose("backdrop");
     pressStartedOnBackdrop.current = false;
   }
 
   return createPortal(
-    <div className="backdrop" data-testid="backdrop" onMouseDown={onBackdropMouseDown} onClick={onBackdropClick}>
+    <div
+      className="backdrop"
+      data-testid="backdrop"
+      onMouseDown={onBackdropMouseDown}
+      onClick={onBackdropClick}
+    >
       <div
         ref={dialogRef}
         className="dialog"
@@ -1787,7 +2170,13 @@ export default function Modal({ open, title, description, onClose, children }) {
         aria-describedby={descId}
         tabIndex={-1}
       >
-        <button type="button" className="icon-btn" aria-label="Close" data-testid="close" onClick={() => onClose("close")}>
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Close"
+          data-testid="close"
+          onClick={() => onClose("close")}
+        >
           ×
         </button>
         <h2 id={titleId}>{title}</h2>
@@ -1795,23 +2184,95 @@ export default function Modal({ open, title, description, onClose, children }) {
         <div className="actions">{children}</div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; margin: 0 0 16px; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.btn.danger { background: #b4232c; border-color: #d0343e; color: #fff; }
-.btn:focus-visible, .icon-btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); }
-.dialog { position: relative; width: min(420px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-.dialog:focus { outline: none; }
-.dialog h2 { margin: 0 32px 8px 0; font-size: 1.15rem; }
-.dialog p { margin: 0 0 18px; color: #b9c0cc; line-height: 1.45; }
-.icon-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.3rem; cursor: pointer; }
-.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.btn.danger {
+  background: #b4232c;
+  border-color: #d0343e;
+  color: #fff;
+}
+.btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 7, 10, 0.7);
+}
+.dialog {
+  position: relative;
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  padding: 20px;
+  border-radius: 12px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  color: #e7e9ee;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog h2 {
+  margin: 0 32px 8px 0;
+  font-size: 1.15rem;
+}
+.dialog p {
+  margin: 0 0 18px;
+  color: #b9c0cc;
+  line-height: 1.45;
+}
+.icon-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 `,
         },
       },
@@ -1851,7 +2312,13 @@ This is the fundamentals version; the [accessible modal with focus trap and scro
 
 ~~~vue
 <Teleport to="body">
-  <div v-if="open" class="backdrop" data-testid="backdrop" @mousedown="onBackdropMouseDown" @click="onBackdropClick">
+  <div
+    v-if="open"
+    class="backdrop"
+    data-testid="backdrop"
+    @mousedown="onBackdropMouseDown"
+    @click="onBackdropClick"
+  >
     <div
       ref="dialog"
       class="dialog"
@@ -1861,7 +2328,13 @@ This is the fundamentals version; the [accessible modal with focus trap and scro
       :aria-describedby="descId"
       tabindex="-1"
     >
-      <button type="button" class="icon-btn" aria-label="Close" data-testid="close" @click="emit('close', 'close')">×</button>
+      <button
+        type="button"
+        class="icon-btn"
+        aria-label="Close"
+        data-testid="close"
+        @click="emit('close', 'close')"
+      >×</button>
       <h2 :id="titleId">{{ title }}</h2>
       <p :id="descId">{{ description }}</p>
       <div class="actions"><slot /></div>
@@ -1879,17 +2352,15 @@ Unlike a React portal, DOM events from teleported content bubble along the **DOM
 ### Step 2 — One watcher for Escape and initial focus
 
 ~~~vue
-// While open: listen for Escape on the document, and move focus into the dialog.
-// flush: "post" runs after the teleported DOM exists.
-watch(() => props.open, (isOpen) => {
-  if (!isOpen) return;
-  (dialog.value.querySelector("[data-autofocus]") ?? dialog.value).focus();
-  const onKeyDown = (e) => {
-    if (e.key === "Escape") emit("close", "escape");
-  };
-  document.addEventListener("keydown", onKeyDown);
-  onWatcherCleanup(() => document.removeEventListener("keydown", onKeyDown));
-}, { flush: "post" });
+// While open: listen for Escape on the document, and move focus into
+the dialog. // flush: "post" runs after the teleported DOM exists.
+watch(() => props.open, (isOpen) => { if (!isOpen) return;
+(dialog.value.querySelector("[data-autofocus]") ??
+dialog.value).focus(); const onKeyDown = (e) => { if (e.key ===
+"Escape") emit("close", "escape"); };
+document.addEventListener("keydown", onKeyDown); onWatcherCleanup(() =>
+document.removeEventListener("keydown", onKeyDown)); }, { flush: "post"
+});
 ~~~
 
 \`flush: "post"\` matters twice: the teleported backdrop element must exist before we can focus inside it. When \`open\` turns false, \`onWatcherCleanup\` removes the listener, so it never outlives the dialog. The caller marks the safest button with \`data-autofocus\` (Cancel for a destructive action); if nothing is marked the panel itself (\`tabindex="-1"\`) takes focus.
@@ -1897,13 +2368,10 @@ watch(() => props.open, (isOpen) => {
 ### Step 3 — Overlay click that really means it
 
 ~~~vue
-function onBackdropMouseDown(e) {
-  pressStartedOnBackdrop = e.target === e.currentTarget;
-}
-function onBackdropClick(e) {
-  if (pressStartedOnBackdrop && e.target === e.currentTarget) emit("close", "backdrop");
-  pressStartedOnBackdrop = false;
-}
+function onBackdropMouseDown(e) { pressStartedOnBackdrop = e.target ===
+e.currentTarget; } function onBackdropClick(e) { if
+(pressStartedOnBackdrop && e.target === e.currentTarget) emit("close",
+"backdrop"); pressStartedOnBackdrop = false; }
 ~~~
 
 \`e.target === e.currentTarget\` ignores clicks that bubbled up from inside the panel. The \`mousedown\` flag handles the sneaky case: pressing on the panel text, dragging and releasing over the overlay fires \`click\` on the overlay (the common ancestor). Vue's \`@click.self\` modifier does the first check for you, but not the second.
@@ -1911,11 +2379,10 @@ function onBackdropClick(e) {
 ### Step 4 — The parent: state, reason, focus return
 
 ~~~vue
-function close(reason) {
-  open.value = false;
-  result.value = reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")";
-  trigger.value.focus(); // give focus back to the button that opened the dialog
-}
+function close(reason) { open.value = false; result.value = reason ===
+"confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")";
+trigger.value.focus(); // give focus back to the button that opened the
+dialog }
 ~~~
 
 📌 **Interview term: Focus return** — after a dialog closes, keyboard focus goes back to the element that opened it, so the user keeps their place. Here the parent knows its trigger; the accessible version generalises it.
@@ -1926,7 +2393,7 @@ The panel has \`role="dialog"\`, \`aria-modal="true"\`, and \`:aria-labelledby\`
 
 Compiled with \`@vue/compiler-sfc\` and mounted with \`createApp(App).mount("#app")\` in jsdom, with the same driver as React and Angular (a press is a \`mousedown\` followed by a \`click\`):
 
-~~~
+~~~text
 [vue] RENDERED: Modal dialogProject: apollo-webDelete projectResult: nothing yet
 [vue] initial      : closed focus=BODY | Result: nothing yet
 [vue] opened       : open focus=cancel
@@ -1945,7 +2412,7 @@ The Teleport put the backdrop directly under \`body\`, outside \`#app\`. The dra
 
 In real Chromium 141 with the styles applied:
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] opened       : open focus=cancel | Result: nothing yet
 [chromium:vue] layout       : backdrop 0,0 800x600 | dialog centre 400,300 | element at (40,40): backdrop
@@ -2053,14 +2520,20 @@ The overlay covers the 800 x 600 viewport and the panel is centred. The second S
 import { ref, useTemplateRef } from "vue";
 import BaseModal from "./components/BaseModal.vue";
 
-const REASONS = { escape: "Escape key", backdrop: "backdrop click", close: "close button", cancel: "Cancel button" };
+const REASONS = {
+  escape: "Escape key",
+  backdrop: "backdrop click",
+  close: "close button",
+  cancel: "Cancel button",
+};
 const open = ref(false);
 const result = ref("nothing yet");
 const trigger = useTemplateRef("trigger");
 
 function close(reason) {
   open.value = false;
-  result.value = reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")";
+  result.value =
+    reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")";
   trigger.value.focus(); // give focus back to the button that opened the dialog
 }
 </script>
@@ -2069,7 +2542,13 @@ function close(reason) {
   <main class="page">
     <h1>Modal dialog</h1>
     <p>Project: <strong>apollo-web</strong></p>
-    <button ref="trigger" type="button" class="btn danger" data-testid="open" @click="open = true">Delete project</button>
+    <button
+      ref="trigger"
+      type="button"
+      class="btn danger"
+      data-testid="open"
+      @click="open = true"
+    >Delete project</button>
     <p data-testid="result" aria-live="polite">Result: {{ result }}</p>
     <BaseModal
       :open="open"
@@ -2077,19 +2556,57 @@ function close(reason) {
       description="This removes the project and its 14 deployments. You cannot undo this."
       @close="close"
     >
-      <button type="button" class="btn" data-autofocus data-testid="cancel" @click="close('cancel')">Cancel</button>
-      <button type="button" class="btn danger" data-testid="confirm" @click="close('confirm')">Delete</button>
+      <button
+        type="button"
+        class="btn"
+        data-autofocus
+        data-testid="cancel"
+        @click="close('cancel')"
+      >Cancel</button>
+      <button
+        type="button"
+        class="btn danger"
+        data-testid="confirm"
+        @click="close('confirm')"
+      >Delete</button>
     </BaseModal>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; margin: 0 0 16px; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.btn.danger { background: #b4232c; border-color: #d0343e; color: #fff; }
-.btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.btn.danger {
+  background: #b4232c;
+  border-color: #d0343e;
+  color: #fff;
+}
+.btn:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/BaseModal.vue": `<script setup>
@@ -2107,32 +2624,45 @@ const titleId = useId();
 const descId = useId();
 let pressStartedOnBackdrop = false;
 
-// While open: listen for Escape on the document, and move focus into the dialog.
+// While open: listen for Escape on the
+// document, and move focus into the dialog.
 // flush: "post" runs after the teleported DOM exists.
-watch(() => props.open, (isOpen) => {
-  if (!isOpen) return;
-  (dialog.value.querySelector("[data-autofocus]") ?? dialog.value).focus();
-  const onKeyDown = (e) => {
-    if (e.key === "Escape") emit("close", "escape");
-  };
-  document.addEventListener("keydown", onKeyDown);
-  onWatcherCleanup(() => document.removeEventListener("keydown", onKeyDown));
-}, { flush: "post" });
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (!isOpen) return;
+    (dialog.value.querySelector("[data-autofocus]") ?? dialog.value).focus();
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") emit("close", "escape");
+    };
+    document.addEventListener("keydown", onKeyDown);
+    onWatcherCleanup(() => document.removeEventListener("keydown", onKeyDown));
+  },
+  { flush: "post" },
+);
 
-// Close only when the press both started and ended on the backdrop itself, so a text
+// Close only when the press both started and
+// ended on the backdrop itself, so a text
 // selection dragged out of the panel does not dismiss the dialog.
 function onBackdropMouseDown(e) {
   pressStartedOnBackdrop = e.target === e.currentTarget;
 }
 function onBackdropClick(e) {
-  if (pressStartedOnBackdrop && e.target === e.currentTarget) emit("close", "backdrop");
+  if (pressStartedOnBackdrop && e.target === e.currentTarget)
+    emit("close", "backdrop");
   pressStartedOnBackdrop = false;
 }
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" class="backdrop" data-testid="backdrop" @mousedown="onBackdropMouseDown" @click="onBackdropClick">
+    <div
+      v-if="open"
+      class="backdrop"
+      data-testid="backdrop"
+      @mousedown="onBackdropMouseDown"
+      @click="onBackdropClick"
+    >
       <div
         ref="dialog"
         class="dialog"
@@ -2142,7 +2672,13 @@ function onBackdropClick(e) {
         :aria-describedby="descId"
         tabindex="-1"
       >
-        <button type="button" class="icon-btn" aria-label="Close" data-testid="close" @click="emit('close', 'close')">×</button>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Close"
+          data-testid="close"
+          @click="emit('close', 'close')"
+        >×</button>
         <h2 :id="titleId">{{ title }}</h2>
         <p :id="descId">{{ description }}</p>
         <div class="actions"><slot /></div>
@@ -2152,14 +2688,61 @@ function onBackdropClick(e) {
 </template>
 
 <style scoped>
-.backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); }
-.dialog { position: relative; width: min(420px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
-.dialog:focus { outline: none; }
-.dialog h2 { margin: 0 32px 8px 0; font-size: 1.15rem; }
-.dialog p { margin: 0 0 18px; color: #b9c0cc; line-height: 1.45; }
-.icon-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.3rem; cursor: pointer; }
-.icon-btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 7, 10, 0.7);
+}
+.dialog {
+  position: relative;
+  width: min(420px, 100%);
+  box-sizing: border-box;
+  padding: 20px;
+  border-radius: 12px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  color: #e7e9ee;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog h2 {
+  margin: 0 32px 8px 0;
+  font-size: 1.15rem;
+}
+.dialog p {
+  margin: 0 0 18px;
+  color: #b9c0cc;
+  line-height: 1.45;
+}
+.icon-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.icon-btn:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 </style>
 `,
         },
@@ -2198,7 +2781,8 @@ The modal only exists inside \`@if (open())\`, so creation and destruction of th
 ### Step 1 — A hand-made portal
 
 ~~~ts
-// A hand-made portal: Angular has inserted the host where the @if block is,
+// A hand-made portal: Angular has inserted
+// the host where the @if block is,
 // so move it to <body>, and take it out again on destroy.
 ngOnInit() {
   document.body.appendChild(this.host);
@@ -2216,7 +2800,12 @@ Because the host leaves \`app-root\`, emulated style encapsulation still works f
 ### Step 2 — Projected actions
 
 ~~~ts
-<div class="backdrop" data-testid="backdrop" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+<div
+  class="backdrop"
+  data-testid="backdrop"
+  (mousedown)="onBackdropMouseDown($event)"
+  (click)="onBackdropClick($event)"
+>
   <div
     #dialog
     class="dialog"
@@ -2226,7 +2815,15 @@ Because the host leaves \`app-root\`, emulated style encapsulation still works f
     [attr.aria-describedby]="descId"
     tabindex="-1"
   >
-    <button type="button" class="icon-btn" aria-label="Close" data-testid="close" (click)="closed.emit('close')">×</button>
+    <button
+      type="button"
+      class="icon-btn"
+      aria-label="Close"
+      data-testid="close"
+      (click)="closed.emit('close')"
+    >
+      ×
+    </button>
     <h2 [id]="titleId">{{ title }}</h2>
     <p [id]="descId">{{ description }}</p>
     <div class="actions"><ng-content /></div>
@@ -2254,7 +2851,8 @@ onBackdropMouseDown(e: MouseEvent) {
   this.pressStartedOnBackdrop = e.target === e.currentTarget;
 }
 onBackdropClick(e: MouseEvent) {
-  if (this.pressStartedOnBackdrop && e.target === e.currentTarget) this.closed.emit("backdrop");
+  if (this.pressStartedOnBackdrop && e.target === e.currentTarget)
+    this.closed.emit("backdrop");
   this.pressStartedOnBackdrop = false;
 }
 ~~~
@@ -2266,7 +2864,9 @@ Initial focus waits for the first render:
 ~~~ts
 afterNextRender(() => {
   const dialog = this.dialog.nativeElement;
-  (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog).focus();
+  (
+    dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog
+  ).focus();
 });
 ~~~
 
@@ -2276,7 +2876,7 @@ afterNextRender(() => {
 
 Bootstrapped with \`bootstrapApplication(AppComponent)\` and no providers in jsdom; the AOT (\`strictTemplates\`) and JIT runs printed the same lines. JIT run:
 
-~~~
+~~~text
 [angular:playground] RENDERED: Modal dialogProject: apollo-webDelete projectResult: nothing yet
 [angular:playground] initial      : closed focus=BODY | Result: nothing yet
 [angular:playground] opened       : open focus=cancel
@@ -2295,7 +2895,7 @@ The top-level body child is \`app-modal\`, the moved host. Drag-release kept it 
 
 Real Chromium 141, styles applied:
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] opened       : open focus=cancel | Result: nothing yet
 [chromium:angular] layout       : backdrop 0,0 800x600 | dialog centre 400,300 | element at (40,40): backdrop
@@ -2399,10 +2999,21 @@ The overlay covers the viewport and the panel is centred. The second Shift+Tab r
 ---
 **Conclusion:** The Angular version moves its own host to \`body\` for a portal, removes it on destroy, projects the action buttons, listens for Escape with a key-filtered host listener and only closes on a press that really belongs to the overlay. AOT and JIT builds print the same verified sequence as React and Vue, including the deliberate gap, Shift+Tab can leave the dialog, that the accessible modal question fixes.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, ViewChild, ViewEncapsulation, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  ViewChild,
+  ViewEncapsulation,
+  signal,
+} from "@angular/core";
 import { ModalComponent } from "./modal.component";
 
-const REASONS: Record<string, string> = { escape: "Escape key", backdrop: "backdrop click", close: "close button", cancel: "Cancel button" };
+const REASONS: Record<string, string> = {
+  escape: "Escape key",
+  backdrop: "backdrop click",
+  close: "close button",
+  cancel: "Cancel button",
+};
 
 @Component({
   selector: "app-root",
@@ -2411,7 +3022,13 @@ const REASONS: Record<string, string> = { escape: "Escape key", backdrop: "backd
     <main class="page">
       <h1>Modal dialog</h1>
       <p>Project: <strong>apollo-web</strong></p>
-      <button #trigger type="button" class="btn danger" data-testid="open" (click)="open.set(true)">Delete project</button>
+      <button
+        #trigger
+        type="button"
+        class="btn danger"
+        data-testid="open"
+        (click)="open.set(true)"
+      >Delete project</button>
       <p data-testid="result" aria-live="polite">Result: {{ result() }}</p>
       @if (open()) {
         <app-modal
@@ -2419,16 +3036,30 @@ const REASONS: Record<string, string> = { escape: "Escape key", backdrop: "backd
           description="This removes the project and its 14 deployments. You cannot undo this."
           (closed)="close($event)"
         >
-          <button type="button" class="btn" data-autofocus data-testid="cancel" (click)="close('cancel')">Cancel</button>
-          <button type="button" class="btn danger" data-testid="confirm" (click)="close('confirm')">Delete</button>
+          <button
+            type="button"
+            class="btn"
+            data-autofocus
+            data-testid="cancel"
+            (click)="close('cancel')"
+          >Cancel</button>
+          <button
+            type="button"
+            class="btn danger"
+            data-testid="confirm"
+            (click)="close('confirm')"
+          >Delete</button>
         </app-modal>
       }
     </main>
   \`,
-  // Global (unencapsulated) so the body reset applies; page rules are prefixed by app-root; the
-  // button and form rules stay unprefixed because projected modal content lives under <body>.
+  // Global (unencapsulated) so the body reset
+  // applies; page rules are prefixed by app-root; the
+  // button and form rules stay unprefixed because
+  // projected modal content lives under <body>.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
     app-root .page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
@@ -2436,7 +3067,8 @@ const REASONS: Record<string, string> = { escape: "Escape key", backdrop: "backd
     .btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
     .btn.danger { background: #b4232c; border-color: #d0343e; color: #fff; }
     .btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   @ViewChild("trigger") trigger!: ElementRef<HTMLButtonElement>;
@@ -2445,25 +3077,46 @@ export class AppComponent {
 
   close(reason: string) {
     this.open.set(false);
-    this.result.set(reason === "confirm" ? "project deleted" : "kept (" + REASONS[reason] + ")");
-    this.trigger.nativeElement.focus(); // give focus back to the button that opened the dialog
+    this.result.set(
+      reason === "confirm"
+        ? "project deleted"
+        : "kept (" + REASONS[reason] + ")",
+    );
+    // give focus back to the button that opened the dialog
+    this.trigger.nativeElement.focus();
   }
 }
 `,
           "/src/app/modal.component.ts": `import {
-  Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, ViewChild,
-  ViewEncapsulation, afterNextRender, inject,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild,
+  ViewEncapsulation,
+  afterNextRender,
+  inject,
 } from "@angular/core";
 
 let nextId = 0;
 
 @Component({
   selector: "app-modal",
-  // The host is moved to <body>, outside the app root, so these styles are global
+  // The host is moved to <body>, outside the
+  // app root, so these styles are global
   // (prefixed by app-modal) instead of emulated-encapsulated.
   encapsulation: ViewEncapsulation.None,
   template: \`
-    <div class="backdrop" data-testid="backdrop" (mousedown)="onBackdropMouseDown($event)" (click)="onBackdropClick($event)">
+    <div
+      class="backdrop"
+      data-testid="backdrop"
+      (mousedown)="onBackdropMouseDown($event)"
+      (click)="onBackdropClick($event)"
+    >
       <div
         #dialog
         class="dialog"
@@ -2473,14 +3126,21 @@ let nextId = 0;
         [attr.aria-describedby]="descId"
         tabindex="-1"
       >
-        <button type="button" class="icon-btn" aria-label="Close" data-testid="close" (click)="closed.emit('close')">×</button>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Close"
+          data-testid="close"
+          (click)="closed.emit('close')"
+        >×</button>
         <h2 [id]="titleId">{{ title }}</h2>
         <p [id]="descId">{{ description }}</p>
         <div class="actions"><ng-content /></div>
       </div>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     app-modal .backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); font-family: system-ui, sans-serif; }
     app-modal .dialog { position: relative; width: min(420px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); }
     app-modal .dialog:focus { outline: none; }
@@ -2489,7 +3149,8 @@ let nextId = 0;
     app-modal .icon-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: inherit; font-size: 1.3rem; cursor: pointer; }
     app-modal .icon-btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
     app-modal .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-  \`],
+  \`,
+  ],
 })
 export class ModalComponent implements OnInit, OnDestroy {
   @Input({ required: true }) title = "";
@@ -2503,7 +3164,8 @@ export class ModalComponent implements OnInit, OnDestroy {
   private pressStartedOnBackdrop = false;
 
   constructor() {
-    // Move focus in once the view is on screen: the [data-autofocus] element, else the dialog.
+    // Move focus in once the view is on screen: the
+    // [data-autofocus] element, else the dialog.
     afterNextRender(() => {
       const dialog = this.dialog.nativeElement;
       (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? dialog).focus();
@@ -2525,13 +3187,15 @@ export class ModalComponent implements OnInit, OnDestroy {
     this.closed.emit("escape");
   }
 
-  // Close only when the press both started and ended on the backdrop itself, so a text
+  // Close only when the press both started and
+  // ended on the backdrop itself, so a text
   // selection dragged out of the panel does not dismiss the dialog.
   onBackdropMouseDown(e: MouseEvent) {
     this.pressStartedOnBackdrop = e.target === e.currentTarget;
   }
   onBackdropClick(e: MouseEvent) {
-    if (this.pressStartedOnBackdrop && e.target === e.currentTarget) this.closed.emit("backdrop");
+    if (this.pressStartedOnBackdrop && e.target === e.currentTarget)
+      this.closed.emit("backdrop");
     this.pressStartedOnBackdrop = false;
   }
 }
@@ -2635,8 +3299,15 @@ Each layer only un-inerts what it inerted itself. When the confirmation closes i
 
 ~~~js
 const TABBABLE = [
-  "a[href]", "area[href]", "button:not([disabled])", "input:not([disabled]):not([type=hidden])",
-  "select:not([disabled])", "textarea:not([disabled])", "iframe", "[contenteditable=true]", "[tabindex]",
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "[contenteditable=true]",
+  "[tabindex]",
 ].join(",");
 
 export function getTabbables(container) {
@@ -2644,8 +3315,10 @@ export function getTabbables(container) {
     (el) =>
       el.tabIndex >= 0 &&
       !el.closest("[inert]") &&
-      // checkVisibility() skips display:none / visibility:hidden; jsdom has no layout, so it lacks it.
-      (typeof el.checkVisibility !== "function" || el.checkVisibility({ visibilityProperty: true }))
+      // checkVisibility() skips display:none /
+      // visibility:hidden; jsdom has no layout, so it lacks it.
+      (typeof el.checkVisibility !== "function" ||
+        el.checkVisibility({ visibilityProperty: true })),
   );
 }
 ~~~
@@ -2661,17 +3334,25 @@ function lockScroll() {
   lockCount += 1;
   if (lockCount > 1) return; // already locked by a modal underneath
   const { body, documentElement: html } = document;
-  // Width of the scrollbar that overflow:hidden is about to remove. 0 with overlay
+  // Width of the scrollbar that overflow:hidden
+  // is about to remove. 0 with overlay
   // scrollbars, and 0 without layout (clientWidth is 0 in jsdom).
-  const gap = html.clientWidth > 0 ? window.innerWidth - html.clientWidth : 0;
-  saved = { overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+  const gap =
+    html.clientWidth > 0 ? window.innerWidth - html.clientWidth : 0;
+  saved = {
+    overflow: body.style.overflow,
+    paddingRight: body.style.paddingRight,
+  };
   body.style.overflow = "hidden";
-  if (gap > 0) body.style.paddingRight = parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
+  if (gap > 0)
+    body.style.paddingRight =
+      parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
 }
 
 function unlockScroll() {
   lockCount = Math.max(0, lockCount - 1);
-  if (lockCount > 0 || !saved) return; // another modal still needs the lock
+  // another modal still needs the lock
+  if (lockCount > 0 || !saved) return;
   document.body.style.overflow = saved.overflow;
   document.body.style.paddingRight = saved.paddingRight;
   saved = null;
@@ -2690,7 +3371,12 @@ function unlockScroll() {
 function inertOthers(layerRoot) {
   const changed = [];
   for (const el of document.body.children) {
-    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT") continue;
+    if (
+      el === layerRoot ||
+      el.hasAttribute("inert") ||
+      el.tagName === "SCRIPT"
+    )
+      continue;
     el.setAttribute("inert", "");
     changed.push(el);
   }
@@ -2706,7 +3392,8 @@ Because the portal renders each layer as a direct child of \`body\`, "everything
 
 ~~~js
 export function activateModal({ dialog, layerRoot, onEscape }) {
-  const restoreTo = document.activeElement; // read BEFORE moving focus in
+  // read BEFORE moving focus in
+  const restoreTo = document.activeElement;
   const layer = {};
   stack.push(layer);
   const releaseInert = inertOthers(layerRoot);
@@ -2714,7 +3401,8 @@ export function activateModal({ dialog, layerRoot, onEscape }) {
   (dialog.querySelector("[data-autofocus]") ?? getTabbables(dialog)[0] ?? dialog).focus();
 
   function onKeyDown(e) {
-    if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+    // a modal above us owns the keyboard
+    if (stack[stack.length - 1] !== layer) return;
     if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
@@ -2744,7 +3432,8 @@ return function deactivate() {
   stack.splice(stack.indexOf(layer), 1);
   releaseInert(); // first: an inert element cannot take focus
   unlockScroll();
-  if (restoreTo && restoreTo.isConnected) restoreTo.focus({ preventScroll: true });
+  if (restoreTo && restoreTo.isConnected)
+    restoreTo.focus({ preventScroll: true });
 };
 ~~~
 
@@ -2753,16 +3442,27 @@ return function deactivate() {
 ### Step 5 — The React component: when, not how
 
 ~~~jsx
-export default function AccessibleModal({ open, title, onClose, children, testId }) {
+export default function AccessibleModal({
+  open,
+  title,
+  onClose,
+  children,
+  testId,
+}) {
   const layerRef = useRef(null);
   const dialogRef = useRef(null);
   const titleId = useId();
   const onEscape = useEffectEvent(() => onClose("escape"));
 
-  // Runs after the portal is in the DOM; the cleanup runs when open turns false or on unmount.
+  // Runs after the portal is in the DOM; the cleanup
+  // runs when open turns false or on unmount.
   useEffect(() => {
     if (!open) return;
-    return activateModal({ dialog: dialogRef.current, layerRoot: layerRef.current, onEscape });
+    return activateModal({
+      dialog: dialogRef.current,
+      layerRoot: layerRef.current,
+      onEscape,
+    });
   }, [open]);
 
   if (!open) return null;
@@ -2772,16 +3472,28 @@ export default function AccessibleModal({ open, title, onClose, children, testId
       ref={layerRef}
       className="layer"
       data-testid={testId + "-layer"}
-      // React bubbles portal events through the React tree, so a click on a nested
-      // modal reaches this handler too. Only a click on THIS backdrop closes.
-      onClick={(e) => { if (e.target === e.currentTarget) onClose("backdrop"); }}
+      // React bubbles portal events through
+      // the React tree, so a click on a nested
+      // modal reaches this handler too. Only
+      // a click on THIS backdrop closes.
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose("backdrop");
+      }}
     >
-      <div ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
+      <div
+        ref={dialogRef}
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        data-testid={testId}
+      >
         <h2 id={titleId}>{title}</h2>
         {children}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 ~~~
@@ -2796,7 +3508,7 @@ The effect runs after the portal is in the DOM, and its cleanup (the \`deactivat
 
 jsdom does not implement \`inert\` or real Tab movement, so this run checks the logic: who is inert, the overflow style, the number of layers, where focus is after each step. \`layers\` lists the non-app children of \`body\` and whether each is inert. The long "RENDERED" line with the 30 background paragraphs is left out:
 
-~~~
+~~~text
 [react] initial          : focus=BODY overflow="" appInert=false layers=0
 [react] open editor      : focus=name overflow="hidden" appInert=true layers=1 [live] aria-modal=true
 [react] Tab on Save      : focus=name overflow="hidden" appInert=true layers=1 [live] (wrapped to first)
@@ -2816,7 +3528,7 @@ jsdom does not implement \`inert\` or real Tab movement, so this run checks the 
 
 The page was scrolled to 300 px first; the browser was launched with classic 15 px scrollbars:
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] before open : {"gap":15,"scrollY":300,"overflow":"","padding":"","right":769,"width":785}
 [chromium:react] opened      : {"gap":0,"scrollY":300,"overflow":"hidden","padding":"15px","right":769,"width":785} focus=name
@@ -2838,7 +3550,7 @@ The page was scrolled to 300 px first; the browser was launched with classic 15 
 
 The same checks against a plain \`<dialog>\` opened with \`showModal()\` in the same Chromium (no framework, no helper):
 
-~~~
+~~~text
 [native] after showModal: focus=a | open button matches :modal? true
 [native] focus() on page button while modal: focus=a
 [native] Tab x4: b -> BODY -> a -> b
@@ -2966,7 +3678,13 @@ The same checks against a plain \`<dialog>\` opened with \`showModal()\` in the 
           "/App.js": `import { useState } from "react";
 import AccessibleModal from "./src/AccessibleModal";
 
-const PARAGRAPHS = Array.from({ length: 30 }, (_, i) => "Background paragraph " + (i + 1) + ". The page behind the modal is long enough to scroll.");
+const PARAGRAPHS = Array.from(
+  { length: 30 },
+  (_, i) =>
+    "Background paragraph " +
+    (i + 1) +
+    ". The page behind the modal is long enough to scroll.",
+);
 
 export default function App() {
   const [editing, setEditing] = useState(false);
@@ -2995,27 +3713,89 @@ export default function App() {
     <div className="app">
       <header className="bar">
         <strong>Profile: {name}</strong>
-        <button type="button" className="btn" data-testid="open" onClick={openEditor}>Edit profile</button>
+        <button
+          type="button"
+          className="btn"
+          data-testid="open"
+          onClick={openEditor}
+        >
+          Edit profile
+        </button>
       </header>
       <main className="page">
-        <p data-testid="status" aria-live="polite">{status}</p>
-        {PARAGRAPHS.map((p) => <p key={p}>{p}</p>)}
+        <p data-testid="status" aria-live="polite">
+          {status}
+        </p>
+        {PARAGRAPHS.map((p) => (
+          <p key={p}>{p}</p>
+        ))}
       </main>
 
-      <AccessibleModal open={editing} title="Edit profile" testId="editor" onClose={() => setEditing(false)}>
+      <AccessibleModal
+        open={editing}
+        title="Edit profile"
+        testId="editor"
+        onClose={() => setEditing(false)}
+      >
         <form onSubmit={save}>
-          <label>Name <input data-autofocus data-testid="name" value={draft} onChange={(e) => setDraft(e.target.value)} /></label>
-          <label>Email <input data-testid="email" type="email" defaultValue="ada@example.com" /></label>
+          <label>
+            Name{" "}
+            <input
+              data-autofocus
+              data-testid="name"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          </label>
+          <label>
+            Email{" "}
+            <input
+              data-testid="email"
+              type="email"
+              defaultValue="ada@example.com"
+            />
+          </label>
           <div className="actions">
-            <button type="button" className="btn" disabled>Delete account</button>
-            <button type="button" className="btn" data-testid="discard" onClick={() => setConfirming(true)}>Discard…</button>
-            <button type="submit" className="btn primary" data-testid="save">Save</button>
+            <button type="button" className="btn" disabled>
+              Delete account
+            </button>
+            <button
+              type="button"
+              className="btn"
+              data-testid="discard"
+              onClick={() => setConfirming(true)}
+            >
+              Discard…
+            </button>
+            <button type="submit" className="btn primary" data-testid="save">
+              Save
+            </button>
           </div>
         </form>
-        <AccessibleModal open={confirming} title="Discard your changes?" testId="confirm" onClose={() => setConfirming(false)}>
+        <AccessibleModal
+          open={confirming}
+          title="Discard your changes?"
+          testId="confirm"
+          onClose={() => setConfirming(false)}
+        >
           <div className="actions">
-            <button type="button" className="btn" data-autofocus data-testid="keep" onClick={() => setConfirming(false)}>Keep editing</button>
-            <button type="button" className="btn danger" data-testid="really-discard" onClick={discard}>Discard</button>
+            <button
+              type="button"
+              className="btn"
+              data-autofocus
+              data-testid="keep"
+              onClick={() => setConfirming(false)}
+            >
+              Keep editing
+            </button>
+            <button
+              type="button"
+              className="btn danger"
+              data-testid="really-discard"
+              onClick={discard}
+            >
+              Discard
+            </button>
           </div>
         </AccessibleModal>
       </AccessibleModal>
@@ -3027,16 +3807,27 @@ export default function App() {
 import { createPortal } from "react-dom";
 import { activateModal } from "./modalA11y";
 
-export default function AccessibleModal({ open, title, onClose, children, testId }) {
+export default function AccessibleModal({
+  open,
+  title,
+  onClose,
+  children,
+  testId,
+}) {
   const layerRef = useRef(null);
   const dialogRef = useRef(null);
   const titleId = useId();
   const onEscape = useEffectEvent(() => onClose("escape"));
 
-  // Runs after the portal is in the DOM; the cleanup runs when open turns false or on unmount.
+  // Runs after the portal is in the DOM; the cleanup
+  // runs when open turns false or on unmount.
   useEffect(() => {
     if (!open) return;
-    return activateModal({ dialog: dialogRef.current, layerRoot: layerRef.current, onEscape });
+    return activateModal({
+      dialog: dialogRef.current,
+      layerRoot: layerRef.current,
+      onEscape,
+    });
   }, [open]);
 
   if (!open) return null;
@@ -3046,25 +3837,45 @@ export default function AccessibleModal({ open, title, onClose, children, testId
       ref={layerRef}
       className="layer"
       data-testid={testId + "-layer"}
-      // React bubbles portal events through the React tree, so a click on a nested
+      // React bubbles portal events through
+      // the React tree, so a click on a nested
       // modal reaches this handler too. Only a click on THIS backdrop closes.
-      onClick={(e) => { if (e.target === e.currentTarget) onClose("backdrop"); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose("backdrop");
+      }}
     >
-      <div ref={dialogRef} className="dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} data-testid={testId}>
+      <div
+        ref={dialogRef}
+        className="dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        data-testid={testId}
+      >
         <h2 id={titleId}>{title}</h2>
         {children}
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 `,
-          "/src/modalA11y.js": `// Framework-free helpers for a modal layer: focus trap, focus restore, inert background,
-// ref-counted scroll lock and a stack so only the top-most modal reacts to keys.
+          "/src/modalA11y.js": `// Framework-free helpers for a modal layer:
+// focus trap, focus restore, inert background,
+// ref-counted scroll lock and a stack so
+// only the top-most modal reacts to keys.
 
 const TABBABLE = [
-  "a[href]", "area[href]", "button:not([disabled])", "input:not([disabled]):not([type=hidden])",
-  "select:not([disabled])", "textarea:not([disabled])", "iframe", "[contenteditable=true]", "[tabindex]",
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "[contenteditable=true]",
+  "[tabindex]",
 ].join(",");
 
 export function getTabbables(container) {
@@ -3072,8 +3883,10 @@ export function getTabbables(container) {
     (el) =>
       el.tabIndex >= 0 &&
       !el.closest("[inert]") &&
-      // checkVisibility() skips display:none / visibility:hidden; jsdom has no layout, so it lacks it.
-      (typeof el.checkVisibility !== "function" || el.checkVisibility({ visibilityProperty: true }))
+      // checkVisibility() skips display:none /
+      // visibility:hidden; jsdom has no layout, so it lacks it.
+      (typeof el.checkVisibility !== "function" ||
+        el.checkVisibility({ visibilityProperty: true })),
   );
 }
 
@@ -3085,12 +3898,18 @@ function lockScroll() {
   lockCount += 1;
   if (lockCount > 1) return; // already locked by a modal underneath
   const { body, documentElement: html } = document;
-  // Width of the scrollbar that overflow:hidden is about to remove. 0 with overlay
+  // Width of the scrollbar that overflow:hidden
+  // is about to remove. 0 with overlay
   // scrollbars, and 0 without layout (clientWidth is 0 in jsdom).
   const gap = html.clientWidth > 0 ? window.innerWidth - html.clientWidth : 0;
-  saved = { overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+  saved = {
+    overflow: body.style.overflow,
+    paddingRight: body.style.paddingRight,
+  };
   body.style.overflow = "hidden";
-  if (gap > 0) body.style.paddingRight = parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
+  if (gap > 0)
+    body.style.paddingRight =
+      parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
 }
 
 function unlockScroll() {
@@ -3105,7 +3924,8 @@ function unlockScroll() {
 function inertOthers(layerRoot) {
   const changed = [];
   for (const el of document.body.children) {
-    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT") continue;
+    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT")
+      continue;
     el.setAttribute("inert", "");
     changed.push(el);
   }
@@ -3125,22 +3945,39 @@ export function activateModal({ dialog, layerRoot, onEscape }) {
   stack.push(layer);
   const releaseInert = inertOthers(layerRoot);
   lockScroll();
-  (dialog.querySelector("[data-autofocus]") ?? getTabbables(dialog)[0] ?? dialog).focus();
+  (
+    dialog.querySelector("[data-autofocus]") ??
+    getTabbables(dialog)[0] ??
+    dialog
+  ).focus();
 
   function onKeyDown(e) {
-    if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+    // a modal above us owns the keyboard
+    if (stack[stack.length - 1] !== layer) return;
     if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
     } else if (e.key === "Tab") {
       const items = getTabbables(dialog);
-      if (items.length === 0) { e.preventDefault(); dialog.focus(); return; }
+      if (items.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
       const outside = !dialog.contains(active);
-      if (e.shiftKey && (active === first || active === dialog || outside)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && (active === last || active === dialog || outside)) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && (active === first || active === dialog || outside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (
+        !e.shiftKey &&
+        (active === last || active === dialog || outside)
+      ) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
   document.addEventListener("keydown", onKeyDown);
@@ -3150,25 +3987,108 @@ export function activateModal({ dialog, layerRoot, onEscape }) {
     stack.splice(stack.indexOf(layer), 1);
     releaseInert(); // first: an inert element cannot take focus
     unlockScroll();
-    if (restoreTo && restoreTo.isConnected) restoreTo.focus({ preventScroll: true });
+    if (restoreTo && restoreTo.isConnected)
+      restoreTo.focus({ preventScroll: true });
   };
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.bar { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #181c23; border-bottom: 1px solid #2c333f; }
-.page { max-width: 560px; margin: 0 auto; padding: 8px 16px 40px; color: #b9c0cc; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.btn.primary { background: #2f6fde; border-color: #4a86f0; color: #fff; }
-.btn.danger { background: #b4232c; border-color: #d0343e; color: #fff; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn:focus-visible, input:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.layer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); }
-.dialog { width: min(440px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; }
-.dialog:focus { outline: none; }
-.dialog h2 { margin: 0 0 14px; font-size: 1.15rem; }
-.dialog label { display: grid; gap: 4px; margin-bottom: 12px; font-size: 0.9rem; color: #b9c0cc; }
-.dialog input { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4250; background: #111418; color: #e7e9ee; }
-.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #181c23;
+  border-bottom: 1px solid #2c333f;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px 40px;
+  color: #b9c0cc;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.btn.primary {
+  background: #2f6fde;
+  border-color: #4a86f0;
+  color: #fff;
+}
+.btn.danger {
+  background: #b4232c;
+  border-color: #d0343e;
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn:focus-visible,
+input:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 7, 10, 0.7);
+}
+.dialog {
+  width: min(440px, 100%);
+  box-sizing: border-box;
+  padding: 20px;
+  border-radius: 12px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  color: #e7e9ee;
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog h2 {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+}
+.dialog label {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #b9c0cc;
+}
+.dialog input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #111418;
+  color: #e7e9ee;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 `,
         },
       },
@@ -3205,19 +4125,35 @@ The DOM work lives in a framework-free module, \`components/modalA11y.js\` (the 
 
 ~~~js
 function onKeyDown(e) {
-  if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+  // a modal above us owns the keyboard
+  if (stack[stack.length - 1] !== layer) return;
   if (e.key === "Escape") {
     e.preventDefault();
     onEscape();
   } else if (e.key === "Tab") {
     const items = getTabbables(dialog);
-    if (items.length === 0) { e.preventDefault(); dialog.focus(); return; }
+    if (items.length === 0) {
+      e.preventDefault();
+      dialog.focus();
+      return;
+    }
     const first = items[0];
     const last = items[items.length - 1];
     const active = document.activeElement;
     const outside = !dialog.contains(active);
-    if (e.shiftKey && (active === first || active === dialog || outside)) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && (active === last || active === dialog || outside)) { e.preventDefault(); first.focus(); }
+    if (
+      e.shiftKey &&
+      (active === first || active === dialog || outside)
+    ) {
+      e.preventDefault();
+      last.focus();
+    } else if (
+      !e.shiftKey &&
+      (active === last || active === dialog || outside)
+    ) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 }
 ~~~
@@ -3234,7 +4170,8 @@ return function deactivate() {
   stack.splice(stack.indexOf(layer), 1);
   releaseInert(); // first: an inert element cannot take focus
   unlockScroll();
-  if (restoreTo && restoreTo.isConnected) restoreTo.focus({ preventScroll: true });
+  if (restoreTo && restoreTo.isConnected)
+    restoreTo.focus({ preventScroll: true });
 };
 ~~~
 
@@ -3247,17 +4184,12 @@ Deactivation is the mirror of activation, and **inert is removed before focus is
 ### Step 3 — The component: a post-flush watcher
 
 ~~~vue
-// flush: "post" = after the teleported DOM exists. onWatcherCleanup runs when open
-// turns false, and also when this component unmounts while open.
-watch(() => props.open, (isOpen) => {
-  if (!isOpen) return;
-  const deactivate = activateModal({
-    dialog: dialog.value,
-    layerRoot: layer.value,
-    onEscape: () => emit("close", "escape"),
-  });
-  onWatcherCleanup(deactivate);
-}, { flush: "post", immediate: true });
+// flush: "post" = after the teleported DOM exists. onWatcherCleanup
+runs when open // turns false, and also when this component unmounts
+while open. watch(() => props.open, (isOpen) => { if (!isOpen) return;
+const deactivate = activateModal({ dialog: dialog.value, layerRoot:
+layer.value, onEscape: () => emit("close", "escape"), });
+onWatcherCleanup(deactivate); }, { flush: "post", immediate: true });
 ~~~
 
 \`flush: "post"\` runs after the teleported layer exists, so the helper can focus inside it. \`immediate: true\` covers a modal that is mounted already open (the nested confirmation's component is created while the editor opens). \`onWatcherCleanup\` runs when \`open\` becomes false **and** when the watcher stops on unmount, which is exactly what happens to the confirmation when "Discard" closes both dialogs in one tick. See [watch flush timing](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5).
@@ -3266,8 +4198,22 @@ watch(() => props.open, (isOpen) => {
 
 ~~~vue
 <Teleport to="body">
-  <div v-if="open" ref="layer" class="layer" :data-testid="testId + '-layer'" @click.self="emit('close', 'backdrop')">
-    <div ref="dialog" class="dialog" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" :data-testid="testId">
+  <div
+    v-if="open"
+    ref="layer"
+    class="layer"
+    :data-testid="testId + '-layer'"
+    @click.self="emit('close', 'backdrop')"
+  >
+    <div
+      ref="dialog"
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      :aria-labelledby="titleId"
+      tabindex="-1"
+      :data-testid="testId"
+    >
       <h2 :id="titleId">{{ title }}</h2>
       <slot />
     </div>
@@ -3281,7 +4227,7 @@ The confirmation \`AccessibleModal\` is written inside the editor's default slot
 
 jsdom (no layout, no \`inert\` behaviour, no default Tab action), same driver as React and Angular; the long background text line is left out:
 
-~~~
+~~~text
 [vue] initial          : focus=BODY overflow="" appInert=false layers=0
 [vue] open editor      : focus=name overflow="hidden" appInert=true layers=1 [live] aria-modal=true
 [vue] Tab on Save      : focus=name overflow="hidden" appInert=true layers=1 [live] (wrapped to first)
@@ -3299,7 +4245,7 @@ With the confirmation open there are two layers and the editor's is inert; Escap
 
 Real Chromium 141 with classic 15 px scrollbars, page scrolled to 300 px:
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] before open : {"gap":15,"scrollY":300,"overflow":"","padding":"","right":769,"width":785}
 [chromium:vue] opened      : {"gap":0,"scrollY":300,"overflow":"hidden","padding":"15px","right":769,"width":785} focus=name
@@ -3410,7 +4356,13 @@ The scrollbar went away, 15 px of padding replaced it, the header width and butt
 import { ref } from "vue";
 import AccessibleModal from "./components/AccessibleModal.vue";
 
-const paragraphs = Array.from({ length: 30 }, (_, i) => "Background paragraph " + (i + 1) + ". The page behind the modal is long enough to scroll.");
+const paragraphs = Array.from(
+  { length: 30 },
+  (_, i) =>
+    "Background paragraph " +
+    (i + 1) +
+    ". The page behind the modal is long enough to scroll.",
+);
 const editing = ref(false);
 const confirming = ref(false);
 const name = ref("Ada Lovelace");
@@ -3437,27 +4389,62 @@ function discard() {
   <div class="app">
     <header class="bar">
       <strong>Profile: {{ name }}</strong>
-      <button type="button" class="btn" data-testid="open" @click="openEditor">Edit profile</button>
+      <button
+        type="button"
+        class="btn"
+        data-testid="open"
+        @click="openEditor"
+      >Edit profile</button>
     </header>
     <main class="page">
       <p data-testid="status" aria-live="polite">{{ status }}</p>
       <p v-for="p in paragraphs" :key="p">{{ p }}</p>
     </main>
 
-    <AccessibleModal :open="editing" title="Edit profile" test-id="editor" @close="editing = false">
+    <AccessibleModal
+      :open="editing"
+      title="Edit profile"
+      test-id="editor"
+      @close="editing = false"
+    >
       <form @submit.prevent="save">
         <label>Name <input v-model="draft" data-autofocus data-testid="name" /></label>
         <label>Email <input data-testid="email" type="email" value="ada@example.com" /></label>
         <div class="actions">
           <button type="button" class="btn" disabled>Delete account</button>
-          <button type="button" class="btn" data-testid="discard" @click="confirming = true">Discard…</button>
-          <button type="submit" class="btn primary" data-testid="save">Save</button>
+          <button
+            type="button"
+            class="btn"
+            data-testid="discard"
+            @click="confirming = true"
+          >Discard…</button>
+          <button
+            type="submit"
+            class="btn primary"
+            data-testid="save"
+          >Save</button>
         </div>
       </form>
-      <AccessibleModal :open="confirming" title="Discard your changes?" test-id="confirm" @close="confirming = false">
+      <AccessibleModal
+        :open="confirming"
+        title="Discard your changes?"
+        test-id="confirm"
+        @close="confirming = false"
+      >
         <div class="actions">
-          <button type="button" class="btn" data-autofocus data-testid="keep" @click="confirming = false">Keep editing</button>
-          <button type="button" class="btn danger" data-testid="really-discard" @click="discard">Discard</button>
+          <button
+            type="button"
+            class="btn"
+            data-autofocus
+            data-testid="keep"
+            @click="confirming = false"
+          >Keep editing</button>
+          <button
+            type="button"
+            class="btn danger"
+            data-testid="really-discard"
+            @click="discard"
+          >Discard</button>
         </div>
       </AccessibleModal>
     </AccessibleModal>
@@ -3465,17 +4452,78 @@ function discard() {
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.bar { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #181c23; border-bottom: 1px solid #2c333f; }
-.page { max-width: 560px; margin: 0 auto; padding: 8px 16px 40px; color: #b9c0cc; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; }
-.btn.primary { background: #2f6fde; border-color: #4a86f0; color: #fff; }
-.btn.danger { background: #b4232c; border-color: #d0343e; color: #fff; }
-.btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn:focus-visible, input:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.dialog label { display: grid; gap: 4px; margin-bottom: 12px; font-size: 0.9rem; color: #b9c0cc; }
-.dialog input { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4250; background: #111418; color: #e7e9ee; }
-.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #181c23;
+  border-bottom: 1px solid #2c333f;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px 40px;
+  color: #b9c0cc;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+}
+.btn.primary {
+  background: #2f6fde;
+  border-color: #4a86f0;
+  color: #fff;
+}
+.btn.danger {
+  background: #b4232c;
+  border-color: #d0343e;
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn:focus-visible,
+input:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.dialog label {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #b9c0cc;
+}
+.dialog input {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #111418;
+  color: #e7e9ee;
+}
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 </style>
 `,
           "/src/components/AccessibleModal.vue": `<script setup>
@@ -3493,23 +4541,42 @@ const layer = useTemplateRef("layer");
 const dialog = useTemplateRef("dialog");
 const titleId = useId();
 
-// flush: "post" = after the teleported DOM exists. onWatcherCleanup runs when open
+// flush: "post" = after the teleported DOM
+// exists. onWatcherCleanup runs when open
 // turns false, and also when this component unmounts while open.
-watch(() => props.open, (isOpen) => {
-  if (!isOpen) return;
-  const deactivate = activateModal({
-    dialog: dialog.value,
-    layerRoot: layer.value,
-    onEscape: () => emit("close", "escape"),
-  });
-  onWatcherCleanup(deactivate);
-}, { flush: "post", immediate: true });
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (!isOpen) return;
+    const deactivate = activateModal({
+      dialog: dialog.value,
+      layerRoot: layer.value,
+      onEscape: () => emit("close", "escape"),
+    });
+    onWatcherCleanup(deactivate);
+  },
+  { flush: "post", immediate: true },
+);
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="open" ref="layer" class="layer" :data-testid="testId + '-layer'" @click.self="emit('close', 'backdrop')">
-      <div ref="dialog" class="dialog" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1" :data-testid="testId">
+    <div
+      v-if="open"
+      ref="layer"
+      class="layer"
+      :data-testid="testId + '-layer'"
+      @click.self="emit('close', 'backdrop')"
+    >
+      <div
+        ref="dialog"
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="titleId"
+        tabindex="-1"
+        :data-testid="testId"
+      >
         <h2 :id="titleId">{{ title }}</h2>
         <slot />
       </div>
@@ -3518,18 +4585,48 @@ watch(() => props.open, (isOpen) => {
 </template>
 
 <style scoped>
-.layer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); }
-.dialog { width: min(440px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; }
-.dialog:focus { outline: none; }
-.dialog h2 { margin: 0 0 14px; font-size: 1.15rem; }
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 7, 10, 0.7);
+}
+.dialog {
+  width: min(440px, 100%);
+  box-sizing: border-box;
+  padding: 20px;
+  border-radius: 12px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  color: #e7e9ee;
+}
+.dialog:focus {
+  outline: none;
+}
+.dialog h2 {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+}
 </style>
 `,
-          "/src/components/modalA11y.js": `// Framework-free helpers for a modal layer: focus trap, focus restore, inert background,
-// ref-counted scroll lock and a stack so only the top-most modal reacts to keys.
+          "/src/components/modalA11y.js": `// Framework-free helpers for a modal layer:
+// focus trap, focus restore, inert background,
+// ref-counted scroll lock and a stack so
+// only the top-most modal reacts to keys.
 
 const TABBABLE = [
-  "a[href]", "area[href]", "button:not([disabled])", "input:not([disabled]):not([type=hidden])",
-  "select:not([disabled])", "textarea:not([disabled])", "iframe", "[contenteditable=true]", "[tabindex]",
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "[contenteditable=true]",
+  "[tabindex]",
 ].join(",");
 
 export function getTabbables(container) {
@@ -3537,8 +4634,10 @@ export function getTabbables(container) {
     (el) =>
       el.tabIndex >= 0 &&
       !el.closest("[inert]") &&
-      // checkVisibility() skips display:none / visibility:hidden; jsdom has no layout, so it lacks it.
-      (typeof el.checkVisibility !== "function" || el.checkVisibility({ visibilityProperty: true }))
+      // checkVisibility() skips display:none /
+      // visibility:hidden; jsdom has no layout, so it lacks it.
+      (typeof el.checkVisibility !== "function" ||
+        el.checkVisibility({ visibilityProperty: true })),
   );
 }
 
@@ -3550,12 +4649,18 @@ function lockScroll() {
   lockCount += 1;
   if (lockCount > 1) return; // already locked by a modal underneath
   const { body, documentElement: html } = document;
-  // Width of the scrollbar that overflow:hidden is about to remove. 0 with overlay
+  // Width of the scrollbar that overflow:hidden
+  // is about to remove. 0 with overlay
   // scrollbars, and 0 without layout (clientWidth is 0 in jsdom).
   const gap = html.clientWidth > 0 ? window.innerWidth - html.clientWidth : 0;
-  saved = { overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+  saved = {
+    overflow: body.style.overflow,
+    paddingRight: body.style.paddingRight,
+  };
   body.style.overflow = "hidden";
-  if (gap > 0) body.style.paddingRight = parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
+  if (gap > 0)
+    body.style.paddingRight =
+      parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
 }
 
 function unlockScroll() {
@@ -3570,7 +4675,8 @@ function unlockScroll() {
 function inertOthers(layerRoot) {
   const changed = [];
   for (const el of document.body.children) {
-    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT") continue;
+    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT")
+      continue;
     el.setAttribute("inert", "");
     changed.push(el);
   }
@@ -3590,22 +4696,39 @@ export function activateModal({ dialog, layerRoot, onEscape }) {
   stack.push(layer);
   const releaseInert = inertOthers(layerRoot);
   lockScroll();
-  (dialog.querySelector("[data-autofocus]") ?? getTabbables(dialog)[0] ?? dialog).focus();
+  (
+    dialog.querySelector("[data-autofocus]") ??
+    getTabbables(dialog)[0] ??
+    dialog
+  ).focus();
 
   function onKeyDown(e) {
-    if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+    // a modal above us owns the keyboard
+    if (stack[stack.length - 1] !== layer) return;
     if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
     } else if (e.key === "Tab") {
       const items = getTabbables(dialog);
-      if (items.length === 0) { e.preventDefault(); dialog.focus(); return; }
+      if (items.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
       const outside = !dialog.contains(active);
-      if (e.shiftKey && (active === first || active === dialog || outside)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && (active === last || active === dialog || outside)) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && (active === first || active === dialog || outside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (
+        !e.shiftKey &&
+        (active === last || active === dialog || outside)
+      ) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
   document.addEventListener("keydown", onKeyDown);
@@ -3615,7 +4738,8 @@ export function activateModal({ dialog, layerRoot, onEscape }) {
     stack.splice(stack.indexOf(layer), 1);
     releaseInert(); // first: an inert element cannot take focus
     unlockScroll();
-    if (restoreTo && restoreTo.isConnected) restoreTo.focus({ preventScroll: true });
+    if (restoreTo && restoreTo.isConnected)
+      restoreTo.focus({ preventScroll: true });
   };
 }
 `,
@@ -3655,7 +4779,8 @@ The DOM work is a framework-free TypeScript module, \`modal-a11y.ts\` (the same 
 
 ~~~ts
 export function activateModal({ dialog, layerRoot, onEscape }: ModalLayer): () => void {
-  const restoreTo = document.activeElement as HTMLElement | null; // read BEFORE moving focus in
+  // read BEFORE moving focus in
+  const restoreTo = document.activeElement as HTMLElement | null;
   const layer = {};
   stack.push(layer);
   const releaseInert = inertOthers(layerRoot);
@@ -3673,19 +4798,35 @@ export function activateModal({ dialog, layerRoot, onEscape }: ModalLayer): () =
 
 ~~~ts
 function onKeyDown(e: KeyboardEvent) {
-  if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+  // a modal above us owns the keyboard
+  if (stack[stack.length - 1] !== layer) return;
   if (e.key === "Escape") {
     e.preventDefault();
     onEscape();
   } else if (e.key === "Tab") {
     const items = getTabbables(dialog);
-    if (items.length === 0) { e.preventDefault(); dialog.focus(); return; }
+    if (items.length === 0) {
+      e.preventDefault();
+      dialog.focus();
+      return;
+    }
     const first = items[0];
     const last = items[items.length - 1];
     const active = document.activeElement;
     const outside = !dialog.contains(active);
-    if (e.shiftKey && (active === first || active === dialog || outside)) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && (active === last || active === dialog || outside)) { e.preventDefault(); first.focus(); }
+    if (
+      e.shiftKey &&
+      (active === first || active === dialog || outside)
+    ) {
+      e.preventDefault();
+      last.focus();
+    } else if (
+      !e.shiftKey &&
+      (active === last || active === dialog || outside)
+    ) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 }
 ~~~
@@ -3717,8 +4858,10 @@ ngOnInit() {
 ngOnDestroy() {
   this.destroyed = true;
   this.deactivate?.();
-  // Angular removes only the root nodes of the view it destroys. A nested modal whose
-  // parent closes in the same tick would be left behind in <body>, so remove it here.
+  // Angular removes only the root nodes of the
+  // view it destroys. A nested modal whose
+  // parent closes in the same tick would be
+  // left behind in <body>, so remove it here.
   this.host.remove();
 }
 ~~~
@@ -3737,7 +4880,7 @@ Styles: \`AppComponent\` uses \`ViewEncapsulation.None\` with page rules prefixe
 
 jsdom, same driver as React and Vue; AOT and JIT printed the same lines. JIT run, background text line left out:
 
-~~~
+~~~text
 [angular:playground] initial          : focus=BODY overflow="" appInert=false layers=0
 [angular:playground] open editor      : focus=name overflow="hidden" appInert=true layers=1 [live] aria-modal=true
 [angular:playground] Tab on Save      : focus=name overflow="hidden" appInert=true layers=1 [live] (wrapped to first)
@@ -3755,7 +4898,7 @@ After "Discard both" there are zero layers left in \`body\`, the overflow is res
 
 Real Chromium 141 with classic 15 px scrollbars, page scrolled to 300 px:
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] before open : {"gap":15,"scrollY":300,"overflow":"","padding":"","right":769,"width":785}
 [chromium:angular] opened      : {"gap":0,"scrollY":300,"overflow":"hidden","padding":"15px","right":769,"width":785} focus=name
@@ -3873,7 +5016,12 @@ import { AccessibleModalComponent } from "./accessible-modal.component";
   template: \`
     <header class="bar">
       <strong>Profile: {{ name() }}</strong>
-      <button type="button" class="btn" data-testid="open" (click)="openEditor()">Edit profile</button>
+      <button
+        type="button"
+        class="btn"
+        data-testid="open"
+        (click)="openEditor()"
+      >Edit profile</button>
     </header>
     <main class="page">
       <p data-testid="status" aria-live="polite">{{ status() }}</p>
@@ -3881,31 +5029,62 @@ import { AccessibleModalComponent } from "./accessible-modal.component";
     </main>
 
     @if (editing()) {
-      <app-accessible-modal title="Edit profile" testId="editor" (closed)="editing.set(false)">
+      <app-accessible-modal
+        title="Edit profile"
+        testId="editor"
+        (closed)="editing.set(false)"
+      >
         <form (ngSubmit)="save()">
           <label>Name <input name="name" data-autofocus data-testid="name" [ngModel]="draft()" (ngModelChange)="draft.set($event)" /></label>
           <label>Email <input name="email" data-testid="email" type="email" value="ada@example.com" /></label>
           <div class="actions">
             <button type="button" class="btn" disabled>Delete account</button>
-            <button type="button" class="btn" data-testid="discard" (click)="confirming.set(true)">Discard…</button>
-            <button type="submit" class="btn primary" data-testid="save">Save</button>
+            <button
+              type="button"
+              class="btn"
+              data-testid="discard"
+              (click)="confirming.set(true)"
+            >Discard…</button>
+            <button
+              type="submit"
+              class="btn primary"
+              data-testid="save"
+            >Save</button>
           </div>
         </form>
         @if (confirming()) {
-          <app-accessible-modal title="Discard your changes?" testId="confirm" (closed)="confirming.set(false)">
+          <app-accessible-modal
+            title="Discard your changes?"
+            testId="confirm"
+            (closed)="confirming.set(false)"
+          >
             <div class="actions">
-              <button type="button" class="btn" data-autofocus data-testid="keep" (click)="confirming.set(false)">Keep editing</button>
-              <button type="button" class="btn danger" data-testid="really-discard" (click)="discard()">Discard</button>
+              <button
+                type="button"
+                class="btn"
+                data-autofocus
+                data-testid="keep"
+                (click)="confirming.set(false)"
+              >Keep editing</button>
+              <button
+                type="button"
+                class="btn danger"
+                data-testid="really-discard"
+                (click)="discard()"
+              >Discard</button>
             </div>
           </app-accessible-modal>
         }
       </app-accessible-modal>
     }
   \`,
-  // Global (unencapsulated) so the body reset applies; page rules are prefixed by app-root; the
-  // button and form rules stay unprefixed because projected modal content lives under <body>.
+  // Global (unencapsulated) so the body reset
+  // applies; page rules are prefixed by app-root; the
+  // button and form rules stay unprefixed because
+  // projected modal content lives under <body>.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
     app-root .bar { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #181c23; border-bottom: 1px solid #2c333f; }
@@ -3918,10 +5097,17 @@ import { AccessibleModalComponent } from "./accessible-modal.component";
     label { display: grid; gap: 4px; margin-bottom: 12px; font-size: 0.9rem; color: #b9c0cc; }
     input { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid #3a4250; background: #111418; color: #e7e9ee; }
     .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
-  readonly paragraphs = Array.from({ length: 30 }, (_, i) => "Background paragraph " + (i + 1) + ". The page behind the modal is long enough to scroll.");
+  readonly paragraphs = Array.from(
+    { length: 30 },
+    (_, i) =>
+      "Background paragraph " +
+      (i + 1) +
+      ". The page behind the modal is long enough to scroll.",
+  );
   readonly editing = signal(false);
   readonly confirming = signal(false);
   readonly name = signal("Ada Lovelace");
@@ -3945,8 +5131,17 @@ export class AppComponent {
 }
 `,
           "/src/app/accessible-modal.component.ts": `import {
-  Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild,
-  ViewEncapsulation, afterNextRender, inject,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  ViewChild,
+  ViewEncapsulation,
+  afterNextRender,
+  inject,
 } from "@angular/core";
 import { activateModal } from "./modal-a11y";
 
@@ -3954,22 +5149,59 @@ let nextId = 0;
 
 @Component({
   selector: "app-accessible-modal",
-  // The host is moved under <body>, outside app-root, so styles are global and prefixed.
+  // The host is moved under <body>, outside
+  // app-root, so styles are global and prefixed.
   encapsulation: ViewEncapsulation.None,
   template: \`
-    <div class="layer" [attr.data-testid]="testId + '-layer'" (click)="onLayerClick($event)">
-      <div #dialog class="dialog" role="dialog" aria-modal="true" [attr.aria-labelledby]="titleId" tabindex="-1" [attr.data-testid]="testId">
+    <div
+      class="layer"
+      [attr.data-testid]="testId + '-layer'"
+      (click)="onLayerClick($event)"
+    >
+      <div
+        #dialog
+        class="dialog"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-labelledby]="titleId"
+        tabindex="-1"
+        [attr.data-testid]="testId"
+      >
         <h2 [id]="titleId">{{ title }}</h2>
         <ng-content />
       </div>
     </div>
   \`,
-  styles: [\`
-    app-accessible-modal .layer { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(5, 7, 10, 0.7); font-family: system-ui, sans-serif; }
-    app-accessible-modal .dialog { width: min(440px, 100%); box-sizing: border-box; padding: 20px; border-radius: 12px; background: #1d222b; border: 1px solid #3a4250; color: #e7e9ee; }
-    app-accessible-modal .dialog:focus { outline: none; }
-    app-accessible-modal .dialog h2 { margin: 0 0 14px; font-size: 1.15rem; }
-  \`],
+  styles: [
+    \`
+      app-accessible-modal .layer {
+        position: fixed;
+        inset: 0;
+        z-index: 100;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: rgba(5, 7, 10, 0.7);
+        font-family: system-ui, sans-serif;
+      }
+      app-accessible-modal .dialog {
+        width: min(440px, 100%);
+        box-sizing: border-box;
+        padding: 20px;
+        border-radius: 12px;
+        background: #1d222b;
+        border: 1px solid #3a4250;
+        color: #e7e9ee;
+      }
+      app-accessible-modal .dialog:focus {
+        outline: none;
+      }
+      app-accessible-modal .dialog h2 {
+        margin: 0 0 14px;
+        font-size: 1.15rem;
+      }
+    \`,
+  ],
 })
 export class AccessibleModalComponent implements OnInit, OnDestroy {
   @Input({ required: true }) title = "";
@@ -4002,8 +5234,10 @@ export class AccessibleModalComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroyed = true;
     this.deactivate?.();
-    // Angular removes only the root nodes of the view it destroys. A nested modal whose
-    // parent closes in the same tick would be left behind in <body>, so remove it here.
+    // Angular removes only the root nodes of the
+    // view it destroys. A nested modal whose
+    // parent closes in the same tick would be
+    // left behind in <body>, so remove it here.
     this.host.remove();
   }
 
@@ -4012,12 +5246,21 @@ export class AccessibleModalComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/modal-a11y.ts": `// Framework-free helpers for a modal layer: focus trap, focus restore, inert background,
-// ref-counted scroll lock and a stack so only the top-most modal reacts to keys.
+          "/src/app/modal-a11y.ts": `// Framework-free helpers for a modal layer:
+// focus trap, focus restore, inert background,
+// ref-counted scroll lock and a stack so
+// only the top-most modal reacts to keys.
 
 const TABBABLE = [
-  "a[href]", "area[href]", "button:not([disabled])", "input:not([disabled]):not([type=hidden])",
-  "select:not([disabled])", "textarea:not([disabled])", "iframe", "[contenteditable=true]", "[tabindex]",
+  "a[href]",
+  "area[href]",
+  "button:not([disabled])",
+  "input:not([disabled]):not([type=hidden])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "iframe",
+  "[contenteditable=true]",
+  "[tabindex]",
 ].join(",");
 
 export function getTabbables(container: HTMLElement): HTMLElement[] {
@@ -4025,8 +5268,10 @@ export function getTabbables(container: HTMLElement): HTMLElement[] {
     (el) =>
       el.tabIndex >= 0 &&
       !el.closest("[inert]") &&
-      // checkVisibility() skips display:none / visibility:hidden; jsdom has no layout, so it lacks it.
-      (typeof el.checkVisibility !== "function" || el.checkVisibility({ visibilityProperty: true }))
+      // checkVisibility() skips display:none /
+      // visibility:hidden; jsdom has no layout, so it lacks it.
+      (typeof el.checkVisibility !== "function" ||
+        el.checkVisibility({ visibilityProperty: true })),
   );
 }
 
@@ -4038,12 +5283,18 @@ function lockScroll(): void {
   lockCount += 1;
   if (lockCount > 1) return; // already locked by a modal underneath
   const { body, documentElement: html } = document;
-  // Width of the scrollbar that overflow:hidden is about to remove. 0 with overlay
+  // Width of the scrollbar that overflow:hidden
+  // is about to remove. 0 with overlay
   // scrollbars, and 0 without layout (clientWidth is 0 in jsdom).
   const gap = html.clientWidth > 0 ? window.innerWidth - html.clientWidth : 0;
-  saved = { overflow: body.style.overflow, paddingRight: body.style.paddingRight };
+  saved = {
+    overflow: body.style.overflow,
+    paddingRight: body.style.paddingRight,
+  };
   body.style.overflow = "hidden";
-  if (gap > 0) body.style.paddingRight = parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
+  if (gap > 0)
+    body.style.paddingRight =
+      parseFloat(getComputedStyle(body).paddingRight) + gap + "px";
 }
 
 function unlockScroll(): void {
@@ -4058,7 +5309,8 @@ function unlockScroll(): void {
 function inertOthers(layerRoot: HTMLElement): () => void {
   const changed: Element[] = [];
   for (const el of Array.from(document.body.children)) {
-    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT") continue;
+    if (el === layerRoot || el.hasAttribute("inert") || el.tagName === "SCRIPT")
+      continue;
     el.setAttribute("inert", "");
     changed.push(el);
   }
@@ -4072,30 +5324,56 @@ const stack: object[] = [];
  * Turns \`dialog\` (inside \`layerRoot\`, a direct child of <body>) into the active modal.
  * Returns a function that undoes everything, in the reverse order.
  */
-export interface ModalLayer { dialog: HTMLElement; layerRoot: HTMLElement; onEscape: () => void; }
+export interface ModalLayer {
+  dialog: HTMLElement;
+  layerRoot: HTMLElement;
+  onEscape: () => void;
+}
 
-export function activateModal({ dialog, layerRoot, onEscape }: ModalLayer): () => void {
-  const restoreTo = document.activeElement as HTMLElement | null; // read BEFORE moving focus in
+export function activateModal({
+  dialog,
+  layerRoot,
+  onEscape,
+}: ModalLayer): () => void {
+  // read BEFORE moving focus in
+  const restoreTo = document.activeElement as HTMLElement | null;
   const layer = {};
   stack.push(layer);
   const releaseInert = inertOthers(layerRoot);
   lockScroll();
-  (dialog.querySelector<HTMLElement>("[data-autofocus]") ?? getTabbables(dialog)[0] ?? dialog).focus();
+  (
+    dialog.querySelector<HTMLElement>("[data-autofocus]") ??
+    getTabbables(dialog)[0] ??
+    dialog
+  ).focus();
 
   function onKeyDown(e: KeyboardEvent) {
-    if (stack[stack.length - 1] !== layer) return; // a modal above us owns the keyboard
+    // a modal above us owns the keyboard
+    if (stack[stack.length - 1] !== layer) return;
     if (e.key === "Escape") {
       e.preventDefault();
       onEscape();
     } else if (e.key === "Tab") {
       const items = getTabbables(dialog);
-      if (items.length === 0) { e.preventDefault(); dialog.focus(); return; }
+      if (items.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;
       const outside = !dialog.contains(active);
-      if (e.shiftKey && (active === first || active === dialog || outside)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && (active === last || active === dialog || outside)) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && (active === first || active === dialog || outside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (
+        !e.shiftKey &&
+        (active === last || active === dialog || outside)
+      ) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
   document.addEventListener("keydown", onKeyDown);
@@ -4105,7 +5383,8 @@ export function activateModal({ dialog, layerRoot, onEscape }: ModalLayer): () =
     stack.splice(stack.indexOf(layer), 1);
     releaseInert(); // first: an inert element cannot take focus
     unlockScroll();
-    if (restoreTo && restoreTo.isConnected) restoreTo.focus({ preventScroll: true });
+    if (restoreTo && restoreTo.isConnected)
+      restoreTo.focus({ preventScroll: true });
   };
 }
 `,
@@ -4207,30 +5486,53 @@ Two decisions, made in this order: first choose a side (flip if the preferred si
 ### Step 1 — The positioning maths
 
 ~~~js
-export function computePosition(anchor, tip, placement, viewport, gap = 8, pad = 8) {
+export function computePosition(
+  anchor,
+  tip,
+  placement,
+  viewport,
+  gap = 8,
+  pad = 8,
+) {
   const fits = {
     top: anchor.top - gap - tip.height >= pad,
     bottom: anchor.bottom + gap + tip.height <= viewport.height - pad,
     left: anchor.left - gap - tip.width >= pad,
     right: anchor.right + gap + tip.width <= viewport.width - pad,
   };
-  // Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-  const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+  // Flip: if the preferred side does not fit but
+  // the opposite side does, use the opposite.
+  const side =
+    !fits[placement] && fits[OPPOSITE[placement]]
+      ? OPPOSITE[placement]
+      : placement;
 
   let top;
   let left;
   if (side === "top" || side === "bottom") {
-    top = side === "top" ? anchor.top - gap - tip.height : anchor.bottom + gap;
+    top =
+      side === "top"
+        ? anchor.top - gap - tip.height
+        : anchor.bottom + gap;
     left = anchor.left + anchor.width / 2 - tip.width / 2;
   } else {
-    left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
+    left =
+      side === "left"
+        ? anchor.left - gap - tip.width
+        : anchor.right + gap;
     top = anchor.top + anchor.height / 2 - tip.height / 2;
   }
-  // Shift: slide along the other axis so the tooltip stays inside the viewport padding.
-  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  // Shift: slide along the other axis so the
+  // tooltip stays inside the viewport padding.
+  const clamp = (v, lo, hi) =>
+    Math.min(Math.max(v, lo), Math.max(lo, hi));
   left = clamp(left, pad, viewport.width - pad - tip.width);
   top = clamp(top, pad, viewport.height - pad - tip.height);
-  return { placement: side, top: Math.round(top), left: Math.round(left) };
+  return {
+    placement: side,
+    top: Math.round(top),
+    left: Math.round(left),
+  };
 }
 ~~~
 
@@ -4255,15 +5557,27 @@ Every event cancels the pending timer before scheduling its own, so moving quick
 ### Step 3 — Measure before paint
 
 ~~~jsx
-// Measure and place before the browser paints, so the tooltip never flashes at 0,0.
+// Measure and place before the browser paints,
+// so the tooltip never flashes at 0,0.
 useLayoutEffect(() => {
-  if (!open) { setPos(null); return; }
+  if (!open) {
+    setPos(null);
+    return;
+  }
   function place() {
     const tip = tipRef.current.getBoundingClientRect();
-    setPos(computePosition(triggerRef.current.getBoundingClientRect(), tip, placement, viewportSize()));
+    setPos(
+      computePosition(
+        triggerRef.current.getBoundingClientRect(),
+        tip,
+        placement,
+        viewportSize(),
+      ),
+    );
   }
   place();
-  // Keep it attached while the page scrolls (capture: any scroll container) or resizes.
+  // Keep it attached while the page scrolls
+  // (capture: any scroll container) or resizes.
   window.addEventListener("scroll", place, true);
   window.addEventListener("resize", place);
   return () => {
@@ -4309,11 +5623,10 @@ return (
       >
         {content}
       </div>,
-      document.body
+      document.body,
     )}
   </>
-  );
-}
+);
 ~~~
 
 📌 **Interview term: Render prop** — a component whose child is a function: \`children(triggerProps)\`. The tooltip does not need to know whether the trigger is a button, a link or an icon; the caller spreads the handlers and the ref onto whatever it renders. It avoids \`cloneElement\`, which React's docs describe as uncommon and fragile.
@@ -4328,7 +5641,7 @@ The tooltip is portalled to \`body\` so no ancestor with \`overflow: hidden\` or
 
 jsdom returns zero-sized rects, so the driver replaces \`getBoundingClientRect\` with fixed rects for each trigger in an 800 x 600 viewport, and gives each tooltip a width of 7 px per character plus 20 (max 240) and a height of 28. Hover is a \`mouseover\` plus \`mouseenter\` (React listens to the former, Vue and Angular to the latter):
 
-~~~
+~~~text
 [react] tooltips in body: 6 | describedby resolves: true
 [react] hover +150ms  : open=false text="Placed top"
 [react] hover +400ms  : open=true placement=top top=264 left=185 text="Placed top"
@@ -4348,7 +5661,7 @@ Check one by hand: the "top" trigger is at x 200, width 60; its tooltip is 90 wi
 
 Real hover with the mouse, real focus, real CSS; \`gap\` is the measured distance between trigger and tooltip edges:
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] hover +150ms : hidden
 [chromium:react] hover +450ms : placement=top gap=8px inViewport=true tip=214,179 88x30
@@ -4478,18 +5791,35 @@ export default function App() {
     <main className="page">
       <div className="edges">
         <Tooltip content="No room above, so I flip below" placement="top">
-          {(props) => <button {...props} className="btn" data-testid="edge-top">Flips</button>}
+          {(props) => (
+            <button {...props} className="btn" data-testid="edge-top">
+              Flips
+            </button>
+          )}
         </Tooltip>
-        <Tooltip content="A longer tooltip that is shifted left to stay on screen" placement="bottom">
-          {(props) => <button {...props} className="btn" data-testid="edge-right">Shifts</button>}
+        <Tooltip
+          content="A longer tooltip that is shifted left to stay on screen"
+          placement="bottom"
+        >
+          {(props) => (
+            <button {...props} className="btn" data-testid="edge-right">
+              Shifts
+            </button>
+          )}
         </Tooltip>
       </div>
       <h1>Tooltip</h1>
-      <p className="hint">Hover (300 ms delay) or Tab to a button. Escape hides the tooltip.</p>
+      <p className="hint">
+        Hover (300 ms delay) or Tab to a button. Escape hides the tooltip.
+      </p>
       <div className="grid">
         {SIDES.map((side) => (
           <Tooltip key={side} content={"Placed " + side} placement={side}>
-            {(props) => <button {...props} className="btn" data-testid={"tt-" + side}>{side}</button>}
+            {(props) => (
+              <button {...props} className="btn" data-testid={"tt-" + side}>
+                {side}
+              </button>
+            )}
           </Tooltip>
         ))}
       </div>
@@ -4502,7 +5832,8 @@ import { createPortal } from "react-dom";
 import { computePosition, viewportSize } from "./position";
 
 const SHOW_DELAY = 300; // hover only; keyboard focus shows at once
-const HIDE_DELAY = 100; // time to move the pointer from the trigger onto the tooltip
+// time to move the pointer from the trigger onto the tooltip
+const HIDE_DELAY = 100;
 
 export default function Tooltip({ content, placement = "top", children }) {
   const [open, setOpen] = useState(false);
@@ -4518,15 +5849,27 @@ export default function Tooltip({ content, placement = "top", children }) {
     else timer.current = setTimeout(() => setOpen(nextOpen), delay);
   }
 
-  // Measure and place before the browser paints, so the tooltip never flashes at 0,0.
+  // Measure and place before the browser paints,
+  // so the tooltip never flashes at 0,0.
   useLayoutEffect(() => {
-    if (!open) { setPos(null); return; }
+    if (!open) {
+      setPos(null);
+      return;
+    }
     function place() {
       const tip = tipRef.current.getBoundingClientRect();
-      setPos(computePosition(triggerRef.current.getBoundingClientRect(), tip, placement, viewportSize()));
+      setPos(
+        computePosition(
+          triggerRef.current.getBoundingClientRect(),
+          tip,
+          placement,
+          viewportSize(),
+        ),
+      );
     }
     place();
-    // Keep it attached while the page scrolls (capture: any scroll container) or resizes.
+    // Keep it attached while the page scrolls
+    // (capture: any scroll container) or resizes.
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
     return () => {
@@ -4538,7 +5881,9 @@ export default function Tooltip({ content, placement = "top", children }) {
   // Escape dismisses without moving focus (WCAG 1.4.13).
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === "Escape") schedule(false, 0); };
+    const onKey = (e) => {
+      if (e.key === "Escape") schedule(false, 0);
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
@@ -4572,26 +5917,38 @@ export default function Tooltip({ content, placement = "top", children }) {
         >
           {content}
         </div>,
-        document.body
+        document.body,
       )}
     </>
   );
 }
 `,
           "/src/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
-// anchor = the trigger's getBoundingClientRect(), tip = { width, height } of the tooltip,
+// anchor = the trigger's getBoundingClientRect(),
+// tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
 const OPPOSITE = { top: "bottom", bottom: "top", left: "right", right: "left" };
 
-export function computePosition(anchor, tip, placement, viewport, gap = 8, pad = 8) {
+export function computePosition(
+  anchor,
+  tip,
+  placement,
+  viewport,
+  gap = 8,
+  pad = 8,
+) {
   const fits = {
     top: anchor.top - gap - tip.height >= pad,
     bottom: anchor.bottom + gap + tip.height <= viewport.height - pad,
     left: anchor.left - gap - tip.width >= pad,
     right: anchor.right + gap + tip.width <= viewport.width - pad,
   };
-  // Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-  const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+  // Flip: if the preferred side does not fit but
+  // the opposite side does, use the opposite.
+  const side =
+    !fits[placement] && fits[OPPOSITE[placement]]
+      ? OPPOSITE[placement]
+      : placement;
 
   let top;
   let left;
@@ -4602,7 +5959,8 @@ export function computePosition(anchor, tip, placement, viewport, gap = 8, pad =
     left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
     top = anchor.top + anchor.height / 2 - tip.height / 2;
   }
-  // Shift: slide along the other axis so the tooltip stays inside the viewport padding.
+  // Shift: slide along the other axis so the
+  // tooltip stays inside the viewport padding.
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
   left = clamp(left, pad, viewport.width - pad - tip.width);
   top = clamp(top, pad, viewport.height - pad - tip.height);
@@ -4610,21 +5968,82 @@ export function computePosition(anchor, tip, placement, viewport, gap = 8, pad =
 }
 
 export function viewportSize() {
-  // clientWidth excludes the scrollbar; it is 0 without layout, so fall back to innerWidth.
+  // clientWidth excludes the scrollbar; it is 0
+  // without layout, so fall back to innerWidth.
   const html = document.documentElement;
-  return { width: html.clientWidth || window.innerWidth, height: html.clientHeight || window.innerHeight };
+  return {
+    width: html.clientWidth || window.innerWidth,
+    height: html.clientHeight || window.innerHeight,
+  };
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 560px; margin: 0 auto; padding: 8px 16px 24px; }
-.edges { display: flex; justify-content: space-between; }
-h1 { font-size: 1.3rem; margin: 40px 0 8px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
-.grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; padding: 60px 0; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; text-transform: capitalize; }
-.btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-.tooltip { position: fixed; top: 0; left: 0; z-index: 1000; width: max-content; max-width: 240px; padding: 6px 10px; border-radius: 6px; background: #f1f3f7; color: #111418; font-size: 0.85rem; line-height: 1.3; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); pointer-events: auto; visibility: hidden; opacity: 0; transition: opacity 120ms; }
-.tooltip[data-open="true"] { visibility: visible; opacity: 1; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+}
+.edges {
+  display: flex;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 40px 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding: 60px 0;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.btn:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+.tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f1f3f7;
+  color: #111418;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.tooltip[data-open="true"] {
+  visibility: visible;
+  opacity: 1;
+}
 `,
         },
       },
@@ -4666,23 +6085,39 @@ const fits = {
   left: anchor.left - gap - tip.width >= pad,
   right: anchor.right + gap + tip.width <= viewport.width - pad,
 };
-// Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+// Flip: if the preferred side does not fit but
+// the opposite side does, use the opposite.
+const side =
+  !fits[placement] && fits[OPPOSITE[placement]]
+    ? OPPOSITE[placement]
+    : placement;
 
 let top;
 let left;
 if (side === "top" || side === "bottom") {
-  top = side === "top" ? anchor.top - gap - tip.height : anchor.bottom + gap;
+  top =
+    side === "top"
+      ? anchor.top - gap - tip.height
+      : anchor.bottom + gap;
   left = anchor.left + anchor.width / 2 - tip.width / 2;
 } else {
-  left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
+  left =
+    side === "left"
+      ? anchor.left - gap - tip.width
+      : anchor.right + gap;
   top = anchor.top + anchor.height / 2 - tip.height / 2;
 }
-// Shift: slide along the other axis so the tooltip stays inside the viewport padding.
-const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+// Shift: slide along the other axis so the
+// tooltip stays inside the viewport padding.
+const clamp = (v, lo, hi) =>
+  Math.min(Math.max(v, lo), Math.max(lo, hi));
 left = clamp(left, pad, viewport.width - pad - tip.width);
 top = clamp(top, pad, viewport.height - pad - tip.height);
-return { placement: side, top: Math.round(top), left: Math.round(left) };
+return {
+  placement: side,
+  top: Math.round(top),
+  left: Math.round(left),
+};
 ~~~
 
 📌 **Interview term: Flip** — use the opposite side when the preferred side overflows the viewport padding and the opposite fits.
@@ -4694,12 +6129,19 @@ Both rects are viewport-relative (\`getBoundingClientRect\`, \`position: fixed\`
 ### Step 2 — The slot contract
 
 ~~~js
-// Handed to the trigger through the scoped slot: <button v-bind="trigger">.
+// Handed to the trigger through the
+// scoped slot: <button v-bind="trigger">.
 const trigger = {
   "aria-describedby": id,
-  onMouseenter: (e) => { triggerEl = e.currentTarget; schedule(true, SHOW_DELAY); },
+  onMouseenter: (e) => {
+    triggerEl = e.currentTarget;
+    schedule(true, SHOW_DELAY);
+  },
   onMouseleave: () => schedule(false, HIDE_DELAY),
-  onFocus: (e) => { triggerEl = e.currentTarget; schedule(true, 0); },
+  onFocus: (e) => {
+    triggerEl = e.currentTarget;
+    schedule(true, 0);
+  },
   onBlur: () => schedule(false, 0),
 };
 ~~~
@@ -4710,22 +6152,36 @@ const trigger = {
 
 ~~~js
 // flush: "post" = after the DOM update, so the tooltip can be measured.
-watch([open, () => props.placement, () => props.content], ([isOpen]) => {
-  if (!isOpen) { pos.value = null; return; }
-  const place = () => {
-    pos.value = computePosition(triggerEl.getBoundingClientRect(), tip.value.getBoundingClientRect(), props.placement, viewportSize());
-  };
-  place();
-  const onKey = (e) => { if (e.key === "Escape") schedule(false, 0); };
-  window.addEventListener("scroll", place, true);
-  window.addEventListener("resize", place);
-  document.addEventListener("keydown", onKey);
-  onWatcherCleanup(() => {
-    window.removeEventListener("scroll", place, true);
-    window.removeEventListener("resize", place);
-    document.removeEventListener("keydown", onKey);
-  });
-}, { flush: "post" });
+watch(
+  [open, () => props.placement, () => props.content],
+  ([isOpen]) => {
+    if (!isOpen) {
+      pos.value = null;
+      return;
+    }
+    const place = () => {
+      pos.value = computePosition(
+        triggerEl.getBoundingClientRect(),
+        tip.value.getBoundingClientRect(),
+        props.placement,
+        viewportSize(),
+      );
+    };
+    place();
+    const onKey = (e) => {
+      if (e.key === "Escape") schedule(false, 0);
+    };
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    document.addEventListener("keydown", onKey);
+    onWatcherCleanup(() => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+      document.removeEventListener("keydown", onKey);
+    });
+  },
+  { flush: "post" },
+);
 ~~~
 
 📌 **Interview term: Post-flush watcher** — a watcher with \`flush: "post"\` runs after Vue has patched the DOM, the right time to measure. Vue flushes its queue in a microtask, and browsers only paint after the microtask queue is empty, so the second update that applies \`pos\` also lands before the first paint. See [watch flush timing](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5).
@@ -4744,7 +6200,9 @@ Scroll is caught with the capture flag (\`true\`) because \`scroll\` does not bu
     class="tooltip"
     :data-placement="pos ? pos.placement : placement"
     :data-open="open && pos ? 'true' : 'false'"
-    :style="pos ? { top: pos.top + 'px', left: pos.left + 'px' } : undefined"
+    :style="
+      pos ? { top: pos.top + 'px', left: pos.left + 'px' } : undefined
+    "
     @mouseenter="schedule(true, 0)"
     @mouseleave="schedule(false, HIDE_DELAY)"
   >
@@ -4761,7 +6219,7 @@ The tooltip is always in the DOM under \`body\` ([Teleport](/interview-question/
 
 The driver stubs \`getBoundingClientRect\` with fixed trigger rects in an 800 x 600 viewport and a tooltip width of 7 px per character plus 20 (max 240), height 28:
 
-~~~
+~~~text
 [vue] tooltips in body: 6 | describedby resolves: true
 [vue] hover +150ms  : open=false text="Placed top"
 [vue] hover +400ms  : open=true placement=top top=264 left=185 text="Placed top"
@@ -4779,7 +6237,7 @@ The driver stubs \`getBoundingClientRect\` with fixed trigger rects in an 800 x 
 
 ### Chromium 141, real layout
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] hover +150ms : hidden
 [chromium:vue] hover +450ms : placement=top gap=8px inViewport=true tip=214,179 88x30
@@ -4897,36 +6355,105 @@ const sides = ["top", "right", "bottom", "left"];
 <template>
   <main class="page">
     <div class="edges">
-      <BaseTooltip content="No room above, so I flip below" placement="top" v-slot="{ trigger }">
-        <button v-bind="trigger" class="btn" data-testid="edge-top">Flips</button>
+      <BaseTooltip
+        content="No room above, so I flip below"
+        placement="top"
+        v-slot="{ trigger }"
+      >
+        <button
+          v-bind="trigger"
+          class="btn"
+          data-testid="edge-top"
+        >Flips</button>
       </BaseTooltip>
-      <BaseTooltip content="A longer tooltip that is shifted left to stay on screen" placement="bottom" v-slot="{ trigger }">
-        <button v-bind="trigger" class="btn" data-testid="edge-right">Shifts</button>
+      <BaseTooltip
+        content="A longer tooltip that is shifted left to stay on screen"
+        placement="bottom"
+        v-slot="{ trigger }"
+      >
+        <button
+          v-bind="trigger"
+          class="btn"
+          data-testid="edge-right"
+        >Shifts</button>
       </BaseTooltip>
     </div>
     <h1>Tooltip</h1>
     <p class="hint">Hover (300 ms delay) or Tab to a button. Escape hides the tooltip.</p>
     <div class="grid">
-      <BaseTooltip v-for="side in sides" :key="side" :content="'Placed ' + side" :placement="side" v-slot="{ trigger }">
-        <button v-bind="trigger" class="btn" :data-testid="'tt-' + side">{{ side }}</button>
+      <BaseTooltip
+        v-for="side in sides"
+        :key="side"
+        :content="'Placed ' + side"
+        :placement="side"
+        v-slot="{ trigger }"
+      >
+        <button
+          v-bind="trigger"
+          class="btn"
+          :data-testid="'tt-' + side"
+        >{{ side }}</button>
       </BaseTooltip>
     </div>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 560px; margin: 0 auto; padding: 8px 16px 24px; }
-.edges { display: flex; justify-content: space-between; }
-h1 { font-size: 1.3rem; margin: 40px 0 8px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
-.grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; padding: 60px 0; }
-.btn { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; cursor: pointer; text-transform: capitalize; }
-.btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+}
+.edges {
+  display: flex;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 40px 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  padding: 60px 0;
+}
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.btn:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/BaseTooltip.vue": `<script setup>
-import { ref, watch, onWatcherCleanup, onBeforeUnmount, useId, useTemplateRef } from "vue";
+import {
+  ref,
+  watch,
+  onWatcherCleanup,
+  onBeforeUnmount,
+  useId,
+  useTemplateRef,
+} from "vue";
 import { computePosition, viewportSize } from "./position.js";
 
 const props = defineProps({
@@ -4935,7 +6462,8 @@ const props = defineProps({
 });
 
 const SHOW_DELAY = 300; // hover only; keyboard focus shows at once
-const HIDE_DELAY = 100; // time to move the pointer from the trigger onto the tooltip
+// time to move the pointer from the trigger onto the tooltip
+const HIDE_DELAY = 100;
 
 const open = ref(false);
 const pos = ref(null);
@@ -4951,31 +6479,51 @@ function schedule(nextOpen, delay) {
 }
 
 // flush: "post" = after the DOM update, so the tooltip can be measured.
-watch([open, () => props.placement, () => props.content], ([isOpen]) => {
-  if (!isOpen) { pos.value = null; return; }
-  const place = () => {
-    pos.value = computePosition(triggerEl.getBoundingClientRect(), tip.value.getBoundingClientRect(), props.placement, viewportSize());
-  };
-  place();
-  const onKey = (e) => { if (e.key === "Escape") schedule(false, 0); };
-  window.addEventListener("scroll", place, true);
-  window.addEventListener("resize", place);
-  document.addEventListener("keydown", onKey);
-  onWatcherCleanup(() => {
-    window.removeEventListener("scroll", place, true);
-    window.removeEventListener("resize", place);
-    document.removeEventListener("keydown", onKey);
-  });
-}, { flush: "post" });
+watch(
+  [open, () => props.placement, () => props.content],
+  ([isOpen]) => {
+    if (!isOpen) {
+      pos.value = null;
+      return;
+    }
+    const place = () => {
+      pos.value = computePosition(
+        triggerEl.getBoundingClientRect(),
+        tip.value.getBoundingClientRect(),
+        props.placement,
+        viewportSize(),
+      );
+    };
+    place();
+    const onKey = (e) => {
+      if (e.key === "Escape") schedule(false, 0);
+    };
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    document.addEventListener("keydown", onKey);
+    onWatcherCleanup(() => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+      document.removeEventListener("keydown", onKey);
+    });
+  },
+  { flush: "post" },
+);
 
 onBeforeUnmount(() => clearTimeout(timer));
 
 // Handed to the trigger through the scoped slot: <button v-bind="trigger">.
 const trigger = {
   "aria-describedby": id,
-  onMouseenter: (e) => { triggerEl = e.currentTarget; schedule(true, SHOW_DELAY); },
+  onMouseenter: (e) => {
+    triggerEl = e.currentTarget;
+    schedule(true, SHOW_DELAY);
+  },
   onMouseleave: () => schedule(false, HIDE_DELAY),
-  onFocus: (e) => { triggerEl = e.currentTarget; schedule(true, 0); },
+  onFocus: (e) => {
+    triggerEl = e.currentTarget;
+    schedule(true, 0);
+  },
   onBlur: () => schedule(false, 0),
 };
 </script>
@@ -5000,24 +6548,56 @@ const trigger = {
 </template>
 
 <style>
-.tooltip { position: fixed; top: 0; left: 0; z-index: 1000; width: max-content; max-width: 240px; padding: 6px 10px; border-radius: 6px; background: #f1f3f7; color: #111418; font-size: 0.85rem; line-height: 1.3; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); visibility: hidden; opacity: 0; transition: opacity 120ms; }
-.tooltip[data-open="true"] { visibility: visible; opacity: 1; }
+.tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #f1f3f7;
+  color: #111418;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.tooltip[data-open="true"] {
+  visibility: visible;
+  opacity: 1;
+}
 </style>
 `,
           "/src/components/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
-// anchor = the trigger's getBoundingClientRect(), tip = { width, height } of the tooltip,
+// anchor = the trigger's getBoundingClientRect(),
+// tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
 const OPPOSITE = { top: "bottom", bottom: "top", left: "right", right: "left" };
 
-export function computePosition(anchor, tip, placement, viewport, gap = 8, pad = 8) {
+export function computePosition(
+  anchor,
+  tip,
+  placement,
+  viewport,
+  gap = 8,
+  pad = 8,
+) {
   const fits = {
     top: anchor.top - gap - tip.height >= pad,
     bottom: anchor.bottom + gap + tip.height <= viewport.height - pad,
     left: anchor.left - gap - tip.width >= pad,
     right: anchor.right + gap + tip.width <= viewport.width - pad,
   };
-  // Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-  const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+  // Flip: if the preferred side does not fit but
+  // the opposite side does, use the opposite.
+  const side =
+    !fits[placement] && fits[OPPOSITE[placement]]
+      ? OPPOSITE[placement]
+      : placement;
 
   let top;
   let left;
@@ -5028,7 +6608,8 @@ export function computePosition(anchor, tip, placement, viewport, gap = 8, pad =
     left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
     top = anchor.top + anchor.height / 2 - tip.height / 2;
   }
-  // Shift: slide along the other axis so the tooltip stays inside the viewport padding.
+  // Shift: slide along the other axis so the
+  // tooltip stays inside the viewport padding.
   const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), Math.max(lo, hi));
   left = clamp(left, pad, viewport.width - pad - tip.width);
   top = clamp(top, pad, viewport.height - pad - tip.height);
@@ -5036,9 +6617,13 @@ export function computePosition(anchor, tip, placement, viewport, gap = 8, pad =
 }
 
 export function viewportSize() {
-  // clientWidth excludes the scrollbar; it is 0 without layout, so fall back to innerWidth.
+  // clientWidth excludes the scrollbar; it is 0
+  // without layout, so fall back to innerWidth.
   const html = document.documentElement;
-  return { width: html.clientWidth || window.innerWidth, height: html.clientHeight || window.innerHeight };
+  return {
+    width: html.clientWidth || window.innerWidth,
+    height: html.clientHeight || window.innerHeight,
+  };
 }
 `,
         },
@@ -5080,23 +6665,39 @@ const fits: Record<Placement, boolean> = {
   left: anchor.left - gap - tip.width >= pad,
   right: anchor.right + gap + tip.width <= viewport.width - pad,
 };
-// Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+// Flip: if the preferred side does not fit but
+// the opposite side does, use the opposite.
+const side =
+  !fits[placement] && fits[OPPOSITE[placement]]
+    ? OPPOSITE[placement]
+    : placement;
 
 let top: number;
 let left: number;
 if (side === "top" || side === "bottom") {
-  top = side === "top" ? anchor.top - gap - tip.height : anchor.bottom + gap;
+  top =
+    side === "top"
+      ? anchor.top - gap - tip.height
+      : anchor.bottom + gap;
   left = anchor.left + anchor.width / 2 - tip.width / 2;
 } else {
-  left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
+  left =
+    side === "left"
+      ? anchor.left - gap - tip.width
+      : anchor.right + gap;
   top = anchor.top + anchor.height / 2 - tip.height / 2;
 }
-// Shift: slide along the other axis so the tooltip stays inside the viewport padding.
-const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+// Shift: slide along the other axis so the
+// tooltip stays inside the viewport padding.
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(Math.max(v, lo), Math.max(lo, hi));
 left = clamp(left, pad, viewport.width - pad - tip.width);
 top = clamp(top, pad, viewport.height - pad - tip.height);
-return { placement: side, top: Math.round(top), left: Math.round(left) };
+return {
+  placement: side,
+  top: Math.round(top),
+  left: Math.round(left),
+};
 ~~~
 
 📌 **Interview term: Flip** — use the opposite side when the preferred one does not fit and the opposite does.
@@ -5107,13 +6708,16 @@ return { placement: side, top: Math.round(top), left: Math.round(left) };
 
 ~~~ts
 constructor() {
-  // Always in the DOM (hidden by CSS), so aria-describedby always resolves.
+  // Always in the DOM (hidden by CSS),
+  // so aria-describedby always resolves.
   this.tip.id = this.id;
   this.tip.className = "tooltip";
   this.tip.setAttribute("role", "tooltip");
   this.tip.dataset["open"] = "false";
   this.tip.addEventListener("mouseenter", () => this.schedule(true, 0));
-  this.tip.addEventListener("mouseleave", () => this.schedule(false, HIDE_DELAY));
+  this.tip.addEventListener("mouseleave", () =>
+    this.schedule(false, HIDE_DELAY),
+  );
   document.body.appendChild(this.tip);
 }
 ~~~
@@ -5121,16 +6725,25 @@ constructor() {
 The tooltip is created by hand and appended to \`body\`, so no ancestor can clip it. Because it is not part of any Angular view, change detection never touches it: the directive writes \`textContent\`, \`style.top/left\` and \`data-open\` directly. That is a deliberate choice for a high-frequency widget (repositioning on scroll) and it sidesteps zoneless scheduling entirely. The trade-off: emulated style encapsulation cannot reach it, so its CSS is global (\`AppComponent\` uses \`ViewEncapsulation.None\`).
 
 ~~~ts
-// Keep the text current even while hidden: screen readers read it through aria-describedby.
+// Keep the text current even while hidden: screen
+// readers read it through aria-describedby.
 ngOnChanges() {
   this.tip.textContent = this.appTooltip;
   if (this.open) this.place();
 }
 
-@HostListener("mouseenter") onEnter() { this.schedule(true, SHOW_DELAY); }
-@HostListener("mouseleave") onLeave() { this.schedule(false, HIDE_DELAY); }
-@HostListener("focus") onFocus() { this.schedule(true, 0); }
-@HostListener("blur") onBlur() { this.schedule(false, 0); }
+@HostListener("mouseenter") onEnter() {
+  this.schedule(true, SHOW_DELAY);
+}
+@HostListener("mouseleave") onLeave() {
+  this.schedule(false, HIDE_DELAY);
+}
+@HostListener("focus") onFocus() {
+  this.schedule(true, 0);
+}
+@HostListener("blur") onBlur() {
+  this.schedule(false, 0);
+}
 ~~~
 
 📌 **Interview term: @HostListener** — binds a directive method to an event on its host element; Angular removes it on destroy ([HostListener and HostBinding](/interview-question/what-do-hostlistener-and-hostbinding-do)). \`ngOnChanges\` keeps the text current even while hidden, so \`aria-describedby\` always resolves to the right description. The first version set the text only when showing; the jsdom run then read an empty description before the first hover.
@@ -5164,7 +6777,14 @@ The tooltip is measured while still \`visibility: hidden\` (it has a size), plac
 ~~~ts
 <div class="grid">
   @for (side of sides; track side) {
-    <button [appTooltip]="'Placed ' + side" [tooltipPlacement]="side" class="btn" [attr.data-testid]="'tt-' + side">{{ side }}</button>
+    <button
+      [appTooltip]="'Placed ' + side"
+      [tooltipPlacement]="side"
+      class="btn"
+      [attr.data-testid]="'tt-' + side"
+    >
+      {{ side }}
+    </button>
   }
 </div>
 ~~~
@@ -5177,7 +6797,7 @@ The tooltip is measured while still \`visibility: hidden\` (it has a size), plac
 
 \`getBoundingClientRect\` is stubbed with fixed trigger rects in an 800 x 600 viewport; tooltip width is 7 px per character plus 20 (max 240), height 28. AOT and JIT printed the same lines; JIT run:
 
-~~~
+~~~text
 [angular:playground] tooltips in body: 6 | describedby resolves: true
 [angular:playground] hover +150ms  : open=false text="Placed top"
 [angular:playground] hover +400ms  : open=true placement=top top=264 left=185 text="Placed top"
@@ -5195,7 +6815,7 @@ The tooltip is measured while still \`visibility: hidden\` (it has a size), plac
 
 ### Chromium 141, real layout
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] hover +150ms : hidden
 [chromium:angular] hover +450ms : placement=top gap=8px inViewport=true tip=214,179 88x30
@@ -5313,22 +6933,39 @@ import { TooltipDirective } from "./tooltip.directive";
   template: \`
     <main class="page">
       <div class="edges">
-        <button appTooltip="No room above, so I flip below" tooltipPlacement="top" class="btn" data-testid="edge-top">Flips</button>
-        <button appTooltip="A longer tooltip that is shifted left to stay on screen" tooltipPlacement="bottom" class="btn" data-testid="edge-right">Shifts</button>
+        <button
+          appTooltip="No room above, so I flip below"
+          tooltipPlacement="top"
+          class="btn"
+          data-testid="edge-top"
+        >Flips</button>
+        <button
+          appTooltip="A longer tooltip that is shifted left to stay on screen"
+          tooltipPlacement="bottom"
+          class="btn"
+          data-testid="edge-right"
+        >Shifts</button>
       </div>
       <h1>Tooltip</h1>
       <p class="hint">Hover (300 ms delay) or Tab to a button. Escape hides the tooltip.</p>
       <div class="grid">
         @for (side of sides; track side) {
-          <button [appTooltip]="'Placed ' + side" [tooltipPlacement]="side" class="btn" [attr.data-testid]="'tt-' + side">{{ side }}</button>
+          <button
+            [appTooltip]="'Placed ' + side"
+            [tooltipPlacement]="side"
+            class="btn"
+            [attr.data-testid]="'tt-' + side"
+          >{{ side }}</button>
         }
       </div>
     </main>
   \`,
-  // Global (unencapsulated): the tooltip element is created by hand under <body>,
+  // Global (unencapsulated): the tooltip
+  // element is created by hand under <body>,
   // where emulated encapsulation attributes would never reach it.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; font-family: system-ui, sans-serif; color: #e7e9ee; }
     app-root .page { max-width: 560px; margin: 0 auto; padding: 8px 16px 24px; }
@@ -5340,30 +6977,58 @@ import { TooltipDirective } from "./tooltip.directive";
     app-root .btn:focus-visible { outline: 2px solid #6ea8fe; outline-offset: 2px; }
     .tooltip { position: fixed; top: 0; left: 0; z-index: 1000; width: max-content; max-width: 240px; padding: 6px 10px; border-radius: 6px; background: #f1f3f7; color: #111418; font-family: system-ui, sans-serif; font-size: 0.85rem; line-height: 1.3; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); visibility: hidden; opacity: 0; transition: opacity 120ms; }
     .tooltip[data-open="true"] { visibility: visible; opacity: 1; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly sides = ["top", "right", "bottom", "left"] as const;
 }
 `,
           "/src/app/position.ts": `// Pure positioning maths: no DOM access, so it is easy to test.
-// anchor = the trigger's getBoundingClientRect(), tip = { width, height } of the tooltip,
+// anchor = the trigger's getBoundingClientRect(),
+// tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
 export type Placement = "top" | "right" | "bottom" | "left";
-export interface Rect { top: number; left: number; bottom: number; right: number; width: number; height: number; }
-export interface Size { width: number; height: number; }
+export interface Rect {
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+  width: number;
+  height: number;
+}
+export interface Size {
+  width: number;
+  height: number;
+}
 
-const OPPOSITE: Record<Placement, Placement> = { top: "bottom", bottom: "top", left: "right", right: "left" };
+const OPPOSITE: Record<Placement, Placement> = {
+  top: "bottom",
+  bottom: "top",
+  left: "right",
+  right: "left",
+};
 
-export function computePosition(anchor: Rect, tip: Size, placement: Placement, viewport: Size, gap = 8, pad = 8): { placement: Placement; top: number; left: number } {
+export function computePosition(
+  anchor: Rect,
+  tip: Size,
+  placement: Placement,
+  viewport: Size,
+  gap = 8,
+  pad = 8,
+): { placement: Placement; top: number; left: number } {
   const fits: Record<Placement, boolean> = {
     top: anchor.top - gap - tip.height >= pad,
     bottom: anchor.bottom + gap + tip.height <= viewport.height - pad,
     left: anchor.left - gap - tip.width >= pad,
     right: anchor.right + gap + tip.width <= viewport.width - pad,
   };
-  // Flip: if the preferred side does not fit but the opposite side does, use the opposite.
-  const side = !fits[placement] && fits[OPPOSITE[placement]] ? OPPOSITE[placement] : placement;
+  // Flip: if the preferred side does not fit but
+  // the opposite side does, use the opposite.
+  const side =
+    !fits[placement] && fits[OPPOSITE[placement]]
+      ? OPPOSITE[placement]
+      : placement;
 
   let top: number;
   let left: number;
@@ -5374,28 +7039,45 @@ export function computePosition(anchor: Rect, tip: Size, placement: Placement, v
     left = side === "left" ? anchor.left - gap - tip.width : anchor.right + gap;
     top = anchor.top + anchor.height / 2 - tip.height / 2;
   }
-  // Shift: slide along the other axis so the tooltip stays inside the viewport padding.
-  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  // Shift: slide along the other axis so the
+  // tooltip stays inside the viewport padding.
+  const clamp = (v: number, lo: number, hi: number) =>
+    Math.min(Math.max(v, lo), Math.max(lo, hi));
   left = clamp(left, pad, viewport.width - pad - tip.width);
   top = clamp(top, pad, viewport.height - pad - tip.height);
   return { placement: side, top: Math.round(top), left: Math.round(left) };
 }
 
 export function viewportSize(): Size {
-  // clientWidth excludes the scrollbar; it is 0 without layout, so fall back to innerWidth.
+  // clientWidth excludes the scrollbar; it is 0
+  // without layout, so fall back to innerWidth.
   const html = document.documentElement;
-  return { width: html.clientWidth || window.innerWidth, height: html.clientHeight || window.innerHeight };
+  return {
+    width: html.clientWidth || window.innerWidth,
+    height: html.clientHeight || window.innerHeight,
+  };
 }
 `,
-          "/src/app/tooltip.directive.ts": `import { Directive, ElementRef, HostListener, Input, OnChanges, OnDestroy, inject } from "@angular/core";
+          "/src/app/tooltip.directive.ts": `import {
+  Directive,
+  ElementRef,
+  HostListener,
+  Input,
+  OnChanges,
+  OnDestroy,
+  inject,
+} from "@angular/core";
 import { Placement, computePosition, viewportSize } from "./position";
 
 const SHOW_DELAY = 300; // hover only; keyboard focus shows at once
-const HIDE_DELAY = 100; // time to move the pointer from the trigger onto the tooltip
+// time to move the pointer from the trigger onto the tooltip
+const HIDE_DELAY = 100;
 let nextId = 0;
 
-// <button appTooltip="Text" tooltipPlacement="top">. The tooltip element lives in <body>,
-// created by hand (no Angular view), so it is updated imperatively, not through change detection.
+// <button appTooltip="Text" tooltipPlacement="top">.
+// The tooltip element lives in <body>,
+// created by hand (no Angular view), so it is updated
+// imperatively, not through change detection.
 @Directive({
   selector: "[appTooltip]",
   host: { "[attr.aria-describedby]": "id" },
@@ -5410,12 +7092,19 @@ export class TooltipDirective implements OnChanges, OnDestroy {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private open = false;
   private place = () => {
-    const p = computePosition(this.trigger.getBoundingClientRect(), this.tip.getBoundingClientRect(), this.tooltipPlacement, viewportSize());
+    const p = computePosition(
+      this.trigger.getBoundingClientRect(),
+      this.tip.getBoundingClientRect(),
+      this.tooltipPlacement,
+      viewportSize(),
+    );
     this.tip.style.top = p.top + "px";
     this.tip.style.left = p.left + "px";
     this.tip.dataset["placement"] = p.placement;
   };
-  private onKey = (e: KeyboardEvent) => { if (e.key === "Escape") this.schedule(false, 0); };
+  private onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") this.schedule(false, 0);
+  };
 
   constructor() {
     // Always in the DOM (hidden by CSS), so aria-describedby always resolves.
@@ -5424,20 +7113,31 @@ export class TooltipDirective implements OnChanges, OnDestroy {
     this.tip.setAttribute("role", "tooltip");
     this.tip.dataset["open"] = "false";
     this.tip.addEventListener("mouseenter", () => this.schedule(true, 0));
-    this.tip.addEventListener("mouseleave", () => this.schedule(false, HIDE_DELAY));
+    this.tip.addEventListener("mouseleave", () =>
+      this.schedule(false, HIDE_DELAY),
+    );
     document.body.appendChild(this.tip);
   }
 
-  // Keep the text current even while hidden: screen readers read it through aria-describedby.
+  // Keep the text current even while hidden: screen
+  // readers read it through aria-describedby.
   ngOnChanges() {
     this.tip.textContent = this.appTooltip;
     if (this.open) this.place();
   }
 
-  @HostListener("mouseenter") onEnter() { this.schedule(true, SHOW_DELAY); }
-  @HostListener("mouseleave") onLeave() { this.schedule(false, HIDE_DELAY); }
-  @HostListener("focus") onFocus() { this.schedule(true, 0); }
-  @HostListener("blur") onBlur() { this.schedule(false, 0); }
+  @HostListener("mouseenter") onEnter() {
+    this.schedule(true, SHOW_DELAY);
+  }
+  @HostListener("mouseleave") onLeave() {
+    this.schedule(false, HIDE_DELAY);
+  }
+  @HostListener("focus") onFocus() {
+    this.schedule(true, 0);
+  }
+  @HostListener("blur") onBlur() {
+    this.schedule(false, 0);
+  }
 
   private schedule(next: boolean, delay: number) {
     clearTimeout(this.timer);
@@ -5570,22 +7270,40 @@ The root is \`position: fixed; right: 24px; bottom: 24px\` with \`display: flex;
 ### Step 2 — Always mounted, inert when closed
 
 ~~~jsx
-{/* Always rendered so the close animation can play; inert while closed. */}
-<ul id={menuId} role="menu" aria-label="Actions" className="actions" inert={!open}>
+{
+  /* Always rendered so the close animation can play; inert while closed. */
+}
+<ul
+  id={menuId}
+  role="menu"
+  aria-label="Actions"
+  className="actions"
+  inert={!open}
+>
   {actions.map((action, i) => (
     <li key={action.id} role="none">
       <button
-        ref={(el) => { itemRefs.current[i] = el; }}
+        ref={(el) => {
+          itemRefs.current[i] = el;
+        }}
         type="button"
         role="menuitem"
         className="action"
         data-testid={"action-" + action.id}
         // Open: nearest first. Close: farthest first.
-        style={{ transitionDelay: (open ? i : actions.length - 1 - i) * STAGGER + "ms" }}
-        onClick={() => { onAction(action); close(); }}
+        style={{
+          transitionDelay:
+            (open ? i : actions.length - 1 - i) * STAGGER + "ms",
+        }}
+        onClick={() => {
+          onAction(action);
+          close();
+        }}
       >
         <span className="action-label">{action.label}</span>
-        <span className="action-icon" aria-hidden="true">{action.icon}</span>
+        <span className="action-icon" aria-hidden="true">
+          {action.icon}
+        </span>
       </button>
     </li>
   ))}
@@ -5611,9 +7329,12 @@ style={{ transitionDelay: (open ? i : actions.length - 1 - i) * STAGGER + "ms" }
 // Outside press closes. Listen only while open.
 useEffect(() => {
   if (!open) return;
-  const onPointerDown = (e) => { if (!rootRef.current.contains(e.target)) setOpen(false); };
+  const onPointerDown = (e) => {
+    if (!rootRef.current.contains(e.target)) setOpen(false);
+  };
   document.addEventListener("pointerdown", onPointerDown);
-  return () => document.removeEventListener("pointerdown", onPointerDown);
+  return () =>
+    document.removeEventListener("pointerdown", onPointerDown);
 }, [open]);
 
 function close() {
@@ -5623,11 +7344,19 @@ function close() {
 ~~~
 
 ~~~jsx
-if (e.key === "Escape" && open) { e.preventDefault(); close(); return; }
+if (e.key === "Escape" && open) {
+  e.preventDefault();
+  close();
+  return;
+}
 if (!open || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
 e.preventDefault();
-const current = itemRefs.current.indexOf(document.activeElement); // -1 = FAB
-const next = e.key === "ArrowUp" ? Math.min(current + 1, actions.length - 1) : current - 1;
+// -1 = FAB
+const current = itemRefs.current.indexOf(document.activeElement);
+const next =
+  e.key === "ArrowUp"
+    ? Math.min(current + 1, actions.length - 1)
+    : current - 1;
 (next < 0 ? fabRef.current : itemRefs.current[next]).focus();
 ~~~
 
@@ -5645,7 +7374,7 @@ The FAB has \`aria-label="Actions"\`, \`aria-haspopup="menu"\`, \`aria-expanded\
 
 Same driver for React, Vue and Angular; the "outside" step dispatches a \`pointerdown\` on the status paragraph:
 
-~~~
+~~~text
 [react] initial   : expanded=false inert="" focus=BODY items=4 delays=120ms,80ms,40ms,0ms
 [react] open      : expanded=true inert=absent focus=fab delays=0ms,40ms,80ms,120ms
 [react] ArrowUp   : expanded=true inert=absent focus=action-share
@@ -5663,7 +7392,7 @@ Closed: \`inert=""\` and close-order delays; open: attribute removed and delays 
 
 \`y\` is the top of each action's icon in the 800 x 600 viewport, \`op\` its computed opacity. Mid-stagger numbers depend on timing and differ slightly between runs:
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] closed      : fab=720,520 share@y483 op=0 print@y427 op=0 copy@y371 op=0 download@y315 op=0
 [chromium:react] open +60ms  : share@y466 op=0.822471 print@y418 op=0.453943 copy@y371 op=0.0105775 download@y315 op=0 (mid-stagger)
@@ -5785,8 +7514,13 @@ export default function App() {
   return (
     <main className="page">
       <h1>Speed dial</h1>
-      <p className="hint">Click the round button, or focus it and use the arrow keys. Escape or a click outside closes it.</p>
-      <p data-testid="status" aria-live="polite">{status}</p>
+      <p className="hint">
+        Click the round button, or focus it and use the arrow keys. Escape or a
+        click outside closes it.
+      </p>
+      <p data-testid="status" aria-live="polite">
+        {status}
+      </p>
       <SpeedDial actions={ACTIONS} onAction={(a) => setStatus(a.done)} />
     </main>
   );
@@ -5806,7 +7540,9 @@ export default function SpeedDial({ actions, onAction }) {
   // Outside press closes. Listen only while open.
   useEffect(() => {
     if (!open) return;
-    const onPointerDown = (e) => { if (!rootRef.current.contains(e.target)) setOpen(false); };
+    const onPointerDown = (e) => {
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
@@ -5816,18 +7552,31 @@ export default function SpeedDial({ actions, onAction }) {
     fabRef.current.focus();
   }
 
-  // Arrow keys walk the column: the FAB is position -1, actions 0..n-1 go upward.
+  // Arrow keys walk the column: the FAB is
+  // position -1, actions 0..n-1 go upward.
   function onKeyDown(e) {
-    if (e.key === "Escape" && open) { e.preventDefault(); close(); return; }
+    if (e.key === "Escape" && open) {
+      e.preventDefault();
+      close();
+      return;
+    }
     if (!open || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
     e.preventDefault();
-    const current = itemRefs.current.indexOf(document.activeElement); // -1 = FAB
-    const next = e.key === "ArrowUp" ? Math.min(current + 1, actions.length - 1) : current - 1;
+    // -1 = FAB
+    const current = itemRefs.current.indexOf(document.activeElement);
+    const next =
+      e.key === "ArrowUp"
+        ? Math.min(current + 1, actions.length - 1)
+        : current - 1;
     (next < 0 ? fabRef.current : itemRefs.current[next]).focus();
   }
 
   return (
-    <div className={"speed-dial" + (open ? " is-open" : "")} ref={rootRef} onKeyDown={onKeyDown}>
+    <div
+      className={"speed-dial" + (open ? " is-open" : "")}
+      ref={rootRef}
+      onKeyDown={onKeyDown}
+    >
       <button
         ref={fabRef}
         type="button"
@@ -5839,24 +7588,42 @@ export default function SpeedDial({ actions, onAction }) {
         aria-controls={menuId}
         onClick={() => setOpen((o) => !o)}
       >
-        <span aria-hidden="true" className="fab-icon">+</span>
+        <span aria-hidden="true" className="fab-icon">
+          +
+        </span>
       </button>
       {/* Always rendered so the close animation can play; inert while closed. */}
-      <ul id={menuId} role="menu" aria-label="Actions" className="actions" inert={!open}>
+      <ul
+        id={menuId}
+        role="menu"
+        aria-label="Actions"
+        className="actions"
+        inert={!open}
+      >
         {actions.map((action, i) => (
           <li key={action.id} role="none">
             <button
-              ref={(el) => { itemRefs.current[i] = el; }}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
               type="button"
               role="menuitem"
               className="action"
               data-testid={"action-" + action.id}
               // Open: nearest first. Close: farthest first.
-              style={{ transitionDelay: (open ? i : actions.length - 1 - i) * STAGGER + "ms" }}
-              onClick={() => { onAction(action); close(); }}
+              style={{
+                transitionDelay:
+                  (open ? i : actions.length - 1 - i) * STAGGER + "ms",
+              }}
+              onClick={() => {
+                onAction(action);
+                close();
+              }}
             >
               <span className="action-label">{action.label}</span>
-              <span className="action-icon" aria-hidden="true">{action.icon}</span>
+              <span className="action-icon" aria-hidden="true">
+                {action.icon}
+              </span>
             </button>
           </li>
         ))}
@@ -5865,21 +7632,111 @@ export default function SpeedDial({ actions, onAction }) {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px 160px; }
-h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
-.speed-dial { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 12px; }
-.fab { width: 56px; height: 56px; border-radius: 50%; border: 0; background: #2f6fde; color: #fff; font-size: 2rem; line-height: 1; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
-.fab-icon { display: inline-block; transition: transform 200ms; }
-.is-open .fab-icon { transform: rotate(45deg); }
-.actions { display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 10px; margin: 0; padding: 0 4px 0 0; list-style: none; }
-.action { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; opacity: 0; transform: translateY(12px) scale(0.6); transition: opacity 160ms, transform 160ms; }
-.is-open .action { opacity: 1; transform: none; }
-.action-label { padding: 4px 8px; border-radius: 6px; background: #1d222b; border: 1px solid #3a4250; font-size: 0.85rem; white-space: nowrap; }
-.action-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #1d222b; border: 1px solid #3a4250; font-size: 1.2rem; }
-.fab:focus-visible, .action:focus-visible .action-icon { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .action, .fab-icon { transition: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 160px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.speed-dial {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 12px;
+}
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  background: #2f6fde;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.fab-icon {
+  display: inline-block;
+  transition: transform 200ms;
+}
+.is-open .fab-icon {
+  transform: rotate(45deg);
+}
+.actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  list-style: none;
+}
+.action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px) scale(0.6);
+  transition:
+    opacity 160ms,
+    transform 160ms;
+}
+.is-open .action {
+  opacity: 1;
+  transform: none;
+}
+.action-label {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  font-size: 1.2rem;
+}
+.fab:focus-visible,
+.action:focus-visible .action-icon {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action,
+  .fab-icon {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -5928,7 +7785,8 @@ The binding is \`:inert="open ? null : ''"\`, not \`:inert="!open"\`. In Chromiu
 
 ~~~js
 // Open: nearest first. Close: farthest first.
-const delay = (i) => (open.value ? i : props.actions.length - 1 - i) * STAGGER + "ms";
+const delay = (i) =>
+  (open.value ? i : props.actions.length - 1 - i) * STAGGER + "ms";
 ~~~
 
 \`:style="{ transitionDelay: delay(i) }"\` on each action. The template reads \`open\`, so the delays update in the same render that flips the class. CSS transitions \`opacity\` and \`transform\`, and \`prefers-reduced-motion: reduce\` turns them off.
@@ -5939,9 +7797,13 @@ const delay = (i) => (open.value ? i : props.actions.length - 1 - i) * STAGGER +
 // Outside press closes. Listen only while open.
 watch(open, (isOpen) => {
   if (!isOpen) return;
-  const onPointerDown = (e) => { if (!root.value.contains(e.target)) open.value = false; };
+  const onPointerDown = (e) => {
+    if (!root.value.contains(e.target)) open.value = false;
+  };
   document.addEventListener("pointerdown", onPointerDown);
-  onWatcherCleanup(() => document.removeEventListener("pointerdown", onPointerDown));
+  onWatcherCleanup(() =>
+    document.removeEventListener("pointerdown", onPointerDown),
+  );
 });
 ~~~
 
@@ -5949,11 +7811,19 @@ watch(open, (isOpen) => {
 
 ~~~js
 function onKeyDown(e) {
-  if (e.key === "Escape" && open.value) { e.preventDefault(); close(); return; }
-  if (!open.value || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+  if (e.key === "Escape" && open.value) {
+    e.preventDefault();
+    close();
+    return;
+  }
+  if (!open.value || (e.key !== "ArrowUp" && e.key !== "ArrowDown"))
+    return;
   e.preventDefault();
   const current = itemEls.indexOf(document.activeElement); // -1 = FAB
-  const next = e.key === "ArrowUp" ? Math.min(current + 1, props.actions.length - 1) : current - 1;
+  const next =
+    e.key === "ArrowUp"
+      ? Math.min(current + 1, props.actions.length - 1)
+      : current - 1;
   (next < 0 ? fab.value : itemEls[next]).focus();
 }
 ~~~
@@ -5968,7 +7838,7 @@ The root is fixed bottom-right with \`flex-direction: column-reverse\`, and the 
 
 jsdom, same driver as React and Angular:
 
-~~~
+~~~text
 [vue] initial   : expanded=false inert="" focus=BODY items=4 delays=120ms,80ms,40ms,0ms
 [vue] open      : expanded=true inert=absent focus=fab delays=0ms,40ms,80ms,120ms
 [vue] ArrowUp   : expanded=true inert=absent focus=action-share
@@ -5982,7 +7852,7 @@ jsdom, same driver as React and Angular:
 
 Chromium 141 (mid-stagger numbers are timing-dependent):
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] closed      : fab=720,520 share@y483 op=0 print@y427 op=0 copy@y371 op=0 download@y315 op=0
 [chromium:vue] open +60ms  : share@y472 op=0.538058 print@y426 op=0.0458943 copy@y371 op=0 download@y315 op=0 (mid-stagger)
@@ -6107,10 +7977,25 @@ const status = ref("Pick an action");
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px 160px; }
-h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.hint { color: #9aa3b2; font-size: 0.9rem; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 160px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
 </style>
 `,
           "/src/components/SpeedDial.vue": `<script setup>
@@ -6129,9 +8014,13 @@ const menuId = useId();
 // Outside press closes. Listen only while open.
 watch(open, (isOpen) => {
   if (!isOpen) return;
-  const onPointerDown = (e) => { if (!root.value.contains(e.target)) open.value = false; };
+  const onPointerDown = (e) => {
+    if (!root.value.contains(e.target)) open.value = false;
+  };
   document.addEventListener("pointerdown", onPointerDown);
-  onWatcherCleanup(() => document.removeEventListener("pointerdown", onPointerDown));
+  onWatcherCleanup(() =>
+    document.removeEventListener("pointerdown", onPointerDown),
+  );
 });
 
 function close() {
@@ -6141,11 +8030,18 @@ function close() {
 
 // Arrow keys walk the column: the FAB is position -1, actions 0..n-1 go upward.
 function onKeyDown(e) {
-  if (e.key === "Escape" && open.value) { e.preventDefault(); close(); return; }
+  if (e.key === "Escape" && open.value) {
+    e.preventDefault();
+    close();
+    return;
+  }
   if (!open.value || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
   e.preventDefault();
   const current = itemEls.indexOf(document.activeElement); // -1 = FAB
-  const next = e.key === "ArrowUp" ? Math.min(current + 1, props.actions.length - 1) : current - 1;
+  const next =
+    e.key === "ArrowUp"
+      ? Math.min(current + 1, props.actions.length - 1)
+      : current - 1;
   (next < 0 ? fab.value : itemEls[next]).focus();
 }
 
@@ -6155,11 +8051,17 @@ function choose(action) {
 }
 
 // Open: nearest first. Close: farthest first.
-const delay = (i) => (open.value ? i : props.actions.length - 1 - i) * STAGGER + "ms";
+const delay = (i) =>
+  (open.value ? i : props.actions.length - 1 - i) * STAGGER + "ms";
 </script>
 
 <template>
-  <div ref="root" class="speed-dial" :class="{ 'is-open': open }" @keydown="onKeyDown">
+  <div
+    ref="root"
+    class="speed-dial"
+    :class="{ 'is-open': open }"
+    @keydown="onKeyDown"
+  >
     <button
       ref="fab"
       type="button"
@@ -6175,7 +8077,13 @@ const delay = (i) => (open.value ? i : props.actions.length - 1 - i) * STAGGER +
     </button>
     <!-- Always rendered so the close animation can play; inert while closed.
          null removes the attribute; false would render inert="false", which is still inert. -->
-    <ul :id="menuId" role="menu" aria-label="Actions" class="actions" :inert="open ? null : ''">
+    <ul
+      :id="menuId"
+      role="menu"
+      aria-label="Actions"
+      class="actions"
+      :inert="open ? null : ''"
+    >
       <li v-for="(action, i) in actions" :key="action.id" role="none">
         <button
           :ref="(el) => (itemEls[i] = el)"
@@ -6195,17 +8103,92 @@ const delay = (i) => (open.value ? i : props.actions.length - 1 - i) * STAGGER +
 </template>
 
 <style scoped>
-.speed-dial { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 12px; }
-.fab { width: 56px; height: 56px; border-radius: 50%; border: 0; background: #2f6fde; color: #fff; font-size: 2rem; line-height: 1; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
-.fab-icon { display: inline-block; transition: transform 200ms; }
-.is-open .fab-icon { transform: rotate(45deg); }
-.actions { display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 10px; margin: 0; padding: 0 4px 0 0; list-style: none; }
-.action { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; opacity: 0; transform: translateY(12px) scale(0.6); transition: opacity 160ms, transform 160ms; }
-.is-open .action { opacity: 1; transform: none; }
-.action-label { padding: 4px 8px; border-radius: 6px; background: #1d222b; border: 1px solid #3a4250; font-size: 0.85rem; white-space: nowrap; }
-.action-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #1d222b; border: 1px solid #3a4250; font-size: 1.2rem; }
-.fab:focus-visible, .action:focus-visible .action-icon { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .action, .fab-icon { transition: none; } }
+.speed-dial {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 12px;
+}
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 0;
+  background: #2f6fde;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.fab-icon {
+  display: inline-block;
+  transition: transform 200ms;
+}
+.is-open .fab-icon {
+  transform: rotate(45deg);
+}
+.actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  list-style: none;
+}
+.action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px) scale(0.6);
+  transition:
+    opacity 160ms,
+    transform 160ms;
+}
+.is-open .action {
+  opacity: 1;
+  transform: none;
+}
+.action-label {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.action-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #1d222b;
+  border: 1px solid #3a4250;
+  font-size: 1.2rem;
+}
+.fab:focus-visible,
+.action:focus-visible .action-icon {
+  outline: 2px solid #6ea8fe;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .action,
+  .fab-icon {
+    transition: none;
+  }
+}
 </style>
 `,
         },
@@ -6242,7 +8225,13 @@ A fixed FAB toggles four actions above it; stagger nearest first on open and far
 
 ~~~ts
 <!-- Always rendered so the close animation can play; inert while closed. -->
-<ul [id]="menuId" role="menu" aria-label="Actions" class="actions" [attr.inert]="open() ? null : ''">
+<ul
+  [id]="menuId"
+  role="menu"
+  aria-label="Actions"
+  class="actions"
+  [attr.inert]="open() ? null : ''"
+></ul>
 ~~~
 
 📌 **Interview term: inert** — makes the list unfocusable, unclickable and hidden from assistive technology while it stays in the DOM for the close animation. \`[attr.inert]="open() ? null : ''"\` adds an empty attribute when closed and removes it (\`null\`) when open; an attribute binding also keeps strict template type checking happy without relying on the DOM schema knowing an \`inert\` property.
@@ -6252,7 +8241,9 @@ A fixed FAB toggles four actions above it; stagger nearest first on open and far
 ~~~ts
 // Open: nearest first. Close: farthest first.
 delay(i: number) {
-  return (this.open() ? i : this.actions.length - 1 - i) * STAGGER + "ms";
+  return (
+    (this.open() ? i : this.actions.length - 1 - i) * STAGGER + "ms"
+  );
 }
 ~~~
 
@@ -6263,18 +8254,30 @@ delay(i: number) {
 ~~~ts
 @HostListener("document:pointerdown", ["$event"])
 onDocumentPointerDown(e: PointerEvent) {
-  if (this.open() && !this.host.contains(e.target as Node)) this.open.set(false);
+  if (this.open() && !this.host.contains(e.target as Node))
+    this.open.set(false);
 }
 
-// Arrow keys walk the column: the FAB is position -1, actions 0..n-1 go upward.
+// Arrow keys walk the column: the FAB is
+// position -1, actions 0..n-1 go upward.
 @HostListener("keydown", ["$event"])
 onKeyDown(e: KeyboardEvent) {
-  if (e.key === "Escape" && this.open()) { e.preventDefault(); this.close(); return; }
-  if (!this.open() || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
+  if (e.key === "Escape" && this.open()) {
+    e.preventDefault();
+    this.close();
+    return;
+  }
+  if (!this.open() || (e.key !== "ArrowUp" && e.key !== "ArrowDown"))
+    return;
   e.preventDefault();
   const els = this.items.map((r) => r.nativeElement);
-  const current = els.indexOf(document.activeElement as HTMLButtonElement); // -1 = FAB
-  const next = e.key === "ArrowUp" ? Math.min(current + 1, els.length - 1) : current - 1;
+  const current = els.indexOf(
+    document.activeElement as HTMLButtonElement,
+  ); // -1 = FAB
+  const next =
+    e.key === "ArrowUp"
+      ? Math.min(current + 1, els.length - 1)
+      : current - 1;
   (next < 0 ? this.fab.nativeElement : els[next]).focus();
 }
 ~~~
@@ -6289,7 +8292,7 @@ onKeyDown(e: KeyboardEvent) {
 
 jsdom, same driver as React and Vue; AOT and JIT printed the same lines. JIT run:
 
-~~~
+~~~text
 [angular:playground] initial   : expanded=false inert="" focus=BODY items=4 delays=120ms,80ms,40ms,0ms
 [angular:playground] open      : expanded=true inert=absent focus=fab delays=0ms,40ms,80ms,120ms
 [angular:playground] ArrowUp   : expanded=true inert=absent focus=action-share
@@ -6303,7 +8306,7 @@ jsdom, same driver as React and Vue; AOT and JIT printed the same lines. JIT run
 
 Chromium 141 (mid-stagger numbers are timing-dependent):
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] closed      : fab=720,520 share@y483 op=0 print@y427 op=0 copy@y371 op=0 download@y315 op=0
 [chromium:angular] open +60ms  : share@y472 op=0.537251 print@y426 op=0.045433 copy@y371 op=0 download@y315 op=0 (mid-stagger)
@@ -6420,15 +8423,18 @@ import { DialAction, SpeedDialComponent } from "./speed-dial.component";
       <app-speed-dial [actions]="actions" (action)="status.set($event.done)" />
     </main>
   \`,
-  // Global (unencapsulated) so the body reset applies; page rules are prefixed by app-root.
+  // Global (unencapsulated) so the body reset
+  // applies; page rules are prefixed by app-root.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; font-family: system-ui, sans-serif; color: #e7e9ee; }
     app-root .page { max-width: 520px; margin: 0 auto; padding: 24px 16px 160px; }
     app-root h1 { font-size: 1.3rem; margin: 0 0 8px; }
     app-root .hint { color: #9aa3b2; font-size: 0.9rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly actions: DialAction[] = [
@@ -6441,11 +8447,25 @@ export class AppComponent {
 }
 `,
           "/src/app/speed-dial.component.ts": `import {
-  Component, ElementRef, EventEmitter, HostListener, Input, Output, QueryList, ViewChild, ViewChildren,
-  inject, signal,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  QueryList,
+  ViewChild,
+  ViewChildren,
+  inject,
+  signal,
 } from "@angular/core";
 
-export interface DialAction { id: string; label: string; icon: string; done: string; }
+export interface DialAction {
+  id: string;
+  label: string;
+  icon: string;
+  done: string;
+}
 
 const STAGGER = 40; // ms between neighbouring actions
 let nextId = 0;
@@ -6468,7 +8488,13 @@ let nextId = 0;
       <span aria-hidden="true" class="fab-icon">+</span>
     </button>
     <!-- Always rendered so the close animation can play; inert while closed. -->
-    <ul [id]="menuId" role="menu" aria-label="Actions" class="actions" [attr.inert]="open() ? null : ''">
+    <ul
+      [id]="menuId"
+      role="menu"
+      aria-label="Actions"
+      class="actions"
+      [attr.inert]="open() ? null : ''"
+    >
       @for (action of actions; track action.id; let i = $index) {
         <li role="none">
           <button
@@ -6481,25 +8507,104 @@ let nextId = 0;
             (click)="choose(action)"
           >
             <span class="action-label">{{ action.label }}</span>
-            <span class="action-icon" aria-hidden="true">{{ action.icon }}</span>
+            <span class="action-icon" aria-hidden="true">{{
+              action.icon
+            }}</span>
           </button>
         </li>
       }
     </ul>
   \`,
-  styles: [\`
-    :host { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 12px; }
-    .fab { width: 56px; height: 56px; border-radius: 50%; border: 0; background: #2f6fde; color: #fff; font-size: 2rem; line-height: 1; cursor: pointer; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
-    .fab-icon { display: inline-block; transition: transform 200ms; }
-    :host(.is-open) .fab-icon { transform: rotate(45deg); }
-    .actions { display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 10px; margin: 0; padding: 0 4px 0 0; list-style: none; }
-    .action { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; opacity: 0; transform: translateY(12px) scale(0.6); transition: opacity 160ms, transform 160ms; }
-    :host(.is-open) .action { opacity: 1; transform: none; }
-    .action-label { padding: 4px 8px; border-radius: 6px; background: #1d222b; border: 1px solid #3a4250; font-size: 0.85rem; white-space: nowrap; }
-    .action-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #1d222b; border: 1px solid #3a4250; font-size: 1.2rem; }
-    .fab:focus-visible, .action:focus-visible .action-icon { outline: 2px solid #6ea8fe; outline-offset: 2px; }
-    @media (prefers-reduced-motion: reduce) { .action, .fab-icon { transition: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 12px;
+      }
+      .fab {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 0;
+        background: #2f6fde;
+        color: #fff;
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+      .fab-icon {
+        display: inline-block;
+        transition: transform 200ms;
+      }
+      :host(.is-open) .fab-icon {
+        transform: rotate(45deg);
+      }
+      .actions {
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 10px;
+        margin: 0;
+        padding: 0 4px 0 0;
+        list-style: none;
+      }
+      .action {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(12px) scale(0.6);
+        transition:
+          opacity 160ms,
+          transform 160ms;
+      }
+      :host(.is-open) .action {
+        opacity: 1;
+        transform: none;
+      }
+      .action-label {
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: #1d222b;
+        border: 1px solid #3a4250;
+        font-size: 0.85rem;
+        white-space: nowrap;
+      }
+      .action-icon {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #1d222b;
+        border: 1px solid #3a4250;
+        font-size: 1.2rem;
+      }
+      .fab:focus-visible,
+      .action:focus-visible .action-icon {
+        outline: 2px solid #6ea8fe;
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .action,
+        .fab-icon {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class SpeedDialComponent {
   @Input({ required: true }) actions: DialAction[] = [];
@@ -6518,18 +8623,26 @@ export class SpeedDialComponent {
 
   @HostListener("document:pointerdown", ["$event"])
   onDocumentPointerDown(e: PointerEvent) {
-    if (this.open() && !this.host.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.contains(e.target as Node))
+      this.open.set(false);
   }
 
-  // Arrow keys walk the column: the FAB is position -1, actions 0..n-1 go upward.
+  // Arrow keys walk the column: the FAB is
+  // position -1, actions 0..n-1 go upward.
   @HostListener("keydown", ["$event"])
   onKeyDown(e: KeyboardEvent) {
-    if (e.key === "Escape" && this.open()) { e.preventDefault(); this.close(); return; }
+    if (e.key === "Escape" && this.open()) {
+      e.preventDefault();
+      this.close();
+      return;
+    }
     if (!this.open() || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
     e.preventDefault();
     const els = this.items.map((r) => r.nativeElement);
-    const current = els.indexOf(document.activeElement as HTMLButtonElement); // -1 = FAB
-    const next = e.key === "ArrowUp" ? Math.min(current + 1, els.length - 1) : current - 1;
+    // -1 = FAB
+    const current = els.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      e.key === "ArrowUp" ? Math.min(current + 1, els.length - 1) : current - 1;
     (next < 0 ? this.fab.nativeElement : els[next]).focus();
   }
 
@@ -6647,12 +8760,21 @@ Storage is read once, on the first render, and written after every change. The t
 ~~~js
 export const STORAGE_KEY = "sidebar:collapsed";
 
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed() {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value) {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 ~~~
 
@@ -6663,13 +8785,21 @@ export function writeCollapsed(value) {
 ~~~jsx
 // Lazy initialiser: read storage once, on the first render only.
 const [collapsed, setCollapsed] = useState(readCollapsed);
-// Which groups are expanded. Start with the group that holds the active page.
+// Which groups are expanded. Start with
+// the group that holds the active page.
 const [openGroups, setOpenGroups] = useState(
-  () => new Set(items.filter((i) => i.children?.some((c) => c.id === active)).map((i) => i.id))
+  () =>
+    new Set(
+      items
+        .filter((i) => i.children?.some((c) => c.id === active))
+        .map((i) => i.id),
+    ),
 );
 const uid = useId();
 
-useEffect(() => { writeCollapsed(collapsed); }, [collapsed]);
+useEffect(() => {
+  writeCollapsed(collapsed);
+}, [collapsed]);
 ~~~
 
 📌 **Interview term: Lazy state initialiser** — passing a function to \`useState(readCollapsed)\` instead of a value. React calls it only on the first render, so storage is not read on every render.
@@ -6681,7 +8811,8 @@ The open groups are a \`Set\`. React compares state by reference, so \`toggleGro
 ~~~jsx
 function toggleGroup(id) {
   if (collapsed) {
-    // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+    // Icons-only mode has no room for a submenu:
+    // expand the sidebar and open the group.
     setCollapsed(false);
     setOpenGroups((prev) => new Set(prev).add(id));
     return;
@@ -6731,8 +8862,18 @@ The sub-list is always rendered and toggled with the \`hidden\` attribute, so \`
 ### Step 5 — The rail without losing names
 
 ~~~css
-.is-collapsed .group.holds-active { box-shadow: inset 3px 0 0 #6ea8fe; }
-.is-collapsed .label, .is-collapsed .chevron { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.is-collapsed .group.holds-active {
+  box-shadow: inset 3px 0 0 #6ea8fe;
+}
+.is-collapsed .label,
+.is-collapsed .chevron {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 ~~~
 
 📌 **Interview term: Visually hidden** — CSS that hides text from sight but keeps it in the accessibility tree (1 px box, clipped). \`display: none\` would remove the names, leaving a rail of unlabelled icons. In the rail each row also gets a \`title\`, giving mouse users a native tooltip, and the group that holds the active page gets an accent bar, since its highlighted child is hidden.
@@ -6745,7 +8886,7 @@ The width animates with \`transition: width 200ms\`, disabled under \`prefers-re
 
 \`stored\` is the raw localStorage value after each step:
 
-~~~
+~~~text
 [react] initial          : collapsed=false toggle="Collapse sidebar" projects=false/hidden settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [react] open Projects    : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [react] click Archived   : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Projects / Archived" aria-current=link-archived stored="0"
@@ -6761,7 +8902,7 @@ The active page's group is highlighted in the rail (\`holds-active: group-settin
 
 ### Chromium 141 (widths, names, reload, keyboard)
 
-~~~
+~~~text
 [chromium:react] browser 141.0.7390.37
 [chromium:react] start width        : 221 px
 [chromium:react] collapse +80ms     : 129 px (mid-transition)
@@ -6884,7 +9025,9 @@ export default function App() {
       <Sidebar items={NAV} active={active} onNavigate={setActive} />
       <main className="content">
         <h1 data-testid="current">{findLabel(active)}</h1>
-        <p>The sidebar remembers whether it is collapsed, even after a reload.</p>
+        <p>
+          The sidebar remembers whether it is collapsed, even after a reload.
+        </p>
       </main>
     </div>
   );
@@ -6898,15 +9041,23 @@ export default function Sidebar({ items, active, onNavigate }) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // Which groups are expanded. Start with the group that holds the active page.
   const [openGroups, setOpenGroups] = useState(
-    () => new Set(items.filter((i) => i.children?.some((c) => c.id === active)).map((i) => i.id))
+    () =>
+      new Set(
+        items
+          .filter((i) => i.children?.some((c) => c.id === active))
+          .map((i) => i.id),
+      ),
   );
   const uid = useId();
 
-  useEffect(() => { writeCollapsed(collapsed); }, [collapsed]);
+  useEffect(() => {
+    writeCollapsed(collapsed);
+  }, [collapsed]);
 
   function toggleGroup(id) {
     if (collapsed) {
-      // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+      // Icons-only mode has no room for a submenu:
+      // expand the sidebar and open the group.
       setCollapsed(false);
       setOpenGroups((prev) => new Set(prev).add(id));
       return;
@@ -6926,16 +9077,26 @@ export default function Sidebar({ items, active, onNavigate }) {
         data-testid={"link-" + item.id}
         aria-current={item.id === active ? "page" : undefined}
         title={collapsed ? item.label : undefined}
-        onClick={(e) => { e.preventDefault(); onNavigate(item.id); }}
+        onClick={(e) => {
+          e.preventDefault();
+          onNavigate(item.id);
+        }}
       >
-        {item.icon && <span className="icon" aria-hidden="true">{item.icon}</span>}
+        {item.icon && (
+          <span className="icon" aria-hidden="true">
+            {item.icon}
+          </span>
+        )}
         <span className="label">{item.label}</span>
       </a>
     );
   }
 
   return (
-    <aside className={"sidebar" + (collapsed ? " is-collapsed" : "")} data-testid="sidebar">
+    <aside
+      className={"sidebar" + (collapsed ? " is-collapsed" : "")}
+      data-testid="sidebar"
+    >
       <button
         type="button"
         className="toggle"
@@ -6957,19 +9118,27 @@ export default function Sidebar({ items, active, onNavigate }) {
               <li key={item.id}>
                 <button
                   type="button"
-                  className={"nav-row group" + (holdsActive ? " holds-active" : "")}
+                  className={
+                    "nav-row group" + (holdsActive ? " holds-active" : "")
+                  }
                   data-testid={"group-" + item.id}
                   aria-expanded={expanded}
                   aria-controls={uid + item.id}
                   title={collapsed ? item.label : undefined}
                   onClick={() => toggleGroup(item.id)}
                 >
-                  <span className="icon" aria-hidden="true">{item.icon}</span>
+                  <span className="icon" aria-hidden="true">
+                    {item.icon}
+                  </span>
                   <span className="label">{item.label}</span>
-                  <span className="chevron" aria-hidden="true">▸</span>
+                  <span className="chevron" aria-hidden="true">
+                    ▸
+                  </span>
                 </button>
                 <ul id={uid + item.id} className="sub" hidden={!expanded}>
-                  {item.children.map((child) => <li key={child.id}>{link(child, "child")}</li>)}
+                  {item.children.map((child) => (
+                    <li key={child.id}>{link(child, "child")}</li>
+                  ))}
                 </ul>
               </li>
             );
@@ -6982,19 +9151,44 @@ export default function Sidebar({ items, active, onNavigate }) {
 `,
           "/src/nav.js": `export const NAV = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "projects", label: "Projects", icon: "▤", children: [{ id: "active", label: "Active" }, { id: "archived", label: "Archived" }] },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: "▤",
+    children: [
+      { id: "active", label: "Active" },
+      { id: "archived", label: "Archived" },
+    ],
+  },
   { id: "team", label: "Team", icon: "☺" },
-  { id: "settings", label: "Settings", icon: "⚙", children: [{ id: "profile", label: "Profile" }, { id: "billing", label: "Billing" }] },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: "⚙",
+    children: [
+      { id: "profile", label: "Profile" },
+      { id: "billing", label: "Billing" },
+    ],
+  },
 ];
 
 export const STORAGE_KEY = "sidebar:collapsed";
 
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed() {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value) {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 
 export function findLabel(id) {
@@ -7006,28 +9200,128 @@ export function findLabel(id) {
   return id;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.layout { display: flex; min-height: 100vh; }
-.content { flex: 1; min-width: 0; padding: 20px 16px; }
-.content h1 { font-size: 1.3rem; margin: 4px 0 8px; }
-.content p { color: #9aa3b2; }
-.sidebar { flex: none; width: 220px; overflow: hidden; background: #181c23; border-right: 1px solid #2c333f; transition: width 200ms ease; }
-.sidebar.is-collapsed { width: 60px; }
-.toggle { display: block; margin: 10px 10px 6px auto; width: 36px; height: 36px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; font-size: 1.1rem; cursor: pointer; }
-.is-collapsed .toggle { margin: 10px auto 6px; }
-.nav-list, .sub { list-style: none; margin: 0; padding: 0 8px; }
-.sub { padding: 0 0 4px 0; }
-.nav-row { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; padding: 9px 10px; margin: 2px 0; border: 0; border-radius: 8px; background: none; color: #c9cfda; font: inherit; text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
-.nav-row:hover { background: #222834; }
-.nav-row[aria-current="page"] { background: #24375a; color: #fff; }
-.nav-row.child { padding-left: 46px; font-size: 0.92rem; }
-.icon { flex: none; width: 24px; text-align: center; font-size: 1.1rem; }
-.chevron { margin-left: auto; transition: transform 150ms; }
-.group[aria-expanded="true"] .chevron { transform: rotate(90deg); }
-.is-collapsed .group.holds-active { box-shadow: inset 3px 0 0 #6ea8fe; }
-.is-collapsed .label, .is-collapsed .chevron { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.nav-row:focus-visible, .toggle:focus-visible { outline: 2px solid #6ea8fe; outline-offset: -2px; }
-@media (prefers-reduced-motion: reduce) { .sidebar, .chevron { transition: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 16px;
+}
+.content h1 {
+  font-size: 1.3rem;
+  margin: 4px 0 8px;
+}
+.content p {
+  color: #9aa3b2;
+}
+.sidebar {
+  flex: none;
+  width: 220px;
+  overflow: hidden;
+  background: #181c23;
+  border-right: 1px solid #2c333f;
+  transition: width 200ms ease;
+}
+.sidebar.is-collapsed {
+  width: 60px;
+}
+.toggle {
+  display: block;
+  margin: 10px 10px 6px auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.is-collapsed .toggle {
+  margin: 10px auto 6px;
+}
+.nav-list,
+.sub {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+}
+.sub {
+  padding: 0 0 4px 0;
+}
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  margin: 2px 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #c9cfda;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav-row:hover {
+  background: #222834;
+}
+.nav-row[aria-current="page"] {
+  background: #24375a;
+  color: #fff;
+}
+.nav-row.child {
+  padding-left: 46px;
+  font-size: 0.92rem;
+}
+.icon {
+  flex: none;
+  width: 24px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+.chevron {
+  margin-left: auto;
+  transition: transform 150ms;
+}
+.group[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.is-collapsed .group.holds-active {
+  box-shadow: inset 3px 0 0 #6ea8fe;
+}
+.is-collapsed .label,
+.is-collapsed .chevron {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.nav-row:focus-visible,
+.toggle:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .chevron {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -7062,12 +9356,21 @@ Render the nested \`NAV\` data; groups expand independently, the active page's g
 ### Step 1 — Safe storage
 
 ~~~js
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed() {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value) {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 ~~~
 
@@ -7081,25 +9384,37 @@ const props = defineProps({ items: { type: Array, required: true } });
 const active = defineModel("active", { type: String, required: true });
 
 const collapsed = ref(readCollapsed());
-// Which groups are expanded. Start with the group that holds the active page.
-const openGroups = ref(new Set(props.items.filter((i) => i.children?.some((c) => c.id === active.value)).map((i) => i.id)));
+// Which groups are expanded. Start with
+// the group that holds the active page.
+const openGroups = ref(
+  new Set(
+    props.items
+      .filter((i) => i.children?.some((c) => c.id === active.value))
+      .map((i) => i.id),
+  ),
+);
 const uid = useId();
 
 watch(collapsed, writeCollapsed, { immediate: true });
 
 function toggleGroup(id) {
   if (collapsed.value) {
-    // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+    // Icons-only mode has no room for a submenu:
+    // expand the sidebar and open the group.
     collapsed.value = false;
     openGroups.value.add(id);
     return;
   }
-  // Vue 3 tracks Set mutations, so add/delete re-render without copying.
-  openGroups.value.has(id) ? openGroups.value.delete(id) : openGroups.value.add(id);
+  // Vue 3 tracks Set mutations, so
+  // add/delete re-render without copying.
+  openGroups.value.has(id)
+    ? openGroups.value.delete(id)
+    : openGroups.value.add(id);
 }
 
 const isExpanded = (id) => openGroups.value.has(id) && !collapsed.value;
-const holdsActive = (item) => item.children.some((c) => c.id === active.value);
+const holdsActive = (item) =>
+  item.children.some((c) => c.id === active.value);
 ~~~
 
 📌 **Interview term: Reactive collections** — Vue 3's reactivity tracks \`Set\` and \`Map\` methods, so \`openGroups.value.add(id)\` and \`.delete(id)\` re-render directly, with no copying. That is a real difference from React, where you must build a new \`Set\`. \`setup\` runs once per component, so \`readCollapsed()\` is called once without any lazy-initialiser trick.
@@ -7152,7 +9467,7 @@ In collapsed mode \`.label\` is **visually hidden** (a clipped 1 px box) instead
 
 jsdom, same driver as React and Angular; \`stored\` is the raw localStorage value:
 
-~~~
+~~~text
 [vue] initial          : collapsed=false toggle="Collapse sidebar" projects=false/hidden settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [vue] open Projects    : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [vue] click Archived   : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Projects / Archived" aria-current=link-archived stored="0"
@@ -7166,7 +9481,7 @@ jsdom, same driver as React and Angular; \`stored\` is the raw localStorage valu
 
 Chromium 141 (widths include a 1 px border; mid-transition width is timing-dependent):
 
-~~~
+~~~text
 [chromium:vue] browser 141.0.7390.37
 [chromium:vue] start width        : 221 px
 [chromium:vue] collapse +80ms     : 129 px (mid-transition)
@@ -7292,11 +9607,28 @@ const active = ref("dashboard");
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #111418; color: #e7e9ee; }
-.layout { display: flex; min-height: 100vh; }
-.content { flex: 1; min-width: 0; padding: 20px 16px; }
-.content h1 { font-size: 1.3rem; margin: 4px 0 8px; }
-.content p { color: #9aa3b2; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #111418;
+  color: #e7e9ee;
+}
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 16px;
+}
+.content h1 {
+  font-size: 1.3rem;
+  margin: 4px 0 8px;
+}
+.content p {
+  color: #9aa3b2;
+}
 </style>
 `,
           "/src/components/CollapsibleSidebar.vue": `<script setup>
@@ -7309,20 +9641,29 @@ const active = defineModel("active", { type: String, required: true });
 
 const collapsed = ref(readCollapsed());
 // Which groups are expanded. Start with the group that holds the active page.
-const openGroups = ref(new Set(props.items.filter((i) => i.children?.some((c) => c.id === active.value)).map((i) => i.id)));
+const openGroups = ref(
+  new Set(
+    props.items
+      .filter((i) => i.children?.some((c) => c.id === active.value))
+      .map((i) => i.id),
+  ),
+);
 const uid = useId();
 
 watch(collapsed, writeCollapsed, { immediate: true });
 
 function toggleGroup(id) {
   if (collapsed.value) {
-    // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+    // Icons-only mode has no room for a submenu:
+    // expand the sidebar and open the group.
     collapsed.value = false;
     openGroups.value.add(id);
     return;
   }
   // Vue 3 tracks Set mutations, so add/delete re-render without copying.
-  openGroups.value.has(id) ? openGroups.value.delete(id) : openGroups.value.add(id);
+  openGroups.value.has(id)
+    ? openGroups.value.delete(id)
+    : openGroups.value.add(id);
 }
 
 const isExpanded = (id) => openGroups.value.has(id) && !collapsed.value;
@@ -7330,7 +9671,11 @@ const holdsActive = (item) => item.children.some((c) => c.id === active.value);
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ 'is-collapsed': collapsed }" data-testid="sidebar">
+  <aside
+    class="sidebar"
+    :class="{ 'is-collapsed': collapsed }"
+    data-testid="sidebar"
+  >
     <button
       type="button"
       class="toggle"
@@ -7393,40 +9738,148 @@ const holdsActive = (item) => item.children.some((c) => c.id === active.value);
 </template>
 
 <style scoped>
-.sidebar { flex: none; width: 220px; overflow: hidden; background: #181c23; border-right: 1px solid #2c333f; transition: width 200ms ease; }
-.sidebar.is-collapsed { width: 60px; }
-.toggle { display: block; margin: 10px 10px 6px auto; width: 36px; height: 36px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; font-size: 1.1rem; cursor: pointer; }
-.is-collapsed .toggle { margin: 10px auto 6px; }
-.nav-list, .sub { list-style: none; margin: 0; padding: 0 8px; }
-.sub { padding: 0 0 4px 0; }
-.nav-row { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; padding: 9px 10px; margin: 2px 0; border: 0; border-radius: 8px; background: none; color: #c9cfda; font: inherit; text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
-.nav-row:hover { background: #222834; }
-.nav-row[aria-current="page"] { background: #24375a; color: #fff; }
-.nav-row.child { padding-left: 46px; font-size: 0.92rem; }
-.icon { flex: none; width: 24px; text-align: center; font-size: 1.1rem; }
-.chevron { margin-left: auto; transition: transform 150ms; }
-.group[aria-expanded="true"] .chevron { transform: rotate(90deg); }
-.is-collapsed .group.holds-active { box-shadow: inset 3px 0 0 #6ea8fe; }
-.is-collapsed .label, .is-collapsed .chevron { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.nav-row:focus-visible, .toggle:focus-visible { outline: 2px solid #6ea8fe; outline-offset: -2px; }
-@media (prefers-reduced-motion: reduce) { .sidebar, .chevron { transition: none; } }
+.sidebar {
+  flex: none;
+  width: 220px;
+  overflow: hidden;
+  background: #181c23;
+  border-right: 1px solid #2c333f;
+  transition: width 200ms ease;
+}
+.sidebar.is-collapsed {
+  width: 60px;
+}
+.toggle {
+  display: block;
+  margin: 10px 10px 6px auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #3a4250;
+  background: #1d222b;
+  color: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.is-collapsed .toggle {
+  margin: 10px auto 6px;
+}
+.nav-list,
+.sub {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+}
+.sub {
+  padding: 0 0 4px 0;
+}
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  margin: 2px 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #c9cfda;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav-row:hover {
+  background: #222834;
+}
+.nav-row[aria-current="page"] {
+  background: #24375a;
+  color: #fff;
+}
+.nav-row.child {
+  padding-left: 46px;
+  font-size: 0.92rem;
+}
+.icon {
+  flex: none;
+  width: 24px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+.chevron {
+  margin-left: auto;
+  transition: transform 150ms;
+}
+.group[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.is-collapsed .group.holds-active {
+  box-shadow: inset 3px 0 0 #6ea8fe;
+}
+.is-collapsed .label,
+.is-collapsed .chevron {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.nav-row:focus-visible,
+.toggle:focus-visible {
+  outline: 2px solid #6ea8fe;
+  outline-offset: -2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .chevron {
+    transition: none;
+  }
+}
 </style>
 `,
           "/src/components/nav.js": `export const NAV = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "projects", label: "Projects", icon: "▤", children: [{ id: "active", label: "Active" }, { id: "archived", label: "Archived" }] },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: "▤",
+    children: [
+      { id: "active", label: "Active" },
+      { id: "archived", label: "Archived" },
+    ],
+  },
   { id: "team", label: "Team", icon: "☺" },
-  { id: "settings", label: "Settings", icon: "⚙", children: [{ id: "profile", label: "Profile" }, { id: "billing", label: "Billing" }] },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: "⚙",
+    children: [
+      { id: "profile", label: "Profile" },
+      { id: "billing", label: "Billing" },
+    ],
+  },
 ];
 
 export const STORAGE_KEY = "sidebar:collapsed";
 
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed() {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value) {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 
 export function findLabel(id) {
@@ -7471,12 +9924,21 @@ Render the nested \`NAV\` data; groups expand independently, the active page's g
 ### Step 1 — Safe storage
 
 ~~~ts
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed(): boolean {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value: boolean): void {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 ~~~
 
@@ -7495,7 +9957,13 @@ constructor() {
 }
 
 ngOnInit() {
-  this.openGroups.set(new Set(this.items.filter((i) => i.children?.some((c) => c.id === this.active)).map((i) => i.id)));
+  this.openGroups.set(
+    new Set(
+      this.items
+        .filter((i) => i.children?.some((c) => c.id === this.active))
+        .map((i) => i.id),
+    ),
+  );
 }
 
 isExpanded(id: string) {
@@ -7509,12 +9977,14 @@ holdsActive(item: NavItem) {
 toggleGroup(id: string) {
   const next = new Set(this.openGroups());
   if (this.collapsed()) {
-    // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+    // Icons-only mode has no room for a submenu:
+    // expand the sidebar and open the group.
     this.collapsed.set(false);
     next.add(id);
   } else if (next.has(id)) next.delete(id);
   else next.add(id);
-  this.openGroups.set(next); // a new Set, so the signal sees a new value
+  // a new Set, so the signal sees a new value
+  this.openGroups.set(next);
 }
 ~~~
 
@@ -7534,7 +10004,9 @@ toggleGroup(id: string) {
     [attr.title]="collapsed() ? leaf.label : null"
     (click)="navigate($event, leaf)"
   >
-    @if (leaf.icon) { <span class="icon" aria-hidden="true">{{ leaf.icon }}</span> }
+    @if (leaf.icon) {
+      <span class="icon" aria-hidden="true">{{ leaf.icon }}</span>
+    }
     <span class="label">{{ leaf.label }}</span>
   </a>
 </ng-template>
@@ -7554,7 +10026,7 @@ toggleGroup(id: string) {
 
 jsdom, same driver as React and Vue; AOT and JIT printed the same lines. JIT run, with \`stored\` the raw localStorage value:
 
-~~~
+~~~text
 [angular:playground] initial          : collapsed=false toggle="Collapse sidebar" projects=false/hidden settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [angular:playground] open Projects    : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Dashboard" aria-current=link-dashboard stored="0"
 [angular:playground] click Archived   : collapsed=false toggle="Collapse sidebar" projects=true/shown settings=false/hidden current="Projects / Archived" aria-current=link-archived stored="0"
@@ -7568,7 +10040,7 @@ jsdom, same driver as React and Vue; AOT and JIT printed the same lines. JIT run
 
 Chromium 141 (widths include a 1 px border; mid-transition width is timing-dependent):
 
-~~~
+~~~text
 [chromium:angular] browser 141.0.7390.37
 [chromium:angular] start width        : 221 px
 [chromium:angular] collapse +80ms     : 129 px (mid-transition)
@@ -7685,23 +10157,30 @@ import { NAV, findLabel } from "./nav";
   imports: [SidebarComponent],
   template: \`
     <div class="layout">
-      <app-sidebar [items]="nav" [active]="active()" (navigateTo)="active.set($event)" />
+      <app-sidebar
+        [items]="nav"
+        [active]="active()"
+        (navigateTo)="active.set($event)"
+      />
       <main class="content">
         <h1 data-testid="current">{{ title() }}</h1>
         <p>The sidebar remembers whether it is collapsed, even after a reload.</p>
       </main>
     </div>
   \`,
-  // Global (unencapsulated) so the body reset applies; page rules are prefixed by app-root.
+  // Global (unencapsulated) so the body reset
+  // applies; page rules are prefixed by app-root.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #111418; }
     app-root { display: block; font-family: system-ui, sans-serif; color: #e7e9ee; }
     app-root .layout { display: flex; min-height: 100vh; }
     app-root .content { flex: 1; min-width: 0; padding: 20px 16px; }
     app-root .content h1 { font-size: 1.3rem; margin: 4px 0 8px; }
     app-root .content p { color: #9aa3b2; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly nav = NAV;
@@ -7709,24 +10188,55 @@ export class AppComponent {
   readonly title = computed(() => findLabel(this.active()));
 }
 `,
-          "/src/app/nav.ts": `export interface NavLeaf { id: string; label: string; icon?: string; }
-export interface NavItem extends NavLeaf { children?: NavLeaf[]; }
+          "/src/app/nav.ts": `export interface NavLeaf {
+  id: string;
+  label: string;
+  icon?: string;
+}
+export interface NavItem extends NavLeaf {
+  children?: NavLeaf[];
+}
 
 export const NAV: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "projects", label: "Projects", icon: "▤", children: [{ id: "active", label: "Active" }, { id: "archived", label: "Archived" }] },
+  {
+    id: "projects",
+    label: "Projects",
+    icon: "▤",
+    children: [
+      { id: "active", label: "Active" },
+      { id: "archived", label: "Archived" },
+    ],
+  },
   { id: "team", label: "Team", icon: "☺" },
-  { id: "settings", label: "Settings", icon: "⚙", children: [{ id: "profile", label: "Profile" }, { id: "billing", label: "Billing" }] },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: "⚙",
+    children: [
+      { id: "profile", label: "Profile" },
+      { id: "billing", label: "Billing" },
+    ],
+  },
 ];
 
 export const STORAGE_KEY = "sidebar:collapsed";
 
-// Storage can throw (private mode, blocked cookies) or be missing, so never trust it.
+// Storage can throw (private mode, blocked
+// cookies) or be missing, so never trust it.
 export function readCollapsed(): boolean {
-  try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 export function writeCollapsed(value: boolean): void {
-  try { localStorage.setItem(STORAGE_KEY, value ? "1" : "0"); } catch { /* ignore */ }
+  try {
+    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
 }
 
 export function findLabel(id: string): string {
@@ -7738,7 +10248,15 @@ export function findLabel(id: string): string {
   return id;
 }
 `,
-          "/src/app/sidebar.component.ts": `import { Component, EventEmitter, Input, OnInit, Output, effect, signal } from "@angular/core";
+          "/src/app/sidebar.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  effect,
+  signal,
+} from "@angular/core";
 import { NgTemplateOutlet } from "@angular/common";
 import { NavItem, NavLeaf, readCollapsed, writeCollapsed } from "./nav";
 
@@ -7778,13 +10296,26 @@ let nextId = 0;
                 <span class="label">{{ item.label }}</span>
                 <span class="chevron" aria-hidden="true">▸</span>
               </button>
-              <ul [id]="uid + item.id" class="sub" [hidden]="!isExpanded(item.id)">
+              <ul
+                [id]="uid + item.id"
+                class="sub"
+                [hidden]="!isExpanded(item.id)"
+              >
                 @for (child of item.children; track child.id) {
-                  <li><ng-container *ngTemplateOutlet="link; context: { $implicit: child, cls: 'child' }" /></li>
+                  <li>
+                    <ng-container
+                      *ngTemplateOutlet="
+                        link;
+                        context: { $implicit: child, cls: 'child' }
+                      "
+                    />
+                  </li>
                 }
               </ul>
             } @else {
-              <ng-container *ngTemplateOutlet="link; context: { $implicit: item, cls: '' }" />
+              <ng-container
+                *ngTemplateOutlet="link; context: { $implicit: item, cls: '' }"
+              />
             }
           </li>
         }
@@ -7800,31 +10331,118 @@ let nextId = 0;
         [attr.title]="collapsed() ? leaf.label : null"
         (click)="navigate($event, leaf)"
       >
-        @if (leaf.icon) { <span class="icon" aria-hidden="true">{{ leaf.icon }}</span> }
+        @if (leaf.icon) {
+          <span class="icon" aria-hidden="true">{{ leaf.icon }}</span>
+        }
         <span class="label">{{ leaf.label }}</span>
       </a>
     </ng-template>
   \`,
   imports: [NgTemplateOutlet],
-  styles: [\`
-    :host { flex: none; width: 220px; overflow: hidden; background: #181c23; border-right: 1px solid #2c333f; transition: width 200ms ease; }
-    :host(.is-collapsed) { width: 60px; }
-    .toggle { display: block; margin: 10px 10px 6px auto; width: 36px; height: 36px; border-radius: 8px; border: 1px solid #3a4250; background: #1d222b; color: inherit; font-size: 1.1rem; cursor: pointer; }
-    :host(.is-collapsed) .toggle { margin: 10px auto 6px; }
-    .nav-list, .sub { list-style: none; margin: 0; padding: 0 8px; }
-    .sub { padding: 0 0 4px 0; }
-    .nav-row { display: flex; align-items: center; gap: 12px; width: 100%; box-sizing: border-box; padding: 9px 10px; margin: 2px 0; border: 0; border-radius: 8px; background: none; color: #c9cfda; font: inherit; text-align: left; text-decoration: none; white-space: nowrap; cursor: pointer; }
-    .nav-row:hover { background: #222834; }
-    .nav-row[aria-current="page"] { background: #24375a; color: #fff; }
-    .nav-row.child { padding-left: 46px; font-size: 0.92rem; }
-    .icon { flex: none; width: 24px; text-align: center; font-size: 1.1rem; }
-    .chevron { margin-left: auto; transition: transform 150ms; }
-    .group[aria-expanded="true"] .chevron { transform: rotate(90deg); }
-    :host(.is-collapsed) .group.holds-active { box-shadow: inset 3px 0 0 #6ea8fe; }
-    :host(.is-collapsed) .label, :host(.is-collapsed) .chevron { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .nav-row:focus-visible, .toggle:focus-visible { outline: 2px solid #6ea8fe; outline-offset: -2px; }
-    @media (prefers-reduced-motion: reduce) { :host, .chevron { transition: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        flex: none;
+        width: 220px;
+        overflow: hidden;
+        background: #181c23;
+        border-right: 1px solid #2c333f;
+        transition: width 200ms ease;
+      }
+      :host(.is-collapsed) {
+        width: 60px;
+      }
+      .toggle {
+        display: block;
+        margin: 10px 10px 6px auto;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid #3a4250;
+        background: #1d222b;
+        color: inherit;
+        font-size: 1.1rem;
+        cursor: pointer;
+      }
+      :host(.is-collapsed) .toggle {
+        margin: 10px auto 6px;
+      }
+      .nav-list,
+      .sub {
+        list-style: none;
+        margin: 0;
+        padding: 0 8px;
+      }
+      .sub {
+        padding: 0 0 4px 0;
+      }
+      .nav-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 9px 10px;
+        margin: 2px 0;
+        border: 0;
+        border-radius: 8px;
+        background: none;
+        color: #c9cfda;
+        font: inherit;
+        text-align: left;
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .nav-row:hover {
+        background: #222834;
+      }
+      .nav-row[aria-current="page"] {
+        background: #24375a;
+        color: #fff;
+      }
+      .nav-row.child {
+        padding-left: 46px;
+        font-size: 0.92rem;
+      }
+      .icon {
+        flex: none;
+        width: 24px;
+        text-align: center;
+        font-size: 1.1rem;
+      }
+      .chevron {
+        margin-left: auto;
+        transition: transform 150ms;
+      }
+      .group[aria-expanded="true"] .chevron {
+        transform: rotate(90deg);
+      }
+      :host(.is-collapsed) .group.holds-active {
+        box-shadow: inset 3px 0 0 #6ea8fe;
+      }
+      :host(.is-collapsed) .label,
+      :host(.is-collapsed) .chevron {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+      .nav-row:focus-visible,
+      .toggle:focus-visible {
+        outline: 2px solid #6ea8fe;
+        outline-offset: -2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :host,
+        .chevron {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class SidebarComponent implements OnInit {
   @Input({ required: true }) items: NavItem[] = [];
@@ -7842,7 +10460,13 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.openGroups.set(new Set(this.items.filter((i) => i.children?.some((c) => c.id === this.active)).map((i) => i.id)));
+    this.openGroups.set(
+      new Set(
+        this.items
+          .filter((i) => i.children?.some((c) => c.id === this.active))
+          .map((i) => i.id),
+      ),
+    );
   }
 
   isExpanded(id: string) {
@@ -7856,7 +10480,8 @@ export class SidebarComponent implements OnInit {
   toggleGroup(id: string) {
     const next = new Set(this.openGroups());
     if (this.collapsed()) {
-      // Icons-only mode has no room for a submenu: expand the sidebar and open the group.
+      // Icons-only mode has no room for a submenu:
+      // expand the sidebar and open the group.
       this.collapsed.set(false);
       next.add(id);
     } else if (next.has(id)) next.delete(id);

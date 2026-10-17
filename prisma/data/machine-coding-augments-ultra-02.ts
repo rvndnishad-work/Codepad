@@ -91,7 +91,7 @@ For this build the answers are: count what the user sees, soft limit by default 
 
 Here is what Node 22 printed for real strings (two of the eight lines trimmed; <code>Intl.Segmenter</code> uses the same kind of ICU data a browser ships). The second line is "cafe" plus a combining acute accent, which renders exactly like the precomposed "café" but is one code unit longer:
 
-~~~
+~~~text
 "hello" length: 5 codePoints: 5 graphemes: 5 utf8Bytes: 5
 "café" length: 5 codePoints: 5 graphemes: 4 utf8Bytes: 6
 "👍" length: 2 codePoints: 1 graphemes: 1 utf8Bytes: 4
@@ -178,7 +178,8 @@ const [enforce, setEnforce] = useState(false);
 
 const count = countGraphemes(text);
 const remaining = limit - count;
-const status = remaining < 0 ? "over" : remaining <= warnAt ? "warn" : "ok";
+const status =
+  remaining < 0 ? "over" : remaining <= warnAt ? "warn" : "ok";
 const canPost = text.trim() !== "" && remaining >= 0;
 ~~~
 
@@ -192,7 +193,9 @@ No <code>useMemo</code> here: counting 50 characters is far cheaper than the mem
 function handleChange(e) {
   const next = e.target.value;
   const composing = e.nativeEvent.isComposing;
-  setText(enforce && !composing ? truncateGraphemes(next, limit) : next);
+  setText(
+    enforce && !composing ? truncateGraphemes(next, limit) : next,
+  );
 }
 
 function handleCompositionEnd(e) {
@@ -212,7 +215,7 @@ Turning the checkbox on also truncates the existing text, so the rule "the text 
 
 Why not the native attribute? In Chromium 141 a <code>&lt;textarea maxlength="5"&gt;</code> measured by playwright-core:
 
-~~~
+~~~text
 maxlength=5 after typing abc + thumbs-up-medium + x: "abc👍" 5
 maxlength=5 typing abcd + thumbs-up: "abcd"
 programmatic set ignores maxlength: "programmatic value longer" tooLong: false
@@ -238,8 +241,12 @@ The skin-tone modifier was silently cut off and the plain thumbs-up was refused 
   {" · "}
   {remaining >= 0 ? remaining + " left" : -remaining + " over"}
 </p>
-<p className="sr-only" aria-live="polite">{announcement}</p>
-<button type="submit" disabled={!canPost}>Post</button>
+<p className="sr-only" aria-live="polite">
+  {announcement}
+</p>
+<button type="submit" disabled={!canPost}>
+  Post
+</button>
 ~~~
 
 📌 **Interview term: aria-describedby** — points from a control to the element that describes it, so a screen reader reads "Your message, edit text, 42 / 50 characters used, 8 left" when the textarea is focused.
@@ -265,7 +272,7 @@ The guard repeats the button's disabled rule because pressing Enter inside other
 
 The full solution in the files tab was mounted with <code>createRoot</code> inside <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. A driver typed real strings with the native value setter, toggled the checkbox, dispatched an <code>isComposing</code> input event followed by <code>compositionend</code> (a fake of what an IME does; jsdom has no real IME), and clicked Post. Output, with the first RENDERED line removed:
 
-~~~
+~~~text
 initial                count="0 / 50 characters used · 50 left" class="count ok" units=0 post=disabled live=""
 Hello + wave(skin)     count="7 / 50 characters used · 43 left" class="count ok" units=10 post=enabled live=""
 family emoji           count="1 / 50 characters used · 49 left" class="count ok" units=8 post=enabled live=""
@@ -401,9 +408,15 @@ export default function App() {
   return (
     <main className="app">
       <h1>Character counter</h1>
-      <CharacterCounter limit={50} warnAt={10} onPost={(t) => setPosts((p) => [t, ...p])} />
+      <CharacterCounter
+        limit={50}
+        warnAt={10}
+        onPost={(t) => setPosts((p) => [t, ...p])}
+      />
       <ul className="posts" data-testid="posts">
-        {posts.map((p, i) => <li key={posts.length - i}>{p}</li>)}
+        {posts.map((p, i) => (
+          <li key={posts.length - i}>{p}</li>
+        ))}
       </ul>
     </main>
   );
@@ -425,8 +438,11 @@ export default function CharacterCounter({ limit = 50, warnAt = 10, onPost }) {
 
   // Only changes when the status changes, so a screen reader hears it once.
   const announcement =
-    status === "over" ? "Character limit exceeded" :
-    status === "warn" ? warnAt + " or fewer characters left" : "";
+    status === "over"
+      ? "Character limit exceeded"
+      : status === "warn"
+        ? warnAt + " or fewer characters left"
+        : "";
 
   function handleChange(e) {
     const next = e.target.value;
@@ -467,7 +483,12 @@ export default function CharacterCounter({ limit = 50, warnAt = 10, onPost }) {
       />
       <div className="counter-row">
         <label className="check">
-          <input type="checkbox" data-testid="enforce" checked={enforce} onChange={toggleEnforce} />
+          <input
+            type="checkbox"
+            data-testid="enforce"
+            checked={enforce}
+            onChange={toggleEnforce}
+          />
           Block typing past the limit
         </label>
         <p id={id + "-count"} data-testid="count" className={"count " + status}>
@@ -477,8 +498,12 @@ export default function CharacterCounter({ limit = 50, warnAt = 10, onPost }) {
           {remaining >= 0 ? remaining + " left" : -remaining + " over"}
         </p>
       </div>
-      <p className="sr-only" aria-live="polite" data-testid="live">{announcement}</p>
-      <button type="submit" data-testid="post" disabled={!canPost}>Post</button>
+      <p className="sr-only" aria-live="polite" data-testid="live">
+        {announcement}
+      </p>
+      <button type="submit" data-testid="post" disabled={!canPost}>
+        Post
+      </button>
     </form>
   );
 }
@@ -507,23 +532,96 @@ export function truncateGraphemes(text, limit) {
   return parts.length <= limit ? text : parts.slice(0, limit).join("");
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
-.counter { display: grid; gap: 8px; }
-textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; color: inherit;
-  background: #181b22; border: 1px solid #333a47; border-radius: 8px; resize: vertical; }
-textarea:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-textarea[aria-invalid="true"] { border-color: #ff6b6b; }
-.counter-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
-.check { display: flex; gap: 6px; align-items: center; font-size: 0.9rem; color: #b8c0cc; }
-.count { margin: 0; font-variant-numeric: tabular-nums; font-size: 0.9rem; color: #9aa4b2; }
-.count.warn { color: #ffb74d; }
-.count.over { color: #ff6b6b; font-weight: 600; }
-button { justify-self: end; padding: 8px 18px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-button:disabled { background: #2a3140; color: #6b7585; cursor: not-allowed; }
-.posts { padding-left: 18px; color: #c9d1dc; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.counter {
+  display: grid;
+  gap: 8px;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font: inherit;
+  color: inherit;
+  background: #181b22;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  resize: vertical;
+}
+textarea:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+textarea[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+.counter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #b8c0cc;
+}
+.count {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: #9aa4b2;
+}
+.count.warn {
+  color: #ffb74d;
+}
+.count.over {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+button {
+  justify-self: end;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  background: #2a3140;
+  color: #6b7585;
+  cursor: not-allowed;
+}
+.posts {
+  padding-left: 18px;
+  color: #c9d1dc;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -580,9 +678,15 @@ const enforce = ref(false);
 const count = computed(() => countGraphemes(text.value));
 const remaining = computed(() => props.limit - count.value);
 const status = computed(() =>
-  remaining.value < 0 ? "over" : remaining.value <= props.warnAt ? "warn" : "ok"
+  remaining.value < 0
+    ? "over"
+    : remaining.value <= props.warnAt
+      ? "warn"
+      : "ok",
 );
-const canPost = computed(() => text.value.trim() !== "" && remaining.value >= 0);
+const canPost = computed(
+  () => text.value.trim() !== "" && remaining.value >= 0,
+);
 ~~~
 
 <code>useId()</code> (added in Vue 3.5, exported from <code>@vue/runtime-core</code>) gives ids that are unique per app and stable between server and client rendering; see [useId in Vue 3.5](/interview-question/useid-vs-getcurrentinstance-how-do-you-generate-ssr-safe-ids-in-vue-3-5).
@@ -596,8 +700,12 @@ For a soft limit <code>v-model="text"</code> is all you need. The hard limit nee
 ~~~js
 function onInput(e) {
   const next = e.target.value;
-  text.value = enforce.value && !e.isComposing ? truncateGraphemes(next, props.limit) : next;
-  // Same string after truncation: Vue sees no change and will not patch the DOM.
+  text.value =
+    enforce.value && !e.isComposing
+      ? truncateGraphemes(next, props.limit)
+      : next;
+  // Same string after truncation: Vue sees
+  // no change and will not patch the DOM.
   if (e.target.value !== text.value) e.target.value = text.value;
 }
 
@@ -625,8 +733,9 @@ The write-back line is the Vue-specific trap. At the limit, typing "z" produces 
 ></textarea>
 <input type="checkbox" v-model="enforce" @change="onToggle" />
 <p :id="id + '-count'" :class="['count', status]">
-  {{ count }} / {{ limit }}<span class="sr-only"> characters used</span>
-  · {{ remaining >= 0 ? remaining + " left" : -remaining + " over" }}
+  {{ count }} / {{ limit
+  }}<span class="sr-only"> characters used</span> ·
+  {{ remaining >= 0 ? remaining + " left" : -remaining + " over" }}
 </p>
 <p class="sr-only" aria-live="polite">{{ announcement }}</p>
 <button type="submit" :disabled="!canPost">Post</button>
@@ -638,7 +747,7 @@ The parent listens with <code>@post="addPost"</code>, and the form uses <code>@s
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44 in jsdom. The driver typed strings, toggled the checkbox, faked an IME (an input event with <code>isComposing: true</code>, then <code>compositionend</code>) and posted. Output with the RENDERED line removed:
 
-~~~
+~~~text
 initial                count="0 / 50 characters used · 50 left" class="count ok" units=0 post=disabled live=""
 Hello + wave(skin)     count="7 / 50 characters used · 43 left" class="count ok" units=10 post=enabled live=""
 family emoji           count="1 / 50 characters used · 49 left" class="count ok" units=8 post=enabled live=""
@@ -772,10 +881,24 @@ function addPost(text) {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
-.posts { padding-left: 18px; color: #c9d1dc; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.posts {
+  padding-left: 18px;
+  color: #c9d1dc;
+}
 </style>
 `,
         "/src/components/CharacterCounter.vue": `<script setup>
@@ -796,18 +919,30 @@ const enforce = ref(false);
 const count = computed(() => countGraphemes(text.value));
 const remaining = computed(() => props.limit - count.value);
 const status = computed(() =>
-  remaining.value < 0 ? "over" : remaining.value <= props.warnAt ? "warn" : "ok"
+  remaining.value < 0
+    ? "over"
+    : remaining.value <= props.warnAt
+      ? "warn"
+      : "ok",
 );
-const canPost = computed(() => text.value.trim() !== "" && remaining.value >= 0);
+const canPost = computed(
+  () => text.value.trim() !== "" && remaining.value >= 0,
+);
 const announcement = computed(() =>
-  status.value === "over" ? "Character limit exceeded" :
-  status.value === "warn" ? props.warnAt + " or fewer characters left" : ""
+  status.value === "over"
+    ? "Character limit exceeded"
+    : status.value === "warn"
+      ? props.warnAt + " or fewer characters left"
+      : "",
 );
 
 function onInput(e) {
   const next = e.target.value;
   // Leave the text alone while an IME is composing; cut it on compositionend.
-  text.value = enforce.value && !e.isComposing ? truncateGraphemes(next, props.limit) : next;
+  text.value =
+    enforce.value && !e.isComposing
+      ? truncateGraphemes(next, props.limit)
+      : next;
   // If truncation produced the same string, Vue sees no change and would not
   // patch the DOM, so write the value back by hand.
   if (e.target.value !== text.value) e.target.value = text.value;
@@ -845,33 +980,99 @@ function submit() {
     ></textarea>
     <div class="counter-row">
       <label class="check">
-        <input type="checkbox" data-testid="enforce" v-model="enforce" @change="onToggle" />
+        <input
+          type="checkbox"
+          data-testid="enforce"
+          v-model="enforce"
+          @change="onToggle"
+        />
         Block typing past the limit
       </label>
       <p :id="id + '-count'" data-testid="count" :class="['count', status]">
-        {{ count }} / {{ limit }}<span class="sr-only"> characters used</span>
-        · {{ remaining >= 0 ? remaining + " left" : -remaining + " over" }}
+        {{ count }} / {{ limit }}<span class="sr-only"> characters used</span> ·
+        {{ remaining >= 0 ? remaining + " left" : -remaining + " over" }}
       </p>
     </div>
-    <p class="sr-only" aria-live="polite" data-testid="live">{{ announcement }}</p>
+    <p class="sr-only" aria-live="polite" data-testid="live">
+      {{ announcement }}
+    </p>
     <button type="submit" data-testid="post" :disabled="!canPost">Post</button>
   </form>
 </template>
 
 <style>
-.counter { display: grid; gap: 8px; }
-textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; color: inherit;
-  background: #181b22; border: 1px solid #333a47; border-radius: 8px; resize: vertical; }
-textarea:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-textarea[aria-invalid="true"] { border-color: #ff6b6b; }
-.counter-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; }
-.check { display: flex; gap: 6px; align-items: center; font-size: 0.9rem; color: #b8c0cc; }
-.count { margin: 0; font-variant-numeric: tabular-nums; font-size: 0.9rem; color: #9aa4b2; }
-.count.warn { color: #ffb74d; }
-.count.over { color: #ff6b6b; font-weight: 600; }
-button { justify-self: end; padding: 8px 18px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-button:disabled { background: #2a3140; color: #6b7585; cursor: not-allowed; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.counter {
+  display: grid;
+  gap: 8px;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font: inherit;
+  color: inherit;
+  background: #181b22;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  resize: vertical;
+}
+textarea:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+textarea[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+.counter-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+.check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #b8c0cc;
+}
+.count {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+  color: #9aa4b2;
+}
+.count.warn {
+  color: #ffb74d;
+}
+.count.over {
+  color: #ff6b6b;
+  font-weight: 600;
+}
+button {
+  justify-self: end;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  background: #2a3140;
+  color: #6b7585;
+  cursor: not-allowed;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
         "/src/graphemes.js": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
@@ -947,9 +1148,15 @@ readonly enforce = signal(false);
 readonly count = computed(() => countGraphemes(this.text()));
 readonly remaining = computed(() => this.limit - this.count());
 readonly status = computed(() =>
-  this.remaining() < 0 ? "over" : this.remaining() <= this.warnAt ? "warn" : "ok"
+  this.remaining() < 0
+    ? "over"
+    : this.remaining() <= this.warnAt
+      ? "warn"
+      : "ok",
 );
-readonly canPost = computed(() => this.text().trim() !== "" && this.remaining() >= 0);
+readonly canPost = computed(
+  () => this.text().trim() !== "" && this.remaining() >= 0,
+);
 ~~~
 
 📌 **Interview term: Zoneless change detection** — Angular 22 apps no longer rely on zone.js to guess when something changed; a signal write schedules the update. The <code>@angular/core</code> 22.2.3 typings state it directly: "Zoneless is enabled by default in Angular v21+". That is why all component state here lives in signals: a plain field changed from a callback would not re-render. See [zoneless Angular](/interview-question/what-is-zoneless-angular-and-how-does-it-improve-performance-in-angular-18).
@@ -960,8 +1167,13 @@ readonly canPost = computed(() => this.text().trim() !== "" && this.remaining() 
 onInput(e: Event) {
   const el = e.target as HTMLTextAreaElement;
   const composing = (e as InputEvent).isComposing;
-  this.text.set(this.enforce() && !composing ? truncateGraphemes(el.value, this.limit) : el.value);
-  // Same string after truncation: the signal does not change, Angular does not touch the DOM.
+  this.text.set(
+    this.enforce() && !composing
+      ? truncateGraphemes(el.value, this.limit)
+      : el.value,
+  );
+  // Same string after truncation: the signal does
+  // not change, Angular does not touch the DOM.
   if (el.value !== this.text()) el.value = this.text();
 }
 ~~~
@@ -982,8 +1194,11 @@ The template binds <code>[value]="text()"</code> and <code>(input)="onInput($eve
   [attr.aria-invalid]="status() === 'over'"
 ></textarea>
 <p [id]="id + '-count'" class="count" [class]="status()">
-  {{ count() }} / {{ limit }}<span class="sr-only"> characters used</span>
-  · {{ remaining() >= 0 ? remaining() + ' left' : -remaining() + ' over' }}
+  {{ count() }} / {{ limit
+  }}<span class="sr-only"> characters used</span> ·
+  {{
+    remaining() >= 0 ? remaining() + " left" : -remaining() + " over"
+  }}
 </p>
 <p class="sr-only" aria-live="polite">{{ announcement() }}</p>
 <button type="submit" [disabled]="!canPost()">Post</button>
@@ -995,7 +1210,7 @@ ARIA attributes need the <code>[attr.x]</code> form because there is no DOM prop
 
 Output from the playground (JIT) run; the AOT strict-template run printed exactly the same lines. RENDERED line removed:
 
-~~~
+~~~text
 initial                count="0 / 50 characters used · 50 left" class="count ok" units=0 post=disabled live=""
 Hello + wave(skin)     count="7 / 50 characters used · 43 left" class="count ok" units=10 post=enabled live=""
 family emoji           count="1 / 50 characters used · 49 left" class="count ok" units=8 post=enabled live=""
@@ -1116,7 +1331,11 @@ import { CharacterCounterComponent } from "./character-counter.component";
   template: \`
     <main class="app">
       <h1>Character counter</h1>
-      <app-character-counter [limit]="50" [warnAt]="10" (post)="addPost($event)" />
+      <app-character-counter
+        [limit]="50"
+        [warnAt]="10"
+        (post)="addPost($event)"
+      />
       <ul class="posts" data-testid="posts">
         @for (p of posts(); track p.id) {
           <li>{{ p.text }}</li>
@@ -1124,12 +1343,29 @@ import { CharacterCounterComponent } from "./character-counter.component";
       </ul>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .app { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.3rem; }
-    .posts { padding-left: 18px; color: #c9d1dc; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      .posts {
+        padding-left: 18px;
+        color: #c9d1dc;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly posts = signal<{ id: number; text: string }[]>([]);
@@ -1140,7 +1376,14 @@ export class AppComponent {
   }
 }
 `,
-        "/src/app/character-counter.component.ts": `import { Component, EventEmitter, Input, Output, computed, signal } from "@angular/core";
+        "/src/app/character-counter.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 import { countGraphemes, truncateGraphemes } from "./graphemes";
 
 let nextId = 0;
@@ -1163,19 +1406,38 @@ let nextId = 0;
       ></textarea>
       <div class="counter-row">
         <label class="check">
-          <input type="checkbox" data-testid="enforce" [checked]="enforce()" (change)="onToggle($event)" />
+          <input
+            type="checkbox"
+            data-testid="enforce"
+            [checked]="enforce()"
+            (change)="onToggle($event)"
+          />
           Block typing past the limit
         </label>
-        <p [id]="id + '-count'" data-testid="count" class="count" [class]="status()">
+        <p
+          [id]="id + '-count'"
+          data-testid="count"
+          class="count"
+          [class]="status()"
+        >
           {{ count() }} / {{ limit }}<span class="sr-only"> characters used</span>
           · {{ remaining() >= 0 ? remaining() + ' left' : -remaining() + ' over' }}
         </p>
       </div>
-      <p class="sr-only" aria-live="polite" data-testid="live">{{ announcement() }}</p>
-      <button type="submit" data-testid="post" [disabled]="!canPost()">Post</button>
+      <p
+        class="sr-only"
+        aria-live="polite"
+        data-testid="live"
+      >{{ announcement() }}</p>
+      <button
+        type="submit"
+        data-testid="post"
+        [disabled]="!canPost()"
+      >Post</button>
     </form>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .counter { display: grid; gap: 8px; }
     textarea { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; color: inherit;
       background: #181b22; border: 1px solid #333a47; border-radius: 8px; resize: vertical; }
@@ -1189,7 +1451,8 @@ let nextId = 0;
     button { justify-self: end; padding: 8px 18px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
     button:disabled { background: #2a3140; color: #6b7585; cursor: not-allowed; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class CharacterCounterComponent {
   @Input() limit = 50;
@@ -1200,24 +1463,38 @@ export class CharacterCounterComponent {
   readonly text = signal("");
   readonly enforce = signal(false);
 
-  // computed() signals: derived from text, cached, recalculated only when it changes.
+  // computed() signals: derived from text,
+  // cached, recalculated only when it changes.
   // limit and warnAt are plain @Input fields; they are read inside computed but
   // are not signals, so this demo treats them as fixed after the first render.
   readonly count = computed(() => countGraphemes(this.text()));
   readonly remaining = computed(() => this.limit - this.count());
   readonly status = computed(() =>
-    this.remaining() < 0 ? "over" : this.remaining() <= this.warnAt ? "warn" : "ok"
+    this.remaining() < 0
+      ? "over"
+      : this.remaining() <= this.warnAt
+        ? "warn"
+        : "ok",
   );
-  readonly canPost = computed(() => this.text().trim() !== "" && this.remaining() >= 0);
+  readonly canPost = computed(
+    () => this.text().trim() !== "" && this.remaining() >= 0,
+  );
   readonly announcement = computed(() =>
-    this.status() === "over" ? "Character limit exceeded" :
-    this.status() === "warn" ? this.warnAt + " or fewer characters left" : ""
+    this.status() === "over"
+      ? "Character limit exceeded"
+      : this.status() === "warn"
+        ? this.warnAt + " or fewer characters left"
+        : "",
   );
 
   onInput(e: Event) {
     const el = e.target as HTMLTextAreaElement;
     const composing = (e as InputEvent).isComposing;
-    this.text.set(this.enforce() && !composing ? truncateGraphemes(el.value, this.limit) : el.value);
+    this.text.set(
+      this.enforce() && !composing
+        ? truncateGraphemes(el.value, this.limit)
+        : el.value,
+    );
     // Same string after truncation means the signal does not change and Angular
     // will not touch the DOM, so write the value back by hand.
     if (el.value !== this.text()) el.value = this.text();
@@ -1364,7 +1641,9 @@ const [announcement, setAnnouncement] = useState("");
 function toggle() {
   const next = !visible;
   setVisible(next);
-  setAnnouncement(next ? "Your password is shown" : "Your password is hidden");
+  setAnnouncement(
+    next ? "Your password is shown" : "Your password is hidden",
+  );
 }
 ...
 <input type={visible ? "text" : "password"} value={value} onChange={(e) => onChange(e.target.value)} ... />
@@ -1389,7 +1668,9 @@ There are two valid ARIA patterns for a toggle: a **changing name** ("Show passw
 ### Step 2: announce the change
 
 ~~~jsx
-<span className="sr-only" aria-live="polite">{announcement}</span>
+<span className="sr-only" aria-live="polite">
+  {announcement}
+</span>
 ~~~
 
 📌 **Interview term: Live region** — an element with <code>aria-live</code>; when its text changes, screen readers read the new text without moving focus. Focus stays on the button, so without this a screen reader user hears only the button's new name. GOV.UK announces "Your password is shown" / "Your password is hidden" the same way. It starts empty so nothing is announced on page load.
@@ -1402,7 +1683,9 @@ useEffect(() => {
   if (!form) return;
   const hide = () => {
     setVisible(false);
-    setAnnouncement((prev) => (prev ? "Your password is hidden" : prev));
+    setAnnouncement((prev) =>
+      prev ? "Your password is hidden" : prev,
+    );
   };
   form.addEventListener("submit", hide);
   return () => form.removeEventListener("submit", hide);
@@ -1448,7 +1731,11 @@ async function handleSubmit(e) {
   e.preventDefault();
   setStatus("loading");
   const res = await fakeSignIn(username, password);
-  setStatus(res.ok ? "Signed in as " + res.user : "Password must be at least 8 characters");
+  setStatus(
+    res.ok
+      ? "Signed in as " + res.user
+      : "Password must be at least 8 characters",
+  );
 }
 ~~~
 
@@ -1458,7 +1745,7 @@ The button shows "Signing in…" and is disabled while the fake request runs. Mo
 
 Mounted with <code>createRoot</code> inside <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. The driver typed a username and password, clicked the toggle, sent key events with and without <code>modifierCapsLock: true</code>, submitted while the password was shown, waited 400 ms for the fake server, then submitted a short password. Output, RENDERED line removed:
 
-~~~
+~~~text
 initial              type=password button="Show" aria-label="Show password" announce="" caps=""
 toggle type attr: button | aria-controls matches input id: true
 input attrs: autocomplete=current-password spellcheck=false autocapitalize=none
@@ -1586,7 +1873,10 @@ import PasswordInput from "./src/PasswordInput";
 // Simulated server: no network in the playground.
 function fakeSignIn(username, password) {
   return new Promise((resolve) =>
-    setTimeout(() => resolve({ ok: password.length >= 8, user: username }), 300)
+    setTimeout(
+      () => resolve({ ok: password.length >= 8, user: username }),
+      300,
+    ),
   );
 }
 
@@ -1599,7 +1889,11 @@ export default function App() {
     e.preventDefault();
     setStatus("loading");
     const res = await fakeSignIn(username, password);
-    setStatus(res.ok ? "Signed in as " + res.user : "Password must be at least 8 characters");
+    setStatus(
+      res.ok
+        ? "Signed in as " + res.user
+        : "Password must be at least 8 characters",
+    );
   }
 
   return (
@@ -1608,14 +1902,26 @@ export default function App() {
       <form onSubmit={handleSubmit} className="card">
         <div className="field">
           <label htmlFor="username">Username</label>
-          <input id="username" data-testid="username" autoComplete="username"
-            value={username} onChange={(e) => setUsername(e.target.value)} />
+          <input
+            id="username"
+            data-testid="username"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
         </div>
         <PasswordInput value={password} onChange={setPassword} />
-        <button type="submit" data-testid="submit" className="primary" disabled={status === "loading"}>
+        <button
+          type="submit"
+          data-testid="submit"
+          className="primary"
+          disabled={status === "loading"}
+        >
           {status === "loading" ? "Signing in…" : "Sign in"}
         </button>
-        <p data-testid="status" role="status">{status === "idle" || status === "loading" ? "" : status}</p>
+        <p data-testid="status" role="status">
+          {status === "idle" || status === "loading" ? "" : status}
+        </p>
       </form>
     </main>
   );
@@ -1623,7 +1929,13 @@ export default function App() {
 `,
         "/src/PasswordInput.js": `import { useEffect, useId, useRef, useState } from "react";
 
-export default function PasswordInput({ label = "Password", name = "password", autoComplete = "current-password", value, onChange }) {
+export default function PasswordInput({
+  label = "Password",
+  name = "password",
+  autoComplete = "current-password",
+  value,
+  onChange,
+}) {
   const id = useId();
   const inputRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -1647,7 +1959,9 @@ export default function PasswordInput({ label = "Password", name = "password", a
   function toggle() {
     const next = !visible;
     setVisible(next);
-    setAnnouncement(next ? "Your password is shown" : "Your password is hidden");
+    setAnnouncement(
+      next ? "Your password is shown" : "Your password is hidden",
+    );
   }
 
   function checkCaps(e) {
@@ -1686,30 +2000,113 @@ export default function PasswordInput({ label = "Password", name = "password", a
           {visible ? "Hide" : "Show"}
         </button>
       </div>
-      <p id={id + "-caps"} data-testid="caps" className="caps" aria-live="polite">
+      <p
+        id={id + "-caps"}
+        data-testid="caps"
+        className="caps"
+        aria-live="polite"
+      >
         {capsLock ? "Caps Lock is on" : ""}
       </p>
-      <span className="sr-only" aria-live="polite" data-testid="announce">{announcement}</span>
+      <span className="sr-only" aria-live="polite" data-testid="announce">
+        {announcement}
+      </span>
     </div>
   );
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
-.card { display: grid; gap: 14px; background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 18px; }
-.field { display: grid; gap: 6px; }
-label { font-size: 0.9rem; color: #b8c0cc; }
-input { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; color: inherit; background: #0f1115; border: 1px solid #333a47; border-radius: 8px; }
-input:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-.pw-wrap { display: flex; gap: 6px; }
-.pw-wrap input { flex: 1; min-width: 0; }
-.pw-toggle { padding: 0 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
-.caps { margin: 0; min-height: 1.2em; font-size: 0.85rem; color: #ffb74d; }
-.primary { padding: 10px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-.primary:disabled { opacity: 0.6; }
-[role="status"] { margin: 0; min-height: 1.2em; color: #81c784; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.card {
+  display: grid;
+  gap: 14px;
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 18px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+label {
+  font-size: 0.9rem;
+  color: #b8c0cc;
+}
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font: inherit;
+  color: inherit;
+  background: #0f1115;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+.pw-wrap {
+  display: flex;
+  gap: 6px;
+}
+.pw-wrap input {
+  flex: 1;
+  min-width: 0;
+}
+.pw-toggle {
+  padding: 0 14px;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  background: #1f2530;
+  color: #e6e6e6;
+  cursor: pointer;
+}
+.caps {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #ffb74d;
+}
+.primary {
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:disabled {
+  opacity: 0.6;
+}
+[role="status"] {
+  margin: 0;
+  min-height: 1.2em;
+  color: #81c784;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -1750,7 +2147,9 @@ const announcement = ref("");
 
 function toggle() {
   visible.value = !visible.value;
-  announcement.value = visible.value ? "Your password is shown" : "Your password is hidden";
+  announcement.value = visible.value
+    ? "Your password is shown"
+    : "Your password is hidden";
 }
 ~~~
 
@@ -1787,7 +2186,8 @@ const inputEl = useTemplateRef("input");
 let form = null;
 function hide() {
   visible.value = false;
-  if (announcement.value) announcement.value = "Your password is hidden";
+  if (announcement.value)
+    announcement.value = "Your password is hidden";
 }
 onMounted(() => {
   form = inputEl.value && inputEl.value.form;
@@ -1820,7 +2220,7 @@ Bound with <code>@keydown</code> and <code>@keyup</code>, cleared on <code>@blur
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44. The driver typed, toggled, sent key events with <code>modifierCapsLock: true</code> and without, submitted while shown, and waited for the simulated server:
 
-~~~
+~~~text
 initial              type=password button="Show" aria-label="Show password" announce="" caps=""
 toggle type attr: button | aria-controls matches input id: true
 input attrs: autocomplete=current-password spellcheck=false autocapitalize=none
@@ -1936,7 +2336,10 @@ import PasswordInput from "./components/PasswordInput.vue";
 // Simulated server: no network in the playground.
 function fakeSignIn(username, password) {
   return new Promise((resolve) =>
-    setTimeout(() => resolve({ ok: password.length >= 8, user: username }), 300)
+    setTimeout(
+      () => resolve({ ok: password.length >= 8, user: username }),
+      300,
+    ),
   );
 }
 
@@ -1947,7 +2350,9 @@ const status = ref("idle");
 async function submit() {
   status.value = "loading";
   const res = await fakeSignIn(username.value, password.value);
-  status.value = res.ok ? "Signed in as " + res.user : "Password must be at least 8 characters";
+  status.value = res.ok
+    ? "Signed in as " + res.user
+    : "Password must be at least 8 characters";
 }
 </script>
 
@@ -1957,29 +2362,92 @@ async function submit() {
     <form class="card" @submit.prevent="submit">
       <div class="field">
         <label for="username">Username</label>
-        <input id="username" data-testid="username" autocomplete="username" v-model="username" />
+        <input
+          id="username"
+          data-testid="username"
+          autocomplete="username"
+          v-model="username"
+        />
       </div>
       <PasswordInput v-model="password" />
-      <button type="submit" data-testid="submit" class="primary" :disabled="status === 'loading'">
+      <button
+        type="submit"
+        data-testid="submit"
+        class="primary"
+        :disabled="status === 'loading'"
+      >
         {{ status === "loading" ? "Signing in…" : "Sign in" }}
       </button>
-      <p data-testid="status" role="status">{{ status === "idle" || status === "loading" ? "" : status }}</p>
+      <p data-testid="status" role="status">
+        {{ status === "idle" || status === "loading" ? "" : status }}
+      </p>
     </form>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
-.card { display: grid; gap: 14px; background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 18px; }
-.field { display: grid; gap: 6px; }
-label { font-size: 0.9rem; color: #b8c0cc; }
-input { width: 100%; box-sizing: border-box; padding: 10px; font: inherit; color: inherit; background: #0f1115; border: 1px solid #333a47; border-radius: 8px; }
-input:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-.primary { padding: 10px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-.primary:disabled { opacity: 0.6; }
-[role="status"] { margin: 0; min-height: 1.2em; color: #81c784; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.card {
+  display: grid;
+  gap: 14px;
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 18px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+}
+label {
+  font-size: 0.9rem;
+  color: #b8c0cc;
+}
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  font: inherit;
+  color: inherit;
+  background: #0f1115;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+.primary {
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary:disabled {
+  opacity: 0.6;
+}
+[role="status"] {
+  margin: 0;
+  min-height: 1.2em;
+  color: #81c784;
+}
 </style>
 `,
         "/src/components/PasswordInput.vue": `<script setup>
@@ -2001,7 +2469,9 @@ const announcement = ref("");
 
 function toggle() {
   visible.value = !visible.value;
-  announcement.value = visible.value ? "Your password is shown" : "Your password is hidden";
+  announcement.value = visible.value
+    ? "Your password is shown"
+    : "Your password is hidden";
 }
 
 function checkCaps(e) {
@@ -2057,16 +2527,43 @@ onBeforeUnmount(() => {
     <p :id="id + '-caps'" data-testid="caps" class="caps" aria-live="polite">
       {{ capsLock ? "Caps Lock is on" : "" }}
     </p>
-    <span class="sr-only" aria-live="polite" data-testid="announce">{{ announcement }}</span>
+    <span class="sr-only" aria-live="polite" data-testid="announce">{{
+      announcement
+    }}</span>
   </div>
 </template>
 
 <style>
-.pw-wrap { display: flex; gap: 6px; }
-.pw-wrap input { flex: 1; min-width: 0; }
-.pw-toggle { padding: 0 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
-.caps { margin: 0; min-height: 1.2em; font-size: 0.85rem; color: #ffb74d; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pw-wrap {
+  display: flex;
+  gap: 6px;
+}
+.pw-wrap input {
+  flex: 1;
+  min-width: 0;
+}
+.pw-toggle {
+  padding: 0 14px;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  background: #1f2530;
+  color: #e6e6e6;
+  cursor: pointer;
+}
+.caps {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #ffb74d;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
         },
@@ -2123,7 +2620,10 @@ A labelled password field with a Show/Hide button, a screen reader announcement,
 >
   {{ visible() ? "Hide" : "Show" }}
 </button>
-<p [id]="id + '-caps'" aria-live="polite">{{ capsLock() ? "Caps Lock is on" : "" }}</p>
+<p
+  [id]="id + '-caps'"
+  aria-live="polite"
+>{{ capsLock() ? "Caps Lock is on" : "" }}</p>
 <span class="sr-only" aria-live="polite">{{ announcement() }}</span>
 ~~~
 
@@ -2139,7 +2639,11 @@ readonly announcement = signal("");
 
 toggle() {
   this.visible.update((v) => !v);
-  this.announcement.set(this.visible() ? "Your password is shown" : "Your password is hidden");
+  this.announcement.set(
+    this.visible()
+      ? "Your password is shown"
+      : "Your password is hidden",
+  );
 }
 ~~~
 
@@ -2155,7 +2659,8 @@ private form: HTMLFormElement | null = null;
 
 private readonly hide = () => {
   this.visible.set(false);
-  if (this.announcement()) this.announcement.set("Your password is hidden");
+  if (this.announcement())
+    this.announcement.set("Your password is hidden");
 };
 
 ngAfterViewInit() {
@@ -2181,7 +2686,7 @@ GOV.UK's Design System switches the field back to password on submit so browsers
 
 Playground (JIT) output; the AOT strict-template run was identical:
 
-~~~
+~~~text
 initial              type=password button="Show" aria-label="Show password" announce="" caps=""
 toggle type attr: button | aria-controls matches input id: true
 input attrs: autocomplete=current-password spellcheck=false autocapitalize=none
@@ -2296,7 +2801,10 @@ import { PasswordInputComponent } from "./password-input.component";
 // Simulated server: no network in the playground.
 function fakeSignIn(username: string, password: string) {
   return new Promise<{ ok: boolean; user: string }>((resolve) =>
-    setTimeout(() => resolve({ ok: password.length >= 8, user: username }), 300)
+    setTimeout(
+      () => resolve({ ok: password.length >= 8, user: username }),
+      300,
+    ),
   );
 }
 
@@ -2314,14 +2822,23 @@ function fakeSignIn(username: string, password: string) {
             [value]="username()" (input)="username.set(user.value)" #user />
         </div>
         <app-password-input [(value)]="password" />
-        <button type="submit" data-testid="submit" class="primary" [disabled]="status() === 'loading'">
+        <button
+          type="submit"
+          data-testid="submit"
+          class="primary"
+          [disabled]="status() === 'loading'"
+        >
           {{ status() === "loading" ? "Signing in…" : "Sign in" }}
         </button>
-        <p data-testid="status" role="status">{{ status() === "idle" || status() === "loading" ? "" : status() }}</p>
+        <p
+          data-testid="status"
+          role="status"
+        >{{ status() === "idle" || status() === "loading" ? "" : status() }}</p>
       </form>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.3rem; }
@@ -2332,7 +2849,8 @@ function fakeSignIn(username: string, password: string) {
     .primary { padding: 10px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
     .primary:disabled { opacity: 0.6; }
     [role="status"] { margin: 0; min-height: 1.2em; color: #81c784; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly username = signal("");
@@ -2344,11 +2862,25 @@ export class AppComponent {
     e.preventDefault();
     this.status.set("loading");
     const res = await fakeSignIn(this.username(), this.password());
-    this.status.set(res.ok ? "Signed in as " + res.user : "Password must be at least 8 characters");
+    this.status.set(
+      res.ok
+        ? "Signed in as " + res.user
+        : "Password must be at least 8 characters",
+    );
   }
 }
 `,
-        "/src/app/password-input.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild, signal } from "@angular/core";
+        "/src/app/password-input.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  ViewChild,
+  signal,
+} from "@angular/core";
 
 let nextId = 0;
 
@@ -2390,25 +2922,72 @@ let nextId = 0;
       <p [id]="id + '-caps'" data-testid="caps" class="caps" aria-live="polite">
         {{ capsLock() ? "Caps Lock is on" : "" }}
       </p>
-      <span class="sr-only" aria-live="polite" data-testid="announce">{{ announcement() }}</span>
+      <span class="sr-only" aria-live="polite" data-testid="announce">{{
+        announcement()
+      }}</span>
     </div>
   \`,
-  styles: [\`
-    .field { display: grid; gap: 6px; }
-    label { font-size: 0.9rem; color: #b8c0cc; }
-    .pw-wrap { display: flex; gap: 6px; }
-    input { flex: 1; min-width: 0; box-sizing: border-box; padding: 10px; font: inherit; color: inherit; background: #0f1115; border: 1px solid #333a47; border-radius: 8px; }
-    input:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-    .pw-toggle { padding: 0 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
-    .caps { margin: 0; min-height: 1.2em; font-size: 0.85rem; color: #ffb74d; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  styles: [
+    \`
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+      label {
+        font-size: 0.9rem;
+        color: #b8c0cc;
+      }
+      .pw-wrap {
+        display: flex;
+        gap: 6px;
+      }
+      input {
+        flex: 1;
+        min-width: 0;
+        box-sizing: border-box;
+        padding: 10px;
+        font: inherit;
+        color: inherit;
+        background: #0f1115;
+        border: 1px solid #333a47;
+        border-radius: 8px;
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 2px solid #5b9dff;
+        outline-offset: 1px;
+      }
+      .pw-toggle {
+        padding: 0 14px;
+        border: 1px solid #333a47;
+        border-radius: 8px;
+        background: #1f2530;
+        color: #e6e6e6;
+        cursor: pointer;
+      }
+      .caps {
+        margin: 0;
+        min-height: 1.2em;
+        font-size: 0.85rem;
+        color: #ffb74d;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+      }
+    \`,
+  ],
 })
 export class PasswordInputComponent implements AfterViewInit, OnDestroy {
   @Input() label = "Password";
   @Input() name = "password";
   @Input() autocomplete = "current-password";
-  // value + valueChange is the naming that makes [(value)] two-way binding work.
+  // value + valueChange is the naming that
+  // makes [(value)] two-way binding work.
   @Input() value = "";
   @Output() valueChange = new EventEmitter<string>();
   @ViewChild("input") inputRef!: ElementRef<HTMLInputElement>;
@@ -2436,7 +3015,9 @@ export class PasswordInputComponent implements AfterViewInit, OnDestroy {
 
   toggle() {
     this.visible.update((v) => !v);
-    this.announcement.set(this.visible() ? "Your password is shown" : "Your password is hidden");
+    this.announcement.set(
+      this.visible() ? "Your password is shown" : "Your password is hidden",
+    );
   }
 
   checkCaps(e: KeyboardEvent) {
@@ -2549,7 +3130,8 @@ The text you see is never stored; it is chosen during render from the preview, t
 ~~~js
 export function truncateText(text, maxChars) {
   const chars = splitGraphemes(text);
-  if (chars.length <= maxChars) return { isTruncated: false, preview: text };
+  if (chars.length <= maxChars)
+    return { isTruncated: false, preview: text };
   let cut = chars.slice(0, maxChars).join("");
   const lastSpace = cut.search(/\\s\\S*$/);
   if (lastSpace > cut.length * 0.6) cut = cut.slice(0, lastSpace);
@@ -2562,7 +3144,7 @@ export function truncateText(text, maxChars) {
 
 Why not <code>text.slice(0, 120)</code>? JavaScript strings are counted in UTF-16 code units and most emoji are two of them. A Node 22 check on the emoji-only review:
 
-~~~
+~~~text
 naive slice(0,119): length 119 last code unit d83c lone high surrogate: true
 thumbs slice(0,8): "Great 👍" codepoint slice: "Great 👍"
 ~~~
@@ -2579,11 +3161,16 @@ The word-boundary rule backs off to the last whitespace, but only if that keeps 
 export default function ReadMore({ text, maxChars = 120 }) {
   const id = useId();
   const [expanded, setExpanded] = useState(false);
-  const { isTruncated, preview } = useMemo(() => truncateText(text, maxChars), [text, maxChars]);
+  const { isTruncated, preview } = useMemo(
+    () => truncateText(text, maxChars),
+    [text, maxChars],
+  );
 
   return (
     <div className="read-more">
-      <p id={id} className="body">{expanded || !isTruncated ? text : preview}</p>
+      <p id={id} className="body">
+        {expanded || !isTruncated ? text : preview}
+      </p>
       {isTruncated && (
         <button
           type="button"
@@ -2628,7 +3215,7 @@ If the requirement is "three lines", characters are the wrong unit: the same 120
 
 The catch is the button: you only want it when the text actually overflows, and that can only be known after layout, by comparing <code>el.scrollHeight</code> with <code>el.clientHeight</code> (and re-checking on resize with a <code>ResizeObserver</code>). That code was **not** run in this solution, because jsdom has no layout and reports 0 for both. It was measured separately in Chromium 141 with playwright-core on a 200 px wide paragraph with 20 px line height:
 
-~~~
+~~~text
 clamp c { clientHeight: 60, scrollHeight: 320, overflowing: true }
 clamp s { clientHeight: 20, scrollHeight: 20, overflowing: false }
 clamp u { clientHeight: 320, scrollHeight: 320, overflowing: false }
@@ -2641,7 +3228,7 @@ The long paragraph was clamped to exactly 3 lines (60 px) with 320 px of content
 
 The solution was mounted inside <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. The driver counted graphemes of each card's text, checked the buttons, clicked Read more and Show less on the first card, and inspected the emoji card's ending. Output, RENDERED line removed:
 
-~~~
+~~~text
 initial card1: chars=117 button="Read more" aria-expanded=false
 initial card2: chars=30 button=none
 initial card3: chars=121 button="Read more" aria-expanded=false
@@ -2790,7 +3377,10 @@ export default function ReadMore({ text, maxChars = 120 }) {
   const id = useId();
   const [expanded, setExpanded] = useState(false);
   // Derived from props; recomputed only when text or maxChars change.
-  const { isTruncated, preview } = useMemo(() => truncateText(text, maxChars), [text, maxChars]);
+  const { isTruncated, preview } = useMemo(
+    () => truncateText(text, maxChars),
+    [text, maxChars],
+  );
 
   return (
     <div className="read-more">
@@ -2829,7 +3419,9 @@ export default function ReadMore({ text, maxChars = 120 }) {
     : null;
 
 function splitGraphemes(text) {
-  return segmenter ? Array.from(segmenter.segment(text), (s) => s.segment) : Array.from(text);
+  return segmenter
+    ? Array.from(segmenter.segment(text), (s) => s.segment)
+    : Array.from(text);
 }
 
 // Cut text to at most maxChars user-visible characters, preferring a word
@@ -2846,15 +3438,57 @@ export function truncateText(text, maxChars) {
   return { isTruncated: true, preview: cut + "…" };
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-h1 { font-size: 1.3rem; margin: 0; }
-.card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px; }
-.card h2 { font-size: 1rem; margin: 0 0 6px; color: #9ec5ff; }
-.body { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
-.link-btn { margin-top: 6px; padding: 2px 0; border: 0; background: none; color: #5b9dff; font: inherit; font-weight: 600; cursor: pointer; }
-.link-btn:hover { text-decoration: underline; }
-.link-btn:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; border-radius: 3px; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  gap: 14px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+.card {
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.card h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+  color: #9ec5ff;
+}
+.body {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.link-btn {
+  margin-top: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #5b9dff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.link-btn:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 `,
         },
       },
@@ -2892,7 +3526,8 @@ A <code>ReadMore</code> component with <code>text</code> and <code>maxChars</cod
 ~~~js
 export function truncateText(text, maxChars) {
   const chars = splitGraphemes(text);
-  if (chars.length <= maxChars) return { isTruncated: false, preview: text };
+  if (chars.length <= maxChars)
+    return { isTruncated: false, preview: text };
   let cut = chars.slice(0, maxChars).join("");
   const lastSpace = cut.search(/\\s\\S*$/);
   if (lastSpace > cut.length * 0.6) cut = cut.slice(0, lastSpace);
@@ -2923,7 +3558,9 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
 
 <template>
   <div class="read-more">
-    <p :id="id" class="body">{{ expanded || !cut.isTruncated ? text : cut.preview }}</p>
+    <p :id="id" class="body">
+      {{ expanded || !cut.isTruncated ? text : cut.preview }}
+    </p>
     <button
       v-if="cut.isTruncated"
       type="button"
@@ -2962,7 +3599,7 @@ If the spec says "three lines", use <code>-webkit-line-clamp: 3</code> with <cod
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44. The driver counted graphemes of each card's text, clicked Read more and Show less on the first card, and checked the emoji card's ending:
 
-~~~
+~~~text
 initial card1: chars=117 button="Read more" aria-expanded=false
 initial card2: chars=30 button=none
 initial card3: chars=121 button="Read more" aria-expanded=false
@@ -3088,11 +3725,34 @@ import { reviews } from "./reviews.js";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-h1 { font-size: 1.3rem; margin: 0; }
-.card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px; }
-.card h2 { font-size: 1rem; margin: 0 0 6px; color: #9ec5ff; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  gap: 14px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+.card {
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+.card h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+  color: #9ec5ff;
+}
 </style>
 `,
         "/src/components/ReadMore.vue": `<script setup>
@@ -3112,7 +3772,9 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
 
 <template>
   <div class="read-more">
-    <p :id="id" data-testid="body" class="body">{{ expanded || !cut.isTruncated ? text : cut.preview }}</p>
+    <p :id="id" data-testid="body" class="body">
+      {{ expanded || !cut.isTruncated ? text : cut.preview }}
+    </p>
     <button
       v-if="cut.isTruncated"
       type="button"
@@ -3128,10 +3790,29 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
 </template>
 
 <style>
-.body { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
-.link-btn { margin-top: 6px; padding: 2px 0; border: 0; background: none; color: #5b9dff; font: inherit; font-weight: 600; cursor: pointer; }
-.link-btn:hover { text-decoration: underline; }
-.link-btn:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; border-radius: 3px; }
+.body {
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.link-btn {
+  margin-top: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: #5b9dff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.link-btn:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 </style>
 `,
         "/src/reviews.js": `export const reviews = [
@@ -3150,7 +3831,9 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
     : null;
 
 function splitGraphemes(text) {
-  return segmenter ? Array.from(segmenter.segment(text), (s) => s.segment) : Array.from(text);
+  return segmenter
+    ? Array.from(segmenter.segment(text), (s) => s.segment)
+    : Array.from(text);
 }
 
 // Cut text to at most maxChars user-visible characters, preferring a word
@@ -3214,7 +3897,9 @@ export class ReadMoreComponent implements OnChanges {
   readonly expanded = signal(false);
 
   private readonly inputs = signal({ text: "", maxChars: 120 });
-  readonly cut = computed(() => truncateText(this.inputs().text, this.inputs().maxChars));
+  readonly cut = computed(() =>
+    truncateText(this.inputs().text, this.inputs().maxChars),
+  );
 
   ngOnChanges() {
     this.inputs.set({ text: this.text, maxChars: this.maxChars });
@@ -3229,7 +3914,10 @@ export class ReadMoreComponent implements OnChanges {
 ### Step 3: the template with built-in control flow
 
 ~~~html
-<p [id]="id" class="body">{{ expanded() || !cut().isTruncated ? text : cut().preview }}</p>
+<p
+  [id]="id"
+  class="body"
+>{{ expanded() || !cut().isTruncated ? text : cut().preview }}</p>
 @if (cut().isTruncated) {
   <button
     type="button"
@@ -3267,7 +3955,7 @@ For a "three lines" spec, use <code>-webkit-line-clamp: 3</code> with <code>disp
 
 Playground (JIT) run; the AOT run was identical:
 
-~~~
+~~~text
 initial card1: chars=117 button="Read more" aria-expanded=false
 initial card2: chars=30 button=none
 initial card3: chars=121 button="Read more" aria-expanded=false
@@ -3394,13 +4082,39 @@ import { reviews } from "./reviews";
       }
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-    h1 { font-size: 1.3rem; margin: 0; }
-    .card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px; }
-    .card h2 { font-size: 1rem; margin: 0 0 6px; color: #9ec5ff; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        display: grid;
+        gap: 14px;
+      }
+      h1 {
+        font-size: 1.3rem;
+        margin: 0;
+      }
+      .card {
+        background: #161a21;
+        border: 1px solid #2a3140;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .card h2 {
+        font-size: 1rem;
+        margin: 0 0 6px;
+        color: #9ec5ff;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly reviews = reviews;
@@ -3415,7 +4129,11 @@ let nextId = 0;
   selector: "app-read-more",
   standalone: true,
   template: \`
-    <p [id]="id" data-testid="body" class="body">{{ expanded() || !cut().isTruncated ? text : cut().preview }}</p>
+    <p
+      [id]="id"
+      data-testid="body"
+      class="body"
+    >{{ expanded() || !cut().isTruncated ? text : cut().preview }}</p>
     @if (cut().isTruncated) {
       <button
         type="button"
@@ -3429,13 +4147,15 @@ let nextId = 0;
       </button>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .body { margin: 0; line-height: 1.5; overflow-wrap: anywhere; }
     .link-btn { margin-top: 6px; padding: 2px 0; border: 0; background: none; color: #5b9dff; font: inherit; font-weight: 600; cursor: pointer; }
     .link-btn:hover { text-decoration: underline; }
     .link-btn:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; border-radius: 3px; }
-  \`],
+  \`,
+  ],
 })
 export class ReadMoreComponent implements OnChanges {
   @Input({ required: true }) text = "";
@@ -3447,14 +4167,20 @@ export class ReadMoreComponent implements OnChanges {
   // @Input fields are not signals, so mirror them into one signal in
   // ngOnChanges; computed() then re-cuts only when an input really changed.
   private readonly inputs = signal({ text: "", maxChars: 120 });
-  readonly cut = computed(() => truncateText(this.inputs().text, this.inputs().maxChars));
+  readonly cut = computed(() =>
+    truncateText(this.inputs().text, this.inputs().maxChars),
+  );
 
   ngOnChanges() {
     this.inputs.set({ text: this.text, maxChars: this.maxChars });
   }
 }
 `,
-        "/src/app/reviews.ts": `export interface Review { id: number; author: string; text: string; }
+        "/src/app/reviews.ts": `export interface Review {
+  id: number;
+  author: string;
+  text: string;
+}
 
 export const reviews: Review[] = [
   {
@@ -3472,12 +4198,17 @@ export const reviews: Review[] = [
     : null;
 
 function splitGraphemes(text: string): string[] {
-  return segmenter ? Array.from(segmenter.segment(text), (s) => s.segment) : Array.from(text);
+  return segmenter
+    ? Array.from(segmenter.segment(text), (s) => s.segment)
+    : Array.from(text);
 }
 
 // Cut text to at most maxChars user-visible characters, preferring a word
 // boundary, and say whether anything was cut.
-export function truncateText(text: string, maxChars: number): { isTruncated: boolean; preview: string } {
+export function truncateText(
+  text: string,
+  maxChars: number,
+): { isTruncated: boolean; preview: string } {
   const chars = splitGraphemes(text);
   if (chars.length <= maxChars) return { isTruncated: false, preview: text };
   let cut = chars.slice(0, maxChars).join("");
@@ -3606,7 +4337,10 @@ export function badgeLabel(count, max) {
 }
 
 const unread = notifications.filter((n) => !n.read).length;
-const ariaLabel = unread === 0 ? "Notifications, no unread" : "Notifications, " + unread + " unread";
+const ariaLabel =
+  unread === 0
+    ? "Notifications, no unread"
+    : "Notifications, " + unread + " unread";
 ~~~
 
 📌 **Interview term: Derived state** — a value computed from existing state during render. Because <code>unread</code> is recalculated from the list every time, it cannot disagree with the list.
@@ -3627,7 +4361,9 @@ Filtering a few hundred items per render is trivial. With tens of thousands you 
 >
   <span aria-hidden="true">🔔</span>
   {unread > 0 && (
-    <span className="badge" aria-hidden="true">{badgeLabel(unread, max)}</span>
+    <span className="badge" aria-hidden="true">
+      {badgeLabel(unread, max)}
+    </span>
   )}
 </button>
 ~~~
@@ -3644,7 +4380,8 @@ Capping is purely visual: the label shows <code>99+</code> while the accessible 
 useEffect(() => {
   if (!open) return;
   const onDocClick = (e) => {
-    if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+    if (wrapRef.current && !wrapRef.current.contains(e.target))
+      setOpen(false);
   };
   document.addEventListener("click", onDocClick);
   return () => document.removeEventListener("click", onDocClick);
@@ -3671,12 +4408,17 @@ function simulate(count) {
     return { id, text: "New notification #" + id, read: false };
   }).reverse(); // newest first; done here, never inside the updater
   setNotifications((list) => [...fresh, ...list]);
-  setAnnouncement(count === 1 ? "1 new notification" : count + " new notifications");
+  setAnnouncement(
+    count === 1 ? "1 new notification" : count + " new notifications",
+  );
 }
 
 const markRead = (id) =>
-  setNotifications((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
-const markAllRead = () => setNotifications((list) => list.map((n) => ({ ...n, read: true })));
+  setNotifications((list) =>
+    list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+  );
+const markAllRead = () =>
+  setNotifications((list) => list.map((n) => ({ ...n, read: true })));
 ~~~
 
 📌 **Interview term: Immutable update** — creating a new array or object instead of changing the existing one. React compares by reference, so <code>list.map(...)</code> returning a new array is what tells it something changed.
@@ -3688,7 +4430,9 @@ The ids come from a <code>useRef</code> counter so they survive re-renders witho
 ### Step 5: announce arrivals
 
 ~~~jsx
-<p className="sr-only" aria-live="polite">{announcement}</p>
+<p className="sr-only" aria-live="polite">
+  {announcement}
+</p>
 ~~~
 
 📌 **Interview term: Live region** — an element whose text changes are announced by screen readers. A badge changing from 0 to 1 is silent; the polite "1 new notification" makes it audible without stealing focus.
@@ -3697,7 +4441,7 @@ The ids come from a <code>useRef</code> counter so they survive re-renders witho
 
 Mounted in <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. The driver opened the bell, clicked the first unread item, pressed Mark all as read, pressed Escape inside the panel, simulated 1 and then 120 new notifications, reopened the panel and clicked on <code>document.body</code>. Output, RENDERED line removed:
 
-~~~
+~~~text
 initial                badge="2" aria-label="Notifications, 2 unread" expanded=false panel=closed
 click bell             badge="2" aria-label="Notifications, 2 unread" expanded=true panel=open
 items: ["Unread: Sam commented on your post","Unread: Your order has shipped","Welcome to the app"]
@@ -3839,25 +4583,44 @@ export default function App() {
       return { id, text: "New notification #" + id, read: false };
     }).reverse(); // newest first; done here, never inside the updater
     setNotifications((list) => [...fresh, ...list]);
-    setAnnouncement(count === 1 ? "1 new notification" : count + " new notifications");
+    setAnnouncement(
+      count === 1 ? "1 new notification" : count + " new notifications",
+    );
   }
 
   const markRead = (id) =>
-    setNotifications((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  const markAllRead = () => setNotifications((list) => list.map((n) => ({ ...n, read: true })));
+    setNotifications((list) =>
+      list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  const markAllRead = () =>
+    setNotifications((list) => list.map((n) => ({ ...n, read: true })));
 
   return (
     <main className="app">
       <header className="bar">
         <span className="brand">Inbox</span>
-        <NotificationBell notifications={notifications} max={99}
-          onMarkRead={markRead} onMarkAllRead={markAllRead} />
+        <NotificationBell
+          notifications={notifications}
+          max={99}
+          onMarkRead={markRead}
+          onMarkAllRead={markAllRead}
+        />
       </header>
       <div className="controls">
-        <button type="button" data-testid="add-1" onClick={() => simulate(1)}>Simulate 1 new</button>
-        <button type="button" data-testid="add-120" onClick={() => simulate(120)}>Simulate 120 new</button>
+        <button type="button" data-testid="add-1" onClick={() => simulate(1)}>
+          Simulate 1 new
+        </button>
+        <button
+          type="button"
+          data-testid="add-120"
+          onClick={() => simulate(120)}
+        >
+          Simulate 120 new
+        </button>
       </div>
-      <p className="sr-only" aria-live="polite" data-testid="live">{announcement}</p>
+      <p className="sr-only" aria-live="polite" data-testid="live">
+        {announcement}
+      </p>
     </main>
   );
 }
@@ -3868,7 +4631,12 @@ export function badgeLabel(count, max) {
   return count > max ? max + "+" : String(count);
 }
 
-export default function NotificationBell({ notifications, max = 99, onMarkRead, onMarkAllRead }) {
+export default function NotificationBell({
+  notifications,
+  max = 99,
+  onMarkRead,
+  onMarkAllRead,
+}) {
   const panelId = useId();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -3876,13 +4644,18 @@ export default function NotificationBell({ notifications, max = 99, onMarkRead, 
 
   // Derived, never stored: the badge can never disagree with the list.
   const unread = notifications.filter((n) => !n.read).length;
-  const ariaLabel = unread === 0 ? "Notifications, no unread" : "Notifications, " + unread + " unread";
+  const ariaLabel =
+    unread === 0
+      ? "Notifications, no unread"
+      : "Notifications, " + unread + " unread";
 
-  // Close on a click outside, only while open; the cleanup removes the listener.
+  // Close on a click outside, only while
+  // open; the cleanup removes the listener.
   useEffect(() => {
     if (!open) return;
     const onDocClick = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target))
+        setOpen(false);
     };
     document.addEventListener("click", onDocClick);
     return () => document.removeEventListener("click", onDocClick);
@@ -3918,8 +4691,13 @@ export default function NotificationBell({ notifications, max = 99, onMarkRead, 
         <div id={panelId} className="panel" data-testid="panel">
           <div className="panel-head">
             <strong>Notifications</strong>
-            <button type="button" className="text-btn" data-testid="mark-all"
-              disabled={unread === 0} onClick={onMarkAllRead}>
+            <button
+              type="button"
+              className="text-btn"
+              data-testid="mark-all"
+              disabled={unread === 0}
+              onClick={onMarkAllRead}
+            >
               Mark all as read
             </button>
           </div>
@@ -3929,9 +4707,12 @@ export default function NotificationBell({ notifications, max = 99, onMarkRead, 
             <ul>
               {notifications.slice(0, 8).map((n) => (
                 <li key={n.id}>
-                  <button type="button" data-testid="item"
+                  <button
+                    type="button"
+                    data-testid="item"
                     className={n.read ? "item" : "item unread"}
-                    onClick={() => onMarkRead(n.id)}>
+                    onClick={() => onMarkRead(n.id)}
+                  >
                     {!n.read && <span className="sr-only">Unread: </span>}
                     {n.text}
                   </button>
@@ -3945,29 +4726,154 @@ export default function NotificationBell({ notifications, max = 99, onMarkRead, 
   );
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #161a21; border: 1px solid #2a3140; border-radius: 12px; }
-.brand { font-weight: 700; }
-.bell-wrap { position: relative; }
-.bell { position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1f2530; font-size: 1.3rem; cursor: pointer; }
-.bell:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }
-.badge { position: absolute; top: -2px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
-  border-radius: 10px; background: #e53935; color: #fff; font-size: 0.72rem; font-weight: 700; line-height: 20px; text-align: center;
-  border: 2px solid #161a21; font-variant-numeric: tabular-nums; }
-.panel { position: absolute; right: 0; top: 52px; width: min(320px, calc(100vw - 32px)); background: #161a21; border: 1px solid #2a3140; border-radius: 12px; box-shadow: 0 8px 24px #0008; z-index: 10; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2a3140; }
-.panel ul { list-style: none; margin: 0; padding: 4px; }
-.item { width: 100%; text-align: left; padding: 10px; border: 0; border-radius: 8px; background: none; color: #9aa4b2; font: inherit; cursor: pointer; }
-.item:hover { background: #1f2530; }
-.item.unread { color: #e6e6e6; font-weight: 600; }
-.item.unread::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #5b9dff; }
-.text-btn { border: 0; background: none; color: #5b9dff; font: inherit; font-size: 0.85rem; cursor: pointer; }
-.text-btn:disabled { color: #6b7585; cursor: default; }
-.empty { padding: 12px; margin: 0; color: #9aa4b2; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.controls button { padding: 8px 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+}
+.brand {
+  font-weight: 700;
+}
+.bell-wrap {
+  position: relative;
+}
+.bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #1f2530;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.bell:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+}
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #e53935;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  border: 2px solid #161a21;
+  font-variant-numeric: tabular-nums;
+}
+.panel {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  width: min(320px, calc(100vw - 32px));
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px #0008;
+  z-index: 10;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a3140;
+}
+.panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+.item {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #9aa4b2;
+  font: inherit;
+  cursor: pointer;
+}
+.item:hover {
+  background: #1f2530;
+}
+.item.unread {
+  color: #e6e6e6;
+  font-weight: 600;
+}
+.item.unread::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #5b9dff;
+}
+.text-btn {
+  border: 0;
+  background: none;
+  color: #5b9dff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.text-btn:disabled {
+  color: #6b7585;
+  cursor: default;
+}
+.empty {
+  padding: 12px;
+  margin: 0;
+  color: #9aa4b2;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.controls button {
+  padding: 8px 14px;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  background: #1f2530;
+  color: #e6e6e6;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -4005,10 +4911,16 @@ const props = defineProps({
 });
 const emit = defineEmits(["mark-read", "mark-all-read"]);
 
-const unread = computed(() => props.notifications.filter((n) => !n.read).length);
-const badge = computed(() => (unread.value > props.max ? props.max + "+" : String(unread.value)));
+const unread = computed(
+  () => props.notifications.filter((n) => !n.read).length,
+);
+const badge = computed(() =>
+  unread.value > props.max ? props.max + "+" : String(unread.value),
+);
 const ariaLabel = computed(() =>
-  unread.value === 0 ? "Notifications, no unread" : "Notifications, " + unread.value + " unread"
+  unread.value === 0
+    ? "Notifications, no unread"
+    : "Notifications, " + unread.value + " unread",
 );
 const visible = computed(() => props.notifications.slice(0, 8));
 ~~~
@@ -4019,16 +4931,28 @@ const visible = computed(() => props.notifications.slice(0, 8));
 
 ~~~vue
 <div class="bell-wrap" ref="wrap" @keydown.esc="close">
-  <button ref="bell" type="button" class="bell"
-    :aria-label="ariaLabel" :aria-expanded="open" :aria-controls="panelId"
-    @click="open = !open">
+  <button
+    ref="bell"
+    type="button"
+    class="bell"
+    :aria-label="ariaLabel"
+    :aria-expanded="open"
+    :aria-controls="panelId"
+    @click="open = !open"
+  >
     <span aria-hidden="true">🔔</span>
-    <span v-if="unread > 0" class="badge" aria-hidden="true">{{ badge }}</span>
+    <span v-if="unread > 0" class="badge" aria-hidden="true">{{
+      badge
+    }}</span>
   </button>
   <div v-if="open" :id="panelId" class="panel">
     ...
     <li v-for="n in visible" :key="n.id">
-      <button type="button" :class="['item', { unread: !n.read }]" @click="emit('mark-read', n.id)">
+      <button
+        type="button"
+        :class="['item', { unread: !n.read }]"
+        @click="emit('mark-read', n.id)"
+      >
         <span v-if="!n.read" class="sr-only">Unread: </span>{{ n.text }}
       </button>
     </li>
@@ -4046,7 +4970,8 @@ const visible = computed(() => props.notifications.slice(0, 8));
 watch(open, (isOpen, _old, onCleanup) => {
   if (!isOpen) return;
   const onDocClick = (e) => {
-    if (wrap.value && !wrap.value.contains(e.target)) open.value = false;
+    if (wrap.value && !wrap.value.contains(e.target))
+      open.value = false;
   };
   document.addEventListener("click", onDocClick);
   onCleanup(() => document.removeEventListener("click", onDocClick));
@@ -4068,7 +4993,8 @@ function simulate(count) {
     return { id, text: "New notification #" + id, read: false };
   }).reverse();
   notifications.value = [...fresh, ...notifications.value];
-  announcement.value = count === 1 ? "1 new notification" : count + " new notifications";
+  announcement.value =
+    count === 1 ? "1 new notification" : count + " new notifications";
 }
 function markRead(id) {
   const n = notifications.value.find((x) => x.id === id);
@@ -4082,7 +5008,7 @@ Mutating <code>n.read</code> directly is idiomatic in Vue because the array is d
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44. The driver opened the bell, read one item, marked all read, pressed Escape inside the panel, simulated 1 and 120 arrivals, reopened, and clicked the page body:
 
-~~~
+~~~text
 initial                badge="2" aria-label="Notifications, 2 unread" expanded=false panel=closed
 click bell             badge="2" aria-label="Notifications, 2 unread" expanded=true panel=open
 items: ["Unread: Sam commented on your post","Unread: Your order has shipped","Welcome to the app"]
@@ -4210,7 +5136,8 @@ function simulate(count) {
     return { id, text: "New notification #" + id, read: false };
   }).reverse();
   notifications.value = [...fresh, ...notifications.value];
-  announcement.value = count === 1 ? "1 new notification" : count + " new notifications";
+  announcement.value =
+    count === 1 ? "1 new notification" : count + " new notifications";
 }
 
 function markRead(id) {
@@ -4230,20 +5157,63 @@ function markAllRead() {
         @mark-read="markRead" @mark-all-read="markAllRead" />
     </header>
     <div class="controls">
-      <button type="button" data-testid="add-1" @click="simulate(1)">Simulate 1 new</button>
-      <button type="button" data-testid="add-120" @click="simulate(120)">Simulate 120 new</button>
+      <button
+        type="button"
+        data-testid="add-1"
+        @click="simulate(1)"
+      >Simulate 1 new</button>
+      <button
+        type="button"
+        data-testid="add-120"
+        @click="simulate(120)"
+      >Simulate 120 new</button>
     </div>
-    <p class="sr-only" aria-live="polite" data-testid="live">{{ announcement }}</p>
+    <p
+      class="sr-only"
+      aria-live="polite"
+      data-testid="live"
+    >{{ announcement }}</p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #161a21; border: 1px solid #2a3140; border-radius: 12px; }
-.brand { font-weight: 700; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.controls button { padding: 8px 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+}
+.brand {
+  font-weight: 700;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.controls button {
+  padding: 8px 14px;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+  background: #1f2530;
+  color: #e6e6e6;
+  cursor: pointer;
+}
 </style>
 `,
         "/src/components/NotificationBell.vue": `<script setup>
@@ -4261,10 +5231,16 @@ const wrap = useTemplateRef("wrap");
 const bell = useTemplateRef("bell");
 
 // Derived with computed(): the badge can never disagree with the list.
-const unread = computed(() => props.notifications.filter((n) => !n.read).length);
-const badge = computed(() => (unread.value > props.max ? props.max + "+" : String(unread.value)));
+const unread = computed(
+  () => props.notifications.filter((n) => !n.read).length,
+);
+const badge = computed(() =>
+  unread.value > props.max ? props.max + "+" : String(unread.value),
+);
 const ariaLabel = computed(() =>
-  unread.value === 0 ? "Notifications, no unread" : "Notifications, " + unread.value + " unread"
+  unread.value === 0
+    ? "Notifications, no unread"
+    : "Notifications, " + unread.value + " unread",
 );
 const visible = computed(() => props.notifications.slice(0, 8));
 
@@ -4298,7 +5274,12 @@ function close() {
       @click="open = !open"
     >
       <span aria-hidden="true">🔔</span>
-      <span v-if="unread > 0" class="badge" data-testid="badge" aria-hidden="true">{{ badge }}</span>
+      <span
+        v-if="unread > 0"
+        class="badge"
+        data-testid="badge"
+        aria-hidden="true"
+      >{{ badge }}</span>
     </button>
     <div v-if="open" :id="panelId" class="panel" data-testid="panel">
       <div class="panel-head">
@@ -4308,7 +5289,10 @@ function close() {
           Mark all as read
         </button>
       </div>
-      <p v-if="notifications.length === 0" class="empty">You are all caught up.</p>
+      <p
+        v-if="notifications.length === 0"
+        class="empty"
+      >You are all caught up.</p>
       <ul v-else>
         <li v-for="n in visible" :key="n.id">
           <button type="button" data-testid="item" :class="['item', { unread: !n.read }]"
@@ -4322,23 +5306,117 @@ function close() {
 </template>
 
 <style>
-.bell-wrap { position: relative; }
-.bell { position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1f2530; font-size: 1.3rem; cursor: pointer; }
-.bell:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }
-.badge { position: absolute; top: -2px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box;
-  border-radius: 10px; background: #e53935; color: #fff; font-size: 0.72rem; font-weight: 700; line-height: 20px; text-align: center;
-  border: 2px solid #161a21; font-variant-numeric: tabular-nums; }
-.panel { position: absolute; right: 0; top: 52px; width: min(320px, calc(100vw - 32px)); background: #161a21; border: 1px solid #2a3140; border-radius: 12px; box-shadow: 0 8px 24px #0008; z-index: 10; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2a3140; }
-.panel ul { list-style: none; margin: 0; padding: 4px; }
-.item { width: 100%; text-align: left; padding: 10px; border: 0; border-radius: 8px; background: none; color: #9aa4b2; font: inherit; cursor: pointer; }
-.item:hover { background: #1f2530; }
-.item.unread { color: #e6e6e6; font-weight: 600; }
-.item.unread::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #5b9dff; }
-.text-btn { border: 0; background: none; color: #5b9dff; font: inherit; font-size: 0.85rem; cursor: pointer; }
-.text-btn:disabled { color: #6b7585; cursor: default; }
-.empty { padding: 12px; margin: 0; color: #9aa4b2; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.bell-wrap {
+  position: relative;
+}
+.bell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #1f2530;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.bell:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+}
+.badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #e53935;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  border: 2px solid #161a21;
+  font-variant-numeric: tabular-nums;
+}
+.panel {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  width: min(320px, calc(100vw - 32px));
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px #0008;
+  z-index: 10;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a3140;
+}
+.panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+.item {
+  width: 100%;
+  text-align: left;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #9aa4b2;
+  font: inherit;
+  cursor: pointer;
+}
+.item:hover {
+  background: #1f2530;
+}
+.item.unread {
+  color: #e6e6e6;
+  font-weight: 600;
+}
+.item.unread::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #5b9dff;
+}
+.text-btn {
+  border: 0;
+  background: none;
+  color: #5b9dff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.text-btn:disabled {
+  color: #6b7585;
+  cursor: default;
+}
+.empty {
+  padding: 12px;
+  margin: 0;
+  color: #9aa4b2;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
         },
@@ -4373,12 +5451,20 @@ A bell with a badge (exact count, <code>99+</code> above 99, hidden at zero), a 
 
 ~~~ts
 private readonly list = signal<Notification[]>([]);
-ngOnChanges() { this.list.set(this.notifications); }
+ngOnChanges() {
+  this.list.set(this.notifications);
+}
 
-readonly unread = computed(() => this.list().filter((n) => !n.read).length);
-readonly badge = computed(() => (this.unread() > this.max ? this.max + "+" : String(this.unread())));
+readonly unread = computed(
+  () => this.list().filter((n) => !n.read).length,
+);
+readonly badge = computed(() =>
+  this.unread() > this.max ? this.max + "+" : String(this.unread()),
+);
 readonly ariaLabel = computed(() =>
-  this.unread() === 0 ? "Notifications, no unread" : "Notifications, " + this.unread() + " unread"
+  this.unread() === 0
+    ? "Notifications, no unread"
+    : "Notifications, " + this.unread() + " unread",
 );
 readonly visible = computed(() => this.list().slice(0, 8));
 ~~~
@@ -4405,7 +5491,12 @@ readonly visible = computed(() => this.list().slice(0, 8));
       <ul>
         @for (n of visible(); track n.id) {
           <li>
-            <button type="button" class="item" [class.unread]="!n.read" (click)="markRead.emit(n.id)">
+            <button
+              type="button"
+              class="item"
+              [class.unread]="!n.read"
+              (click)="markRead.emit(n.id)"
+            >
               @if (!n.read) {<span class="sr-only">Unread: </span>}{{ n.text }}
             </button>
           </li>
@@ -4425,7 +5516,11 @@ private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
 @HostListener("document:click", ["$event"])
 onDocumentClick(e: MouseEvent) {
-  if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+  if (
+    this.open() &&
+    !this.host.nativeElement.contains(e.target as Node)
+  )
+    this.open.set(false);
 }
 
 @HostListener("keydown.escape")
@@ -4449,10 +5544,14 @@ simulate(count: number) {
     return { id, text: "New notification #" + id, read: false };
   }).reverse();
   this.notifications.update((list) => [...fresh, ...list]);
-  this.announcement.set(count === 1 ? "1 new notification" : count + " new notifications");
+  this.announcement.set(
+    count === 1 ? "1 new notification" : count + " new notifications",
+  );
 }
 markRead(id: number) {
-  this.notifications.update((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  this.notifications.update((list) =>
+    list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+  );
 }
 ~~~
 
@@ -4462,7 +5561,7 @@ The parent binds <code>[notifications]="notifications()"</code> and <code>(markR
 
 Playground (JIT) run; the AOT run printed the same:
 
-~~~
+~~~text
 initial                badge="2" aria-label="Notifications, 2 unread" expanded=false panel=closed
 click bell             badge="2" aria-label="Notifications, 2 unread" expanded=true panel=open
 items: ["Unread: Sam commented on your post","Unread: Your order has shipped","Welcome to the app"]
@@ -4572,7 +5671,10 @@ Badge 2 → 1 → hidden; exact counts in the accessible name; Escape closes and
 **Conclusion:** In Angular the notification bell receives the list as an input, mirrors it into a signal, and derives the unread count, the <code>99+</code> label and the accessible name with <code>computed()</code>. Outputs send read requests to the parent, which updates the list immutably; <code>@HostListener</code> handles Escape and outside clicks with automatic cleanup. Both compile modes on Angular 22.2.3 produced the same verified behaviour.`,
         files: {
         "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { Notification, NotificationBellComponent } from "./notification-bell.component";
+import {
+  Notification,
+  NotificationBellComponent,
+} from "./notification-bell.component";
 
 @Component({
   selector: "app-root",
@@ -4586,13 +5688,26 @@ import { Notification, NotificationBellComponent } from "./notification-bell.com
           (markRead)="markRead($event)" (markAllRead)="markAllRead()" />
       </header>
       <div class="controls">
-        <button type="button" data-testid="add-1" (click)="simulate(1)">Simulate 1 new</button>
-        <button type="button" data-testid="add-120" (click)="simulate(120)">Simulate 120 new</button>
+        <button
+          type="button"
+          data-testid="add-1"
+          (click)="simulate(1)"
+        >Simulate 1 new</button>
+        <button
+          type="button"
+          data-testid="add-120"
+          (click)="simulate(120)"
+        >Simulate 120 new</button>
       </div>
-      <p class="sr-only" aria-live="polite" data-testid="live">{{ announcement() }}</p>
+      <p
+        class="sr-only"
+        aria-live="polite"
+        data-testid="live"
+      >{{ announcement() }}</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 560px; margin: 0 auto; padding: 16px; }
     .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #161a21; border: 1px solid #2a3140; border-radius: 12px; }
@@ -4600,7 +5715,8 @@ import { Notification, NotificationBellComponent } from "./notification-bell.com
     .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
     .controls button { padding: 8px 14px; border: 1px solid #333a47; border-radius: 8px; background: #1f2530; color: #e6e6e6; cursor: pointer; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly notifications = signal<Notification[]>([
@@ -4618,22 +5734,44 @@ export class AppComponent {
       return { id, text: "New notification #" + id, read: false };
     }).reverse();
     this.notifications.update((list) => [...fresh, ...list]);
-    this.announcement.set(count === 1 ? "1 new notification" : count + " new notifications");
+    this.announcement.set(
+      count === 1 ? "1 new notification" : count + " new notifications",
+    );
   }
 
   // New arrays and objects: the child mirrors the input with ngOnChanges,
   // which only fires when the array reference changes.
   markRead(id: number) {
-    this.notifications.update((list) => list.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    this.notifications.update((list) =>
+      list.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
   }
   markAllRead() {
-    this.notifications.update((list) => list.map((n) => ({ ...n, read: true })));
+    this.notifications.update((list) =>
+      list.map((n) => ({ ...n, read: true })),
+    );
   }
 }
 `,
-        "/src/app/notification-bell.component.ts": `import { Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, Output, ViewChild, computed, inject, signal } from "@angular/core";
+        "/src/app/notification-bell.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnChanges,
+  Output,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 
-export interface Notification { id: number; text: string; read: boolean; }
+export interface Notification {
+  id: number;
+  text: string;
+  read: boolean;
+}
 
 let nextId = 0;
 
@@ -4654,7 +5792,11 @@ let nextId = 0;
       >
         <span aria-hidden="true">🔔</span>
         @if (unread() > 0) {
-          <span class="badge" data-testid="badge" aria-hidden="true">{{ badge() }}</span>
+          <span
+            class="badge"
+            data-testid="badge"
+            aria-hidden="true"
+          >{{ badge() }}</span>
         }
       </button>
       @if (open()) {
@@ -4684,7 +5826,8 @@ let nextId = 0;
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .bell-wrap { position: relative; }
     .bell { position: relative; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #1f2530; font-size: 1.3rem; cursor: pointer; }
@@ -4703,7 +5846,8 @@ let nextId = 0;
     .text-btn:disabled { color: #6b7585; cursor: default; }
     .empty { padding: 12px; margin: 0; color: #9aa4b2; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class NotificationBellComponent implements OnChanges {
   @Input({ required: true }) notifications: Notification[] = [];
@@ -4718,18 +5862,25 @@ export class NotificationBellComponent implements OnChanges {
 
   // Mirror the @Input into a signal so computed() can track it.
   private readonly list = signal<Notification[]>([]);
-  ngOnChanges() { this.list.set(this.notifications); }
+  ngOnChanges() {
+    this.list.set(this.notifications);
+  }
 
   readonly unread = computed(() => this.list().filter((n) => !n.read).length);
-  readonly badge = computed(() => (this.unread() > this.max ? this.max + "+" : String(this.unread())));
+  readonly badge = computed(() =>
+    this.unread() > this.max ? this.max + "+" : String(this.unread()),
+  );
   readonly ariaLabel = computed(() =>
-    this.unread() === 0 ? "Notifications, no unread" : "Notifications, " + this.unread() + " unread"
+    this.unread() === 0
+      ? "Notifications, no unread"
+      : "Notifications, " + this.unread() + " unread",
   );
   readonly visible = computed(() => this.list().slice(0, 8));
 
   @HostListener("document:click", ["$event"])
   onDocumentClick(e: MouseEvent) {
-    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.nativeElement.contains(e.target as Node))
+      this.open.set(false);
   }
 
   @HostListener("keydown.escape")
@@ -4875,12 +6026,14 @@ export function validate(label, value) {
 }
 
 export function cellValue(row, col, rows) {
-  return col % 2 === 0 ? col * rows + row + 1 : col * rows + (rows - row);
+  return col % 2 === 0
+    ? col * rows + row + 1
+    : col * rows + (rows - row);
 }
 
 export function buildGrid(rows, cols) {
   return Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows))
+    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows)),
   );
 }
 ~~~
@@ -4898,13 +6051,20 @@ const [draft, setDraft] = useState({ rows: "", cols: "" });
 const [size, setSize] = useState(null);
 const [errors, setErrors] = useState({ rows: "", cols: "" });
 
-const grid = useMemo(() => (size ? buildGrid(size.rows, size.cols) : []), [size]);
+const grid = useMemo(
+  () => (size ? buildGrid(size.rows, size.cols) : []),
+  [size],
+);
 
 function handleSubmit(e) {
   e.preventDefault();
-  const next = { rows: validate("Rows", draft.rows), cols: validate("Columns", draft.cols) };
+  const next = {
+    rows: validate("Rows", draft.rows),
+    cols: validate("Columns", draft.cols),
+  };
   setErrors(next);
-  if (next.rows || next.cols) return; // keep showing the last valid table
+  // keep showing the last valid table
+  if (next.rows || next.cols) return;
   setSize({ rows: Number(draft.rows), cols: Number(draft.cols) });
 }
 ~~~
@@ -4929,7 +6089,13 @@ Using the form's <code>onSubmit</code> (not the button's <code>onClick</code>) m
   aria-invalid={errors[key] ? true : undefined}
   aria-describedby={errors[key] ? key + "-error" : undefined}
 />
-{errors[key] && <p id={key + "-error"} className="error">{errors[key]}</p>}
+{
+  errors[key] && (
+    <p id={key + "-error"} className="error">
+      {errors[key]}
+    </p>
+  );
+}
 ~~~
 
 📌 **Interview term: aria-invalid / aria-describedby** — <code>aria-invalid="true"</code> tells assistive technology the value is wrong; <code>aria-describedby</code> links the field to its error text so it is read with the field. Passing <code>undefined</code> removes the attribute entirely when there is no error, rather than leaving <code>aria-invalid="false"</code> on every field.
@@ -4940,11 +6106,15 @@ Using the form's <code>onSubmit</code> (not the button's <code>onClick</code>) m
 
 ~~~jsx
 <table>
-  <caption>{size.rows} × {size.cols} table</caption>
+  <caption>
+    {size.rows} × {size.cols} table
+  </caption>
   <tbody>
     {grid.map((row, r) => (
       <tr key={r}>
-        {row.map((value) => <td key={value}>{value}</td>)}
+        {row.map((value) => (
+          <td key={value}>{value}</td>
+        ))}
       </tr>
     ))}
   </tbody>
@@ -4959,7 +6129,7 @@ The table sits in an <code>overflow-x: auto</code> wrapper so a 20-column table 
 
 Mounted in <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. The driver typed 4 and 5 without submitting, generated, tried 0 x 2.5, an empty rows field, 1 x 1, 20 x 20 and 20 x 21. Output, RENDERED line removed:
 
-~~~
+~~~text
 initial: table=no rowsError=none colsError=none rows aria-invalid=null
 hint: "Choose a size and press Generate."
 typed 4 and 5, not submitted: table=no rowsError=none colsError=none rows aria-invalid=null
@@ -5114,7 +6284,7 @@ export function cellValue(row, col, rows) {
 
 export function buildGrid(rows, cols) {
   return Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows))
+    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows)),
   );
 }
 `,
@@ -5128,11 +6298,17 @@ export default function TableGenerator() {
   const [size, setSize] = useState(null);
   const [errors, setErrors] = useState({ rows: "", cols: "" });
 
-  const grid = useMemo(() => (size ? buildGrid(size.rows, size.cols) : []), [size]);
+  const grid = useMemo(
+    () => (size ? buildGrid(size.rows, size.cols) : []),
+    [size],
+  );
 
   function handleSubmit(e) {
     e.preventDefault();
-    const next = { rows: validate("Rows", draft.rows), cols: validate("Columns", draft.cols) };
+    const next = {
+      rows: validate("Rows", draft.rows),
+      cols: validate("Columns", draft.cols),
+    };
     setErrors(next);
     if (next.rows || next.cols) return; // keep showing the last valid table
     setSize({ rows: Number(draft.rows), cols: Number(draft.cols) });
@@ -5153,7 +6329,11 @@ export default function TableGenerator() {
         aria-invalid={errors[key] ? true : undefined}
         aria-describedby={errors[key] ? key + "-error" : undefined}
       />
-      {errors[key] && <p id={key + "-error"} className="error" data-testid={key + "-error"}>{errors[key]}</p>}
+      {errors[key] && (
+        <p id={key + "-error"} className="error" data-testid={key + "-error"}>
+          {errors[key]}
+        </p>
+      )}
     </div>
   );
 
@@ -5162,44 +6342,121 @@ export default function TableGenerator() {
       <form className="controls" onSubmit={handleSubmit} noValidate>
         {field("rows", "Rows")}
         {field("cols", "Columns")}
-        <button type="submit" data-testid="generate">Generate</button>
+        <button type="submit" data-testid="generate">
+          Generate
+        </button>
       </form>
       {size ? (
         <div className="table-scroll">
           <table data-testid="table">
-            <caption>{size.rows} × {size.cols} table</caption>
+            <caption>
+              {size.rows} × {size.cols} table
+            </caption>
             <tbody>
               {grid.map((row, r) => (
                 <tr key={r}>
-                  {row.map((value) => <td key={value}>{value}</td>)}
+                  {row.map((value) => (
+                    <td key={value}>{value}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ) : (
-        <p className="hint" data-testid="hint">Choose a size and press Generate.</p>
+        <p className="hint" data-testid="hint">
+          Choose a size and press Generate.
+        </p>
       )}
     </section>
   );
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
-.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
-.field { display: grid; gap: 4px; }
-label { font-size: 0.85rem; color: #b8c0cc; }
-input { width: 110px; padding: 8px; font: inherit; color: inherit; background: #181b22; border: 1px solid #333a47; border-radius: 8px; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-input:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-.error { margin: 0; max-width: 220px; font-size: 0.8rem; color: #ff8a80; }
-button { margin-top: 21px; padding: 9px 18px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-.hint { color: #9aa4b2; }
-.table-scroll { overflow-x: auto; }
-table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-caption { text-align: left; padding-bottom: 6px; color: #9aa4b2; font-size: 0.85rem; }
-td { min-width: 36px; padding: 6px 8px; text-align: center; border: 1px solid #333a47; background: #161a21; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+}
+label {
+  font-size: 0.85rem;
+  color: #b8c0cc;
+}
+input {
+  width: 110px;
+  padding: 8px;
+  font: inherit;
+  color: inherit;
+  background: #181b22;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+.error {
+  margin: 0;
+  max-width: 220px;
+  font-size: 0.8rem;
+  color: #ff8a80;
+}
+button {
+  margin-top: 21px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hint {
+  color: #9aa4b2;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+caption {
+  text-align: left;
+  padding-bottom: 6px;
+  color: #9aa4b2;
+  font-size: 0.85rem;
+}
+td {
+  min-width: 36px;
+  padding: 6px 8px;
+  text-align: center;
+  border: 1px solid #333a47;
+  background: #161a21;
+}
 `,
         },
       },
@@ -5239,12 +6496,18 @@ Rows and Columns inputs (1 to 20), a Generate button, Enter submits, per-field e
 ### Step 2: the v-model number surprise
 
 ~~~vue
-<input type="number" inputmode="numeric" min="1" :max="MAX" v-model="draft[f.key]" />
+<input
+  type="number"
+  inputmode="numeric"
+  min="1"
+  :max="MAX"
+  v-model="draft[f.key]"
+/>
 ~~~
 
 📌 **Interview term: v-model on type="number"** — Vue casts the value to a number automatically when the input's type is <code>number</code>, as if you had written <code>v-model.number</code> ([v-model modifiers](/interview-question/what-are-v-model-modifiers)). In the 3.5.44 runtime this is the line <code>const castToNumber = number || vnode.props &amp;&amp; vnode.props.type === "number"</code> in <code>vModelText</code>. A copy of the solution logging the draft on each submit printed:
 
-~~~
+~~~text
 draft: {"rows":4,"cols":5} number number
 draft: {"rows":0,"cols":2.5} number number
 draft: {"rows":"","cols":2.5} string number
@@ -5258,7 +6521,9 @@ So the draft is a number when parseable and the empty string when the box is emp
 const draft = reactive({ rows: "", cols: "" });
 const size = ref(null);
 const errors = reactive({ rows: "", cols: "" });
-const grid = computed(() => (size.value ? buildGrid(size.value.rows, size.value.cols) : []));
+const grid = computed(() =>
+  size.value ? buildGrid(size.value.rows, size.value.cols) : [],
+);
 
 function generate() {
   errors.rows = validate("Rows", draft.rows);
@@ -5280,7 +6545,11 @@ The form uses <code>@submit.prevent="generate"</code> with <code>novalidate</cod
   <input :id="f.key" type="number" v-model="draft[f.key]"
     :aria-invalid="errors[f.key] ? true : undefined"
     :aria-describedby="errors[f.key] ? f.key + '-error' : undefined" />
-  <p v-if="errors[f.key]" :id="f.key + '-error'" class="error">{{ errors[f.key] }}</p>
+  <p
+    v-if="errors[f.key]"
+    :id="f.key + '-error'"
+    class="error"
+  >{{ errors[f.key] }}</p>
 </div>
 ...
 <table v-if="size">
@@ -5300,7 +6569,7 @@ Binding <code>undefined</code> removes the attribute entirely. Nested <code>v-fo
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44:
 
-~~~
+~~~text
 initial: table=no rowsError=none colsError=none rows aria-invalid=null
 hint: "Choose a size and press Generate."
 typed 4 and 5, not submitted: table=no rowsError=none colsError=none rows aria-invalid=null
@@ -5422,9 +6691,20 @@ import TableGenerator from "./components/TableGenerator.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.3rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
 </style>
 `,
         "/src/components/TableGenerator.vue": `<script setup>
@@ -5438,7 +6718,9 @@ const draft = reactive({ rows: "", cols: "" });
 const size = ref(null);
 const errors = reactive({ rows: "", cols: "" });
 
-const grid = computed(() => (size.value ? buildGrid(size.value.rows, size.value.cols) : []));
+const grid = computed(() =>
+  size.value ? buildGrid(size.value.rows, size.value.cols) : [],
+);
 
 function generate() {
   errors.rows = validate("Rows", draft.rows);
@@ -5469,7 +6751,12 @@ const fields = [
           :aria-invalid="errors[f.key] ? true : undefined"
           :aria-describedby="errors[f.key] ? f.key + '-error' : undefined"
         />
-        <p v-if="errors[f.key]" :id="f.key + '-error'" class="error" :data-testid="f.key + '-error'">
+        <p
+          v-if="errors[f.key]"
+          :id="f.key + '-error'"
+          class="error"
+          :data-testid="f.key + '-error'"
+        >
           {{ errors[f.key] }}
         </p>
       </div>
@@ -5485,24 +6772,86 @@ const fields = [
         </tbody>
       </table>
     </div>
-    <p v-else class="hint" data-testid="hint">Choose a size and press Generate.</p>
+    <p
+      v-else
+      class="hint"
+      data-testid="hint"
+    >Choose a size and press Generate.</p>
   </section>
 </template>
 
 <style>
-.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
-.field { display: grid; gap: 4px; }
-label { font-size: 0.85rem; color: #b8c0cc; }
-input { width: 110px; padding: 8px; font: inherit; color: inherit; background: #181b22; border: 1px solid #333a47; border-radius: 8px; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-input:focus-visible, button:focus-visible { outline: 2px solid #5b9dff; outline-offset: 1px; }
-.error { margin: 0; max-width: 220px; font-size: 0.8rem; color: #ff8a80; }
-button { margin-top: 21px; padding: 9px 18px; border: 0; border-radius: 8px; background: #5b9dff; color: #0b1220; font-weight: 600; cursor: pointer; }
-.hint { color: #9aa4b2; }
-.table-scroll { overflow-x: auto; }
-table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-caption { text-align: left; padding-bottom: 6px; color: #9aa4b2; font-size: 0.85rem; }
-td { min-width: 36px; padding: 6px 8px; text-align: center; border: 1px solid #333a47; background: #161a21; }
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.field {
+  display: grid;
+  gap: 4px;
+}
+label {
+  font-size: 0.85rem;
+  color: #b8c0cc;
+}
+input {
+  width: 110px;
+  padding: 8px;
+  font: inherit;
+  color: inherit;
+  background: #181b22;
+  border: 1px solid #333a47;
+  border-radius: 8px;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 1px;
+}
+.error {
+  margin: 0;
+  max-width: 220px;
+  font-size: 0.8rem;
+  color: #ff8a80;
+}
+button {
+  margin-top: 21px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #5b9dff;
+  color: #0b1220;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hint {
+  color: #9aa4b2;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+table {
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+caption {
+  text-align: left;
+  padding-bottom: 6px;
+  color: #9aa4b2;
+  font-size: 0.85rem;
+}
+td {
+  min-width: 36px;
+  padding: 6px 8px;
+  text-align: center;
+  border: 1px solid #333a47;
+  background: #161a21;
+}
 </style>
 `,
         "/src/table.js": `export const MAX = 20;
@@ -5524,7 +6873,7 @@ export function cellValue(row, col, rows) {
 
 export function buildGrid(rows, cols) {
   return Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows))
+    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows)),
   );
 }
 `,
@@ -5578,7 +6927,7 @@ Rows and Columns (1 to 20), Generate on submit, Enter submits, per-field errors 
 
 📌 **Interview term: NumberValueAccessor** — the <code>FormsModule</code> directive that connects <code>ngModel</code> to <code>&lt;input type="number"&gt;</code>. It converts the text to a number, and to <code>null</code> when the box is empty. A copy of the solution logging the draft on each submit printed:
 
-~~~
+~~~text
 draft: {"rows":4,"cols":5} number number
 draft: {"rows":0,"cols":2.5} number number
 draft: {"rows":null,"cols":2.5} object number
@@ -5598,7 +6947,10 @@ readonly grid = computed(() => {
 
 generate() {
   const d = this.draft();
-  const next = { rows: validate("Rows", d.rows ?? ""), cols: validate("Columns", d.cols ?? "") };
+  const next = {
+    rows: validate("Rows", d.rows ?? ""),
+    cols: validate("Columns", d.cols ?? ""),
+  };
   this.errors.set(next);
   if (next.rows || next.cols) return; // keep the last valid table
   this.size.set({ rows: Number(d.rows), cols: Number(d.cols) });
@@ -5636,7 +6988,7 @@ Rows never reorder, so <code>track $index</code> is fine for them; cell values a
 
 Playground (JIT) run; AOT was identical:
 
-~~~
+~~~text
 initial: table=no rowsError=none colsError=none rows aria-invalid=null
 hint: "Choose a size and press Generate."
 typed 4 and 5, not submitted: table=no rowsError=none colsError=none rows aria-invalid=null
@@ -5760,11 +7112,25 @@ import { TableGeneratorComponent } from "./table-generator.component";
       <app-table-generator />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .app { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.3rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -5796,7 +7162,11 @@ import { buildGrid, MAX, validate } from "./table";
             [attr.aria-describedby]="errors()[f.key] ? f.key + '-error' : null"
           />
           @if (errors()[f.key]) {
-            <p [id]="f.key + '-error'" class="error" [attr.data-testid]="f.key + '-error'">{{ errors()[f.key] }}</p>
+            <p
+              [id]="f.key + '-error'"
+              class="error"
+              [attr.data-testid]="f.key + '-error'"
+            >{{ errors()[f.key] }}</p>
           }
         </div>
       }
@@ -5821,7 +7191,8 @@ import { buildGrid, MAX, validate } from "./table";
       <p class="hint" data-testid="hint">Choose a size and press Generate.</p>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
     .field { display: grid; gap: 4px; }
     label { font-size: 0.85rem; color: #b8c0cc; }
@@ -5835,7 +7206,8 @@ import { buildGrid, MAX, validate } from "./table";
     table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
     caption { text-align: left; padding-bottom: 6px; color: #9aa4b2; font-size: 0.85rem; }
     td { min-width: 36px; padding: 6px 8px; text-align: center; border: 1px solid #333a47; background: #161a21; }
-  \`],
+  \`,
+  ],
 })
 export class TableGeneratorComponent {
   readonly max = MAX;
@@ -5845,7 +7217,10 @@ export class TableGeneratorComponent {
   ];
 
   // Draft: what is in the inputs now. Committed: the last valid size.
-  readonly draft = signal<{ rows: number | null; cols: number | null }>({ rows: null, cols: null });
+  readonly draft = signal<{ rows: number | null; cols: number | null }>({
+    rows: null,
+    cols: null,
+  });
   readonly size = signal<{ rows: number; cols: number } | null>(null);
   readonly errors = signal({ rows: "", cols: "" });
 
@@ -5860,7 +7235,10 @@ export class TableGeneratorComponent {
 
   generate() {
     const d = this.draft();
-    const next = { rows: validate("Rows", d.rows ?? ""), cols: validate("Columns", d.cols ?? "") };
+    const next = {
+      rows: validate("Rows", d.rows ?? ""),
+      cols: validate("Columns", d.cols ?? ""),
+    };
     this.errors.set(next);
     if (next.rows || next.cols) return; // keep the last valid table
     this.size.set({ rows: Number(d.rows), cols: Number(d.cols) });
@@ -5886,7 +7264,7 @@ export function cellValue(row: number, col: number, rows: number): number {
 
 export function buildGrid(rows: number, cols: number): number[][] {
   return Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows))
+    Array.from({ length: cols }, (_, c) => cellValue(r, c, rows)),
   );
 }
 `,
@@ -5992,7 +7370,8 @@ export function initials(name) {
   const words = name.trim().split(/\\s+/).filter(Boolean);
   if (words.length === 0) return "?";
   const first = Array.from(words[0])[0];
-  const last = words.length > 1 ? Array.from(words[words.length - 1])[0] : "";
+  const last =
+    words.length > 1 ? Array.from(words[words.length - 1])[0] : "";
   return (first + last).toUpperCase();
 }
 
@@ -6034,19 +7413,35 @@ export default function Avatar({ person, size, z }) {
         role="img"
         aria-label={person.name}
         tabIndex={0}
-        style={{ width: size, height: size, background: showImage ? "#222" : colorFor(person.name) }}
+        style={{
+          width: size,
+          height: size,
+          background: showImage ? "#222" : colorFor(person.name),
+        }}
         onMouseEnter={() => setTip(true)}
         onMouseLeave={() => setTip(false)}
         onFocus={() => setTip(true)}
         onBlur={() => setTip(false)}
       >
         {showImage ? (
-          <img src={person.src} alt="" width={size} height={size} onError={() => setFailed(true)} />
+          <img
+            src={person.src}
+            alt=""
+            width={size}
+            height={size}
+            onError={() => setFailed(true)}
+          />
         ) : (
-          <span className="initials" aria-hidden="true">{initials(person.name)}</span>
+          <span className="initials" aria-hidden="true">
+            {initials(person.name)}
+          </span>
         )}
       </span>
-      {tip && <span className="tooltip" aria-hidden="true">{person.name}</span>}
+      {tip && (
+        <span className="tooltip" aria-hidden="true">
+          {person.name}
+        </span>
+      )}
     </li>
   );
 }
@@ -6063,9 +7458,17 @@ The tooltip responds to focus as well as hover, because hover-only content is un
 ### Step 4: the +N button and the group
 
 ~~~jsx
-<ul className="stack" aria-label={label + ", " + people.length + " people"}>
+<ul
+  className="stack"
+  aria-label={label + ", " + people.length + " people"}
+>
   {visible.map((p, i) => (
-    <Avatar key={p.id + ":" + (p.src || "")} person={p} size={size} z={visible.length - i} />
+    <Avatar
+      key={p.id + ":" + (p.src || "")}
+      person={p}
+      size={size}
+      z={visible.length - i}
+    />
   ))}
   {hidden.length > 0 && (
     <li className="avatar-item" style={{ zIndex: 0 }}>
@@ -6082,7 +7485,15 @@ The tooltip responds to focus as well as hover, because hover-only content is un
     </li>
   )}
 </ul>
-{showAll && <ul className="overflow-list">{hidden.map((p) => <li key={p.id}>{p.name}</li>)}</ul>}
+{
+  showAll && (
+    <ul className="overflow-list">
+      {hidden.map((p) => (
+        <li key={p.id}>{p.name}</li>
+      ))}
+    </ul>
+  );
+}
 ~~~
 
 📌 **Interview term: Stacking context and z-index** — <code>z-index</code> decides which overlapping element is painted on top, but only for positioned elements; that is why <code>.avatar-item</code> has <code>position: relative</code>. Without explicit values, later siblings paint over earlier ones, which would put the last avatar on top.
@@ -6093,7 +7504,7 @@ The list's <code>aria-label</code> gives the true total ("Project team, 7 people
 
 Mounted in <code>&lt;StrictMode&gt;</code> on React 19.3.1 in jsdom. jsdom does not fetch images, so the driver dispatched the <code>error</code> event a browser would fire for the broken URL; and because React listens for <code>mouseover</code>/<code>mouseout</code> while Vue and Angular use <code>mouseenter</code>/<code>mouseleave</code>, the shared driver sent both. Output:
 
-~~~
+~~~text
 team: list label="Project team, 7 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P] more="+3" (Show 3 more)
 small: list label="Reviewers, 5 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P, Katherine Johnson=img] more=none
 team z-index order: 4,3,2,1,0
@@ -6246,19 +7657,35 @@ export default function Avatar({ person, size, z }) {
         role="img"
         aria-label={person.name}
         tabIndex={0}
-        style={{ width: size, height: size, background: showImage ? "#222" : colorFor(person.name) }}
+        style={{
+          width: size,
+          height: size,
+          background: showImage ? "#222" : colorFor(person.name),
+        }}
         onMouseEnter={() => setTip(true)}
         onMouseLeave={() => setTip(false)}
         onFocus={() => setTip(true)}
         onBlur={() => setTip(false)}
       >
         {showImage ? (
-          <img src={person.src} alt="" width={size} height={size} onError={() => setFailed(true)} />
+          <img
+            src={person.src}
+            alt=""
+            width={size}
+            height={size}
+            onError={() => setFailed(true)}
+          />
         ) : (
-          <span className="initials" aria-hidden="true">{initials(person.name)}</span>
+          <span className="initials" aria-hidden="true">
+            {initials(person.name)}
+          </span>
         )}
       </span>
-      {tip && <span className="tooltip" data-testid="tooltip" aria-hidden="true">{person.name}</span>}
+      {tip && (
+        <span className="tooltip" data-testid="tooltip" aria-hidden="true">
+          {person.name}
+        </span>
+      )}
     </li>
   );
 }
@@ -6266,7 +7693,12 @@ export default function Avatar({ person, size, z }) {
         "/src/AvatarGroup.js": `import { useState } from "react";
 import Avatar from "./Avatar";
 
-export default function AvatarGroup({ people, max = 4, size = 40, label = "Members" }) {
+export default function AvatarGroup({
+  people,
+  max = 4,
+  size = 40,
+  label = "Members",
+}) {
   const [showAll, setShowAll] = useState(false);
   // Show max avatars, but never a "+1" bubble: if only one is hidden, show it.
   const visibleCount = people.length <= max + 1 ? people.length : max;
@@ -6275,10 +7707,18 @@ export default function AvatarGroup({ people, max = 4, size = 40, label = "Membe
 
   return (
     <div className="avatar-group">
-      <ul className="stack" aria-label={label + ", " + people.length + " people"}>
+      <ul
+        className="stack"
+        aria-label={label + ", " + people.length + " people"}
+      >
         {visible.map((p, i) => (
           // key = id + src: a new photo URL remounts Avatar, so failed resets
-          <Avatar key={p.id + ":" + (p.src || "")} person={p} size={size} z={visible.length - i} />
+          <Avatar
+            key={p.id + ":" + (p.src || "")}
+            person={p}
+            size={size}
+            z={visible.length - i}
+          />
         ))}
         {hidden.length > 0 && (
           <li className="avatar-item" style={{ zIndex: 0 }}>
@@ -6299,7 +7739,9 @@ export default function AvatarGroup({ people, max = 4, size = 40, label = "Membe
       </ul>
       {showAll && (
         <ul className="overflow-list" data-testid="overflow">
-          {hidden.map((p) => <li key={p.id}>{p.name}</li>)}
+          {hidden.map((p) => (
+            <li key={p.id}>{p.name}</li>
+          ))}
         </ul>
       )}
     </div>
@@ -6307,12 +7749,15 @@ export default function AvatarGroup({ people, max = 4, size = 40, label = "Membe
 }
 `,
         "/src/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
-const PHOTO_A = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
-const PHOTO_B = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
+const PHOTO_A =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
+const PHOTO_B =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
 
 export const people = [
   { id: 1, name: "Ada Lovelace", src: PHOTO_A },
-  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" }, // broken on purpose
+  // broken on purpose
+  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" },
   { id: 3, name: "Alan Turing" },
   { id: 4, name: "Plato" },
   { id: 5, name: "Katherine Johnson", src: PHOTO_B },
@@ -6335,21 +7780,96 @@ export function colorFor(name) {
   return "hsl(" + hash + " 45% 38%)";
 }
 `,
-        "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-h1 { font-size: 1.3rem; margin: 0; }
-.card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px 18px; }
-.card h2 { font-size: 0.95rem; margin: 0 0 12px; color: #9ec5ff; }
-.stack { display: flex; list-style: none; margin: 0; padding: 0 0 0 10px; }
-.avatar-item { position: relative; margin-left: -10px; }
-.avatar { display: grid; place-items: center; box-sizing: border-box; border-radius: 50%; overflow: hidden;
-  border: 2px solid #161a21; color: #fff; font-size: 0.8rem; font-weight: 700; cursor: default; }
-.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.avatar:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }
-.more { background: #2a3140; color: #e6e6e6; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0; }
-.tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap;
-  padding: 4px 8px; border-radius: 6px; background: #e6e6e6; color: #0f1115; font-size: 0.75rem; pointer-events: none; }
-.overflow-list { margin: 12px 0 0; padding: 8px 12px 8px 28px; background: #0f1115; border: 1px solid #2a3140; border-radius: 8px; font-size: 0.9rem; }
+        "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  gap: 14px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+.card {
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 14px 16px 18px;
+}
+.card h2 {
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+  color: #9ec5ff;
+}
+.stack {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 10px;
+}
+.avatar-item {
+  position: relative;
+  margin-left: -10px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #161a21;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: default;
+}
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+}
+.more {
+  background: #2a3140;
+  color: #e6e6e6;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #e6e6e6;
+  color: #0f1115;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.overflow-list {
+  margin: 12px 0 0;
+  padding: 8px 12px 8px 28px;
+  background: #0f1115;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
 `,
         },
       },
@@ -6387,19 +7907,37 @@ Up to 4 overlapping avatars then a <code>+N</code> button (never "+1"), initials
 
 ~~~js
 const visibleCount = computed(() =>
-  props.people.length <= props.max + 1 ? props.people.length : props.max
+  props.people.length <= props.max + 1
+    ? props.people.length
+    : props.max,
 );
-const visible = computed(() => props.people.slice(0, visibleCount.value));
+const visible = computed(() =>
+  props.people.slice(0, visibleCount.value),
+);
 const hidden = computed(() => props.people.slice(visibleCount.value));
 ~~~
 
 ~~~vue
-<ul class="stack" :aria-label="label + ', ' + people.length + ' people'">
-  <Avatar v-for="(p, i) in visible" :key="p.id" :person="p" :size="size" :z="visible.length - i" />
+<ul
+  class="stack"
+  :aria-label="label + ', ' + people.length + ' people'"
+>
+  <Avatar
+    v-for="(p, i) in visible"
+    :key="p.id"
+    :person="p"
+    :size="size"
+    :z="visible.length - i"
+  />
   <li v-if="hidden.length > 0" class="avatar-item" style="z-index: 0">
-    <button type="button" class="avatar more"
-      :aria-expanded="showAll" :aria-label="'Show ' + hidden.length + ' more'"
-      @click="showAll = !showAll" @keydown.esc="showAll = false">
+    <button
+      type="button"
+      class="avatar more"
+      :aria-expanded="showAll"
+      :aria-label="'Show ' + hidden.length + ' more'"
+      @click="showAll = !showAll"
+      @keydown.esc="showAll = false"
+    >
       +{{ hidden.length }}
     </button>
   </li>
@@ -6415,18 +7953,43 @@ A <code>v-for</code> directly on a component works the same as on an element; th
 ~~~js
 const failed = ref(false);
 const tip = ref(false);
-watch(() => props.person.src, () => { failed.value = false; });
+watch(
+  () => props.person.src,
+  () => {
+    failed.value = false;
+  },
+);
 const showImage = computed(() => !!props.person.src && !failed.value);
 ~~~
 
 ~~~vue
 <li class="avatar-item" :style="{ zIndex: tip ? 100 : z }">
-  <span class="avatar" role="img" :aria-label="person.name" tabindex="0" :style="style"
-    @mouseenter="tip = true" @mouseleave="tip = false" @focus="tip = true" @blur="tip = false">
-    <img v-if="showImage" :src="person.src" alt="" :width="size" :height="size" @error="failed = true" />
-    <span v-else class="initials" aria-hidden="true">{{ initials(person.name) }}</span>
+  <span
+    class="avatar"
+    role="img"
+    :aria-label="person.name"
+    tabindex="0"
+    :style="style"
+    @mouseenter="tip = true"
+    @mouseleave="tip = false"
+    @focus="tip = true"
+    @blur="tip = false"
+  >
+    <img
+      v-if="showImage"
+      :src="person.src"
+      alt=""
+      :width="size"
+      :height="size"
+      @error="failed = true"
+    />
+    <span v-else class="initials" aria-hidden="true">{{
+      initials(person.name)
+    }}</span>
   </span>
-  <span v-if="tip" class="tooltip" aria-hidden="true">{{ person.name }}</span>
+  <span v-if="tip" class="tooltip" aria-hidden="true">{{
+    person.name
+  }}</span>
 </li>
 ~~~
 
@@ -6440,7 +8003,7 @@ The tooltip shows on focus as well as hover, so keyboard users get it too. Style
 
 Mounted with <code>createApp(App).mount("#app")</code> on Vue 3.5.44. The driver fired <code>error</code> on the broken image (jsdom loads no images), and sent <code>mouseenter</code>/<code>mouseleave</code> along with <code>mouseover</code>/<code>mouseout</code> so one driver serves all frameworks:
 
-~~~
+~~~text
 team: list label="Project team, 7 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P] more="+3" (Show 3 more)
 small: list label="Reviewers, 5 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P, Katherine Johnson=img] more=none
 team z-index order: 4,3,2,1,0
@@ -6565,11 +8128,34 @@ import { people } from "./people.js";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-h1 { font-size: 1.3rem; margin: 0; }
-.card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px 18px; }
-.card h2 { font-size: 0.95rem; margin: 0 0 12px; color: #9ec5ff; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: grid;
+  gap: 14px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+.card {
+  background: #161a21;
+  border: 1px solid #2a3140;
+  border-radius: 12px;
+  padding: 14px 16px 18px;
+}
+.card h2 {
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+  color: #9ec5ff;
+}
 </style>
 `,
         "/src/components/Avatar.vue": `<script setup>
@@ -6585,7 +8171,12 @@ const props = defineProps({
 const failed = ref(false);
 const tip = ref(false);
 // A new photo URL deserves a fresh attempt.
-watch(() => props.person.src, () => { failed.value = false; });
+watch(
+  () => props.person.src,
+  () => {
+    failed.value = false;
+  },
+);
 
 const showImage = computed(() => !!props.person.src && !failed.value);
 const style = computed(() => ({
@@ -6609,10 +8200,21 @@ const style = computed(() => ({
       @focus="tip = true"
       @blur="tip = false"
     >
-      <img v-if="showImage" :src="person.src" alt="" :width="size" :height="size" @error="failed = true" />
-      <span v-else class="initials" aria-hidden="true">{{ initials(person.name) }}</span>
+      <img
+        v-if="showImage"
+        :src="person.src"
+        alt=""
+        :width="size"
+        :height="size"
+        @error="failed = true"
+      />
+      <span v-else class="initials" aria-hidden="true">{{
+        initials(person.name)
+      }}</span>
     </span>
-    <span v-if="tip" class="tooltip" data-testid="tooltip" aria-hidden="true">{{ person.name }}</span>
+    <span v-if="tip" class="tooltip" data-testid="tooltip" aria-hidden="true">{{
+      person.name
+    }}</span>
   </li>
 </template>
 `,
@@ -6629,7 +8231,9 @@ const props = defineProps({
 
 const showAll = ref(false);
 // Never a "+1" bubble: if only one would be hidden, show it instead.
-const visibleCount = computed(() => (props.people.length <= props.max + 1 ? props.people.length : props.max));
+const visibleCount = computed(() =>
+  props.people.length <= props.max + 1 ? props.people.length : props.max,
+);
 const visible = computed(() => props.people.slice(0, visibleCount.value));
 const hidden = computed(() => props.people.slice(visibleCount.value));
 </script>
@@ -6637,7 +8241,13 @@ const hidden = computed(() => props.people.slice(visibleCount.value));
 <template>
   <div class="avatar-group">
     <ul class="stack" :aria-label="label + ', ' + people.length + ' people'">
-      <Avatar v-for="(p, i) in visible" :key="p.id" :person="p" :size="size" :z="visible.length - i" />
+      <Avatar
+        v-for="(p, i) in visible"
+        :key="p.id"
+        :person="p"
+        :size="size"
+        :z="visible.length - i"
+      />
       <li v-if="hidden.length > 0" class="avatar-item" style="z-index: 0">
         <button
           type="button"
@@ -6660,25 +8270,80 @@ const hidden = computed(() => props.people.slice(visibleCount.value));
 </template>
 
 <style>
-.stack { display: flex; list-style: none; margin: 0; padding: 0 0 0 10px; }
-.avatar-item { position: relative; margin-left: -10px; }
-.avatar { display: grid; place-items: center; box-sizing: border-box; border-radius: 50%; overflow: hidden;
-  border: 2px solid #161a21; color: #fff; font-size: 0.8rem; font-weight: 700; cursor: default; }
-.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.avatar:focus-visible { outline: 2px solid #5b9dff; outline-offset: 2px; }
-.more { background: #2a3140; color: #e6e6e6; font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; padding: 0; }
-.tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap;
-  padding: 4px 8px; border-radius: 6px; background: #e6e6e6; color: #0f1115; font-size: 0.75rem; pointer-events: none; }
-.overflow-list { margin: 12px 0 0; padding: 8px 12px 8px 28px; background: #0f1115; border: 1px solid #2a3140; border-radius: 8px; font-size: 0.9rem; }
+.stack {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 10px;
+}
+.avatar-item {
+  position: relative;
+  margin-left: -10px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #161a21;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: default;
+}
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar:focus-visible {
+  outline: 2px solid #5b9dff;
+  outline-offset: 2px;
+}
+.more {
+  background: #2a3140;
+  color: #e6e6e6;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #e6e6e6;
+  color: #0f1115;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.overflow-list {
+  margin: 12px 0 0;
+  padding: 8px 12px 8px 28px;
+  background: #0f1115;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
 </style>
 `,
         "/src/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
-const PHOTO_A = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
-const PHOTO_B = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
+const PHOTO_A =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
+const PHOTO_B =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
 
 export const people = [
   { id: 1, name: "Ada Lovelace", src: PHOTO_A },
-  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" }, // broken on purpose
+  // broken on purpose
+  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" },
   { id: 3, name: "Alan Turing" },
   { id: 4, name: "Plato" },
   { id: 5, name: "Katherine Johnson", src: PHOTO_B },
@@ -6742,10 +8407,16 @@ ngOnChanges() {
 }
 
 private readonly visibleCount = computed(() =>
-  this.list().length <= this.maxSig() + 1 ? this.list().length : this.maxSig()
+  this.list().length <= this.maxSig() + 1
+    ? this.list().length
+    : this.maxSig(),
 );
-readonly visible = computed(() => this.list().slice(0, this.visibleCount()));
-readonly hidden = computed(() => this.list().slice(this.visibleCount()));
+readonly visible = computed(() =>
+  this.list().slice(0, this.visibleCount()),
+);
+readonly hidden = computed(() =>
+  this.list().slice(this.visibleCount()),
+);
 ~~~
 
 📌 **Interview term: ngOnChanges** — called when an <code>@Input</code> gets a new value; mirroring inputs into signals here lets <code>computed()</code> react. The parent passes a field (<code>reviewers = people.slice(0, 5)</code>), not <code>people.slice(0, 5)</code> in the template, because a new array on every check would retrigger <code>ngOnChanges</code> each time. See [ngOnChanges](/interview-question/what-is-the-purpose-of-ngonchanges-and-how-does-it-capture-changes-in-input-prop).
@@ -6754,16 +8425,35 @@ readonly hidden = computed(() => this.list().slice(this.visibleCount()));
 
 ~~~html
 @for (p of visible(); track p.id; let i = $index) {
-  <li class="avatar-item" [style.z-index]="tipId() === p.id ? 100 : visible().length - i">
-    <span class="avatar" role="img" [attr.aria-label]="p.name" tabindex="0"
-      [style.width.px]="size" [style.height.px]="size"
+  <li
+    class="avatar-item"
+    [style.z-index]="tipId() === p.id ? 100 : visible().length - i"
+  >
+    <span
+      class="avatar"
+      role="img"
+      [attr.aria-label]="p.name"
+      tabindex="0"
+      [style.width.px]="size"
+      [style.height.px]="size"
       [style.background]="showImage(p) ? '#222' : color(p.name)"
-      (mouseenter)="tipId.set(p.id)" (mouseleave)="tipId.set(null)"
-      (focus)="tipId.set(p.id)" (blur)="tipId.set(null)">
+      (mouseenter)="tipId.set(p.id)"
+      (mouseleave)="tipId.set(null)"
+      (focus)="tipId.set(p.id)"
+      (blur)="tipId.set(null)"
+    >
       @if (showImage(p)) {
-        <img [src]="p.src" alt="" [width]="size" [height]="size" (error)="markFailed(p)" />
+        <img
+          [src]="p.src"
+          alt=""
+          [width]="size"
+          [height]="size"
+          (error)="markFailed(p)"
+        />
       } @else {
-        <span class="initials" aria-hidden="true">{{ initialsOf(p.name) }}</span>
+        <span class="initials" aria-hidden="true">{{
+          initialsOf(p.name)
+        }}</span>
       }
     </span>
     @if (tipId() === p.id) {
@@ -6808,7 +8498,7 @@ A new <code>Set</code> is created on each failure: signals compare by reference,
 
 Playground (JIT) run; AOT was identical. The driver fired the image <code>error</code> event itself and sent both <code>mouseenter</code> and <code>mouseover</code> so one driver works for every framework:
 
-~~~
+~~~text
 team: list label="Project team, 7 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P] more="+3" (Show 3 more)
 small: list label="Reviewers, 5 people" avatars=[Ada Lovelace=img, Grace Hopper=img, Alan Turing=AT, Plato=P, Katherine Johnson=img] more=none
 team z-index order: 4,3,2,1,0
@@ -6934,13 +8624,39 @@ import { people } from "./people";
       </section>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .app { max-width: 560px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 14px; }
-    h1 { font-size: 1.3rem; margin: 0; }
-    .card { background: #161a21; border: 1px solid #2a3140; border-radius: 12px; padding: 14px 16px 18px; }
-    .card h2 { font-size: 0.95rem; margin: 0 0 12px; color: #9ec5ff; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        display: grid;
+        gap: 14px;
+      }
+      h1 {
+        font-size: 1.3rem;
+        margin: 0;
+      }
+      .card {
+        background: #161a21;
+        border: 1px solid #2a3140;
+        border-radius: 12px;
+        padding: 14px 16px 18px;
+      }
+      .card h2 {
+        font-size: 0.95rem;
+        margin: 0 0 12px;
+        color: #9ec5ff;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly people = people;
@@ -6956,9 +8672,15 @@ import { Person, colorFor, initials } from "./people";
   selector: "app-avatar-group",
   standalone: true,
   template: \`
-    <ul class="stack" [attr.aria-label]="label + ', ' + list().length + ' people'">
+    <ul
+      class="stack"
+      [attr.aria-label]="label + ', ' + list().length + ' people'"
+    >
       @for (p of visible(); track p.id; let i = $index) {
-        <li class="avatar-item" [style.z-index]="tipId() === p.id ? 100 : visible().length - i">
+        <li
+          class="avatar-item"
+          [style.z-index]="tipId() === p.id ? 100 : visible().length - i"
+        >
           <span
             class="avatar"
             data-testid="avatar"
@@ -6974,13 +8696,26 @@ import { Person, colorFor, initials } from "./people";
             (blur)="tipId.set(null)"
           >
             @if (showImage(p)) {
-              <img [src]="p.src" alt="" [width]="size" [height]="size" (error)="markFailed(p)" />
+              <img
+                [src]="p.src"
+                alt=""
+                [width]="size"
+                [height]="size"
+                (error)="markFailed(p)"
+              />
             } @else {
-              <span class="initials" aria-hidden="true">{{ initialsOf(p.name) }}</span>
+              <span
+                class="initials"
+                aria-hidden="true"
+              >{{ initialsOf(p.name) }}</span>
             }
           </span>
           @if (tipId() === p.id) {
-            <span class="tooltip" data-testid="tooltip" aria-hidden="true">{{ p.name }}</span>
+            <span
+              class="tooltip"
+              data-testid="tooltip"
+              aria-hidden="true"
+            >{{ p.name }}</span>
           }
         </li>
       }
@@ -7008,7 +8743,8 @@ import { Person, colorFor, initials } from "./people";
       </ul>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .stack { display: flex; list-style: none; margin: 0; padding: 0 0 0 10px; }
     .avatar-item { position: relative; margin-left: -10px; }
@@ -7020,7 +8756,8 @@ import { Person, colorFor, initials } from "./people";
     .tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); white-space: nowrap;
       padding: 4px 8px; border-radius: 6px; background: #e6e6e6; color: #0f1115; font-size: 0.75rem; pointer-events: none; }
     .overflow-list { margin: 12px 0 0; padding: 8px 12px 8px 28px; background: #0f1115; border: 1px solid #2a3140; border-radius: 8px; font-size: 0.9rem; }
-  \`],
+  \`,
+  ],
 })
 export class AvatarGroupComponent implements OnChanges {
   @Input({ required: true }) people: Person[] = [];
@@ -7043,7 +8780,9 @@ export class AvatarGroupComponent implements OnChanges {
 
   // Never a "+1" bubble: if only one would be hidden, show it instead.
   private readonly visibleCount = computed(() =>
-    this.list().length <= this.maxSig() + 1 ? this.list().length : this.maxSig()
+    this.list().length <= this.maxSig() + 1
+      ? this.list().length
+      : this.maxSig(),
   );
   readonly visible = computed(() => this.list().slice(0, this.visibleCount()));
   readonly hidden = computed(() => this.list().slice(this.visibleCount()));
@@ -7054,19 +8793,30 @@ export class AvatarGroupComponent implements OnChanges {
   markFailed(p: Person) {
     if (p.src) this.failed.update((s) => new Set(s).add(p.src as string));
   }
-  initialsOf(name: string) { return initials(name); }
-  color(name: string) { return colorFor(name); }
+  initialsOf(name: string) {
+    return initials(name);
+  }
+  color(name: string) {
+    return colorFor(name);
+  }
 }
 `,
         "/src/app/people.ts": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
-const PHOTO_A = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
-const PHOTO_B = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
+const PHOTO_A =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
+const PHOTO_B =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAi0lEQVR42pXKUQYCAABEwT1OkiRJkiRJkiRJkiS6TJIkiSRJIkmSRJIk0aF6nWHne0S/x6DLsMOozbjFpMm08ZvVmddYVFlWWJVZl9gU2RbY5WVt9jlZm0NW1uaYkbU5pWVtzilZm0tS1uaakLW5xWVt7jFZm0dU1uYZkbV5hWVt3iFZm09Q1uYb+AOIUu6SjNRxpwAAAABJRU5ErkJggg==";
 
-export interface Person { id: number; name: string; src?: string; }
+export interface Person {
+  id: number;
+  name: string;
+  src?: string;
+}
 
 export const people: Person[] = [
   { id: 1, name: "Ada Lovelace", src: PHOTO_A },
-  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" }, // broken on purpose
+  // broken on purpose
+  { id: 2, name: "Grace Hopper", src: "/missing-avatar.png" },
   { id: 3, name: "Alan Turing" },
   { id: 4, name: "Plato" },
   { id: 5, name: "Katherine Johnson", src: PHOTO_B },

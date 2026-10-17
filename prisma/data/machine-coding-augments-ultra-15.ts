@@ -136,9 +136,14 @@ Start with the logic, not the JSX. A board is a flat array of 9 cells, indexed 0
 
 \`\`\`js
 export const LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-  [0, 4, 8], [2, 4, 6],            // diagonals
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // rows
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // columns
+  [0, 4, 8],
+  [2, 4, 6], // diagonals
 ];
 
 export const emptyBoard = () => Array(9).fill(null);
@@ -158,7 +163,6 @@ export function getWinner(board) {
 Whose turn is it? You do not need a variable. X always starts, so when an even number of cells is filled it is X's turn:
 
 \`\`\`js
-
 // X always starts, so whose turn it is can be derived from the board.
 export function nextPlayer(board) {
   const filled = board.filter(Boolean).length;
@@ -184,7 +188,8 @@ Notice that <code>playMove</code> refuses illegal moves itself (a filled cell, o
 
 \`\`\`jsx
 export default function App() {
-  // The only state: nine cells. Everything else is derived on each render.
+  // The only state: nine cells. Everything
+  // else is derived on each render.
   const [board, setBoard] = useState(emptyBoard);
 
   const win = getWinner(board);
@@ -221,8 +226,19 @@ export default function Board({ board, winLine, gameOver, onPlay }) {
             key={i}
             type="button"
             data-testid={"cell-" + i}
-            className={"cell" + (isWin ? " win" : "") + (value ? " " + value.toLowerCase() : "")}
-            aria-label={"Row " + row + ", column " + col + ", " + (value || "empty")}
+            className={
+              "cell" +
+              (isWin ? " win" : "") +
+              (value ? " " + value.toLowerCase() : "")
+            }
+            aria-label={
+              "Row " +
+              row +
+              ", column " +
+              col +
+              ", " +
+              (value || "empty")
+            }
             disabled={Boolean(value) || gameOver}
             onClick={() => onPlay(i)}
           >
@@ -254,7 +270,7 @@ Restart is just <code>setBoard(emptyBoard())</code>. The stylesheet uses a CSS g
 
 **The rules on their own.** A node script fed fixed move sequences to <code>playMove</code> and printed the board (rows separated by <code>/</code>, <code>.</code> is empty):
 
-\`\`\`
+\`\`\`text
 X top row      | XXX/OO./... | Winner: X line 0,1,2
 draw           | XOX/XOO/OXX | Draw 
 O anti-diag    | XXO/.O./O.X | Winner: O line 2,4,6
@@ -267,7 +283,7 @@ The last two lines matter: replaying a cell (<code>[4, 4, 4]</code>) leaves only
 
 **The real component.** The solution was bundled with esbuild, rendered with <code>createRoot</code> inside <code>&lt;StrictMode&gt;</code> in jsdom, and a driver dispatched real click events on the cells:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-ToeNext player: XRestart
 start      : Next player: X | .../.../...
 re-click 0 : Next player: O | X../.../... | cell 0 disabled = true
@@ -403,14 +419,21 @@ export default function App() {
   return (
     <main className="ttt">
       <h1>Tic-Tac-Toe</h1>
-      <p className="status" data-testid="status" aria-live="polite">{status}</p>
+      <p className="status" data-testid="status" aria-live="polite">
+        {status}
+      </p>
       <Board
         board={board}
         winLine={win ? win.line : []}
         gameOver={gameOver}
         onPlay={(i) => setBoard((b) => playMove(b, i))}
       />
-      <button type="button" className="restart" data-testid="restart" onClick={() => setBoard(emptyBoard())}>
+      <button
+        type="button"
+        className="restart"
+        data-testid="restart"
+        onClick={() => setBoard(emptyBoard())}
+      >
         Restart
       </button>
     </main>
@@ -429,8 +452,14 @@ export default function App() {
             key={i}
             type="button"
             data-testid={"cell-" + i}
-            className={"cell" + (isWin ? " win" : "") + (value ? " " + value.toLowerCase() : "")}
-            aria-label={"Row " + row + ", column " + col + ", " + (value || "empty")}
+            className={
+              "cell" +
+              (isWin ? " win" : "") +
+              (value ? " " + value.toLowerCase() : "")
+            }
+            aria-label={
+              "Row " + row + ", column " + col + ", " + (value || "empty")
+            }
             disabled={Boolean(value) || gameOver}
             onClick={() => onPlay(i)}
           >
@@ -444,9 +473,14 @@ export default function App() {
 `,
           "/src/game.js": `// Pure game logic: no React here, so it can be tested on its own.
 export const LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-  [0, 4, 8], [2, 4, 6],            // diagonals
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // rows
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // columns
+  [0, 4, 8],
+  [2, 4, 6], // diagonals
 ];
 
 export const emptyBoard = () => Array(9).fill(null);
@@ -486,21 +520,72 @@ export function playMove(board, index) {
   return next;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.ttt { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.ttt h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.status { min-height: 1.5em; font-weight: 600; color: #fbbf24; }
-.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
-.cell { aspect-ratio: 1; font-size: 2.4rem; font-weight: 700; border: 2px solid #334155; border-radius: 10px;
-  background: #1e293b; color: #e2e8f0; cursor: pointer; }
-.cell:disabled { cursor: default; }
-.cell:not(:disabled):hover { background: #273449; }
-.cell:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.cell.x { color: #38bdf8; }
-.cell.o { color: #f472b6; }
-.cell.win { background: #14532d; border-color: #22c55e; }
-.restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569;
-  background: #334155; color: #f8fafc; cursor: pointer; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.ttt {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.ttt h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.status {
+  min-height: 1.5em;
+  font-weight: 600;
+  color: #fbbf24;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+.cell {
+  aspect-ratio: 1;
+  font-size: 2.4rem;
+  font-weight: 700;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.cell:disabled {
+  cursor: default;
+}
+.cell:not(:disabled):hover {
+  background: #273449;
+}
+.cell:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cell.x {
+  color: #38bdf8;
+}
+.cell.o {
+  color: #f472b6;
+}
+.cell.win {
+  background: #14532d;
+  border-color: #22c55e;
+}
+.restart {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
 `,
         },
       },
@@ -538,17 +623,26 @@ The rules live in <code>src/game.js</code>, a plain JavaScript module with no Vu
 <script setup>
 import { ref, computed } from "vue";
 import GameBoard from "./components/GameBoard.vue";
-import { emptyBoard, getWinner, getStatus, isDraw, playMove } from "./game.js";
+import {
+  emptyBoard,
+  getWinner,
+  getStatus,
+  isDraw,
+  playMove,
+} from "./game.js";
 
 // The only state: nine cells. Everything else is a computed.
 const board = ref(emptyBoard());
 
 const win = computed(() => getWinner(board.value));
 const status = computed(() => getStatus(board.value));
-const gameOver = computed(() => Boolean(win.value) || isDraw(board.value));
+const gameOver = computed(
+  () => Boolean(win.value) || isDraw(board.value),
+);
 
 function play(i) {
-  board.value = playMove(board.value, i); // replace, never mutate in place
+  // replace, never mutate in place
+  board.value = playMove(board.value, i);
 }
 function restart() {
   board.value = emptyBoard();
@@ -572,7 +666,12 @@ defineProps({
 const emit = defineEmits(["play"]);
 
 const label = (value, i) =>
-  "Row " + (Math.floor(i / 3) + 1) + ", column " + ((i % 3) + 1) + ", " + (value || "empty");
+  "Row " +
+  (Math.floor(i / 3) + 1) +
+  ", column " +
+  ((i % 3) + 1) +
+  ", " +
+  (value || "empty");
 </script>
 
 <template>
@@ -604,9 +703,23 @@ const label = (value, i) =>
 <template>
   <main class="ttt">
     <h1>Tic-Tac-Toe</h1>
-    <p class="status" data-testid="status" aria-live="polite">{{ status }}</p>
-    <GameBoard :board="board" :win-line="win ? win.line : []" :game-over="gameOver" @play="play" />
-    <button type="button" class="restart" data-testid="restart" @click="restart">Restart</button>
+    <p
+      class="status"
+      data-testid="status"
+      aria-live="polite"
+    >{{ status }}</p>
+    <GameBoard
+      :board="board"
+      :win-line="win ? win.line : []"
+      :game-over="gameOver"
+      @play="play"
+    />
+    <button
+      type="button"
+      class="restart"
+      data-testid="restart"
+      @click="restart"
+    >Restart</button>
   </main>
 </template>
 \`\`\`
@@ -617,7 +730,7 @@ The status is an <code>aria-live="polite"</code> paragraph. 📌 **Interview ter
 
 The rules were first run on their own with node, feeding fixed move sequences to <code>playMove</code> (rows separated by <code>/</code>, <code>.</code> is empty):
 
-\`\`\`
+\`\`\`text
 X top row      | XXX/OO./... | Winner: X line 0,1,2
 draw           | XOX/XOO/OXX | Draw 
 O anti-diag    | XXO/.O./O.X | Winner: O line 2,4,6
@@ -628,7 +741,7 @@ immutable     | old board untouched: true | new board is a new array: true
 
 Then the SFCs were compiled with <code>@vue/compiler-sfc</code>, mounted with <code>createApp(App).mount("#app")</code> in jsdom, and a driver clicked real cells:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-ToeNext player: XRestart
 start      : Next player: X | .../.../...
 re-click 0 : Next player: O | X../.../... | cell 0 disabled = true
@@ -758,18 +871,52 @@ function restart() {
   <main class="ttt">
     <h1>Tic-Tac-Toe</h1>
     <p class="status" data-testid="status" aria-live="polite">{{ status }}</p>
-    <GameBoard :board="board" :win-line="win ? win.line : []" :game-over="gameOver" @play="play" />
-    <button type="button" class="restart" data-testid="restart" @click="restart">Restart</button>
+    <GameBoard
+      :board="board"
+      :win-line="win ? win.line : []"
+      :game-over="gameOver"
+      @play="play"
+    />
+    <button
+      type="button"
+      class="restart"
+      data-testid="restart"
+      @click="restart"
+    >Restart</button>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.ttt { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.ttt h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.status { min-height: 1.5em; font-weight: 600; color: #fbbf24; }
-.restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569;
-  background: #334155; color: #f8fafc; cursor: pointer; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.ttt {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.ttt h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.status {
+  min-height: 1.5em;
+  font-weight: 600;
+  color: #fbbf24;
+}
+.restart {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/components/GameBoard.vue": `<script setup>
@@ -781,7 +928,12 @@ defineProps({
 const emit = defineEmits(["play"]);
 
 const label = (value, i) =>
-  "Row " + (Math.floor(i / 3) + 1) + ", column " + ((i % 3) + 1) + ", " + (value || "empty");
+  "Row " +
+  (Math.floor(i / 3) + 1) +
+  ", column " +
+  ((i % 3) + 1) +
+  ", " +
+  (value || "empty");
 </script>
 
 <template>
@@ -802,22 +954,54 @@ const label = (value, i) =>
 </template>
 
 <style scoped>
-.board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
-.cell { aspect-ratio: 1; font-size: 2.4rem; font-weight: 700; border: 2px solid #334155; border-radius: 10px;
-  background: #1e293b; color: #e2e8f0; cursor: pointer; }
-.cell:disabled { cursor: default; }
-.cell:not(:disabled):hover { background: #273449; }
-.cell:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.cell.x { color: #38bdf8; }
-.cell.o { color: #f472b6; }
-.cell.win { background: #14532d; border-color: #22c55e; }
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+.cell {
+  aspect-ratio: 1;
+  font-size: 2.4rem;
+  font-weight: 700;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  background: #1e293b;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+.cell:disabled {
+  cursor: default;
+}
+.cell:not(:disabled):hover {
+  background: #273449;
+}
+.cell:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cell.x {
+  color: #38bdf8;
+}
+.cell.o {
+  color: #f472b6;
+}
+.cell.win {
+  background: #14532d;
+  border-color: #22c55e;
+}
 </style>
 `,
           "/src/game.js": `// Pure game logic: no React here, so it can be tested on its own.
 export const LINES = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-  [0, 4, 8], [2, 4, 6],            // diagonals
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // rows
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // columns
+  [0, 4, 8],
+  [2, 4, 6], // diagonals
 ];
 
 export const emptyBoard = () => Array(9).fill(null);
@@ -891,11 +1075,14 @@ The rules live in <code>game.ts</code>, plain TypeScript with no Angular imports
 
 \`\`\`ts
 export class AppComponent {
-  // The only state: nine cells in a signal. Everything else is computed.
+  // The only state: nine cells in a
+  // signal. Everything else is computed.
   readonly board = signal(emptyBoard());
   readonly win = computed(() => getWinner(this.board()));
   readonly status = computed(() => getStatus(this.board()));
-  readonly gameOver = computed(() => !!this.win() || isDraw(this.board()));
+  readonly gameOver = computed(
+    () => !!this.win() || isDraw(this.board()),
+  );
 
   play(i: number): void {
     this.board.update((b) => playMove(b, i));
@@ -961,7 +1148,14 @@ export class BoardComponent {
   @Output() play = new EventEmitter<number>();
 
   label(value: Cell, i: number): string {
-    return "Row " + (Math.floor(i / 3) + 1) + ", column " + ((i % 3) + 1) + ", " + (value || "empty");
+    return (
+      "Row " +
+      (Math.floor(i / 3) + 1) +
+      ", column " +
+      ((i % 3) + 1) +
+      ", " +
+      (value || "empty")
+    );
   }
 }
 \`\`\`
@@ -976,7 +1170,7 @@ export class BoardComponent {
 
 The rule functions were run with node against fixed move sequences (the logic file is the same algorithm in TypeScript; rows separated by <code>/</code>, <code>.</code> is empty):
 
-\`\`\`
+\`\`\`text
 X top row      | XXX/OO./... | Winner: X line 0,1,2
 draw           | XOX/XOO/OXX | Draw 
 O anti-diag    | XXO/.O./O.X | Winner: O line 2,4,6
@@ -987,7 +1181,7 @@ immutable     | old board untouched: true | new board is a new array: true
 
 The components were then booted with <code>bootstrapApplication(AppComponent)</code> twice: AOT-compiled with <code>ngc</code> and <code>strictTemplates</code>, and JIT-compiled at runtime like the playground. A driver clicked real cells. AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-ToeNext player: XRestart
 start      : Next player: X | .../.../...
 re-click 0 : Next player: O | X../.../... | cell 0 disabled = true
@@ -1104,24 +1298,35 @@ import { emptyBoard, getStatus, getWinner, isDraw, playMove } from "./game";
   template: \`
     <main class="ttt">
       <h1>Tic-Tac-Toe</h1>
-      <p class="status" data-testid="status" aria-live="polite">{{ status() }}</p>
+      <p
+        class="status"
+        data-testid="status"
+        aria-live="polite"
+      >{{ status() }}</p>
       <app-board
         [board]="board()"
         [winLine]="win()?.line ?? []"
         [gameOver]="gameOver()"
         (play)="play($event)"
       />
-      <button type="button" class="restart" data-testid="restart" (click)="restart()">Restart</button>
+      <button
+        type="button"
+        class="restart"
+        data-testid="restart"
+        (click)="restart()"
+      >Restart</button>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
     .ttt { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .ttt h1 { font-size: 1.4rem; margin: 0 0 8px; }
     .status { min-height: 1.5em; font-weight: 600; color: #fbbf24; }
     .restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569;
       background: #334155; color: #f8fafc; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   // The only state: nine cells in a signal. Everything else is computed.
@@ -1161,7 +1366,8 @@ import { Cell } from "./game";
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0; }
     .cell { aspect-ratio: 1; font-size: 2.4rem; font-weight: 700; border: 2px solid #334155; border-radius: 10px;
       background: #1e293b; color: #e2e8f0; cursor: pointer; }
@@ -1171,7 +1377,8 @@ import { Cell } from "./game";
     .cell.x { color: #38bdf8; }
     .cell.o { color: #f472b6; }
     .cell.win { background: #14532d; border-color: #22c55e; }
-  \`],
+  \`,
+  ],
 })
 export class BoardComponent {
   @Input() board: Cell[] = [];
@@ -1180,19 +1387,34 @@ export class BoardComponent {
   @Output() play = new EventEmitter<number>();
 
   label(value: Cell, i: number): string {
-    return "Row " + (Math.floor(i / 3) + 1) + ", column " + ((i % 3) + 1) + ", " + (value || "empty");
+    return (
+      "Row " +
+      (Math.floor(i / 3) + 1) +
+      ", column " +
+      ((i % 3) + 1) +
+      ", " +
+      (value || "empty")
+    );
   }
 }
 `,
           "/src/app/game.ts": `// Pure game logic: no Angular here, so it can be tested on its own.
 export type Player = "X" | "O";
 export type Cell = Player | null;
-export interface Win { player: Player; line: number[]; }
+export interface Win {
+  player: Player;
+  line: number[];
+}
 
 export const LINES: number[][] = [
-  [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
-  [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
-  [0, 4, 8], [2, 4, 6],            // diagonals
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8], // rows
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8], // columns
+  [0, 4, 8],
+  [2, 4, 6], // diagonals
 ];
 
 export const emptyBoard = (): Cell[] => Array<Cell>(9).fill(null);
@@ -1353,12 +1575,20 @@ Any new line of M must pass through the cell just played, so the four accent lin
 The board is one flat array of <code>n * n</code> cells; cell (row, col) lives at <code>row * n + col</code>. 📌 **Interview term: Row-major indexing** — storing a 2D grid in one array row after row. It keeps copies cheap and keys simple, but you must check row and column bounds yourself: index 4 plus one on a 5-wide board is index 5, which is the *next row*, not a neighbour.
 
 \`\`\`js
-// Right, down, down-right, down-left. Each is walked both ways from the last move.
-export const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+// Right, down, down-right, down-left. Each
+// is walked both ways from the last move.
+export const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
-export const playerAt = (moveNumber) => (moveNumber % 2 === 0 ? "X" : "O");
+export const playerAt = (moveNumber) =>
+  moveNumber % 2 === 0 ? "X" : "O";
 
-// Only lines through the LAST move can be new wins, so check just those:
+// Only lines through the LAST move can
+// be new wins, so check just those:
 // at most 4 directions x 2 sides x (m - 1) cells = O(m), whatever n is.
 export function checkWinFrom(board, n, m, index) {
   const player = board[index];
@@ -1370,13 +1600,21 @@ export function checkWinFrom(board, n, m, index) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= m) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= m)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -1391,7 +1629,8 @@ Walking *both* ways is not optional. In the 3 x 3 test below, X plays cells 0 an
 ### Step 2: history as moves plus a pointer
 
 \`\`\`js
-// Rebuild the position after the first \`step\` moves. History stores moves, not boards.
+// Rebuild the position after the first \`step\`
+// moves. History stores moves, not boards.
 export function replay(n, m, moves, step) {
   const board = Array(n * n).fill(null);
   let winner = null;
@@ -1410,15 +1649,18 @@ export function replay(n, m, moves, step) {
 export default function App() {
   const [n, setN] = useState(5);
   const [m, setM] = useState(4);
-  const [moves, setMoves] = useState([]); // cell index of every move, in order
-  const [step, setStep] = useState(0);    // how many of those moves are on the board
+  // cell index of every move, in order
+  const [moves, setMoves] = useState([]);
+  // how many of those moves are on the board
+  const [step, setStep] = useState(0);
 
   const game = replay(n, m, moves, step);  // derived, never stored
   const gameOver = Boolean(game.winner) || game.draw;
 
   function play(i) {
     if (gameOver || game.board[i]) return;
-    const next = moves.slice(0, step).concat(i); // a new move drops the redo future
+    // a new move drops the redo future
+    const next = moves.slice(0, step).concat(i);
     setMoves(next);
     setStep(next.length);
   }
@@ -1449,7 +1691,14 @@ Tabbing through 64 cells is miserable. The board uses a roving tabindex instead:
 import { useState } from "react";
 import { coords, moveFocus } from "./game";
 
-export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
+export default function Board({
+  n,
+  m,
+  board,
+  winLine,
+  gameOver,
+  onPlay,
+}) {
   // Roving tabindex: one cell is in the tab order, arrows move it.
   const [focusIdx, setFocusIdx] = useState(0);
   const active = Math.min(focusIdx, n * n - 1);
@@ -1459,14 +1708,18 @@ export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
     if (next === active) return;
     e.preventDefault();
     setFocusIdx(next);
-    e.currentTarget.querySelector('[data-index="' + next + '"]').focus();
+    e.currentTarget
+      .querySelector('[data-index="' + next + '"]')
+      .focus();
   }
 
   return (
     <div
       className="board"
       role="group"
-      aria-label={"Board " + n + " by " + n + ", " + m + " in a row wins"}
+      aria-label={
+        "Board " + n + " by " + n + ", " + m + " in a row wins"
+      }
       style={{ gridTemplateColumns: "repeat(" + n + ", 1fr)" }}
       onKeyDown={handleKeyDown}
     >
@@ -1477,11 +1730,18 @@ export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
           data-index={i}
           data-testid={"cell-" + i}
           tabIndex={i === active ? 0 : -1}
-          className={"cell" + (winLine.includes(i) ? " win" : "") + (value ? " " + value.toLowerCase() : "")}
+          className={
+            "cell" +
+            (winLine.includes(i) ? " win" : "") +
+            (value ? " " + value.toLowerCase() : "")
+          }
           aria-label={coords(i, n) + ", " + (value || "empty")}
           aria-disabled={Boolean(value) || gameOver}
           onFocus={() => setFocusIdx(i)}
-          onClick={() => { setFocusIdx(i); onPlay(i); }}
+          onClick={() => {
+            setFocusIdx(i);
+            onPlay(i);
+          }}
         >
           {value}
         </button>
@@ -1508,7 +1768,7 @@ When N or M changes, <code>App</code> renders <code>&lt;Board key={n + "x" + m} 
 
 **Reads per win check.** A node script wrapped the board in a <code>Proxy</code> that counts cell reads, placed a winning run in the middle of a scattered position, and compared <code>checkWinFrom</code> with a naive full-board scan:
 
-\`\`\`
+\`\`\`text
 n=3 m=3      | last-move check: X reads 3 | full scan: X reads 11
 n=15 m=5     | last-move check: X reads 6 | full scan: X reads 148
 n=100 m=5    | last-move check: X reads 6 | full scan: X reads 6813
@@ -1521,7 +1781,7 @@ On a 100 x 100 board the last-move check read 6 cells; the full scan read 6,813 
 
 **The component.** Rendered in <code>&lt;StrictMode&gt;</code> in jsdom; the driver clicked cells, changed the <code>&lt;select&gt;</code>s and pressed arrow keys on the focused element:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-Toe IIBoard size3 x 34 x 45 x 56 x 67 x 78 x 8In a row to win345Next player: XGame start
 start       : Next player: X | cells = 25 | need = 4 | Board 5 by 5, 4 in a row wins
 diagonal    : Winner: X | win cells = 0,6,12,18
@@ -1659,14 +1919,16 @@ export default function App() {
   const [n, setN] = useState(5);
   const [m, setM] = useState(4);
   const [moves, setMoves] = useState([]); // cell index of every move, in order
-  const [step, setStep] = useState(0);    // how many of those moves are on the board
+  // how many of those moves are on the board
+  const [step, setStep] = useState(0);
 
-  const game = replay(n, m, moves, step);  // derived, never stored
+  const game = replay(n, m, moves, step); // derived, never stored
   const gameOver = Boolean(game.winner) || game.draw;
 
   function play(i) {
     if (gameOver || game.board[i]) return;
-    const next = moves.slice(0, step).concat(i); // a new move drops the redo future
+    // a new move drops the redo future
+    const next = moves.slice(0, step).concat(i);
     setMoves(next);
     setStep(next.length);
   }
@@ -1690,18 +1952,36 @@ export default function App() {
       <div className="config">
         <label>
           Board size
-          <select data-testid="size" value={n} onChange={(e) => resize(Number(e.target.value))}>
-            {SIZES.map((s) => <option key={s} value={s}>{s + " x " + s}</option>)}
+          <select
+            data-testid="size"
+            value={n}
+            onChange={(e) => resize(Number(e.target.value))}
+          >
+            {SIZES.map((s) => (
+              <option key={s} value={s}>
+                {s + " x " + s}
+              </option>
+            ))}
           </select>
         </label>
         <label>
           In a row to win
-          <select data-testid="need" value={m} onChange={(e) => changeNeed(Number(e.target.value))}>
-            {SIZES.filter((s) => s <= n).map((s) => <option key={s} value={s}>{s}</option>)}
+          <select
+            data-testid="need"
+            value={m}
+            onChange={(e) => changeNeed(Number(e.target.value))}
+          >
+            {SIZES.filter((s) => s <= n).map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
           </select>
         </label>
       </div>
-      <p className="status" data-testid="status" aria-live="polite">{statusText(game)}</p>
+      <p className="status" data-testid="status" aria-live="polite">
+        {statusText(game)}
+      </p>
       <Board
         key={n + "x" + m}
         n={n}
@@ -1747,11 +2027,18 @@ export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
           data-index={i}
           data-testid={"cell-" + i}
           tabIndex={i === active ? 0 : -1}
-          className={"cell" + (winLine.includes(i) ? " win" : "") + (value ? " " + value.toLowerCase() : "")}
+          className={
+            "cell" +
+            (winLine.includes(i) ? " win" : "") +
+            (value ? " " + value.toLowerCase() : "")
+          }
           aria-label={coords(i, n) + ", " + (value || "empty")}
           aria-disabled={Boolean(value) || gameOver}
           onFocus={() => setFocusIdx(i)}
-          onClick={() => { setFocusIdx(i); onPlay(i); }}
+          onClick={() => {
+            setFocusIdx(i);
+            onPlay(i);
+          }}
         >
           {value}
         </button>
@@ -1766,7 +2053,12 @@ export default function History({ moves, step, n, onJump }) {
   return (
     <ol className="history" aria-label="Move history">
       <li>
-        <button type="button" data-testid="jump-0" aria-current={step === 0 ? "step" : undefined} onClick={() => onJump(0)}>
+        <button
+          type="button"
+          data-testid="jump-0"
+          aria-current={step === 0 ? "step" : undefined}
+          onClick={() => onJump(0)}
+        >
           Game start
         </button>
       </li>
@@ -1789,8 +2081,14 @@ export default function History({ moves, step, n, onJump }) {
           "/src/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 
-// Right, down, down-right, down-left. Each is walked both ways from the last move.
-export const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+// Right, down, down-right, down-left. Each
+// is walked both ways from the last move.
+export const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const playerAt = (moveNumber) => (moveNumber % 2 === 0 ? "X" : "O");
 
@@ -1806,7 +2104,14 @@ export function checkWinFrom(board, n, m, index) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
@@ -1817,7 +2122,8 @@ export function checkWinFrom(board, n, m, index) {
   return null;
 }
 
-// Rebuild the position after the first \`step\` moves. History stores moves, not boards.
+// Rebuild the position after the first \`step\`
+// moves. History stores moves, not boards.
 export function replay(n, m, moves, step) {
   const board = Array(n * n).fill(null);
   let winner = null;
@@ -1848,26 +2154,101 @@ export function moveFocus(index, key, n) {
   return index;
 }
 
-export const coords = (index, n) => "row " + (Math.floor(index / n) + 1) + ", column " + ((index % n) + 1);
+export const coords = (index, n) =>
+  "row " + (Math.floor(index / n) + 1) + ", column " + ((index % n) + 1);
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.ttt { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-.ttt h1 { font-size: 1.4rem; margin: 0 0 12px; text-align: center; }
-.config { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.config label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #94a3b8; }
-.config select { padding: 6px 8px; border-radius: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; }
-.status { text-align: center; min-height: 1.5em; font-weight: 600; color: #fbbf24; }
-.board { display: grid; gap: 6px; margin: 12px 0; }
-.cell { aspect-ratio: 1; min-width: 0; font-size: clamp(1rem, 6vw, 1.8rem); font-weight: 700; border: 2px solid #334155;
-  border-radius: 8px; background: #1e293b; color: #e2e8f0; cursor: pointer; padding: 0; }
-.cell[aria-disabled="true"] { cursor: default; }
-.cell:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.cell.x { color: #38bdf8; }
-.cell.o { color: #f472b6; }
-.cell.win { background: #14532d; border-color: #22c55e; }
-.history { padding-left: 1.5em; font-size: 0.9rem; }
-.history button { background: none; border: none; color: #93c5fd; cursor: pointer; padding: 2px 0; text-align: left; }
-.history button[aria-current="step"] { color: #fbbf24; font-weight: 700; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.ttt {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.ttt h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+  text-align: center;
+}
+.config {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.config label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+.config select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+.status {
+  text-align: center;
+  min-height: 1.5em;
+  font-weight: 600;
+  color: #fbbf24;
+}
+.board {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  font-size: clamp(1rem, 6vw, 1.8rem);
+  font-weight: 700;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+}
+.cell[aria-disabled="true"] {
+  cursor: default;
+}
+.cell:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cell.x {
+  color: #38bdf8;
+}
+.cell.o {
+  color: #f472b6;
+}
+.cell.win {
+  background: #14532d;
+  border-color: #22c55e;
+}
+.history {
+  padding-left: 1.5em;
+  font-size: 0.9rem;
+}
+.history button {
+  background: none;
+  border: none;
+  color: #93c5fd;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+}
+.history button[aria-current="step"] {
+  color: #fbbf24;
+  font-weight: 700;
+}
 `,
         },
       },
@@ -1904,12 +2285,20 @@ The rules live in <code>src/game.js</code> (no Vue): <code>checkWinFrom(board, n
 ### Step 1: the win check
 
 \`\`\`js
-// Right, down, down-right, down-left. Each is walked both ways from the last move.
-export const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+// Right, down, down-right, down-left. Each
+// is walked both ways from the last move.
+export const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
-export const playerAt = (moveNumber) => (moveNumber % 2 === 0 ? "X" : "O");
+export const playerAt = (moveNumber) =>
+  moveNumber % 2 === 0 ? "X" : "O";
 
-// Only lines through the LAST move can be new wins, so check just those:
+// Only lines through the LAST move can
+// be new wins, so check just those:
 // at most 4 directions x 2 sides x (m - 1) cells = O(m), whatever n is.
 export function checkWinFrom(board, n, m, index) {
   const player = board[index];
@@ -1921,13 +2310,21 @@ export function checkWinFrom(board, n, m, index) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= m) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= m)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -1949,13 +2346,18 @@ const SIZES = [3, 4, 5, 6, 7, 8];
 const n = ref(5);
 const m = ref(4);
 const moves = ref([]); // cell index of every move, in order
-const step = ref(0);   // how many of those moves are on the board
+const step = ref(0); // how many of those moves are on the board
 
-const game = computed(() => replay(n.value, m.value, moves.value, step.value));
-const gameOver = computed(() => Boolean(game.value.winner) || game.value.draw);
+const game = computed(() =>
+  replay(n.value, m.value, moves.value, step.value),
+);
+const gameOver = computed(
+  () => Boolean(game.value.winner) || game.value.draw,
+);
 const needOptions = computed(() => SIZES.filter((s) => s <= n.value));
 
-// A new board size or win length starts a new game; M can never exceed N.
+// A new board size or win length starts
+// a new game; M can never exceed N.
 watch([n, m], () => {
   if (m.value > n.value) m.value = n.value;
   moves.value = [];
@@ -1964,7 +2366,8 @@ watch([n, m], () => {
 
 function play(i) {
   if (gameOver.value || game.value.board[i]) return;
-  moves.value = moves.value.slice(0, step.value).concat(i); // a new move drops the redo future
+  // a new move drops the redo future
+  moves.value = moves.value.slice(0, step.value).concat(i);
   step.value = moves.value.length;
 }
 </script>
@@ -1984,17 +2387,23 @@ function play(i) {
       <label>
         Board size
         <select v-model.number="n" data-testid="size">
-          <option v-for="s in SIZES" :key="s" :value="s">{{ s + " x " + s }}</option>
+          <option v-for="s in SIZES" :key="s" :value="s">
+            {{ s + " x " + s }}
+          </option>
         </select>
       </label>
       <label>
         In a row to win
         <select v-model.number="m" data-testid="need">
-          <option v-for="s in needOptions" :key="s" :value="s">{{ s }}</option>
+          <option v-for="s in needOptions" :key="s" :value="s">
+            {{ s }}
+          </option>
         </select>
       </label>
     </div>
-    <p class="status" data-testid="status" aria-live="polite">{{ statusText(game) }}</p>
+    <p class="status" data-testid="status" aria-live="polite">
+      {{ statusText(game) }}
+    </p>
     <GameBoard
       :key="n + 'x' + m"
       :n="n"
@@ -2004,7 +2413,12 @@ function play(i) {
       :game-over="gameOver"
       @play="play"
     />
-    <MoveHistory :moves="moves" :step="step" :n="n" @jump="(s) => (step = s)" />
+    <MoveHistory
+      :moves="moves"
+      :step="step"
+      :n="n"
+      @jump="(s) => (step = s)"
+    />
   </main>
 </template>
 \`\`\`
@@ -2015,22 +2429,13 @@ function play(i) {
 ### Step 4: a roving tabindex grid
 
 \`\`\`vue
-// Roving tabindex: one cell is in the tab order, arrows move it.
-const focusIdx = ref(0);
-const active = computed(() => Math.min(focusIdx.value, props.n * props.n - 1));
-
-function onKeydown(e) {
-  const next = moveFocus(active.value, e.key, props.n);
-  if (next === active.value) return;
-  e.preventDefault();
-  focusIdx.value = next;
-  e.currentTarget.querySelector('[data-index="' + next + '"]').focus();
-}
-
-function onClick(i) {
-  focusIdx.value = i;
-  emit("play", i);
-}
+// Roving tabindex: one cell is in the tab order, arrows move it. const
+focusIdx = ref(0); const active = computed(() =>
+Math.min(focusIdx.value, props.n * props.n - 1)); function onKeydown(e)
+{ const next = moveFocus(active.value, e.key, props.n); if (next ===
+active.value) return; e.preventDefault(); focusIdx.value = next;
+e.currentTarget.querySelector('[data-index="' + next + '"]').focus(); }
+function onClick(i) { focusIdx.value = i; emit("play", i); }
 </script>
 
 <template>
@@ -2070,7 +2475,7 @@ Cells use <code>:aria-disabled</code> instead of <code>:disabled</code>: a disab
 
 The rules were checked with node; a <code>Proxy</code> counted cell reads for the last-move check against a full-board scan:
 
-\`\`\`
+\`\`\`text
 n=3 m=3      | last-move check: X reads 3 | full scan: X reads 11
 n=15 m=5     | last-move check: X reads 6 | full scan: X reads 148
 n=100 m=5    | last-move check: X reads 6 | full scan: X reads 6813
@@ -2081,7 +2486,7 @@ time travel to step 4    | Next player: X | XOX.O....
 
 The SFCs were then compiled with <code>@vue/compiler-sfc</code>, mounted in jsdom, and driven with clicks, <code>&lt;select&gt;</code> changes and arrow keys:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-Toe II Board size 3 x 34 x 45 x 56 x 67 x 78 x 8 In a row to win 345Next player: X Game start
 start       : Next player: X | cells = 25 | need = 4 | Board 5 by 5, 4 in a row wins
 diagonal    : Winner: X | win cells = 0,6,12,18
@@ -2196,7 +2601,7 @@ const SIZES = [3, 4, 5, 6, 7, 8];
 const n = ref(5);
 const m = ref(4);
 const moves = ref([]); // cell index of every move, in order
-const step = ref(0);   // how many of those moves are on the board
+const step = ref(0); // how many of those moves are on the board
 
 const game = computed(() => replay(n.value, m.value, moves.value, step.value));
 const gameOver = computed(() => Boolean(game.value.winner) || game.value.draw);
@@ -2211,7 +2616,8 @@ watch([n, m], () => {
 
 function play(i) {
   if (gameOver.value || game.value.board[i]) return;
-  moves.value = moves.value.slice(0, step.value).concat(i); // a new move drops the redo future
+  // a new move drops the redo future
+  moves.value = moves.value.slice(0, step.value).concat(i);
   step.value = moves.value.length;
 }
 </script>
@@ -2223,7 +2629,9 @@ function play(i) {
       <label>
         Board size
         <select v-model.number="n" data-testid="size">
-          <option v-for="s in SIZES" :key="s" :value="s">{{ s + " x " + s }}</option>
+          <option v-for="s in SIZES" :key="s" :value="s">
+            {{ s + " x " + s }}
+          </option>
         </select>
       </label>
       <label>
@@ -2233,7 +2641,9 @@ function play(i) {
         </select>
       </label>
     </div>
-    <p class="status" data-testid="status" aria-live="polite">{{ statusText(game) }}</p>
+    <p class="status" data-testid="status" aria-live="polite">
+      {{ statusText(game) }}
+    </p>
     <GameBoard
       :key="n + 'x' + m"
       :n="n"
@@ -2248,13 +2658,48 @@ function play(i) {
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.ttt { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-.ttt h1 { font-size: 1.4rem; margin: 0 0 12px; text-align: center; }
-.config { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.config label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #94a3b8; }
-.config select { padding: 6px 8px; border-radius: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; }
-.status { text-align: center; min-height: 1.5em; font-weight: 600; color: #fbbf24; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.ttt {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.ttt h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+  text-align: center;
+}
+.config {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.config label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+.config select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+.status {
+  text-align: center;
+  min-height: 1.5em;
+  font-weight: 600;
+  color: #fbbf24;
+}
 </style>
 `,
           "/src/components/GameBoard.vue": `<script setup>
@@ -2315,14 +2760,40 @@ function onClick(i) {
 </template>
 
 <style scoped>
-.board { display: grid; gap: 6px; margin: 12px 0; }
-.cell { aspect-ratio: 1; min-width: 0; font-size: clamp(1rem, 6vw, 1.8rem); font-weight: 700; border: 2px solid #334155;
-  border-radius: 8px; background: #1e293b; color: #e2e8f0; cursor: pointer; padding: 0; }
-.cell[aria-disabled="true"] { cursor: default; }
-.cell:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.cell.x { color: #38bdf8; }
-.cell.o { color: #f472b6; }
-.cell.win { background: #14532d; border-color: #22c55e; }
+.board {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+}
+.cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  font-size: clamp(1rem, 6vw, 1.8rem);
+  font-weight: 700;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+}
+.cell[aria-disabled="true"] {
+  cursor: default;
+}
+.cell:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cell.x {
+  color: #38bdf8;
+}
+.cell.o {
+  color: #f472b6;
+}
+.cell.win {
+  background: #14532d;
+  border-color: #22c55e;
+}
 </style>
 `,
           "/src/components/MoveHistory.vue": `<script setup>
@@ -2339,7 +2810,12 @@ const emit = defineEmits(["jump"]);
 <template>
   <ol class="history" aria-label="Move history">
     <li>
-      <button type="button" data-testid="jump-0" :aria-current="step === 0 ? 'step' : undefined" @click="emit('jump', 0)">
+      <button
+        type="button"
+        data-testid="jump-0"
+        :aria-current="step === 0 ? 'step' : undefined"
+        @click="emit('jump', 0)"
+      >
         Game start
       </button>
     </li>
@@ -2357,16 +2833,35 @@ const emit = defineEmits(["jump"]);
 </template>
 
 <style scoped>
-.history { padding-left: 1.5em; font-size: 0.9rem; }
-.history button { background: none; border: none; color: #93c5fd; cursor: pointer; padding: 2px 0; text-align: left; }
-.history button[aria-current="step"] { color: #fbbf24; font-weight: 700; }
+.history {
+  padding-left: 1.5em;
+  font-size: 0.9rem;
+}
+.history button {
+  background: none;
+  border: none;
+  color: #93c5fd;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+}
+.history button[aria-current="step"] {
+  color: #fbbf24;
+  font-weight: 700;
+}
 </style>
 `,
           "/src/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 
-// Right, down, down-right, down-left. Each is walked both ways from the last move.
-export const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+// Right, down, down-right, down-left. Each
+// is walked both ways from the last move.
+export const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const playerAt = (moveNumber) => (moveNumber % 2 === 0 ? "X" : "O");
 
@@ -2382,7 +2877,14 @@ export function checkWinFrom(board, n, m, index) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
@@ -2393,7 +2895,8 @@ export function checkWinFrom(board, n, m, index) {
   return null;
 }
 
-// Rebuild the position after the first \`step\` moves. History stores moves, not boards.
+// Rebuild the position after the first \`step\`
+// moves. History stores moves, not boards.
 export function replay(n, m, moves, step) {
   const board = Array(n * n).fill(null);
   let winner = null;
@@ -2424,7 +2927,8 @@ export function moveFocus(index, key, n) {
   return index;
 }
 
-export const coords = (index, n) => "row " + (Math.floor(index / n) + 1) + ", column " + ((index % n) + 1);
+export const coords = (index, n) =>
+  "row " + (Math.floor(index / n) + 1) + ", column " + ((index % n) + 1);
 `,
         },
       },
@@ -2455,9 +2959,15 @@ A Gomoku referee checks only the row, column and diagonals of the stone just pla
 ### Step 1: the win check
 
 \`\`\`ts
-// Only lines through the LAST move can be new wins, so check just those:
+// Only lines through the LAST move can
+// be new wins, so check just those:
 // at most 4 directions x 2 sides x (m - 1) cells = O(m), whatever n is.
-export function checkWinFrom(board: Cell[], n: number, m: number, index: number): Win | null {
+export function checkWinFrom(
+  board: Cell[],
+  n: number,
+  m: number,
+  index: number,
+): Win | null {
   const player = board[index];
   if (!player) return null;
   const row = Math.floor(index / n);
@@ -2467,13 +2977,21 @@ export function checkWinFrom(board: Cell[], n: number, m: number, index: number)
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= m) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= m)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -2488,17 +3006,25 @@ export class AppComponent {
   readonly sizes = SIZES;
   readonly n = signal(5);
   readonly m = signal(4);
-  readonly moves = signal<number[]>([]); // cell index of every move, in order
-  readonly step = signal(0);             // how many of those moves are on the board
+  // cell index of every move, in order
+  readonly moves = signal<number[]>([]);
+  readonly step = signal(0); // how many of those moves are on the board
 
-  readonly game = computed(() => replay(this.n(), this.m(), this.moves(), this.step()));
-  readonly gameOver = computed(() => !!this.game().winner || this.game().draw);
+  readonly game = computed(() =>
+    replay(this.n(), this.m(), this.moves(), this.step()),
+  );
+  readonly gameOver = computed(
+    () => !!this.game().winner || this.game().draw,
+  );
   readonly status = computed(() => statusText(this.game()));
-  readonly needOptions = computed(() => SIZES.filter((s) => s <= this.n()));
+  readonly needOptions = computed(() =>
+    SIZES.filter((s) => s <= this.n()),
+  );
 
   play(i: number): void {
     if (this.gameOver() || this.game().board[i]) return;
-    const next = this.moves().slice(0, this.step()).concat(i); // a new move drops the redo future
+    // a new move drops the redo future
+    const next = this.moves().slice(0, this.step()).concat(i);
     this.moves.set(next);
     this.step.set(next.length);
   }
@@ -2526,21 +3052,30 @@ export class AppComponent {
 The selects are wired by hand rather than with <code>ngModel</code>, which keeps <code>FormsModule</code> out and makes the reset explicit:
 
 \`\`\`ts
-        <label>
-          Board size
-          <select data-testid="size" (change)="resize(+$any($event.target).value)">
-            @for (s of sizes; track s) {
-              <option [value]="s" [selected]="s === n()">{{ s + " x " + s }}</option>
-            }
-          </select>
-        </label>
-        <label>
-          In a row to win
-          <select data-testid="need" (change)="changeNeed(+$any($event.target).value)">
-            @for (s of needOptions(); track s) {
-              <option [value]="s" [selected]="s === m()">{{ s }}</option>
-            }
-          </select>
+<label>
+  Board size
+  <select
+    data-testid="size"
+    (change)="resize(+$any($event.target).value)"
+  >
+    @for (s of sizes; track s) {
+      <option [value]="s" [selected]="s === n()">
+        {{ s + " x " + s }}
+      </option>
+    }
+  </select>
+</label>
+<label>
+  In a row to win
+  <select
+    data-testid="need"
+    (change)="changeNeed(+$any($event.target).value)"
+  >
+    @for (s of needOptions(); track s) {
+      <option [value]="s" [selected]="s === m()">{{ s }}</option>
+    }
+  </select></label
+>
 \`\`\`
 
 <code>$any($event.target).value</code> is a strict-template escape hatch: <code>$event.target</code> is typed as <code>EventTarget | null</code>, which has no <code>value</code>.
@@ -2548,7 +3083,7 @@ The selects are wired by hand rather than with <code>ngModel</code>, which keeps
 ### Step 3: the roving tabindex board
 
 \`\`\`ts
-  template: \`
+template: \`
     <div
       class="board"
       role="group"
@@ -2588,7 +3123,8 @@ export class BoardComponent implements OnChanges {
   // Roving tabindex: one cell is in the tab order, arrows move it.
   readonly active = signal(0);
 
-  // A new board size or win length is a new game: put the tab stop back on cell 0.
+  // A new board size or win length is a new
+  // game: put the tab stop back on cell 0.
   ngOnChanges(changes: SimpleChanges): void {
     if (changes["n"] || changes["m"]) this.active.set(0);
   }
@@ -2604,7 +3140,9 @@ export class BoardComponent implements OnChanges {
     e.preventDefault();
     this.active.set(next);
     const host = e.currentTarget as HTMLElement;
-    host.querySelector<HTMLElement>('[data-index="' + next + '"]')?.focus();
+    host
+      .querySelector<HTMLElement>('[data-index="' + next + '"]')
+      ?.focus();
   }
 
   onClick(i: number): void {
@@ -2624,7 +3162,7 @@ export class BoardComponent implements OnChanges {
 
 The rules were checked with node, counting cell reads with a <code>Proxy</code>:
 
-\`\`\`
+\`\`\`text
 n=3 m=3      | last-move check: X reads 3 | full scan: X reads 11
 n=15 m=5     | last-move check: X reads 6 | full scan: X reads 148
 n=100 m=5    | last-move check: X reads 6 | full scan: X reads 6813
@@ -2635,7 +3173,7 @@ time travel to step 4    | Next player: X | XOX.O....
 
 The components were booted with <code>bootstrapApplication(AppComponent)</code> AOT (ngc, <code>strictTemplates</code>) and JIT, and driven with clicks, select changes and arrow keys. AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Tic-Tac-Toe II Board size 3 x 34 x 45 x 56 x 67 x 78 x 8 In a row to win 345Next player: X Game start
 start       : Next player: X | cells = 25 | need = 4 | Board 5 by 5, 4 in a row wins
 diagonal    : Winner: X | win cells = 0,6,12,18
@@ -2755,22 +3293,35 @@ const SIZES = [3, 4, 5, 6, 7, 8];
       <div class="config">
         <label>
           Board size
-          <select data-testid="size" (change)="resize(+$any($event.target).value)">
+          <select
+            data-testid="size"
+            (change)="resize(+$any($event.target).value)"
+          >
             @for (s of sizes; track s) {
-              <option [value]="s" [selected]="s === n()">{{ s + " x " + s }}</option>
+              <option
+                [value]="s"
+                [selected]="s === n()"
+              >{{ s + " x " + s }}</option>
             }
           </select>
         </label>
         <label>
           In a row to win
-          <select data-testid="need" (change)="changeNeed(+$any($event.target).value)">
+          <select
+            data-testid="need"
+            (change)="changeNeed(+$any($event.target).value)"
+          >
             @for (s of needOptions(); track s) {
               <option [value]="s" [selected]="s === m()">{{ s }}</option>
             }
           </select>
         </label>
       </div>
-      <p class="status" data-testid="status" aria-live="polite">{{ status() }}</p>
+      <p
+        class="status"
+        data-testid="status"
+        aria-live="polite"
+      >{{ status() }}</p>
       <app-board
         [n]="n()"
         [m]="m()"
@@ -2779,10 +3330,16 @@ const SIZES = [3, 4, 5, 6, 7, 8];
         [gameOver]="gameOver()"
         (play)="play($event)"
       />
-      <app-history [moves]="moves()" [step]="step()" [n]="n()" (jump)="step.set($event)" />
+      <app-history
+        [moves]="moves()"
+        [step]="step()"
+        [n]="n()"
+        (jump)="step.set($event)"
+      />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
     .ttt { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
     .ttt h1 { font-size: 1.4rem; margin: 0 0 12px; text-align: center; }
@@ -2790,23 +3347,27 @@ const SIZES = [3, 4, 5, 6, 7, 8];
     .config label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: #94a3b8; }
     .config select { padding: 6px 8px; border-radius: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #475569; }
     .status { text-align: center; min-height: 1.5em; font-weight: 600; color: #fbbf24; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly sizes = SIZES;
   readonly n = signal(5);
   readonly m = signal(4);
   readonly moves = signal<number[]>([]); // cell index of every move, in order
-  readonly step = signal(0);             // how many of those moves are on the board
+  readonly step = signal(0); // how many of those moves are on the board
 
-  readonly game = computed(() => replay(this.n(), this.m(), this.moves(), this.step()));
+  readonly game = computed(() =>
+    replay(this.n(), this.m(), this.moves(), this.step()),
+  );
   readonly gameOver = computed(() => !!this.game().winner || this.game().draw);
   readonly status = computed(() => statusText(this.game()));
   readonly needOptions = computed(() => SIZES.filter((s) => s <= this.n()));
 
   play(i: number): void {
     if (this.gameOver() || this.game().board[i]) return;
-    const next = this.moves().slice(0, this.step()).concat(i); // a new move drops the redo future
+    // a new move drops the redo future
+    const next = this.moves().slice(0, this.step()).concat(i);
     this.moves.set(next);
     this.step.set(next.length);
   }
@@ -2828,7 +3389,15 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/board.component.ts": `import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signal } from "@angular/core";
+          "/src/app/board.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  signal,
+} from "@angular/core";
 import { Cell, coords, moveFocus } from "./game";
 
 @Component({
@@ -2860,7 +3429,8 @@ import { Cell, coords, moveFocus } from "./game";
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .board { display: grid; gap: 6px; margin: 12px 0; }
     .cell { aspect-ratio: 1; min-width: 0; font-size: clamp(1rem, 6vw, 1.8rem); font-weight: 700; border: 2px solid #334155;
       border-radius: 8px; background: #1e293b; color: #e2e8f0; cursor: pointer; padding: 0; }
@@ -2869,7 +3439,8 @@ import { Cell, coords, moveFocus } from "./game";
     .cell.x { color: #38bdf8; }
     .cell.o { color: #f472b6; }
     .cell.win { background: #14532d; border-color: #22c55e; }
-  \`],
+  \`,
+  ],
 })
 export class BoardComponent implements OnChanges {
   @Input() n = 3;
@@ -2882,7 +3453,8 @@ export class BoardComponent implements OnChanges {
   // Roving tabindex: one cell is in the tab order, arrows move it.
   readonly active = signal(0);
 
-  // A new board size or win length is a new game: put the tab stop back on cell 0.
+  // A new board size or win length is a new
+  // game: put the tab stop back on cell 0.
   ngOnChanges(changes: SimpleChanges): void {
     if (changes["n"] || changes["m"]) this.active.set(0);
   }
@@ -2911,17 +3483,37 @@ export class BoardComponent implements OnChanges {
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 export type Player = "X" | "O";
 export type Cell = Player | null;
-export interface Win { player: Player; line: number[]; }
-export interface Game { board: Cell[]; winner: Win | null; draw: boolean; next: Player; }
+export interface Win {
+  player: Player;
+  line: number[];
+}
+export interface Game {
+  board: Cell[];
+  winner: Win | null;
+  draw: boolean;
+  next: Player;
+}
 
-// Right, down, down-right, down-left. Each is walked both ways from the last move.
-export const DIRECTIONS: [number, number][] = [[0, 1], [1, 0], [1, 1], [1, -1]];
+// Right, down, down-right, down-left. Each
+// is walked both ways from the last move.
+export const DIRECTIONS: [number, number][] = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
-export const playerAt = (moveNumber: number): Player => (moveNumber % 2 === 0 ? "X" : "O");
+export const playerAt = (moveNumber: number): Player =>
+  moveNumber % 2 === 0 ? "X" : "O";
 
 // Only lines through the LAST move can be new wins, so check just those:
 // at most 4 directions x 2 sides x (m - 1) cells = O(m), whatever n is.
-export function checkWinFrom(board: Cell[], n: number, m: number, index: number): Win | null {
+export function checkWinFrom(
+  board: Cell[],
+  n: number,
+  m: number,
+  index: number,
+): Win | null {
   const player = board[index];
   if (!player) return null;
   const row = Math.floor(index / n);
@@ -2931,7 +3523,14 @@ export function checkWinFrom(board: Cell[], n: number, m: number, index: number)
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < m && r >= 0 && r < n && c >= 0 && c < n && board[r * n + c] === player) {
+      while (
+        line.length < m &&
+        r >= 0 &&
+        r < n &&
+        c >= 0 &&
+        c < n &&
+        board[r * n + c] === player
+      ) {
         line.push(r * n + c);
         r += dr * sign;
         c += dc * sign;
@@ -2942,8 +3541,14 @@ export function checkWinFrom(board: Cell[], n: number, m: number, index: number)
   return null;
 }
 
-// Rebuild the position after the first \`step\` moves. History stores moves, not boards.
-export function replay(n: number, m: number, moves: number[], step: number): Game {
+// Rebuild the position after the first \`step\`
+// moves. History stores moves, not boards.
+export function replay(
+  n: number,
+  m: number,
+  moves: number[],
+  step: number,
+): Game {
   const board = Array<Cell>(n * n).fill(null);
   let winner: Win | null = null;
   for (let i = 0; i < step && !winner; i++) {
@@ -2985,7 +3590,12 @@ import { coords, playerAt } from "./game";
   template: \`
     <ol class="history" aria-label="Move history">
       <li>
-        <button type="button" data-testid="jump-0" [attr.aria-current]="step === 0 ? 'step' : null" (click)="jump.emit(0)">
+        <button
+          type="button"
+          data-testid="jump-0"
+          [attr.aria-current]="step === 0 ? 'step' : null"
+          (click)="jump.emit(0)"
+        >
           Game start
         </button>
       </li>
@@ -3001,11 +3611,13 @@ import { coords, playerAt } from "./game";
       }
     </ol>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .history { padding-left: 1.5em; font-size: 0.9rem; }
     .history button { background: none; border: none; color: #93c5fd; cursor: pointer; padding: 2px 0; text-align: left; }
     .history button[aria-current="step"] { color: #fbbf24; font-weight: 700; }
-  \`],
+  \`,
+  ],
 })
 export class HistoryComponent {
   @Input() moves: number[] = [];
@@ -3014,7 +3626,9 @@ export class HistoryComponent {
   @Output() jump = new EventEmitter<number>();
 
   label(cell: number, i: number): string {
-    return "Move " + (i + 1) + ": " + playerAt(i) + " at " + coords(cell, this.n);
+    return (
+      "Move " + (i + 1) + ": " + playerAt(i) + " at " + coords(cell, this.n)
+    );
   }
 }
 `,
@@ -3136,22 +3750,30 @@ Every arrow in this flow lives inside one pure function, <code>drop</code>. The 
 ### Step 1: board layout and gravity
 
 \`\`\`js
-// Pure Connect Four logic. No framework code, so it can be tested on its own.
-// Flat board: cell (row, col) is at row * COLS + col, row 0 is the TOP row.
+// Pure Connect Four logic. No framework
+// code, so it can be tested on its own.
+// Flat board: cell (row, col) is at row
+// * COLS + col, row 0 is the TOP row.
 export const ROWS = 6;
 export const COLS = 7;
 export const NEED = 4;
-const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const newGame = () => ({
   board: Array(ROWS * COLS).fill(null),
   current: "Red",
-  winner: null,   // { player, line } once someone connects four
+  winner: null, // { player, line } once someone connects four
   lastMove: null, // { row, col } of the latest disc
   moves: 0,
 });
 
-// Gravity: the disc lands in the lowest empty row of the column, or -1 if full.
+// Gravity: the disc lands in the lowest
+// empty row of the column, or -1 if full.
 export function landingRow(board, col) {
   for (let row = ROWS - 1; row >= 0; row--) {
     if (!board[row * COLS + col]) return row;
@@ -3167,7 +3789,8 @@ export function landingRow(board, col) {
 ### Step 2: the win check from the new disc
 
 \`\`\`js
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
 export function winFrom(board, row, col) {
   const player = board[row * COLS + col];
   for (const [dr, dc] of DIRECTIONS) {
@@ -3175,13 +3798,21 @@ export function winFrom(board, row, col) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -3196,7 +3827,8 @@ Walking both ways matters most in Connect Four, because a disc often lands in th
 ### Step 3: one drop, one new game object
 
 \`\`\`js
-export const isDraw = (game) => !game.winner && game.moves === ROWS * COLS;
+export const isDraw = (game) =>
+  !game.winner && game.moves === ROWS * COLS;
 export const isOver = (game) => Boolean(game.winner) || isDraw(game);
 
 // Returns a NEW game object; an illegal drop returns the same object.
@@ -3212,7 +3844,11 @@ export function drop(game, col) {
     winner,
     lastMove: { row, col },
     moves: game.moves + 1,
-    current: winner ? game.current : game.current === "Red" ? "Yellow" : "Red",
+    current: winner
+      ? game.current
+      : game.current === "Red"
+        ? "Yellow"
+        : "Red",
   };
 }
 \`\`\`
@@ -3233,8 +3869,17 @@ export default function App() {
   return (
     <main className="c4">
       <h1>Connect Four</h1>
-      <p className={"status " + game.current.toLowerCase()} data-testid="status">{statusText(game)}</p>
-      <div className="grid" role="group" aria-label="Connect Four board, 7 columns by 6 rows">
+      <p
+        className={"status " + game.current.toLowerCase()}
+        data-testid="status"
+      >
+        {statusText(game)}
+      </p>
+      <div
+        className="grid"
+        role="group"
+        aria-label="Connect Four board, 7 columns by 6 rows"
+      >
         {Array.from({ length: COLS }, (_, col) => (
           <Column
             key={col}
@@ -3247,8 +3892,15 @@ export default function App() {
           />
         ))}
       </div>
-      <p className="sr-only" data-testid="announce" aria-live="polite">{announce(game)}</p>
-      <button type="button" className="restart" data-testid="restart" onClick={() => setGame(newGame())}>
+      <p className="sr-only" data-testid="announce" aria-live="polite">
+        {announce(game)}
+      </p>
+      <button
+        type="button"
+        className="restart"
+        data-testid="restart"
+        onClick={() => setGame(newGame())}
+      >
         New game
       </button>
     </main>
@@ -3259,7 +3911,14 @@ export default function App() {
 \`\`\`jsx
 import { ROWS, COLS } from "./connect4";
 
-export default function Column({ col, board, winLine, label, disabled, onDrop }) {
+export default function Column({
+  col,
+  board,
+  winLine,
+  label,
+  disabled,
+  onDrop,
+}) {
   const cells = [];
   for (let row = 0; row < ROWS; row++) {
     const i = row * COLS + col;
@@ -3268,8 +3927,12 @@ export default function Column({ col, board, winLine, label, disabled, onDrop })
       <span
         key={row}
         data-testid={"slot-" + row + "-" + col}
-        className={"slot" + (disc ? " " + disc.toLowerCase() : "") + (winLine.includes(i) ? " win" : "")}
-      />
+        className={
+          "slot" +
+          (disc ? " " + disc.toLowerCase() : "") +
+          (winLine.includes(i) ? " win" : "")
+        }
+      />,
     );
   }
   return (
@@ -3279,7 +3942,9 @@ export default function Column({ col, board, winLine, label, disabled, onDrop })
       data-testid={"col-" + col}
       aria-label={label}
       aria-disabled={disabled}
-      onClick={() => { if (!disabled) onDrop(col); }}
+      onClick={() => {
+        if (!disabled) onDrop(col);
+      }}
     >
       {cells}
     </button>
@@ -3297,7 +3962,7 @@ The hidden <code>sr-only</code> paragraph is a polite live region that announces
 
 **The rules alone.** A node script played fixed sequences through <code>drop</code>:
 
-\`\`\`
+\`\`\`text
 gravity          | first disc in col 4 lands in row 5 (bottom = 5)
 full column      | landingRow = -1 | 7th drop returns the same object: true
 vertical         | Red wins! | cells 14,21,28,35 | moves 7
@@ -3311,7 +3976,7 @@ The 42-move draw sequence was found by a seeded random search over legal games, 
 
 **The component.** Rendered inside <code>&lt;StrictMode&gt;</code> in jsdom; the driver clicked column buttons and printed rows of the board (<code>R</code>, <code>Y</code>, <code>.</code>; top row first) and the highlighted slots (<code>row-col</code>):
 
-\`\`\`
+\`\`\`text
 RENDERED: Connect FourTurn: RedNew game
 start      : Turn: Red | Column 1, 6 empty
 first drop : ...R... | Red dropped in column 4, row 1 from the bottom. Turn: Yellow
@@ -3433,7 +4098,16 @@ The first line shows a disc landing on the bottom row and the live-region text. 
         files: {
           "/App.js": `import { useState } from "react";
 import Column from "./src/Column";
-import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusText } from "./src/connect4";
+import {
+  COLS,
+  announce,
+  columnLabel,
+  drop,
+  isOver,
+  landingRow,
+  newGame,
+  statusText,
+} from "./src/connect4";
 
 export default function App() {
   const [game, setGame] = useState(newGame);
@@ -3443,8 +4117,17 @@ export default function App() {
   return (
     <main className="c4">
       <h1>Connect Four</h1>
-      <p className={"status " + game.current.toLowerCase()} data-testid="status">{statusText(game)}</p>
-      <div className="grid" role="group" aria-label="Connect Four board, 7 columns by 6 rows">
+      <p
+        className={"status " + game.current.toLowerCase()}
+        data-testid="status"
+      >
+        {statusText(game)}
+      </p>
+      <div
+        className="grid"
+        role="group"
+        aria-label="Connect Four board, 7 columns by 6 rows"
+      >
         {Array.from({ length: COLS }, (_, col) => (
           <Column
             key={col}
@@ -3457,8 +4140,15 @@ export default function App() {
           />
         ))}
       </div>
-      <p className="sr-only" data-testid="announce" aria-live="polite">{announce(game)}</p>
-      <button type="button" className="restart" data-testid="restart" onClick={() => setGame(newGame())}>
+      <p className="sr-only" data-testid="announce" aria-live="polite">
+        {announce(game)}
+      </p>
+      <button
+        type="button"
+        className="restart"
+        data-testid="restart"
+        onClick={() => setGame(newGame())}
+      >
         New game
       </button>
     </main>
@@ -3467,7 +4157,14 @@ export default function App() {
 `,
           "/src/Column.js": `import { ROWS, COLS } from "./connect4";
 
-export default function Column({ col, board, winLine, label, disabled, onDrop }) {
+export default function Column({
+  col,
+  board,
+  winLine,
+  label,
+  disabled,
+  onDrop,
+}) {
   const cells = [];
   for (let row = 0; row < ROWS; row++) {
     const i = row * COLS + col;
@@ -3476,8 +4173,12 @@ export default function Column({ col, board, winLine, label, disabled, onDrop })
       <span
         key={row}
         data-testid={"slot-" + row + "-" + col}
-        className={"slot" + (disc ? " " + disc.toLowerCase() : "") + (winLine.includes(i) ? " win" : "")}
-      />
+        className={
+          "slot" +
+          (disc ? " " + disc.toLowerCase() : "") +
+          (winLine.includes(i) ? " win" : "")
+        }
+      />,
     );
   }
   return (
@@ -3487,7 +4188,9 @@ export default function Column({ col, board, winLine, label, disabled, onDrop })
       data-testid={"col-" + col}
       aria-label={label}
       aria-disabled={disabled}
-      onClick={() => { if (!disabled) onDrop(col); }}
+      onClick={() => {
+        if (!disabled) onDrop(col);
+      }}
     >
       {cells}
     </button>
@@ -3499,12 +4202,17 @@ export default function Column({ col, board, winLine, label, disabled, onDrop })
 export const ROWS = 6;
 export const COLS = 7;
 export const NEED = 4;
-const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const newGame = () => ({
   board: Array(ROWS * COLS).fill(null),
   current: "Red",
-  winner: null,   // { player, line } once someone connects four
+  winner: null, // { player, line } once someone connects four
   lastMove: null, // { row, col } of the latest disc
   moves: 0,
 });
@@ -3517,7 +4225,8 @@ export function landingRow(board, col) {
   return -1;
 }
 
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
 export function winFrom(board, row, col) {
   const player = board[row * COLS + col];
   for (const [dr, dc] of DIRECTIONS) {
@@ -3525,13 +4234,21 @@ export function winFrom(board, row, col) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -3567,7 +4284,15 @@ export function announce(game) {
   if (!game.lastMove) return "";
   const { row, col } = game.lastMove;
   const who = game.board[row * COLS + col];
-  return who + " dropped in column " + (col + 1) + ", row " + (ROWS - row) + " from the bottom. " + statusText(game);
+  return (
+    who +
+    " dropped in column " +
+    (col + 1) +
+    ", row " +
+    (ROWS - row) +
+    " from the bottom. " +
+    statusText(game)
+  );
 }
 
 export function columnLabel(game, col) {
@@ -3575,26 +4300,93 @@ export function columnLabel(game, col) {
   return "Column " + (col + 1) + ", " + (free === 0 ? "full" : free + " empty");
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.c4 { max-width: 460px; margin: 0 auto; padding: 24px 12px; text-align: center; }
-.c4 h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.status { font-weight: 700; min-height: 1.5em; }
-.status.red { color: #f87171; }
-.status.yellow { color: #facc15; }
-.grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px; background: #1d4ed8;
-  border-radius: 12px; margin: 12px 0; }
-.column { display: grid; grid-template-rows: repeat(6, 1fr); gap: 4px; padding: 2px; border: none; border-radius: 8px;
-  background: transparent; cursor: pointer; }
-.column:hover:not([aria-disabled="true"]) { background: #2563eb; }
-.column[aria-disabled="true"] { cursor: not-allowed; }
-.column:focus-visible { outline: 3px solid #fbbf24; outline-offset: 1px; }
-.slot { display: block; aspect-ratio: 1; border-radius: 50%; background: #0f172a; }
-.slot.red { background: #ef4444; }
-.slot.yellow { background: #facc15; }
-.slot.win { box-shadow: 0 0 0 3px #f8fafc inset; }
-.restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.c4 {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 12px;
+  text-align: center;
+}
+.c4 h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.status {
+  font-weight: 700;
+  min-height: 1.5em;
+}
+.status.red {
+  color: #f87171;
+}
+.status.yellow {
+  color: #facc15;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 8px;
+  background: #1d4ed8;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+.column {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 4px;
+  padding: 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.column:hover:not([aria-disabled="true"]) {
+  background: #2563eb;
+}
+.column[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+.column:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 1px;
+}
+.slot {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #0f172a;
+}
+.slot.red {
+  background: #ef4444;
+}
+.slot.yellow {
+  background: #facc15;
+}
+.slot.win {
+  box-shadow: 0 0 0 3px #f8fafc inset;
+}
+.restart {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -3626,7 +4418,8 @@ All rules live in <code>src/connect4.js</code>, which has no Vue in it: <code>ne
 ### Step 1: gravity and the win check
 
 \`\`\`js
-// Gravity: the disc lands in the lowest empty row of the column, or -1 if full.
+// Gravity: the disc lands in the lowest
+// empty row of the column, or -1 if full.
 export function landingRow(board, col) {
   for (let row = ROWS - 1; row >= 0; row--) {
     if (!board[row * COLS + col]) return row;
@@ -3634,7 +4427,8 @@ export function landingRow(board, col) {
   return -1;
 }
 
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
 export function winFrom(board, row, col) {
   const player = board[row * COLS + col];
   for (const [dr, dc] of DIRECTIONS) {
@@ -3642,13 +4436,21 @@ export function winFrom(board, row, col) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -3664,12 +4466,23 @@ export function winFrom(board, row, col) {
 <script setup>
 import { ref, computed } from "vue";
 import BoardColumn from "./components/BoardColumn.vue";
-import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusText } from "./connect4.js";
+import {
+  COLS,
+  announce,
+  columnLabel,
+  drop,
+  isOver,
+  landingRow,
+  newGame,
+  statusText,
+} from "./connect4.js";
 
 // One ref holds the whole game; drop() always returns a new object.
 const game = ref(newGame());
 const over = computed(() => isOver(game.value));
-const winLine = computed(() => (game.value.winner ? game.value.winner.line : []));
+const winLine = computed(() =>
+  game.value.winner ? game.value.winner.line : [],
+);
 const columns = Array.from({ length: COLS }, (_, c) => c);
 
 function onDrop(col) {
@@ -3680,8 +4493,17 @@ function onDrop(col) {
 <template>
   <main class="c4">
     <h1>Connect Four</h1>
-    <p :class="['status', game.current.toLowerCase()]" data-testid="status">{{ statusText(game) }}</p>
-    <div class="grid" role="group" aria-label="Connect Four board, 7 columns by 6 rows">
+    <p
+      :class="['status', game.current.toLowerCase()]"
+      data-testid="status"
+    >
+      {{ statusText(game) }}
+    </p>
+    <div
+      class="grid"
+      role="group"
+      aria-label="Connect Four board, 7 columns by 6 rows"
+    >
       <BoardColumn
         v-for="col in columns"
         :key="col"
@@ -3693,9 +4515,19 @@ function onDrop(col) {
         @drop="onDrop"
       />
     </div>
-    <p class="sr-only" data-testid="announce" aria-live="polite">{{ announce(game) }}</p>
-    <button type="button" class="restart" data-testid="restart" @click="game = newGame()">New game</button>
+    <p class="sr-only" data-testid="announce" aria-live="polite">
+      {{ announce(game) }}
+    </p>
+    <button
+      type="button"
+      class="restart"
+      data-testid="restart"
+      @click="game = newGame()"
+    >
+      New game
+    </button>
   </main>
+</template>
 \`\`\`
 
 <code>game.value = drop(game.value, col)</code> replaces the whole object. 📌 **Interview term: Immutable update** — <code>drop</code> copies the board and returns a new object, or the same object for an illegal drop. Vue's deep reactivity would also track an in-place change, but returning new objects keeps <code>drop</code> pure and testable, and keeps old positions intact for undo later.
@@ -3755,7 +4587,7 @@ A hidden live region (<code>aria-live="polite"</code>) reads out each move, such
 
 The rules alone, run with node:
 
-\`\`\`
+\`\`\`text
 gravity          | first disc in col 4 lands in row 5 (bottom = 5)
 full column      | landingRow = -1 | 7th drop returns the same object: true
 vertical         | Red wins! | cells 14,21,28,35 | moves 7
@@ -3767,7 +4599,7 @@ diagonal \\       | Red wins! | cells 17,25,33,41 | moves 11
 
 The app compiled with <code>@vue/compiler-sfc</code>, mounted in jsdom and driven by clicks on the column buttons. Rows are printed top first (<code>R</code>, <code>Y</code>, <code>.</code>) and winning slots as <code>row-col</code>:
 
-\`\`\`
+\`\`\`text
 RENDERED: Connect FourTurn: RedNew game
 start      : Turn: Red | Column 1, 6 empty
 first drop : ...R... | Red dropped in column 4, row 1 from the bottom. Turn: Yellow
@@ -3869,12 +4701,23 @@ These lines match the React and Angular builds exactly, including the 42-move dr
           "/src/App.vue": `<script setup>
 import { ref, computed } from "vue";
 import BoardColumn from "./components/BoardColumn.vue";
-import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusText } from "./connect4.js";
+import {
+  COLS,
+  announce,
+  columnLabel,
+  drop,
+  isOver,
+  landingRow,
+  newGame,
+  statusText,
+} from "./connect4.js";
 
 // One ref holds the whole game; drop() always returns a new object.
 const game = ref(newGame());
 const over = computed(() => isOver(game.value));
-const winLine = computed(() => (game.value.winner ? game.value.winner.line : []));
+const winLine = computed(() =>
+  game.value.winner ? game.value.winner.line : [],
+);
 const columns = Array.from({ length: COLS }, (_, c) => c);
 
 function onDrop(col) {
@@ -3885,8 +4728,15 @@ function onDrop(col) {
 <template>
   <main class="c4">
     <h1>Connect Four</h1>
-    <p :class="['status', game.current.toLowerCase()]" data-testid="status">{{ statusText(game) }}</p>
-    <div class="grid" role="group" aria-label="Connect Four board, 7 columns by 6 rows">
+    <p
+      :class="['status', game.current.toLowerCase()]"
+      data-testid="status"
+    >{{ statusText(game) }}</p>
+    <div
+      class="grid"
+      role="group"
+      aria-label="Connect Four board, 7 columns by 6 rows"
+    >
       <BoardColumn
         v-for="col in columns"
         :key="col"
@@ -3898,23 +4748,73 @@ function onDrop(col) {
         @drop="onDrop"
       />
     </div>
-    <p class="sr-only" data-testid="announce" aria-live="polite">{{ announce(game) }}</p>
-    <button type="button" class="restart" data-testid="restart" @click="game = newGame()">New game</button>
+    <p
+      class="sr-only"
+      data-testid="announce"
+      aria-live="polite"
+    >{{ announce(game) }}</p>
+    <button
+      type="button"
+      class="restart"
+      data-testid="restart"
+      @click="game = newGame()"
+    >New game</button>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.c4 { max-width: 460px; margin: 0 auto; padding: 24px 12px; text-align: center; }
-.c4 h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.status { font-weight: 700; min-height: 1.5em; }
-.status.red { color: #f87171; }
-.status.yellow { color: #facc15; }
-.grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 8px; background: #1d4ed8;
-  border-radius: 12px; margin: 12px 0; }
-.restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.c4 {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 12px;
+  text-align: center;
+}
+.c4 h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.status {
+  font-weight: 700;
+  min-height: 1.5em;
+}
+.status.red {
+  color: #f87171;
+}
+.status.yellow {
+  color: #facc15;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 8px;
+  background: #1d4ed8;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+.restart {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/components/BoardColumn.vue": `<script setup>
@@ -3956,15 +4856,41 @@ function onClick() {
 </template>
 
 <style scoped>
-.column { display: grid; grid-template-rows: repeat(6, 1fr); gap: 4px; padding: 2px; border: none; border-radius: 8px;
-  background: transparent; cursor: pointer; }
-.column:hover:not([aria-disabled="true"]) { background: #2563eb; }
-.column[aria-disabled="true"] { cursor: not-allowed; }
-.column:focus-visible { outline: 3px solid #fbbf24; outline-offset: 1px; }
-.slot { display: block; aspect-ratio: 1; border-radius: 50%; background: #0f172a; }
-.slot.red { background: #ef4444; }
-.slot.yellow { background: #facc15; }
-.slot.win { box-shadow: 0 0 0 3px #f8fafc inset; }
+.column {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 4px;
+  padding: 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.column:hover:not([aria-disabled="true"]) {
+  background: #2563eb;
+}
+.column[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+.column:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 1px;
+}
+.slot {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #0f172a;
+}
+.slot.red {
+  background: #ef4444;
+}
+.slot.yellow {
+  background: #facc15;
+}
+.slot.win {
+  box-shadow: 0 0 0 3px #f8fafc inset;
+}
 </style>
 `,
           "/src/connect4.js": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
@@ -3972,12 +4898,17 @@ function onClick() {
 export const ROWS = 6;
 export const COLS = 7;
 export const NEED = 4;
-const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+const DIRECTIONS = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const newGame = () => ({
   board: Array(ROWS * COLS).fill(null),
   current: "Red",
-  winner: null,   // { player, line } once someone connects four
+  winner: null, // { player, line } once someone connects four
   lastMove: null, // { row, col } of the latest disc
   moves: 0,
 });
@@ -3990,7 +4921,8 @@ export function landingRow(board, col) {
   return -1;
 }
 
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
 export function winFrom(board, row, col) {
   const player = board[row * COLS + col];
   for (const [dr, dc] of DIRECTIONS) {
@@ -3998,13 +4930,21 @@ export function winFrom(board, row, col) {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
@@ -4040,7 +4980,15 @@ export function announce(game) {
   if (!game.lastMove) return "";
   const { row, col } = game.lastMove;
   const who = game.board[row * COLS + col];
-  return who + " dropped in column " + (col + 1) + ", row " + (ROWS - row) + " from the bottom. " + statusText(game);
+  return (
+    who +
+    " dropped in column " +
+    (col + 1) +
+    ", row " +
+    (ROWS - row) +
+    " from the bottom. " +
+    statusText(game)
+  );
 }
 
 export function columnLabel(game, col) {
@@ -4078,7 +5026,8 @@ In Connect Four you never pick a slot. You pick a column and gravity picks the s
 ### Step 1: the rules
 
 \`\`\`ts
-// Gravity: the disc lands in the lowest empty row of the column, or -1 if full.
+// Gravity: the disc lands in the lowest
+// empty row of the column, or -1 if full.
 export function landingRow(board: Disc[], col: number): number {
   for (let row = ROWS - 1; row >= 0; row--) {
     if (!board[row * COLS + col]) return row;
@@ -4086,8 +5035,13 @@ export function landingRow(board: Disc[], col: number): number {
   return -1;
 }
 
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
-export function winFrom(board: Disc[], row: number, col: number): Win | null {
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
+export function winFrom(
+  board: Disc[],
+  row: number,
+  col: number,
+): Win | null {
   const player = board[row * COLS + col];
   if (!player) return null;
   for (const [dr, dc] of DIRECTIONS) {
@@ -4095,19 +5049,29 @@ export function winFrom(board: Disc[], row: number, col: number): Win | null {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
 
-export const isDraw = (game: Game): boolean => !game.winner && game.moves === ROWS * COLS;
-export const isOver = (game: Game): boolean => !!game.winner || isDraw(game);
+export const isDraw = (game: Game): boolean =>
+  !game.winner && game.moves === ROWS * COLS;
+export const isOver = (game: Game): boolean =>
+  !!game.winner || isDraw(game);
 
 // Returns a NEW game object; an illegal drop returns the same object.
 export function drop(game: Game, col: number): Game {
@@ -4122,7 +5086,11 @@ export function drop(game: Game, col: number): Game {
     winner,
     lastMove: { row, col },
     moves: game.moves + 1,
-    current: winner ? game.current : game.current === "Red" ? "Yellow" : "Red",
+    current: winner
+      ? game.current
+      : game.current === "Red"
+        ? "Yellow"
+        : "Red",
   };
 }
 \`\`\`
@@ -4140,7 +5108,8 @@ export class AppComponent {
   readonly newGame = newGame;
   readonly columns = Array.from({ length: COLS }, (_, c) => c);
 
-  // One signal holds the whole game; drop() always returns a new object.
+  // One signal holds the whole game;
+  // drop() always returns a new object.
   readonly game = signal(newGame());
   readonly over = computed(() => isOver(this.game()));
   readonly status = computed(() => statusText(this.game()));
@@ -4160,7 +5129,7 @@ export class AppComponent {
 \`\`\`
 
 \`\`\`ts
-  template: \`
+template: \`
     <main class="c4">
       <h1>Connect Four</h1>
       <p class="status" [class.red]="game().current === 'Red'" [class.yellow]="game().current === 'Yellow'"
@@ -4219,22 +5188,21 @@ import { COLS, Disc, ROWS } from "./connect4";
 \`\`\`
 
 \`\`\`ts
-  @Input() board: Disc[] = [];
-  @Input() winLine: number[] = [];
-  @Input() label = "";
-  @Input() disabled = false;
-  @Output() dropDisc = new EventEmitter<number>();
+@Input() board: Disc[] = [];
+@Input() winLine: number[] = [];
+@Input() label = "";
+@Input() disabled = false;
+@Output() dropDisc = new EventEmitter<number>();
 
-  readonly rows = Array.from({ length: ROWS }, (_, r) => r);
-  readonly cols = COLS;
+readonly rows = Array.from({ length: ROWS }, (_, r) => r);
+readonly cols = COLS;
 
-  disc(row: number): Disc {
-    return this.board[row * COLS + this.col];
-  }
+disc(row: number): Disc {
+  return this.board[row * COLS + this.col];
+}
 
-  onClick(): void {
-    if (!this.disabled) this.dropDisc.emit(this.col);
-  }
+onClick(): void {
+  if (!this.disabled) this.dropDisc.emit(this.col);
 }
 \`\`\`
 
@@ -4247,7 +5215,7 @@ import { COLS, Disc, ROWS } from "./connect4";
 
 Rules run with node:
 
-\`\`\`
+\`\`\`text
 gravity          | first disc in col 4 lands in row 5 (bottom = 5)
 full column      | landingRow = -1 | 7th drop returns the same object: true
 vertical         | Red wins! | cells 14,21,28,35 | moves 7
@@ -4259,7 +5227,7 @@ diagonal \\       | Red wins! | cells 17,25,33,41 | moves 11
 
 Booted with <code>bootstrapApplication(AppComponent)</code> under AOT and JIT and driven by clicks on the column buttons (rows printed top first; winning slots as <code>row-col</code>). AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Connect FourTurn: RedNew game
 start      : Turn: Red | Column 1, 6 empty
 first drop : ...R... | Red dropped in column 4, row 1 from the bottom. Turn: Yellow
@@ -4359,7 +5327,16 @@ The JIT run printed the same lines, and both match the React and Vue builds. Lay
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { ColumnComponent } from "./column.component";
-import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusText } from "./connect4";
+import {
+  COLS,
+  announce,
+  columnLabel,
+  drop,
+  isOver,
+  landingRow,
+  newGame,
+  statusText,
+} from "./connect4";
 
 @Component({
   selector: "app-root",
@@ -4370,7 +5347,11 @@ import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusT
       <h1>Connect Four</h1>
       <p class="status" [class.red]="game().current === 'Red'" [class.yellow]="game().current === 'Yellow'"
          data-testid="status">{{ status() }}</p>
-      <div class="grid" role="group" aria-label="Connect Four board, 7 columns by 6 rows">
+      <div
+        class="grid"
+        role="group"
+        aria-label="Connect Four board, 7 columns by 6 rows"
+      >
         @for (col of columns; track col) {
           <app-column
             [col]="col"
@@ -4382,11 +5363,21 @@ import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusT
           />
         }
       </div>
-      <p class="sr-only" data-testid="announce" aria-live="polite">{{ announcement() }}</p>
-      <button type="button" class="restart" data-testid="restart" (click)="game.set(newGame())">New game</button>
+      <p
+        class="sr-only"
+        data-testid="announce"
+        aria-live="polite"
+      >{{ announcement() }}</p>
+      <button
+        type="button"
+        class="restart"
+        data-testid="restart"
+        (click)="game.set(newGame())"
+      >New game</button>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
     .c4 { max-width: 460px; margin: 0 auto; padding: 24px 12px; text-align: center; }
     .c4 h1 { font-size: 1.4rem; margin: 0 0 8px; }
@@ -4398,7 +5389,8 @@ import { COLS, announce, columnLabel, drop, isOver, landingRow, newGame, statusT
     .restart { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
       color: #f8fafc; cursor: pointer; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly newGame = newGame;
@@ -4448,18 +5440,49 @@ import { COLS, Disc, ROWS } from "./connect4";
       }
     </button>
   \`,
-  styles: [\`
-    :host { display: block; }
-    .column { display: grid; grid-template-rows: repeat(6, 1fr); gap: 4px; padding: 2px; border: none; border-radius: 8px;
-      background: transparent; cursor: pointer; width: 100%; }
-    .column:hover:not([aria-disabled="true"]) { background: #2563eb; }
-    .column[aria-disabled="true"] { cursor: not-allowed; }
-    .column:focus-visible { outline: 3px solid #fbbf24; outline-offset: 1px; }
-    .slot { display: block; aspect-ratio: 1; border-radius: 50%; background: #0f172a; }
-    .slot.red { background: #ef4444; }
-    .slot.yellow { background: #facc15; }
-    .slot.win { box-shadow: 0 0 0 3px #f8fafc inset; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .column {
+        display: grid;
+        grid-template-rows: repeat(6, 1fr);
+        gap: 4px;
+        padding: 2px;
+        border: none;
+        border-radius: 8px;
+        background: transparent;
+        cursor: pointer;
+        width: 100%;
+      }
+      .column:hover:not([aria-disabled="true"]) {
+        background: #2563eb;
+      }
+      .column[aria-disabled="true"] {
+        cursor: not-allowed;
+      }
+      .column:focus-visible {
+        outline: 3px solid #fbbf24;
+        outline-offset: 1px;
+      }
+      .slot {
+        display: block;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: #0f172a;
+      }
+      .slot.red {
+        background: #ef4444;
+      }
+      .slot.yellow {
+        background: #facc15;
+      }
+      .slot.win {
+        box-shadow: 0 0 0 3px #f8fafc inset;
+      }
+    \`,
+  ],
 })
 export class ColumnComponent {
   @Input() col = 0;
@@ -4485,11 +5508,14 @@ export class ColumnComponent {
 // Flat board: cell (row, col) is at row * COLS + col, row 0 is the TOP row.
 export type Player = "Red" | "Yellow";
 export type Disc = Player | null;
-export interface Win { player: Player; line: number[]; }
+export interface Win {
+  player: Player;
+  line: number[];
+}
 export interface Game {
   board: Disc[];
   current: Player;
-  winner: Win | null;                     // set once someone connects four
+  winner: Win | null; // set once someone connects four
   lastMove: { row: number; col: number } | null;
   moves: number;
 }
@@ -4497,7 +5523,12 @@ export interface Game {
 export const ROWS = 6;
 export const COLS = 7;
 export const NEED = 4;
-const DIRECTIONS: [number, number][] = [[0, 1], [1, 0], [1, 1], [1, -1]];
+const DIRECTIONS: [number, number][] = [
+  [0, 1],
+  [1, 0],
+  [1, 1],
+  [1, -1],
+];
 
 export const newGame = (): Game => ({
   board: Array<Disc>(ROWS * COLS).fill(null),
@@ -4515,7 +5546,8 @@ export function landingRow(board: Disc[], col: number): number {
   return -1;
 }
 
-// Only lines through the new disc can be new wins: 4 directions, 3 cells each way.
+// Only lines through the new disc can be
+// new wins: 4 directions, 3 cells each way.
 export function winFrom(board: Disc[], row: number, col: number): Win | null {
   const player = board[row * COLS + col];
   if (!player) return null;
@@ -4524,18 +5556,27 @@ export function winFrom(board: Disc[], row: number, col: number): Win | null {
     for (const sign of [1, -1]) {
       let r = row + dr * sign;
       let c = col + dc * sign;
-      while (line.length < NEED && r >= 0 && r < ROWS && c >= 0 && c < COLS && board[r * COLS + c] === player) {
+      while (
+        line.length < NEED &&
+        r >= 0 &&
+        r < ROWS &&
+        c >= 0 &&
+        c < COLS &&
+        board[r * COLS + c] === player
+      ) {
         line.push(r * COLS + c);
         r += dr * sign;
         c += dc * sign;
       }
     }
-    if (line.length >= NEED) return { player, line: line.sort((a, b) => a - b) };
+    if (line.length >= NEED)
+      return { player, line: line.sort((a, b) => a - b) };
   }
   return null;
 }
 
-export const isDraw = (game: Game): boolean => !game.winner && game.moves === ROWS * COLS;
+export const isDraw = (game: Game): boolean =>
+  !game.winner && game.moves === ROWS * COLS;
 export const isOver = (game: Game): boolean => !!game.winner || isDraw(game);
 
 // Returns a NEW game object; an illegal drop returns the same object.
@@ -4566,7 +5607,15 @@ export function announce(game: Game): string {
   if (!game.lastMove) return "";
   const { row, col } = game.lastMove;
   const who = game.board[row * COLS + col];
-  return who + " dropped in column " + (col + 1) + ", row " + (ROWS - row) + " from the bottom. " + statusText(game);
+  return (
+    who +
+    " dropped in column " +
+    (col + 1) +
+    ", row " +
+    (ROWS - row) +
+    " from the bottom. " +
+    statusText(game)
+  );
 }
 
 export function columnLabel(game: Game, col: number): string {
@@ -4673,8 +5722,10 @@ There are only two phases. Input is accepted in the first and ignored in the sec
 ### Step 1: config-driven slots and tiny rules
 
 \`\`\`js
-// Pure Grid Lights logic. No framework code, so it can be tested on its own.
-// 1 = a light, 0 = an empty slot. The default is a 3 x 3 ring with a hole in the middle.
+// Pure Grid Lights logic. No framework
+// code, so it can be tested on its own.
+// 1 = a light, 0 = an empty slot. The default
+// is a 3 x 3 ring with a hole in the middle.
 export const CONFIG = [
   [1, 1, 1],
   [1, 0, 1],
@@ -4685,13 +5736,20 @@ export const OFF_DELAY_MS = 300;
 // Flatten the config into renderable slots, each with a stable index.
 export function slotsFrom(config) {
   return config.flatMap((row, r) =>
-    row.map((on, c) => ({ index: r * row.length + c, row: r, col: c, isLight: on === 1 }))
+    row.map((on, c) => ({
+      index: r * row.length + c,
+      row: r,
+      col: c,
+      isLight: on === 1,
+    })),
   );
 }
 
-export const countLights = (config) => config.flat().filter((v) => v === 1).length;
+export const countLights = (config) =>
+  config.flat().filter((v) => v === 1).length;
 
-// The activation ORDER is the state: a light is "on" when its index is in it.
+// The activation ORDER is the state: a
+// light is "on" when its index is in it.
 export function activate(order, index) {
   return order.includes(index) ? order : [...order, index];
 }
@@ -4705,12 +5763,12 @@ Rendering from <code>CONFIG</code> means a 4 x 4 or an L-shaped grid is a data c
 ### Step 2: clicking
 
 \`\`\`jsx
-  function handleActivate(index) {
-    if (deactivating || order.includes(index)) return;
-    const next = activate(order, index);
-    setOrder(next);
-    if (next.length === TOTAL) setDeactivating(true);
-  }
+function handleActivate(index) {
+  if (deactivating || order.includes(index)) return;
+  const next = activate(order, index);
+  setOrder(next);
+  if (next.length === TOTAL) setDeactivating(true);
+}
 \`\`\`
 
 Two guards: ignore clicks while deactivating, and ignore clicks on lights that are already on. When the click that lights the last cell arrives, flip <code>deactivating</code> on. React batches both state updates from one event into a single render. See [how React batching works](/interview-question/how-does-react-s-batching-work).
@@ -4719,11 +5777,14 @@ Two guards: ignore clicks while deactivating, and ignore clicks on lights that a
 
 \`\`\`jsx
 export default function App() {
-  const [order, setOrder] = useState([]);              // indices, in the order they were turned on
+  // indices, in the order they were turned on
+  const [order, setOrder] = useState([]);
   const [deactivating, setDeactivating] = useState(false);
 
-  // One timeout per step: each run turns off ONE light, then the new \`order\` schedules the next.
-  // The cleanup clears a pending timeout, so StrictMode and unmounts cannot leave one behind.
+  // One timeout per step: each run turns off ONE
+  // light, then the new \`order\` schedules the next.
+  // The cleanup clears a pending timeout, so
+  // StrictMode and unmounts cannot leave one behind.
   useEffect(() => {
     if (!deactivating) return;
     if (order.length === 0) {
@@ -4752,13 +5813,16 @@ Why a chain of timeouts rather than one <code>setInterval</code>? Both work. The
 
 \`\`\`jsx
 export default function Light({ slot, on, locked, onActivate }) {
-  if (!slot.isLight) return <span className="hole" aria-hidden="true" />;
+  if (!slot.isLight)
+    return <span className="hole" aria-hidden="true" />;
   return (
     <button
       type="button"
       data-testid={"light-" + slot.index}
       className={"light" + (on ? " on" : "")}
-      aria-label={"Row " + (slot.row + 1) + ", column " + (slot.col + 1)}
+      aria-label={
+        "Row " + (slot.row + 1) + ", column " + (slot.col + 1)
+      }
       aria-pressed={on}
       aria-disabled={locked}
       onClick={() => onActivate(slot.index)}
@@ -4777,7 +5841,7 @@ The status line ("3 of 8 on" / "Turning off in reverse order...") is a polite li
 
 **The rules.** Run with node:
 
-\`\`\`
+\`\`\`text
 lights: 8 | slots: 9 | hole at index 4
 activation order: 0,1,2,5,8,7,6,3 (the repeated 0 was ignored)
 deactivation order: 3,6,7,8,5,2,1,0
@@ -4785,7 +5849,7 @@ deactivation order: 3,6,7,8,5,2,1,0
 
 **The component, with real timers.** Rendered in <code>&lt;StrictMode&gt;</code> in jsdom. The driver clicked seven lights clockwise, re-clicked a lit one, clicked the eighth, then polled the DOM every 20 ms for 3 seconds, recording when each light went off. Halfway through it clicked an already-off light to check that input is locked:
 
-\`\`\`
+\`\`\`text
 RENDERED: Grid Lights0 of 8 on
 start       : 8 lights, center hole = true | 0 of 8 on
 7 clicked   : 0,1,2,5,6,7,8 | 7 of 8 on | light-0 aria-pressed = true
@@ -4906,17 +5970,27 @@ The off order is the exact reverse of the click order, and each light went off a
         files: {
           "/App.js": `import { useEffect, useState } from "react";
 import Light from "./src/Light";
-import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom } from "./src/lights";
+import {
+  CONFIG,
+  OFF_DELAY_MS,
+  activate,
+  countLights,
+  deactivateLast,
+  slotsFrom,
+} from "./src/lights";
 
 const SLOTS = slotsFrom(CONFIG);
 const TOTAL = countLights(CONFIG);
 
 export default function App() {
-  const [order, setOrder] = useState([]);              // indices, in the order they were turned on
+  // indices, in the order they were turned on
+  const [order, setOrder] = useState([]);
   const [deactivating, setDeactivating] = useState(false);
 
-  // One timeout per step: each run turns off ONE light, then the new \`order\` schedules the next.
-  // The cleanup clears a pending timeout, so StrictMode and unmounts cannot leave one behind.
+  // One timeout per step: each run turns off ONE
+  // light, then the new \`order\` schedules the next.
+  // The cleanup clears a pending timeout, so
+  // StrictMode and unmounts cannot leave one behind.
   useEffect(() => {
     if (!deactivating) return;
     if (order.length === 0) {
@@ -4938,9 +6012,14 @@ export default function App() {
     <main className="lights-app">
       <h1>Grid Lights</h1>
       <p className="hint" data-testid="status" aria-live="polite">
-        {deactivating ? "Turning off in reverse order..." : order.length + " of " + TOTAL + " on"}
+        {deactivating
+          ? "Turning off in reverse order..."
+          : order.length + " of " + TOTAL + " on"}
       </p>
-      <div className="grid" style={{ gridTemplateColumns: "repeat(" + CONFIG[0].length + ", 1fr)" }}>
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: "repeat(" + CONFIG[0].length + ", 1fr)" }}
+      >
         {SLOTS.map((slot) => (
           <Light
             key={slot.index}
@@ -4971,7 +6050,8 @@ export default function App() {
 }
 `,
           "/src/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
-// 1 = a light, 0 = an empty slot. The default is a 3 x 3 ring with a hole in the middle.
+// 1 = a light, 0 = an empty slot. The default
+// is a 3 x 3 ring with a hole in the middle.
 export const CONFIG = [
   [1, 1, 1],
   [1, 0, 1],
@@ -4982,11 +6062,17 @@ export const OFF_DELAY_MS = 300;
 // Flatten the config into renderable slots, each with a stable index.
 export function slotsFrom(config) {
   return config.flatMap((row, r) =>
-    row.map((on, c) => ({ index: r * row.length + c, row: r, col: c, isLight: on === 1 }))
+    row.map((on, c) => ({
+      index: r * row.length + c,
+      row: r,
+      col: c,
+      isLight: on === 1,
+    })),
   );
 }
 
-export const countLights = (config) => config.flat().filter((v) => v === 1).length;
+export const countLights = (config) =>
+  config.flat().filter((v) => v === 1).length;
 
 // The activation ORDER is the state: a light is "on" when its index is in it.
 export function activate(order, index) {
@@ -4996,16 +6082,53 @@ export function activate(order, index) {
 // Deactivation removes the most recently activated light first.
 export const deactivateLast = (order) => order.slice(0, -1);
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.lights-app { max-width: 340px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.lights-app h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.hint { color: #94a3b8; min-height: 1.5em; }
-.grid { display: grid; gap: 12px; margin-top: 16px; }
-.light { aspect-ratio: 1; border-radius: 12px; border: 2px solid #334155; background: #1e293b; cursor: pointer; }
-.light.on { background: #22c55e; border-color: #4ade80; box-shadow: 0 0 18px #16a34a; }
-.light[aria-disabled="true"] { cursor: wait; }
-.light:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.hole { aspect-ratio: 1; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.lights-app {
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.lights-app h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #94a3b8;
+  min-height: 1.5em;
+}
+.grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.light {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid #334155;
+  background: #1e293b;
+  cursor: pointer;
+}
+.light.on {
+  background: #22c55e;
+  border-color: #4ade80;
+  box-shadow: 0 0 18px #16a34a;
+}
+.light[aria-disabled="true"] {
+  cursor: wait;
+}
+.light:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.hole {
+  aspect-ratio: 1;
+}
 `,
         },
       },
@@ -5070,15 +6193,22 @@ The activation order is the whole state. Lights that are on are exactly the indi
 <script setup>
 import { ref, onBeforeUnmount } from "vue";
 import GridLight from "./components/GridLight.vue";
-import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom } from "./lights.js";
+import {
+  CONFIG,
+  OFF_DELAY_MS,
+  activate,
+  countLights,
+  deactivateLast,
+  slotsFrom,
+} from "./lights.js";
 
 const slots = slotsFrom(CONFIG);
 const total = countLights(CONFIG);
 const columns = CONFIG[0].length;
 
-const order = ref([]);            // indices, in the order they were turned on
+const order = ref([]); // indices, in the order they were turned on
 const deactivating = ref(false);
-let timer = null;                 // not reactive: the template never reads it
+let timer = null; // not reactive: the template never reads it
 
 function startDeactivation() {
   deactivating.value = true;
@@ -5117,9 +6247,16 @@ onBeforeUnmount(() => clearInterval(timer));
   <main class="lights-app">
     <h1>Grid Lights</h1>
     <p class="hint" data-testid="status" aria-live="polite">
-      {{ deactivating ? "Turning off in reverse order..." : order.length + " of " + total + " on" }}
+      {{
+        deactivating
+          ? "Turning off in reverse order..."
+          : order.length + " of " + total + " on"
+      }}
     </p>
-    <div class="grid" :style="{ gridTemplateColumns: 'repeat(' + columns + ', 1fr)' }">
+    <div
+      class="grid"
+      :style="{ gridTemplateColumns: 'repeat(' + columns + ', 1fr)' }"
+    >
       <GridLight
         v-for="slot in slots"
         :key="slot.index"
@@ -5168,7 +6305,7 @@ const emit = defineEmits(["activate"]);
 
 The rules alone, with node:
 
-\`\`\`
+\`\`\`text
 lights: 8 | slots: 9 | hole at index 4
 activation order: 0,1,2,5,8,7,6,3 (the repeated 0 was ignored)
 deactivation order: 3,6,7,8,5,2,1,0
@@ -5176,7 +6313,7 @@ deactivation order: 3,6,7,8,5,2,1,0
 
 The app compiled with <code>@vue/compiler-sfc</code> and mounted in jsdom. The driver clicked seven lights clockwise, re-clicked a lit one, clicked the eighth, then polled every 20 ms with real timers and clicked an already-off light mid-sequence:
 
-\`\`\`
+\`\`\`text
 RENDERED: Grid Lights0 of 8 on
 start       : 8 lights, center hole = true | 0 of 8 on
 7 clicked   : 0,1,2,5,6,7,8 | 7 of 8 on | light-0 aria-pressed = true
@@ -5276,15 +6413,22 @@ Off order is the exact reverse of the clicks, spaced 300 ms apart (the first tim
           "/src/App.vue": `<script setup>
 import { ref, onBeforeUnmount } from "vue";
 import GridLight from "./components/GridLight.vue";
-import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom } from "./lights.js";
+import {
+  CONFIG,
+  OFF_DELAY_MS,
+  activate,
+  countLights,
+  deactivateLast,
+  slotsFrom,
+} from "./lights.js";
 
 const slots = slotsFrom(CONFIG);
 const total = countLights(CONFIG);
 const columns = CONFIG[0].length;
 
-const order = ref([]);            // indices, in the order they were turned on
+const order = ref([]); // indices, in the order they were turned on
 const deactivating = ref(false);
-let timer = null;                 // not reactive: the template never reads it
+let timer = null; // not reactive: the template never reads it
 
 function startDeactivation() {
   deactivating.value = true;
@@ -5313,9 +6457,16 @@ onBeforeUnmount(() => clearInterval(timer));
   <main class="lights-app">
     <h1>Grid Lights</h1>
     <p class="hint" data-testid="status" aria-live="polite">
-      {{ deactivating ? "Turning off in reverse order..." : order.length + " of " + total + " on" }}
+      {{
+        deactivating
+          ? "Turning off in reverse order..."
+          : order.length + " of " + total + " on"
+      }}
     </p>
-    <div class="grid" :style="{ gridTemplateColumns: 'repeat(' + columns + ', 1fr)' }">
+    <div
+      class="grid"
+      :style="{ gridTemplateColumns: 'repeat(' + columns + ', 1fr)' }"
+    >
       <GridLight
         v-for="slot in slots"
         :key="slot.index"
@@ -5329,11 +6480,31 @@ onBeforeUnmount(() => clearInterval(timer));
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.lights-app { max-width: 340px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.lights-app h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.hint { color: #94a3b8; min-height: 1.5em; }
-.grid { display: grid; gap: 12px; margin-top: 16px; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.lights-app {
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.lights-app h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #94a3b8;
+  min-height: 1.5em;
+}
+.grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
 </style>
 `,
           "/src/components/GridLight.vue": `<script setup>
@@ -5360,15 +6531,33 @@ const emit = defineEmits(["activate"]);
 </template>
 
 <style scoped>
-.light { aspect-ratio: 1; border-radius: 12px; border: 2px solid #334155; background: #1e293b; cursor: pointer; }
-.light.on { background: #22c55e; border-color: #4ade80; box-shadow: 0 0 18px #16a34a; }
-.light[aria-disabled="true"] { cursor: wait; }
-.light:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.hole { aspect-ratio: 1; }
+.light {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid #334155;
+  background: #1e293b;
+  cursor: pointer;
+}
+.light.on {
+  background: #22c55e;
+  border-color: #4ade80;
+  box-shadow: 0 0 18px #16a34a;
+}
+.light[aria-disabled="true"] {
+  cursor: wait;
+}
+.light:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.hole {
+  aspect-ratio: 1;
+}
 </style>
 `,
           "/src/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
-// 1 = a light, 0 = an empty slot. The default is a 3 x 3 ring with a hole in the middle.
+// 1 = a light, 0 = an empty slot. The default
+// is a 3 x 3 ring with a hole in the middle.
 export const CONFIG = [
   [1, 1, 1],
   [1, 0, 1],
@@ -5379,11 +6568,17 @@ export const OFF_DELAY_MS = 300;
 // Flatten the config into renderable slots, each with a stable index.
 export function slotsFrom(config) {
   return config.flatMap((row, r) =>
-    row.map((on, c) => ({ index: r * row.length + c, row: r, col: c, isLight: on === 1 }))
+    row.map((on, c) => ({
+      index: r * row.length + c,
+      row: r,
+      col: c,
+      isLight: on === 1,
+    })),
   );
 }
 
-export const countLights = (config) => config.flat().filter((v) => v === 1).length;
+export const countLights = (config) =>
+  config.flat().filter((v) => v === 1).length;
 
 // The activation ORDER is the state: a light is "on" when its index is in it.
 export function activate(order, index) {
@@ -5424,32 +6619,32 @@ Grid Lights is a stack with a metronome. Clicks push lights onto the stack; when
 ### Step 1: state, click handling and the interval
 
 \`\`\`ts
-  readonly columns = CONFIG[0].length;
+readonly columns = CONFIG[0].length;
 
-  readonly order = signal<number[]>([]); // indices, in the order they were turned on
-  readonly deactivating = signal(false);
-  private timer: ReturnType<typeof setInterval> | undefined;
+// indices, in the order they were turned on
+readonly order = signal<number[]>([]);
+readonly deactivating = signal(false);
+private timer: ReturnType<typeof setInterval> | undefined;
 
-  constructor() {
-    inject(DestroyRef).onDestroy(() => clearInterval(this.timer));
-  }
+constructor() {
+  inject(DestroyRef).onDestroy(() => clearInterval(this.timer));
+}
 
-  onActivate(index: number): void {
-    if (this.deactivating() || this.order().includes(index)) return;
-    this.order.update((o) => activate(o, index));
-    if (this.order().length === this.total) this.startDeactivation();
-  }
+onActivate(index: number): void {
+  if (this.deactivating() || this.order().includes(index)) return;
+  this.order.update((o) => activate(o, index));
+  if (this.order().length === this.total) this.startDeactivation();
+}
 
-  private startDeactivation(): void {
-    this.deactivating.set(true);
-    this.timer = setInterval(() => {
-      this.order.update(deactivateLast);
-      if (this.order().length === 0) {
-        clearInterval(this.timer);
-        this.deactivating.set(false);
-      }
-    }, OFF_DELAY_MS);
-  }
+private startDeactivation(): void {
+  this.deactivating.set(true);
+  this.timer = setInterval(() => {
+    this.order.update(deactivateLast);
+    if (this.order().length === 0) {
+      clearInterval(this.timer);
+      this.deactivating.set(false);
+    }
+  }, OFF_DELAY_MS);
 }
 \`\`\`
 
@@ -5461,7 +6656,7 @@ Grid Lights is a stack with a metronome. Clicks push lights onto the stack; when
 ### Step 2: the template
 
 \`\`\`ts
-  template: \`
+template: \`
     <main class="lights-app">
       <h1>Grid Lights</h1>
       <p class="hint" data-testid="status" aria-live="polite">
@@ -5486,8 +6681,8 @@ Grid Lights is a stack with a metronome. Clicks push lights onto the stack; when
 ### Step 3: the light component
 
 \`\`\`ts
-  standalone: true,
-  template: \`
+standalone: true,
+template: \`
     @if (slot.isLight) {
       <button
         type="button"
@@ -5520,7 +6715,7 @@ export class LightComponent {
 
 The rules alone, with node:
 
-\`\`\`
+\`\`\`text
 lights: 8 | slots: 9 | hole at index 4
 activation order: 0,1,2,5,8,7,6,3 (the repeated 0 was ignored)
 deactivation order: 3,6,7,8,5,2,1,0
@@ -5528,7 +6723,7 @@ deactivation order: 3,6,7,8,5,2,1,0
 
 Booted AOT (ngc, <code>strictTemplates</code>) and JIT, then driven with real timers: seven clockwise clicks, a re-click, the eighth click, polling every 20 ms, and a click on an already-off light mid-sequence. AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Grid Lights 0 of 8 on
 start       : 8 lights, center hole = true | 0 of 8 on
 7 clicked   : 0,1,2,5,6,7,8 | 7 of 8 on | light-0 aria-pressed = true
@@ -5627,7 +6822,14 @@ The JIT run printed identical lines; both match the React and Vue builds. The fi
         files: {
           "/src/app/app.component.ts": `import { Component, DestroyRef, inject, signal } from "@angular/core";
 import { LightComponent } from "./light.component";
-import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom } from "./lights";
+import {
+  CONFIG,
+  OFF_DELAY_MS,
+  activate,
+  countLights,
+  deactivateLast,
+  slotsFrom,
+} from "./lights";
 
 @Component({
   selector: "app-root",
@@ -5637,9 +6839,16 @@ import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom 
     <main class="lights-app">
       <h1>Grid Lights</h1>
       <p class="hint" data-testid="status" aria-live="polite">
-        {{ deactivating() ? "Turning off in reverse order..." : order().length + " of " + total + " on" }}
+        {{
+          deactivating()
+            ? "Turning off in reverse order..."
+            : order().length + " of " + total + " on"
+        }}
       </p>
-      <div class="grid" [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'">
+      <div
+        class="grid"
+        [style.grid-template-columns]="'repeat(' + columns + ', 1fr)'"
+      >
         @for (slot of slots; track slot.index) {
           <app-light
             [slot]="slot"
@@ -5651,20 +6860,44 @@ import { CONFIG, OFF_DELAY_MS, activate, countLights, deactivateLast, slotsFrom 
       </div>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    .lights-app { max-width: 340px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-    .lights-app h1 { font-size: 1.4rem; margin: 0 0 8px; }
-    .hint { color: #94a3b8; min-height: 1.5em; }
-    .grid { display: grid; gap: 12px; margin-top: 16px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+      .lights-app {
+        max-width: 340px;
+        margin: 0 auto;
+        padding: 24px 16px;
+        text-align: center;
+      }
+      .lights-app h1 {
+        font-size: 1.4rem;
+        margin: 0 0 8px;
+      }
+      .hint {
+        color: #94a3b8;
+        min-height: 1.5em;
+      }
+      .grid {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly slots = slotsFrom(CONFIG);
   readonly total = countLights(CONFIG);
   readonly columns = CONFIG[0].length;
 
-  readonly order = signal<number[]>([]); // indices, in the order they were turned on
+  // indices, in the order they were turned on
+  readonly order = signal<number[]>([]);
   readonly deactivating = signal(false);
   private timer: ReturnType<typeof setInterval> | undefined;
 
@@ -5703,7 +6936,9 @@ import { Slot } from "./lights";
         [attr.data-testid]="'light-' + slot.index"
         class="light"
         [class.on]="on"
-        [attr.aria-label]="'Row ' + (slot.row + 1) + ', column ' + (slot.col + 1)"
+        [attr.aria-label]="
+          'Row ' + (slot.row + 1) + ', column ' + (slot.col + 1)
+        "
         [attr.aria-pressed]="on"
         [attr.aria-disabled]="locked"
         (click)="activate.emit(slot.index)"
@@ -5712,15 +6947,38 @@ import { Slot } from "./lights";
       <span class="hole" aria-hidden="true"></span>
     }
   \`,
-  styles: [\`
-    :host { display: block; }
-    .light { display: block; width: 100%; aspect-ratio: 1; border-radius: 12px; border: 2px solid #334155;
-      background: #1e293b; cursor: pointer; }
-    .light.on { background: #22c55e; border-color: #4ade80; box-shadow: 0 0 18px #16a34a; }
-    .light[aria-disabled="true"] { cursor: wait; }
-    .light:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-    .hole { display: block; aspect-ratio: 1; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .light {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        border: 2px solid #334155;
+        background: #1e293b;
+        cursor: pointer;
+      }
+      .light.on {
+        background: #22c55e;
+        border-color: #4ade80;
+        box-shadow: 0 0 18px #16a34a;
+      }
+      .light[aria-disabled="true"] {
+        cursor: wait;
+      }
+      .light:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: 2px;
+      }
+      .hole {
+        display: block;
+        aspect-ratio: 1;
+      }
+    \`,
+  ],
 })
 export class LightComponent {
   @Input({ required: true }) slot!: Slot;
@@ -5730,7 +6988,8 @@ export class LightComponent {
 }
 `,
           "/src/app/lights.ts": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
-// 1 = a light, 0 = an empty slot. The default is a 3 x 3 ring with a hole in the middle.
+// 1 = a light, 0 = an empty slot. The default
+// is a 3 x 3 ring with a hole in the middle.
 export const CONFIG: number[][] = [
   [1, 1, 1],
   [1, 0, 1],
@@ -5738,16 +6997,27 @@ export const CONFIG: number[][] = [
 ];
 export const OFF_DELAY_MS = 300;
 
-export interface Slot { index: number; row: number; col: number; isLight: boolean; }
+export interface Slot {
+  index: number;
+  row: number;
+  col: number;
+  isLight: boolean;
+}
 
 // Flatten the config into renderable slots, each with a stable index.
 export function slotsFrom(config: number[][]): Slot[] {
   return config.flatMap((row, r) =>
-    row.map((on, c) => ({ index: r * row.length + c, row: r, col: c, isLight: on === 1 }))
+    row.map((on, c) => ({
+      index: r * row.length + c,
+      row: r,
+      col: c,
+      isLight: on === 1,
+    })),
   );
 }
 
-export const countLights = (config: number[][]): number => config.flat().filter((v) => v === 1).length;
+export const countLights = (config: number[][]): number =>
+  config.flat().filter((v) => v === 1).length;
 
 // The activation ORDER is the state: a light is "on" when its index is in it.
 export function activate(order: number[], index: number): number[] {
@@ -5862,28 +7132,33 @@ Every arrow is taken by one of two pure functions: <code>tick</code> for the pas
 
 \`\`\`js
 // Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
-// No timers and no Math.random in here: the caller passes the elapsed time and a random source,
+// No timers and no Math.random in here: the caller
+// passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
 export const HOLES = 9;
 export const GAME_MS = 15000;
 export const TICK_MS = 100;
-export const GAP_MS = 400;        // pause between one mole leaving and the next appearing
-export const UP_START_MS = 1200;  // how long a mole stays up at the start...
-export const UP_END_MS = 500;     // ...shrinking linearly to this by the end
+// pause between one mole leaving and the next appearing
+export const GAP_MS = 400;
+// how long a mole stays up at the start...
+export const UP_START_MS = 1200;
+// ...shrinking linearly to this by the end
+export const UP_END_MS = 500;
 
 export const initialState = () => ({
-  status: "idle",   // "idle" | "playing" | "over"
+  status: "idle", // "idle" | "playing" | "over"
   timeLeft: GAME_MS,
   score: 0,
   misses: 0,
-  mole: null,       // { hole, left } while a mole is up
+  mole: null, // { hole, left } while a mole is up
   lastHole: -1,
   gapLeft: 0,
   spawned: 0,
 });
 
 export function upTime(timeLeft) {
-  const progress = (GAME_MS - timeLeft) / GAME_MS; // 0 at the start, 1 at the end
+  // 0 at the start, 1 at the end
+  const progress = (GAME_MS - timeLeft) / GAME_MS;
   return Math.round(UP_START_MS - (UP_START_MS - UP_END_MS) * progress);
 }
 
@@ -5895,7 +7170,11 @@ export function pickHole(random, holes, last) {
   return i;
 }
 
-export const start = () => ({ ...initialState(), status: "playing", gapLeft: GAP_MS });
+export const start = () => ({
+  ...initialState(),
+  status: "playing",
+  gapLeft: GAP_MS,
+});
 \`\`\`
 
 📌 **Interview term: Dependency injection (of randomness)** — instead of calling <code>Math.random()</code> inside the rules, the caller passes a <code>random</code> function in. Production passes the real one; a test passes a seeded generator and gets the same "random" holes every run. <code>pickHole</code> makes one draw per mole and skips the previous hole by shifting indices, so a repeat is impossible without retry loops.
@@ -5906,12 +7185,20 @@ export const start = () => ({ ...initialState(), status: "playing", gapLeft: GAP
 export function tick(state, dt, random) {
   if (state.status !== "playing") return state;
   const timeLeft = Math.max(0, state.timeLeft - dt);
-  if (timeLeft === 0) return { ...state, timeLeft, status: "over", mole: null };
+  if (timeLeft === 0)
+    return { ...state, timeLeft, status: "over", mole: null };
 
   if (state.mole) {
     const left = state.mole.left - dt;
-    if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    if (left > 0)
+      return { ...state, timeLeft, mole: { ...state.mole, left } };
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -5927,10 +7214,21 @@ export function tick(state, dt, random) {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state, hole) {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
-  return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
+  if (
+    state.status !== "playing" ||
+    !state.mole ||
+    state.mole.hole !== hole
+  )
+    return state;
+  return {
+    ...state,
+    score: state.score + 1,
+    mole: null,
+    gapLeft: GAP_MS,
+  };
 }
 \`\`\`
 
@@ -5941,13 +7239,16 @@ export function whack(state, hole) {
 ### Step 2: one clock, and why there is a ref
 
 \`\`\`jsx
-// The random source the game uses. Read at call time, so a test can replace Math.random.
+// The random source the game uses. Read at call
+// time, so a test can replace Math.random.
 const random = () => Math.random();
 
 export default function App() {
   const [game, setGame] = useState(initialState);
-  // The interval callback is created once per game, so it must not read \`game\` from its
-  // closure (that copy would be stale). It reads the latest state from this ref instead.
+  // The interval callback is created once per
+  // game, so it must not read \`game\` from its
+  // closure (that copy would be stale). It reads
+  // the latest state from this ref instead.
   const gameRef = useRef(game);
   const commit = (next) => {
     gameRef.current = next;
@@ -5957,7 +7258,8 @@ export default function App() {
   useEffect(() => {
     if (game.status !== "playing") return;
     const id = setInterval(() => commit(tick(gameRef.current, TICK_MS, random)), TICK_MS);
-    return () => clearInterval(id); // runs on game over, on unmount, and in StrictMode re-runs
+    // runs on game over, on unmount, and in StrictMode re-runs
+    return () => clearInterval(id);
   }, [game.status]);
 \`\`\`
 
@@ -5976,33 +7278,47 @@ The usual fix is the updater form, <code>setGame(g => tick(g, ...))</code>. It i
 ### Step 3: rendering
 
 \`\`\`jsx
-  const playing = game.status === "playing";
+const playing = game.status === "playing";
 
-  return (
-    <main className="wam">
-      <h1>Whack-a-Mole</h1>
-      <div className="hud">
-        <span>Score: <strong data-testid="score">{game.score}</strong></span>
-        <span>Time: <strong data-testid="time">{Math.ceil(game.timeLeft / 1000) + "s"}</strong></span>
-      </div>
-      <p className="status" data-testid="status" aria-live="polite">{statusText(game)}</p>
-      <div className="field" role="group" aria-label="Mole holes">
-        {Array.from({ length: HOLES }, (_, i) => (
-          <Hole
-            key={i}
-            index={i}
-            up={Boolean(game.mole) && game.mole.hole === i}
-            disabled={!playing}
-            onWhack={(h) => commit(whack(gameRef.current, h))}
-          />
-        ))}
-      </div>
-      <button type="button" className="start" data-testid="start" disabled={playing} onClick={() => commit(start())}>
-        {game.status === "over" ? "Play again" : "Start"}
-      </button>
-    </main>
-  );
-}
+return (
+  <main className="wam">
+    <h1>Whack-a-Mole</h1>
+    <div className="hud">
+      <span>
+        Score: <strong data-testid="score">{game.score}</strong>
+      </span>
+      <span>
+        Time:{" "}
+        <strong data-testid="time">
+          {Math.ceil(game.timeLeft / 1000) + "s"}
+        </strong>
+      </span>
+    </div>
+    <p className="status" data-testid="status" aria-live="polite">
+      {statusText(game)}
+    </p>
+    <div className="field" role="group" aria-label="Mole holes">
+      {Array.from({ length: HOLES }, (_, i) => (
+        <Hole
+          key={i}
+          index={i}
+          up={Boolean(game.mole) && game.mole.hole === i}
+          disabled={!playing}
+          onWhack={(h) => commit(whack(gameRef.current, h))}
+        />
+      ))}
+    </div>
+    <button
+      type="button"
+      className="start"
+      data-testid="start"
+      disabled={playing}
+      onClick={() => commit(start())}
+    >
+      {game.status === "over" ? "Play again" : "Start"}
+    </button>
+  </main>
+);
 \`\`\`
 
 \`\`\`jsx
@@ -6031,7 +7347,7 @@ export default function Hole({ index, up, disabled, onWhack }) {
 
 **The rules, with a seeded generator.** A node script played whole 15-second games through <code>tick</code> and <code>whack</code> with <code>mulberry32(42)</code> as the random source and three simulated players:
 
-\`\`\`
+\`\`\`text
 up time at 15s / 7.5s / 0s left: 1200 850 500 ms
 fast player (200 ms) | moles 25 | score 24 | missed 0 | first holes 5,3,7,5,1,5,2,5
 slow player (900 ms) | moles 12 | score 5 | missed 7 | first holes 5,3,7,5,1,5,2,5
@@ -6044,7 +7360,7 @@ Same seed, same game; the hole sequence does not depend on how well you play (on
 
 **The component, with real timers.** Rendered in <code>&lt;StrictMode&gt;</code> in jsdom. The driver replaced <code>Math.random</code> with the same <code>mulberry32(42)</code>, pressed Start, polled every 20 ms, clicked a wrong hole and then the mole twice, whacked moles 2, 3, 5 and 6, let mole 4 escape, and stopped hitting after mole 6:
 
-\`\`\`
+\`\`\`text
 RENDERED: Whack-a-MoleScore: 0Time: 15sPress Start, then hit the molesStart
 idle        : Press Start, then hit the moles | score 0 | time 15s | hole-0 aria-disabled = true
 idle click  : score 0
@@ -6170,15 +7486,26 @@ The holes 5, 3, 7, 5, 1, 5, 2, 5 match the node run exactly, which is the point 
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
 import Hole from "./src/Hole";
-import { HOLES, TICK_MS, initialState, start, statusText, tick, whack } from "./src/mole";
+import {
+  HOLES,
+  TICK_MS,
+  initialState,
+  start,
+  statusText,
+  tick,
+  whack,
+} from "./src/mole";
 
-// The random source the game uses. Read at call time, so a test can replace Math.random.
+// The random source the game uses. Read at call
+// time, so a test can replace Math.random.
 const random = () => Math.random();
 
 export default function App() {
   const [game, setGame] = useState(initialState);
-  // The interval callback is created once per game, so it must not read \`game\` from its
-  // closure (that copy would be stale). It reads the latest state from this ref instead.
+  // The interval callback is created once per
+  // game, so it must not read \`game\` from its
+  // closure (that copy would be stale). It reads
+  // the latest state from this ref instead.
   const gameRef = useRef(game);
   const commit = (next) => {
     gameRef.current = next;
@@ -6187,8 +7514,12 @@ export default function App() {
 
   useEffect(() => {
     if (game.status !== "playing") return;
-    const id = setInterval(() => commit(tick(gameRef.current, TICK_MS, random)), TICK_MS);
-    return () => clearInterval(id); // runs on game over, on unmount, and in StrictMode re-runs
+    const id = setInterval(
+      () => commit(tick(gameRef.current, TICK_MS, random)),
+      TICK_MS,
+    );
+    // runs on game over, on unmount, and in StrictMode re-runs
+    return () => clearInterval(id);
   }, [game.status]);
 
   const playing = game.status === "playing";
@@ -6197,10 +7528,19 @@ export default function App() {
     <main className="wam">
       <h1>Whack-a-Mole</h1>
       <div className="hud">
-        <span>Score: <strong data-testid="score">{game.score}</strong></span>
-        <span>Time: <strong data-testid="time">{Math.ceil(game.timeLeft / 1000) + "s"}</strong></span>
+        <span>
+          Score: <strong data-testid="score">{game.score}</strong>
+        </span>
+        <span>
+          Time:{" "}
+          <strong data-testid="time">
+            {Math.ceil(game.timeLeft / 1000) + "s"}
+          </strong>
+        </span>
       </div>
-      <p className="status" data-testid="status" aria-live="polite">{statusText(game)}</p>
+      <p className="status" data-testid="status" aria-live="polite">
+        {statusText(game)}
+      </p>
       <div className="field" role="group" aria-label="Mole holes">
         {Array.from({ length: HOLES }, (_, i) => (
           <Hole
@@ -6212,7 +7552,13 @@ export default function App() {
           />
         ))}
       </div>
-      <button type="button" className="start" data-testid="start" disabled={playing} onClick={() => commit(start())}>
+      <button
+        type="button"
+        className="start"
+        data-testid="start"
+        disabled={playing}
+        onClick={() => commit(start())}
+      >
         {game.status === "over" ? "Play again" : "Start"}
       </button>
     </main>
@@ -6235,28 +7581,31 @@ export default function App() {
 }
 `,
           "/src/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
-// No timers and no Math.random in here: the caller passes the elapsed time and a random source,
+// No timers and no Math.random in here: the caller
+// passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
 export const HOLES = 9;
 export const GAME_MS = 15000;
 export const TICK_MS = 100;
-export const GAP_MS = 400;        // pause between one mole leaving and the next appearing
-export const UP_START_MS = 1200;  // how long a mole stays up at the start...
-export const UP_END_MS = 500;     // ...shrinking linearly to this by the end
+// pause between one mole leaving and the next appearing
+export const GAP_MS = 400;
+export const UP_START_MS = 1200; // how long a mole stays up at the start...
+export const UP_END_MS = 500; // ...shrinking linearly to this by the end
 
 export const initialState = () => ({
-  status: "idle",   // "idle" | "playing" | "over"
+  status: "idle", // "idle" | "playing" | "over"
   timeLeft: GAME_MS,
   score: 0,
   misses: 0,
-  mole: null,       // { hole, left } while a mole is up
+  mole: null, // { hole, left } while a mole is up
   lastHole: -1,
   gapLeft: 0,
   spawned: 0,
 });
 
 export function upTime(timeLeft) {
-  const progress = (GAME_MS - timeLeft) / GAME_MS; // 0 at the start, 1 at the end
+  // 0 at the start, 1 at the end
+  const progress = (GAME_MS - timeLeft) / GAME_MS;
   return Math.round(UP_START_MS - (UP_START_MS - UP_END_MS) * progress);
 }
 
@@ -6268,7 +7617,11 @@ export function pickHole(random, holes, last) {
   return i;
 }
 
-export const start = () => ({ ...initialState(), status: "playing", gapLeft: GAP_MS });
+export const start = () => ({
+  ...initialState(),
+  status: "playing",
+  gapLeft: GAP_MS,
+});
 
 export function tick(state, dt, random) {
   if (state.status !== "playing") return state;
@@ -6278,7 +7631,13 @@ export function tick(state, dt, random) {
   if (state.mole) {
     const left = state.mole.left - dt;
     if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -6294,9 +7653,11 @@ export function tick(state, dt, random) {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state, hole) {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
+  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole)
+    return state;
   return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
 }
 
@@ -6306,23 +7667,83 @@ export function statusText(state) {
   return "Go!";
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.wam { max-width: 380px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.wam h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.hud { display: flex; justify-content: space-between; font-size: 1.05rem; }
-.hud strong { color: #fbbf24; }
-.status { min-height: 1.5em; color: #94a3b8; }
-.field { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
-.hole { position: relative; aspect-ratio: 1; border-radius: 50%; border: none; overflow: hidden; cursor: pointer;
-  background: radial-gradient(circle at 50% 70%, #3f2a14 0 45%, #14532d 46%); touch-action: manipulation; }
-.hole[aria-disabled="true"] { cursor: default; }
-.hole:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.mole { position: absolute; left: 22%; width: 56%; height: 56%; bottom: -60%; border-radius: 50% 50% 40% 40%;
-  background: #a16207; transition: bottom 120ms ease-out; }
-.hole.up .mole { bottom: 18%; }
-.start { padding: 10px 24px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; }
-.start:disabled { opacity: 0.5; cursor: default; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.wam {
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.wam h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.hud {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+.hud strong {
+  color: #fbbf24;
+}
+.status {
+  min-height: 1.5em;
+  color: #94a3b8;
+}
+.field {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.hole {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  overflow: hidden;
+  cursor: pointer;
+  background: radial-gradient(circle at 50% 70%, #3f2a14 0 45%, #14532d 46%);
+  touch-action: manipulation;
+}
+.hole[aria-disabled="true"] {
+  cursor: default;
+}
+.hole:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.mole {
+  position: absolute;
+  left: 22%;
+  width: 56%;
+  height: 56%;
+  bottom: -60%;
+  border-radius: 50% 50% 40% 40%;
+  background: #a16207;
+  transition: bottom 120ms ease-out;
+}
+.hole.up .mole {
+  bottom: 18%;
+}
+.start {
+  padding: 10px 24px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.start:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 `,
         },
       },
@@ -6359,12 +7780,20 @@ A fairground Whack-a-Mole machine is a clock plus a rulebook: every so often pop
 export function tick(state, dt, random) {
   if (state.status !== "playing") return state;
   const timeLeft = Math.max(0, state.timeLeft - dt);
-  if (timeLeft === 0) return { ...state, timeLeft, status: "over", mole: null };
+  if (timeLeft === 0)
+    return { ...state, timeLeft, status: "over", mole: null };
 
   if (state.mole) {
     const left = state.mole.left - dt;
-    if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    if (left > 0)
+      return { ...state, timeLeft, mole: { ...state.mole, left } };
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -6380,10 +7809,21 @@ export function tick(state, dt, random) {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state, hole) {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
-  return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
+  if (
+    state.status !== "playing" ||
+    !state.mole ||
+    state.mole.hole !== hole
+  )
+    return state;
+  return {
+    ...state,
+    score: state.score + 1,
+    mole: null,
+    gapLeft: GAP_MS,
+  };
 }
 \`\`\`
 
@@ -6395,12 +7835,22 @@ export function whack(state, hole) {
 <script setup>
 import { shallowRef, computed, watch, onBeforeUnmount } from "vue";
 import MoleHole from "./components/MoleHole.vue";
-import { HOLES, TICK_MS, initialState, start, statusText, tick, whack } from "./mole.js";
+import {
+  HOLES,
+  TICK_MS,
+  initialState,
+  start,
+  statusText,
+  tick,
+  whack,
+} from "./mole.js";
 
-// The random source the game uses. Read at call time, so a test can replace Math.random.
+// The random source the game uses. Read at call
+// time, so a test can replace Math.random.
 const random = () => Math.random();
 
-// The game object is always replaced, never mutated, so a shallowRef is enough.
+// The game object is always replaced, never
+// mutated, so a shallowRef is enough.
 const game = shallowRef(initialState());
 const playing = computed(() => game.value.status === "playing");
 const holes = Array.from({ length: HOLES }, (_, i) => i);
@@ -6414,7 +7864,11 @@ function stopTimer() {
 // Start the clock when a game starts, stop it when the game ends.
 watch(playing, (isPlaying) => {
   stopTimer();
-  if (isPlaying) timer = setInterval(() => (game.value = tick(game.value, TICK_MS, random)), TICK_MS);
+  if (isPlaying)
+    timer = setInterval(
+      () => (game.value = tick(game.value, TICK_MS, random)),
+      TICK_MS,
+    );
 });
 onBeforeUnmount(stopTimer);
 
@@ -6437,10 +7891,20 @@ function onWhack(hole) {
   <main class="wam">
     <h1>Whack-a-Mole</h1>
     <div class="hud">
-      <span>Score: <strong data-testid="score">{{ game.score }}</strong></span>
-      <span>Time: <strong data-testid="time">{{ Math.ceil(game.timeLeft / 1000) + "s" }}</strong></span>
+      <span
+        >Score:
+        <strong data-testid="score">{{ game.score }}</strong></span
+      >
+      <span
+        >Time:
+        <strong data-testid="time">{{
+          Math.ceil(game.timeLeft / 1000) + "s"
+        }}</strong></span
+      >
     </div>
-    <p class="status" data-testid="status" aria-live="polite">{{ statusText(game) }}</p>
+    <p class="status" data-testid="status" aria-live="polite">
+      {{ statusText(game) }}
+    </p>
     <div class="field" role="group" aria-label="Mole holes">
       <MoleHole
         v-for="i in holes"
@@ -6451,7 +7915,13 @@ function onWhack(hole) {
         @whack="onWhack"
       />
     </div>
-    <button type="button" class="start" data-testid="start" :disabled="playing" @click="game = start()">
+    <button
+      type="button"
+      class="start"
+      data-testid="start"
+      :disabled="playing"
+      @click="game = start()"
+    >
       {{ game.status === "over" ? "Play again" : "Start" }}
     </button>
   </main>
@@ -6464,7 +7934,7 @@ function onWhack(hole) {
 
 The rules alone, with node, using <code>mulberry32(42)</code> and three simulated players:
 
-\`\`\`
+\`\`\`text
 up time at 15s / 7.5s / 0s left: 1200 850 500 ms
 fast player (200 ms) | moles 25 | score 24 | missed 0 | first holes 5,3,7,5,1,5,2,5
 slow player (900 ms) | moles 12 | score 5 | missed 7 | first holes 5,3,7,5,1,5,2,5
@@ -6475,7 +7945,7 @@ same seed twice gives the same game: true
 
 The SFCs were compiled and mounted in jsdom. The driver replaced <code>Math.random</code> with the same seeded generator, pressed Start, polled every 20 ms, clicked a wrong hole and the mole twice, whacked moles 2, 3, 5 and 6, let mole 4 escape and ignored the rest:
 
-\`\`\`
+\`\`\`text
 RENDERED: Whack-a-MoleScore: 0Time: 15sPress Start, then hit the molesStart
 idle        : Press Start, then hit the moles | score 0 | time 15s | hole-0 aria-disabled = true
 idle click  : score 0
@@ -6579,9 +8049,18 @@ The hole sequence matches the node run and the React and Angular builds. The dou
           "/src/App.vue": `<script setup>
 import { shallowRef, computed, watch, onBeforeUnmount } from "vue";
 import MoleHole from "./components/MoleHole.vue";
-import { HOLES, TICK_MS, initialState, start, statusText, tick, whack } from "./mole.js";
+import {
+  HOLES,
+  TICK_MS,
+  initialState,
+  start,
+  statusText,
+  tick,
+  whack,
+} from "./mole.js";
 
-// The random source the game uses. Read at call time, so a test can replace Math.random.
+// The random source the game uses. Read at call
+// time, so a test can replace Math.random.
 const random = () => Math.random();
 
 // The game object is always replaced, never mutated, so a shallowRef is enough.
@@ -6598,7 +8077,11 @@ function stopTimer() {
 // Start the clock when a game starts, stop it when the game ends.
 watch(playing, (isPlaying) => {
   stopTimer();
-  if (isPlaying) timer = setInterval(() => (game.value = tick(game.value, TICK_MS, random)), TICK_MS);
+  if (isPlaying)
+    timer = setInterval(
+      () => (game.value = tick(game.value, TICK_MS, random)),
+      TICK_MS,
+    );
 });
 onBeforeUnmount(stopTimer);
 
@@ -6611,10 +8094,19 @@ function onWhack(hole) {
   <main class="wam">
     <h1>Whack-a-Mole</h1>
     <div class="hud">
-      <span>Score: <strong data-testid="score">{{ game.score }}</strong></span>
-      <span>Time: <strong data-testid="time">{{ Math.ceil(game.timeLeft / 1000) + "s" }}</strong></span>
+      <span
+        >Score: <strong data-testid="score">{{ game.score }}</strong></span
+      >
+      <span
+        >Time:
+        <strong data-testid="time">{{
+          Math.ceil(game.timeLeft / 1000) + "s"
+        }}</strong></span
+      >
     </div>
-    <p class="status" data-testid="status" aria-live="polite">{{ statusText(game) }}</p>
+    <p class="status" data-testid="status" aria-live="polite">
+      {{ statusText(game) }}
+    </p>
     <div class="field" role="group" aria-label="Mole holes">
       <MoleHole
         v-for="i in holes"
@@ -6625,23 +8117,66 @@ function onWhack(hole) {
         @whack="onWhack"
       />
     </div>
-    <button type="button" class="start" data-testid="start" :disabled="playing" @click="game = start()">
+    <button
+      type="button"
+      class="start"
+      data-testid="start"
+      :disabled="playing"
+      @click="game = start()"
+    >
       {{ game.status === "over" ? "Play again" : "Start" }}
     </button>
   </main>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.wam { max-width: 380px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.wam h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.hud { display: flex; justify-content: space-between; font-size: 1.05rem; }
-.hud strong { color: #fbbf24; }
-.status { min-height: 1.5em; color: #94a3b8; }
-.field { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
-.start { padding: 10px 24px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; }
-.start:disabled { opacity: 0.5; cursor: default; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.wam {
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.wam h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.hud {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05rem;
+}
+.hud strong {
+  color: #fbbf24;
+}
+.status {
+  min-height: 1.5em;
+  color: #94a3b8;
+}
+.field {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.start {
+  padding: 10px 24px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.start:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 </style>
 `,
           "/src/components/MoleHole.vue": `<script setup>
@@ -6667,38 +8202,64 @@ const emit = defineEmits(["whack"]);
 </template>
 
 <style scoped>
-.hole { position: relative; aspect-ratio: 1; border-radius: 50%; border: none; overflow: hidden; cursor: pointer;
-  background: radial-gradient(circle at 50% 70%, #3f2a14 0 45%, #14532d 46%); touch-action: manipulation; }
-.hole[aria-disabled="true"] { cursor: default; }
-.hole:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.mole { position: absolute; left: 22%; width: 56%; height: 56%; bottom: -60%; border-radius: 50% 50% 40% 40%;
-  background: #a16207; transition: bottom 120ms ease-out; }
-.hole.up .mole { bottom: 18%; }
+.hole {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  overflow: hidden;
+  cursor: pointer;
+  background: radial-gradient(circle at 50% 70%, #3f2a14 0 45%, #14532d 46%);
+  touch-action: manipulation;
+}
+.hole[aria-disabled="true"] {
+  cursor: default;
+}
+.hole:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.mole {
+  position: absolute;
+  left: 22%;
+  width: 56%;
+  height: 56%;
+  bottom: -60%;
+  border-radius: 50% 50% 40% 40%;
+  background: #a16207;
+  transition: bottom 120ms ease-out;
+}
+.hole.up .mole {
+  bottom: 18%;
+}
 </style>
 `,
           "/src/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
-// No timers and no Math.random in here: the caller passes the elapsed time and a random source,
+// No timers and no Math.random in here: the caller
+// passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
 export const HOLES = 9;
 export const GAME_MS = 15000;
 export const TICK_MS = 100;
-export const GAP_MS = 400;        // pause between one mole leaving and the next appearing
-export const UP_START_MS = 1200;  // how long a mole stays up at the start...
-export const UP_END_MS = 500;     // ...shrinking linearly to this by the end
+// pause between one mole leaving and the next appearing
+export const GAP_MS = 400;
+export const UP_START_MS = 1200; // how long a mole stays up at the start...
+export const UP_END_MS = 500; // ...shrinking linearly to this by the end
 
 export const initialState = () => ({
-  status: "idle",   // "idle" | "playing" | "over"
+  status: "idle", // "idle" | "playing" | "over"
   timeLeft: GAME_MS,
   score: 0,
   misses: 0,
-  mole: null,       // { hole, left } while a mole is up
+  mole: null, // { hole, left } while a mole is up
   lastHole: -1,
   gapLeft: 0,
   spawned: 0,
 });
 
 export function upTime(timeLeft) {
-  const progress = (GAME_MS - timeLeft) / GAME_MS; // 0 at the start, 1 at the end
+  // 0 at the start, 1 at the end
+  const progress = (GAME_MS - timeLeft) / GAME_MS;
   return Math.round(UP_START_MS - (UP_START_MS - UP_END_MS) * progress);
 }
 
@@ -6710,7 +8271,11 @@ export function pickHole(random, holes, last) {
   return i;
 }
 
-export const start = () => ({ ...initialState(), status: "playing", gapLeft: GAP_MS });
+export const start = () => ({
+  ...initialState(),
+  status: "playing",
+  gapLeft: GAP_MS,
+});
 
 export function tick(state, dt, random) {
   if (state.status !== "playing") return state;
@@ -6720,7 +8285,13 @@ export function tick(state, dt, random) {
   if (state.mole) {
     const left = state.mole.left - dt;
     if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -6736,9 +8307,11 @@ export function tick(state, dt, random) {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state, hole) {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
+  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole)
+    return state;
   return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
 }
 
@@ -6779,15 +8352,27 @@ A Whack-a-Mole machine is a clock and a rulebook. The clock ticks; the rulebook 
 ### Step 1: the rules
 
 \`\`\`ts
-export function tick(state: GameState, dt: number, random: Random): GameState {
+export function tick(
+  state: GameState,
+  dt: number,
+  random: Random,
+): GameState {
   if (state.status !== "playing") return state;
   const timeLeft = Math.max(0, state.timeLeft - dt);
-  if (timeLeft === 0) return { ...state, timeLeft, status: "over", mole: null };
+  if (timeLeft === 0)
+    return { ...state, timeLeft, status: "over", mole: null };
 
   if (state.mole) {
     const left = state.mole.left - dt;
-    if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    if (left > 0)
+      return { ...state, timeLeft, mole: { ...state.mole, left } };
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -6803,10 +8388,21 @@ export function tick(state: GameState, dt: number, random: Random): GameState {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state: GameState, hole: number): GameState {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
-  return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
+  if (
+    state.status !== "playing" ||
+    !state.mole ||
+    state.mole.hole !== hole
+  )
+    return state;
+  return {
+    ...state,
+    score: state.score + 1,
+    mole: null,
+    gapLeft: GAP_MS,
+  };
 }
 \`\`\`
 
@@ -6821,15 +8417,22 @@ export class AppComponent {
 
   readonly game = signal<GameState>(initialState());
   readonly playing = computed(() => this.game().status === "playing");
-  readonly seconds = computed(() => Math.ceil(this.game().timeLeft / 1000));
+  readonly seconds = computed(() =>
+    Math.ceil(this.game().timeLeft / 1000),
+  );
   readonly status = computed(() => statusText(this.game()));
 
   constructor() {
-    // Start the clock when a game starts, stop it when the game ends or the component is destroyed.
+    // Start the clock when a game starts, stop it when
+    // the game ends or the component is destroyed.
     effect((onCleanup) => {
       if (!this.playing()) return;
-      const id = setInterval(() => this.game.update((g) => tick(g, TICK_MS, random)), TICK_MS);
-      onCleanup(() => clearInterval(id)); // runs before the next effect run and on destroy
+      const id = setInterval(
+        () => this.game.update((g) => tick(g, TICK_MS, random)),
+        TICK_MS,
+      );
+      // runs before the next effect run and on destroy
+      onCleanup(() => clearInterval(id));
     });
   }
 
@@ -6871,7 +8474,7 @@ export class AppComponent {
 
 The rules, with node and <code>mulberry32(42)</code>:
 
-\`\`\`
+\`\`\`text
 up time at 15s / 7.5s / 0s left: 1200 850 500 ms
 fast player (200 ms) | moles 25 | score 24 | missed 0 | first holes 5,3,7,5,1,5,2,5
 slow player (900 ms) | moles 12 | score 5 | missed 7 | first holes 5,3,7,5,1,5,2,5
@@ -6882,7 +8485,7 @@ same seed twice gives the same game: true
 
 Booted AOT (ngc, <code>strictTemplates</code>) and JIT; the driver installed the same seeded <code>Math.random</code>, pressed Start, polled every 20 ms, clicked a wrong hole and the mole twice, whacked moles 2, 3, 5 and 6, let 4 escape and ignored the rest. AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Whack-a-MoleScore: 0Time: 15sPress Start, then hit the moles Start
 idle        : Press Start, then hit the moles | score 0 | time 15s | hole-0 aria-disabled = true
 idle click  : score 0
@@ -6986,9 +8589,19 @@ The JIT run printed identical lines; the holes match the node run and the React 
         files: {
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
 import { HoleComponent } from "./hole.component";
-import { GameState, HOLES, TICK_MS, initialState, start, statusText, tick, whack } from "./mole";
+import {
+  GameState,
+  HOLES,
+  TICK_MS,
+  initialState,
+  start,
+  statusText,
+  tick,
+  whack,
+} from "./mole";
 
-// The random source the game uses. Read at call time, so a test can replace Math.random.
+// The random source the game uses. Read at call
+// time, so a test can replace Math.random.
 const random = () => Math.random();
 
 @Component({
@@ -7002,18 +8615,34 @@ const random = () => Math.random();
         <span>Score: <strong data-testid="score">{{ game().score }}</strong></span>
         <span>Time: <strong data-testid="time">{{ seconds() + "s" }}</strong></span>
       </div>
-      <p class="status" data-testid="status" aria-live="polite">{{ status() }}</p>
+      <p
+        class="status"
+        data-testid="status"
+        aria-live="polite"
+      >{{ status() }}</p>
       <div class="field" role="group" aria-label="Mole holes">
         @for (i of holes; track i) {
-          <app-hole [index]="i" [up]="game().mole?.hole === i" [disabled]="!playing()" (whack)="onWhack($event)" />
+          <app-hole
+            [index]="i"
+            [up]="game().mole?.hole === i"
+            [disabled]="!playing()"
+            (whack)="onWhack($event)"
+          />
         }
       </div>
-      <button type="button" class="start" data-testid="start" [disabled]="playing()" (click)="game.set(start())">
+      <button
+        type="button"
+        class="start"
+        data-testid="start"
+        [disabled]="playing()"
+        (click)="game.set(start())"
+      >
         {{ game().status === "over" ? "Play again" : "Start" }}
       </button>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
     .wam { max-width: 380px; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .wam h1 { font-size: 1.4rem; margin: 0 0 8px; }
@@ -7024,7 +8653,8 @@ const random = () => Math.random();
     .start { padding: 10px 24px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
       color: #f8fafc; cursor: pointer; }
     .start:disabled { opacity: 0.5; cursor: default; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly holes = Array.from({ length: HOLES }, (_, i) => i);
@@ -7036,11 +8666,16 @@ export class AppComponent {
   readonly status = computed(() => statusText(this.game()));
 
   constructor() {
-    // Start the clock when a game starts, stop it when the game ends or the component is destroyed.
+    // Start the clock when a game starts, stop it when
+    // the game ends or the component is destroyed.
     effect((onCleanup) => {
       if (!this.playing()) return;
-      const id = setInterval(() => this.game.update((g) => tick(g, TICK_MS, random)), TICK_MS);
-      onCleanup(() => clearInterval(id)); // runs before the next effect run and on destroy
+      const id = setInterval(
+        () => this.game.update((g) => tick(g, TICK_MS, random)),
+        TICK_MS,
+      );
+      // runs before the next effect run and on destroy
+      onCleanup(() => clearInterval(id));
     });
   }
 
@@ -7067,16 +8702,49 @@ export class AppComponent {
       <span class="mole" aria-hidden="true"></span>
     </button>
   \`,
-  styles: [\`
-    :host { display: block; }
-    .hole { position: relative; display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; border: none; overflow: hidden;
-      cursor: pointer; background: radial-gradient(circle at 50% 70%, #3f2a14 0 45%, #14532d 46%); touch-action: manipulation; }
-    .hole[aria-disabled="true"] { cursor: default; }
-    .hole:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-    .mole { position: absolute; left: 22%; width: 56%; height: 56%; bottom: -60%; border-radius: 50% 50% 40% 40%;
-      background: #a16207; transition: bottom 120ms ease-out; }
-    .hole.up .mole { bottom: 18%; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .hole {
+        position: relative;
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        border: none;
+        overflow: hidden;
+        cursor: pointer;
+        background: radial-gradient(
+          circle at 50% 70%,
+          #3f2a14 0 45%,
+          #14532d 46%
+        );
+        touch-action: manipulation;
+      }
+      .hole[aria-disabled="true"] {
+        cursor: default;
+      }
+      .hole:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: 2px;
+      }
+      .mole {
+        position: absolute;
+        left: 22%;
+        width: 56%;
+        height: 56%;
+        bottom: -60%;
+        border-radius: 50% 50% 40% 40%;
+        background: #a16207;
+        transition: bottom 120ms ease-out;
+      }
+      .hole.up .mole {
+        bottom: 18%;
+      }
+    \`,
+  ],
 })
 export class HoleComponent {
   @Input() index = 0;
@@ -7086,17 +8754,22 @@ export class HoleComponent {
 }
 `,
           "/src/app/mole.ts": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
-// No timers and no Math.random in here: the caller passes the elapsed time and a random source,
+// No timers and no Math.random in here: the caller
+// passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
 export const HOLES = 9;
 export const GAME_MS = 15000;
 export const TICK_MS = 100;
-export const GAP_MS = 400;        // pause between one mole leaving and the next appearing
-export const UP_START_MS = 1200;  // how long a mole stays up at the start...
-export const UP_END_MS = 500;     // ...shrinking linearly to this by the end
+// pause between one mole leaving and the next appearing
+export const GAP_MS = 400;
+export const UP_START_MS = 1200; // how long a mole stays up at the start...
+export const UP_END_MS = 500; // ...shrinking linearly to this by the end
 
 export type Status = "idle" | "playing" | "over";
-export interface Mole { hole: number; left: number; }
+export interface Mole {
+  hole: number;
+  left: number;
+}
 export interface GameState {
   status: Status;
   timeLeft: number;
@@ -7114,14 +8787,15 @@ export const initialState = (): GameState => ({
   timeLeft: GAME_MS,
   score: 0,
   misses: 0,
-  mole: null,       // { hole, left } while a mole is up
+  mole: null, // { hole, left } while a mole is up
   lastHole: -1,
   gapLeft: 0,
   spawned: 0,
 });
 
 export function upTime(timeLeft: number): number {
-  const progress = (GAME_MS - timeLeft) / GAME_MS; // 0 at the start, 1 at the end
+  // 0 at the start, 1 at the end
+  const progress = (GAME_MS - timeLeft) / GAME_MS;
   return Math.round(UP_START_MS - (UP_START_MS - UP_END_MS) * progress);
 }
 
@@ -7133,7 +8807,11 @@ export function pickHole(random: Random, holes: number, last: number): number {
   return i;
 }
 
-export const start = (): GameState => ({ ...initialState(), status: "playing", gapLeft: GAP_MS });
+export const start = (): GameState => ({
+  ...initialState(),
+  status: "playing",
+  gapLeft: GAP_MS,
+});
 
 export function tick(state: GameState, dt: number, random: Random): GameState {
   if (state.status !== "playing") return state;
@@ -7143,7 +8821,13 @@ export function tick(state: GameState, dt: number, random: Random): GameState {
   if (state.mole) {
     const left = state.mole.left - dt;
     if (left > 0) return { ...state, timeLeft, mole: { ...state.mole, left } };
-    return { ...state, timeLeft, mole: null, misses: state.misses + 1, gapLeft: GAP_MS }; // it got away
+    return {
+      ...state,
+      timeLeft,
+      mole: null,
+      misses: state.misses + 1,
+      gapLeft: GAP_MS,
+    }; // it got away
   }
 
   const gapLeft = state.gapLeft - dt;
@@ -7159,9 +8843,11 @@ export function tick(state: GameState, dt: number, random: Random): GameState {
   };
 }
 
-// Only a hit on the hole that has a mole counts, and only once: the mole goes down at once.
+// Only a hit on the hole that has a mole counts,
+// and only once: the mole goes down at once.
 export function whack(state: GameState, hole: number): GameState {
-  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole) return state;
+  if (state.status !== "playing" || !state.mole || state.mole.hole !== hole)
+    return state;
   return { ...state, score: state.score + 1, mole: null, gapLeft: GAP_MS };
 }
 
@@ -7270,7 +8956,8 @@ A new operation is the third arrow that is not drawn on purpose: it pushes onto 
 ### Step 1: the model and the three transitions
 
 \`\`\`js
-// Pure undo/redo logic. No framework code, so it can be tested on its own.
+// Pure undo/redo logic. No framework
+// code, so it can be tested on its own.
 // past    = entries already applied, oldest first
 // present = the current value
 // future  = entries that were undone, next-to-redo first
@@ -7283,12 +8970,21 @@ export const OPERATIONS = [
   { label: "x2", apply: (v) => v * 2 },
 ];
 
-export const initialHistory = () => ({ past: [], present: 0, future: [] });
+export const initialHistory = () => ({
+  past: [],
+  present: 0,
+  future: [],
+});
 
-// A new action records { op, from, to } and CLEARS the future: you cannot redo
+// A new action records { op, from, to }
+// and CLEARS the future: you cannot redo
 // something that belongs to a timeline you have just left.
 export function perform(h, op) {
-  const entry = { op: op.label, from: h.present, to: op.apply(h.present) };
+  const entry = {
+    op: op.label,
+    from: h.present,
+    to: op.apply(h.present),
+  };
   const past = [...h.past, entry].slice(-HISTORY_LIMIT);
   return { past, present: entry.to, future: [] };
 }
@@ -7296,7 +8992,11 @@ export function perform(h, op) {
 export function undo(h) {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h) {
@@ -7334,10 +9034,12 @@ Walk through each function:
 
 \`\`\`jsx
 export default function App() {
-  // One state object holds all three stacks, so they can never get out of step.
+  // One state object holds all three stacks,
+  // so they can never get out of step.
   const [history, setHistory] = useState(initialHistory);
 
-  // Keyboard shortcuts. The listener only calls the setter with a pure function,
+  // Keyboard shortcuts. The listener only
+  // calls the setter with a pure function,
   // so it never needs the current history and can be registered once.
   useEffect(() => {
     function onKeyDown(e) {
@@ -7391,18 +9093,29 @@ export default function App() {
 
 \`\`\`jsx
 export default function HistoryTable({ past }) {
-  if (past.length === 0) return <p className="empty" data-testid="history-empty">No history yet</p>;
+  if (past.length === 0)
+    return (
+      <p className="empty" data-testid="history-empty">
+        No history yet
+      </p>
+    );
   // Newest first, so the row that Undo would revert is at the top.
   const rows = past.map((entry, i) => ({ ...entry, id: i })).reverse();
   return (
     <table className="history" data-testid="history">
       <thead>
-        <tr><th scope="col">Op</th><th scope="col">Old</th><th scope="col">New</th></tr>
+        <tr>
+          <th scope="col">Op</th>
+          <th scope="col">Old</th>
+          <th scope="col">New</th>
+        </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.id}>
-            <td>{r.op}</td><td>{r.from}</td><td>{r.to}</td>
+            <td>{r.op}</td>
+            <td>{r.from}</td>
+            <td>{r.to}</td>
           </tr>
         ))}
       </tbody>
@@ -7417,7 +9130,7 @@ Newest first, so the row at the top is the one Undo would revert. The table uses
 
 **The logic alone.** A node script stressed the edges:
 
-\`\`\`
+\`\`\`text
 undo on empty  : true (same object back, nothing to undo)
 55 x +1        : present 55, past 50, future 0 | oldest kept entry: {"op":"+1","from":5,"to":6}
 undo all       : present 5, past 0, future 50 | undos possible: 50
@@ -7429,7 +9142,7 @@ The cap kept 50 of 55 entries (the oldest kept goes from 5 to 6), undoing all of
 
 **The component.** Rendered in <code>&lt;StrictMode&gt;</code> in jsdom; the driver clicked buttons and dispatched keydown events on <code>document.body</code>, which bubble to <code>window</code>. History rows are printed newest first as "op old new":
 
-\`\`\`
+\`\`\`text
 RENDERED: Undoable CounterUndoRedoReset0/2-1+1x2No history yet
 start      : 0 | undo off, redo off | history: (empty)
 +1 +1 x2   : 4 | undo on, redo off | history: x2 2 4 | +1 1 2 | +1 0 1
@@ -7552,13 +9265,23 @@ Read the "-1 (new)" line: after undo, undo, redo the future held the <code>x2</c
         files: {
           "/App.js": `import { useEffect, useState } from "react";
 import HistoryTable from "./src/HistoryTable";
-import { OPERATIONS, canRedo, canUndo, initialHistory, perform, redo, shortcutFor, undo } from "./src/history";
+import {
+  OPERATIONS,
+  canRedo,
+  canUndo,
+  initialHistory,
+  perform,
+  redo,
+  shortcutFor,
+  undo,
+} from "./src/history";
 
 export default function App() {
   // One state object holds all three stacks, so they can never get out of step.
   const [history, setHistory] = useState(initialHistory);
 
-  // Keyboard shortcuts. The listener only calls the setter with a pure function,
+  // Keyboard shortcuts. The listener only
+  // calls the setter with a pure function,
   // so it never needs the current history and can be registered once.
   useEffect(() => {
     function onKeyDown(e) {
@@ -7575,11 +9298,33 @@ export default function App() {
     <main className="undo-app">
       <h1>Undoable Counter</h1>
       <div className="toolbar">
-        <button type="button" data-testid="undo" disabled={!canUndo(history)} onClick={() => setHistory(undo)}>Undo</button>
-        <button type="button" data-testid="redo" disabled={!canRedo(history)} onClick={() => setHistory(redo)}>Redo</button>
-        <button type="button" data-testid="reset" onClick={() => setHistory(initialHistory())}>Reset</button>
+        <button
+          type="button"
+          data-testid="undo"
+          disabled={!canUndo(history)}
+          onClick={() => setHistory(undo)}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          data-testid="redo"
+          disabled={!canRedo(history)}
+          onClick={() => setHistory(redo)}
+        >
+          Redo
+        </button>
+        <button
+          type="button"
+          data-testid="reset"
+          onClick={() => setHistory(initialHistory())}
+        >
+          Reset
+        </button>
       </div>
-      <output className="value" data-testid="value" aria-live="polite">{history.present}</output>
+      <output className="value" data-testid="value" aria-live="polite">
+        {history.present}
+      </output>
       <div className="ops">
         {OPERATIONS.map((op) => (
           <button
@@ -7598,18 +9343,29 @@ export default function App() {
 }
 `,
           "/src/HistoryTable.js": `export default function HistoryTable({ past }) {
-  if (past.length === 0) return <p className="empty" data-testid="history-empty">No history yet</p>;
+  if (past.length === 0)
+    return (
+      <p className="empty" data-testid="history-empty">
+        No history yet
+      </p>
+    );
   // Newest first, so the row that Undo would revert is at the top.
   const rows = past.map((entry, i) => ({ ...entry, id: i })).reverse();
   return (
     <table className="history" data-testid="history">
       <thead>
-        <tr><th scope="col">Op</th><th scope="col">Old</th><th scope="col">New</th></tr>
+        <tr>
+          <th scope="col">Op</th>
+          <th scope="col">Old</th>
+          <th scope="col">New</th>
+        </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.id}>
-            <td>{r.op}</td><td>{r.from}</td><td>{r.to}</td>
+            <td>{r.op}</td>
+            <td>{r.from}</td>
+            <td>{r.to}</td>
           </tr>
         ))}
       </tbody>
@@ -7643,7 +9399,11 @@ export function perform(h, op) {
 export function undo(h) {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h) {
@@ -7664,19 +9424,72 @@ export function shortcutFor(e) {
   return null;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.undo-app { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.undo-app h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar, .ops { display: flex; gap: 8px; justify-content: center; }
-button { padding: 8px 14px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; min-width: 56px; }
-button:disabled { opacity: 0.45; cursor: default; }
-button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.value { display: block; font-size: 3rem; font-weight: 700; margin: 16px 0; color: #fbbf24; }
-.history { width: 100%; margin-top: 20px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.history th, .history td { padding: 6px 8px; border-bottom: 1px solid #334155; }
-.history th { color: #94a3b8; font-weight: 600; }
-.empty { margin-top: 20px; color: #64748b; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.undo-app {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.undo-app h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar,
+.ops {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+button {
+  padding: 8px 14px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+  min-width: 56px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+button:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.value {
+  display: block;
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 16px 0;
+  color: #fbbf24;
+}
+.history {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.history th,
+.history td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #334155;
+}
+.history th {
+  color: #94a3b8;
+  font-weight: 600;
+}
+.empty {
+  margin-top: 20px;
+  color: #64748b;
+}
 `,
         },
       },
@@ -7732,10 +9545,15 @@ This is the moment from the Verified run where <code>-1</code> is pressed after 
 ### Step 1: the pure model
 
 \`\`\`js
-// A new action records { op, from, to } and CLEARS the future: you cannot redo
+// A new action records { op, from, to }
+// and CLEARS the future: you cannot redo
 // something that belongs to a timeline you have just left.
 export function perform(h, op) {
-  const entry = { op: op.label, from: h.present, to: op.apply(h.present) };
+  const entry = {
+    op: op.label,
+    from: h.present,
+    to: op.apply(h.present),
+  };
   const past = [...h.past, entry].slice(-HISTORY_LIMIT);
   return { past, present: entry.to, future: [] };
 }
@@ -7743,7 +9561,11 @@ export function perform(h, op) {
 export function undo(h) {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h) {
@@ -7766,9 +9588,19 @@ export const canRedo = (h) => h.future.length > 0;
 <script setup>
 import { shallowRef, computed, onMounted, onBeforeUnmount } from "vue";
 import HistoryTable from "./components/HistoryTable.vue";
-import { OPERATIONS, canRedo, canUndo, initialHistory, perform, redo, shortcutFor, undo } from "./history.js";
+import {
+  OPERATIONS,
+  canRedo,
+  canUndo,
+  initialHistory,
+  perform,
+  redo,
+  shortcutFor,
+  undo,
+} from "./history.js";
 
-// One object holds all three stacks. Every change replaces it, so shallowRef is enough.
+// One object holds all three stacks. Every
+// change replaces it, so shallowRef is enough.
 const history = shallowRef(initialHistory());
 const undoable = computed(() => canUndo(history.value));
 const redoable = computed(() => canRedo(history.value));
@@ -7789,11 +9621,29 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeyDown));
   <main class="undo-app">
     <h1>Undoable Counter</h1>
     <div class="toolbar">
-      <button type="button" data-testid="undo" :disabled="!undoable" @click="run(undo)">Undo</button>
-      <button type="button" data-testid="redo" :disabled="!redoable" @click="run(redo)">Redo</button>
-      <button type="button" data-testid="reset" @click="history = initialHistory()">Reset</button>
+      <button
+        type="button"
+        data-testid="undo"
+        :disabled="!undoable"
+        @click="run(undo)"
+      >Undo</button>
+      <button
+        type="button"
+        data-testid="redo"
+        :disabled="!redoable"
+        @click="run(redo)"
+      >Redo</button>
+      <button
+        type="button"
+        data-testid="reset"
+        @click="history = initialHistory()"
+      >Reset</button>
     </div>
-    <output class="value" data-testid="value" aria-live="polite">{{ history.present }}</output>
+    <output
+      class="value"
+      data-testid="value"
+      aria-live="polite"
+    >{{ history.present }}</output>
     <div class="ops">
       <button
         v-for="op in OPERATIONS"
@@ -7824,7 +9674,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeyDown));
 
 The model alone, with node:
 
-\`\`\`
+\`\`\`text
 undo on empty  : true (same object back, nothing to undo)
 55 x +1        : present 55, past 50, future 0 | oldest kept entry: {"op":"+1","from":5,"to":6}
 undo all       : present 5, past 0, future 50 | undos possible: 50
@@ -7834,7 +9684,7 @@ new action     : present 14, past 3, future 0 | redo now changes nothing: true
 
 The app compiled with <code>@vue/compiler-sfc</code>, mounted in jsdom, and driven by button clicks plus keydown events on <code>document.body</code> (they bubble to <code>window</code>). History rows are "op old new", newest first:
 
-\`\`\`
+\`\`\`text
 RENDERED: Undoable CounterUndoRedoReset0/2-1+1x2No history yet
 start      : 0 | undo off, redo off | history: (empty)
 +1 +1 x2   : 4 | undo on, redo off | history: x2 2 4 | +1 1 2 | +1 0 1
@@ -7936,9 +9786,19 @@ These lines match the React and Angular builds. After undo, undo, redo, the new 
           "/src/App.vue": `<script setup>
 import { shallowRef, computed, onMounted, onBeforeUnmount } from "vue";
 import HistoryTable from "./components/HistoryTable.vue";
-import { OPERATIONS, canRedo, canUndo, initialHistory, perform, redo, shortcutFor, undo } from "./history.js";
+import {
+  OPERATIONS,
+  canRedo,
+  canUndo,
+  initialHistory,
+  perform,
+  redo,
+  shortcutFor,
+  undo,
+} from "./history.js";
 
-// One object holds all three stacks. Every change replaces it, so shallowRef is enough.
+// One object holds all three stacks. Every
+// change replaces it, so shallowRef is enough.
 const history = shallowRef(initialHistory());
 const undoable = computed(() => canUndo(history.value));
 const redoable = computed(() => canRedo(history.value));
@@ -7959,11 +9819,29 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeyDown));
   <main class="undo-app">
     <h1>Undoable Counter</h1>
     <div class="toolbar">
-      <button type="button" data-testid="undo" :disabled="!undoable" @click="run(undo)">Undo</button>
-      <button type="button" data-testid="redo" :disabled="!redoable" @click="run(redo)">Redo</button>
-      <button type="button" data-testid="reset" @click="history = initialHistory()">Reset</button>
+      <button
+        type="button"
+        data-testid="undo"
+        :disabled="!undoable"
+        @click="run(undo)"
+      >Undo</button>
+      <button
+        type="button"
+        data-testid="redo"
+        :disabled="!redoable"
+        @click="run(redo)"
+      >Redo</button>
+      <button
+        type="button"
+        data-testid="reset"
+        @click="history = initialHistory()"
+      >Reset</button>
     </div>
-    <output class="value" data-testid="value" aria-live="polite">{{ history.present }}</output>
+    <output
+      class="value"
+      data-testid="value"
+      aria-live="polite"
+    >{{ history.present }}</output>
     <div class="ops">
       <button
         v-for="op in OPERATIONS"
@@ -7980,15 +9858,53 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeyDown));
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
-.undo-app { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
-.undo-app h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar, .ops { display: flex; gap: 8px; justify-content: center; }
-.undo-app button { padding: 8px 14px; font-size: 1rem; border-radius: 8px; border: 1px solid #475569; background: #334155;
-  color: #f8fafc; cursor: pointer; min-width: 56px; }
-.undo-app button:disabled { opacity: 0.45; cursor: default; }
-.undo-app button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.value { display: block; font-size: 3rem; font-weight: 700; margin: 16px 0; color: #fbbf24; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.undo-app {
+  max-width: 360px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  text-align: center;
+}
+.undo-app h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar,
+.ops {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.undo-app button {
+  padding: 8px 14px;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+  min-width: 56px;
+}
+.undo-app button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.undo-app button:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.value {
+  display: block;
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 16px 0;
+  color: #fbbf24;
+}
 </style>
 `,
           "/src/components/HistoryTable.vue": `<script setup>
@@ -7996,11 +9912,17 @@ import { computed } from "vue";
 
 const props = defineProps({ past: { type: Array, required: true } });
 // Newest first, so the row that Undo would revert is at the top.
-const rows = computed(() => props.past.map((entry, i) => ({ ...entry, id: i })).reverse());
+const rows = computed(() =>
+  props.past.map((entry, i) => ({ ...entry, id: i })).reverse(),
+);
 </script>
 
 <template>
-  <p v-if="past.length === 0" class="empty" data-testid="history-empty">No history yet</p>
+  <p
+    v-if="past.length === 0"
+    class="empty"
+    data-testid="history-empty"
+  >No history yet</p>
   <table v-else class="history" data-testid="history">
     <thead>
       <tr><th scope="col">Op</th><th scope="col">Old</th><th scope="col">New</th></tr>
@@ -8014,10 +9936,25 @@ const rows = computed(() => props.past.map((entry, i) => ({ ...entry, id: i })).
 </template>
 
 <style scoped>
-.history { width: 100%; margin-top: 20px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.history th, .history td { padding: 6px 8px; border-bottom: 1px solid #334155; }
-.history th { color: #94a3b8; font-weight: 600; }
-.empty { margin-top: 20px; color: #64748b; }
+.history {
+  width: 100%;
+  margin-top: 20px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.history th,
+.history td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #334155;
+}
+.history th {
+  color: #94a3b8;
+  font-weight: 600;
+}
+.empty {
+  margin-top: 20px;
+  color: #64748b;
+}
 </style>
 `,
           "/src/history.js": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
@@ -8046,7 +9983,11 @@ export function perform(h, op) {
 export function undo(h) {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h) {
@@ -8097,10 +10038,15 @@ In a hallway of rooms, the rooms behind you are the **past**, the room you stand
 ### Step 1: the pure model
 
 \`\`\`ts
-// A new action records { op, from, to } and CLEARS the future: you cannot redo
+// A new action records { op, from, to }
+// and CLEARS the future: you cannot redo
 // something that belongs to a timeline you have just left.
 export function perform(h: History, op: Operation): History {
-  const entry: Entry = { op: op.label, from: h.present, to: op.apply(h.present) };
+  const entry: Entry = {
+    op: op.label,
+    from: h.present,
+    to: op.apply(h.present),
+  };
   const past = [...h.past, entry].slice(-HISTORY_LIMIT);
   return { past, present: entry.to, future: [] };
 }
@@ -8108,7 +10054,11 @@ export function perform(h: History, op: Operation): History {
 export function undo(h: History): History {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h: History): History {
@@ -8126,7 +10076,7 @@ export const canRedo = (h: History): boolean => h.future.length > 0;
 ### Step 2: the component
 
 \`\`\`ts
-  template: \`
+template: \`
     <main class="undo-app">
       <h1>Undoable Counter</h1>
       <div class="toolbar">
@@ -8152,7 +10102,8 @@ export class AppComponent {
   readonly redo = redo;
   readonly initialHistory = initialHistory;
 
-  // One signal holds all three stacks, so they can never get out of step.
+  // One signal holds all three stacks,
+  // so they can never get out of step.
   readonly history = signal<History>(initialHistory());
   readonly undoable = computed(() => canUndo(this.history()));
   readonly redoable = computed(() => canRedo(this.history()));
@@ -8165,7 +10116,8 @@ export class AppComponent {
     this.history.update((h) => perform(h, op));
   }
 
-  // Keyboard shortcuts on the whole page; Angular removes the listener on destroy.
+  // Keyboard shortcuts on the whole page;
+  // Angular removes the listener on destroy.
   @HostListener("window:keydown", ["$event"])
   onKeyDown(e: KeyboardEvent): void {
     const action = shortcutFor(e);
@@ -8200,7 +10152,7 @@ The template uses <code>@if</code>/<code>@else</code> for the empty message and 
 
 The model alone, with node:
 
-\`\`\`
+\`\`\`text
 undo on empty  : true (same object back, nothing to undo)
 55 x +1        : present 55, past 50, future 0 | oldest kept entry: {"op":"+1","from":5,"to":6}
 undo all       : present 5, past 0, future 50 | undos possible: 50
@@ -8210,7 +10162,7 @@ new action     : present 14, past 3, future 0 | redo now changes nothing: true
 
 Booted AOT (ngc, <code>strictTemplates</code>) and JIT, then driven with clicks and keydown events on <code>document.body</code> (they bubble to <code>window</code>). Rows are "op old new", newest first. AOT output:
 
-\`\`\`
+\`\`\`text
 RENDERED: Undoable CounterUndoRedoReset0/2-1+1x2No history yet
 start      : 0 | undo off, redo off | history: (empty)
 +1 +1 x2   : 4 | undo on, redo off | history: x2 2 4 | +1 1 2 | +1 0 1
@@ -8311,7 +10263,18 @@ The JIT run printed identical lines, matching the React and Vue builds. After un
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, computed, signal } from "@angular/core";
 import { HistoryTableComponent } from "./history-table.component";
-import { History, OPERATIONS, Operation, canRedo, canUndo, initialHistory, perform, redo, shortcutFor, undo } from "./history";
+import {
+  History,
+  OPERATIONS,
+  Operation,
+  canRedo,
+  canUndo,
+  initialHistory,
+  perform,
+  redo,
+  shortcutFor,
+  undo,
+} from "./history";
 
 @Component({
   selector: "app-root",
@@ -8321,20 +10284,43 @@ import { History, OPERATIONS, Operation, canRedo, canUndo, initialHistory, perfo
     <main class="undo-app">
       <h1>Undoable Counter</h1>
       <div class="toolbar">
-        <button type="button" data-testid="undo" [disabled]="!undoable()" (click)="run(undo)">Undo</button>
-        <button type="button" data-testid="redo" [disabled]="!redoable()" (click)="run(redo)">Redo</button>
-        <button type="button" data-testid="reset" (click)="history.set(initialHistory())">Reset</button>
+        <button
+          type="button"
+          data-testid="undo"
+          [disabled]="!undoable()"
+          (click)="run(undo)"
+        >Undo</button>
+        <button
+          type="button"
+          data-testid="redo"
+          [disabled]="!redoable()"
+          (click)="run(redo)"
+        >Redo</button>
+        <button
+          type="button"
+          data-testid="reset"
+          (click)="history.set(initialHistory())"
+        >Reset</button>
       </div>
-      <output class="value" data-testid="value" aria-live="polite">{{ history().present }}</output>
+      <output
+        class="value"
+        data-testid="value"
+        aria-live="polite"
+      >{{ history().present }}</output>
       <div class="ops">
         @for (op of operations; track op.label) {
-          <button type="button" [attr.data-testid]="'op-' + op.label" (click)="apply(op)">{{ op.label }}</button>
+          <button
+            type="button"
+            [attr.data-testid]="'op-' + op.label"
+            (click)="apply(op)"
+          >{{ op.label }}</button>
         }
       </div>
       <app-history-table [past]="history().past" />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
     .undo-app { max-width: 360px; margin: 0 auto; padding: 24px 16px; text-align: center; }
     .undo-app h1 { font-size: 1.4rem; margin: 0 0 12px; }
@@ -8344,7 +10330,8 @@ import { History, OPERATIONS, Operation, canRedo, canUndo, initialHistory, perfo
     button:disabled { opacity: 0.45; cursor: default; }
     button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
     .value { display: block; font-size: 3rem; font-weight: 700; margin: 16px 0; color: #fbbf24; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly operations = OPERATIONS;
@@ -8365,7 +10352,8 @@ export class AppComponent {
     this.history.update((h) => perform(h, op));
   }
 
-  // Keyboard shortcuts on the whole page; Angular removes the listener on destroy.
+  // Keyboard shortcuts on the whole page;
+  // Angular removes the listener on destroy.
   @HostListener("window:keydown", ["$event"])
   onKeyDown(e: KeyboardEvent): void {
     const action = shortcutFor(e);
@@ -8387,22 +10375,47 @@ import { Entry } from "./history";
     } @else {
       <table class="history" data-testid="history">
         <thead>
-          <tr><th scope="col">Op</th><th scope="col">Old</th><th scope="col">New</th></tr>
+          <tr>
+            <th scope="col">Op</th>
+            <th scope="col">Old</th>
+            <th scope="col">New</th>
+          </tr>
         </thead>
         <tbody>
           @for (r of rows; track r.id) {
-            <tr><td>{{ r.op }}</td><td>{{ r.from }}</td><td>{{ r.to }}</td></tr>
+            <tr>
+              <td>{{ r.op }}</td>
+              <td>{{ r.from }}</td>
+              <td>{{ r.to }}</td>
+            </tr>
           }
         </tbody>
       </table>
     }
   \`,
-  styles: [\`
-    .history { width: 100%; margin-top: 20px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-    .history th, .history td { padding: 6px 8px; border-bottom: 1px solid #334155; }
-    .history th { color: #94a3b8; font-weight: 600; }
-    .empty { margin-top: 20px; color: #64748b; }
-  \`],
+  styles: [
+    \`
+      .history {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+      }
+      .history th,
+      .history td {
+        padding: 6px 8px;
+        border-bottom: 1px solid #334155;
+      }
+      .history th {
+        color: #94a3b8;
+        font-weight: 600;
+      }
+      .empty {
+        margin-top: 20px;
+        color: #64748b;
+      }
+    \`,
+  ],
 })
 export class HistoryTableComponent {
   @Input() past: Entry[] = [];
@@ -8417,9 +10430,20 @@ export class HistoryTableComponent {
 // past    = entries already applied, oldest first
 // present = the current value
 // future  = entries that were undone, next-to-redo first
-export interface Operation { label: string; apply: (v: number) => number; }
-export interface Entry { op: string; from: number; to: number; }
-export interface History { past: Entry[]; present: number; future: Entry[]; }
+export interface Operation {
+  label: string;
+  apply: (v: number) => number;
+}
+export interface Entry {
+  op: string;
+  from: number;
+  to: number;
+}
+export interface History {
+  past: Entry[];
+  present: number;
+  future: Entry[];
+}
 export type Action = "undo" | "redo";
 
 export const HISTORY_LIMIT = 50;
@@ -8431,12 +10455,20 @@ export const OPERATIONS: Operation[] = [
   { label: "x2", apply: (v) => v * 2 },
 ];
 
-export const initialHistory = (): History => ({ past: [], present: 0, future: [] });
+export const initialHistory = (): History => ({
+  past: [],
+  present: 0,
+  future: [],
+});
 
 // A new action records { op, from, to } and CLEARS the future: you cannot redo
 // something that belongs to a timeline you have just left.
 export function perform(h: History, op: Operation): History {
-  const entry: Entry = { op: op.label, from: h.present, to: op.apply(h.present) };
+  const entry: Entry = {
+    op: op.label,
+    from: h.present,
+    to: op.apply(h.present),
+  };
   const past = [...h.past, entry].slice(-HISTORY_LIMIT);
   return { past, present: entry.to, future: [] };
 }
@@ -8444,7 +10476,11 @@ export function perform(h: History, op: Operation): History {
 export function undo(h: History): History {
   if (h.past.length === 0) return h;
   const entry = h.past[h.past.length - 1];
-  return { past: h.past.slice(0, -1), present: entry.from, future: [entry, ...h.future] };
+  return {
+    past: h.past.slice(0, -1),
+    present: entry.from,
+    future: [entry, ...h.future],
+  };
 }
 
 export function redo(h: History): History {

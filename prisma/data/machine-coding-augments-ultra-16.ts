@@ -174,7 +174,8 @@ export const isLocked = (g) => g.open.length === 2;
 export const isWon = (g) => g.matched.length === g.deck.length;
 
 export function flip(g, i) {
-  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i)) return g;
+  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i))
+    return g;
   const open = [...g.open, i];
   if (open.length === 1) return { ...g, open };
   const [a, b] = open;
@@ -222,12 +223,27 @@ The effect runs when <code>locked</code> flips. If it became true, start the 800
 ### Step 4: the card and the board
 
 ~~~jsx
-export default function Card({ index, symbol, faceUp, matched, onFlip }) {
-  const label = faceUp ? "Card " + (index + 1) + ": " + symbol : "Card " + (index + 1) + ": face down";
+export default function Card({
+  index,
+  symbol,
+  faceUp,
+  matched,
+  onFlip,
+}) {
+  const label = faceUp
+    ? "Card " + (index + 1) + ": " + symbol
+    : "Card " + (index + 1) + ": face down";
   return (
-    <button type="button" data-testid="card"
-      className={"card" + (faceUp ? " up" : "") + (matched ? " done" : "")}
-      aria-label={label} disabled={matched} onClick={() => onFlip(index)}>
+    <button
+      type="button"
+      data-testid="card"
+      className={
+        "card" + (faceUp ? " up" : "") + (matched ? " done" : "")
+      }
+      aria-label={label}
+      disabled={matched}
+      onClick={() => onFlip(index)}
+    >
       {faceUp ? symbol : ""}
     </button>
   );
@@ -387,8 +403,16 @@ export default function App() {
     <main className="memory">
       <h1>Memory</h1>
       <div className="bar">
-        <span data-testid="moves">Moves: {game.moves} · Pairs: {game.matched.length / 2}/{game.deck.length / 2}</span>
-        <button type="button" onClick={() => setGame((g) => createGame(g.seed + 1))}>New game</button>
+        <span data-testid="moves">
+          Moves: {game.moves} · Pairs: {game.matched.length / 2}/
+          {game.deck.length / 2}
+        </span>
+        <button
+          type="button"
+          onClick={() => setGame((g) => createGame(g.seed + 1))}
+        >
+          New game
+        </button>
       </div>
       <div className="grid" role="group" aria-label="Cards" aria-busy={locked}>
         {game.deck.map((symbol, i) => (
@@ -403,14 +427,20 @@ export default function App() {
         ))}
       </div>
       <p className="status" role="status" data-testid="status">
-        {won ? "You won in " + game.moves + " moves!" : locked ? "No match. Flipping back..." : ""}
+        {won
+          ? "You won in " + game.moves + " moves!"
+          : locked
+            ? "No match. Flipping back..."
+            : ""}
       </p>
     </main>
   );
 }
 `,
           "/src/Card.js": `export default function Card({ index, symbol, faceUp, matched, onFlip }) {
-  const label = faceUp ? "Card " + (index + 1) + ": " + symbol : "Card " + (index + 1) + ": face down";
+  const label = faceUp
+    ? "Card " + (index + 1) + ": " + symbol
+    : "Card " + (index + 1) + ": face down";
   return (
     <button
       type="button"
@@ -458,7 +488,8 @@ export function createGame(seed, pairs = 8) {
   return { seed, deck, open: [], matched: [], moves: 0 };
 }
 
-// Two face-up cards that do not match: the board ignores clicks until they flip back.
+// Two face-up cards that do not match: the
+// board ignores clicks until they flip back.
 export const isLocked = (g) => g.open.length === 2;
 export const isWon = (g) => g.matched.length === g.deck.length;
 
@@ -478,19 +509,71 @@ export function hideUnmatched(g) {
   return isLocked(g) ? { ...g, open: [] } : g;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.memory { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.memory h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
-.bar button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.card { aspect-ratio: 1; border-radius: 10px; border: 1px solid #3b4252; font-size: 1.8rem; cursor: pointer;
-  background: #1f6feb; color: transparent; transition: background 0.2s; }
-.card.up { background: #1c2128; color: inherit; }
-.card.done { background: #12301f; border-color: #2ea043; cursor: default; }
-.card:focus-visible { outline: 3px solid #f9a825; outline-offset: 2px; }
-.status { min-height: 1.4em; margin-top: 12px; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.memory {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.memory h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.bar button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.card {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1px solid #3b4252;
+  font-size: 1.8rem;
+  cursor: pointer;
+  background: #1f6feb;
+  color: transparent;
+  transition: background 0.2s;
+}
+.card.up {
+  background: #1c2128;
+  color: inherit;
+}
+.card.done {
+  background: #12301f;
+  border-color: #2ea043;
+  cursor: default;
+}
+.card:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 2px;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 12px;
+}
 `,
         },
       },
@@ -538,12 +621,14 @@ export function createGame(seed, pairs = 8) {
 }
 
 export function flip(g, i) {
-  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i)) return g;
+  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i))
+    return g;
   const open = [...g.open, i];
   if (open.length === 1) return { ...g, open };
   const [a, b] = open;
   const moves = g.moves + 1;
-  if (g.deck[a] === g.deck[b]) return { ...g, open: [], matched: [...g.matched, a, b], moves };
+  if (g.deck[a] === g.deck[b])
+    return { ...g, open: [], matched: [...g.matched, a, b], moves };
   return { ...g, open, moves };
 }
 ~~~
@@ -559,11 +644,18 @@ const game = ref(createGame(1));
 const locked = computed(() => isLocked(game.value));
 let timer = null;
 
-function cancelTimer() { clearTimeout(timer); timer = null; }
+function cancelTimer() {
+  clearTimeout(timer);
+  timer = null;
+}
 
 watch(locked, (now) => {
   cancelTimer();
-  if (now) timer = setTimeout(() => (game.value = hideUnmatched(game.value)), FLIP_BACK_MS);
+  if (now)
+    timer = setTimeout(
+      () => (game.value = hideUnmatched(game.value)),
+      FLIP_BACK_MS,
+    );
 });
 onUnmounted(cancelTimer);
 ~~~
@@ -588,11 +680,19 @@ const emit = defineEmits(["flip"]);
 </script>
 
 <template>
-  <button type="button" data-testid="card" class="card"
+  <button
+    type="button"
+    data-testid="card"
+    class="card"
     :class="{ up: faceUp, done: matched }"
-    :aria-label="'Card ' + (index + 1) + ': ' + (faceUp ? symbol : 'face down')"
+    :aria-label="
+      'Card ' + (index + 1) + ': ' + (faceUp ? symbol : 'face down')
+    "
     :disabled="matched"
-    @click="emit('flip', props.index)">{{ faceUp ? symbol : "" }}</button>
+    @click="emit('flip', props.index)"
+  >
+    {{ faceUp ? symbol : "" }}
+  </button>
 </template>
 ~~~
 
@@ -731,7 +831,11 @@ function cancelTimer() {
 // Start the flip-back timer only when the board becomes locked.
 watch(locked, (now) => {
   cancelTimer();
-  if (now) timer = setTimeout(() => (game.value = hideUnmatched(game.value)), FLIP_BACK_MS);
+  if (now)
+    timer = setTimeout(
+      () => (game.value = hideUnmatched(game.value)),
+      FLIP_BACK_MS,
+    );
 });
 onUnmounted(cancelTimer);
 
@@ -743,7 +847,11 @@ const newGame = () => (game.value = createGame(game.value.seed + 1));
   <main class="memory">
     <h1>Memory</h1>
     <div class="bar">
-      <span data-testid="moves">Moves: {{ game.moves }} · Pairs: {{ game.matched.length / 2 }}/{{ game.deck.length / 2 }}</span>
+      <span data-testid="moves"
+        >Moves: {{ game.moves }} · Pairs: {{ game.matched.length / 2 }}/{{
+          game.deck.length / 2
+        }}</span
+      >
       <button type="button" @click="newGame">New game</button>
     </div>
     <div class="grid" role="group" aria-label="Cards" :aria-busy="locked">
@@ -758,25 +866,83 @@ const newGame = () => (game.value = createGame(game.value.seed + 1));
       />
     </div>
     <p class="status" role="status" data-testid="status">
-      {{ won ? "You won in " + game.moves + " moves!" : locked ? "No match. Flipping back..." : "" }}
+      {{
+        won
+          ? "You won in " + game.moves + " moves!"
+          : locked
+            ? "No match. Flipping back..."
+            : ""
+      }}
     </p>
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.memory { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.memory h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
-.bar button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.card { aspect-ratio: 1; border-radius: 10px; border: 1px solid #3b4252; font-size: 1.8rem; cursor: pointer;
-  background: #1f6feb; color: transparent; transition: background 0.2s; }
-.card.up { background: #1c2128; color: inherit; }
-.card.done { background: #12301f; border-color: #2ea043; cursor: default; }
-.card:focus-visible { outline: 3px solid #f9a825; outline-offset: 2px; }
-.status { min-height: 1.4em; margin-top: 12px; }
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.memory {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.memory h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.bar button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.card {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 1px solid #3b4252;
+  font-size: 1.8rem;
+  cursor: pointer;
+  background: #1f6feb;
+  color: transparent;
+  transition: background 0.2s;
+}
+.card.up {
+  background: #1c2128;
+  color: inherit;
+}
+.card.done {
+  background: #12301f;
+  border-color: #2ea043;
+  cursor: default;
+}
+.card:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 2px;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 12px;
+}
 </style>
 `,
           "/src/components/MemoryCard.vue": `<script setup>
@@ -798,7 +964,9 @@ const emit = defineEmits(["flip"]);
     :aria-label="'Card ' + (index + 1) + ': ' + (faceUp ? symbol : 'face down')"
     :disabled="matched"
     @click="emit('flip', props.index)"
-  >{{ faceUp ? symbol : "" }}</button>
+  >
+    {{ faceUp ? symbol : "" }}
+  </button>
 </template>
 `,
           "/src/memory.js": `// Pure game logic: no React, no DOM, no timers. Every function takes a game
@@ -834,7 +1002,8 @@ export function createGame(seed, pairs = 8) {
   return { seed, deck, open: [], matched: [], moves: 0 };
 }
 
-// Two face-up cards that do not match: the board ignores clicks until they flip back.
+// Two face-up cards that do not match: the
+// board ignores clicks until they flip back.
 export const isLocked = (g) => g.open.length === 2;
 export const isWon = (g) => g.matched.length === g.deck.length;
 
@@ -901,12 +1070,14 @@ export interface Game {
 export const isLocked = (g: Game) => g.open.length === 2;
 
 export function flip(g: Game, i: number): Game {
-  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i)) return g;
+  if (isLocked(g) || g.open.includes(i) || g.matched.includes(i))
+    return g;
   const open = [...g.open, i];
   if (open.length === 1) return { ...g, open };
   const [a, b] = open;
   const moves = g.moves + 1;
-  if (g.deck[a] === g.deck[b]) return { ...g, open: [], matched: [...g.matched, a, b], moves };
+  if (g.deck[a] === g.deck[b])
+    return { ...g, open: [], matched: [...g.matched, a, b], moves };
   return { ...g, open, moves };
 }
 ~~~
@@ -926,13 +1097,20 @@ export class AppComponent {
   constructor() {
     effect((onCleanup) => {
       if (!this.locked()) return;
-      const id = setTimeout(() => this.game.update(hideUnmatched), FLIP_BACK_MS);
+      const id = setTimeout(
+        () => this.game.update(hideUnmatched),
+        FLIP_BACK_MS,
+      );
       onCleanup(() => clearTimeout(id));
     });
   }
 
-  onFlip(i: number) { this.game.update((g) => flip(g, i)); }
-  newGame() { this.game.update((g) => createGame(g.seed + 1)); }
+  onFlip(i: number) {
+    this.game.update((g) => flip(g, i));
+  }
+  newGame() {
+    this.game.update((g) => createGame(g.seed + 1));
+  }
 }
 ~~~
 
@@ -1091,11 +1269,24 @@ const FLIP_BACK_MS = 800;
     <main class="memory">
       <h1>Memory</h1>
       <div class="bar">
-        <span data-testid="moves">Moves: {{ game().moves }} · Pairs: {{ game().matched.length / 2 }}/{{ game().deck.length / 2 }}</span>
+        <span data-testid="moves"
+          >Moves: {{ game().moves }} · Pairs: {{ game().matched.length / 2 }}/{{
+            game().deck.length / 2
+          }}</span
+        >
         <button type="button" (click)="newGame()">New game</button>
       </div>
-      <div class="grid" role="group" aria-label="Cards" [attr.aria-busy]="locked()">
-        @for (symbol of game().deck; track game().seed + "-" + i; let i = $index) {
+      <div
+        class="grid"
+        role="group"
+        aria-label="Cards"
+        [attr.aria-busy]="locked()"
+      >
+        @for (
+          symbol of game().deck;
+          track game().seed + "-" + i;
+          let i = $index
+        ) {
           <app-memory-card
             [index]="i"
             [symbol]="symbol"
@@ -1106,19 +1297,58 @@ const FLIP_BACK_MS = 800;
         }
       </div>
       <p class="status" role="status" data-testid="status">
-        {{ won() ? "You won in " + game().moves + " moves!" : locked() ? "No match. Flipping back..." : "" }}
+        {{
+          won()
+            ? "You won in " + game().moves + " moves!"
+            : locked()
+              ? "No match. Flipping back..."
+              : ""
+        }}
       </p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; font-family: system-ui, sans-serif; color: #e8e8ea; }
-    .memory { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-    .memory h1 { font-size: 1.3rem; margin: 0 0 8px; }
-    .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .bar button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .status { min-height: 1.4em; margin-top: 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        font-family: system-ui, sans-serif;
+        color: #e8e8ea;
+      }
+      .memory {
+        max-width: 360px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      .memory h1 {
+        font-size: 1.3rem;
+        margin: 0 0 8px;
+      }
+      .bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .bar button {
+        background: #2a2f3a;
+        color: #e8e8ea;
+        border: 1px solid #3b4252;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .status {
+        min-height: 1.4em;
+        margin-top: 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly game = signal(createGame(1));
@@ -1130,7 +1360,10 @@ export class AppComponent {
     // (new game while locked, or the component being destroyed).
     effect((onCleanup) => {
       if (!this.locked()) return;
-      const id = setTimeout(() => this.game.update(hideUnmatched), FLIP_BACK_MS);
+      const id = setTimeout(
+        () => this.game.update(hideUnmatched),
+        FLIP_BACK_MS,
+      );
       onCleanup(() => clearTimeout(id));
     });
   }
@@ -1161,14 +1394,16 @@ export class AppComponent {
       (click)="flip.emit(index)"
     >{{ faceUp ? symbol : "" }}</button>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .card { width: 100%; aspect-ratio: 1; border-radius: 10px; border: 1px solid #3b4252; font-size: 1.8rem;
       cursor: pointer; background: #1f6feb; color: transparent; transition: background 0.2s; }
     .card.up { background: #1c2128; color: #e8e8ea; }
     .card.done { background: #12301f; border-color: #2ea043; cursor: default; }
     .card:focus-visible { outline: 3px solid #f9a825; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class MemoryCardComponent {
   @Input({ required: true }) index = 0;
@@ -1179,7 +1414,8 @@ export class MemoryCardComponent {
 }
 `,
           "/src/app/memory.ts": `// Pure game logic: no Angular, no DOM, no timers. Every function takes a game
-// object and returns a new one, so the component only decides WHEN to call them.
+// object and returns a new one, so the
+// component only decides WHEN to call them.
 
 export interface Game {
   seed: number;
@@ -1219,7 +1455,8 @@ export function createGame(seed: number, pairs = 8): Game {
   return { seed, deck, open: [], matched: [], moves: 0 };
 }
 
-// Two face-up cards that do not match: the board ignores clicks until they flip back.
+// Two face-up cards that do not match: the
+// board ignores clicks until they flip back.
 export const isLocked = (g: Game) => g.open.length === 2;
 export const isWon = (g: Game) => g.matched.length === g.deck.length;
 
@@ -1362,7 +1599,16 @@ export function createGame(seed) {
   const mid = Math.floor(SIZE / 2) * SIZE;
   const snake = [mid + 4, mid + 3, mid + 2];
   const [food, rng] = placeFood(snake, seed);
-  return { seed, snake, dir: "right", queue: [], food, rng, score: 0, status: "ready" };
+  return {
+    seed,
+    snake,
+    dir: "right",
+    queue: [],
+    food,
+    rng,
+    score: 0,
+    status: "ready",
+  };
 }
 ~~~
 
@@ -1393,7 +1639,12 @@ Two clicks ran the updater four times, and the values 1 and 3 were thrown away. 
 
 ~~~js
 export function turn(g, dir) {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (
+    g.status === "over" ||
+    g.status === "won" ||
+    g.status === "paused"
+  )
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -1426,7 +1677,16 @@ export function step(g) {
   const snake = [next, ...body];
   if (!eating) return { ...g, dir, queue, snake };
   const [food, rng] = placeFood(snake, g.rng);
-  return { ...g, dir, queue, snake, food, rng, score: g.score + 1, status: food === -1 ? "won" : "running" };
+  return {
+    ...g,
+    dir,
+    queue,
+    snake,
+    food,
+    rng,
+    score: g.score + 1,
+    status: food === -1 ? "won" : "running",
+  };
 }
 ~~~
 
@@ -1616,9 +1876,22 @@ A real-time game is hard to make fully accessible; the honest answer in an inter
         files: {
           "/App.js": `import { useEffect, useState } from "react";
 import Board from "./src/Board";
-import { KEY_TO_DIR, TICK_MS, createGame, step, togglePause, turn } from "./src/snake";
+import {
+  KEY_TO_DIR,
+  TICK_MS,
+  createGame,
+  step,
+  togglePause,
+  turn,
+} from "./src/snake";
 
-const LABEL = { ready: "Press an arrow key or Start", running: "Running", paused: "Paused", over: "Game over", won: "You filled the board!" };
+const LABEL = {
+  ready: "Press an arrow key or Start",
+  running: "Running",
+  paused: "Paused",
+  over: "Game over",
+  won: "You filled the board!",
+};
 
 export default function App() {
   const [game, setGame] = useState(() => createGame(1));
@@ -1653,18 +1926,36 @@ export default function App() {
     <main className="snake">
       <h1>Snake</h1>
       <div className="bar">
-        <span data-testid="score">Score: {game.score} · Length: {game.snake.length}</span>
+        <span data-testid="score">
+          Score: {game.score} · Length: {game.snake.length}
+        </span>
         {over ? (
-          <button type="button" onClick={() => setGame((g) => createGame(g.seed + 1))}>Restart</button>
+          <button
+            type="button"
+            onClick={() => setGame((g) => createGame(g.seed + 1))}
+          >
+            Restart
+          </button>
         ) : (
-          <button type="button" onClick={() => setGame(togglePause)}>{running ? "Pause" : "Start"}</button>
+          <button type="button" onClick={() => setGame(togglePause)}>
+            {running ? "Pause" : "Start"}
+          </button>
         )}
       </div>
       <Board snake={game.snake} food={game.food} />
-      <p className="status" role="status" data-testid="status">{LABEL[game.status]}{over ? " · Final score " + game.score : ""}</p>
+      <p className="status" role="status" data-testid="status">
+        {LABEL[game.status]}
+        {over ? " · Final score " + game.score : ""}
+      </p>
       <div className="pad">
         {["up", "left", "down", "right"].map((d) => (
-          <button key={d} type="button" className={d} aria-label={d} onClick={() => setGame((g) => turn(g, d))}>
+          <button
+            key={d}
+            type="button"
+            className={d}
+            aria-label={d}
+            onClick={() => setGame((g) => turn(g, d))}
+          >
             {{ up: "▲", left: "◀", down: "▼", right: "▶" }[d]}
           </button>
         ))}
@@ -1680,11 +1971,36 @@ export default function Board({ snake, food }) {
   const body = new Set(snake);
   const cells = [];
   for (let i = 0; i < SIZE * SIZE; i++) {
-    const kind = i === snake[0] ? "head" : body.has(i) ? "body" : i === food ? "food" : "empty";
-    cells.push(<div key={i} className={"cell " + kind} data-testid="cell" data-kind={kind} />);
+    const kind =
+      i === snake[0]
+        ? "head"
+        : body.has(i)
+          ? "body"
+          : i === food
+            ? "food"
+            : "empty";
+    cells.push(
+      <div
+        key={i}
+        className={"cell " + kind}
+        data-testid="cell"
+        data-kind={kind}
+      />,
+    );
   }
   return (
-    <div className="board" role="img" aria-label={"Snake board, " + SIZE + " by " + SIZE + ", snake length " + snake.length}>
+    <div
+      className="board"
+      role="img"
+      aria-label={
+        "Snake board, " +
+        SIZE +
+        " by " +
+        SIZE +
+        ", snake length " +
+        snake.length
+      }
+    >
       {cells}
     </div>
   );
@@ -1722,13 +2038,23 @@ export function createGame(seed) {
   const mid = Math.floor(SIZE / 2) * SIZE;
   const snake = [mid + 4, mid + 3, mid + 2];
   const [food, rng] = placeFood(snake, seed);
-  return { seed, snake, dir: "right", queue: [], food, rng, score: 0, status: "ready" };
+  return {
+    seed,
+    snake,
+    dir: "right",
+    queue: [],
+    food,
+    rng,
+    score: 0,
+    status: "ready",
+  };
 }
 
 // Queue a turn. It is checked against the LAST queued direction, not only the
 // current one, so two quick presses can never add up to a 180-degree turn.
 export function turn(g, dir) {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (g.status === "over" || g.status === "won" || g.status === "paused")
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -1738,7 +2064,8 @@ export function turn(g, dir) {
 
 export function togglePause(g) {
   if (g.status === "running") return { ...g, status: "paused" };
-  if (g.status === "paused" || g.status === "ready") return { ...g, status: "running" };
+  if (g.status === "paused" || g.status === "ready")
+    return { ...g, status: "running" };
   return g;
 }
 
@@ -1761,33 +2088,117 @@ export function step(g) {
   const snake = [next, ...body];
   if (!eating) return { ...g, dir, queue, snake };
   const [food, rng] = placeFood(snake, g.rng);
-  return { ...g, dir, queue, snake, food, rng, score: g.score + 1, status: food === -1 ? "won" : "running" };
+  return {
+    ...g,
+    dir,
+    queue,
+    snake,
+    food,
+    rng,
+    score: g.score + 1,
+    status: food === -1 ? "won" : "running",
+  };
 }
 
 export const KEY_TO_DIR = {
-  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-  w: "up", s: "down", a: "left", d: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  w: "up",
+  s: "down",
+  a: "left",
+  d: "right",
 };
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.snake { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.snake h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-button:focus-visible { outline: 3px solid #f9a825; outline-offset: 2px; }
-.board { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; background: #161b22; padding: 4px; border-radius: 8px; }
-.cell { aspect-ratio: 1; border-radius: 3px; background: #1c2128; }
-.cell.body { background: #2ea043; }
-.cell.head { background: #7ee787; }
-.cell.food { background: #f85149; border-radius: 50%; }
-.status { min-height: 1.4em; margin: 10px 0; }
-.pad { display: grid; grid-template-columns: repeat(3, 56px); gap: 6px; justify-content: center; }
-.pad button { height: 44px; }
-.pad .up { grid-column: 2; }
-.pad .left { grid-column: 1; grid-row: 2; }
-.pad .down { grid-column: 2; grid-row: 2; }
-.pad .right { grid-column: 3; grid-row: 2; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.snake {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.snake h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 2px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  background: #161b22;
+  padding: 4px;
+  border-radius: 8px;
+}
+.cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: #1c2128;
+}
+.cell.body {
+  background: #2ea043;
+}
+.cell.head {
+  background: #7ee787;
+}
+.cell.food {
+  background: #f85149;
+  border-radius: 50%;
+}
+.status {
+  min-height: 1.4em;
+  margin: 10px 0;
+}
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  gap: 6px;
+  justify-content: center;
+}
+.pad button {
+  height: 44px;
+}
+.pad .up {
+  grid-column: 2;
+}
+.pad .left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.pad .down {
+  grid-column: 2;
+  grid-row: 2;
+}
+.pad .right {
+  grid-column: 3;
+  grid-row: 2;
+}
 `,
         },
       },
@@ -1823,7 +2234,12 @@ The rules live in a plain <code>src/snake.js</code> with no Vue in it: <code>cre
 
 ~~~js
 export function turn(g, dir) {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (
+    g.status === "over" ||
+    g.status === "won" ||
+    g.status === "paused"
+  )
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -1838,7 +2254,8 @@ export function turn(g, dir) {
 
 ~~~js
 const eating = next === g.food;
-const body = eating ? g.snake : g.snake.slice(0, -1); // the tail leaves this tick
+// the tail leaves this tick
+const body = eating ? g.snake : g.snake.slice(0, -1);
 if (body.includes(next)) return { ...g, dir, queue, status: "over" };
 ~~~
 
@@ -1852,7 +2269,10 @@ const running = computed(() => game.value.status === "running");
 const apply = (fn) => (game.value = fn(game.value));
 
 let loop = null;
-const stopLoop = () => { clearInterval(loop); loop = null; };
+const stopLoop = () => {
+  clearInterval(loop);
+  loop = null;
+};
 watch(running, (on) => {
   stopLoop();
   if (on) loop = setInterval(() => apply(step), TICK_MS);
@@ -1891,7 +2311,13 @@ A listener on <code>window</code> works without focusing the board, <code>preven
 const kinds = computed(() => {
   const body = new Set(props.snake);
   return Array.from({ length: SIZE * SIZE }, (_, i) =>
-    i === props.snake[0] ? "head" : body.has(i) ? "body" : i === props.food ? "food" : "empty"
+    i === props.snake[0]
+      ? "head"
+      : body.has(i)
+        ? "body"
+        : i === props.food
+          ? "food"
+          : "empty",
   );
 });
 ~~~
@@ -2021,19 +2447,42 @@ One interval while running and none before Start, after pause or after game over
           "/src/App.vue": `<script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import SnakeBoard from "./components/SnakeBoard.vue";
-import { KEY_TO_DIR, TICK_MS, createGame, step, togglePause, turn } from "./snake.js";
+import {
+  KEY_TO_DIR,
+  TICK_MS,
+  createGame,
+  step,
+  togglePause,
+  turn,
+} from "./snake.js";
 
-const LABEL = { ready: "Press an arrow key or Start", running: "Running", paused: "Paused", over: "Game over", won: "You filled the board!" };
-const PAD = [["up", "▲"], ["left", "◀"], ["down", "▼"], ["right", "▶"]];
+const LABEL = {
+  ready: "Press an arrow key or Start",
+  running: "Running",
+  paused: "Paused",
+  over: "Game over",
+  won: "You filled the board!",
+};
+const PAD = [
+  ["up", "▲"],
+  ["left", "◀"],
+  ["down", "▼"],
+  ["right", "▶"],
+];
 
 const game = ref(createGame(1));
 const running = computed(() => game.value.status === "running");
-const over = computed(() => game.value.status === "over" || game.value.status === "won");
+const over = computed(
+  () => game.value.status === "over" || game.value.status === "won",
+);
 const apply = (fn) => (game.value = fn(game.value));
 
 // The game loop: one fixed-rate interval, alive only while running.
 let loop = null;
-const stopLoop = () => { clearInterval(loop); loop = null; };
+const stopLoop = () => {
+  clearInterval(loop);
+  loop = null;
+};
 watch(running, (on) => {
   stopLoop();
   if (on) loop = setInterval(() => apply(step), TICK_MS);
@@ -2061,37 +2510,125 @@ onUnmounted(() => {
     <h1>Snake</h1>
     <div class="bar">
       <span data-testid="score">Score: {{ game.score }} · Length: {{ game.snake.length }}</span>
-      <button v-if="over" type="button" @click="apply((g) => createGame(g.seed + 1))">Restart</button>
-      <button v-else type="button" @click="apply(togglePause)">{{ running ? "Pause" : "Start" }}</button>
+      <button
+        v-if="over"
+        type="button"
+        @click="apply((g) => createGame(g.seed + 1))"
+      >Restart</button>
+      <button
+        v-else
+        type="button"
+        @click="apply(togglePause)"
+      >{{ running ? "Pause" : "Start" }}</button>
     </div>
     <SnakeBoard :snake="game.snake" :food="game.food" />
-    <p class="status" role="status" data-testid="status">{{ LABEL[game.status] }}{{ over ? " · Final score " + game.score : "" }}</p>
+    <p
+      class="status"
+      role="status"
+      data-testid="status"
+    >{{ LABEL[game.status] }}{{ over ? " · Final score " + game.score : "" }}</p>
     <div class="pad">
-      <button v-for="[d, icon] in PAD" :key="d" type="button" :class="d" :aria-label="d" @click="apply((g) => turn(g, d))">{{ icon }}</button>
+      <button
+        v-for="[d, icon] in PAD"
+        :key="d"
+        type="button"
+        :class="d"
+        :aria-label="d"
+        @click="apply((g) => turn(g, d))"
+      >{{ icon }}</button>
     </div>
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.snake { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.snake h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-button:focus-visible { outline: 3px solid #f9a825; outline-offset: 2px; }
-.board { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; background: #161b22; padding: 4px; border-radius: 8px; }
-.cell { aspect-ratio: 1; border-radius: 3px; background: #1c2128; }
-.cell.body { background: #2ea043; }
-.cell.head { background: #7ee787; }
-.cell.food { background: #f85149; border-radius: 50%; }
-.status { min-height: 1.4em; margin: 10px 0; }
-.pad { display: grid; grid-template-columns: repeat(3, 56px); gap: 6px; justify-content: center; }
-.pad button { height: 44px; }
-.pad .up { grid-column: 2; }
-.pad .left { grid-column: 1; grid-row: 2; }
-.pad .down { grid-column: 2; grid-row: 2; }
-.pad .right { grid-column: 3; grid-row: 2; }
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.snake {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.snake h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 2px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+  background: #161b22;
+  padding: 4px;
+  border-radius: 8px;
+}
+.cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: #1c2128;
+}
+.cell.body {
+  background: #2ea043;
+}
+.cell.head {
+  background: #7ee787;
+}
+.cell.food {
+  background: #f85149;
+  border-radius: 50%;
+}
+.status {
+  min-height: 1.4em;
+  margin: 10px 0;
+}
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  gap: 6px;
+  justify-content: center;
+}
+.pad button {
+  height: 44px;
+}
+.pad .up {
+  grid-column: 2;
+}
+.pad .left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.pad .down {
+  grid-column: 2;
+  grid-row: 2;
+}
+.pad .right {
+  grid-column: 3;
+  grid-row: 2;
+}
 </style>
 `,
           "/src/components/SnakeBoard.vue": `<script setup>
@@ -2107,14 +2644,32 @@ const props = defineProps({
 const kinds = computed(() => {
   const body = new Set(props.snake);
   return Array.from({ length: SIZE * SIZE }, (_, i) =>
-    i === props.snake[0] ? "head" : body.has(i) ? "body" : i === props.food ? "food" : "empty"
+    i === props.snake[0]
+      ? "head"
+      : body.has(i)
+        ? "body"
+        : i === props.food
+          ? "food"
+          : "empty",
   );
 });
 </script>
 
 <template>
-  <div class="board" role="img" :aria-label="'Snake board, ' + SIZE + ' by ' + SIZE + ', snake length ' + snake.length">
-    <div v-for="(kind, i) in kinds" :key="i" :class="['cell', kind]" data-testid="cell" :data-kind="kind"></div>
+  <div
+    class="board"
+    role="img"
+    :aria-label="
+      'Snake board, ' + SIZE + ' by ' + SIZE + ', snake length ' + snake.length
+    "
+  >
+    <div
+      v-for="(kind, i) in kinds"
+      :key="i"
+      :class="['cell', kind]"
+      data-testid="cell"
+      :data-kind="kind"
+    ></div>
   </div>
 </template>
 `,
@@ -2150,13 +2705,23 @@ export function createGame(seed) {
   const mid = Math.floor(SIZE / 2) * SIZE;
   const snake = [mid + 4, mid + 3, mid + 2];
   const [food, rng] = placeFood(snake, seed);
-  return { seed, snake, dir: "right", queue: [], food, rng, score: 0, status: "ready" };
+  return {
+    seed,
+    snake,
+    dir: "right",
+    queue: [],
+    food,
+    rng,
+    score: 0,
+    status: "ready",
+  };
 }
 
 // Queue a turn. It is checked against the LAST queued direction, not only the
 // current one, so two quick presses can never add up to a 180-degree turn.
 export function turn(g, dir) {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (g.status === "over" || g.status === "won" || g.status === "paused")
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -2166,7 +2731,8 @@ export function turn(g, dir) {
 
 export function togglePause(g) {
   if (g.status === "running") return { ...g, status: "paused" };
-  if (g.status === "paused" || g.status === "ready") return { ...g, status: "running" };
+  if (g.status === "paused" || g.status === "ready")
+    return { ...g, status: "running" };
   return g;
 }
 
@@ -2189,12 +2755,27 @@ export function step(g) {
   const snake = [next, ...body];
   if (!eating) return { ...g, dir, queue, snake };
   const [food, rng] = placeFood(snake, g.rng);
-  return { ...g, dir, queue, snake, food, rng, score: g.score + 1, status: food === -1 ? "won" : "running" };
+  return {
+    ...g,
+    dir,
+    queue,
+    snake,
+    food,
+    rng,
+    score: g.score + 1,
+    status: food === -1 ? "won" : "running",
+  };
 }
 
 export const KEY_TO_DIR = {
-  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-  w: "up", s: "down", a: "left", d: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  w: "up",
+  s: "down",
+  a: "left",
+  d: "right",
 };
 `,
         },
@@ -2231,7 +2812,12 @@ The rules are framework-free TypeScript in <code>snake.ts</code>: types for <cod
 
 ~~~ts
 export function turn(g: Game, dir: Dir): Game {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (
+    g.status === "over" ||
+    g.status === "won" ||
+    g.status === "paused"
+  )
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -2407,11 +2993,32 @@ The loop exists only while running, opposite keys and the queued-180 case are dr
 
 **Conclusion:** In Angular, Snake is one signal holding an immutable <code>Game</code>, an effect that owns a single interval and cleans it up through <code>onCleanup</code>, and a <code>@HostListener</code> on <code>window</code> that feeds a validated direction queue. The rules are plain TypeScript, so the same driver produces the same output in AOT, JIT, React and Vue.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, HostListener, computed, effect, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  HostListener,
+  computed,
+  effect,
+  signal,
+} from "@angular/core";
 import { SnakeBoardComponent } from "./snake-board.component";
-import { Dir, Game, KEY_TO_DIR, TICK_MS, createGame, step, togglePause, turn } from "./snake";
+import {
+  Dir,
+  Game,
+  KEY_TO_DIR,
+  TICK_MS,
+  createGame,
+  step,
+  togglePause,
+  turn,
+} from "./snake";
 
-const LABEL: Record<string, string> = { ready: "Press an arrow key or Start", running: "Running", paused: "Paused", over: "Game over", won: "You filled the board!" };
+const LABEL: Record<string, string> = {
+  ready: "Press an arrow key or Start",
+  running: "Running",
+  paused: "Paused",
+  over: "Game over",
+  won: "You filled the board!",
+};
 
 @Component({
   selector: "app-root",
@@ -2425,19 +3032,32 @@ const LABEL: Record<string, string> = { ready: "Press an arrow key or Start", ru
         @if (over()) {
           <button type="button" (click)="restart()">Restart</button>
         } @else {
-          <button type="button" (click)="apply(togglePause)">{{ running() ? "Pause" : "Start" }}</button>
+          <button
+            type="button"
+            (click)="apply(togglePause)"
+          >{{ running() ? "Pause" : "Start" }}</button>
         }
       </div>
       <app-snake-board [snake]="game().snake" [food]="game().food" />
-      <p class="status" role="status" data-testid="status">{{ label[game().status] }}{{ over() ? " · Final score " + game().score : "" }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ label[game().status] }}{{ over() ? " · Final score " + game().score : "" }}</p>
       <div class="pad">
         @for (p of pad; track p.dir) {
-          <button type="button" [class]="p.dir" [attr.aria-label]="p.dir" (click)="move(p.dir)">{{ p.icon }}</button>
+          <button
+            type="button"
+            [class]="p.dir"
+            [attr.aria-label]="p.dir"
+            (click)="move(p.dir)"
+          >{{ p.icon }}</button>
         }
       </div>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; color: #e8e8ea; }
     .snake { max-width: 360px; margin: 24px auto; padding: 0 16px; }
     .snake h1 { font-size: 1.3rem; margin: 0 0 8px; }
@@ -2451,17 +3071,23 @@ const LABEL: Record<string, string> = { ready: "Press an arrow key or Start", ru
     .pad .left { grid-column: 1; grid-row: 2; }
     .pad .down { grid-column: 2; grid-row: 2; }
     .pad .right { grid-column: 3; grid-row: 2; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly label = LABEL;
   readonly togglePause = togglePause;
   readonly pad: { dir: Dir; icon: string }[] = [
-    { dir: "up", icon: "▲" }, { dir: "left", icon: "◀" }, { dir: "down", icon: "▼" }, { dir: "right", icon: "▶" },
+    { dir: "up", icon: "▲" },
+    { dir: "left", icon: "◀" },
+    { dir: "down", icon: "▼" },
+    { dir: "right", icon: "▶" },
   ];
   readonly game = signal<Game>(createGame(1));
   readonly running = computed(() => this.game().status === "running");
-  readonly over = computed(() => this.game().status === "over" || this.game().status === "won");
+  readonly over = computed(
+    () => this.game().status === "over" || this.game().status === "won",
+  );
 
   constructor() {
     // The game loop: re-runs only when running() flips; onCleanup clears the
@@ -2506,19 +3132,55 @@ import { SIZE } from "./snake";
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: \`
-    <div class="board" role="img" [attr.aria-label]="'Snake board, ' + size + ' by ' + size + ', snake length ' + snake.length">
+    <div
+      class="board"
+      role="img"
+      [attr.aria-label]="
+        'Snake board, ' +
+        size +
+        ' by ' +
+        size +
+        ', snake length ' +
+        snake.length
+      "
+    >
       @for (kind of kinds; track $index) {
-        <div class="cell" [class]="'cell ' + kind" data-testid="cell" [attr.data-kind]="kind"></div>
+        <div
+          class="cell"
+          [class]="'cell ' + kind"
+          data-testid="cell"
+          [attr.data-kind]="kind"
+        ></div>
       }
     </div>
   \`,
-  styles: [\`
-    .board { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; background: #161b22; padding: 4px; border-radius: 8px; }
-    .cell { aspect-ratio: 1; border-radius: 3px; background: #1c2128; }
-    .cell.body { background: #2ea043; }
-    .cell.head { background: #7ee787; }
-    .cell.food { background: #f85149; border-radius: 50%; }
-  \`],
+  styles: [
+    \`
+      .board {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 2px;
+        background: #161b22;
+        padding: 4px;
+        border-radius: 8px;
+      }
+      .cell {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        background: #1c2128;
+      }
+      .cell.body {
+        background: #2ea043;
+      }
+      .cell.head {
+        background: #7ee787;
+      }
+      .cell.food {
+        background: #f85149;
+        border-radius: 50%;
+      }
+    \`,
+  ],
 })
 export class SnakeBoardComponent {
   readonly size = SIZE;
@@ -2526,14 +3188,28 @@ export class SnakeBoardComponent {
   private _snake: number[] = [];
   private _food = -1;
 
-  @Input({ required: true }) set snake(v: number[]) { this._snake = v; this.rebuild(); }
-  get snake() { return this._snake; }
-  @Input({ required: true }) set food(v: number) { this._food = v; this.rebuild(); }
+  @Input({ required: true }) set snake(v: number[]) {
+    this._snake = v;
+    this.rebuild();
+  }
+  get snake() {
+    return this._snake;
+  }
+  @Input({ required: true }) set food(v: number) {
+    this._food = v;
+    this.rebuild();
+  }
 
   private rebuild() {
     const body = new Set(this._snake);
     this.kinds = Array.from({ length: SIZE * SIZE }, (_, i) =>
-      i === this._snake[0] ? "head" : body.has(i) ? "body" : i === this._food ? "food" : "empty"
+      i === this._snake[0]
+        ? "head"
+        : body.has(i)
+          ? "body"
+          : i === this._food
+            ? "food"
+            : "empty",
     );
   }
 }
@@ -2556,8 +3232,18 @@ export interface Game {
 
 export const SIZE = 12;
 export const TICK_MS = 150;
-const DELTA: Record<Dir, [number, number]> = { up: [-1, 0], down: [1, 0], left: [0, -1], right: [0, 1] };
-const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
+const DELTA: Record<Dir, [number, number]> = {
+  up: [-1, 0],
+  down: [1, 0],
+  left: [0, -1],
+  right: [0, 1],
+};
+const OPPOSITE: Record<Dir, Dir> = {
+  up: "down",
+  down: "up",
+  left: "right",
+  right: "left",
+};
 
 // mulberry32 written as a pure step: (state) -> [value, nextState].
 // Keeping the RNG state inside the game object makes step() a pure function,
@@ -2583,13 +3269,23 @@ export function createGame(seed: number): Game {
   const mid = Math.floor(SIZE / 2) * SIZE;
   const snake = [mid + 4, mid + 3, mid + 2];
   const [food, rng] = placeFood(snake, seed);
-  return { seed, snake, dir: "right", queue: [], food, rng, score: 0, status: "ready" };
+  return {
+    seed,
+    snake,
+    dir: "right",
+    queue: [],
+    food,
+    rng,
+    score: 0,
+    status: "ready",
+  };
 }
 
 // Queue a turn. It is checked against the LAST queued direction, not only the
 // current one, so two quick presses can never add up to a 180-degree turn.
 export function turn(g: Game, dir: Dir): Game {
-  if (g.status === "over" || g.status === "won" || g.status === "paused") return g;
+  if (g.status === "over" || g.status === "won" || g.status === "paused")
+    return g;
   const last = g.queue.length ? g.queue[g.queue.length - 1] : g.dir;
   if (dir === last || dir === OPPOSITE[last] || g.queue.length >= 2) {
     return g.status === "ready" ? { ...g, status: "running" } : g;
@@ -2599,7 +3295,8 @@ export function turn(g: Game, dir: Dir): Game {
 
 export function togglePause(g: Game): Game {
   if (g.status === "running") return { ...g, status: "paused" };
-  if (g.status === "paused" || g.status === "ready") return { ...g, status: "running" };
+  if (g.status === "paused" || g.status === "ready")
+    return { ...g, status: "running" };
   return g;
 }
 
@@ -2622,12 +3319,27 @@ export function step(g: Game): Game {
   const snake = [next, ...body];
   if (!eating) return { ...g, dir, queue, snake };
   const [food, rng] = placeFood(snake, g.rng);
-  return { ...g, dir, queue, snake, food, rng, score: g.score + 1, status: food === -1 ? "won" : "running" };
+  return {
+    ...g,
+    dir,
+    queue,
+    snake,
+    food,
+    rng,
+    score: g.score + 1,
+    status: food === -1 ? "won" : "running",
+  };
 }
 
 export const KEY_TO_DIR: Record<string, Dir | undefined> = {
-  ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-  w: "up", s: "down", a: "left", d: "right",
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  w: "up",
+  s: "down",
+  a: "left",
+  d: "right",
 };
 `,
         },
@@ -2744,13 +3456,15 @@ Rows and columns are zero-based in code (the UI says "Row 5, column 8" for the s
 ~~~js
 export const rowOf = (i) => Math.floor(i / 9);
 export const colOf = (i) => i % 9;
-export const boxOf = (i) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+export const boxOf = (i) =>
+  Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
 
 const UNITS = [];
 for (let k = 0; k < 9; k++) {
   UNITS.push([...Array(9)].map((_, j) => k * 9 + j)); // row k
   UNITS.push([...Array(9)].map((_, j) => j * 9 + k)); // column k
-  UNITS.push([...Array(81).keys()].filter((i) => boxOf(i) === k)); // box k
+  // box k
+  UNITS.push([...Array(81).keys()].filter((i) => boxOf(i) === k));
 }
 ~~~
 
@@ -2769,7 +3483,8 @@ export function findConflicts(cells) {
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v).push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
@@ -2784,7 +3499,8 @@ A <code>Set</code> is the right return type: a cell in a row conflict and a box 
 ### Step 3: sanitise what the keyboard sends
 
 ~~~js
-export const digitFrom = (raw) => Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
+export const digitFrom = (raw) =>
+  Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
 
 export function setCell(cells, givens, i, value) {
   if (givens[i] || cells[i] === value) return cells;
@@ -2807,7 +3523,14 @@ An input fires <code>change</code> with the whole new text, which may be <code>"
   data-testid="cell"
   inputMode="numeric"
   autoComplete="off"
-  aria-label={"Row " + (r + 1) + ", column " + (c + 1) + (given ? ", given" : "") + (conflict ? ", conflict" : "")}
+  aria-label={
+    "Row " +
+    (r + 1) +
+    ", column " +
+    (c + 1) +
+    (given ? ", given" : "") +
+    (conflict ? ", conflict" : "")
+  }
   aria-invalid={conflict || undefined}
   readOnly={given}
   tabIndex={active ? 0 : -1}
@@ -2981,7 +3704,16 @@ A separate check in Chromium 141 (playwright-core, 360 px wide viewport) loaded 
         files: {
           "/App.js": `import { useMemo, useRef, useState } from "react";
 import Cell from "./src/Cell";
-import { PUZZLE, digitFrom, findConflicts, isPeer, isSolved, moveFrom, parse, setCell } from "./src/sudoku";
+import {
+  PUZZLE,
+  digitFrom,
+  findConflicts,
+  isPeer,
+  isSolved,
+  moveFrom,
+  parse,
+  setCell,
+} from "./src/sudoku";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -3009,7 +3741,9 @@ export default function App() {
       <h1>Sudoku</h1>
       <div className="bar">
         <span data-testid="filled">Filled: {filled}/81</span>
-        <button type="button" onClick={() => setCells(START)}>Clear</button>
+        <button type="button" onClick={() => setCells(START)}>
+          Clear
+        </button>
       </div>
       <div className="board" role="group" aria-label="Sudoku board, 9 by 9">
         {cells.map((v, i) => (
@@ -3022,14 +3756,20 @@ export default function App() {
             peer={isPeer(active, i)}
             active={active === i}
             inputRef={(el) => (refs.current[i] = el)}
-            onValue={(idx, raw) => setCells((c) => setCell(c, GIVENS, idx, digitFrom(raw)))}
+            onValue={(idx, raw) =>
+              setCells((c) => setCell(c, GIVENS, idx, digitFrom(raw)))
+            }
             onKeyDown={onKeyDown}
             onFocus={setActive}
           />
         ))}
       </div>
       <p className="status" role="status" data-testid="status">
-        {solved ? "Solved!" : conflicts.size ? conflicts.size + " cells in conflict" : "No conflicts"}
+        {solved
+          ? "Solved!"
+          : conflicts.size
+            ? conflicts.size + " cells in conflict"
+            : "No conflicts"}
       </p>
     </main>
   );
@@ -3037,9 +3777,30 @@ export default function App() {
 `,
           "/src/Cell.js": `import { colOf, rowOf } from "./sudoku";
 
-export default function Cell({ index, value, given, conflict, peer, active, onValue, onKeyDown, onFocus, inputRef }) {
-  const r = rowOf(index), c = colOf(index);
-  const cls = ["cell", "r" + r, "c" + c, given && "given", conflict && "conflict", peer && "peer"].filter(Boolean).join(" ");
+export default function Cell({
+  index,
+  value,
+  given,
+  conflict,
+  peer,
+  active,
+  onValue,
+  onKeyDown,
+  onFocus,
+  inputRef,
+}) {
+  const r = rowOf(index),
+    c = colOf(index);
+  const cls = [
+    "cell",
+    "r" + r,
+    "c" + c,
+    given && "given",
+    conflict && "conflict",
+    peer && "peer",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <input
       ref={inputRef}
@@ -3047,7 +3808,14 @@ export default function Cell({ index, value, given, conflict, peer, active, onVa
       data-testid="cell"
       inputMode="numeric"
       autoComplete="off"
-      aria-label={"Row " + (r + 1) + ", column " + (c + 1) + (given ? ", given" : "") + (conflict ? ", conflict" : "")}
+      aria-label={
+        "Row " +
+        (r + 1) +
+        ", column " +
+        (c + 1) +
+        (given ? ", given" : "") +
+        (conflict ? ", conflict" : "")
+      }
       aria-invalid={conflict || undefined}
       readOnly={given}
       tabIndex={active ? 0 : -1}
@@ -3069,7 +3837,8 @@ export const PUZZLE =
 export const parse = (s) => [...s].map(Number);
 export const rowOf = (i) => Math.floor(i / 9);
 export const colOf = (i) => i % 9;
-export const boxOf = (i) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+export const boxOf = (i) =>
+  Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
 
 // The 27 units: 9 rows, 9 columns, 9 boxes. Built once.
 const UNITS = [];
@@ -3091,14 +3860,16 @@ export function findConflicts(cells) {
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v).push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
 
 // Same row, column or box as i (the cells a value in i competes with).
 export const isPeer = (i, j) =>
-  i !== j && (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
+  i !== j &&
+  (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
 
 export function setCell(cells, givens, i, value) {
   if (givens[i] || cells[i] === value) return cells;
@@ -3108,9 +3879,11 @@ export function setCell(cells, givens, i, value) {
 }
 
 // Keep only the last digit 1-9 the user typed; anything else empties the cell.
-export const digitFrom = (raw) => Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
+export const digitFrom = (raw) =>
+  Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
 
-export const isSolved = (cells, conflicts) => cells.every((v) => v > 0) && conflicts.size === 0;
+export const isSolved = (cells, conflicts) =>
+  cells.every((v) => v > 0) && conflicts.size === 0;
 
 const MOVES = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
 // Arrow-key target for roving focus; stays put at the edges.
@@ -3122,22 +3895,84 @@ export function moveFrom(i, key) {
   return j < 0 || j > 80 ? i : j;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.sudoku { max-width: 380px; margin: 24px auto; padding: 0 12px; }
-.sudoku h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.board { display: grid; grid-template-columns: repeat(9, 1fr); border: 2px solid #8b949e; }
-.cell { width: 100%; aspect-ratio: 1; box-sizing: border-box; border: 1px solid #30363d; background: #161b22;
-  color: #79c0ff; font-size: 1.15rem; text-align: center; padding: 0; caret-color: transparent; }
-.cell.given { color: #e8e8ea; font-weight: 700; }
-.cell.peer { background: #1f2937; }
-.cell.conflict { background: #4a1418; color: #ffa198; }
-.cell:focus { outline: 2px solid #f9a825; outline-offset: -2px; background: #2d2a12; }
-.cell.c2, .cell.c5 { border-right: 2px solid #8b949e; }
-.cell.r2, .cell.r5 { border-bottom: 2px solid #8b949e; }
-.status { min-height: 1.4em; margin-top: 10px; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.sudoku {
+  max-width: 380px;
+  margin: 24px auto;
+  padding: 0 12px;
+}
+.sudoku h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2px solid #8b949e;
+}
+.cell {
+  width: 100%;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #79c0ff;
+  font-size: 1.15rem;
+  text-align: center;
+  padding: 0;
+  caret-color: transparent;
+}
+.cell.given {
+  color: #e8e8ea;
+  font-weight: 700;
+}
+.cell.peer {
+  background: #1f2937;
+}
+.cell.conflict {
+  background: #4a1418;
+  color: #ffa198;
+}
+.cell:focus {
+  outline: 2px solid #f9a825;
+  outline-offset: -2px;
+  background: #2d2a12;
+}
+.cell.c2,
+.cell.c5 {
+  border-right: 2px solid #8b949e;
+}
+.cell.r2,
+.cell.r5 {
+  border-bottom: 2px solid #8b949e;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 10px;
+}
 `,
         },
       },
@@ -3184,7 +4019,8 @@ export function findConflicts(cells) {
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v).push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
@@ -3198,7 +4034,14 @@ export function findConflicts(cells) {
 
 ~~~vue
 <script setup>
-const props = defineProps({ index: Number, value: Number, given: Boolean, conflict: Boolean, peer: Boolean, active: Boolean });
+const props = defineProps({
+  index: Number,
+  value: Number,
+  given: Boolean,
+  conflict: Boolean,
+  peer: Boolean,
+  active: Boolean,
+});
 const emit = defineEmits(["value", "move", "focused"]);
 
 function onInput(e) {
@@ -3208,12 +4051,26 @@ function onInput(e) {
 </script>
 
 <template>
-  <input :class="['cell', 'r' + r, 'c' + c, { given, conflict, peer }]"
-    inputmode="numeric" autocomplete="off"
-    :aria-label="'Row ' + (r + 1) + ', column ' + (c + 1) + (given ? ', given' : '') + (conflict ? ', conflict' : '')"
+  <input
+    :class="['cell', 'r' + r, 'c' + c, { given, conflict, peer }]"
+    inputmode="numeric"
+    autocomplete="off"
+    :aria-label="
+      'Row ' +
+      (r + 1) +
+      ', column ' +
+      (c + 1) +
+      (given ? ', given' : '') +
+      (conflict ? ', conflict' : '')
+    "
     :aria-invalid="conflict || undefined"
-    :readonly="given" :tabindex="active ? 0 : -1" :value="value || ''"
-    @input="onInput" @keydown="emit('move', index, $event)" @focus="emit('focused', index)" />
+    :readonly="given"
+    :tabindex="active ? 0 : -1"
+    :value="value || ''"
+    @input="onInput"
+    @keydown="emit('move', index, $event)"
+    @focus="emit('focused', index)"
+  />
 </template>
 ~~~
 
@@ -3356,7 +4213,16 @@ Both cells of each duplicate are flagged (row 1 and the 4 in column 4, row 8); c
           "/src/App.vue": `<script setup>
 import { computed, nextTick, ref, useTemplateRef } from "vue";
 import SudokuCell from "./components/SudokuCell.vue";
-import { PUZZLE, digitFrom, findConflicts, isPeer, isSolved, moveFrom, parse, setCell } from "./sudoku.js";
+import {
+  PUZZLE,
+  digitFrom,
+  findConflicts,
+  isPeer,
+  isSolved,
+  moveFrom,
+  parse,
+  setCell,
+} from "./sudoku.js";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -3391,7 +4257,12 @@ async function onMove(i, e) {
       <span data-testid="filled">Filled: {{ filled }}/81</span>
       <button type="button" @click="cells = START">Clear</button>
     </div>
-    <div ref="board" class="board" role="group" aria-label="Sudoku board, 9 by 9">
+    <div
+      ref="board"
+      class="board"
+      role="group"
+      aria-label="Sudoku board, 9 by 9"
+    >
       <SudokuCell
         v-for="(v, i) in cells"
         :key="i"
@@ -3407,28 +4278,96 @@ async function onMove(i, e) {
       />
     </div>
     <p class="status" role="status" data-testid="status">
-      {{ solved ? "Solved!" : conflicts.size ? conflicts.size + " cells in conflict" : "No conflicts" }}
+      {{
+        solved
+          ? "Solved!"
+          : conflicts.size
+            ? conflicts.size + " cells in conflict"
+            : "No conflicts"
+      }}
     </p>
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.sudoku { max-width: 380px; margin: 24px auto; padding: 0 12px; }
-.sudoku h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.board { display: grid; grid-template-columns: repeat(9, 1fr); border: 2px solid #8b949e; }
-.cell { width: 100%; aspect-ratio: 1; box-sizing: border-box; border: 1px solid #30363d; background: #161b22;
-  color: #79c0ff; font-size: 1.15rem; text-align: center; padding: 0; caret-color: transparent; }
-.cell.given { color: #e8e8ea; font-weight: 700; }
-.cell.peer { background: #1f2937; }
-.cell.conflict { background: #4a1418; color: #ffa198; }
-.cell:focus { outline: 2px solid #f9a825; outline-offset: -2px; background: #2d2a12; }
-.cell.c2, .cell.c5 { border-right: 2px solid #8b949e; }
-.cell.r2, .cell.r5 { border-bottom: 2px solid #8b949e; }
-.status { min-height: 1.4em; margin-top: 10px; }
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.sudoku {
+  max-width: 380px;
+  margin: 24px auto;
+  padding: 0 12px;
+}
+.sudoku h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  border: 2px solid #8b949e;
+}
+.cell {
+  width: 100%;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 1px solid #30363d;
+  background: #161b22;
+  color: #79c0ff;
+  font-size: 1.15rem;
+  text-align: center;
+  padding: 0;
+  caret-color: transparent;
+}
+.cell.given {
+  color: #e8e8ea;
+  font-weight: 700;
+}
+.cell.peer {
+  background: #1f2937;
+}
+.cell.conflict {
+  background: #4a1418;
+  color: #ffa198;
+}
+.cell:focus {
+  outline: 2px solid #f9a825;
+  outline-offset: -2px;
+  background: #2d2a12;
+}
+.cell.c2,
+.cell.c5 {
+  border-right: 2px solid #8b949e;
+}
+.cell.r2,
+.cell.r5 {
+  border-bottom: 2px solid #8b949e;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 10px;
+}
 </style>
 `,
           "/src/components/SudokuCell.vue": `<script setup>
@@ -3462,7 +4401,14 @@ function onInput(e) {
     data-testid="cell"
     inputmode="numeric"
     autocomplete="off"
-    :aria-label="'Row ' + (r + 1) + ', column ' + (c + 1) + (given ? ', given' : '') + (conflict ? ', conflict' : '')"
+    :aria-label="
+      'Row ' +
+      (r + 1) +
+      ', column ' +
+      (c + 1) +
+      (given ? ', given' : '') +
+      (conflict ? ', conflict' : '')
+    "
     :aria-invalid="conflict || undefined"
     :readonly="given"
     :tabindex="active ? 0 : -1"
@@ -3483,7 +4429,8 @@ export const PUZZLE =
 export const parse = (s) => [...s].map(Number);
 export const rowOf = (i) => Math.floor(i / 9);
 export const colOf = (i) => i % 9;
-export const boxOf = (i) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+export const boxOf = (i) =>
+  Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
 
 // The 27 units: 9 rows, 9 columns, 9 boxes. Built once.
 const UNITS = [];
@@ -3505,14 +4452,16 @@ export function findConflicts(cells) {
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v).push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
 
 // Same row, column or box as i (the cells a value in i competes with).
 export const isPeer = (i, j) =>
-  i !== j && (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
+  i !== j &&
+  (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
 
 export function setCell(cells, givens, i, value) {
   if (givens[i] || cells[i] === value) return cells;
@@ -3522,9 +4471,11 @@ export function setCell(cells, givens, i, value) {
 }
 
 // Keep only the last digit 1-9 the user typed; anything else empties the cell.
-export const digitFrom = (raw) => Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
+export const digitFrom = (raw) =>
+  Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
 
-export const isSolved = (cells, conflicts) => cells.every((v) => v > 0) && conflicts.size === 0;
+export const isSolved = (cells, conflicts) =>
+  cells.every((v) => v > 0) && conflicts.size === 0;
 
 const MOVES = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
 // Arrow-key target for roving focus; stays put at the edges.
@@ -3569,7 +4520,8 @@ A Sudoku is a 9 by 9 grid of nine 3 by 3 boxes, some digits printed in advance, 
 ### Step 1: typed, pure rules
 
 ~~~ts
-export const boxOf = (i: number) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+export const boxOf = (i: number) =>
+  Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
 
 export function findConflicts(cells: number[]): Set<number> {
   const bad = new Set<number>();
@@ -3581,7 +4533,8 @@ export function findConflicts(cells: number[]): Set<number> {
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v)!.push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
@@ -3598,18 +4551,39 @@ export function findConflicts(cells: number[]): Set<number> {
   selector: "app-sudoku-cell",
   standalone: true,
   template: \`
-    <input [class]="'cell r' + r + ' c' + c" [class.given]="given" [class.conflict]="conflict" [class.peer]="peer"
-      data-testid="cell" inputmode="numeric" autocomplete="off"
-      [attr.aria-label]="'Row ' + (r + 1) + ', column ' + (c + 1) + (given ? ', given' : '') + (conflict ? ', conflict' : '')"
-      [attr.aria-invalid]="conflict || null" [readOnly]="given" [tabIndex]="active ? 0 : -1"
-      [value]="value || ''" (input)="onInput($event)"
-      (keydown)="move.emit({ index, event: $event })" (focus)="focused.emit(index)" />
+    <input
+      [class]="'cell r' + r + ' c' + c"
+      [class.given]="given"
+      [class.conflict]="conflict"
+      [class.peer]="peer"
+      data-testid="cell"
+      inputmode="numeric"
+      autocomplete="off"
+      [attr.aria-label]="
+        'Row ' +
+        (r + 1) +
+        ', column ' +
+        (c + 1) +
+        (given ? ', given' : '') +
+        (conflict ? ', conflict' : '')
+      "
+      [attr.aria-invalid]="conflict || null"
+      [readOnly]="given"
+      [tabIndex]="active ? 0 : -1"
+      [value]="value || ''"
+      (input)="onInput($event)"
+      (keydown)="move.emit({ index, event: $event })"
+      (focus)="focused.emit(index)"
+    />
   \`,
 })
 export class SudokuCellComponent {
   @Input({ required: true }) index = 0;
   @Input({ required: true }) value = 0;
-  @Output() valueChange = new EventEmitter<{ index: number; raw: string }>();
+  @Output() valueChange = new EventEmitter<{
+    index: number;
+    raw: string;
+  }>();
 
   onInput(e: Event) {
     const el = e.target as HTMLInputElement;
@@ -3628,7 +4602,8 @@ The playground compiles at runtime (JIT), where signal <code>input()</code> and 
 ### Step 3: roving tabindex with ViewChildren
 
 ~~~ts
-@ViewChildren(SudokuCellComponent) cellViews!: QueryList<SudokuCellComponent>;
+@ViewChildren(SudokuCellComponent)
+cellViews!: QueryList<SudokuCellComponent>;
 
 onMove(i: number, e: KeyboardEvent) {
   const j = moveFrom(i, e.key);
@@ -3754,9 +4729,24 @@ Every member of each duplicate is flagged and un-flagged correctly, rejected tex
 
 **Conclusion:** In Angular the board is one signal of 81 numbers with conflicts, counts and the solved flag as computed signals, a decorator-input cell that emits raw text and writes back the accepted value, and roving tabindex through an <code>active</code> signal and <code>@ViewChildren</code>. The validator is plain TypeScript over 27 units, and the same driver proves identical behaviour in AOT, JIT, React and Vue.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, QueryList, ViewChildren, computed, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  QueryList,
+  ViewChildren,
+  computed,
+  signal,
+} from "@angular/core";
 import { SudokuCellComponent } from "./sudoku-cell.component";
-import { PUZZLE, digitFrom, findConflicts, isPeer, isSolved, moveFrom, parse, setCell } from "./sudoku";
+import {
+  PUZZLE,
+  digitFrom,
+  findConflicts,
+  isPeer,
+  isSolved,
+  moveFrom,
+  parse,
+  setCell,
+} from "./sudoku";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -3788,19 +4778,58 @@ const GIVENS = START.map((v) => v > 0);
         }
       </div>
       <p class="status" role="status" data-testid="status">
-        {{ solved() ? "Solved!" : conflicts().size ? conflicts().size + " cells in conflict" : "No conflicts" }}
+        {{
+          solved()
+            ? "Solved!"
+            : conflicts().size
+              ? conflicts().size + " cells in conflict"
+              : "No conflicts"
+        }}
       </p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; font-family: system-ui, sans-serif; color: #e8e8ea; }
-    .sudoku { max-width: 380px; margin: 24px auto; padding: 0 12px; }
-    .sudoku h1 { font-size: 1.3rem; margin: 0 0 8px; }
-    .bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; }
-    button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-    .board { display: grid; grid-template-columns: repeat(9, 1fr); border: 2px solid #8b949e; }
-    .status { min-height: 1.4em; margin-top: 10px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        font-family: system-ui, sans-serif;
+        color: #e8e8ea;
+      }
+      .sudoku {
+        max-width: 380px;
+        margin: 24px auto;
+        padding: 0 12px;
+      }
+      .sudoku h1 {
+        font-size: 1.3rem;
+        margin: 0 0 8px;
+      }
+      .bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      button {
+        background: #2a2f3a;
+        color: #e8e8ea;
+        border: 1px solid #3b4252;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(9, 1fr);
+        border: 2px solid #8b949e;
+      }
+      .status {
+        min-height: 1.4em;
+        margin-top: 10px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly start = START;
@@ -3827,7 +4856,14 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/sudoku-cell.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, inject } from "@angular/core";
+          "/src/app/sudoku-cell.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+} from "@angular/core";
 import { colOf, rowOf } from "./sudoku";
 
 @Component({
@@ -3842,7 +4878,14 @@ import { colOf, rowOf } from "./sudoku";
       data-testid="cell"
       inputmode="numeric"
       autocomplete="off"
-      [attr.aria-label]="'Row ' + (r + 1) + ', column ' + (c + 1) + (given ? ', given' : '') + (conflict ? ', conflict' : '')"
+      [attr.aria-label]="
+        'Row ' +
+        (r + 1) +
+        ', column ' +
+        (c + 1) +
+        (given ? ', given' : '') +
+        (conflict ? ', conflict' : '')
+      "
       [attr.aria-invalid]="conflict || null"
       [readOnly]="given"
       [tabIndex]="active ? 0 : -1"
@@ -3852,17 +4895,50 @@ import { colOf, rowOf } from "./sudoku";
       (focus)="focused.emit(index)"
     />
   \`,
-  styles: [\`
-    :host { display: block; }
-    .cell { display: block; width: 100%; aspect-ratio: 1; box-sizing: border-box; border: 1px solid #30363d; background: #161b22;
-      color: #79c0ff; font-size: 1.15rem; text-align: center; padding: 0; caret-color: transparent; }
-    .cell.given { color: #e8e8ea; font-weight: 700; }
-    .cell.peer { background: #1f2937; }
-    .cell.conflict { background: #4a1418; color: #ffa198; }
-    .cell:focus { outline: 2px solid #f9a825; outline-offset: -2px; background: #2d2a12; }
-    .cell.c2, .cell.c5 { border-right: 2px solid #8b949e; }
-    .cell.r2, .cell.r5 { border-bottom: 2px solid #8b949e; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .cell {
+        display: block;
+        width: 100%;
+        aspect-ratio: 1;
+        box-sizing: border-box;
+        border: 1px solid #30363d;
+        background: #161b22;
+        color: #79c0ff;
+        font-size: 1.15rem;
+        text-align: center;
+        padding: 0;
+        caret-color: transparent;
+      }
+      .cell.given {
+        color: #e8e8ea;
+        font-weight: 700;
+      }
+      .cell.peer {
+        background: #1f2937;
+      }
+      .cell.conflict {
+        background: #4a1418;
+        color: #ffa198;
+      }
+      .cell:focus {
+        outline: 2px solid #f9a825;
+        outline-offset: -2px;
+        background: #2d2a12;
+      }
+      .cell.c2,
+      .cell.c5 {
+        border-right: 2px solid #8b949e;
+      }
+      .cell.r2,
+      .cell.r5 {
+        border-bottom: 2px solid #8b949e;
+      }
+    \`,
+  ],
 })
 export class SudokuCellComponent {
   @Input({ required: true }) index = 0;
@@ -3876,8 +4952,12 @@ export class SudokuCellComponent {
   @Output() focused = new EventEmitter<number>();
   private host = inject(ElementRef<HTMLElement>);
 
-  get r() { return rowOf(this.index); }
-  get c() { return colOf(this.index); }
+  get r() {
+    return rowOf(this.index);
+  }
+  get c() {
+    return colOf(this.index);
+  }
 
   onInput(e: Event) {
     const el = e.target as HTMLInputElement;
@@ -3902,7 +4982,8 @@ export const PUZZLE =
 export const parse = (s: string): number[] => [...s].map(Number);
 export const rowOf = (i: number) => Math.floor(i / 9);
 export const colOf = (i: number) => i % 9;
-export const boxOf = (i: number) => Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
+export const boxOf = (i: number) =>
+  Math.floor(rowOf(i) / 3) * 3 + Math.floor(colOf(i) / 3);
 
 // The 27 units: 9 rows, 9 columns, 9 boxes. Built once.
 const UNITS: number[][] = [];
@@ -3917,23 +4998,31 @@ for (let k = 0; k < 9; k++) {
 export function findConflicts(cells: number[]): Set<number> {
   const bad = new Set<number>();
   for (const unit of UNITS) {
-    const seen = new Map<number, number[]>(); // value -> indices holding it in this unit
+    // value -> indices holding it in this unit
+    const seen = new Map<number, number[]>();
     for (const i of unit) {
       const v = cells[i];
       if (!v) continue;
       if (!seen.has(v)) seen.set(v, []);
       seen.get(v)!.push(i);
     }
-    for (const list of seen.values()) if (list.length > 1) list.forEach((i) => bad.add(i));
+    for (const list of seen.values())
+      if (list.length > 1) list.forEach((i) => bad.add(i));
   }
   return bad;
 }
 
 // Same row, column or box as i (the cells a value in i competes with).
 export const isPeer = (i: number, j: number) =>
-  i !== j && (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
+  i !== j &&
+  (rowOf(i) === rowOf(j) || colOf(i) === colOf(j) || boxOf(i) === boxOf(j));
 
-export function setCell(cells: number[], givens: boolean[], i: number, value: number): number[] {
+export function setCell(
+  cells: number[],
+  givens: boolean[],
+  i: number,
+  value: number,
+): number[] {
   if (givens[i] || cells[i] === value) return cells;
   const next = cells.slice();
   next[i] = value;
@@ -3941,11 +5030,18 @@ export function setCell(cells: number[], givens: boolean[], i: number, value: nu
 }
 
 // Keep only the last digit 1-9 the user typed; anything else empties the cell.
-export const digitFrom = (raw: string) => Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
+export const digitFrom = (raw: string) =>
+  Number(raw.replace(/[^1-9]/g, "").slice(-1) || 0);
 
-export const isSolved = (cells: number[], conflicts: Set<number>) => cells.every((v) => v > 0) && conflicts.size === 0;
+export const isSolved = (cells: number[], conflicts: Set<number>) =>
+  cells.every((v) => v > 0) && conflicts.size === 0;
 
-const MOVES: Record<string, number | undefined> = { ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1 };
+const MOVES: Record<string, number | undefined> = {
+  ArrowUp: -9,
+  ArrowDown: 9,
+  ArrowLeft: -1,
+  ArrowRight: 1,
+};
 // Arrow-key target for roving focus; stays put at the edges.
 export function moveFrom(i: number, key: string): number {
   const d = MOVES[key];
@@ -4065,11 +5161,15 @@ The wave spreads through zeros and stops at numbers, which are opened but never 
 
 ~~~js
 export function neighbors(i, rows, cols) {
-  const r = Math.floor(i / cols), c = i % cols, out = [];
+  const r = Math.floor(i / cols),
+    c = i % cols,
+    out = [];
   for (let dr = -1; dr <= 1; dr++)
     for (let dc = -1; dc <= 1; dc++) {
-      const nr = r + dr, nc = c + dc;
-      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+      const nr = r + dr,
+        nc = c + dc;
+      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols)
+        out.push(nr * cols + nc);
     }
   return out;
 }
@@ -4085,15 +5185,22 @@ function placeMines(g, safe) {
   const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
   // (tiny crowded boards fall back to protecting only the clicked cell)
   const pool = [];
-  for (let i = 0; i < rows * cols; i++) if (!keepClear.has(i)) pool.push(i);
+  for (let i = 0; i < rows * cols; i++)
+    if (!keepClear.has(i)) pool.push(i);
   const rng = mulberry32(g.seed);
   for (let k = 0; k < mines; k++) {
-    const j = k + Math.floor(rng() * (pool.length - k)); // partial Fisher-Yates
+    // partial Fisher-Yates
+    const j = k + Math.floor(rng() * (pool.length - k));
     [pool[k], pool[j]] = [pool[j], pool[k]];
   }
   const cells = g.cells.map((c) => ({ ...c }));
   for (const i of pool.slice(0, mines)) cells[i].mine = true;
-  cells.forEach((c, i) => (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length));
+  cells.forEach(
+    (c, i) =>
+      (c.adj = neighbors(i, rows, cols).filter(
+        (n) => cells[n].mine,
+      ).length),
+  );
   return { ...g, cells, placed: true, status: "playing" };
 }
 ~~~
@@ -4113,10 +5220,13 @@ export function reveal(game, i) {
   if (g.cells[i].open || g.cells[i].flag) return g;
   if (!g.placed) g = placeMines(g, i);
   const cells = g.cells.slice();
-  const touch = (j) => (cells[j] = { ...cells[j] }); // copy only the cells we change
+  // copy only the cells we change
+  const touch = (j) => (cells[j] = { ...cells[j] });
 
   if (cells[i].mine) {
-    cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).open = true; });
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).open = true;
+    });
     return { ...g, cells, status: "lost", exploded: i };
   }
 
@@ -4134,7 +5244,10 @@ export function reveal(game, i) {
     }
   }
   const won = opened === g.rows * g.cols - g.mines;
-  if (won) cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).flag = true; });
+  if (won)
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).flag = true;
+    });
   return { ...g, cells, opened, status: won ? "won" : g.status };
 }
 ~~~
@@ -4170,11 +5283,19 @@ Win detection uses the running <code>opened</code> count: the game is won when i
   type="button"
   data-testid="cell"
   data-view={v}
-  className={"cell" + (cell.open ? " open" : "") + (n > 0 ? " n" + n : "") + (exploded ? " boom" : "")}
+  className={
+    "cell" +
+    (cell.open ? " open" : "") +
+    (n > 0 ? " n" + n : "") +
+    (exploded ? " boom" : "")
+  }
   aria-label={where + what}
   tabIndex={active ? 0 : -1}
   onClick={() => onReveal(index)}
-  onContextMenu={(e) => { e.preventDefault(); onFlag(index); }}
+  onContextMenu={(e) => {
+    e.preventDefault();
+    onFlag(index);
+  }}
   onKeyDown={(e) => onKeyDown(index, e)}
   onFocus={() => onFocus(index)}
 >
@@ -4347,7 +5468,12 @@ The jsdom verifier dispatches clicks and keys, not right-clicks. A separate chec
 import Cell from "./src/Cell";
 import { createGame, flagsUsed, reveal, toggleFlag } from "./src/minesweeper";
 
-const MESSAGE = { ready: "Click any cell to start", playing: "Playing", won: "You win! 🎉", lost: "Boom! You hit a mine." };
+const MESSAGE = {
+  ready: "Click any cell to start",
+  playing: "Playing",
+  won: "You win! 🎉",
+  lost: "Boom! You hit a mine.",
+};
 
 export default function App() {
   const [game, setGame] = useState(() => createGame(1));
@@ -4356,16 +5482,26 @@ export default function App() {
   const refs = useRef([]);
   const { rows, cols } = game;
 
-  const onReveal = (i) => setGame((g) => (flagMode ? toggleFlag(g, i) : reveal(g, i)));
+  const onReveal = (i) =>
+    setGame((g) => (flagMode ? toggleFlag(g, i) : reveal(g, i)));
   const onFlag = (i) => setGame((g) => toggleFlag(g, i));
 
   function onKeyDown(i, e) {
     if (e.key === "f" || e.key === "F") return onFlag(i);
-    const r = Math.floor(i / cols), c = i % cols;
-    const to = { ArrowUp: [r - 1, c], ArrowDown: [r + 1, c], ArrowLeft: [r, c - 1], ArrowRight: [r, c + 1] }[e.key];
+    const r = Math.floor(i / cols),
+      c = i % cols;
+    const to = {
+      ArrowUp: [r - 1, c],
+      ArrowDown: [r + 1, c],
+      ArrowLeft: [r, c - 1],
+      ArrowRight: [r, c + 1],
+    }[e.key];
     if (!to) return;
     e.preventDefault();
-    const [nr, nc] = [Math.min(rows - 1, Math.max(0, to[0])), Math.min(cols - 1, Math.max(0, to[1]))];
+    const [nr, nc] = [
+      Math.min(rows - 1, Math.max(0, to[0])),
+      Math.min(cols - 1, Math.max(0, to[1])),
+    ];
     setActive(nr * cols + nc);
     refs.current[nr * cols + nc].focus();
   }
@@ -4374,11 +5510,30 @@ export default function App() {
     <main className="mines">
       <h1>Minesweeper</h1>
       <div className="bar">
-        <span data-testid="counter">Mines left: {game.mines - flagsUsed(game)}</span>
-        <button type="button" aria-pressed={flagMode} onClick={() => setFlagMode((m) => !m)}>🚩 Flag mode</button>
-        <button type="button" onClick={() => setGame((g) => createGame(g.seed + 1))}>New game</button>
+        <span data-testid="counter">
+          Mines left: {game.mines - flagsUsed(game)}
+        </span>
+        <button
+          type="button"
+          aria-pressed={flagMode}
+          onClick={() => setFlagMode((m) => !m)}
+        >
+          🚩 Flag mode
+        </button>
+        <button
+          type="button"
+          onClick={() => setGame((g) => createGame(g.seed + 1))}
+        >
+          New game
+        </button>
       </div>
-      <div className="board" role="group" aria-label={"Minefield, " + rows + " by " + cols + ", " + game.mines + " mines"}>
+      <div
+        className="board"
+        role="group"
+        aria-label={
+          "Minefield, " + rows + " by " + cols + ", " + game.mines + " mines"
+        }
+      >
         {game.cells.map((cell, i) => (
           <Cell
             key={i}
@@ -4395,7 +5550,9 @@ export default function App() {
           />
         ))}
       </div>
-      <p className="status" role="status" data-testid="status">{MESSAGE[game.status]}</p>
+      <p className="status" role="status" data-testid="status">
+        {MESSAGE[game.status]}
+      </p>
     </main>
   );
 }
@@ -4404,22 +5561,55 @@ export default function App() {
 
 const SHOW = { hidden: "", flag: "🚩", mine: "💣" };
 
-export default function Cell({ index, cols, cell, exploded, active, onReveal, onFlag, onKeyDown, onFocus, buttonRef }) {
+export default function Cell({
+  index,
+  cols,
+  cell,
+  exploded,
+  active,
+  onReveal,
+  onFlag,
+  onKeyDown,
+  onFocus,
+  buttonRef,
+}) {
   const v = view(cell);
   const n = v.startsWith("open-") ? Number(v.slice(5)) : -1;
-  const where = "Row " + (Math.floor(index / cols) + 1) + ", column " + ((index % cols) + 1) + ": ";
-  const what = v === "hidden" ? "hidden" : v === "flag" ? "flagged" : v === "mine" ? "mine" : n === 0 ? "empty" : n + " nearby";
+  const where =
+    "Row " +
+    (Math.floor(index / cols) + 1) +
+    ", column " +
+    ((index % cols) + 1) +
+    ": ";
+  const what =
+    v === "hidden"
+      ? "hidden"
+      : v === "flag"
+        ? "flagged"
+        : v === "mine"
+          ? "mine"
+          : n === 0
+            ? "empty"
+            : n + " nearby";
   return (
     <button
       ref={buttonRef}
       type="button"
       data-testid="cell"
       data-view={v}
-      className={"cell" + (cell.open ? " open" : "") + (n > 0 ? " n" + n : "") + (exploded ? " boom" : "")}
+      className={
+        "cell" +
+        (cell.open ? " open" : "") +
+        (n > 0 ? " n" + n : "") +
+        (exploded ? " boom" : "")
+      }
       aria-label={where + what}
       tabIndex={active ? 0 : -1}
       onClick={() => onReveal(index)}
-      onContextMenu={(e) => { e.preventDefault(); onFlag(index); }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        onFlag(index);
+      }}
       onKeyDown={(e) => onKeyDown(index, e)}
       onFocus={() => onFocus(index)}
     >
@@ -4428,7 +5618,8 @@ export default function Cell({ index, cols, cell, exploded, active, onReveal, on
   );
 }
 `,
-          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no DOM. Every function returns a new game.
+          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no
+// DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
 export function mulberry32(seed) {
@@ -4443,18 +5634,37 @@ export function mulberry32(seed) {
 }
 
 export function neighbors(i, rows, cols) {
-  const r = Math.floor(i / cols), c = i % cols, out = [];
+  const r = Math.floor(i / cols),
+    c = i % cols,
+    out = [];
   for (let dr = -1; dr <= 1; dr++)
     for (let dc = -1; dc <= 1; dc++) {
-      const nr = r + dr, nc = c + dc;
-      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+      const nr = r + dr,
+        nc = c + dc;
+      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols)
+        out.push(nr * cols + nc);
     }
   return out;
 }
 
 export function createGame(seed, rows = 9, cols = 9, mines = 10) {
-  const cells = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, open: false, flag: false }));
-  return { seed, rows, cols, mines, cells, placed: false, status: "ready", opened: 0, exploded: -1 };
+  const cells = Array.from({ length: rows * cols }, () => ({
+    mine: false,
+    adj: 0,
+    open: false,
+    flag: false,
+  }));
+  return {
+    seed,
+    rows,
+    cols,
+    mines,
+    cells,
+    placed: false,
+    status: "ready",
+    opened: 0,
+    exploded: -1,
+  };
 }
 
 // Mines are placed on the FIRST reveal, never on that cell or its neighbours,
@@ -4463,7 +5673,8 @@ function placeMines(g, safe) {
   const { rows, cols, mines } = g;
   const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
   if (rows * cols - keepClear.size < mines) {
-    keepClear.clear(); // tiny, crowded board: only the clicked cell is protected
+    // tiny, crowded board: only the clicked cell is protected
+    keepClear.clear();
     keepClear.add(safe);
   }
   const pool = [];
@@ -4475,7 +5686,10 @@ function placeMines(g, safe) {
   }
   const cells = g.cells.map((c) => ({ ...c }));
   for (const i of pool.slice(0, mines)) cells[i].mine = true;
-  cells.forEach((c, i) => (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length));
+  cells.forEach(
+    (c, i) =>
+      (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length),
+  );
   return { ...g, cells, placed: true, status: "playing" };
 }
 
@@ -4485,10 +5699,13 @@ export function reveal(game, i) {
   if (g.cells[i].open || g.cells[i].flag) return g;
   if (!g.placed) g = placeMines(g, i);
   const cells = g.cells.slice();
-  const touch = (j) => (cells[j] = { ...cells[j] }); // copy only the cells we change
+  // copy only the cells we change
+  const touch = (j) => (cells[j] = { ...cells[j] });
 
   if (cells[i].mine) {
-    cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).open = true; });
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).open = true;
+    });
     return { ...g, cells, status: "lost", exploded: i };
   }
 
@@ -4508,7 +5725,10 @@ export function reveal(game, i) {
     }
   }
   const won = opened === g.rows * g.cols - g.mines;
-  if (won) cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).flag = true; });
+  if (won)
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).flag = true;
+    });
   return { ...g, cells, opened, status: won ? "won" : g.status };
 }
 
@@ -4527,21 +5747,98 @@ export function view(c) {
   return c.flag ? "flag" : "hidden";
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.mines { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.mines h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-button[aria-pressed="true"] { background: #5a3d0a; border-color: #f9a825; }
-.board { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; }
-.cell { aspect-ratio: 1; padding: 0; border-radius: 4px; font-weight: 700; font-size: 1rem; background: #30363d; border: 1px solid #484f58; }
-.cell.open { background: #161b22; border-color: #21262d; cursor: default; }
-.cell.boom { background: #8e1519; }
-.cell:focus-visible { outline: 3px solid #f9a825; outline-offset: 1px; }
-.n1 { color: #58a6ff; } .n2 { color: #3fb950; } .n3 { color: #f85149; } .n4 { color: #bc8cff; }
-.n5 { color: #ff7b72; } .n6 { color: #39c5cf; } .n7 { color: #e8e8ea; } .n8 { color: #8b949e; }
-.status { min-height: 1.4em; margin-top: 10px; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.mines {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.mines h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button[aria-pressed="true"] {
+  background: #5a3d0a;
+  border-color: #f9a825;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+}
+.cell {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1rem;
+  background: #30363d;
+  border: 1px solid #484f58;
+}
+.cell.open {
+  background: #161b22;
+  border-color: #21262d;
+  cursor: default;
+}
+.cell.boom {
+  background: #8e1519;
+}
+.cell:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 1px;
+}
+.n1 {
+  color: #58a6ff;
+}
+.n2 {
+  color: #3fb950;
+}
+.n3 {
+  color: #f85149;
+}
+.n4 {
+  color: #bc8cff;
+}
+.n5 {
+  color: #ff7b72;
+}
+.n6 {
+  color: #39c5cf;
+}
+.n7 {
+  color: #e8e8ea;
+}
+.n8 {
+  color: #8b949e;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 10px;
+}
 `,
         },
       },
@@ -4578,10 +5875,12 @@ The rules live in a plain <code>src/minesweeper.js</code>: <code>createGame(seed
 ~~~js
 const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
 const pool = [];
-for (let i = 0; i < rows * cols; i++) if (!keepClear.has(i)) pool.push(i);
+for (let i = 0; i < rows * cols; i++)
+  if (!keepClear.has(i)) pool.push(i);
 const rng = mulberry32(g.seed);
 for (let k = 0; k < mines; k++) {
-  const j = k + Math.floor(rng() * (pool.length - k)); // partial Fisher-Yates
+  // partial Fisher-Yates
+  const j = k + Math.floor(rng() * (pool.length - k));
   [pool[k], pool[j]] = [pool[j], pool[k]];
 }
 ~~~
@@ -4776,7 +6075,12 @@ import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
 import MineCell from "./components/MineCell.vue";
 import { createGame, flagsUsed, reveal, toggleFlag } from "./minesweeper.js";
 
-const MESSAGE = { ready: "Click any cell to start", playing: "Playing", won: "You win! 🎉", lost: "Boom! You hit a mine." };
+const MESSAGE = {
+  ready: "Click any cell to start",
+  playing: "Playing",
+  won: "You win! 🎉",
+  lost: "Boom! You hit a mine.",
+};
 
 // shallowRef: the game is replaced as a whole by the pure functions,
 // so Vue does not need to make 81 cell objects deeply reactive.
@@ -4786,17 +6090,28 @@ const active = ref(0);
 const board = useTemplateRef("board");
 const minesLeft = computed(() => game.value.mines - flagsUsed(game.value));
 
-const onReveal = (i) => (game.value = flagMode.value ? toggleFlag(game.value, i) : reveal(game.value, i));
+const onReveal = (i) =>
+  (game.value = flagMode.value
+    ? toggleFlag(game.value, i)
+    : reveal(game.value, i));
 const onFlag = (i) => (game.value = toggleFlag(game.value, i));
 
 async function onNav(i, e) {
   if (e.key === "f" || e.key === "F") return onFlag(i);
   const { rows, cols } = game.value;
-  const r = Math.floor(i / cols), c = i % cols;
-  const to = { ArrowUp: [r - 1, c], ArrowDown: [r + 1, c], ArrowLeft: [r, c - 1], ArrowRight: [r, c + 1] }[e.key];
+  const r = Math.floor(i / cols),
+    c = i % cols;
+  const to = {
+    ArrowUp: [r - 1, c],
+    ArrowDown: [r + 1, c],
+    ArrowLeft: [r, c - 1],
+    ArrowRight: [r, c + 1],
+  }[e.key];
   if (!to) return;
   e.preventDefault();
-  const j = Math.min(rows - 1, Math.max(0, to[0])) * cols + Math.min(cols - 1, Math.max(0, to[1]));
+  const j =
+    Math.min(rows - 1, Math.max(0, to[0])) * cols +
+    Math.min(cols - 1, Math.max(0, to[1]));
   active.value = j;
   await nextTick();
   board.value.querySelectorAll("button")[j].focus();
@@ -4808,10 +6123,22 @@ async function onNav(i, e) {
     <h1>Minesweeper</h1>
     <div class="bar">
       <span data-testid="counter">Mines left: {{ minesLeft }}</span>
-      <button type="button" :aria-pressed="flagMode" @click="flagMode = !flagMode">🚩 Flag mode</button>
-      <button type="button" @click="game = createGame(game.seed + 1)">New game</button>
+      <button
+        type="button"
+        :aria-pressed="flagMode"
+        @click="flagMode = !flagMode"
+      >🚩 Flag mode</button>
+      <button
+        type="button"
+        @click="game = createGame(game.seed + 1)"
+      >New game</button>
     </div>
-    <div ref="board" class="board" role="group" :aria-label="'Minefield, ' + game.rows + ' by ' + game.cols + ', ' + game.mines + ' mines'">
+    <div
+      ref="board"
+      class="board"
+      role="group"
+      :aria-label="'Minefield, ' + game.rows + ' by ' + game.cols + ', ' + game.mines + ' mines'"
+    >
       <MineCell
         v-for="(cell, i) in game.cells"
         :key="i"
@@ -4826,26 +6153,107 @@ async function onNav(i, e) {
         @focused="active = $event"
       />
     </div>
-    <p class="status" role="status" data-testid="status">{{ MESSAGE[game.status] }}</p>
+    <p
+      class="status"
+      role="status"
+      data-testid="status"
+    >{{ MESSAGE[game.status] }}</p>
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.mines { max-width: 360px; margin: 24px auto; padding: 0 16px; }
-.mines h1 { font-size: 1.3rem; margin: 0 0 8px; }
-.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-button { background: #2a2f3a; color: #e8e8ea; border: 1px solid #3b4252; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-button[aria-pressed="true"] { background: #5a3d0a; border-color: #f9a825; }
-.board { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; }
-.cell { aspect-ratio: 1; padding: 0; border-radius: 4px; font-weight: 700; font-size: 1rem; background: #30363d; border: 1px solid #484f58; }
-.cell.open { background: #161b22; border-color: #21262d; cursor: default; }
-.cell.boom { background: #8e1519; }
-.cell:focus-visible { outline: 3px solid #f9a825; outline-offset: 1px; }
-.n1 { color: #58a6ff; } .n2 { color: #3fb950; } .n3 { color: #f85149; } .n4 { color: #bc8cff; }
-.n5 { color: #ff7b72; } .n6 { color: #39c5cf; } .n7 { color: #e8e8ea; } .n8 { color: #8b949e; }
-.status { min-height: 1.4em; margin-top: 10px; }
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.mines {
+  max-width: 360px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.mines h1 {
+  font-size: 1.3rem;
+  margin: 0 0 8px;
+}
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+button {
+  background: #2a2f3a;
+  color: #e8e8ea;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button[aria-pressed="true"] {
+  background: #5a3d0a;
+  border-color: #f9a825;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+}
+.cell {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 1rem;
+  background: #30363d;
+  border: 1px solid #484f58;
+}
+.cell.open {
+  background: #161b22;
+  border-color: #21262d;
+  cursor: default;
+}
+.cell.boom {
+  background: #8e1519;
+}
+.cell:focus-visible {
+  outline: 3px solid #f9a825;
+  outline-offset: 1px;
+}
+.n1 {
+  color: #58a6ff;
+}
+.n2 {
+  color: #3fb950;
+}
+.n3 {
+  color: #f85149;
+}
+.n4 {
+  color: #bc8cff;
+}
+.n5 {
+  color: #ff7b72;
+}
+.n6 {
+  color: #39c5cf;
+}
+.n7 {
+  color: #e8e8ea;
+}
+.n8 {
+  color: #8b949e;
+}
+.status {
+  min-height: 1.4em;
+  margin-top: 10px;
+}
 </style>
 `,
           "/src/components/MineCell.vue": `<script setup>
@@ -4862,13 +6270,24 @@ const props = defineProps({
 const emit = defineEmits(["reveal", "flag", "nav", "focused"]);
 
 const v = computed(() => view(props.cell));
-const n = computed(() => (v.value.startsWith("open-") ? Number(v.value.slice(5)) : -1));
+const n = computed(() =>
+  v.value.startsWith("open-") ? Number(v.value.slice(5)) : -1,
+);
 const label = computed(() => {
-  const where = "Row " + (Math.floor(props.index / props.cols) + 1) + ", column " + ((props.index % props.cols) + 1) + ": ";
-  const what = { hidden: "hidden", flag: "flagged", mine: "mine" }[v.value] || (n.value === 0 ? "empty" : n.value + " nearby");
+  const where =
+    "Row " +
+    (Math.floor(props.index / props.cols) + 1) +
+    ", column " +
+    ((props.index % props.cols) + 1) +
+    ": ";
+  const what =
+    { hidden: "hidden", flag: "flagged", mine: "mine" }[v.value] ||
+    (n.value === 0 ? "empty" : n.value + " nearby");
   return where + what;
 });
-const face = computed(() => (n.value > 0 ? n.value : { flag: "🚩", mine: "💣" }[v.value] || ""));
+const face = computed(() =>
+  n.value > 0 ? n.value : { flag: "🚩", mine: "💣" }[v.value] || "",
+);
 </script>
 
 <template>
@@ -4883,10 +6302,13 @@ const face = computed(() => (n.value > 0 ? n.value : { flag: "🚩", mine: "💣
     @contextmenu.prevent="emit('flag', index)"
     @keydown="emit('nav', index, $event)"
     @focus="emit('focused', index)"
-  >{{ face }}</button>
+  >
+    {{ face }}
+  </button>
 </template>
 `,
-          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no DOM. Every function returns a new game.
+          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no
+// DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
 export function mulberry32(seed) {
@@ -4901,18 +6323,37 @@ export function mulberry32(seed) {
 }
 
 export function neighbors(i, rows, cols) {
-  const r = Math.floor(i / cols), c = i % cols, out = [];
+  const r = Math.floor(i / cols),
+    c = i % cols,
+    out = [];
   for (let dr = -1; dr <= 1; dr++)
     for (let dc = -1; dc <= 1; dc++) {
-      const nr = r + dr, nc = c + dc;
-      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+      const nr = r + dr,
+        nc = c + dc;
+      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols)
+        out.push(nr * cols + nc);
     }
   return out;
 }
 
 export function createGame(seed, rows = 9, cols = 9, mines = 10) {
-  const cells = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, open: false, flag: false }));
-  return { seed, rows, cols, mines, cells, placed: false, status: "ready", opened: 0, exploded: -1 };
+  const cells = Array.from({ length: rows * cols }, () => ({
+    mine: false,
+    adj: 0,
+    open: false,
+    flag: false,
+  }));
+  return {
+    seed,
+    rows,
+    cols,
+    mines,
+    cells,
+    placed: false,
+    status: "ready",
+    opened: 0,
+    exploded: -1,
+  };
 }
 
 // Mines are placed on the FIRST reveal, never on that cell or its neighbours,
@@ -4921,7 +6362,8 @@ function placeMines(g, safe) {
   const { rows, cols, mines } = g;
   const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
   if (rows * cols - keepClear.size < mines) {
-    keepClear.clear(); // tiny, crowded board: only the clicked cell is protected
+    // tiny, crowded board: only the clicked cell is protected
+    keepClear.clear();
     keepClear.add(safe);
   }
   const pool = [];
@@ -4933,7 +6375,10 @@ function placeMines(g, safe) {
   }
   const cells = g.cells.map((c) => ({ ...c }));
   for (const i of pool.slice(0, mines)) cells[i].mine = true;
-  cells.forEach((c, i) => (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length));
+  cells.forEach(
+    (c, i) =>
+      (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length),
+  );
   return { ...g, cells, placed: true, status: "playing" };
 }
 
@@ -4943,10 +6388,13 @@ export function reveal(game, i) {
   if (g.cells[i].open || g.cells[i].flag) return g;
   if (!g.placed) g = placeMines(g, i);
   const cells = g.cells.slice();
-  const touch = (j) => (cells[j] = { ...cells[j] }); // copy only the cells we change
+  // copy only the cells we change
+  const touch = (j) => (cells[j] = { ...cells[j] });
 
   if (cells[i].mine) {
-    cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).open = true; });
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).open = true;
+    });
     return { ...g, cells, status: "lost", exploded: i };
   }
 
@@ -4966,7 +6414,10 @@ export function reveal(game, i) {
     }
   }
   const won = opened === g.rows * g.cols - g.mines;
-  if (won) cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).flag = true; });
+  if (won)
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).flag = true;
+    });
   return { ...g, cells, opened, status: won ? "won" : g.status };
 }
 
@@ -5020,10 +6471,12 @@ function placeMines(g: Game, safe: number): Game {
   const { rows, cols, mines } = g;
   const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
   const pool: number[] = [];
-  for (let i = 0; i < rows * cols; i++) if (!keepClear.has(i)) pool.push(i);
+  for (let i = 0; i < rows * cols; i++)
+    if (!keepClear.has(i)) pool.push(i);
   const rng = mulberry32(g.seed);
   for (let k = 0; k < mines; k++) {
-    const j = k + Math.floor(rng() * (pool.length - k)); // partial Fisher-Yates
+    // partial Fisher-Yates
+    const j = k + Math.floor(rng() * (pool.length - k));
     [pool[k], pool[j]] = [pool[j], pool[k]];
   }
   // ... set mine on pool[0..mines), then compute adj for every cell
@@ -5074,8 +6527,11 @@ while (stack.length) {
 })
 export class MineCellComponent {
   @Input({ required: true }) cell!: Cell;
-  // index, cols, exploded, active inputs; reveal, flag, nav, focused outputs
-  get v() { return view(this.cell); }
+  // index, cols, exploded, active inputs;
+  // reveal, flag, nav, focused outputs
+  get v() {
+    return view(this.cell);
+  }
 }
 ~~~
 
@@ -5229,11 +6685,22 @@ Same boards as React and Vue: 36 cells from the first click, flags block reveals
 
 **Conclusion:** In Angular, Minesweeper is one signal holding an immutable game, a decorator-input cell component that emits reveal, flag and navigation events, and typed pure rules that defer mine placement to the first click and open regions with an explicit stack. The seeded RNG makes the same driver produce the same boards in AOT, JIT, React and Vue.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, QueryList, ViewChildren, computed, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  QueryList,
+  ViewChildren,
+  computed,
+  signal,
+} from "@angular/core";
 import { MineCellComponent } from "./mine-cell.component";
 import { createGame, flagsUsed, reveal, toggleFlag } from "./minesweeper";
 
-const MESSAGE: Record<string, string> = { ready: "Click any cell to start", playing: "Playing", won: "You win! 🎉", lost: "Boom! You hit a mine." };
+const MESSAGE: Record<string, string> = {
+  ready: "Click any cell to start",
+  playing: "Playing",
+  won: "You win! 🎉",
+  lost: "Boom! You hit a mine.",
+};
 
 @Component({
   selector: "app-root",
@@ -5244,10 +6711,18 @@ const MESSAGE: Record<string, string> = { ready: "Click any cell to start", play
       <h1>Minesweeper</h1>
       <div class="bar">
         <span data-testid="counter">Mines left: {{ minesLeft() }}</span>
-        <button type="button" [attr.aria-pressed]="flagMode()" (click)="flagMode.set(!flagMode())">🚩 Flag mode</button>
+        <button
+          type="button"
+          [attr.aria-pressed]="flagMode()"
+          (click)="flagMode.set(!flagMode())"
+        >🚩 Flag mode</button>
         <button type="button" (click)="newGame()">New game</button>
       </div>
-      <div class="board" role="group" [attr.aria-label]="'Minefield, ' + game().rows + ' by ' + game().cols + ', ' + game().mines + ' mines'">
+      <div
+        class="board"
+        role="group"
+        [attr.aria-label]="'Minefield, ' + game().rows + ' by ' + game().cols + ', ' + game().mines + ' mines'"
+      >
         @for (cell of game().cells; track i; let i = $index) {
           <app-mine-cell
             [index]="i"
@@ -5262,10 +6737,15 @@ const MESSAGE: Record<string, string> = { ready: "Click any cell to start", play
           />
         }
       </div>
-      <p class="status" role="status" data-testid="status">{{ message[game().status] }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ message[game().status] }}</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; color: #e8e8ea; }
     .mines { max-width: 360px; margin: 24px auto; padding: 0 16px; }
     .mines h1 { font-size: 1.3rem; margin: 0 0 8px; }
@@ -5274,18 +6754,23 @@ const MESSAGE: Record<string, string> = { ready: "Click any cell to start", play
     button[aria-pressed="true"] { background: #5a3d0a; border-color: #f9a825; }
     .board { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; }
     .status { min-height: 1.4em; margin-top: 10px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly message = MESSAGE;
   readonly game = signal(createGame(1));
   readonly flagMode = signal(false);
   readonly active = signal(0);
-  readonly minesLeft = computed(() => this.game().mines - flagsUsed(this.game()));
+  readonly minesLeft = computed(
+    () => this.game().mines - flagsUsed(this.game()),
+  );
   @ViewChildren(MineCellComponent) cellViews!: QueryList<MineCellComponent>;
 
   onReveal(i: number) {
-    this.game.update((g) => (this.flagMode() ? toggleFlag(g, i) : reveal(g, i)));
+    this.game.update((g) =>
+      this.flagMode() ? toggleFlag(g, i) : reveal(g, i),
+    );
   }
 
   onFlag(i: number) {
@@ -5299,18 +6784,33 @@ export class AppComponent {
   onNav(i: number, e: KeyboardEvent) {
     if (e.key === "f" || e.key === "F") return this.onFlag(i);
     const { rows, cols } = this.game();
-    const r = Math.floor(i / cols), c = i % cols;
-    const moves: Record<string, [number, number]> = { ArrowUp: [r - 1, c], ArrowDown: [r + 1, c], ArrowLeft: [r, c - 1], ArrowRight: [r, c + 1] };
+    const r = Math.floor(i / cols),
+      c = i % cols;
+    const moves: Record<string, [number, number]> = {
+      ArrowUp: [r - 1, c],
+      ArrowDown: [r + 1, c],
+      ArrowLeft: [r, c - 1],
+      ArrowRight: [r, c + 1],
+    };
     const to = moves[e.key];
     if (!to) return;
     e.preventDefault();
-    const j = Math.min(rows - 1, Math.max(0, to[0])) * cols + Math.min(cols - 1, Math.max(0, to[1]));
+    const j =
+      Math.min(rows - 1, Math.max(0, to[0])) * cols +
+      Math.min(cols - 1, Math.max(0, to[1]));
     this.active.set(j);
     this.cellViews.get(j)!.focus();
   }
 }
 `,
-          "/src/app/mine-cell.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, inject } from "@angular/core";
+          "/src/app/mine-cell.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  inject,
+} from "@angular/core";
 import { Cell, view } from "./minesweeper";
 
 @Component({
@@ -5330,7 +6830,8 @@ import { Cell, view } from "./minesweeper";
       (focus)="focused.emit(index)"
     >{{ face }}</button>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .cell { display: block; width: 100%; aspect-ratio: 1; padding: 0; border-radius: 4px; font-weight: 700; font-size: 1rem;
       color: #e8e8ea; background: #30363d; border: 1px solid #484f58; cursor: pointer; }
@@ -5339,7 +6840,8 @@ import { Cell, view } from "./minesweeper";
     .cell:focus-visible { outline: 3px solid #f9a825; outline-offset: 1px; }
     .n1 { color: #58a6ff; } .n2 { color: #3fb950; } .n3 { color: #f85149; } .n4 { color: #bc8cff; }
     .n5 { color: #ff7b72; } .n6 { color: #39c5cf; } .n7 { color: #e8e8ea; } .n8 { color: #8b949e; }
-  \`],
+  \`,
+  ],
 })
 export class MineCellComponent {
   @Input({ required: true }) index = 0;
@@ -5353,12 +6855,38 @@ export class MineCellComponent {
   @Output() focused = new EventEmitter<number>();
   private host = inject(ElementRef<HTMLElement>);
 
-  get v() { return view(this.cell); }
-  get n() { return this.v.startsWith("open-") ? Number(this.v.slice(5)) : -1; }
-  get face() { return this.n > 0 ? String(this.n) : this.v === "flag" ? "🚩" : this.v === "mine" ? "💣" : ""; }
+  get v() {
+    return view(this.cell);
+  }
+  get n() {
+    return this.v.startsWith("open-") ? Number(this.v.slice(5)) : -1;
+  }
+  get face() {
+    return this.n > 0
+      ? String(this.n)
+      : this.v === "flag"
+        ? "🚩"
+        : this.v === "mine"
+          ? "💣"
+          : "";
+  }
   get label() {
-    const where = "Row " + (Math.floor(this.index / this.cols) + 1) + ", column " + ((this.index % this.cols) + 1) + ": ";
-    const what = this.v === "hidden" ? "hidden" : this.v === "flag" ? "flagged" : this.v === "mine" ? "mine" : this.n === 0 ? "empty" : this.n + " nearby";
+    const where =
+      "Row " +
+      (Math.floor(this.index / this.cols) + 1) +
+      ", column " +
+      ((this.index % this.cols) + 1) +
+      ": ";
+    const what =
+      this.v === "hidden"
+        ? "hidden"
+        : this.v === "flag"
+          ? "flagged"
+          : this.v === "mine"
+            ? "mine"
+            : this.n === 0
+              ? "empty"
+              : this.n + " nearby";
     return where + what;
   }
 
@@ -5367,14 +6895,27 @@ export class MineCellComponent {
   }
 }
 `,
-          "/src/app/minesweeper.ts": `// Pure Minesweeper logic: no framework, no DOM. Every function returns a new game.
+          "/src/app/minesweeper.ts": `// Pure Minesweeper logic: no framework, no
+// DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
-export interface Cell { mine: boolean; adj: number; open: boolean; flag: boolean; }
+export interface Cell {
+  mine: boolean;
+  adj: number;
+  open: boolean;
+  flag: boolean;
+}
 export type Status = "ready" | "playing" | "won" | "lost";
 export interface Game {
-  seed: number; rows: number; cols: number; mines: number;
-  cells: Cell[]; placed: boolean; status: Status; opened: number; exploded: number;
+  seed: number;
+  rows: number;
+  cols: number;
+  mines: number;
+  cells: Cell[];
+  placed: boolean;
+  status: Status;
+  opened: number;
+  exploded: number;
 }
 
 export function mulberry32(seed: number): () => number {
@@ -5389,18 +6930,37 @@ export function mulberry32(seed: number): () => number {
 }
 
 export function neighbors(i: number, rows: number, cols: number): number[] {
-  const r = Math.floor(i / cols), c = i % cols, out: number[] = [];
+  const r = Math.floor(i / cols),
+    c = i % cols,
+    out: number[] = [];
   for (let dr = -1; dr <= 1; dr++)
     for (let dc = -1; dc <= 1; dc++) {
-      const nr = r + dr, nc = c + dc;
-      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols) out.push(nr * cols + nc);
+      const nr = r + dr,
+        nc = c + dc;
+      if ((dr || dc) && nr >= 0 && nr < rows && nc >= 0 && nc < cols)
+        out.push(nr * cols + nc);
     }
   return out;
 }
 
 export function createGame(seed: number, rows = 9, cols = 9, mines = 10): Game {
-  const cells: Cell[] = Array.from({ length: rows * cols }, () => ({ mine: false, adj: 0, open: false, flag: false }));
-  return { seed, rows, cols, mines, cells, placed: false, status: "ready", opened: 0, exploded: -1 };
+  const cells: Cell[] = Array.from({ length: rows * cols }, () => ({
+    mine: false,
+    adj: 0,
+    open: false,
+    flag: false,
+  }));
+  return {
+    seed,
+    rows,
+    cols,
+    mines,
+    cells,
+    placed: false,
+    status: "ready",
+    opened: 0,
+    exploded: -1,
+  };
 }
 
 // Mines are placed on the FIRST reveal, never on that cell or its neighbours,
@@ -5409,7 +6969,8 @@ function placeMines(g: Game, safe: number): Game {
   const { rows, cols, mines } = g;
   const keepClear = new Set([safe, ...neighbors(safe, rows, cols)]);
   if (rows * cols - keepClear.size < mines) {
-    keepClear.clear(); // tiny, crowded board: only the clicked cell is protected
+    // tiny, crowded board: only the clicked cell is protected
+    keepClear.clear();
     keepClear.add(safe);
   }
   const pool: number[] = [];
@@ -5421,7 +6982,10 @@ function placeMines(g: Game, safe: number): Game {
   }
   const cells = g.cells.map((c) => ({ ...c }));
   for (const i of pool.slice(0, mines)) cells[i].mine = true;
-  cells.forEach((c, i) => (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length));
+  cells.forEach(
+    (c, i) =>
+      (c.adj = neighbors(i, rows, cols).filter((n) => cells[n].mine).length),
+  );
   return { ...g, cells, placed: true, status: "playing" };
 }
 
@@ -5431,10 +6995,13 @@ export function reveal(game: Game, i: number): Game {
   if (g.cells[i].open || g.cells[i].flag) return g;
   if (!g.placed) g = placeMines(g, i);
   const cells = g.cells.slice();
-  const touch = (j: number) => (cells[j] = { ...cells[j] }); // copy only the cells we change
+  // copy only the cells we change
+  const touch = (j: number) => (cells[j] = { ...cells[j] });
 
   if (cells[i].mine) {
-    cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).open = true; });
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).open = true;
+    });
     return { ...g, cells, status: "lost", exploded: i };
   }
 
@@ -5454,7 +7021,10 @@ export function reveal(game: Game, i: number): Game {
     }
   }
   const won = opened === g.rows * g.cols - g.mines;
-  if (won) cells.forEach((c, j) => { if (c.mine && !c.flag) touch(j).flag = true; });
+  if (won)
+    cells.forEach((c, j) => {
+      if (c.mine && !c.flag) touch(j).flag = true;
+    });
   return { ...g, cells, opened, status: won ? "won" : g.status };
 }
 
@@ -5607,14 +7177,31 @@ lolly vs hello  naive YYGG-  two-pass -YGG-
 ~~~js
 export function submit(g) {
   if (g.status !== "playing") return g;
-  if (g.current.length < WORD_LENGTH) return { ...g, message: "Not enough letters" };
-  if (!WORDS.includes(g.current)) return { ...g, message: "Not in word list" };
-  const guesses = [...g.guesses, { word: g.current, marks: score(g.current, g.answer) }];
+  if (g.current.length < WORD_LENGTH)
+    return { ...g, message: "Not enough letters" };
+  if (!WORDS.includes(g.current))
+    return { ...g, message: "Not in word list" };
+  const guesses = [
+    ...g.guesses,
+    { word: g.current, marks: score(g.current, g.answer) },
+  ];
   if (g.current === g.answer) {
-    return { ...g, guesses, current: "", status: "won", message: "Solved in " + guesses.length + "/" + MAX_GUESSES };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "won",
+      message: "Solved in " + guesses.length + "/" + MAX_GUESSES,
+    };
   }
   if (guesses.length === MAX_GUESSES) {
-    return { ...g, guesses, current: "", status: "lost", message: "The word was " + g.answer.toUpperCase() };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "lost",
+      message: "The word was " + g.answer.toUpperCase(),
+    };
   }
   return { ...g, guesses, current: "", message: "" };
 }
@@ -5627,7 +7214,8 @@ export function submit(g) {
 ### Step 3: one entry point for both keyboards
 
 ~~~js
-export const isGameKey = (key) => key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
+export const isGameKey = (key) =>
+  key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
 export function applyKey(g, key) {
   if (key === "Enter") return submit(g);
   if (key === "Backspace") return backspace(g);
@@ -5641,8 +7229,10 @@ The on-screen keyboard calls <code>onKey(name)</code> and the window listener ca
 ~~~jsx
 useEffect(() => {
   const handler = (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
-    if (e.target instanceof HTMLButtonElement && e.key === "Enter") return; // the button click handles it
+    // leave browser shortcuts alone
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target instanceof HTMLButtonElement && e.key === "Enter")
+      return; // the button click handles it
     if (isGameKey(e.key)) {
       e.preventDefault();
       setGame((g) => applyKey(g, e.key));
@@ -5663,7 +7253,8 @@ export function letterStates(guesses) {
   const best = {};
   for (const { word, marks } of guesses)
     [...word].forEach((ch, i) => {
-      if (!best[ch] || RANK[marks[i]] > RANK[best[ch]]) best[ch] = marks[i];
+      if (!best[ch] || RANK[marks[i]] > RANK[best[ch]])
+        best[ch] = marks[i];
     });
   return best;
 }
@@ -5815,7 +7406,14 @@ A separate check in Chromium 141 (playwright-core, 360 px wide viewport) loaded 
           "/App.js": `import { useEffect, useState } from "react";
 import Board from "./src/Board";
 import Keyboard from "./src/Keyboard";
-import { FIRST_SEED, applyKey, boardRows, createGame, isGameKey, letterStates } from "./src/wordle";
+import {
+  FIRST_SEED,
+  applyKey,
+  boardRows,
+  createGame,
+  isGameKey,
+  letterStates,
+} from "./src/wordle";
 
 export default function App() {
   const [game, setGame] = useState(() => createGame(FIRST_SEED));
@@ -5823,8 +7421,10 @@ export default function App() {
 
   useEffect(() => {
     const handler = (e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
-      if (e.target instanceof HTMLButtonElement && e.key === "Enter") return; // the button click handles it
+      // leave browser shortcuts alone
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // the button click handles it
+      if (e.target instanceof HTMLButtonElement && e.key === "Enter") return;
       if (isGameKey(e.key)) {
         e.preventDefault();
         setGame((g) => applyKey(g, e.key));
@@ -5839,10 +7439,17 @@ export default function App() {
       <div className="top">
         <span data-testid="game">Game #{game.seed}</span>
         <h1>WORDLE</h1>
-        <button type="button" onClick={() => setGame((g) => createGame(g.seed + 1))}>New</button>
+        <button
+          type="button"
+          onClick={() => setGame((g) => createGame(g.seed + 1))}
+        >
+          New
+        </button>
       </div>
       <Board rows={boardRows(game)} guesses={game.guesses} />
-      <p className="message" role="status" data-testid="message">{game.message}</p>
+      <p className="message" role="status" data-testid="message">
+        {game.message}
+      </p>
       <Keyboard states={letterStates(game.guesses)} onKey={onKey} />
     </main>
   );
@@ -5854,12 +7461,30 @@ export default function App() {
       {rows.map((row, r) => {
         const done = r < guesses.length;
         const label = done
-          ? "Guess " + (r + 1) + ": " + guesses[r].word + ", " + row.map((t) => t.ch + " " + t.state).join(", ")
+          ? "Guess " +
+            (r + 1) +
+            ": " +
+            guesses[r].word +
+            ", " +
+            row.map((t) => t.ch + " " + t.state).join(", ")
           : undefined;
         return (
-          <div key={r} className="row" data-testid="row" role={done ? "img" : undefined} aria-label={label}>
+          <div
+            key={r}
+            className="row"
+            data-testid="row"
+            role={done ? "img" : undefined}
+            aria-label={label}
+          >
             {row.map((t, i) => (
-              <div key={i} className={"tile " + t.state} data-state={t.state} aria-hidden={done || undefined}>{t.ch}</div>
+              <div
+                key={i}
+                className={"tile " + t.state}
+                data-state={t.state}
+                aria-hidden={done || undefined}
+              >
+                {t.ch}
+              </div>
             ))}
           </div>
         );
@@ -5881,9 +7506,15 @@ export default function Keyboard({ states, onKey }) {
               <button
                 key={k}
                 type="button"
-                className={"key " + (k === "+" || k === "-" ? "wide" : states[k] || "")}
+                className={
+                  "key " + (k === "+" || k === "-" ? "wide" : states[k] || "")
+                }
                 data-key={name}
-                aria-label={k === "+" || k === "-" ? name : k + (states[k] ? ", " + states[k] : "")}
+                aria-label={
+                  k === "+" || k === "-"
+                    ? name
+                    : k + (states[k] ? ", " + states[k] : "")
+                }
                 onClick={() => onKey(name)}
               >
                 {k === "+" ? "Enter" : k === "-" ? "⌫" : k}
@@ -5902,7 +7533,8 @@ export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;
 export const FIRST_SEED = 7;
 
-// A small built-in list; a real game ships thousands of answers and allowed guesses.
+// A small built-in list; a real game ships
+// thousands of answers and allowed guesses.
 export const WORDS = (
   "abide apple bread brick chair cloud crane dream eagle eerie field flame geese ghost globe grape heart " +
   "hello house juice knife lemon light lolly lucky magic mouse night ocean piano plant queen river robot " +
@@ -5943,7 +7575,14 @@ export function score(guess, answer) {
 
 export function createGame(seed) {
   const answer = WORDS[Math.floor(mulberry32(seed)() * WORDS.length)];
-  return { seed, answer, guesses: [], current: "", status: "playing", message: "" };
+  return {
+    seed,
+    answer,
+    guesses: [],
+    current: "",
+    status: "playing",
+    message: "",
+  };
 }
 
 export function typeLetter(g, ch) {
@@ -5958,14 +7597,30 @@ export function backspace(g) {
 
 export function submit(g) {
   if (g.status !== "playing") return g;
-  if (g.current.length < WORD_LENGTH) return { ...g, message: "Not enough letters" };
+  if (g.current.length < WORD_LENGTH)
+    return { ...g, message: "Not enough letters" };
   if (!WORDS.includes(g.current)) return { ...g, message: "Not in word list" };
-  const guesses = [...g.guesses, { word: g.current, marks: score(g.current, g.answer) }];
+  const guesses = [
+    ...g.guesses,
+    { word: g.current, marks: score(g.current, g.answer) },
+  ];
   if (g.current === g.answer) {
-    return { ...g, guesses, current: "", status: "won", message: "Solved in " + guesses.length + "/" + MAX_GUESSES };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "won",
+      message: "Solved in " + guesses.length + "/" + MAX_GUESSES,
+    };
   }
   if (guesses.length === MAX_GUESSES) {
-    return { ...g, guesses, current: "", status: "lost", message: "The word was " + g.answer.toUpperCase() };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "lost",
+      message: "The word was " + g.answer.toUpperCase(),
+    };
   }
   return { ...g, guesses, current: "", message: "" };
 }
@@ -5983,15 +7638,26 @@ export function letterStates(guesses) {
 
 // Rows for rendering: submitted guesses, the row being typed, then empty rows.
 export function boardRows(g) {
-  const rows = g.guesses.map(({ word, marks }) => [...word].map((ch, i) => ({ ch, state: marks[i] })));
+  const rows = g.guesses.map(({ word, marks }) =>
+    [...word].map((ch, i) => ({ ch, state: marks[i] })),
+  );
   if (rows.length < MAX_GUESSES && g.status === "playing")
-    rows.push([...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({ ch: ch.trim(), state: ch.trim() ? "typed" : "empty" })));
-  while (rows.length < MAX_GUESSES) rows.push(Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })));
+    rows.push(
+      [...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({
+        ch: ch.trim(),
+        state: ch.trim() ? "typed" : "empty",
+      })),
+    );
+  while (rows.length < MAX_GUESSES)
+    rows.push(
+      Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })),
+    );
   return rows;
 }
 
 // One entry point for both the physical and the on-screen keyboard.
-export const isGameKey = (key) => key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
+export const isGameKey = (key) =>
+  key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
 export function applyKey(g, key) {
   if (key === "Enter") return submit(g);
   if (key === "Backspace") return backspace(g);
@@ -5999,31 +7665,124 @@ export function applyKey(g, key) {
   return g;
 }
 
-export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"]; // + is Enter, - is Backspace
+// + is Enter, - is Backspace
+export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"];
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.wordle { max-width: 360px; margin: 20px auto; padding: 0 8px; text-align: center; }
-.wordle h1 { font-size: 1.3rem; margin: 0 0 4px; letter-spacing: 2px; }
-.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-button { font: inherit; color: #e8e8ea; cursor: pointer; }
-.top button { background: #2a2f3a; border: 1px solid #3b4252; border-radius: 6px; padding: 4px 10px; }
-.board { display: grid; gap: 5px; justify-content: center; margin-bottom: 10px; }
-.row { display: grid; grid-template-columns: repeat(5, 52px); gap: 5px; }
-.tile { height: 52px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;
-  text-transform: uppercase; border: 2px solid #3a3a3c; box-sizing: border-box; }
-.tile.typed { border-color: #6e7681; }
-.tile.correct { background: #538d4e; border-color: #538d4e; }
-.tile.present { background: #b59f3b; border-color: #b59f3b; }
-.tile.absent { background: #3a3a3c; border-color: #3a3a3c; }
-.message { min-height: 1.4em; margin: 6px 0; font-weight: 600; }
-.keys { display: grid; gap: 6px; }
-.keyrow { display: flex; gap: 4px; justify-content: center; }
-.key { flex: 1; max-width: 34px; height: 48px; border: 0; border-radius: 4px; background: #818384; font-weight: 700;
-  text-transform: uppercase; padding: 0; }
-.key.wide { max-width: 56px; font-size: 0.7rem; }
-.key.correct { background: #538d4e; } .key.present { background: #b59f3b; } .key.absent { background: #3a3a3c; }
-.key:focus-visible { outline: 3px solid #f9a825; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.wordle {
+  max-width: 360px;
+  margin: 20px auto;
+  padding: 0 8px;
+  text-align: center;
+}
+.wordle h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+  letter-spacing: 2px;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+button {
+  font: inherit;
+  color: #e8e8ea;
+  cursor: pointer;
+}
+.top button {
+  background: #2a2f3a;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.board {
+  display: grid;
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 52px);
+  gap: 5px;
+}
+.tile {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid #3a3a3c;
+  box-sizing: border-box;
+}
+.tile.typed {
+  border-color: #6e7681;
+}
+.tile.correct {
+  background: #538d4e;
+  border-color: #538d4e;
+}
+.tile.present {
+  background: #b59f3b;
+  border-color: #b59f3b;
+}
+.tile.absent {
+  background: #3a3a3c;
+  border-color: #3a3a3c;
+}
+.message {
+  min-height: 1.4em;
+  margin: 6px 0;
+  font-weight: 600;
+}
+.keys {
+  display: grid;
+  gap: 6px;
+}
+.keyrow {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.key {
+  flex: 1;
+  max-width: 34px;
+  height: 48px;
+  border: 0;
+  border-radius: 4px;
+  background: #818384;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0;
+}
+.key.wide {
+  max-width: 56px;
+  font-size: 0.7rem;
+}
+.key.correct {
+  background: #538d4e;
+}
+.key.present {
+  background: #b59f3b;
+}
+.key.absent {
+  background: #3a3a3c;
+}
+.key:focus-visible {
+  outline: 3px solid #f9a825;
+}
 `,
         },
       },
@@ -6092,7 +7851,8 @@ const onKey = (key) => (game.value = applyKey(game.value, key));
 
 function handler(e) {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
-  if (e.target instanceof HTMLButtonElement && e.key === "Enter") return;
+  if (e.target instanceof HTMLButtonElement && e.key === "Enter")
+    return;
   if (isGameKey(e.key)) {
     e.preventDefault();
     onKey(e.key);
@@ -6111,11 +7871,19 @@ The modifier check keeps Ctrl+C and Cmd+R working. The button check avoids a dou
 <code>WordleBoard.vue</code> renders <code>rows</code> with nested <code>v-for</code>; a submitted row gets <code>role="img"</code> and a label such as "Guess 1: speed, s absent, p absent, e present, e absent, d present", with its tiles <code>aria-hidden</code>. <code>WordleKeyboard.vue</code> receives <code>states</code> and emits <code>key</code>:
 
 ~~~vue
-<button v-for="k in row" :key="k" type="button"
+<button
+  v-for="k in row"
+  :key="k"
+  type="button"
   :class="['key', wide(k) ? 'wide' : states[k] || '']"
   :data-key="nameOf(k)"
-  :aria-label="wide(k) ? nameOf(k) : k + (states[k] ? ', ' + states[k] : '')"
-  @click="emit('key', nameOf(k))">{{ k === "+" ? "Enter" : k === "-" ? "⌫" : k }}</button>
+  :aria-label="
+    wide(k) ? nameOf(k) : k + (states[k] ? ', ' + states[k] : '')
+  "
+  @click="emit('key', nameOf(k))"
+>
+  {{ k === "+" ? "Enter" : k === "-" ? "⌫" : k }}
+</button>
 ~~~
 
 📌 **Interview term: Emits** — the child announces what happened (<code>emit('key', 'Enter')</code>) and the parent decides what it means. Declaring them is covered in [why declare emits](/interview-question/why-declare-emits-and-can-you-validate-them).
@@ -6246,7 +8014,14 @@ Invalid guesses cost no try, a sixth letter is ignored, "speed" gives one yellow
 import { computed, onMounted, onUnmounted, shallowRef } from "vue";
 import WordleBoard from "./components/WordleBoard.vue";
 import WordleKeyboard from "./components/WordleKeyboard.vue";
-import { FIRST_SEED, applyKey, boardRows, createGame, isGameKey, letterStates } from "./wordle.js";
+import {
+  FIRST_SEED,
+  applyKey,
+  boardRows,
+  createGame,
+  isGameKey,
+  letterStates,
+} from "./wordle.js";
 
 // The pure functions return a new game every time, so a shallowRef is enough.
 const game = shallowRef(createGame(FIRST_SEED));
@@ -6255,8 +8030,10 @@ const states = computed(() => letterStates(game.value.guesses));
 const onKey = (key) => (game.value = applyKey(game.value, key));
 
 function handler(e) {
-  if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
-  if (e.target instanceof HTMLButtonElement && e.key === "Enter") return; // the button click handles it
+  // leave browser shortcuts alone
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  // the button click handles it
+  if (e.target instanceof HTMLButtonElement && e.key === "Enter") return;
   if (isGameKey(e.key)) {
     e.preventDefault();
     onKey(e.key);
@@ -6271,38 +8048,137 @@ onUnmounted(() => window.removeEventListener("keydown", handler));
     <div class="top">
       <span data-testid="game">Game #{{ game.seed }}</span>
       <h1>WORDLE</h1>
-      <button type="button" @click="game = createGame(game.seed + 1)">New</button>
+      <button
+        type="button"
+        @click="game = createGame(game.seed + 1)"
+      >New</button>
     </div>
     <WordleBoard :rows="rows" :guesses="game.guesses" />
-    <p class="message" role="status" data-testid="message">{{ game.message }}</p>
+    <p
+      class="message"
+      role="status"
+      data-testid="message"
+    >{{ game.message }}</p>
     <WordleKeyboard :states="states" @key="onKey" />
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1115; color: #e8e8ea; }
-.wordle { max-width: 360px; margin: 20px auto; padding: 0 8px; text-align: center; }
-.wordle h1 { font-size: 1.3rem; margin: 0 0 4px; letter-spacing: 2px; }
-.top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-button { font: inherit; color: #e8e8ea; cursor: pointer; }
-.top button { background: #2a2f3a; border: 1px solid #3b4252; border-radius: 6px; padding: 4px 10px; }
-.board { display: grid; gap: 5px; justify-content: center; margin-bottom: 10px; }
-.row { display: grid; grid-template-columns: repeat(5, 52px); gap: 5px; }
-.tile { height: 52px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;
-  text-transform: uppercase; border: 2px solid #3a3a3c; box-sizing: border-box; }
-.tile.typed { border-color: #6e7681; }
-.tile.correct { background: #538d4e; border-color: #538d4e; }
-.tile.present { background: #b59f3b; border-color: #b59f3b; }
-.tile.absent { background: #3a3a3c; border-color: #3a3a3c; }
-.message { min-height: 1.4em; margin: 6px 0; font-weight: 600; }
-.keys { display: grid; gap: 6px; }
-.keyrow { display: flex; gap: 4px; justify-content: center; }
-.key { flex: 1; max-width: 34px; height: 48px; border: 0; border-radius: 4px; background: #818384; font-weight: 700;
-  text-transform: uppercase; padding: 0; }
-.key.wide { max-width: 56px; font-size: 0.7rem; }
-.key.correct { background: #538d4e; } .key.present { background: #b59f3b; } .key.absent { background: #3a3a3c; }
-.key:focus-visible { outline: 3px solid #f9a825; }
+:root {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1115;
+  color: #e8e8ea;
+}
+.wordle {
+  max-width: 360px;
+  margin: 20px auto;
+  padding: 0 8px;
+  text-align: center;
+}
+.wordle h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+  letter-spacing: 2px;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+button {
+  font: inherit;
+  color: #e8e8ea;
+  cursor: pointer;
+}
+.top button {
+  background: #2a2f3a;
+  border: 1px solid #3b4252;
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.board {
+  display: grid;
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 52px);
+  gap: 5px;
+}
+.tile {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 2px solid #3a3a3c;
+  box-sizing: border-box;
+}
+.tile.typed {
+  border-color: #6e7681;
+}
+.tile.correct {
+  background: #538d4e;
+  border-color: #538d4e;
+}
+.tile.present {
+  background: #b59f3b;
+  border-color: #b59f3b;
+}
+.tile.absent {
+  background: #3a3a3c;
+  border-color: #3a3a3c;
+}
+.message {
+  min-height: 1.4em;
+  margin: 6px 0;
+  font-weight: 600;
+}
+.keys {
+  display: grid;
+  gap: 6px;
+}
+.keyrow {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+.key {
+  flex: 1;
+  max-width: 34px;
+  height: 48px;
+  border: 0;
+  border-radius: 4px;
+  background: #818384;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0;
+}
+.key.wide {
+  max-width: 56px;
+  font-size: 0.7rem;
+}
+.key.correct {
+  background: #538d4e;
+}
+.key.present {
+  background: #b59f3b;
+}
+.key.absent {
+  background: #3a3a3c;
+}
+.key:focus-visible {
+  outline: 3px solid #f9a825;
+}
 </style>
 `,
           "/src/components/WordleBoard.vue": `<script setup>
@@ -6311,7 +8187,12 @@ defineProps({
   guesses: { type: Array, required: true },
 });
 const label = (row, r, guesses) =>
-  "Guess " + (r + 1) + ": " + guesses[r].word + ", " + row.map((t) => t.ch + " " + t.state).join(", ");
+  "Guess " +
+  (r + 1) +
+  ": " +
+  guesses[r].word +
+  ", " +
+  row.map((t) => t.ch + " " + t.state).join(", ");
 </script>
 
 <template>
@@ -6324,7 +8205,15 @@ const label = (row, r, guesses) =>
       :role="r < guesses.length ? 'img' : undefined"
       :aria-label="r < guesses.length ? label(row, r, guesses) : undefined"
     >
-      <div v-for="(t, i) in row" :key="i" :class="['tile', t.state]" :data-state="t.state" :aria-hidden="r < guesses.length || undefined">{{ t.ch }}</div>
+      <div
+        v-for="(t, i) in row"
+        :key="i"
+        :class="['tile', t.state]"
+        :data-state="t.state"
+        :aria-hidden="r < guesses.length || undefined"
+      >
+        {{ t.ch }}
+      </div>
     </div>
   </div>
 </template>
@@ -6347,9 +8236,13 @@ const wide = (k) => k === "+" || k === "-";
         type="button"
         :class="['key', wide(k) ? 'wide' : states[k] || '']"
         :data-key="nameOf(k)"
-        :aria-label="wide(k) ? nameOf(k) : k + (states[k] ? ', ' + states[k] : '')"
+        :aria-label="
+          wide(k) ? nameOf(k) : k + (states[k] ? ', ' + states[k] : '')
+        "
         @click="emit('key', nameOf(k))"
-      >{{ k === "+" ? "Enter" : k === "-" ? "⌫" : k }}</button>
+      >
+        {{ k === "+" ? "Enter" : k === "-" ? "⌫" : k }}
+      </button>
     </div>
   </div>
 </template>
@@ -6360,7 +8253,8 @@ export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;
 export const FIRST_SEED = 7;
 
-// A small built-in list; a real game ships thousands of answers and allowed guesses.
+// A small built-in list; a real game ships
+// thousands of answers and allowed guesses.
 export const WORDS = (
   "abide apple bread brick chair cloud crane dream eagle eerie field flame geese ghost globe grape heart " +
   "hello house juice knife lemon light lolly lucky magic mouse night ocean piano plant queen river robot " +
@@ -6401,7 +8295,14 @@ export function score(guess, answer) {
 
 export function createGame(seed) {
   const answer = WORDS[Math.floor(mulberry32(seed)() * WORDS.length)];
-  return { seed, answer, guesses: [], current: "", status: "playing", message: "" };
+  return {
+    seed,
+    answer,
+    guesses: [],
+    current: "",
+    status: "playing",
+    message: "",
+  };
 }
 
 export function typeLetter(g, ch) {
@@ -6416,14 +8317,30 @@ export function backspace(g) {
 
 export function submit(g) {
   if (g.status !== "playing") return g;
-  if (g.current.length < WORD_LENGTH) return { ...g, message: "Not enough letters" };
+  if (g.current.length < WORD_LENGTH)
+    return { ...g, message: "Not enough letters" };
   if (!WORDS.includes(g.current)) return { ...g, message: "Not in word list" };
-  const guesses = [...g.guesses, { word: g.current, marks: score(g.current, g.answer) }];
+  const guesses = [
+    ...g.guesses,
+    { word: g.current, marks: score(g.current, g.answer) },
+  ];
   if (g.current === g.answer) {
-    return { ...g, guesses, current: "", status: "won", message: "Solved in " + guesses.length + "/" + MAX_GUESSES };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "won",
+      message: "Solved in " + guesses.length + "/" + MAX_GUESSES,
+    };
   }
   if (guesses.length === MAX_GUESSES) {
-    return { ...g, guesses, current: "", status: "lost", message: "The word was " + g.answer.toUpperCase() };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "lost",
+      message: "The word was " + g.answer.toUpperCase(),
+    };
   }
   return { ...g, guesses, current: "", message: "" };
 }
@@ -6441,15 +8358,26 @@ export function letterStates(guesses) {
 
 // Rows for rendering: submitted guesses, the row being typed, then empty rows.
 export function boardRows(g) {
-  const rows = g.guesses.map(({ word, marks }) => [...word].map((ch, i) => ({ ch, state: marks[i] })));
+  const rows = g.guesses.map(({ word, marks }) =>
+    [...word].map((ch, i) => ({ ch, state: marks[i] })),
+  );
   if (rows.length < MAX_GUESSES && g.status === "playing")
-    rows.push([...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({ ch: ch.trim(), state: ch.trim() ? "typed" : "empty" })));
-  while (rows.length < MAX_GUESSES) rows.push(Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })));
+    rows.push(
+      [...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({
+        ch: ch.trim(),
+        state: ch.trim() ? "typed" : "empty",
+      })),
+    );
+  while (rows.length < MAX_GUESSES)
+    rows.push(
+      Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })),
+    );
   return rows;
 }
 
 // One entry point for both the physical and the on-screen keyboard.
-export const isGameKey = (key) => key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
+export const isGameKey = (key) =>
+  key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
 export function applyKey(g, key) {
   if (key === "Enter") return submit(g);
   if (key === "Backspace") return backspace(g);
@@ -6457,7 +8385,8 @@ export function applyKey(g, key) {
   return g;
 }
 
-export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"]; // + is Enter, - is Backspace
+// + is Enter, - is Backspace
+export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"];
 `,
         },
       },
@@ -6527,7 +8456,8 @@ export class AppComponent {
   @HostListener("window:keydown", ["$event"])
   onWindowKey(e: KeyboardEvent) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.target instanceof HTMLButtonElement && e.key === "Enter") return;
+    if (e.target instanceof HTMLButtonElement && e.key === "Enter")
+      return;
     if (isGameKey(e.key)) {
       e.preventDefault();
       this.onKey(e.key);
@@ -6670,7 +8600,14 @@ Invalid guesses cost no try, the sixth letter is ignored, the duplicate cases sc
           "/src/app/app.component.ts": `import { Component, HostListener, computed, signal } from "@angular/core";
 import { WordleBoardComponent } from "./wordle-board.component";
 import { WordleKeyboardComponent } from "./wordle-keyboard.component";
-import { FIRST_SEED, applyKey, boardRows, createGame, isGameKey, letterStates } from "./wordle";
+import {
+  FIRST_SEED,
+  applyKey,
+  boardRows,
+  createGame,
+  isGameKey,
+  letterStates,
+} from "./wordle";
 
 @Component({
   selector: "app-root",
@@ -6684,18 +8621,24 @@ import { FIRST_SEED, applyKey, boardRows, createGame, isGameKey, letterStates } 
         <button type="button" (click)="newGame()">New</button>
       </div>
       <app-wordle-board [rows]="rows()" [guesses]="game().guesses" />
-      <p class="message" role="status" data-testid="message">{{ game().message }}</p>
+      <p
+        class="message"
+        role="status"
+        data-testid="message"
+      >{{ game().message }}</p>
       <app-wordle-keyboard [states]="states()" (key)="onKey($event)" />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; color: #e8e8ea; }
     .wordle { max-width: 360px; margin: 20px auto; padding: 0 8px; text-align: center; }
     .wordle h1 { font-size: 1.3rem; margin: 0 0 4px; letter-spacing: 2px; }
     .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .top button { font: inherit; color: #e8e8ea; background: #2a2f3a; border: 1px solid #3b4252; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
     .message { min-height: 1.4em; margin: 6px 0; font-weight: 600; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly game = signal(createGame(FIRST_SEED));
@@ -6712,8 +8655,10 @@ export class AppComponent {
 
   @HostListener("window:keydown", ["$event"])
   onWindowKey(e: KeyboardEvent) {
-    if (e.ctrlKey || e.metaKey || e.altKey) return; // leave browser shortcuts alone
-    if (e.target instanceof HTMLButtonElement && e.key === "Enter") return; // the button click handles it
+    // leave browser shortcuts alone
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // the button click handles it
+    if (e.target instanceof HTMLButtonElement && e.key === "Enter") return;
     if (isGameKey(e.key)) {
       e.preventDefault();
       this.onKey(e.key);
@@ -6734,13 +8679,18 @@ import { Guess, Tile } from "./wordle";
              [attr.role]="r < guesses.length ? 'img' : null"
              [attr.aria-label]="r < guesses.length ? label(row, r) : null">
           @for (t of row; track i; let i = $index) {
-            <div [class]="'tile ' + t.state" [attr.data-state]="t.state" [attr.aria-hidden]="r < guesses.length || null">{{ t.ch }}</div>
+            <div
+              [class]="'tile ' + t.state"
+              [attr.data-state]="t.state"
+              [attr.aria-hidden]="r < guesses.length || null"
+            >{{ t.ch }}</div>
           }
         </div>
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .board { display: grid; gap: 5px; justify-content: center; margin-bottom: 10px; }
     .row { display: grid; grid-template-columns: repeat(5, 52px); gap: 5px; }
     .tile { height: 52px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; font-weight: 700;
@@ -6749,14 +8699,22 @@ import { Guess, Tile } from "./wordle";
     .tile.correct { background: #538d4e; border-color: #538d4e; }
     .tile.present { background: #b59f3b; border-color: #b59f3b; }
     .tile.absent { background: #3a3a3c; border-color: #3a3a3c; }
-  \`],
+  \`,
+  ],
 })
 export class WordleBoardComponent {
   @Input({ required: true }) rows: Tile[][] = [];
   @Input({ required: true }) guesses: Guess[] = [];
 
   label(row: Tile[], r: number) {
-    return "Guess " + (r + 1) + ": " + this.guesses[r].word + ", " + row.map((t) => t.ch + " " + t.state).join(", ");
+    return (
+      "Guess " +
+      (r + 1) +
+      ": " +
+      this.guesses[r].word +
+      ", " +
+      row.map((t) => t.ch + " " + t.state).join(", ")
+    );
   }
 }
 `,
@@ -6781,7 +8739,8 @@ import { KEY_ROWS } from "./wordle";
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .keys { display: grid; gap: 6px; }
     .keyrow { display: flex; gap: 4px; justify-content: center; }
     .key { flex: 1; max-width: 34px; height: 48px; border: 0; border-radius: 4px; background: #818384; font: inherit; font-weight: 700;
@@ -6789,7 +8748,8 @@ import { KEY_ROWS } from "./wordle";
     .key.wide { max-width: 56px; font-size: 0.7rem; }
     .key.correct { background: #538d4e; } .key.present { background: #b59f3b; } .key.absent { background: #3a3a3c; }
     .key:focus-visible { outline: 3px solid #f9a825; }
-  \`],
+  \`,
+  ],
 })
 export class WordleKeyboardComponent {
   @Input({ required: true }) states: Record<string, string> = {};
@@ -6806,14 +8766,25 @@ export const MAX_GUESSES = 6;
 export const FIRST_SEED = 7;
 
 export type Mark = "correct" | "present" | "absent";
-export interface Guess { word: string; marks: Mark[]; }
-export interface Game {
-  seed: number; answer: string; guesses: Guess[]; current: string;
-  status: "playing" | "won" | "lost"; message: string;
+export interface Guess {
+  word: string;
+  marks: Mark[];
 }
-export interface Tile { ch: string; state: string; }
+export interface Game {
+  seed: number;
+  answer: string;
+  guesses: Guess[];
+  current: string;
+  status: "playing" | "won" | "lost";
+  message: string;
+}
+export interface Tile {
+  ch: string;
+  state: string;
+}
 
-// A small built-in list; a real game ships thousands of answers and allowed guesses.
+// A small built-in list; a real game ships
+// thousands of answers and allowed guesses.
 export const WORDS: string[] = (
   "abide apple bread brick chair cloud crane dream eagle eerie field flame geese ghost globe grape heart " +
   "hello house juice knife lemon light lolly lucky magic mouse night ocean piano plant queen river robot " +
@@ -6854,7 +8825,14 @@ export function score(guess: string, answer: string): Mark[] {
 
 export function createGame(seed: number): Game {
   const answer = WORDS[Math.floor(mulberry32(seed)() * WORDS.length)];
-  return { seed, answer, guesses: [], current: "", status: "playing", message: "" };
+  return {
+    seed,
+    answer,
+    guesses: [],
+    current: "",
+    status: "playing",
+    message: "",
+  };
 }
 
 export function typeLetter(g: Game, ch: string): Game {
@@ -6869,14 +8847,30 @@ export function backspace(g: Game): Game {
 
 export function submit(g: Game): Game {
   if (g.status !== "playing") return g;
-  if (g.current.length < WORD_LENGTH) return { ...g, message: "Not enough letters" };
+  if (g.current.length < WORD_LENGTH)
+    return { ...g, message: "Not enough letters" };
   if (!WORDS.includes(g.current)) return { ...g, message: "Not in word list" };
-  const guesses: Guess[] = [...g.guesses, { word: g.current, marks: score(g.current, g.answer) }];
+  const guesses: Guess[] = [
+    ...g.guesses,
+    { word: g.current, marks: score(g.current, g.answer) },
+  ];
   if (g.current === g.answer) {
-    return { ...g, guesses, current: "", status: "won", message: "Solved in " + guesses.length + "/" + MAX_GUESSES };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "won",
+      message: "Solved in " + guesses.length + "/" + MAX_GUESSES,
+    };
   }
   if (guesses.length === MAX_GUESSES) {
-    return { ...g, guesses, current: "", status: "lost", message: "The word was " + g.answer.toUpperCase() };
+    return {
+      ...g,
+      guesses,
+      current: "",
+      status: "lost",
+      message: "The word was " + g.answer.toUpperCase(),
+    };
   }
   return { ...g, guesses, current: "", message: "" };
 }
@@ -6894,15 +8888,26 @@ export function letterStates(guesses: Guess[]): Record<string, Mark> {
 
 // Rows for rendering: submitted guesses, the row being typed, then empty rows.
 export function boardRows(g: Game): Tile[][] {
-  const rows: Tile[][] = g.guesses.map(({ word, marks }) => [...word].map((ch, i) => ({ ch, state: marks[i] })));
+  const rows: Tile[][] = g.guesses.map(({ word, marks }) =>
+    [...word].map((ch, i) => ({ ch, state: marks[i] })),
+  );
   if (rows.length < MAX_GUESSES && g.status === "playing")
-    rows.push([...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({ ch: ch.trim(), state: ch.trim() ? "typed" : "empty" })));
-  while (rows.length < MAX_GUESSES) rows.push(Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })));
+    rows.push(
+      [...g.current.padEnd(WORD_LENGTH, " ")].map((ch) => ({
+        ch: ch.trim(),
+        state: ch.trim() ? "typed" : "empty",
+      })),
+    );
+  while (rows.length < MAX_GUESSES)
+    rows.push(
+      Array.from({ length: WORD_LENGTH }, () => ({ ch: "", state: "empty" })),
+    );
   return rows;
 }
 
 // One entry point for both the physical and the on-screen keyboard.
-export const isGameKey = (key: string) => key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
+export const isGameKey = (key: string) =>
+  key === "Enter" || key === "Backspace" || /^[a-zA-Z]$/.test(key);
 export function applyKey(g: Game, key: string): Game {
   if (key === "Enter") return submit(g);
   if (key === "Backspace") return backspace(g);
@@ -6910,7 +8915,8 @@ export function applyKey(g: Game, key: string): Game {
   return g;
 }
 
-export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"]; // + is Enter, - is Backspace
+// + is Enter, - is Backspace
+export const KEY_ROWS = ["qwertyuiop", "asdfghjkl", "+zxcvbnm-"];
 `,
         },
       },

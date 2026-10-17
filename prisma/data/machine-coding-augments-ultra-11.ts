@@ -141,7 +141,14 @@ function entryFor(key) {
   let e = cache.get(key);
   if (!e) {
     e = {
-      state: { status: "idle", data: undefined, error: null, isFetching: false, failureCount: 0, updatedAt: 0 },
+      state: {
+        status: "idle",
+        data: undefined,
+        error: null,
+        isFetching: false,
+        failureCount: 0,
+        updatedAt: 0,
+      },
       promise: null, // the in-flight request, shared by every caller
       fetcher: null,
       options: DEFAULTS,
@@ -169,28 +176,48 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
   e.options = { ...DEFAULTS, ...options };
   const { staleTime, retry, retryDelay } = e.options;
 
-  if (e.promise) return e.promise;                       // 1. dedupe
+  if (e.promise) return e.promise; // 1. dedupe
 
-  const fresh = e.state.status === "success" && Date.now() - e.state.updatedAt < staleTime;
-  if (fresh && !force) return Promise.resolve(e.state.data); // 2. cache hit
+  const fresh =
+    e.state.status === "success" &&
+    Date.now() - e.state.updatedAt < staleTime;
+  // 2. cache hit
+  if (fresh && !force) return Promise.resolve(e.state.data);
 
-  setState(e, { status: e.state.data === undefined ? "loading" : e.state.status, isFetching: true, failureCount: 0 });
+  setState(e, {
+    status: e.state.data === undefined ? "loading" : e.state.status,
+    isFetching: true,
+    failureCount: 0,
+  });
   e.promise = (async () => {
     for (let attempt = 0; ; attempt++) {
       try {
         const data = await fetcher();
-        setState(e, { status: "success", data, error: null, isFetching: false, updatedAt: Date.now() });
+        setState(e, {
+          status: "success",
+          data,
+          error: null,
+          isFetching: false,
+          updatedAt: Date.now(),
+        });
         return data;
       } catch (err) {
         if (attempt >= retry) {
-          setState(e, { status: "error", error: err, isFetching: false, failureCount: attempt + 1 });
+          setState(e, {
+            status: "error",
+            error: err,
+            isFetching: false,
+            failureCount: attempt + 1,
+          });
           throw err;
         }
         setState(e, { failureCount: attempt + 1 });
-        await sleep(retryDelay * 2 ** attempt);          // 4. backoff
+        await sleep(retryDelay * 2 ** attempt); // 4. backoff
       }
     }
-  })().finally(() => { e.promise = null; });
+  })().finally(() => {
+    e.promise = null;
+  });
   return e.promise;
 }
 ~~~
@@ -218,11 +245,13 @@ export function useQuery(key, fetcher, options) {
   const state = useSyncExternalStore(sub, () => getState(key));
 
   useEffect(() => {
-    fetchQuery(key, fetcher, options).catch(() => {}); // errors live in state
+    // errors live in state
+    fetchQuery(key, fetcher, options).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  const refetch = () => fetchQuery(key, fetcher, options, true).catch(() => {});
+  const refetch = () =>
+    fetchQuery(key, fetcher, options, true).catch(() => {});
   return { ...state, refetch };
 }
 ~~~
@@ -244,12 +273,19 @@ In development, React 19 \`StrictMode\` mounts each component, runs its effects,
 ### Step 5: The consumer
 
 ~~~jsx
-const { status, data, error, isFetching, failureCount } = useQuery("user/" + id, () => fetchUser(id));
+const { status, data, error, isFetching, failureCount } = useQuery(
+  "user/" + id,
+  () => fetchUser(id),
+);
 let body;
 if (status === "loading" || status === "idle") {
-  body = failureCount > 0 ? "Retrying (failed " + failureCount + "x)..." : "Loading...";
+  body =
+    failureCount > 0
+      ? "Retrying (failed " + failureCount + "x)..."
+      : "Loading...";
 } else if (status === "error") {
-  body = "Error: " + error.message + " after " + failureCount + " attempts";
+  body =
+    "Error: " + error.message + " after " + failureCount + " attempts";
 } else {
   body = data.name + " (served #" + data.servedAs + ")";
 }
@@ -261,7 +297,7 @@ The fake API stamps each response with \`servedAs\`, the call number for that ke
 
 The driver read the call log and every card at fixed times, then clicked "Mount late card", "Invalidate user/1" and "Load broken user". Output from React 19.3.1 under \`StrictMode\`, unedited:
 
-\`\`\`
+\`\`\`text
 [react] t=0      Fetcher calls: user/1=1 user/2=1
 [react]          Header: Loading... | Sidebar: Loading... | Flaky: Loading...
 [react] t=80ms   Fetcher calls: user/1=1 user/2=1
@@ -394,9 +430,15 @@ import { invalidate } from "./src/queryClient";
 function CallLog() {
   // Re-render on every fetcher call; the string is the snapshot.
   const summary = useSyncExternalStore(subscribeCalls, () =>
-    Object.entries(getCalls()).map(([k, n]) => k + "=" + n).join(" ")
+    Object.entries(getCalls())
+      .map(([k, n]) => k + "=" + n)
+      .join(" "),
   );
-  return <p className="log" data-testid="calls">Fetcher calls: {summary || "none"}</p>;
+  return (
+    <p className="log" data-testid="calls">
+      Fetcher calls: {summary || "none"}
+    </p>
+  );
 }
 
 export default function App() {
@@ -418,7 +460,10 @@ export default function App() {
         <button data-testid="btn-late" onClick={() => setShowThird((v) => !v)}>
           {showThird ? "Unmount" : "Mount"} late card
         </button>
-        <button data-testid="btn-invalidate" onClick={() => invalidate("user/1")}>
+        <button
+          data-testid="btn-invalidate"
+          onClick={() => invalidate("user/1")}
+        >
           Invalidate user/1
         </button>
         <button data-testid="btn-broken" onClick={() => setShowBroken(true)}>
@@ -433,11 +478,17 @@ export default function App() {
 import { fetchUser } from "./fakeApi";
 
 export default function UserCard({ label, id, testId }) {
-  const { status, data, error, isFetching, failureCount } = useQuery("user/" + id, () => fetchUser(id));
+  const { status, data, error, isFetching, failureCount } = useQuery(
+    "user/" + id,
+    () => fetchUser(id),
+  );
 
   let body;
   if (status === "loading" || status === "idle") {
-    body = failureCount > 0 ? "Retrying (failed " + failureCount + "x)..." : "Loading...";
+    body =
+      failureCount > 0
+        ? "Retrying (failed " + failureCount + "x)..."
+        : "Loading...";
   } else if (status === "error") {
     body = "Error: " + error.message + " after " + failureCount + " attempts";
   } else {
@@ -445,10 +496,16 @@ export default function UserCard({ label, id, testId }) {
   }
 
   return (
-    <div className={"card " + status} data-testid={testId} aria-busy={isFetching}>
+    <div
+      className={"card " + status}
+      data-testid={testId}
+      aria-busy={isFetching}
+    >
       <span className="label">{label}</span>
       <span role="status">{body}</span>
-      {isFetching && status === "success" && <span className="badge">refreshing</span>}
+      {isFetching && status === "success" && (
+        <span className="badge">refreshing</span>
+      )}
     </div>
   );
 }
@@ -493,7 +550,14 @@ function entryFor(key) {
   let e = cache.get(key);
   if (!e) {
     e = {
-      state: { status: "idle", data: undefined, error: null, isFetching: false, failureCount: 0, updatedAt: 0 },
+      state: {
+        status: "idle",
+        data: undefined,
+        error: null,
+        isFetching: false,
+        failureCount: 0,
+        updatedAt: 0,
+      },
       promise: null, // the in-flight request, shared by every caller
       fetcher: null,
       options: DEFAULTS,
@@ -530,7 +594,8 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
   if (e.promise) return e.promise;
 
   // 2. Cache: fresh data is returned without calling the fetcher.
-  const fresh = e.state.status === "success" && Date.now() - e.state.updatedAt < staleTime;
+  const fresh =
+    e.state.status === "success" && Date.now() - e.state.updatedAt < staleTime;
   if (fresh && !force) return Promise.resolve(e.state.data);
 
   // 3. Fetch, keeping old data on screen (stale-while-revalidate).
@@ -543,15 +608,27 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
     for (let attempt = 0; ; attempt++) {
       try {
         const data = await fetcher();
-        setState(e, { status: "success", data, error: null, isFetching: false, updatedAt: Date.now() });
+        setState(e, {
+          status: "success",
+          data,
+          error: null,
+          isFetching: false,
+          updatedAt: Date.now(),
+        });
         return data;
       } catch (err) {
         if (attempt >= retry) {
-          setState(e, { status: "error", error: err, isFetching: false, failureCount: attempt + 1 });
+          setState(e, {
+            status: "error",
+            error: err,
+            isFetching: false,
+            failureCount: attempt + 1,
+          });
           throw err;
         }
         setState(e, { failureCount: attempt + 1 });
-        await sleep(retryDelay * 2 ** attempt); // 4. exponential backoff: 100, 200, 400 ms
+        // 4. exponential backoff: 100, 200, 400 ms
+        await sleep(retryDelay * 2 ** attempt);
       }
     }
   })().finally(() => {
@@ -564,7 +641,8 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
 export function invalidate(key) {
   const e = entryFor(key);
   e.state = { ...e.state, updatedAt: 0 };
-  if (e.listeners.size && e.fetcher) fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
+  if (e.listeners.size && e.fetcher)
+    fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
 }
 `,
           "/src/useQuery.js": `import { useCallback, useEffect, useSyncExternalStore } from "react";
@@ -588,19 +666,77 @@ export function useQuery(key, fetcher, options) {
   return { ...state, refetch };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 640px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.3rem; }
-.log { font-family: ui-monospace, monospace; font-size: 0.85rem; color: #9ecbff; }
-.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-.card { background: #1a1d24; border: 1px solid #2c313c; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-.card.error { border-color: #e5534b; }
-.card.success { border-color: #3fb950; }
-.label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #8b949e; }
-.badge { align-self: flex-start; font-size: 0.7rem; background: #263247; color: #9ecbff; border-radius: 999px; padding: 2px 8px; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-button { background: #238636; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-button:focus-visible { outline: 2px solid #9ecbff; outline-offset: 2px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.log {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: #9ecbff;
+}
+.grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+.card {
+  background: #1a1d24;
+  border: 1px solid #2c313c;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.card.error {
+  border-color: #e5534b;
+}
+.card.success {
+  border-color: #3fb950;
+}
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b949e;
+}
+.badge {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  background: #263247;
+  color: #9ecbff;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid #9ecbff;
+  outline-offset: 2px;
+}
 `,
         },
       },
@@ -641,7 +777,14 @@ export function entryFor(key) {
   let e = cache.get(key);
   if (!e) {
     e = {
-      state: shallowRef({ status: "idle", data: undefined, error: null, isFetching: false, failureCount: 0, updatedAt: 0 }),
+      state: shallowRef({
+        status: "idle",
+        data: undefined,
+        error: null,
+        isFetching: false,
+        failureCount: 0,
+        updatedAt: 0,
+      }),
       promise: null,
       fetcher: null,
       options: DEFAULTS,
@@ -651,7 +794,8 @@ export function entryFor(key) {
   }
   return e;
 }
-const setState = (e, patch) => (e.state.value = { ...e.state.value, ...patch });
+const setState = (e, patch) =>
+  (e.state.value = { ...e.state.value, ...patch });
 ~~~
 
 Vue's reactivity does the subscription work that React needs \`useSyncExternalStore\` for: any component whose render read \`e.state.value\` re-renders when it is reassigned. There is no listener \`Set\` to manage.
@@ -659,20 +803,31 @@ Vue's reactivity does the subscription work that React needs \`useSyncExternalSt
 ### Step 2: fetchQuery — the four rules
 
 ~~~js
-if (e.promise) return e.promise;                              // 1. dedupe
-const fresh = s.status === "success" && Date.now() - s.updatedAt < staleTime;
-if (fresh && !force) return Promise.resolve(s.data);         // 2. cache hit
-setState(e, { status: s.data === undefined ? "loading" : s.status, isFetching: true, failureCount: 0 });
-e.promise = (async () => {                                   // 3. fetch
+if (e.promise) return e.promise; // 1. dedupe
+const fresh =
+  s.status === "success" && Date.now() - s.updatedAt < staleTime;
+if (fresh && !force) return Promise.resolve(s.data); // 2. cache hit
+setState(e, {
+  status: s.data === undefined ? "loading" : s.status,
+  isFetching: true,
+  failureCount: 0,
+});
+e.promise = (async () => {
+  // 3. fetch
   for (let attempt = 0; ; attempt++) {
-    try { /* await fetcher(), set success */ }
-    catch (err) {
-      if (attempt >= retry) { /* set error */ throw err; }
+    try {
+      /* await fetcher(), set success */
+    } catch (err) {
+      if (attempt >= retry) {
+        /* set error */ throw err;
+      }
       setState(e, { failureCount: attempt + 1 });
-      await sleep(retryDelay * 2 ** attempt);                // 4. backoff
+      await sleep(retryDelay * 2 ** attempt); // 4. backoff
     }
   }
-})().finally(() => { e.promise = null; });
+})().finally(() => {
+  e.promise = null;
+});
 ~~~
 
 📌 **Interview term: Request deduplication** — concurrent requests for the same key share one in-flight promise, so the fetcher runs once.
@@ -696,11 +851,20 @@ export function useQuery(key, fetcher, options) {
       onCleanup(() => e.observers--); // key change or unmount
       fetchQuery(k, () => fetcher(k), options).catch(() => {});
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   const state = computed(() => entry.value.state.value);
-  return { state, refetch: () => fetchQuery(toValue(key), () => fetcher(toValue(key)), options, true).catch(() => {}) };
+  return {
+    state,
+    refetch: () =>
+      fetchQuery(
+        toValue(key),
+        () => fetcher(toValue(key)),
+        options,
+        true,
+      ).catch(() => {}),
+  };
 }
 ~~~
 
@@ -713,8 +877,13 @@ export function useQuery(key, fetcher, options) {
 ~~~vue
 <script setup>
 const props = defineProps({ label: String, id: Number });
-const { state } = useQuery(() => "user/" + props.id, () => fetchUser(props.id));
-const body = computed(() => { /* "Loading...", "Retrying (failed 2x)...", an error or the name */ });
+const { state } = useQuery(
+  () => "user/" + props.id,
+  () => fetchUser(props.id),
+);
+const body = computed(() => {
+  /* "Loading...", "Retrying (failed 2x)...", an error or the name */
+});
 </script>
 ~~~
 
@@ -724,7 +893,7 @@ const body = computed(() => { /* "Loading...", "Retrying (failed 2x)...", an err
 
 The shared driver read the call log and the cards at fixed times, then clicked "Mount late card", "Invalidate user/1" and "Load broken user". Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] t=0      Fetcher calls: user/1=1 user/2=1
 [vue]          Header: Loading... | Sidebar: Loading... | Flaky: Loading...
 [vue] t=80ms   Fetcher calls: user/1=1 user/2=1
@@ -839,42 +1008,121 @@ import { invalidate } from "./queryClient";
 
 const showLate = ref(false);
 const showBroken = ref(false);
-const summary = computed(() => Object.entries(calls).map(([k, n]) => k + "=" + n).join(" "));
+const summary = computed(() =>
+  Object.entries(calls)
+    .map(([k, n]) => k + "=" + n)
+    .join(" "),
+);
 </script>
 
 <template>
   <main class="app">
     <h1>useQuery demo</h1>
-    <p class="log" data-testid="calls">Fetcher calls: {{ summary || "none" }}</p>
+    <p
+      class="log"
+      data-testid="calls"
+    >Fetcher calls: {{ summary || "none" }}</p>
     <section class="grid">
       <UserCard label="Header" :id="1" data-testid="card-header" />
       <UserCard label="Sidebar" :id="1" data-testid="card-sidebar" />
       <UserCard label="Flaky" :id="2" data-testid="card-flaky" />
       <UserCard v-if="showLate" label="Late" :id="1" data-testid="card-late" />
-      <UserCard v-if="showBroken" label="Broken" :id="3" data-testid="card-broken" />
+      <UserCard
+        v-if="showBroken"
+        label="Broken"
+        :id="3"
+        data-testid="card-broken"
+      />
     </section>
     <div class="actions">
-      <button data-testid="btn-late" @click="showLate = !showLate">{{ showLate ? "Unmount" : "Mount" }} late card</button>
-      <button data-testid="btn-invalidate" @click="invalidate('user/1')">Invalidate user/1</button>
-      <button data-testid="btn-broken" @click="showBroken = true">Load broken user</button>
+      <button
+        data-testid="btn-late"
+        @click="showLate = !showLate"
+      >{{ showLate ? "Unmount" : "Mount" }} late card</button>
+      <button
+        data-testid="btn-invalidate"
+        @click="invalidate('user/1')"
+      >Invalidate user/1</button>
+      <button
+        data-testid="btn-broken"
+        @click="showBroken = true"
+      >Load broken user</button>
     </div>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 640px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.3rem; }
-.log { font-family: ui-monospace, monospace; font-size: 0.85rem; color: #9ecbff; }
-.grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-.card { background: #1a1d24; border: 1px solid #2c313c; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
-.card.error { border-color: #e5534b; }
-.card.success { border-color: #3fb950; }
-.label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #8b949e; }
-.badge { align-self: flex-start; font-size: 0.7rem; background: #263247; color: #9ecbff; border-radius: 999px; padding: 2px 8px; }
-.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-button { background: #238636; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-button:focus-visible { outline: 2px solid #9ecbff; outline-offset: 2px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.log {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  color: #9ecbff;
+}
+.grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+.card {
+  background: #1a1d24;
+  border: 1px solid #2c313c;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.card.error {
+  border-color: #e5534b;
+}
+.card.success {
+  border-color: #3fb950;
+}
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8b949e;
+}
+.badge {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  background: #263247;
+  color: #9ecbff;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 2px solid #9ecbff;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/UserCard.vue": `<script setup>
@@ -883,13 +1131,21 @@ import { useQuery } from "../useQuery";
 import { fetchUser } from "../fakeApi";
 
 const props = defineProps({ label: String, id: Number });
-const { state } = useQuery(() => "user/" + props.id, () => fetchUser(props.id));
+const { state } = useQuery(
+  () => "user/" + props.id,
+  () => fetchUser(props.id),
+);
 
 const body = computed(() => {
   const s = state.value;
   if (s.status === "loading" || s.status === "idle")
-    return s.failureCount > 0 ? "Retrying (failed " + s.failureCount + "x)..." : "Loading...";
-  if (s.status === "error") return "Error: " + s.error.message + " after " + s.failureCount + " attempts";
+    return s.failureCount > 0
+      ? "Retrying (failed " + s.failureCount + "x)..."
+      : "Loading...";
+  if (s.status === "error")
+    return (
+      "Error: " + s.error.message + " after " + s.failureCount + " attempts"
+    );
   return s.data.name + " (served #" + s.data.servedAs + ")";
 });
 </script>
@@ -898,7 +1154,9 @@ const body = computed(() => {
   <div :class="['card', state.status]" :aria-busy="state.isFetching">
     <span class="label">{{ label }}</span>
     <span role="status">{{ body }}</span>
-    <span v-if="state.isFetching && state.status === 'success'" class="badge">refreshing</span>
+    <span v-if="state.isFetching && state.status === 'success'" class="badge"
+      >refreshing</span
+    >
   </div>
 </template>
 `,
@@ -939,7 +1197,14 @@ export function entryFor(key) {
   let e = cache.get(key);
   if (!e) {
     e = {
-      state: shallowRef({ status: "idle", data: undefined, error: null, isFetching: false, failureCount: 0, updatedAt: 0 }),
+      state: shallowRef({
+        status: "idle",
+        data: undefined,
+        error: null,
+        isFetching: false,
+        failureCount: 0,
+        updatedAt: 0,
+      }),
       promise: null, // the in-flight request, shared by every caller
       fetcher: null,
       options: DEFAULTS,
@@ -965,16 +1230,31 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
   if (fresh && !force) return Promise.resolve(s.data); // 2. cache hit
 
   // 3. fetch, keeping old data visible (stale-while-revalidate)
-  setState(e, { status: s.data === undefined ? "loading" : s.status, isFetching: true, failureCount: 0 });
+  setState(e, {
+    status: s.data === undefined ? "loading" : s.status,
+    isFetching: true,
+    failureCount: 0,
+  });
   e.promise = (async () => {
     for (let attempt = 0; ; attempt++) {
       try {
         const data = await fetcher();
-        setState(e, { status: "success", data, error: null, isFetching: false, updatedAt: Date.now() });
+        setState(e, {
+          status: "success",
+          data,
+          error: null,
+          isFetching: false,
+          updatedAt: Date.now(),
+        });
         return data;
       } catch (err) {
         if (attempt >= retry) {
-          setState(e, { status: "error", error: err, isFetching: false, failureCount: attempt + 1 });
+          setState(e, {
+            status: "error",
+            error: err,
+            isFetching: false,
+            failureCount: attempt + 1,
+          });
           throw err;
         }
         setState(e, { failureCount: attempt + 1 });
@@ -990,7 +1270,8 @@ export function fetchQuery(key, fetcher, options = {}, force = false) {
 export function invalidate(key) {
   const e = entryFor(key);
   setState(e, { updatedAt: 0 });
-  if (e.observers > 0 && e.fetcher) fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
+  if (e.observers > 0 && e.fetcher)
+    fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
 }
 `,
           "/src/useQuery.js": `import { computed, shallowRef, toValue, watch } from "vue";
@@ -1008,13 +1289,17 @@ export function useQuery(key, fetcher, options) {
       entry.value = e;
       e.observers++;
       onCleanup(() => e.observers--); // runs on key change and on unmount
-      fetchQuery(k, () => fetcher(k), options).catch(() => {}); // errors live in state
+      // errors live in state
+      fetchQuery(k, () => fetcher(k), options).catch(() => {});
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   const state = computed(() => entry.value.state.value);
-  const refetch = () => fetchQuery(toValue(key), () => fetcher(toValue(key)), options, true).catch(() => {});
+  const refetch = () =>
+    fetchQuery(toValue(key), () => fetcher(toValue(key)), options, true).catch(
+      () => {},
+    );
   return { state, refetch };
 }
 `,
@@ -1055,7 +1340,8 @@ The contract matches the React and Vue versions: a query exposes \`status\`, \`d
 ~~~ts
 interface Entry {
   state: WritableSignal<QueryState<any>>;
-  promise: Promise<any> | null; // the in-flight request, shared by every caller
+  // the in-flight request, shared by every caller
+  promise: Promise<any> | null;
   fetcher: (() => Promise<any>) | null;
   options: Required<QueryOptions>;
   observers: number;
@@ -1064,30 +1350,49 @@ interface Entry {
 @Injectable({ providedIn: "root" })
 export class QueryClient {
   private cache = new Map<string, Entry>();
-  // entryFor(key) creates { state: signal({ status: "idle", ... }), promise: null, ... } on first use
+  // entryFor(key) creates { state: signal({ status:
+  // "idle", ... }), promise: null, ... } on first use
 }
 ~~~
 
 ### Step 2: fetchQuery — the four rules
 
 ~~~ts
-if (e.promise) return e.promise;                                      // 1. dedupe
-const fresh = s.status === "success" && Date.now() - s.updatedAt < staleTime;
-if (fresh && !force) return Promise.resolve(s.data);                 // 2. cache hit
-e.state.update((p) => ({ ...p, status: p.data === undefined ? "loading" : p.status, isFetching: true, failureCount: 0 }));
-e.promise = (async () => {                                           // 3. fetch
+if (e.promise) return e.promise; // 1. dedupe
+const fresh =
+  s.status === "success" && Date.now() - s.updatedAt < staleTime;
+if (fresh && !force) return Promise.resolve(s.data); // 2. cache hit
+e.state.update((p) => ({
+  ...p,
+  status: p.data === undefined ? "loading" : p.status,
+  isFetching: true,
+  failureCount: 0,
+}));
+e.promise = (async () => {
+  // 3. fetch
   for (let attempt = 0; ; attempt++) {
     try {
       const data = await fetcher();
-      e.state.update((p) => ({ ...p, status: "success", data, error: null, isFetching: false, updatedAt: Date.now() }));
+      e.state.update((p) => ({
+        ...p,
+        status: "success",
+        data,
+        error: null,
+        isFetching: false,
+        updatedAt: Date.now(),
+      }));
       return data;
     } catch (err) {
-      if (attempt >= retry) { /* status "error" */ throw err; }
+      if (attempt >= retry) {
+        /* status "error" */ throw err;
+      }
       e.state.update((p) => ({ ...p, failureCount: attempt + 1 }));
-      await sleep(retryDelay * 2 ** attempt);                        // 4. backoff
+      await sleep(retryDelay * 2 ** attempt); // 4. backoff
     }
   }
-})().finally(() => { e.promise = null; });
+})().finally(() => {
+  e.promise = null;
+});
 ~~~
 
 📌 **Interview term: Request deduplication** — callers of the same key share one in-flight promise, so the fetcher runs once however many components ask.
@@ -1099,14 +1404,21 @@ The update functions always return a new object. A signal compares with \`Object
 ### Step 3: query() ties a component to an entry
 
 ~~~ts
-query<T>(key: string, fetcher: () => Promise<T>, destroyRef: DestroyRef, options: QueryOptions = {}) {
+query<T>(
+  key: string,
+  fetcher: () => Promise<T>,
+  destroyRef: DestroyRef,
+  options: QueryOptions = {},
+) {
   const e = this.entryFor(key);
   e.observers++;
   destroyRef.onDestroy(() => e.observers--);
-  this.fetchQuery(key, fetcher, options).catch(() => {}); // errors live in state
+  // errors live in state
+  this.fetchQuery(key, fetcher, options).catch(() => {});
   return {
     state: e.state.asReadonly() as Signal<QueryState<T>>,
-    refetch: () => this.fetchQuery(key, fetcher, options, true).catch(() => {}),
+    refetch: () =>
+      this.fetchQuery(key, fetcher, options, true).catch(() => {}),
   };
 }
 ~~~
@@ -1125,11 +1437,17 @@ export class UserCardComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   state!: Signal<QueryState<User>>;
 
-  readonly body = computed(() => { /* "Loading...", "Retrying (failed 2x)...", an error or the name */ });
+  readonly body = computed(() => {
+    /* "Loading...", "Retrying (failed 2x)...", an error or the name */
+  });
 
   ngOnInit() {
     const id = this.userId;
-    this.state = this.client.query("user/" + id, () => fetchUser(id), this.destroyRef).state;
+    this.state = this.client.query(
+      "user/" + id,
+      () => fetchUser(id),
+      this.destroyRef,
+    ).state;
   }
 }
 ~~~
@@ -1145,7 +1463,7 @@ The template reads \`state()\` and \`body()\`; because both are signals, the zon
 
 The same driver as the React and Vue versions read the call log and the cards, then clicked "Mount late card", "Invalidate user/1" and "Load broken user". The \`angular:playground\` (JIT) run printed identical lines; this is the \`angular:app\` (AOT, strict templates) run:
 
-\`\`\`
+\`\`\`text
 [angular:app] t=0      Fetcher calls: user/1=1 user/2=1
 [angular:app]          Header: Loading... | Sidebar: Loading... | Flaky: Loading...
 [angular:app] t=80ms   Fetcher calls: user/1=1 user/2=1
@@ -1263,26 +1581,47 @@ import { calls } from "./fake-api";
   template: \`
     <main class="app">
       <h1>useQuery demo</h1>
-      <p class="log" data-testid="calls">Fetcher calls: {{ summary() || "none" }}</p>
+      <p
+        class="log"
+        data-testid="calls"
+      >Fetcher calls: {{ summary() || "none" }}</p>
       <section class="grid">
         <app-user-card label="Header" [userId]="1" data-testid="card-header" />
-        <app-user-card label="Sidebar" [userId]="1" data-testid="card-sidebar" />
+        <app-user-card
+          label="Sidebar"
+          [userId]="1"
+          data-testid="card-sidebar"
+        />
         <app-user-card label="Flaky" [userId]="2" data-testid="card-flaky" />
         @if (showLate()) {
           <app-user-card label="Late" [userId]="1" data-testid="card-late" />
         }
         @if (showBroken()) {
-          <app-user-card label="Broken" [userId]="3" data-testid="card-broken" />
+          <app-user-card
+            label="Broken"
+            [userId]="3"
+            data-testid="card-broken"
+          />
         }
       </section>
       <div class="actions">
-        <button data-testid="btn-late" (click)="showLate.set(!showLate())">{{ showLate() ? "Unmount" : "Mount" }} late card</button>
-        <button data-testid="btn-invalidate" (click)="client.invalidate('user/1')">Invalidate user/1</button>
-        <button data-testid="btn-broken" (click)="showBroken.set(true)">Load broken user</button>
+        <button
+          data-testid="btn-late"
+          (click)="showLate.set(!showLate())"
+        >{{ showLate() ? "Unmount" : "Mount" }} late card</button>
+        <button
+          data-testid="btn-invalidate"
+          (click)="client.invalidate('user/1')"
+        >Invalidate user/1</button>
+        <button
+          data-testid="btn-broken"
+          (click)="showBroken.set(true)"
+        >Load broken user</button>
       </div>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; min-height: 100vh; }
     .app { max-width: 640px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.3rem; }
@@ -1296,13 +1635,18 @@ import { calls } from "./fake-api";
     .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     button { background: #238636; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
     button:focus-visible { outline: 2px solid #9ecbff; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly client = inject(QueryClient);
   readonly showLate = signal(false);
   readonly showBroken = signal(false);
-  readonly summary = computed(() => Object.entries(calls()).map(([k, n]) => k + "=" + n).join(" "));
+  readonly summary = computed(() =>
+    Object.entries(calls())
+      .map(([k, n]) => k + "=" + n)
+      .join(" "),
+  );
 }
 `,
           "/src/app/fake-api.ts": `// A simulated server. Nothing here touches the network: every "request" is a
@@ -1310,9 +1654,17 @@ export class AppComponent {
 // a signal so the UI (and the test driver) can prove caching, dedupe and retry.
 import { signal } from "@angular/core";
 
-export interface User { id: number; name: string; servedAs: number; }
+export interface User {
+  id: number;
+  name: string;
+  servedAs: number;
+}
 
-const NAMES: Record<number, string> = { 1: "Ada Lovelace", 2: "Grace Hopper", 3: "Alan Turing" };
+const NAMES: Record<number, string> = {
+  1: "Ada Lovelace",
+  2: "Grace Hopper",
+  3: "Alan Turing",
+};
 const failuresLeft: Record<number, number> = { 2: 2 }; // user 2 fails twice
 export const calls = signal<Record<string, number>>({});
 
@@ -1332,7 +1684,13 @@ export function fetchUser(id: number): Promise<User> {
   });
 }
 `,
-          "/src/app/query-client.ts": `import { DestroyRef, Injectable, Signal, WritableSignal, signal } from "@angular/core";
+          "/src/app/query-client.ts": `import {
+  DestroyRef,
+  Injectable,
+  Signal,
+  WritableSignal,
+  signal,
+} from "@angular/core";
 
 export interface QueryState<T> {
   status: "idle" | "loading" | "success" | "error";
@@ -1342,7 +1700,11 @@ export interface QueryState<T> {
   failureCount: number;
   updatedAt: number;
 }
-export interface QueryOptions { staleTime?: number; retry?: number; retryDelay?: number; }
+export interface QueryOptions {
+  staleTime?: number;
+  retry?: number;
+  retryDelay?: number;
+}
 
 interface Entry {
   state: WritableSignal<QueryState<any>>;
@@ -1352,7 +1714,11 @@ interface Entry {
   observers: number;
 }
 
-const DEFAULTS: Required<QueryOptions> = { staleTime: 5000, retry: 2, retryDelay: 100 };
+const DEFAULTS: Required<QueryOptions> = {
+  staleTime: 5000,
+  retry: 2,
+  retryDelay: 100,
+};
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // One instance for the whole app (providedIn root), so every component that
@@ -1365,7 +1731,14 @@ export class QueryClient {
     let e = this.cache.get(key);
     if (!e) {
       e = {
-        state: signal<QueryState<any>>({ status: "idle", data: undefined, error: null, isFetching: false, failureCount: 0, updatedAt: 0 }),
+        state: signal<QueryState<any>>({
+          status: "idle",
+          data: undefined,
+          error: null,
+          isFetching: false,
+          failureCount: 0,
+          updatedAt: 0,
+        }),
         promise: null,
         fetcher: null,
         options: DEFAULTS,
@@ -1377,18 +1750,30 @@ export class QueryClient {
   }
 
   /** Subscribe a component to a key. Pass the component DestroyRef so the observer count drops on destroy. */
-  query<T>(key: string, fetcher: () => Promise<T>, destroyRef: DestroyRef, options: QueryOptions = {}) {
+  query<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    destroyRef: DestroyRef,
+    options: QueryOptions = {},
+  ) {
     const e = this.entryFor(key);
     e.observers++;
     destroyRef.onDestroy(() => e.observers--);
-    this.fetchQuery(key, fetcher, options).catch(() => {}); // errors live in state
+    // errors live in state
+    this.fetchQuery(key, fetcher, options).catch(() => {});
     return {
       state: e.state.asReadonly() as Signal<QueryState<T>>,
-      refetch: () => this.fetchQuery(key, fetcher, options, true).catch(() => {}),
+      refetch: () =>
+        this.fetchQuery(key, fetcher, options, true).catch(() => {}),
     };
   }
 
-  fetchQuery<T>(key: string, fetcher: () => Promise<T>, options: QueryOptions = {}, force = false): Promise<T> {
+  fetchQuery<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    options: QueryOptions = {},
+    force = false,
+  ): Promise<T> {
     const e = this.entryFor(key);
     e.fetcher = fetcher;
     e.options = { ...DEFAULTS, ...options };
@@ -1396,24 +1781,44 @@ export class QueryClient {
     const s = e.state();
 
     if (e.promise) return e.promise; // 1. dedupe
-    const fresh = s.status === "success" && Date.now() - s.updatedAt < staleTime;
+    const fresh =
+      s.status === "success" && Date.now() - s.updatedAt < staleTime;
     if (fresh && !force) return Promise.resolve(s.data); // 2. cache hit
 
     // 3. fetch, keeping old data visible (stale-while-revalidate)
-    e.state.update((p) => ({ ...p, status: p.data === undefined ? "loading" : p.status, isFetching: true, failureCount: 0 }));
+    e.state.update((p) => ({
+      ...p,
+      status: p.data === undefined ? "loading" : p.status,
+      isFetching: true,
+      failureCount: 0,
+    }));
     e.promise = (async () => {
       for (let attempt = 0; ; attempt++) {
         try {
           const data = await fetcher();
-          e.state.update((p) => ({ ...p, status: "success", data, error: null, isFetching: false, updatedAt: Date.now() }));
+          e.state.update((p) => ({
+            ...p,
+            status: "success",
+            data,
+            error: null,
+            isFetching: false,
+            updatedAt: Date.now(),
+          }));
           return data;
         } catch (err) {
           if (attempt >= retry) {
-            e.state.update((p) => ({ ...p, status: "error", error: err as Error, isFetching: false, failureCount: attempt + 1 }));
+            e.state.update((p) => ({
+              ...p,
+              status: "error",
+              error: err as Error,
+              isFetching: false,
+              failureCount: attempt + 1,
+            }));
             throw err;
           }
           e.state.update((p) => ({ ...p, failureCount: attempt + 1 }));
-          await sleep(retryDelay * 2 ** attempt); // 4. backoff: 100, 200, 400 ms
+          // 4. backoff: 100, 200, 400 ms
+          await sleep(retryDelay * 2 ** attempt);
         }
       }
     })().finally(() => {
@@ -1425,18 +1830,30 @@ export class QueryClient {
   invalidate(key: string) {
     const e = this.entryFor(key);
     e.state.update((p) => ({ ...p, updatedAt: 0 }));
-    if (e.observers > 0 && e.fetcher) this.fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
+    if (e.observers > 0 && e.fetcher)
+      this.fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
   }
 }
 `,
-          "/src/app/user-card.component.ts": `import { Component, DestroyRef, Input, OnInit, Signal, computed, inject } from "@angular/core";
+          "/src/app/user-card.component.ts": `import {
+  Component,
+  DestroyRef,
+  Input,
+  OnInit,
+  Signal,
+  computed,
+  inject,
+} from "@angular/core";
 import { QueryClient, QueryState } from "./query-client";
 import { User, fetchUser } from "./fake-api";
 
 @Component({
   selector: "app-user-card",
   template: \`
-    <div [class]="'card ' + state().status" [attr.aria-busy]="state().isFetching">
+    <div
+      [class]="'card ' + state().status"
+      [attr.aria-busy]="state().isFetching"
+    >
       <span class="label">{{ label }}</span>
       <span role="status">{{ body() }}</span>
       @if (state().isFetching && state().status === "success") {
@@ -1456,15 +1873,24 @@ export class UserCardComponent implements OnInit {
   readonly body = computed(() => {
     const s = this.state();
     if (s.status === "loading" || s.status === "idle")
-      return s.failureCount > 0 ? "Retrying (failed " + s.failureCount + "x)..." : "Loading...";
-    if (s.status === "error") return "Error: " + s.error?.message + " after " + s.failureCount + " attempts";
+      return s.failureCount > 0
+        ? "Retrying (failed " + s.failureCount + "x)..."
+        : "Loading...";
+    if (s.status === "error")
+      return (
+        "Error: " + s.error?.message + " after " + s.failureCount + " attempts"
+      );
     return s.data!.name + " (served #" + s.data!.servedAs + ")";
   });
 
   // Inputs are set before ngOnInit, so this is the first place the id is known.
   ngOnInit() {
     const id = this.userId;
-    this.state = this.client.query("user/" + id, () => fetchUser(id), this.destroyRef).state;
+    this.state = this.client.query(
+      "user/" + id,
+      () => fetchUser(id),
+      this.destroyRef,
+    ).state;
   }
 }
 `,
@@ -1573,7 +1999,12 @@ Many messages flow into the map, but only the flush touches React state. In the 
 ~~~js
 const stream = (n, gap = 2) => {
   let left = n;
-  const tick = () => { if (left-- > 0) { next(); later(tick, gap); } };
+  const tick = () => {
+    if (left-- > 0) {
+      next();
+      later(tick, gap);
+    }
+  };
   later(tick, gap);
 };
 ~~~
@@ -1590,11 +2021,12 @@ const feed = createFeed((msg) => {
     setQuotes((q) => applyBatch(q, new Map([[msg.symbol, msg]])));
     return;
   }
-  pending.current.set(msg.symbol, msg);     // newer price overwrites older
-  if (scheduled.current) return;             // a flush is already booked
-  scheduled.current = modeRef.current === "raf"
-    ? { kind: "raf", id: requestAnimationFrame(flush) }
-    : { kind: "timeout", id: setTimeout(flush, 250) };
+  pending.current.set(msg.symbol, msg); // newer price overwrites older
+  if (scheduled.current) return; // a flush is already booked
+  scheduled.current =
+    modeRef.current === "raf"
+      ? { kind: "raf", id: requestAnimationFrame(flush) }
+      : { kind: "timeout", id: setTimeout(flush, 250) };
 });
 ~~~
 
@@ -1632,7 +2064,10 @@ Two subtle points. The batch is copied before the updater runs, because React ma
 useEffect(() => {
   // ... flush and feed as above
   feedRef.current = feed;
-  return () => { feed.stop(); cancelFlush(); };
+  return () => {
+    feed.stop();
+    cancelFlush();
+  };
 }, []);
 ~~~
 
@@ -1646,7 +2081,13 @@ const MemoRow = memo(Row);
 useEffect(() => {
   const s = stats.current;
   s.renders++;
-  hud.current.textContent = "Messages: " + s.messages + " | State updates: " + s.updates + " | Renders: " + s.renders;
+  hud.current.textContent =
+    "Messages: " +
+    s.messages +
+    " | State updates: " +
+    s.updates +
+    " | Renders: " +
+    s.renders;
 });
 ~~~
 
@@ -1658,7 +2099,7 @@ useEffect(() => {
 
 The driver selected each mode, reset prices, clicked "Stream 200 messages" and read the HUD and table 1.5 s later. One caveat for honesty: the verifier normally wraps waits in React's \`act()\`, which queues updates until the scope ends and would hide the real render count, so during the stream the driver switched the act environment off and waited on a plain timer. React then scheduled renders exactly as in a browser. Output, unedited:
 
-\`\`\`
+\`\`\`text
 [react] raf      Messages: 200 | State updates: 27 | Renders: 27
 [react]          AAPL 185.73 -4.27 ▼ | MSFT 417.25 -2.75 ▼ | NVDA 122.82 +2.82 ▲ | AMZN 187.94 +7.94 ▼ | TSLA 248.35 -1.65 ▼
 [react] interval Messages: 200 | State updates: 2 | Renders: 2
@@ -1792,7 +2233,13 @@ export default function App() {
   useEffect(() => {
     const s = stats.current;
     s.renders++;
-    hud.current.textContent = "Messages: " + s.messages + " | State updates: " + s.updates + " | Renders: " + s.renders;
+    hud.current.textContent =
+      "Messages: " +
+      s.messages +
+      " | State updates: " +
+      s.updates +
+      " | Renders: " +
+      s.renders;
   });
 
   return (
@@ -1801,14 +2248,22 @@ export default function App() {
       <div className="controls">
         <label>
           Batching{" "}
-          <select data-testid="mode" value={mode} onChange={(e) => setMode(e.target.value)}>
+          <select
+            data-testid="mode"
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
+          >
             <option value="raf">Per animation frame</option>
             <option value="interval">Every 250 ms</option>
             <option value="off">Off (every message)</option>
           </select>
         </label>
-        <button data-testid="stream" onClick={() => stream(200)}>Stream 200 messages</button>
-        <button data-testid="reset" onClick={reset}>Reset prices</button>
+        <button data-testid="stream" onClick={() => stream(200)}>
+          Stream 200 messages
+        </button>
+        <button data-testid="reset" onClick={reset}>
+          Reset prices
+        </button>
       </div>
       <p className="hud" data-testid="hud" ref={hud} aria-live="off" />
       <TickerTable quotes={quotes} />
@@ -1830,7 +2285,9 @@ function Row({ q }) {
       <td className={"num " + (change >= 0 ? "pos" : "neg")}>
         {(change >= 0 ? "+" : "") + fmt(change)}
       </td>
-      <td aria-label={dir === "up" ? "up" : dir === "down" ? "down" : "unchanged"}>
+      <td
+        aria-label={dir === "up" ? "up" : dir === "down" ? "down" : "unchanged"}
+      >
         {dir === "up" ? "▲" : dir === "down" ? "▼" : "•"}
       </td>
     </tr>
@@ -1844,10 +2301,17 @@ export default function TickerTable({ quotes }) {
     <table className="ticker">
       <caption className="sr-only">Live prices</caption>
       <thead>
-        <tr><th scope="col">Symbol</th><th scope="col">Price</th><th scope="col">Change</th><th scope="col">Move</th></tr>
+        <tr>
+          <th scope="col">Symbol</th>
+          <th scope="col">Price</th>
+          <th scope="col">Change</th>
+          <th scope="col">Move</th>
+        </tr>
       </thead>
       <tbody>
-        {Object.values(quotes).map((q) => <MemoRow key={q.symbol} q={q} />)}
+        {Object.values(quotes).map((q) => (
+          <MemoRow key={q.symbol} q={q} />
+        ))}
       </tbody>
     </table>
   );
@@ -1857,7 +2321,13 @@ export default function TickerTable({ quotes }) {
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
-export const SYMBOLS = [["AAPL", 190], ["MSFT", 420], ["NVDA", 120], ["AMZN", 180], ["TSLA", 250]];
+export const SYMBOLS = [
+  ["AAPL", 190],
+  ["MSFT", 420],
+  ["NVDA", 120],
+  ["AMZN", 180],
+  ["TSLA", 250],
+];
 
 function mulberry32(seed) {
   let a = seed;
@@ -1873,7 +2343,10 @@ export function createFeed(onMessage) {
   let rand, prices;
   const timers = new Set();
   const later = (fn, ms) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const reset = () => {
@@ -1882,16 +2355,25 @@ export function createFeed(onMessage) {
   };
   const next = () => {
     const [symbol] = SYMBOLS[Math.floor(rand() * SYMBOLS.length)];
-    prices[symbol] = Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
+    prices[symbol] =
+      Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
     onMessage({ symbol, price: prices[symbol] });
   };
   // n messages, one per task, \`gap\` ms apart
   const stream = (n, gap = 2) => {
     let left = n;
-    const tick = () => { if (left-- > 0) { next(); later(tick, gap); } };
+    const tick = () => {
+      if (left-- > 0) {
+        next();
+        later(tick, gap);
+      }
+    };
     later(tick, gap);
   };
-  const stop = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const stop = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   reset();
   return { stream, stop, reset };
 }
@@ -1900,7 +2382,12 @@ export function createFeed(onMessage) {
 import { SYMBOLS, createFeed } from "./feed";
 
 const initialQuotes = () =>
-  Object.fromEntries(SYMBOLS.map(([symbol, open]) => [symbol, { symbol, open, price: open, prev: open }]));
+  Object.fromEntries(
+    SYMBOLS.map(([symbol, open]) => [
+      symbol,
+      { symbol, open, price: open, prev: open },
+    ]),
+  );
 
 // Apply a batch of the LATEST message per symbol. \`prev\` is the price the
 // user last SAW, not the price of the message before, so the arrow is honest.
@@ -1918,12 +2405,15 @@ function applyBatch(quotes, batch) {
 export function useTicker(mode) {
   const [quotes, setQuotes] = useState(initialQuotes);
   const modeRef = useRef(mode);
-  const pending = useRef(new Map()); // symbol -> latest message, not rendered yet
+  // symbol -> latest message, not rendered yet
+  const pending = useRef(new Map());
   const scheduled = useRef(null);
   const stats = useRef({ messages: 0, updates: 0, renders: 0 });
   const feedRef = useRef(null);
 
-  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
 
   const cancelFlush = () => {
     const s = scheduled.current;
@@ -1949,13 +2439,17 @@ export function useTicker(mode) {
       }
       pending.current.set(msg.symbol, msg); // newer price overwrites older
       if (scheduled.current) return; // a flush is already booked
-      scheduled.current = modeRef.current === "raf"
-        ? { kind: "raf", id: requestAnimationFrame(flush) }
-        : { kind: "timeout", id: setTimeout(flush, 250) };
+      scheduled.current =
+        modeRef.current === "raf"
+          ? { kind: "raf", id: requestAnimationFrame(flush) }
+          : { kind: "timeout", id: setTimeout(flush, 250) };
     });
     feedRef.current = feed;
     // StrictMode mounts, unmounts and mounts again: stop timers and frames.
-    return () => { feed.stop(); cancelFlush(); };
+    return () => {
+      feed.stop();
+      cancelFlush();
+    };
   }, []);
 
   const stream = useCallback((n) => {
@@ -1974,22 +2468,81 @@ export function useTicker(mode) {
   return { quotes, stats, stream, reset };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0d1117; color: #e6edf3; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.3rem; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-select, button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 7px 10px; }
-button { cursor: pointer; }
-button:focus-visible, select:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
-.hud { font-family: ui-monospace, monospace; font-size: 0.8rem; color: #8b949e; min-height: 1.2em; }
-.ticker { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.ticker th, .ticker td { padding: 8px; border-bottom: 1px solid #21262d; text-align: left; }
-.num { text-align: right; }
-.pos { color: #3fb950; }
-.neg { color: #f85149; }
-tr.up td:last-child { color: #3fb950; }
-tr.down td:last-child { color: #f85149; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+select,
+button {
+  background: #21262d;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+button {
+  cursor: pointer;
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+.hud {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: #8b949e;
+  min-height: 1.2em;
+}
+.ticker {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.ticker th,
+.ticker td {
+  padding: 8px;
+  border-bottom: 1px solid #21262d;
+  text-align: left;
+}
+.num {
+  text-align: right;
+}
+.pos {
+  color: #3fb950;
+}
+.neg {
+  color: #f85149;
+}
+tr.up td:last-child {
+  color: #3fb950;
+}
+tr.down td:last-child {
+  color: #f85149;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 `,
         },
       },
@@ -2029,26 +2582,35 @@ Same behaviour as the React and Angular versions: five symbols with price, chang
 ~~~js
 export function useTicker(mode) {
   const quotes = shallowRef(initialQuotes());
-  const pending = new Map();   // symbol -> latest message, not on screen yet
+  // symbol -> latest message, not on screen yet
+  const pending = new Map();
   let scheduled = null;
-  const stats = { messages: 0, updates: 0, renders: 0 }; // not reactive on purpose
+  // not reactive on purpose
+  const stats = { messages: 0, updates: 0, renders: 0 };
 
   const feed = createFeed((msg) => {
     stats.messages++;
     const m = toValue(mode);
     if (m === "off") {
       stats.updates++;
-      quotes.value = applyBatch(quotes.value, new Map([[msg.symbol, msg]]));
+      quotes.value = applyBatch(
+        quotes.value,
+        new Map([[msg.symbol, msg]]),
+      );
       return;
     }
     pending.set(msg.symbol, msg);
     if (scheduled) return;
-    scheduled = m === "raf"
-      ? { kind: "raf", id: requestAnimationFrame(flush) }
-      : { kind: "timeout", id: setTimeout(flush, 250) };
+    scheduled =
+      m === "raf"
+        ? { kind: "raf", id: requestAnimationFrame(flush) }
+        : { kind: "timeout", id: setTimeout(flush, 250) };
   });
 
-  onScopeDispose(() => { feed.stop(); cancelFlush(); });
+  onScopeDispose(() => {
+    feed.stop();
+    cancelFlush();
+  });
   // ...
 }
 ~~~
@@ -2085,10 +2647,19 @@ Each \`TickerRow\` gets one quote object as a prop. When a flush leaves a symbol
 ~~~js
 const hud = ref(null);
 const paint = () => {
-  hud.value.textContent = "Messages: " + stats.messages + " | State updates: " + stats.updates + " | Renders: " + stats.renders;
+  hud.value.textContent =
+    "Messages: " +
+    stats.messages +
+    " | State updates: " +
+    stats.updates +
+    " | Renders: " +
+    stats.renders;
 };
 onMounted(paint);
-onUpdated(() => { stats.renders++; paint(); });
+onUpdated(() => {
+  stats.renders++;
+  paint();
+});
 ~~~
 
 \`onUpdated\` runs after each re-render of \`App.vue\`. The HUD writes into an element whose template content is empty, so Vue never overwrites it, and nothing reactive changes.
@@ -2099,7 +2670,7 @@ onUpdated(() => { stats.renders++; paint(); });
 
 For each mode the driver selected it with \`v-model\` on the \`<select>\`, reset prices, clicked "Stream 200 messages" and read the HUD and table 1.5 s later. Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] raf      Messages: 200 | State updates: 27 | Renders: 27
 [vue]          AAPL 185.73 -4.27 ▼ | MSFT 417.25 -2.75 ▼ | NVDA 122.82 +2.82 ▲ | AMZN 187.94 +7.94 ▼ | TSLA 248.35 -1.65 ▼
 [vue] interval Messages: 200 | State updates: 2 | Renders: 2
@@ -2216,7 +2787,13 @@ const hud = ref(null);
 // onUpdated fires after every re-render of this component. Writing the HUD
 // straight to the DOM keeps the measurement from causing renders itself.
 const paint = () => {
-  hud.value.textContent = "Messages: " + stats.messages + " | State updates: " + stats.updates + " | Renders: " + stats.renders;
+  hud.value.textContent =
+    "Messages: " +
+    stats.messages +
+    " | State updates: " +
+    stats.updates +
+    " | Renders: " +
+    stats.renders;
 };
 onMounted(paint);
 onUpdated(() => {
@@ -2237,7 +2814,10 @@ onUpdated(() => {
           <option value="off">Off (every message)</option>
         </select>
       </label>
-      <button data-testid="stream" @click="stream(200)">Stream 200 messages</button>
+      <button
+        data-testid="stream"
+        @click="stream(200)"
+      >Stream 200 messages</button>
       <button data-testid="reset" @click="reset">Reset prices</button>
     </div>
     <p ref="hud" class="hud" data-testid="hud" aria-live="off"></p>
@@ -2254,22 +2834,81 @@ onUpdated(() => {
 </template>
 
 <style>
-body { margin: 0; background: #0d1117; color: #e6edf3; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.3rem; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-select, button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 8px; padding: 7px 10px; }
-button { cursor: pointer; }
-button:focus-visible, select:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
-.hud { font-family: ui-monospace, monospace; font-size: 0.8rem; color: #8b949e; min-height: 1.2em; }
-.ticker { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.ticker th, .ticker td { padding: 8px; border-bottom: 1px solid #21262d; text-align: left; }
-.num { text-align: right; }
-.pos { color: #3fb950; }
-.neg { color: #f85149; }
-tr.up td:last-child { color: #3fb950; }
-tr.down td:last-child { color: #f85149; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+body {
+  margin: 0;
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.3rem;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+select,
+button {
+  background: #21262d;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+button {
+  cursor: pointer;
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+.hud {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  color: #8b949e;
+  min-height: 1.2em;
+}
+.ticker {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.ticker th,
+.ticker td {
+  padding: 8px;
+  border-bottom: 1px solid #21262d;
+  text-align: left;
+}
+.num {
+  text-align: right;
+}
+.pos {
+  color: #3fb950;
+}
+.neg {
+  color: #f85149;
+}
+tr.up td:last-child {
+  color: #3fb950;
+}
+tr.down td:last-child {
+  color: #f85149;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 </style>
 `,
           "/src/components/TickerRow.vue": `<script setup>
@@ -2277,15 +2916,25 @@ import { computed } from "vue";
 const props = defineProps({ q: Object });
 const fmt = (n) => n.toFixed(2);
 const change = computed(() => props.q.price - props.q.open);
-const dir = computed(() => (props.q.price > props.q.prev ? "up" : props.q.price < props.q.prev ? "down" : "flat"));
+const dir = computed(() =>
+  props.q.price > props.q.prev
+    ? "up"
+    : props.q.price < props.q.prev
+      ? "down"
+      : "flat",
+);
 </script>
 
 <template>
   <tr :class="dir" :data-testid="'row-' + q.symbol">
     <th scope="row">{{ q.symbol }}</th>
     <td class="num">{{ fmt(q.price) }}</td>
-    <td :class="['num', change >= 0 ? 'pos' : 'neg']">{{ (change >= 0 ? "+" : "") + fmt(change) }}</td>
-    <td :aria-label="dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'unchanged'">
+    <td :class="['num', change >= 0 ? 'pos' : 'neg']">
+      {{ (change >= 0 ? "+" : "") + fmt(change) }}
+    </td>
+    <td
+      :aria-label="dir === 'up' ? 'up' : dir === 'down' ? 'down' : 'unchanged'"
+    >
       {{ dir === "up" ? "▲" : dir === "down" ? "▼" : "•" }}
     </td>
   </tr>
@@ -2295,7 +2944,13 @@ const dir = computed(() => (props.q.price > props.q.prev ? "up" : props.q.price 
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
-export const SYMBOLS = [["AAPL", 190], ["MSFT", 420], ["NVDA", 120], ["AMZN", 180], ["TSLA", 250]];
+export const SYMBOLS = [
+  ["AAPL", 190],
+  ["MSFT", 420],
+  ["NVDA", 120],
+  ["AMZN", 180],
+  ["TSLA", 250],
+];
 
 function mulberry32(seed) {
   let a = seed;
@@ -2311,7 +2966,10 @@ export function createFeed(onMessage) {
   let rand, prices;
   const timers = new Set();
   const later = (fn, ms) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const reset = () => {
@@ -2320,16 +2978,25 @@ export function createFeed(onMessage) {
   };
   const next = () => {
     const [symbol] = SYMBOLS[Math.floor(rand() * SYMBOLS.length)];
-    prices[symbol] = Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
+    prices[symbol] =
+      Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
     onMessage({ symbol, price: prices[symbol] });
   };
   // n messages, one per task, \`gap\` ms apart
   const stream = (n, gap = 2) => {
     let left = n;
-    const tick = () => { if (left-- > 0) { next(); later(tick, gap); } };
+    const tick = () => {
+      if (left-- > 0) {
+        next();
+        later(tick, gap);
+      }
+    };
     later(tick, gap);
   };
-  const stop = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const stop = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   reset();
   return { stream, stop, reset };
 }
@@ -2338,9 +3005,15 @@ export function createFeed(onMessage) {
 import { SYMBOLS, createFeed } from "./feed";
 
 const initialQuotes = () =>
-  Object.fromEntries(SYMBOLS.map(([symbol, open]) => [symbol, { symbol, open, price: open, prev: open }]));
+  Object.fromEntries(
+    SYMBOLS.map(([symbol, open]) => [
+      symbol,
+      { symbol, open, price: open, prev: open },
+    ]),
+  );
 
-// \`prev\` is the price the user last SAW, so the arrow compares on-screen values.
+// \`prev\` is the price the user last SAW,
+// so the arrow compares on-screen values.
 function applyBatch(quotes, batch) {
   const next = { ...quotes };
   batch.forEach((msg, symbol) => {
@@ -2357,10 +3030,14 @@ export function useTicker(mode) {
   const quotes = shallowRef(initialQuotes());
   const pending = new Map(); // symbol -> latest message, not on screen yet
   let scheduled = null;
-  const stats = { messages: 0, updates: 0, renders: 0 }; // plain object: not reactive on purpose
+  // plain object: not reactive on purpose
+  const stats = { messages: 0, updates: 0, renders: 0 };
 
   const cancelFlush = () => {
-    if (scheduled) (scheduled.kind === "raf" ? cancelAnimationFrame : clearTimeout)(scheduled.id);
+    if (scheduled)
+      (scheduled.kind === "raf" ? cancelAnimationFrame : clearTimeout)(
+        scheduled.id,
+      );
     scheduled = null;
   };
   const flush = () => {
@@ -2382,13 +3059,17 @@ export function useTicker(mode) {
     }
     pending.set(msg.symbol, msg); // newer price overwrites older
     if (scheduled) return; // a flush is already booked
-    scheduled = m === "raf"
-      ? { kind: "raf", id: requestAnimationFrame(flush) }
-      : { kind: "timeout", id: setTimeout(flush, 250) };
+    scheduled =
+      m === "raf"
+        ? { kind: "raf", id: requestAnimationFrame(flush) }
+        : { kind: "timeout", id: setTimeout(flush, 250) };
   });
 
   // Runs when the owning component unmounts.
-  onScopeDispose(() => { feed.stop(); cancelFlush(); });
+  onScopeDispose(() => {
+    feed.stop();
+    cancelFlush();
+  });
 
   const stream = (n) => {
     Object.assign(stats, { messages: 0, updates: 0, renders: 0 });
@@ -2443,14 +3124,17 @@ private feed = createFeed((msg) => {
   this.stats.messages++;
   if (this.mode === "off") {
     this.stats.updates++;
-    this.quotes.update((q) => applyBatch(q, new Map([[msg.symbol, msg]])));
+    this.quotes.update((q) =>
+      applyBatch(q, new Map([[msg.symbol, msg]])),
+    );
     return;
   }
-  this.pending.set(msg.symbol, msg);        // newer price overwrites older
-  if (this.scheduled) return;               // a flush is already booked
-  this.scheduled = this.mode === "raf"
-    ? { kind: "raf", id: requestAnimationFrame(this.flush) }
-    : { kind: "timeout", id: setTimeout(this.flush, 250) };
+  this.pending.set(msg.symbol, msg); // newer price overwrites older
+  if (this.scheduled) return; // a flush is already booked
+  this.scheduled =
+    this.mode === "raf"
+      ? { kind: "raf", id: requestAnimationFrame(this.flush) }
+      : { kind: "timeout", id: setTimeout(this.flush, 250) };
 });
 ~~~
 
@@ -2494,7 +3178,13 @@ constructor() {
   afterEveryRender(() => {
     const s = this.ticker.stats;
     s.renders++;
-    this.hud.nativeElement.textContent = "Messages: " + s.messages + " | State updates: " + s.updates + " | Renders: " + s.renders;
+    this.hud.nativeElement.textContent =
+      "Messages: " +
+      s.messages +
+      " | State updates: " +
+      s.updates +
+      " | Renders: " +
+      s.renders;
   });
 }
 ~~~
@@ -2507,7 +3197,7 @@ The mode \`<select>\` uses \`[ngModel]\` and \`(ngModelChange)\` with \`FormsMod
 
 For each mode the driver selected it, reset prices, clicked "Stream 200 messages" and read the HUD and table 1.5 s later. This is the \`angular:app\` (AOT) run; the \`angular:playground\` (JIT) run printed the same prices and render counts within a frame or two (counts are timing-dependent; repeated runs gave 27-33 per frame and 2-3 state updates for the throttle):
 
-\`\`\`
+\`\`\`text
 [angular:app] raf      Messages: 200 | State updates: 29 | Renders: 30
 [angular:app]          AAPL 185.73 -4.27 ▼ | MSFT 417.25 -2.75 ▼ | NVDA 122.82 +2.82 ▲ | AMZN 187.94 +7.94 ▲ | TSLA 248.35 -1.65 ▼
 [angular:app] interval Messages: 200 | State updates: 2 | Renders: 3
@@ -2611,7 +3301,14 @@ For each mode the driver selected it, reset prices, clicked "Stream 200 messages
 ---
 **Conclusion:** A zoneless Angular app renders when signals change, so a fast feed needs explicit coalescing: buffer messages in a component-provided service, book one flush per animation frame or 250 ms window, write the signal once per flush, and clean up in \`ngOnDestroy\`. Tracking rows by symbol keeps the DOM stable, and \`afterEveryRender\` makes the result measurable: 200 messages produced 201 renders unbatched, about 30 per frame and 3 with a fixed throttle, with identical final prices.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, ViewChild, afterEveryRender, computed, inject } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  ViewChild,
+  afterEveryRender,
+  computed,
+  inject,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { Mode, Quote, TickerService } from "./ticker.service";
 
@@ -2625,14 +3322,24 @@ import { Mode, Quote, TickerService } from "./ticker.service";
       <div class="controls">
         <label>
           Batching
-          <select data-testid="mode" [ngModel]="ticker.mode" (ngModelChange)="setMode($event)">
+          <select
+            data-testid="mode"
+            [ngModel]="ticker.mode"
+            (ngModelChange)="setMode($event)"
+          >
             <option value="raf">Per animation frame</option>
             <option value="interval">Every 250 ms</option>
             <option value="off">Off (every message)</option>
           </select>
         </label>
-        <button data-testid="stream" (click)="ticker.stream(200)">Stream 200 messages</button>
-        <button data-testid="reset" (click)="ticker.reset()">Reset prices</button>
+        <button
+          data-testid="stream"
+          (click)="ticker.stream(200)"
+        >Stream 200 messages</button>
+        <button
+          data-testid="reset"
+          (click)="ticker.reset()"
+        >Reset prices</button>
       </div>
       <p #hud class="hud" data-testid="hud" aria-live="off"></p>
       <table class="ticker">
@@ -2653,7 +3360,8 @@ import { Mode, Quote, TickerService } from "./ticker.service";
       </table>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0d1117; color: #e6edf3; font-family: system-ui, sans-serif; min-height: 100vh; }
     .app { max-width: 560px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.3rem; }
@@ -2670,7 +3378,8 @@ import { Mode, Quote, TickerService } from "./ticker.service";
     tr.up td:last-child { color: #3fb950; }
     tr.down td:last-child { color: #f85149; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly ticker = inject(TickerService);
@@ -2683,7 +3392,13 @@ export class AppComponent {
     afterEveryRender(() => {
       const s = this.ticker.stats;
       s.renders++;
-      this.hud.nativeElement.textContent = "Messages: " + s.messages + " | State updates: " + s.updates + " | Renders: " + s.renders;
+      this.hud.nativeElement.textContent =
+        "Messages: " +
+        s.messages +
+        " | State updates: " +
+        s.updates +
+        " | Renders: " +
+        s.renders;
     });
   }
 
@@ -2700,8 +3415,17 @@ export class AppComponent {
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
-export interface Tick { symbol: string; price: number; }
-export const SYMBOLS: [string, number][] = [["AAPL", 190], ["MSFT", 420], ["NVDA", 120], ["AMZN", 180], ["TSLA", 250]];
+export interface Tick {
+  symbol: string;
+  price: number;
+}
+export const SYMBOLS: [string, number][] = [
+  ["AAPL", 190],
+  ["MSFT", 420],
+  ["NVDA", 120],
+  ["AMZN", 180],
+  ["TSLA", 250],
+];
 
 function mulberry32(seed: number) {
   let a = seed;
@@ -2718,7 +3442,10 @@ export function createFeed(onMessage: (t: Tick) => void) {
   let prices: Record<string, number> = Object.fromEntries(SYMBOLS);
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const later = (fn: () => void, ms: number) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const reset = () => {
@@ -2727,30 +3454,50 @@ export function createFeed(onMessage: (t: Tick) => void) {
   };
   const next = () => {
     const [symbol] = SYMBOLS[Math.floor(rand() * SYMBOLS.length)];
-    prices[symbol] = Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
+    prices[symbol] =
+      Math.round(prices[symbol] * (1 + (rand() - 0.5) * 0.01) * 100) / 100;
     onMessage({ symbol, price: prices[symbol] });
   };
   // n messages, one per task, \`gap\` ms apart
   const stream = (n: number, gap = 2) => {
     let left = n;
-    const tick = () => { if (left-- > 0) { next(); later(tick, gap); } };
+    const tick = () => {
+      if (left-- > 0) {
+        next();
+        later(tick, gap);
+      }
+    };
     later(tick, gap);
   };
-  const stop = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const stop = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   return { stream, stop, reset };
 }
 `,
           "/src/app/ticker.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
 import { SYMBOLS, Tick, createFeed } from "./feed";
 
-export interface Quote { symbol: string; open: number; price: number; prev: number; }
+export interface Quote {
+  symbol: string;
+  open: number;
+  price: number;
+  prev: number;
+}
 export type Mode = "raf" | "interval" | "off";
 type Quotes = Record<string, Quote>;
 
 const initialQuotes = (): Quotes =>
-  Object.fromEntries(SYMBOLS.map(([symbol, open]) => [symbol, { symbol, open, price: open, prev: open }]));
+  Object.fromEntries(
+    SYMBOLS.map(([symbol, open]) => [
+      symbol,
+      { symbol, open, price: open, prev: open },
+    ]),
+  );
 
-// \`prev\` is the price the user last SAW, so the arrow compares on-screen values.
+// \`prev\` is the price the user last SAW,
+// so the arrow compares on-screen values.
 function applyBatch(quotes: Quotes, batch: Map<string, Tick>): Quotes {
   const next = { ...quotes };
   batch.forEach((msg, symbol) => {
@@ -2766,9 +3513,11 @@ function applyBatch(quotes: Quotes, batch: Map<string, Tick>): Quotes {
 export class TickerService implements OnDestroy {
   readonly quotes = signal<Quotes>(initialQuotes());
   mode: Mode = "raf";
-  readonly stats = { messages: 0, updates: 0, renders: 0 }; // plain object: not a signal on purpose
+  // plain object: not a signal on purpose
+  readonly stats = { messages: 0, updates: 0, renders: 0 };
 
-  private pending = new Map<string, Tick>(); // symbol -> latest message, not on screen yet
+  // symbol -> latest message, not on screen yet
+  private pending = new Map<string, Tick>();
   private scheduled: { kind: "raf" | "timeout"; id: any } | null = null;
 
   private flush = () => {
@@ -2789,14 +3538,15 @@ export class TickerService implements OnDestroy {
     }
     this.pending.set(msg.symbol, msg); // newer price overwrites older
     if (this.scheduled) return; // a flush is already booked
-    this.scheduled = this.mode === "raf"
-      ? { kind: "raf", id: requestAnimationFrame(this.flush) }
-      : { kind: "timeout", id: setTimeout(this.flush, 250) };
+    this.scheduled =
+      this.mode === "raf"
+        ? { kind: "raf", id: requestAnimationFrame(this.flush) }
+        : { kind: "timeout", id: setTimeout(this.flush, 250) };
   });
 
   private cancelFlush() {
     const s = this.scheduled;
-    if (s) (s.kind === "raf" ? cancelAnimationFrame(s.id) : clearTimeout(s.id));
+    if (s) s.kind === "raf" ? cancelAnimationFrame(s.id) : clearTimeout(s.id);
     this.scheduled = null;
   }
 
@@ -2922,12 +3672,14 @@ useEffect(() => {
   const s = createSocket({
     onMessage: (m) => {
       setMessages((list) => [...list, { ...m, status: "sent" }]);
-      if (!stick.atBottom.current) setUnread((n) => n + 1); // do not yank the reader down
+      // do not yank the reader down
+      if (!stick.atBottom.current) setUnread((n) => n + 1);
     },
     onTyping: setTyping,
   });
   socket.current = s;
-  return () => s.close(); // StrictMode mounts twice: the first socket is closed
+  // StrictMode mounts twice: the first socket is closed
+  return () => s.close();
 }, [stick.atBottom]);
 ~~~
 
@@ -2936,24 +3688,35 @@ The callback reads \`stick.atBottom.current\` at the moment the message arrives,
 ### Step 2: optimistic send and retry
 
 ~~~js
-const patch = (id, changes) => setMessages((list) => list.map((m) => (m.id === id ? { ...m, ...changes } : m)));
+const patch = (id, changes) =>
+  setMessages((list) =>
+    list.map((m) => (m.id === id ? { ...m, ...changes } : m)),
+  );
 
 const deliver = useCallback((id, text) => {
   socket.current.send(text, id).then(
-    (ack) => patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-    () => patch(id, { status: "failed" })
+    (ack) =>
+      patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
+    () => patch(id, { status: "failed" }),
   );
 }, []);
 
 const send = (text) => {
   const id = "c" + nextId.current++;
-  stick.force.current = true; // your own message always scrolls into view
-  setMessages((list) => [...list, { id, author: "me", text, time: null, status: "pending" }]);
+  // your own message always scrolls into view
+  stick.force.current = true;
+  setMessages((list) => [
+    ...list,
+    { id, author: "me", text, time: null, status: "pending" },
+  ]);
   setUnread(0);
   deliver(id, text);
 };
 
-const retry = (m) => { patch(m.id, { status: "pending" }); deliver(m.id, m.text); };
+const retry = (m) => {
+  patch(m.id, { status: "pending" });
+  deliver(m.id, m.text);
+};
 ~~~
 
 \`patch\` uses a functional update because acks arrive later, after other messages may have been appended; the updater always works on the latest list.
@@ -2979,7 +3742,8 @@ export function useStickToBottom(deps) {
 
   const onScroll = () => {
     const el = ref.current;
-    atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
+    atBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
     return atBottom.current;
   };
   // jump() scrolls down on demand for the "new messages" button
@@ -3010,7 +3774,7 @@ Shift+Enter falls through to the default (a new line). \`isComposing\` is true w
 
 jsdom computes no layout, so the driver installed a fake one on the list element before acting: every \`<li>\` is 80 px tall, the visible area is 200 px, and \`scrollTop\` is a stored number clamped to the scrollable range. The component code is unchanged and reads the same properties it would in a browser. Each line shows the last rows as \`author: text [meta]\`, then \`scrollTop=current/max\`. Output, unedited:
 
-\`\`\`
+\`\`\`text
 [react] send disabled while empty: true
 [react] after Enter   : You: Hello there [Sending...] | draft="" | scrollTop=40/40
 [react] +200ms        : Sam: How can I help today? [09:39] | You: Hello there [09:41]
@@ -3143,8 +3907,20 @@ import MessageList from "./src/MessageList";
 import Composer from "./src/Composer";
 
 const SEED = [
-  { id: "m1", author: "sam", text: "Hi! I am Sam from support.", time: "09:38", status: "sent" },
-  { id: "m2", author: "sam", text: "How can I help today?", time: "09:39", status: "sent" },
+  {
+    id: "m1",
+    author: "sam",
+    text: "Hi! I am Sam from support.",
+    time: "09:38",
+    status: "sent",
+  },
+  {
+    id: "m2",
+    author: "sam",
+    text: "How can I help today?",
+    time: "09:39",
+    status: "sent",
+  },
 ];
 
 export default function App() {
@@ -3159,27 +3935,35 @@ export default function App() {
     const s = createSocket({
       onMessage: (m) => {
         setMessages((list) => [...list, { ...m, status: "sent" }]);
-        if (!stick.atBottom.current) setUnread((n) => n + 1); // do not yank the reader down
+        // do not yank the reader down
+        if (!stick.atBottom.current) setUnread((n) => n + 1);
       },
       onTyping: setTyping,
     });
     socket.current = s;
-    return () => s.close(); // StrictMode mounts twice: the first socket is closed
+    // StrictMode mounts twice: the first socket is closed
+    return () => s.close();
   }, [stick.atBottom]);
 
-  const patch = (id, changes) => setMessages((list) => list.map((m) => (m.id === id ? { ...m, ...changes } : m)));
+  const patch = (id, changes) =>
+    setMessages((list) =>
+      list.map((m) => (m.id === id ? { ...m, ...changes } : m)),
+    );
 
   const deliver = useCallback((id, text) => {
     socket.current.send(text, id).then(
       (ack) => patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-      () => patch(id, { status: "failed" })
+      () => patch(id, { status: "failed" }),
     );
   }, []);
 
   const send = (text) => {
     const id = "c" + nextId.current++;
     stick.force.current = true; // your own message always scrolls into view
-    setMessages((list) => [...list, { id, author: "me", text, time: null, status: "pending" }]); // optimistic
+    setMessages((list) => [
+      ...list,
+      { id, author: "me", text, time: null, status: "pending" },
+    ]); // optimistic
     setUnread(0);
     deliver(id, text);
   };
@@ -3197,14 +3981,32 @@ export default function App() {
     <main className="chat">
       <header className="chat-head">
         <h1>Support chat</h1>
-        <button data-testid="incoming" onClick={() => socket.current.pushIncoming("Any update on your side?")}>
+        <button
+          data-testid="incoming"
+          onClick={() =>
+            socket.current.pushIncoming("Any update on your side?")
+          }
+        >
           Simulate incoming
         </button>
       </header>
       <div className="list-wrap">
-        <MessageList messages={messages} typing={typing} listRef={stick.ref} onScroll={onScroll} onRetry={retry} />
+        <MessageList
+          messages={messages}
+          typing={typing}
+          listRef={stick.ref}
+          onScroll={onScroll}
+          onRetry={retry}
+        />
         {unread > 0 && (
-          <button className="jump" data-testid="jump" onClick={() => { stick.jump(); setUnread(0); }}>
+          <button
+            className="jump"
+            data-testid="jump"
+            onClick={() => {
+              stick.jump();
+              setUnread(0);
+            }}
+          >
             {unread} new {unread === 1 ? "message" : "messages"} ↓
           </button>
         )}
@@ -3227,7 +4029,13 @@ export default function Composer({ onSend }) {
   };
 
   return (
-    <form className="composer" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+    <form
+      className="composer"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
       <textarea
         aria-label="Message"
         data-testid="draft"
@@ -3236,25 +4044,45 @@ export default function Composer({ onSend }) {
         placeholder="Write a message"
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
-          // Enter sends, Shift+Enter makes a new line. Skip while an IME is composing.
+          // Enter sends, Shift+Enter makes a new
+          // line. Skip while an IME is composing.
           if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             submit();
           }
         }}
       />
-      <button type="submit" data-testid="send" disabled={!canSend}>Send</button>
+      <button type="submit" data-testid="send" disabled={!canSend}>
+        Send
+      </button>
     </form>
   );
 }
 `,
-          "/src/MessageList.js": `export default function MessageList({ messages, typing, listRef, onScroll, onRetry }) {
+          "/src/MessageList.js": `export default function MessageList({
+  messages,
+  typing,
+  listRef,
+  onScroll,
+  onRetry,
+}) {
   return (
-    <ol className="messages" role="log" aria-label="Conversation" ref={listRef} onScroll={onScroll} data-testid="list">
+    <ol
+      className="messages"
+      role="log"
+      aria-label="Conversation"
+      ref={listRef}
+      onScroll={onScroll}
+      data-testid="list"
+    >
       {messages.map((m) => (
         // The client id is the key for the message whole life: the server id
         // arrives later, and changing the key would remount the row.
-        <li key={m.id} className={"msg " + (m.author === "me" ? "me" : "them")} data-status={m.status}>
+        <li
+          key={m.id}
+          className={"msg " + (m.author === "me" ? "me" : "them")}
+          data-status={m.status}
+        >
           <span className="sr-only">{m.author === "me" ? "You" : "Sam"}: </span>
           <p className="bubble">{m.text}</p>
           <span className="meta">
@@ -3263,13 +4091,19 @@ export default function Composer({ onSend }) {
             {m.status === "failed" && (
               <>
                 <span role="alert">Failed to send</span>{" "}
-                <button className="retry" onClick={() => onRetry(m)}>Retry</button>
+                <button className="retry" onClick={() => onRetry(m)}>
+                  Retry
+                </button>
               </>
             )}
           </span>
         </li>
       ))}
-      {typing && <li className="typing" role="status">Sam is typing...</li>}
+      {typing && (
+        <li className="typing" role="status">
+          Sam is typing...
+        </li>
+      )}
     </ol>
   );
 }
@@ -3285,7 +4119,10 @@ export function createSocket({ onMessage, onTyping }) {
   const failedOnce = new Set();
   const timers = new Set();
   const later = (fn, ms) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const stamp = () => {
@@ -3306,21 +4143,31 @@ export function createSocket({ onMessage, onTyping }) {
         later(() => onTyping(true), 150);
         later(() => {
           onTyping(false);
-          onMessage({ id: "s" + serverId++, author: "sam", text: "Got it: " + text, time: stamp() });
+          onMessage({
+            id: "s" + serverId++,
+            author: "sam",
+            text: "Got it: " + text,
+            time: stamp(),
+          });
         }, 450);
       }, 120);
     });
   }
 
   // Someone else posts, unprompted (the "Simulate incoming" button).
-  const pushIncoming = (text) => onMessage({ id: "s" + serverId++, author: "sam", text, time: stamp() });
-  const close = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const pushIncoming = (text) =>
+    onMessage({ id: "s" + serverId++, author: "sam", text, time: stamp() });
+  const close = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   return { send, pushIncoming, close };
 }
 `,
           "/src/useStickToBottom.js": `import { useLayoutEffect, useRef } from "react";
 
-const THRESHOLD = 40; // px: "close enough" to the bottom counts as at the bottom
+// px: "close enough" to the bottom counts as at the bottom
+const THRESHOLD = 40;
 
 // Keeps a scroll container pinned to the bottom ONLY while the user is
 // already there. \`deps\` are the values whose change adds content.
@@ -3343,7 +4190,8 @@ export function useStickToBottom(deps) {
 
   const onScroll = () => {
     const el = ref.current;
-    atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
+    atBottom.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
     return atBottom.current;
   };
   const jump = () => {
@@ -3354,29 +4202,138 @@ export function useStickToBottom(deps) {
   return { ref, atBottom, force, onScroll, jump };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e7e9ee; font-family: system-ui, sans-serif; }
-.chat { max-width: 480px; height: 100vh; margin: 0 auto; display: flex; flex-direction: column; }
-.chat-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #262b36; }
-h1 { font-size: 1.05rem; margin: 0; }
-.list-wrap { position: relative; flex: 1; min-height: 0; }
-.messages { list-style: none; margin: 0; padding: 12px; height: 100%; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 80%; display: flex; flex-direction: column; }
-.msg.me { align-self: flex-end; align-items: flex-end; }
-.bubble { margin: 0; padding: 8px 12px; border-radius: 14px; background: #1f2430; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.me .bubble { background: #2f6feb; color: #fff; }
-.msg[data-status="pending"] .bubble { opacity: 0.6; }
-.msg[data-status="failed"] .bubble { outline: 1px solid #f85149; }
-.meta { font-size: 0.72rem; color: #8b93a7; margin-top: 2px; }
-.meta [role="alert"] { color: #ff7b72; }
-.typing { color: #8b93a7; font-style: italic; font-size: 0.85rem; }
-.jump { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); }
-.composer { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #262b36; }
-textarea { flex: 1; resize: none; background: #161a22; color: inherit; border: 1px solid #2c3240; border-radius: 10px; padding: 8px 10px; font: inherit; }
-button { background: #238636; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.retry { background: transparent; color: #ffa198; padding: 0; text-decoration: underline; }
-button:focus-visible, textarea:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e7e9ee;
+  font-family: system-ui, sans-serif;
+}
+.chat {
+  max-width: 480px;
+  height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.chat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #262b36;
+}
+h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+.list-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+.msg.me {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.bubble {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #1f2430;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.msg.me .bubble {
+  background: #2f6feb;
+  color: #fff;
+}
+.msg[data-status="pending"] .bubble {
+  opacity: 0.6;
+}
+.msg[data-status="failed"] .bubble {
+  outline: 1px solid #f85149;
+}
+.meta {
+  font-size: 0.72rem;
+  color: #8b93a7;
+  margin-top: 2px;
+}
+.meta [role="alert"] {
+  color: #ff7b72;
+}
+.typing {
+  color: #8b93a7;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.jump {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #262b36;
+}
+textarea {
+  flex: 1;
+  resize: none;
+  background: #161a22;
+  color: inherit;
+  border: 1px solid #2c3240;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+}
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.retry {
+  background: transparent;
+  color: #ffa198;
+  padding: 0;
+  text-decoration: underline;
+}
+button:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 `,
         },
       },
@@ -3417,7 +4374,8 @@ Same behaviour as the React and Angular versions: a conversation with timestamps
 const socket = createSocket({
   onMessage: (m) => {
     messages.value.push({ ...m, status: "sent" });
-    if (!listRef.value.isAtBottom()) unread.value++; // do not yank the reader down
+    // do not yank the reader down
+    if (!listRef.value.isAtBottom()) unread.value++;
   },
   onTyping: (v) => (typing.value = v),
 });
@@ -3431,16 +4389,25 @@ onUnmounted(() => socket.close());
 ~~~js
 function patch(id, changes) {
   const m = messages.value.find((x) => x.id === id);
-  if (m) Object.assign(m, changes); // deep reactivity: mutating the item is enough
+  // deep reactivity: mutating the item is enough
+  if (m) Object.assign(m, changes);
 }
 function send(text) {
   const id = "c" + nextId++;
-  listRef.value.forceNext(); // your own message always scrolls into view
-  messages.value.push({ id, author: "me", text, time: null, status: "pending" });
+  // your own message always scrolls into view
+  listRef.value.forceNext();
+  messages.value.push({
+    id,
+    author: "me",
+    text,
+    time: null,
+    status: "pending",
+  });
   unread.value = 0;
   socket.send(text, id).then(
-    (ack) => patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-    () => patch(id, { status: "failed" })
+    (ack) =>
+      patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
+    () => patch(id, { status: "failed" }),
   );
 }
 ~~~
@@ -3458,7 +4425,8 @@ let force = false;
 
 function onScroll() {
   const el = list.value;
-  atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
+  atBottom =
+    el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
   if (atBottom) emit("at-bottom");
 }
 
@@ -3470,7 +4438,7 @@ watch(
       force = false;
     }
   },
-  { flush: "post" }
+  { flush: "post" },
 );
 
 defineExpose({ isAtBottom, scrollToBottom, forceNext });
@@ -3483,7 +4451,11 @@ The watch source is the message **count** and the typing flag; patching a messag
 ### Step 4: Enter, Shift+Enter and IME
 
 ~~~vue
-<textarea v-model="draft" aria-label="Message" @keydown.enter.exact.prevent="onEnter"></textarea>
+<textarea
+  v-model="draft"
+  aria-label="Message"
+  @keydown.enter.exact.prevent="onEnter"
+></textarea>
 ~~~
 
 \`.enter\` matches the Enter key, \`.exact\` requires that no modifier is held, so Shift+Enter falls through and inserts a new line; \`.prevent\` stops the newline on plain Enter. \`onEnter\` returns early while \`e.isComposing\` is true, so confirming a word in an input method editor does not send the message. Key modifiers are covered in [event handling and modifiers](/interview-question/how-do-you-handle-events-in-vue-v-on-and-event-modifiers).
@@ -3492,7 +4464,7 @@ The watch source is the message **count** and the typing flag; patching a messag
 
 The driver installed a fake layout on the list (each \`<li>\` 80 px tall, a 200 px viewport, a stored and clamped \`scrollTop\`), then typed, pressed Enter, scrolled, clicked and waited on real timers. Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] send disabled while empty: true
 [vue] after Enter   : You: Hello there [Sending...] | draft="" | scrollTop=40/40
 [vue] +200ms        : Sam: How can I help today? [09:39] | You: Hello there [09:41]
@@ -3608,8 +4580,20 @@ import MessageList from "./components/MessageList.vue";
 import Composer from "./components/Composer.vue";
 
 const messages = ref([
-  { id: "m1", author: "sam", text: "Hi! I am Sam from support.", time: "09:38", status: "sent" },
-  { id: "m2", author: "sam", text: "How can I help today?", time: "09:39", status: "sent" },
+  {
+    id: "m1",
+    author: "sam",
+    text: "Hi! I am Sam from support.",
+    time: "09:38",
+    status: "sent",
+  },
+  {
+    id: "m2",
+    author: "sam",
+    text: "How can I help today?",
+    time: "09:39",
+    status: "sent",
+  },
 ]);
 const typing = ref(false);
 const unread = ref(0);
@@ -3619,7 +4603,8 @@ let nextId = 1;
 const socket = createSocket({
   onMessage: (m) => {
     messages.value.push({ ...m, status: "sent" });
-    if (!listRef.value.isAtBottom()) unread.value++; // do not yank the reader down
+    // do not yank the reader down
+    if (!listRef.value.isAtBottom()) unread.value++;
   },
   onTyping: (v) => (typing.value = v),
 });
@@ -3627,20 +4612,27 @@ onUnmounted(() => socket.close());
 
 function patch(id, changes) {
   const m = messages.value.find((x) => x.id === id);
-  if (m) Object.assign(m, changes); // deep reactivity: mutating the item is enough
+  // deep reactivity: mutating the item is enough
+  if (m) Object.assign(m, changes);
 }
 
 function deliver(id, text) {
   socket.send(text, id).then(
     (ack) => patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-    () => patch(id, { status: "failed" })
+    () => patch(id, { status: "failed" }),
   );
 }
 
 function send(text) {
   const id = "c" + nextId++;
   listRef.value.forceNext(); // your own message always scrolls into view
-  messages.value.push({ id, author: "me", text, time: null, status: "pending" }); // optimistic
+  messages.value.push({
+    id,
+    author: "me",
+    text,
+    time: null,
+    status: "pending",
+  }); // optimistic
   unread.value = 0;
   deliver(id, text);
 }
@@ -3660,10 +4652,19 @@ function jump() {
   <main class="chat">
     <header class="chat-head">
       <h1>Support chat</h1>
-      <button data-testid="incoming" @click="socket.pushIncoming('Any update on your side?')">Simulate incoming</button>
+      <button
+        data-testid="incoming"
+        @click="socket.pushIncoming('Any update on your side?')"
+      >Simulate incoming</button>
     </header>
     <div class="list-wrap">
-      <MessageList ref="listRef" :messages="messages" :typing="typing" @retry="retry" @at-bottom="unread = 0" />
+      <MessageList
+        ref="listRef"
+        :messages="messages"
+        :typing="typing"
+        @retry="retry"
+        @at-bottom="unread = 0"
+      />
       <button v-if="unread > 0" class="jump" data-testid="jump" @click="jump">
         {{ unread }} new {{ unread === 1 ? "message" : "messages" }} ↓
       </button>
@@ -3673,29 +4674,138 @@ function jump() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e7e9ee; font-family: system-ui, sans-serif; }
-.chat { max-width: 480px; height: 100vh; margin: 0 auto; display: flex; flex-direction: column; }
-.chat-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #262b36; }
-h1 { font-size: 1.05rem; margin: 0; }
-.list-wrap { position: relative; flex: 1; min-height: 0; }
-.messages { list-style: none; margin: 0; padding: 12px; height: 100%; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 80%; display: flex; flex-direction: column; }
-.msg.me { align-self: flex-end; align-items: flex-end; }
-.bubble { margin: 0; padding: 8px 12px; border-radius: 14px; background: #1f2430; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg.me .bubble { background: #2f6feb; color: #fff; }
-.msg[data-status="pending"] .bubble { opacity: 0.6; }
-.msg[data-status="failed"] .bubble { outline: 1px solid #f85149; }
-.meta { font-size: 0.72rem; color: #8b93a7; margin-top: 2px; }
-.meta [role="alert"] { color: #ff7b72; }
-.typing { color: #8b93a7; font-style: italic; font-size: 0.85rem; }
-.jump { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); }
-.composer { display: flex; gap: 8px; padding: 10px; border-top: 1px solid #262b36; }
-textarea { flex: 1; resize: none; background: #161a22; color: inherit; border: 1px solid #2c3240; border-radius: 10px; padding: 8px 10px; font: inherit; }
-button { background: #238636; color: #fff; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button.retry { background: transparent; color: #ffa198; padding: 0; text-decoration: underline; }
-button:focus-visible, textarea:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e7e9ee;
+  font-family: system-ui, sans-serif;
+}
+.chat {
+  max-width: 480px;
+  height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+.chat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #262b36;
+}
+h1 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+.list-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+}
+.msg.me {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.bubble {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #1f2430;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.msg.me .bubble {
+  background: #2f6feb;
+  color: #fff;
+}
+.msg[data-status="pending"] .bubble {
+  opacity: 0.6;
+}
+.msg[data-status="failed"] .bubble {
+  outline: 1px solid #f85149;
+}
+.meta {
+  font-size: 0.72rem;
+  color: #8b93a7;
+  margin-top: 2px;
+}
+.meta [role="alert"] {
+  color: #ff7b72;
+}
+.typing {
+  color: #8b93a7;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+.jump {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #262b36;
+}
+textarea {
+  flex: 1;
+  resize: none;
+  background: #161a22;
+  color: inherit;
+  border: 1px solid #2c3240;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: inherit;
+}
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button.retry {
+  background: transparent;
+  color: #ffa198;
+  padding: 0;
+  text-decoration: underline;
+}
+button:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 </style>
 `,
           "/src/components/Composer.vue": `<script setup>
@@ -3743,12 +4853,16 @@ let atBottom = true; // plain variable: reading it must never trigger a render
 let force = false;
 
 // The parent calls these through a template ref (see defineExpose).
-function isAtBottom() { return atBottom; }
+function isAtBottom() {
+  return atBottom;
+}
 function scrollToBottom() {
   list.value.scrollTop = list.value.scrollHeight;
   atBottom = true;
 }
-function forceNext() { force = true; }
+function forceNext() {
+  force = true;
+}
 defineExpose({ isAtBottom, scrollToBottom, forceNext });
 
 function onScroll() {
@@ -3767,15 +4881,27 @@ watch(
       force = false;
     }
   },
-  { flush: "post" }
+  { flush: "post" },
 );
 </script>
 
 <template>
-  <ol ref="list" class="messages" role="log" aria-label="Conversation" data-testid="list" @scroll="onScroll">
+  <ol
+    ref="list"
+    class="messages"
+    role="log"
+    aria-label="Conversation"
+    data-testid="list"
+    @scroll="onScroll"
+  >
     <!-- The client id is the key for the message whole life: the server id
          arrives later, and changing the key would remount the row. -->
-    <li v-for="m in messages" :key="m.id" :class="['msg', m.author === 'me' ? 'me' : 'them']" :data-status="m.status">
+    <li
+      v-for="m in messages"
+      :key="m.id"
+      :class="['msg', m.author === 'me' ? 'me' : 'them']"
+      :data-status="m.status"
+    >
       <span class="sr-only">{{ m.author === "me" ? "You" : "Sam" }}: </span>
       <p class="bubble">{{ m.text }}</p>
       <span class="meta">
@@ -3783,7 +4909,8 @@ watch(
         <template v-else-if="m.status === 'sent'">{{ m.time }}</template>
         <template v-else>
           <span role="alert">Failed to send</span>
-          {{ " " }}<button class="retry" @click="emit('retry', m)">Retry</button>
+          {{ " "
+          }}<button class="retry" @click="emit('retry', m)">Retry</button>
         </template>
       </span>
     </li>
@@ -3802,7 +4929,10 @@ export function createSocket({ onMessage, onTyping }) {
   const failedOnce = new Set();
   const timers = new Set();
   const later = (fn, ms) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const stamp = () => {
@@ -3823,15 +4953,24 @@ export function createSocket({ onMessage, onTyping }) {
         later(() => onTyping(true), 150);
         later(() => {
           onTyping(false);
-          onMessage({ id: "s" + serverId++, author: "sam", text: "Got it: " + text, time: stamp() });
+          onMessage({
+            id: "s" + serverId++,
+            author: "sam",
+            text: "Got it: " + text,
+            time: stamp(),
+          });
         }, 450);
       }, 120);
     });
   }
 
   // Someone else posts, unprompted (the "Simulate incoming" button).
-  const pushIncoming = (text) => onMessage({ id: "s" + serverId++, author: "sam", text, time: stamp() });
-  const close = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const pushIncoming = (text) =>
+    onMessage({ id: "s" + serverId++, author: "sam", text, time: stamp() });
+  const close = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   return { send, pushIncoming, close };
 }
 `,
@@ -3872,14 +5011,16 @@ Same behaviour as the React and Vue versions: conversation with timestamps, Ente
 ### Step 1: messages and the socket
 
 ~~~ts
-readonly messages = signal<Message[]>([ /* two seeded messages */ ]);
-private atBottom = true; // plain field: reading it must never schedule a render
+readonly messages = signal<Message[]>([/* two seeded messages */]);
+// plain field: reading it must never schedule a render
+private atBottom = true;
 private force = false;
 
 readonly socket = createSocket({
   onMessage: (m) => {
     this.messages.update((list) => [...list, { ...m, status: "sent" }]);
-    if (!this.atBottom) this.unread.update((n) => n + 1); // do not yank the reader down
+    // do not yank the reader down
+    if (!this.atBottom) this.unread.update((n) => n + 1);
   },
   onTyping: (v) => this.typing.set(v),
 });
@@ -3893,15 +5034,23 @@ readonly socket = createSocket({
 send(text: string) {
   const id = "c" + this.nextId++;
   this.force = true; // your own message always scrolls into view
-  this.messages.update((list) => [...list, { id, author: "me", text, time: null, status: "pending" }]);
+  this.messages.update((list) => [
+    ...list,
+    { id, author: "me", text, time: null, status: "pending" },
+  ]);
   this.unread.set(0);
   this.deliver(id, text);
 }
 
 private deliver(id: string, text: string) {
   this.socket.send(text, id).then(
-    (ack) => this.patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-    () => this.patch(id, { status: "failed" })
+    (ack) =>
+      this.patch(id, {
+        status: "sent",
+        time: ack.time,
+        serverId: ack.id,
+      }),
+    () => this.patch(id, { status: "failed" }),
   );
 }
 ~~~
@@ -3927,7 +5076,8 @@ constructor() {
 
 onScroll() {
   const el = this.list.nativeElement;
-  this.atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
+  this.atBottom =
+    el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
   if (this.atBottom) this.unread.set(0);
 }
 ~~~
@@ -3940,7 +5090,8 @@ onScroll() {
 
 ~~~ts
 onEnter(e: KeyboardEvent) {
-  if (e.isComposing) return; // an IME is mid-word: Enter confirms it, not send
+  // an IME is mid-word: Enter confirms it, not send
+  if (e.isComposing) return;
   e.preventDefault();
   this.submit();
 }
@@ -3954,7 +5105,7 @@ The template binds \`(keydown.enter)="onEnter($any($event))"\`. Angular key pseu
 
 The driver installed a fake layout on the list (each \`<li>\` 80 px tall, a 200 px viewport, a stored and clamped \`scrollTop\`), then typed, pressed Enter, scrolled, clicked and waited. \`angular:app\` (AOT) run; the \`angular:playground\` (JIT) run printed identical lines:
 
-\`\`\`
+\`\`\`text
 [angular:app] send disabled while empty: true
 [angular:app] after Enter   : You: Hello there [Sending...] | draft="" | scrollTop=40/40
 [angular:app] +200ms        : Sam: How can I help today? [09:39] | You: Hello there [09:41]
@@ -4063,7 +5214,15 @@ The pending message appears instantly and gets its time 200 ms later; the list s
 ---
 **Conclusion:** In Angular the chat pane is a signal of messages tracked by client id, an optimistic send that appends and then patches on ack or error, and an \`afterRenderEffect\` that pins the list only when a plain \`atBottom\` field says the reader is already there. Zoneless rendering is why displayed state is in signals and scroll bookkeeping is not, and the verified AOT and JIT runs both show instant messages, a working Retry and a list that stays still while the user reads history.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, DestroyRef, ElementRef, ViewChild, afterRenderEffect, inject, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewChild,
+  afterRenderEffect,
+  inject,
+  signal,
+} from "@angular/core";
 import { ComposerComponent } from "./composer.component";
 import { createSocket } from "./fake-socket";
 
@@ -4084,12 +5243,25 @@ const THRESHOLD = 40; // px: "close enough" counts as at the bottom
     <main class="chat">
       <header class="chat-head">
         <h1>Support chat</h1>
-        <button data-testid="incoming" (click)="socket.pushIncoming('Any update on your side?')">Simulate incoming</button>
+        <button
+          data-testid="incoming"
+          (click)="socket.pushIncoming('Any update on your side?')"
+        >Simulate incoming</button>
       </header>
       <div class="list-wrap">
-        <ol #list class="messages" role="log" aria-label="Conversation" data-testid="list" (scroll)="onScroll()">
+        <ol
+          #list
+          class="messages"
+          role="log"
+          aria-label="Conversation"
+          data-testid="list"
+          (scroll)="onScroll()"
+        >
           @for (m of messages(); track m.id) {
-            <li [class]="'msg ' + (m.author === 'me' ? 'me' : 'them')" [attr.data-status]="m.status">
+            <li
+              [class]="'msg ' + (m.author === 'me' ? 'me' : 'them')"
+              [attr.data-status]="m.status"
+            >
               <span class="sr-only">{{ m.author === "me" ? "You" : "Sam" }}: </span>
               <p class="bubble">{{ m.text }}</p>
               <span class="meta">
@@ -4108,13 +5280,18 @@ const THRESHOLD = 40; // px: "close enough" counts as at the bottom
           }
         </ol>
         @if (unread() > 0) {
-          <button class="jump" data-testid="jump" (click)="jump()">{{ unread() }} new {{ unread() === 1 ? "message" : "messages" }} ↓</button>
+          <button
+            class="jump"
+            data-testid="jump"
+            (click)="jump()"
+          >{{ unread() }} new {{ unread() === 1 ? "message" : "messages" }} ↓</button>
         }
       </div>
       <app-composer (send)="send($event)" />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0f1218; color: #e7e9ee; font-family: system-ui, sans-serif; }
     .chat { max-width: 480px; height: 100vh; margin: 0 auto; display: flex; flex-direction: column; }
     .chat-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #262b36; }
@@ -4138,25 +5315,40 @@ const THRESHOLD = 40; // px: "close enough" counts as at the bottom
     button.retry { background: transparent; color: #ffa198; padding: 0; text-decoration: underline; }
     :host ::ng-deep button:focus-visible, :host ::ng-deep textarea:focus-visible { outline: 2px solid #58a6ff; outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly messages = signal<Message[]>([
-    { id: "m1", author: "sam", text: "Hi! I am Sam from support.", time: "09:38", status: "sent" },
-    { id: "m2", author: "sam", text: "How can I help today?", time: "09:39", status: "sent" },
+    {
+      id: "m1",
+      author: "sam",
+      text: "Hi! I am Sam from support.",
+      time: "09:38",
+      status: "sent",
+    },
+    {
+      id: "m2",
+      author: "sam",
+      text: "How can I help today?",
+      time: "09:39",
+      status: "sent",
+    },
   ]);
   readonly typing = signal(false);
   readonly unread = signal(0);
   @ViewChild("list", { static: true }) list!: ElementRef<HTMLOListElement>;
 
-  private atBottom = true; // plain field: reading it must never schedule a render
+  // plain field: reading it must never schedule a render
+  private atBottom = true;
   private force = false;
   private nextId = 1;
 
   readonly socket = createSocket({
     onMessage: (m) => {
       this.messages.update((list) => [...list, { ...m, status: "sent" }]);
-      if (!this.atBottom) this.unread.update((n) => n + 1); // do not yank the reader down
+      // do not yank the reader down
+      if (!this.atBottom) this.unread.update((n) => n + 1);
     },
     onTyping: (v) => this.typing.set(v),
   });
@@ -4176,20 +5368,26 @@ export class AppComponent {
   }
 
   private patch(id: string, changes: Partial<Message>) {
-    this.messages.update((list) => list.map((m) => (m.id === id ? { ...m, ...changes } : m)));
+    this.messages.update((list) =>
+      list.map((m) => (m.id === id ? { ...m, ...changes } : m)),
+    );
   }
 
   private deliver(id: string, text: string) {
     this.socket.send(text, id).then(
-      (ack) => this.patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
-      () => this.patch(id, { status: "failed" })
+      (ack) =>
+        this.patch(id, { status: "sent", time: ack.time, serverId: ack.id }),
+      () => this.patch(id, { status: "failed" }),
     );
   }
 
   send(text: string) {
     const id = "c" + this.nextId++;
     this.force = true; // your own message always scrolls into view
-    this.messages.update((list) => [...list, { id, author: "me", text, time: null, status: "pending" }]); // optimistic
+    this.messages.update((list) => [
+      ...list,
+      { id, author: "me", text, time: null, status: "pending" },
+    ]); // optimistic
     this.unread.set(0);
     this.deliver(id, text);
   }
@@ -4201,7 +5399,8 @@ export class AppComponent {
 
   onScroll() {
     const el = this.list.nativeElement;
-    this.atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
+    this.atBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight < THRESHOLD;
     if (this.atBottom) this.unread.set(0);
   }
 
@@ -4217,7 +5416,13 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/composer.component.ts": `import { Component, EventEmitter, Output, computed, signal } from "@angular/core";
+          "/src/app/composer.component.ts": `import {
+  Component,
+  EventEmitter,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 
 @Component({
   selector: "app-composer",
@@ -4233,7 +5438,11 @@ export class AppComponent {
         (input)="draft.set($any($event.target).value)"
         (keydown.enter)="onEnter($any($event))"
       ></textarea>
-      <button type="submit" data-testid="send" [disabled]="!canSend()">Send</button>
+      <button
+        type="submit"
+        data-testid="send"
+        [disabled]="!canSend()"
+      >Send</button>
     </form>
   \`,
 })
@@ -4243,7 +5452,8 @@ export class ComposerComponent {
   readonly canSend = computed(() => this.draft().trim().length > 0);
 
   onEnter(e: KeyboardEvent) {
-    if (e.isComposing) return; // an IME is mid-word: Enter confirms it, not send
+    // an IME is mid-word: Enter confirms it, not send
+    if (e.isComposing) return;
     e.preventDefault();
     this.submit();
   }
@@ -4260,16 +5470,30 @@ export class ComposerComponent {
 // at 09:40 and ticks one minute per server event, so output is repeatable.
 // Any message containing "fail" is rejected on its FIRST attempt only, so
 // the failed state and the retry path can both be seen.
-export interface ServerMessage { id: string; author: "sam"; text: string; time: string; }
-export interface Ack { id: string; time: string; }
+export interface ServerMessage {
+  id: string;
+  author: "sam";
+  text: string;
+  time: string;
+}
+export interface Ack {
+  id: string;
+  time: string;
+}
 
-export function createSocket(handlers: { onMessage: (m: ServerMessage) => void; onTyping: (v: boolean) => void }) {
+export function createSocket(handlers: {
+  onMessage: (m: ServerMessage) => void;
+  onTyping: (v: boolean) => void;
+}) {
   let minutes = 9 * 60 + 40;
   let serverId = 100;
   const failedOnce = new Set<string>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
   const later = (fn: () => void, ms: number) => {
-    const id = setTimeout(() => { timers.delete(id); fn(); }, ms);
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
     timers.add(id);
   };
   const stamp = () => {
@@ -4290,15 +5514,29 @@ export function createSocket(handlers: { onMessage: (m: ServerMessage) => void; 
         later(() => handlers.onTyping(true), 150);
         later(() => {
           handlers.onTyping(false);
-          handlers.onMessage({ id: "s" + serverId++, author: "sam", text: "Got it: " + text, time: stamp() });
+          handlers.onMessage({
+            id: "s" + serverId++,
+            author: "sam",
+            text: "Got it: " + text,
+            time: stamp(),
+          });
         }, 450);
       }, 120);
     });
   }
 
   // Someone else posts, unprompted (the "Simulate incoming" button).
-  const pushIncoming = (text: string) => handlers.onMessage({ id: "s" + serverId++, author: "sam", text, time: stamp() });
-  const close = () => { timers.forEach(clearTimeout); timers.clear(); };
+  const pushIncoming = (text: string) =>
+    handlers.onMessage({
+      id: "s" + serverId++,
+      author: "sam",
+      text,
+      time: stamp(),
+    });
+  const close = () => {
+    timers.forEach(clearTimeout);
+    timers.clear();
+  };
   return { send, pushIncoming, close };
 }
 `,
@@ -4398,7 +5636,9 @@ function castVote(poll, optionId) {
   if (poll.votedId) return poll; // second vote: ignored
   return {
     votedId: optionId,
-    options: poll.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + 1 } : o)),
+    options: poll.options.map((o) =>
+      o.id === optionId ? { ...o, votes: o.votes + 1 } : o,
+    ),
   };
 }
 ~~~
@@ -4441,7 +5681,9 @@ export function percentages(counts) {
   const raw = counts.map((c) => (c / total) * 100);
   const floors = raw.map(Math.floor);
   let left = 100 - floors.reduce((a, b) => a + b, 0);
-  const order = raw.map((r, i) => [r - floors[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const order = raw
+    .map((r, i) => [r - floors[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
   for (const [, i] of order) {
     if (left-- <= 0) break;
     floors[i]++;
@@ -4461,13 +5703,24 @@ With counts 12, 8, 5 and 3 (28 votes), the exact shares are 42.86, 28.57, 17.86 
   <fieldset>
     <legend>{question}</legend>
     {poll.options.map((o) => (
-      <label key={o.id} className={"option" + (choice === o.id ? " chosen" : "")}>
-        <input type="radio" name={name} value={o.id} checked={choice === o.id} onChange={() => setChoice(o.id)} />
+      <label
+        key={o.id}
+        className={"option" + (choice === o.id ? " chosen" : "")}
+      >
+        <input
+          type="radio"
+          name={name}
+          value={o.id}
+          checked={choice === o.id}
+          onChange={() => setChoice(o.id)}
+        />
         {o.label}
       </label>
     ))}
   </fieldset>
-  <button type="submit" data-testid="vote" disabled={!choice}>Vote</button>
+  <button type="submit" data-testid="vote" disabled={!choice}>
+    Vote
+  </button>
 </form>
 ~~~
 
@@ -4479,7 +5732,7 @@ Native radios give you arrow-key navigation, one Tab stop for the group and corr
 
 The driver checked the initial form, clicked the "Vue" radio, then clicked Vote **twice in the same tick** before any re-render. To make that a real same-tick double click in React, it switched off React's test \`act()\` environment for those two clicks so React scheduled work as a browser would. Output, unedited:
 
-\`\`\`
+\`\`\`text
 [react] radios: 4 | same group name: true | Vote disabled: true
 [react] picked: vue | Vote disabled: false
 [react] results: React43% · 12 | Vue (your vote)28% · 8 | Angular18% · 5 | Svelte11% · 3
@@ -4602,7 +5855,10 @@ const OPTIONS = [
 export default function App() {
   return (
     <main className="app">
-      <Poll question="Which framework do you reach for first?" options={OPTIONS} />
+      <Poll
+        question="Which framework do you reach for first?"
+        options={OPTIONS}
+      />
     </main>
   );
 }
@@ -4615,13 +5871,16 @@ function castVote(poll, optionId) {
   if (poll.votedId) return poll; // second vote: ignored
   return {
     votedId: optionId,
-    options: poll.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + 1 } : o)),
+    options: poll.options.map((o) =>
+      o.id === optionId ? { ...o, votes: o.votes + 1 } : o,
+    ),
   };
 }
 
 export default function Poll({ question, options }) {
   const [poll, setPoll] = useState({ votedId: null, options });
-  const [choice, setChoice] = useState(null); // selected radio, not yet submitted
+  // selected radio, not yet submitted
+  const [choice, setChoice] = useState(null);
   const name = useId(); // unique radio-group name per poll instance
 
   const total = poll.options.reduce((sum, o) => sum + o.votes, 0);
@@ -4641,13 +5900,24 @@ export default function Poll({ question, options }) {
         <fieldset>
           <legend>{question}</legend>
           {poll.options.map((o) => (
-            <label key={o.id} className={"option" + (choice === o.id ? " chosen" : "")}>
-              <input type="radio" name={name} value={o.id} checked={choice === o.id} onChange={() => setChoice(o.id)} />
+            <label
+              key={o.id}
+              className={"option" + (choice === o.id ? " chosen" : "")}
+            >
+              <input
+                type="radio"
+                name={name}
+                value={o.id}
+                checked={choice === o.id}
+                onChange={() => setChoice(o.id)}
+              />
               {o.label}
             </label>
           ))}
         </fieldset>
-        <button type="submit" data-testid="vote" disabled={!choice}>Vote</button>
+        <button type="submit" data-testid="vote" disabled={!choice}>
+          Vote
+        </button>
         <p className="total">{total} votes so far</p>
       </form>
     );
@@ -4658,10 +5928,21 @@ export default function Poll({ question, options }) {
       <h2 id={name + "-q"}>{question}</h2>
       <ul className="results">
         {poll.options.map((o, i) => (
-          <li key={o.id} className={o.id === poll.votedId ? "mine" : ""} data-testid={"result-" + o.id}>
+          <li
+            key={o.id}
+            className={o.id === poll.votedId ? "mine" : ""}
+            data-testid={"result-" + o.id}
+          >
             <div className="row">
-              <span>{o.label}{o.id === poll.votedId && <strong className="you"> (your vote)</strong>}</span>
-              <span>{pcts[i]}% · {o.votes}</span>
+              <span>
+                {o.label}
+                {o.id === poll.votedId && (
+                  <strong className="you"> (your vote)</strong>
+                )}
+              </span>
+              <span>
+                {pcts[i]}% · {o.votes}
+              </span>
             </div>
             {/* Decorative: the text above already says the number. */}
             <div className="track" aria-hidden="true">
@@ -4670,7 +5951,9 @@ export default function Poll({ question, options }) {
           </li>
         ))}
       </ul>
-      <p className="total" role="status">Thanks for voting! {total} votes in total.</p>
+      <p className="total" role="status">
+        Thanks for voting! {total} votes in total.
+      </p>
     </section>
   );
 }
@@ -4684,7 +5967,9 @@ export function percentages(counts) {
   const floors = raw.map(Math.floor);
   let left = 100 - floors.reduce((a, b) => a + b, 0);
   // Hand the missing points to the biggest fractional parts first.
-  const order = raw.map((r, i) => [r - floors[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const order = raw
+    .map((r, i) => [r - floors[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
   for (const [, i] of order) {
     if (left-- <= 0) break;
     floors[i]++;
@@ -4692,24 +5977,110 @@ export function percentages(counts) {
   return floors;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #11131a; color: #e8e8ee; font-family: system-ui, sans-serif; }
-.app { max-width: 460px; margin: 0 auto; padding: 16px; }
-.poll { background: #1a1d27; border: 1px solid #2b3040; border-radius: 12px; padding: 16px; }
-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
-legend, h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
-.option { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #2b3040; border-radius: 10px; cursor: pointer; }
-.option.chosen { border-color: #7c9cff; background: #20263a; }
-.option:focus-within { outline: 2px solid #7c9cff; outline-offset: 2px; }
-button { margin-top: 12px; background: #5b7cfa; color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
-.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.92rem; margin-bottom: 4px; }
-.track { height: 10px; background: #262b3a; border-radius: 999px; overflow: hidden; }
-.bar { height: 100%; background: #5b7cfa; border-radius: 999px; transition: width 500ms ease-out; }
-.mine .bar { background: #3fb950; }
-.you { color: #3fb950; font-weight: 600; }
-.total { color: #9aa0b4; font-size: 0.85rem; margin: 12px 0 0; }
-@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #11131a;
+  color: #e8e8ee;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.poll {
+  background: #1a1d27;
+  border: 1px solid #2b3040;
+  border-radius: 12px;
+  padding: 16px;
+}
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+legend,
+h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #2b3040;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.option.chosen {
+  border-color: #7c9cff;
+  background: #20263a;
+}
+.option:focus-within {
+  outline: 2px solid #7c9cff;
+  outline-offset: 2px;
+}
+button {
+  margin-top: 12px;
+  background: #5b7cfa;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+.track {
+  height: 10px;
+  background: #262b3a;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  background: #5b7cfa;
+  border-radius: 999px;
+  transition: width 500ms ease-out;
+}
+.mine .bar {
+  background: #3fb950;
+}
+.you {
+  color: #3fb950;
+  font-weight: 600;
+}
+.total {
+  color: #9aa0b4;
+  font-size: 0.85rem;
+  margin: 12px 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -4748,12 +6119,20 @@ Same as the React and Angular versions: four options with starting counts, Vote 
 ~~~vue
 <fieldset>
   <legend>{{ question }}</legend>
-  <label v-for="o in tally" :key="o.id" :class="['option', { chosen: choice === o.id }]">
+  <label
+    v-for="o in tally"
+    :key="o.id"
+    :class="['option', { chosen: choice === o.id }]"
+  >
     <input v-model="choice" type="radio" :name="name" :value="o.id" />
     {{ o.label }}
   </label>
 </fieldset>
-<button type="submit" data-testid="vote" :disabled="!choice">Vote</button>
+<button
+  type="submit"
+  data-testid="vote"
+  :disabled="!choice"
+>Vote</button>
 ~~~
 
 On a radio, \`v-model\` sets \`choice\` to that input's \`value\` when it is checked, and checks the input whose value equals \`choice\`. Native radios give arrow-key navigation and a single Tab stop for free. Details: [v-model on form inputs](/interview-question/how-does-v-model-work-on-form-inputs).
@@ -4764,7 +6143,9 @@ On a radio, \`v-model\` sets \`choice\` to that input's \`value\` when it is che
 function submit() {
   if (!choice.value || votedId.value) return;
   votedId.value = choice.value;
-  tally.value = tally.value.map((o) => (o.id === choice.value ? { ...o, votes: o.votes + 1 } : o));
+  tally.value = tally.value.map((o) =>
+    o.id === choice.value ? { ...o, votes: o.votes + 1 } : o,
+  );
   emit("voted", choice.value);
 }
 ~~~
@@ -4776,7 +6157,9 @@ Vue refs update **synchronously**: the moment \`votedId.value\` is set, any late
 ### Step 3: percentages that add up to 100
 
 ~~~js
-const pcts = computed(() => percentages(tally.value.map((o) => o.votes)));
+const pcts = computed(() =>
+  percentages(tally.value.map((o) => o.votes)),
+);
 ~~~
 
 \`percentages\` floors every share and gives the leftover points to the largest fractional parts. With counts 12, 8, 5 and 3, plain rounding gives 43 + 29 + 18 + 11 = 101; the helper gives 43, 28, 18, 11 = 100.
@@ -4807,7 +6190,7 @@ const pcts = computed(() => percentages(tally.value.map((o) => o.votes)));
 
 The driver clicked the "Vue" radio, then clicked Vote twice in the same tick before any re-render. Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] radios: 4 | same group name: true | Vote disabled: true
 [vue] picked: vue | Vote disabled: false
 [vue] results: React43% · 12 | Vue (your vote)28% · 8 | Angular18% · 5 | Svelte11% · 3
@@ -4923,29 +6306,118 @@ const OPTIONS = [
 
 <template>
   <main class="app">
-    <Poll question="Which framework do you reach for first?" :options="OPTIONS" />
+    <Poll
+      question="Which framework do you reach for first?"
+      :options="OPTIONS"
+    />
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #11131a; color: #e8e8ee; font-family: system-ui, sans-serif; }
-.app { max-width: 460px; margin: 0 auto; padding: 16px; }
-.poll { background: #1a1d27; border: 1px solid #2b3040; border-radius: 12px; padding: 16px; }
-fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
-legend, h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
-.option { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #2b3040; border-radius: 10px; cursor: pointer; }
-.option.chosen { border-color: #7c9cff; background: #20263a; }
-.option:focus-within { outline: 2px solid #7c9cff; outline-offset: 2px; }
-button { margin-top: 12px; background: #5b7cfa; color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
-.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.92rem; margin-bottom: 4px; }
-.track { height: 10px; background: #262b3a; border-radius: 999px; overflow: hidden; }
-.bar { height: 100%; background: #5b7cfa; border-radius: 999px; transition: width 500ms ease-out; }
-.mine .bar { background: #3fb950; }
-.you { color: #3fb950; font-weight: 600; }
-.total { color: #9aa0b4; font-size: 0.85rem; margin: 12px 0 0; }
-@media (prefers-reduced-motion: reduce) { .bar { transition: none; } }
+body {
+  margin: 0;
+  background: #11131a;
+  color: #e8e8ee;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.poll {
+  background: #1a1d27;
+  border: 1px solid #2b3040;
+  border-radius: 12px;
+  padding: 16px;
+}
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+legend,
+h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #2b3040;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.option.chosen {
+  border-color: #7c9cff;
+  background: #20263a;
+}
+.option:focus-within {
+  outline: 2px solid #7c9cff;
+  outline-offset: 2px;
+}
+button {
+  margin-top: 12px;
+  background: #5b7cfa;
+  color: #fff;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.92rem;
+  margin-bottom: 4px;
+}
+.track {
+  height: 10px;
+  background: #262b3a;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar {
+  height: 100%;
+  background: #5b7cfa;
+  border-radius: 999px;
+  transition: width 500ms ease-out;
+}
+.mine .bar {
+  background: #3fb950;
+}
+.you {
+  color: #3fb950;
+  font-weight: 600;
+}
+.total {
+  color: #9aa0b4;
+  font-size: 0.85rem;
+  margin: 12px 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}
 </style>
 `,
           "/src/components/Poll.vue": `<script setup>
@@ -4972,7 +6444,9 @@ function submit() {
   // already sees votedId and stops here.
   if (!choice.value || votedId.value) return;
   votedId.value = choice.value;
-  tally.value = tally.value.map((o) => (o.id === choice.value ? { ...o, votes: o.votes + 1 } : o));
+  tally.value = tally.value.map((o) =>
+    o.id === choice.value ? { ...o, votes: o.votes + 1 } : o,
+  );
   emit("voted", choice.value);
 }
 </script>
@@ -4981,7 +6455,11 @@ function submit() {
   <form v-if="!votedId" class="poll" @submit.prevent="submit">
     <fieldset>
       <legend>{{ question }}</legend>
-      <label v-for="o in tally" :key="o.id" :class="['option', { chosen: choice === o.id }]">
+      <label
+        v-for="o in tally"
+        :key="o.id"
+        :class="['option', { chosen: choice === o.id }]"
+      >
         <input v-model="choice" type="radio" :name="name" :value="o.id" />
         {{ o.label }}
       </label>
@@ -4993,7 +6471,12 @@ function submit() {
   <section v-else class="poll" :aria-labelledby="name + '-q'">
     <h2 :id="name + '-q'">{{ question }}</h2>
     <ul class="results">
-      <li v-for="(o, i) in tally" :key="o.id" :class="{ mine: o.id === votedId }" :data-testid="'result-' + o.id">
+      <li
+        v-for="(o, i) in tally"
+        :key="o.id"
+        :class="{ mine: o.id === votedId }"
+        :data-testid="'result-' + o.id"
+      >
         <div class="row">
           <span>{{ o.label }}<strong v-if="o.id === votedId" class="you"> (your vote)</strong></span>
           <span>{{ pcts[i] }}% · {{ o.votes }}</span>
@@ -5004,7 +6487,10 @@ function submit() {
         </div>
       </li>
     </ul>
-    <p class="total" role="status">Thanks for voting! {{ total }} votes in total.</p>
+    <p
+      class="total"
+      role="status"
+    >Thanks for voting! {{ total }} votes in total.</p>
   </section>
 </template>
 `,
@@ -5017,7 +6503,9 @@ export function percentages(counts) {
   const floors = raw.map(Math.floor);
   let left = 100 - floors.reduce((a, b) => a + b, 0);
   // Hand the missing points to the biggest fractional parts first.
-  const order = raw.map((r, i) => [r - floors[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const order = raw
+    .map((r, i) => [r - floors[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
   for (const [, i] of order) {
     if (left-- <= 0) break;
     floors[i]++;
@@ -5080,12 +6568,22 @@ Inputs are set before \`ngOnInit\` but not yet in field initializers, so the cop
       <legend>{{ question }}</legend>
       @for (o of tally(); track o.id) {
         <label class="option" [class.chosen]="choice() === o.id">
-          <input type="radio" [name]="name" [value]="o.id" [checked]="choice() === o.id" (change)="choice.set(o.id)" />
+          <input
+            type="radio"
+            [name]="name"
+            [value]="o.id"
+            [checked]="choice() === o.id"
+            (change)="choice.set(o.id)"
+          />
           {{ o.label }}
         </label>
       }
     </fieldset>
-    <button type="submit" data-testid="vote" [disabled]="!choice()">Vote</button>
+    <button
+      type="submit"
+      data-testid="vote"
+      [disabled]="!choice()"
+    >Vote</button>
   </form>
 } @else {
   <!-- results -->
@@ -5103,7 +6601,9 @@ submit() {
   const id = this.choice();
   if (!id || this.votedId()) return;
   this.votedId.set(id);
-  this.tally.update((list) => list.map((o) => (o.id === id ? { ...o, votes: o.votes + 1 } : o)));
+  this.tally.update((list) =>
+    list.map((o) => (o.id === id ? { ...o, votes: o.votes + 1 } : o)),
+  );
   this.voted.emit(id);
 }
 ~~~
@@ -5122,7 +6622,7 @@ The bar element binds \`[style.width.%]="pcts()[i]"\`, the unit suffix form of a
 
 The driver clicked the "Vue" radio, then clicked Vote twice in the same tick. \`angular:app\` (AOT) run; the \`angular:playground\` (JIT) run printed identical lines:
 
-\`\`\`
+\`\`\`text
 [angular:app] radios: 4 | same group name: true | Vote disabled: true
 [angular:app] picked: vue | Vote disabled: false
 [angular:app] results: React43% · 12 | Vue (your vote)28% · 8 | Angular18% · 5 | Svelte11% · 3
@@ -5233,29 +6733,121 @@ import { PollComponent, PollOption } from "./poll.component";
   imports: [PollComponent],
   template: \`
     <main class="app">
-      <app-poll question="Which framework do you reach for first?" [options]="options" />
+      <app-poll
+        question="Which framework do you reach for first?"
+        [options]="options"
+      />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; background: #11131a; color: #e8e8ee; font-family: system-ui, sans-serif; min-height: 100vh; }
-    .app { max-width: 460px; margin: 0 auto; padding: 16px; }
-    :host ::ng-deep .poll { background: #1a1d27; border: 1px solid #2b3040; border-radius: 12px; padding: 16px; }
-    :host ::ng-deep fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
-    :host ::ng-deep legend, :host ::ng-deep h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
-    :host ::ng-deep .option { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #2b3040; border-radius: 10px; cursor: pointer; }
-    :host ::ng-deep .option.chosen { border-color: #7c9cff; background: #20263a; }
-    :host ::ng-deep .option:focus-within { outline: 2px solid #7c9cff; outline-offset: 2px; }
-    :host ::ng-deep button { margin-top: 12px; background: #5b7cfa; color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-    :host ::ng-deep button:disabled { opacity: 0.45; cursor: not-allowed; }
-    :host ::ng-deep .results { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-    :host ::ng-deep .row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.92rem; margin-bottom: 4px; }
-    :host ::ng-deep .track { height: 10px; background: #262b3a; border-radius: 999px; overflow: hidden; }
-    :host ::ng-deep .bar { height: 100%; background: #5b7cfa; border-radius: 999px; transition: width 500ms ease-out; }
-    :host ::ng-deep .mine .bar { background: #3fb950; }
-    :host ::ng-deep .you { color: #3fb950; font-weight: 600; }
-    :host ::ng-deep .total { color: #9aa0b4; font-size: 0.85rem; margin: 12px 0 0; }
-    @media (prefers-reduced-motion: reduce) { :host ::ng-deep .bar { transition: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        background: #11131a;
+        color: #e8e8ee;
+        font-family: system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      .app {
+        max-width: 460px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      :host ::ng-deep .poll {
+        background: #1a1d27;
+        border: 1px solid #2b3040;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      :host ::ng-deep fieldset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 8px;
+      }
+      :host ::ng-deep legend,
+      :host ::ng-deep h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+      :host ::ng-deep .option {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border: 1px solid #2b3040;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      :host ::ng-deep .option.chosen {
+        border-color: #7c9cff;
+        background: #20263a;
+      }
+      :host ::ng-deep .option:focus-within {
+        outline: 2px solid #7c9cff;
+        outline-offset: 2px;
+      }
+      :host ::ng-deep button {
+        margin-top: 12px;
+        background: #5b7cfa;
+        color: #fff;
+        border: 0;
+        border-radius: 8px;
+        padding: 9px 16px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      :host ::ng-deep button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      :host ::ng-deep .results {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+      }
+      :host ::ng-deep .row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 0.92rem;
+        margin-bottom: 4px;
+      }
+      :host ::ng-deep .track {
+        height: 10px;
+        background: #262b3a;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      :host ::ng-deep .bar {
+        height: 100%;
+        background: #5b7cfa;
+        border-radius: 999px;
+        transition: width 500ms ease-out;
+      }
+      :host ::ng-deep .mine .bar {
+        background: #3fb950;
+      }
+      :host ::ng-deep .you {
+        color: #3fb950;
+        font-weight: 600;
+      }
+      :host ::ng-deep .total {
+        color: #9aa0b4;
+        font-size: 0.85rem;
+        margin: 12px 0 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :host ::ng-deep .bar {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly options: PollOption[] = [
@@ -5275,7 +6867,9 @@ export function percentages(counts: number[]): number[] {
   const floors = raw.map(Math.floor);
   let left = 100 - floors.reduce((a, b) => a + b, 0);
   // Hand the missing points to the biggest fractional parts first.
-  const order = raw.map((r, i): [number, number] => [r - floors[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+  const order = raw
+    .map((r, i): [number, number] => [r - floors[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1]);
   for (const [, i] of order) {
     if (left-- <= 0) break;
     floors[i]++;
@@ -5283,10 +6877,22 @@ export function percentages(counts: number[]): number[] {
   return floors;
 }
 `,
-          "/src/app/poll.component.ts": `import { Component, EventEmitter, Input, OnInit, Output, computed, signal } from "@angular/core";
+          "/src/app/poll.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 import { percentages } from "./percentages";
 
-export interface PollOption { id: string; label: string; votes: number; }
+export interface PollOption {
+  id: string;
+  label: string;
+  votes: number;
+}
 let nextPollId = 0;
 
 @Component({
@@ -5298,12 +6904,22 @@ let nextPollId = 0;
           <legend>{{ question }}</legend>
           @for (o of tally(); track o.id) {
             <label class="option" [class.chosen]="choice() === o.id">
-              <input type="radio" [name]="name" [value]="o.id" [checked]="choice() === o.id" (change)="choice.set(o.id)" />
+              <input
+                type="radio"
+                [name]="name"
+                [value]="o.id"
+                [checked]="choice() === o.id"
+                (change)="choice.set(o.id)"
+              />
               {{ o.label }}
             </label>
           }
         </fieldset>
-        <button type="submit" data-testid="vote" [disabled]="!choice()">Vote</button>
+        <button
+          type="submit"
+          data-testid="vote"
+          [disabled]="!choice()"
+        >Vote</button>
         <p class="total">{{ total() }} votes so far</p>
       </form>
     } @else {
@@ -5311,7 +6927,10 @@ let nextPollId = 0;
         <h2 [id]="name + '-q'">{{ question }}</h2>
         <ul class="results">
           @for (o of tally(); track o.id; let i = $index) {
-            <li [class.mine]="o.id === votedId()" [attr.data-testid]="'result-' + o.id">
+            <li
+              [class.mine]="o.id === votedId()"
+              [attr.data-testid]="'result-' + o.id"
+            >
               <div class="row">
                 <span>{{ o.label }}@if (o.id === votedId()) {<strong class="you"> (your vote)</strong>}</span>
                 <span>{{ pcts()[i] }}% · {{ o.votes }}</span>
@@ -5323,7 +6942,10 @@ let nextPollId = 0;
             </li>
           }
         </ul>
-        <p class="total" role="status">Thanks for voting! {{ total() }} votes in total.</p>
+        <p
+          class="total"
+          role="status"
+        >Thanks for voting! {{ total() }} votes in total.</p>
       </section>
     }
   \`,
@@ -5333,11 +6955,15 @@ export class PollComponent implements OnInit {
   @Input({ required: true }) options!: PollOption[];
   @Output() voted = new EventEmitter<string>();
 
-  readonly name = "poll-" + nextPollId++; // unique radio-group name per instance
+  // unique radio-group name per instance
+  readonly name = "poll-" + nextPollId++;
   readonly tally = signal<PollOption[]>([]);
   readonly votedId = signal<string | null>(null);
-  readonly choice = signal<string | null>(null); // selected radio, not yet submitted
-  readonly total = computed(() => this.tally().reduce((sum, o) => sum + o.votes, 0));
+  // selected radio, not yet submitted
+  readonly choice = signal<string | null>(null);
+  readonly total = computed(() =>
+    this.tally().reduce((sum, o) => sum + o.votes, 0),
+  );
   readonly pcts = computed(() => percentages(this.tally().map((o) => o.votes)));
 
   // @Input values arrive before ngOnInit: copy them into local state once.
@@ -5350,7 +6976,9 @@ export class PollComponent implements OnInit {
     // signal.set is synchronous: a second click in the same tick sees votedId.
     if (!id || this.votedId()) return;
     this.votedId.set(id);
-    this.tally.update((list) => list.map((o) => (o.id === id ? { ...o, votes: o.votes + 1 } : o)));
+    this.tally.update((list) =>
+      list.map((o) => (o.id === id ? { ...o, votes: o.votes + 1 } : o)),
+    );
     this.voted.emit(id);
   }
 }
@@ -5462,12 +7090,18 @@ useEffect(() => {
   let alive = true;
   let unsubscribe = () => {};
   server.getPoll().then((p) => {
-    if (!alive) return; // unmounted (or StrictMode test unmount) before load
+    // unmounted (or StrictMode test unmount) before load
+    if (!alive) return;
     setPoll(p);
     setVotedId(loadVote(p.id));
-    unsubscribe = server.subscribe(({ optionId }) => setPoll((cur) => bump(cur, optionId, +1)));
+    unsubscribe = server.subscribe(({ optionId }) =>
+      setPoll((cur) => bump(cur, optionId, +1)),
+    );
   });
-  return () => { alive = false; unsubscribe(); };
+  return () => {
+    alive = false;
+    unsubscribe();
+  };
 }, [server]);
 ~~~
 
@@ -5489,7 +7123,8 @@ const vote = (optionId) => {
     () => {
       inFlight.current = false;
       setPending(false);
-      saveVote(poll.id, optionId); // persist only what the server accepted
+      // persist only what the server accepted
+      saveVote(poll.id, optionId);
       setBurst((b) => b + 1);
     },
     (err) => {
@@ -5498,7 +7133,7 @@ const vote = (optionId) => {
       setVotedId(null);
       setPending(false);
       setError(err.message);
-    }
+    },
   );
 };
 ~~~
@@ -5513,7 +7148,11 @@ The rollback is \`bump(cur, optionId, -1)\` on the **current** state, not \`setP
 
 ~~~js
 export const loadVote = (pollId) => {
-  try { return localStorage.getItem("poll:" + pollId); } catch { return null; }
+  try {
+    return localStorage.getItem("poll:" + pollId);
+  } catch {
+    return null;
+  }
 };
 ~~~
 
@@ -5544,17 +7183,44 @@ export default function Confetti({ burst }) {
     const t = setTimeout(() => setPieces([]), 1200);
     return () => clearTimeout(t);
   }, [burst]);
-  return <div className="confetti" aria-hidden="true">{pieces.map((p) => <span key={burst + "-" + p.id} className="piece" style={p.style} />)}</div>;
+  return (
+    <div className="confetti" aria-hidden="true">
+      {pieces.map((p) => (
+        <span
+          key={burst + "-" + p.id}
+          className="piece"
+          style={p.style}
+        />
+      ))}
+    </div>
+  );
 }
 ~~~
 
 ~~~css
-.piece { position: absolute; left: 50%; top: 45%; width: 8px; height: 12px; opacity: 0;
-  animation: confetti 1100ms ease-out var(--delay) forwards; }
+.piece {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 8px;
+  height: 12px;
+  opacity: 0;
+  animation: confetti 1100ms ease-out var(--delay) forwards;
+}
 @keyframes confetti {
-  0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-  35%  { opacity: 1; transform: translate(calc(var(--x) * 0.6), var(--up)) rotate(calc(var(--r) * 0.4)); }
-  100% { opacity: 0; transform: translate(var(--x), var(--down)) rotate(var(--r)); }
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.6), var(--up))
+      rotate(calc(var(--r) * 0.4));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--down)) rotate(var(--r));
+  }
 }
 ~~~
 
@@ -5568,7 +7234,7 @@ One keyframe serves every piece; each piece differs only through its CSS custom 
 
 The driver loaded the widget, waited across live pushes, voted for Tacos with the failure toggle on, waited for the rollback, voted for Pizza with it off, checked the confetti and storage, and finally remounted the widget to simulate a reload. Output, unedited:
 
-\`\`\`
+\`\`\`text
 [react] t=0       Loading poll...
 [react] t=300     total 34 | Tacos 41% · 14 | Ramen 32% · 11 | Pizza 27% · 9
 [react] t=1500    total 35 | Tacos 40% · 14 | Ramen 34% · 12 | Pizza 26% · 9
@@ -5704,7 +7370,11 @@ export default function App() {
   return (
     <main className="app">
       <LivePoll key={mountKey} server={server} />
-      <button className="link" data-testid="remount" onClick={() => setMountKey((k) => k + 1)}>
+      <button
+        className="link"
+        data-testid="remount"
+        onClick={() => setMountKey((k) => k + 1)}
+      >
         Remount widget (simulates a reload)
       </button>
     </main>
@@ -5713,10 +7383,18 @@ export default function App() {
 `,
           "/src/Confetti.js": `import { useEffect, useState } from "react";
 
-const COLORS = ["#ffca28", "#ef5350", "#66bb6a", "#42a5f5", "#ab47bc", "#ff7043"];
+const COLORS = [
+  "#ffca28",
+  "#ef5350",
+  "#66bb6a",
+  "#42a5f5",
+  "#ab47bc",
+  "#ff7043",
+];
 
 const reducedMotion = () =>
-  typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function makePieces(n) {
   return Array.from({ length: n }, (_, i) => ({
@@ -5744,7 +7422,9 @@ export default function Confetti({ burst }) {
   }, [burst]);
   return (
     <div className="confetti" aria-hidden="true" data-testid="confetti">
-      {pieces.map((p) => <span key={burst + "-" + p.id} className="piece" style={p.style} />)}
+      {pieces.map((p) => (
+        <span key={burst + "-" + p.id} className="piece" style={p.style} />
+      ))}
     </div>
   );
 }
@@ -5756,7 +7436,9 @@ import Confetti from "./Confetti";
 
 const bump = (poll, optionId, delta) => ({
   ...poll,
-  options: poll.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + delta } : o)),
+  options: poll.options.map((o) =>
+    o.id === optionId ? { ...o, votes: o.votes + delta } : o,
+  ),
 });
 
 export default function LivePoll({ server }) {
@@ -5766,7 +7448,8 @@ export default function LivePoll({ server }) {
   const [error, setError] = useState(null);
   const [burst, setBurst] = useState(0);
   const [failNext, setFailNext] = useState(false);
-  const inFlight = useRef(false); // a ref, so a double click in one tick sees it
+  // a ref, so a double click in one tick sees it
+  const inFlight = useRef(false);
 
   useEffect(() => {
     let alive = true;
@@ -5776,12 +7459,22 @@ export default function LivePoll({ server }) {
       setPoll(p);
       setVotedId(loadVote(p.id));
       // Live updates arrive as deltas: "someone voted for X".
-      unsubscribe = server.subscribe(({ optionId }) => setPoll((cur) => bump(cur, optionId, +1)));
+      unsubscribe = server.subscribe(({ optionId }) =>
+        setPoll((cur) => bump(cur, optionId, +1)),
+      );
     });
-    return () => { alive = false; unsubscribe(); };
+    return () => {
+      alive = false;
+      unsubscribe();
+    };
   }, [server]);
 
-  if (!poll) return <p className="poll" role="status">Loading poll...</p>;
+  if (!poll)
+    return (
+      <p className="poll" role="status">
+        Loading poll...
+      </p>
+    );
 
   const total = poll.options.reduce((s, o) => s + o.votes, 0);
   const pcts = percentages(poll.options.map((o) => o.votes));
@@ -5809,17 +7502,23 @@ export default function LivePoll({ server }) {
         setVotedId(null);
         setPending(false);
         setError(err.message);
-      }
+      },
     );
   };
 
-  const forget = () => { saveVote(poll.id, null); setVotedId(null); };
+  const forget = () => {
+    saveVote(poll.id, null);
+    setVotedId(null);
+  };
 
   return (
     <section className="poll" aria-labelledby="poll-q">
       <header className="poll-head">
         <h2 id="poll-q">{poll.question}</h2>
-        <span className="live"><span className="dot" aria-hidden="true" />Live · <span data-testid="total">{total}</span> votes</span>
+        <span className="live">
+          <span className="dot" aria-hidden="true" />
+          Live · <span data-testid="total">{total}</span> votes
+        </span>
       </header>
       <ul className="options">
         {poll.options.map((o, i) => (
@@ -5831,18 +7530,49 @@ export default function LivePoll({ server }) {
               disabled={!!votedId || pending}
               onClick={() => vote(o.id)}
             >
-              <span className="bar" style={{ width: pcts[i] + "%" }} aria-hidden="true" />
-              <span className="opt-label">{o.label}{votedId === o.id ? " ✓" : ""}</span>
-              <span className="opt-num">{pcts[i]}% · {o.votes}</span>
+              <span
+                className="bar"
+                style={{ width: pcts[i] + "%" }}
+                aria-hidden="true"
+              />
+              <span className="opt-label">
+                {o.label}
+                {votedId === o.id ? " ✓" : ""}
+              </span>
+              <span className="opt-num">
+                {pcts[i]}% · {o.votes}
+              </span>
             </button>
           </li>
         ))}
       </ul>
-      <p className="msg" role="status">{pending ? "Saving your vote..." : votedId ? "Vote counted. Thank you!" : "Tap an option to vote."}</p>
-      {error && <p className="err" role="alert">{error}</p>}
+      <p className="msg" role="status">
+        {pending
+          ? "Saving your vote..."
+          : votedId
+            ? "Vote counted. Thank you!"
+            : "Tap an option to vote."}
+      </p>
+      {error && (
+        <p className="err" role="alert">
+          {error}
+        </p>
+      )}
       <div className="tools">
-        <label><input type="checkbox" data-testid="fail" checked={failNext} onChange={(e) => setFailNext(e.target.checked)} /> Make the next vote fail</label>
-        {votedId && !pending && <button className="link" onClick={forget}>Forget my vote (demo)</button>}
+        <label>
+          <input
+            type="checkbox"
+            data-testid="fail"
+            checked={failNext}
+            onChange={(e) => setFailNext(e.target.checked)}
+          />{" "}
+          Make the next vote fail
+        </label>
+        {votedId && !pending && (
+          <button className="link" onClick={forget}>
+            Forget my vote (demo)
+          </button>
+        )}
       </div>
       <Confetti burst={burst} />
     </section>
@@ -5856,7 +7586,12 @@ export function percentages(counts) {
   const raw = counts.map((c) => (c / total) * 100);
   const out = raw.map(Math.floor);
   let left = 100 - out.reduce((a, b) => a + b, 0);
-  raw.map((r, i) => [r - out[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).forEach(([, i]) => { if (left-- > 0) out[i]++; });
+  raw
+    .map((r, i) => [r - out[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1])
+    .forEach(([, i]) => {
+      if (left-- > 0) out[i]++;
+    });
   return out;
 }
 `,
@@ -5877,7 +7612,9 @@ export function createPollServer() {
   };
   let failNext = false;
   const copy = () => JSON.parse(JSON.stringify(poll));
-  const bump = (id) => { poll.options.find((o) => o.id === id).votes++; };
+  const bump = (id) => {
+    poll.options.find((o) => o.id === id).votes++;
+  };
 
   return {
     getPoll: () => new Promise((r) => setTimeout(() => r(copy()), 150)),
@@ -5886,11 +7623,13 @@ export function createPollServer() {
         setTimeout(() => {
           if (failNext) {
             failNext = false;
-            return reject(new Error("The server rejected the vote. Please try again."));
+            return reject(
+              new Error("The server rejected the vote. Please try again."),
+            );
           }
           bump(optionId);
           resolve({ ok: true });
-        }, 800)
+        }, 800),
       ),
     // Push other people's votes. Returns an unsubscribe function.
     subscribe(cb) {
@@ -5902,7 +7641,9 @@ export function createPollServer() {
       }, 1000);
       return () => clearInterval(id);
     },
-    setFailNext: (v) => { failNext = v; },
+    setFailNext: (v) => {
+      failNext = v;
+    },
   };
 }
 
@@ -5911,44 +7652,186 @@ export const server = createPollServer();
           "/src/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
 // access is wrapped. The widget still works without it; it just forgets.
 export const loadVote = (pollId) => {
-  try { return localStorage.getItem("poll:" + pollId); } catch { return null; }
+  try {
+    return localStorage.getItem("poll:" + pollId);
+  } catch {
+    return null;
+  }
 };
 export const saveVote = (pollId, optionId) => {
   try {
     if (optionId) localStorage.setItem("poll:" + pollId, optionId);
     else localStorage.removeItem("poll:" + pollId);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 };
 `,
-          "/styles.css": `body { margin: 0; background: #0e1016; color: #eceef4; font-family: system-ui, sans-serif; }
-.app { max-width: 460px; margin: 0 auto; padding: 16px; }
-.poll { position: relative; background: #181b24; border: 1px solid #2a2f3d; border-radius: 14px; padding: 16px; }
-.poll-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: baseline; }
-h2 { font-size: 1.05rem; margin: 0 0 10px; }
-.live { font-size: 0.8rem; color: #9aa3b8; display: inline-flex; align-items: center; gap: 6px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #ef5350; animation: pulse 1.4s infinite; }
-@keyframes pulse { 50% { opacity: 0.3; } }
-.options { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.opt { position: relative; overflow: hidden; width: 100%; display: flex; justify-content: space-between; gap: 8px; padding: 12px; border-radius: 10px; border: 1px solid #2f3546; background: #1f2330; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.opt:disabled { cursor: default; }
-.opt:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.opt.mine { border-color: #66bb6a; }
-.bar { position: absolute; inset: 0 auto 0 0; background: rgba(122, 162, 255, 0.22); transition: width 600ms ease-out; }
-.opt.mine .bar { background: rgba(102, 187, 106, 0.28); }
-.opt-label, .opt-num { position: relative; }
-.opt-num { font-variant-numeric: tabular-nums; color: #b9c0d4; }
-.msg { font-size: 0.85rem; color: #9aa3b8; margin: 12px 0 0; }
-.err { color: #ff8a80; font-size: 0.85rem; margin: 6px 0 0; }
-.tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; font-size: 0.8rem; color: #9aa3b8; }
-.link { background: none; border: 0; color: #7aa2ff; text-decoration: underline; cursor: pointer; padding: 0; font: inherit; margin-top: 10px; }
-.confetti { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.piece { position: absolute; left: 50%; top: 45%; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: confetti 1100ms ease-out var(--delay) forwards; }
-@keyframes confetti {
-  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-  35% { opacity: 1; transform: translate(calc(var(--x) * 0.6), var(--up)) rotate(calc(var(--r) * 0.4)); }
-  100% { opacity: 0; transform: translate(var(--x), var(--down)) rotate(var(--r)); }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0e1016;
+  color: #eceef4;
+  font-family: system-ui, sans-serif;
 }
-@media (prefers-reduced-motion: reduce) { .bar, .dot { transition: none; animation: none; } }
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.poll {
+  position: relative;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 14px;
+  padding: 16px;
+}
+.poll-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: baseline;
+}
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+}
+.live {
+  font-size: 0.8rem;
+  color: #9aa3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef5350;
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.opt {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #2f3546;
+  background: #1f2330;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.opt:disabled {
+  cursor: default;
+}
+.opt:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.opt.mine {
+  border-color: #66bb6a;
+}
+.bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(122, 162, 255, 0.22);
+  transition: width 600ms ease-out;
+}
+.opt.mine .bar {
+  background: rgba(102, 187, 106, 0.28);
+}
+.opt-label,
+.opt-num {
+  position: relative;
+}
+.opt-num {
+  font-variant-numeric: tabular-nums;
+  color: #b9c0d4;
+}
+.msg {
+  font-size: 0.85rem;
+  color: #9aa3b8;
+  margin: 12px 0 0;
+}
+.err {
+  color: #ff8a80;
+  font-size: 0.85rem;
+  margin: 6px 0 0;
+}
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #9aa3b8;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  margin-top: 10px;
+}
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.piece {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti 1100ms ease-out var(--delay) forwards;
+}
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.6), var(--up))
+      rotate(calc(var(--r) * 0.4));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--down)) rotate(var(--r));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .dot {
+    transition: none;
+    animation: none;
+  }
+}
 `,
         },
       },
@@ -5992,9 +7875,14 @@ props.server.getPoll().then((p) => {
   if (!alive) return; // unmounted before the poll arrived
   poll.value = p;
   votedId.value = loadVote(p.id);
-  unsubscribe = props.server.subscribe(({ optionId }) => bump(optionId, +1));
+  unsubscribe = props.server.subscribe(({ optionId }) =>
+    bump(optionId, +1),
+  );
 });
-onUnmounted(() => { alive = false; unsubscribe(); });
+onUnmounted(() => {
+  alive = false;
+  unsubscribe();
+});
 ~~~
 
 \`script setup\` runs once per instance, so the request starts during setup with no \`onMounted\` needed. The subscription begins only after the snapshot is in place.
@@ -6002,7 +7890,8 @@ onUnmounted(() => { alive = false; unsubscribe(); });
 ~~~js
 const bump = (optionId, delta) => {
   const o = poll.value.options.find((x) => x.id === optionId);
-  o.votes += delta; // deep reactivity: mutating the option re-renders its row
+  // deep reactivity: mutating the option re-renders its row
+  o.votes += delta;
 };
 ~~~
 
@@ -6012,15 +7901,25 @@ Because \`poll\` is a deep \`ref\`, mutating one option is tracked, and \`total\
 
 ~~~js
 function vote(optionId) {
-  if (votedId.value || pending.value) return; // refs update synchronously
+  // refs update synchronously
+  if (votedId.value || pending.value) return;
   error.value = null;
   pending.value = true;
   votedId.value = optionId;
   bump(optionId, +1); // optimistic
   props.server.setFailNext(failNext.value);
   props.server.vote(optionId).then(
-    () => { pending.value = false; saveVote(poll.value.id, optionId); burst.value++; },
-    (err) => { bump(optionId, -1); votedId.value = null; pending.value = false; error.value = err.message; }
+    () => {
+      pending.value = false;
+      saveVote(poll.value.id, optionId);
+      burst.value++;
+    },
+    (err) => {
+      bump(optionId, -1);
+      votedId.value = null;
+      pending.value = false;
+      error.value = err.message;
+    },
   );
 }
 ~~~
@@ -6043,14 +7942,19 @@ watch(
     clearTimeout(timer);
     pieces.value = makePieces(30);
     timer = setTimeout(() => (pieces.value = []), 1200);
-  }
+  },
 );
 onBeforeUnmount(() => clearTimeout(timer));
 ~~~
 
 ~~~vue
 <div class="confetti" aria-hidden="true">
-  <span v-for="p in pieces" :key="p.id" class="piece" :style="p.style"></span>
+  <span
+    v-for="p in pieces"
+    :key="p.id"
+    class="piece"
+    :style="p.style"
+  ></span>
 </div>
 ~~~
 
@@ -6068,7 +7972,7 @@ Each piece's \`style\` object holds CSS custom properties (\`--x\`, \`--up\`, \`
 
 The driver loaded the widget, waited through live pushes, voted for Tacos with the failure toggle on, waited for the rollback, voted for Pizza, checked confetti and storage, and remounted. Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] t=0       Loading poll...
 [vue] t=300     total 34 | Tacos 41% · 14 | Ramen 32% · 11 | Pizza 27% · 9
 [vue] t=1500    total 35 | Tacos 40% · 14 | Ramen 34% · 12 | Pizza 26% · 9
@@ -6187,52 +8091,200 @@ const mountKey = ref(0);
 <template>
   <main class="app">
     <LivePoll :key="mountKey" :server="server" />
-    <button class="link" data-testid="remount" @click="mountKey++">Remount widget (simulates a reload)</button>
+    <button
+      class="link"
+      data-testid="remount"
+      @click="mountKey++"
+    >Remount widget (simulates a reload)</button>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0e1016; color: #eceef4; font-family: system-ui, sans-serif; }
-.app { max-width: 460px; margin: 0 auto; padding: 16px; }
-.poll { position: relative; background: #181b24; border: 1px solid #2a2f3d; border-radius: 14px; padding: 16px; }
-.poll-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: baseline; }
-h2 { font-size: 1.05rem; margin: 0 0 10px; }
-.live { font-size: 0.8rem; color: #9aa3b8; display: inline-flex; align-items: center; gap: 6px; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #ef5350; animation: pulse 1.4s infinite; }
-@keyframes pulse { 50% { opacity: 0.3; } }
-.options { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.opt { position: relative; overflow: hidden; width: 100%; display: flex; justify-content: space-between; gap: 8px; padding: 12px; border-radius: 10px; border: 1px solid #2f3546; background: #1f2330; color: inherit; font: inherit; cursor: pointer; text-align: left; }
-.opt:disabled { cursor: default; }
-.opt:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.opt.mine { border-color: #66bb6a; }
-.bar { position: absolute; inset: 0 auto 0 0; background: rgba(122, 162, 255, 0.22); transition: width 600ms ease-out; }
-.opt.mine .bar { background: rgba(102, 187, 106, 0.28); }
-.opt-label, .opt-num { position: relative; }
-.opt-num { font-variant-numeric: tabular-nums; color: #b9c0d4; }
-.msg { font-size: 0.85rem; color: #9aa3b8; margin: 12px 0 0; }
-.err { color: #ff8a80; font-size: 0.85rem; margin: 6px 0 0; }
-.tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; font-size: 0.8rem; color: #9aa3b8; }
-.link { background: none; border: 0; color: #7aa2ff; text-decoration: underline; cursor: pointer; padding: 0; font: inherit; margin-top: 10px; }
-.confetti { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.piece { position: absolute; left: 50%; top: 45%; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: confetti 1100ms ease-out var(--delay) forwards; }
-@keyframes confetti {
-  0% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
-  35% { opacity: 1; transform: translate(calc(var(--x) * 0.6), var(--up)) rotate(calc(var(--r) * 0.4)); }
-  100% { opacity: 0; transform: translate(var(--x), var(--down)) rotate(var(--r)); }
+body {
+  margin: 0;
+  background: #0e1016;
+  color: #eceef4;
+  font-family: system-ui, sans-serif;
 }
-@media (prefers-reduced-motion: reduce) { .bar, .dot { transition: none; animation: none; } }
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.poll {
+  position: relative;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 14px;
+  padding: 16px;
+}
+.poll-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  align-items: baseline;
+}
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 10px;
+}
+.live {
+  font-size: 0.8rem;
+  color: #9aa3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef5350;
+  animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+.options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.opt {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #2f3546;
+  background: #1f2330;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.opt:disabled {
+  cursor: default;
+}
+.opt:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.opt.mine {
+  border-color: #66bb6a;
+}
+.bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(122, 162, 255, 0.22);
+  transition: width 600ms ease-out;
+}
+.opt.mine .bar {
+  background: rgba(102, 187, 106, 0.28);
+}
+.opt-label,
+.opt-num {
+  position: relative;
+}
+.opt-num {
+  font-variant-numeric: tabular-nums;
+  color: #b9c0d4;
+}
+.msg {
+  font-size: 0.85rem;
+  color: #9aa3b8;
+  margin: 12px 0 0;
+}
+.err {
+  color: #ff8a80;
+  font-size: 0.85rem;
+  margin: 6px 0 0;
+}
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #9aa3b8;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  margin-top: 10px;
+}
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.piece {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti 1100ms ease-out var(--delay) forwards;
+}
+@keyframes confetti {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 0.6), var(--up))
+      rotate(calc(var(--r) * 0.4));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--down)) rotate(var(--r));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .dot {
+    transition: none;
+    animation: none;
+  }
+}
 </style>
 `,
           "/src/components/Confetti.vue": `<script setup>
 import { onBeforeUnmount, ref, watch } from "vue";
 
 const props = defineProps({ burst: { type: Number, default: 0 } });
-const COLORS = ["#ffca28", "#ef5350", "#66bb6a", "#42a5f5", "#ab47bc", "#ff7043"];
+const COLORS = [
+  "#ffca28",
+  "#ef5350",
+  "#66bb6a",
+  "#42a5f5",
+  "#ab47bc",
+  "#ff7043",
+];
 const pieces = ref([]);
 let timer = null;
 
 const reducedMotion = () =>
-  typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function makePieces(n) {
   return Array.from({ length: n }, (_, i) => ({
@@ -6257,7 +8309,7 @@ watch(
     clearTimeout(timer);
     pieces.value = makePieces(30);
     timer = setTimeout(() => (pieces.value = []), 1200);
-  }
+  },
 );
 onBeforeUnmount(() => clearTimeout(timer));
 </script>
@@ -6297,14 +8349,28 @@ props.server.getPoll().then((p) => {
   // Live updates arrive as deltas: "someone voted for X".
   unsubscribe = props.server.subscribe(({ optionId }) => bump(optionId, +1));
 });
-onUnmounted(() => { alive = false; unsubscribe(); });
+onUnmounted(() => {
+  alive = false;
+  unsubscribe();
+});
 
-const total = computed(() => (poll.value ? poll.value.options.reduce((s, o) => s + o.votes, 0) : 0));
-const pcts = computed(() => (poll.value ? percentages(poll.value.options.map((o) => o.votes)) : []));
-const message = computed(() => (pending.value ? "Saving your vote..." : votedId.value ? "Vote counted. Thank you!" : "Tap an option to vote."));
+const total = computed(() =>
+  poll.value ? poll.value.options.reduce((s, o) => s + o.votes, 0) : 0,
+);
+const pcts = computed(() =>
+  poll.value ? percentages(poll.value.options.map((o) => o.votes)) : [],
+);
+const message = computed(() =>
+  pending.value
+    ? "Saving your vote..."
+    : votedId.value
+      ? "Vote counted. Thank you!"
+      : "Tap an option to vote.",
+);
 
 function vote(optionId) {
-  // Vue updates are synchronous, so a second click in the same tick sees pending.
+  // Vue updates are synchronous, so a second
+  // click in the same tick sees pending.
   if (votedId.value || pending.value) return;
   error.value = null;
   pending.value = true;
@@ -6314,7 +8380,8 @@ function vote(optionId) {
   props.server.vote(optionId).then(
     () => {
       pending.value = false;
-      saveVote(poll.value.id, optionId); // persist only what the server accepted
+      // persist only what the server accepted
+      saveVote(poll.value.id, optionId);
       burst.value++;
     },
     (err) => {
@@ -6324,7 +8391,7 @@ function vote(optionId) {
       votedId.value = null;
       pending.value = false;
       error.value = err.message;
-    }
+    },
   );
 }
 
@@ -6350,7 +8417,11 @@ function forget() {
           :disabled="!!votedId || pending"
           @click="vote(o.id)"
         >
-          <span class="bar" :style="{ width: pcts[i] + '%' }" aria-hidden="true"></span>
+          <span
+            class="bar"
+            :style="{ width: pcts[i] + '%' }"
+            aria-hidden="true"
+          ></span>
           <span class="opt-label">{{ o.label }}{{ votedId === o.id ? " ✓" : "" }}</span>
           <span class="opt-num">{{ pcts[i] }}% · {{ o.votes }}</span>
         </button>
@@ -6360,7 +8431,11 @@ function forget() {
     <p v-if="error" class="err" role="alert">{{ error }}</p>
     <div class="tools">
       <label><input v-model="failNext" type="checkbox" data-testid="fail" /> Make the next vote fail</label>
-      <button v-if="votedId && !pending" class="link" @click="forget">Forget my vote (demo)</button>
+      <button
+        v-if="votedId && !pending"
+        class="link"
+        @click="forget"
+      >Forget my vote (demo)</button>
     </div>
     <Confetti :burst="burst" />
   </section>
@@ -6373,7 +8448,12 @@ export function percentages(counts) {
   const raw = counts.map((c) => (c / total) * 100);
   const out = raw.map(Math.floor);
   let left = 100 - out.reduce((a, b) => a + b, 0);
-  raw.map((r, i) => [r - out[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).forEach(([, i]) => { if (left-- > 0) out[i]++; });
+  raw
+    .map((r, i) => [r - out[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1])
+    .forEach(([, i]) => {
+      if (left-- > 0) out[i]++;
+    });
   return out;
 }
 `,
@@ -6394,7 +8474,9 @@ export function createPollServer() {
   };
   let failNext = false;
   const copy = () => JSON.parse(JSON.stringify(poll));
-  const bump = (id) => { poll.options.find((o) => o.id === id).votes++; };
+  const bump = (id) => {
+    poll.options.find((o) => o.id === id).votes++;
+  };
 
   return {
     getPoll: () => new Promise((r) => setTimeout(() => r(copy()), 150)),
@@ -6403,11 +8485,13 @@ export function createPollServer() {
         setTimeout(() => {
           if (failNext) {
             failNext = false;
-            return reject(new Error("The server rejected the vote. Please try again."));
+            return reject(
+              new Error("The server rejected the vote. Please try again."),
+            );
           }
           bump(optionId);
           resolve({ ok: true });
-        }, 800)
+        }, 800),
       ),
     // Push other people's votes. Returns an unsubscribe function.
     subscribe(cb) {
@@ -6419,7 +8503,9 @@ export function createPollServer() {
       }, 1000);
       return () => clearInterval(id);
     },
-    setFailNext: (v) => { failNext = v; },
+    setFailNext: (v) => {
+      failNext = v;
+    },
   };
 }
 
@@ -6428,13 +8514,19 @@ export const server = createPollServer();
           "/src/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
 // access is wrapped. The widget still works without it; it just forgets.
 export const loadVote = (pollId) => {
-  try { return localStorage.getItem("poll:" + pollId); } catch { return null; }
+  try {
+    return localStorage.getItem("poll:" + pollId);
+  } catch {
+    return null;
+  }
 };
 export const saveVote = (pollId, optionId) => {
   try {
     if (optionId) localStorage.setItem("poll:" + pollId, optionId);
     else localStorage.removeItem("poll:" + pollId);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 };
 `,
         },
@@ -6478,7 +8570,9 @@ ngOnInit() {
     if (!this.alive) return; // destroyed before the poll arrived
     this.poll.set(p);
     this.votedId.set(loadVote(p.id));
-    this.unsubscribe = this.server.subscribe(({ optionId }) => this.bump(optionId, +1));
+    this.unsubscribe = this.server.subscribe(({ optionId }) =>
+      this.bump(optionId, +1),
+    );
   });
 }
 ngOnDestroy() {
@@ -6487,7 +8581,15 @@ ngOnDestroy() {
 }
 
 private bump(optionId: string, delta: number) {
-  this.poll.update((p) => p && { ...p, options: p.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + delta } : o)) });
+  this.poll.update(
+    (p) =>
+      p && {
+        ...p,
+        options: p.options.map((o) =>
+          o.id === optionId ? { ...o, votes: o.votes + delta } : o,
+        ),
+      },
+  );
 }
 ~~~
 
@@ -6497,15 +8599,25 @@ The server comes in as an \`@Input\`, so \`ngOnInit\` is the first place it is a
 
 ~~~ts
 vote(optionId: string) {
-  if (this.votedId() || this.pending()) return; // signals are synchronous
+  // signals are synchronous
+  if (this.votedId() || this.pending()) return;
   this.error.set(null);
   this.pending.set(true);
   this.votedId.set(optionId);
   this.bump(optionId, +1); // optimistic
   this.server.setFailNext(this.failNext());
   this.server.vote(optionId).then(
-    () => { this.pending.set(false); saveVote(this.poll()!.id, optionId); this.burst.update((b) => b + 1); },
-    (err: Error) => { this.bump(optionId, -1); this.votedId.set(null); this.pending.set(false); this.error.set(err.message); }
+    () => {
+      this.pending.set(false);
+      saveVote(this.poll()!.id, optionId);
+      this.burst.update((b) => b + 1);
+    },
+    (err: Error) => {
+      this.bump(optionId, -1);
+      this.votedId.set(null);
+      this.pending.set(false);
+      this.error.set(err.message);
+    },
   );
 }
 ~~~
@@ -6523,12 +8635,11 @@ vote(optionId: string) {
 ~~~ts
 @Component({
   selector: "app-confetti",
-  template: \`
-    <div class="confetti" aria-hidden="true">
-      @for (p of pieces(); track p.id) {
-        <span class="piece" [style]="p.style"></span>
-      }
-    </div>\`,
+  template: \` <div class="confetti" aria-hidden="true">
+    @for (p of pieces(); track p.id) {
+      <span class="piece" [style]="p.style"></span>
+    }
+  </div>\`,
 })
 export class ConfettiComponent implements OnChanges, OnDestroy {
   @Input() burst = 0;
@@ -6539,7 +8650,9 @@ export class ConfettiComponent implements OnChanges, OnDestroy {
     this.pieces.set(this.make(30));
     this.timer = setTimeout(() => this.pieces.set([]), 1200);
   }
-  ngOnDestroy() { clearTimeout(this.timer); }
+  ngOnDestroy() {
+    clearTimeout(this.timer);
+  }
 }
 ~~~
 
@@ -6557,7 +8670,7 @@ The app wraps the widget in \`@if (mounted())\`. "Remount" sets \`mounted\` to f
 
 The driver loaded the widget, waited through live pushes, voted for Tacos with the failure toggle on, waited for the rollback, voted for Pizza, checked confetti and storage, and remounted. \`angular:app\` (AOT) run; the \`angular:playground\` (JIT) run printed identical lines:
 
-\`\`\`
+\`\`\`text
 [angular:app] t=0       Loading poll...
 [angular:app] t=300     total 34 | Tacos 41% · 14 | Ramen 32% · 11 | Pizza 27% · 9
 [angular:app] t=1500    total 35 | Tacos 40% · 14 | Ramen 34% · 12 | Pizza 26% · 9
@@ -6677,10 +8790,15 @@ import { server } from "./poll-server";
       @if (mounted()) {
         <app-live-poll [server]="server" />
       }
-      <button class="link" data-testid="remount" (click)="remount()">Remount widget (simulates a reload)</button>
+      <button
+        class="link"
+        data-testid="remount"
+        (click)="remount()"
+      >Remount widget (simulates a reload)</button>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0e1016; color: #eceef4; font-family: system-ui, sans-serif; min-height: 100vh; }
     .app { max-width: 460px; margin: 0 auto; padding: 16px; }
     :host ::ng-deep .poll { position: relative; background: #181b24; border: 1px solid #2a2f3d; border-radius: 14px; padding: 16px; }
@@ -6710,7 +8828,8 @@ import { server } from "./poll-server";
       100% { opacity: 0; transform: translate(var(--x), var(--down)) rotate(var(--r)); }
     }
     @media (prefers-reduced-motion: reduce) { :host ::ng-deep .bar, :host ::ng-deep .dot { transition: none; animation: none; } }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly server = server;
@@ -6718,17 +8837,29 @@ export class AppComponent {
 
   remount() {
     this.mounted.set(false); // this render destroys the component...
-    setTimeout(() => this.mounted.set(true)); // ...the next one creates a fresh one
+    // ...the next one creates a fresh one
+    setTimeout(() => this.mounted.set(true));
   }
 }
 `,
           "/src/app/confetti.component.ts": `import { Component, Input, OnChanges, OnDestroy, signal } from "@angular/core";
 
-const COLORS = ["#ffca28", "#ef5350", "#66bb6a", "#42a5f5", "#ab47bc", "#ff7043"];
-interface Piece { id: string; style: Record<string, string>; }
+const COLORS = [
+  "#ffca28",
+  "#ef5350",
+  "#66bb6a",
+  "#42a5f5",
+  "#ab47bc",
+  "#ff7043",
+];
+interface Piece {
+  id: string;
+  style: Record<string, string>;
+}
 
 const reducedMotion = () =>
-  typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Hand-made confetti: a new burst number fires 30 spans animated by one CSS
 // keyframe; they are removed after 1.2 s.
@@ -6773,7 +8904,14 @@ export class ConfettiComponent implements OnChanges, OnDestroy {
   }
 }
 `,
-          "/src/app/live-poll.component.ts": `import { Component, Input, OnDestroy, OnInit, computed, signal } from "@angular/core";
+          "/src/app/live-poll.component.ts": `import {
+  Component,
+  Input,
+  OnDestroy,
+  OnInit,
+  computed,
+  signal,
+} from "@angular/core";
 import { ConfettiComponent } from "./confetti.component";
 import { Poll, PollServer } from "./poll-server";
 import { loadVote, percentages, saveVote } from "./util";
@@ -6798,7 +8936,11 @@ import { loadVote, percentages, saveVote } from "./util";
                 [disabled]="!!votedId() || pending()"
                 (click)="vote(o.id)"
               >
-                <span class="bar" [style.width.%]="pcts()[i]" aria-hidden="true"></span>
+                <span
+                  class="bar"
+                  [style.width.%]="pcts()[i]"
+                  aria-hidden="true"
+                ></span>
                 <span class="opt-label">{{ o.label }}{{ votedId() === o.id ? " ✓" : "" }}</span>
                 <span class="opt-num">{{ pcts()[i] }}% · {{ o.votes }}</span>
               </button>
@@ -6812,7 +8954,10 @@ import { loadVote, percentages, saveVote } from "./util";
         <div class="tools">
           <label><input type="checkbox" data-testid="fail" [checked]="failNext()" (change)="failNext.set($any($event.target).checked)" /> Make the next vote fail</label>
           @if (votedId() && !pending()) {
-            <button class="link" (click)="forget()">Forget my vote (demo)</button>
+            <button
+              class="link"
+              (click)="forget()"
+            >Forget my vote (demo)</button>
           }
         </div>
         <app-confetti [burst]="burst()" />
@@ -6831,16 +8976,34 @@ export class LivePollComponent implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly burst = signal(0);
   readonly failNext = signal(false);
-  readonly total = computed(() => this.poll()?.options.reduce((s, o) => s + o.votes, 0) ?? 0);
-  readonly pcts = computed(() => percentages(this.poll()?.options.map((o) => o.votes) ?? []));
-  readonly message = computed(() => (this.pending() ? "Saving your vote..." : this.votedId() ? "Vote counted. Thank you!" : "Tap an option to vote."));
+  readonly total = computed(
+    () => this.poll()?.options.reduce((s, o) => s + o.votes, 0) ?? 0,
+  );
+  readonly pcts = computed(() =>
+    percentages(this.poll()?.options.map((o) => o.votes) ?? []),
+  );
+  readonly message = computed(() =>
+    this.pending()
+      ? "Saving your vote..."
+      : this.votedId()
+        ? "Vote counted. Thank you!"
+        : "Tap an option to vote.",
+  );
 
   private alive = true;
   private unsubscribe = () => {};
 
   // Immutable update: a new poll object, so the signal notifies.
   private bump(optionId: string, delta: number) {
-    this.poll.update((p) => p && { ...p, options: p.options.map((o) => (o.id === optionId ? { ...o, votes: o.votes + delta } : o)) });
+    this.poll.update(
+      (p) =>
+        p && {
+          ...p,
+          options: p.options.map((o) =>
+            o.id === optionId ? { ...o, votes: o.votes + delta } : o,
+          ),
+        },
+    );
   }
 
   ngOnInit() {
@@ -6849,7 +9012,9 @@ export class LivePollComponent implements OnInit, OnDestroy {
       this.poll.set(p);
       this.votedId.set(loadVote(p.id));
       // Live updates arrive as deltas: "someone voted for X".
-      this.unsubscribe = this.server.subscribe(({ optionId }) => this.bump(optionId, +1));
+      this.unsubscribe = this.server.subscribe(({ optionId }) =>
+        this.bump(optionId, +1),
+      );
     });
   }
 
@@ -6868,7 +9033,8 @@ export class LivePollComponent implements OnInit, OnDestroy {
     this.server.vote(optionId).then(
       () => {
         this.pending.set(false);
-        saveVote(this.poll()!.id, optionId); // persist only what the server accepted
+        // persist only what the server accepted
+        saveVote(this.poll()!.id, optionId);
         this.burst.update((b) => b + 1);
       },
       (err: Error) => {
@@ -6878,7 +9044,7 @@ export class LivePollComponent implements OnInit, OnDestroy {
         this.votedId.set(null);
         this.pending.set(false);
         this.error.set(err.message);
-      }
+      },
     );
   }
 
@@ -6891,8 +9057,16 @@ export class LivePollComponent implements OnInit, OnDestroy {
           "/src/app/poll-server.ts": `// A simulated poll backend. No network: every call is a setTimeout. Other
 // people "vote" on a fixed schedule (one vote every 1000 ms, from a fixed
 // sequence) so the live results move by themselves and runs are repeatable.
-export interface Option { id: string; label: string; votes: number; }
-export interface Poll { id: string; question: string; options: Option[]; }
+export interface Option {
+  id: string;
+  label: string;
+  votes: number;
+}
+export interface Poll {
+  id: string;
+  question: string;
+  options: Option[];
+}
 
 const OTHERS = ["ramen", "tacos", "ramen", "pizza", "ramen", "tacos"];
 
@@ -6908,7 +9082,9 @@ export function createPollServer() {
   };
   let failNext = false;
   const copy = (): Poll => JSON.parse(JSON.stringify(poll));
-  const bump = (id: string) => { poll.options.find((o) => o.id === id)!.votes++; };
+  const bump = (id: string) => {
+    poll.options.find((o) => o.id === id)!.votes++;
+  };
 
   return {
     getPoll: () => new Promise<Poll>((r) => setTimeout(() => r(copy()), 150)),
@@ -6917,11 +9093,13 @@ export function createPollServer() {
         setTimeout(() => {
           if (failNext) {
             failNext = false;
-            return reject(new Error("The server rejected the vote. Please try again."));
+            return reject(
+              new Error("The server rejected the vote. Please try again."),
+            );
           }
           bump(optionId);
           resolve({ ok: true });
-        }, 800)
+        }, 800),
       ),
     // Push other people's votes. Returns an unsubscribe function.
     subscribe(cb: (e: { optionId: string }) => void) {
@@ -6933,7 +9111,9 @@ export function createPollServer() {
       }, 1000);
       return () => clearInterval(id);
     },
-    setFailNext: (v: boolean) => { failNext = v; },
+    setFailNext: (v: boolean) => {
+      failNext = v;
+    },
   };
 }
 
@@ -6947,20 +9127,31 @@ export function percentages(counts: number[]): number[] {
   const raw = counts.map((c) => (c / total) * 100);
   const out = raw.map(Math.floor);
   let left = 100 - out.reduce((a, b) => a + b, 0);
-  raw.map((r, i): [number, number] => [r - out[i], i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]).forEach(([, i]) => { if (left-- > 0) out[i]++; });
+  raw
+    .map((r, i): [number, number] => [r - out[i], i])
+    .sort((a, b) => b[0] - a[0] || a[1] - b[1])
+    .forEach(([, i]) => {
+      if (left-- > 0) out[i]++;
+    });
   return out;
 }
 
 // localStorage can throw (private mode, blocked storage, quota), so every
 // access is wrapped. The widget still works without it; it just forgets.
 export const loadVote = (pollId: string): string | null => {
-  try { return localStorage.getItem("poll:" + pollId); } catch { return null; }
+  try {
+    return localStorage.getItem("poll:" + pollId);
+  } catch {
+    return null;
+  }
 };
 export const saveVote = (pollId: string, optionId: string | null) => {
   try {
     if (optionId) localStorage.setItem("poll:" + pollId, optionId);
     else localStorage.removeItem("poll:" + pollId);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 };
 `,
         },
@@ -7070,17 +9261,30 @@ export function quizReducer(state, action) {
     case "RESTART":
       return { ...initialState, phase: "question", deadline };
     case "SELECT":
-      return state.phase === "question" ? { ...state, selected: action.option } : state;
+      return state.phase === "question"
+        ? { ...state, selected: action.option }
+        : state;
     case "NEXT":
     case "TIMEOUT": {
       if (state.phase !== "question") return state;
-      if (action.type === "TIMEOUT" && action.index !== state.index) return state;
-      if (action.type === "NEXT" && state.selected === null) return state;
-      const answers = [...state.answers, action.type === "TIMEOUT" ? null : state.selected];
+      if (action.type === "TIMEOUT" && action.index !== state.index)
+        return state;
+      if (action.type === "NEXT" && state.selected === null)
+        return state;
+      const answers = [
+        ...state.answers,
+        action.type === "TIMEOUT" ? null : state.selected,
+      ];
       const last = state.index === QUESTIONS.length - 1;
       return last
         ? { ...state, phase: "review", answers, selected: null }
-        : { ...state, index: state.index + 1, answers, selected: null, deadline };
+        : {
+            ...state,
+            index: state.index + 1,
+            answers,
+            selected: null,
+            deadline,
+          };
     }
     default:
       return state;
@@ -7098,7 +9302,8 @@ useEffect(() => {
   const id = setInterval(() => {
     const t = Date.now();
     setNow(t);
-    if (t >= state.deadline) dispatch({ type: "TIMEOUT", index, at: t });
+    if (t >= state.deadline)
+      dispatch({ type: "TIMEOUT", index, at: t });
   }, 200);
   return () => clearInterval(id);
 }, [phase, index, state.deadline]);
@@ -7114,9 +9319,11 @@ Counting down with \`seconds - 1\` every 1000 ms drifts, because intervals are n
 useEffect(() => {
   if (phase !== "question") return;
   const onKey = (e) => {
-    if (e.target.closest && e.target.closest("button")) return; // let buttons handle their own Enter
+    // let buttons handle their own Enter
+    if (e.target.closest && e.target.closest("button")) return;
     const n = Number(e.key);
-    if (n >= 1 && n <= q.options.length) dispatch({ type: "SELECT", option: n - 1 });
+    if (n >= 1 && n <= q.options.length)
+      dispatch({ type: "SELECT", option: n - 1 });
     if (e.key === "Enter") dispatch({ type: "NEXT", at: Date.now() });
   };
   window.addEventListener("keydown", onKey);
@@ -7141,7 +9348,8 @@ The heading has \`tabIndex={-1}\`, which makes it focusable by script without ad
 ### Step 5: the review is pure derivation
 
 ~~~js
-export const scoreOf = (answers) => answers.filter((a, i) => a === QUESTIONS[i].answer).length;
+export const scoreOf = (answers) =>
+  answers.filter((a, i) => a === QUESTIONS[i].answer).length;
 ~~~
 
 The review loops over \`QUESTIONS\` and \`answers\` together: ✓ or ✗, "Your answer: ..." or "Time ran out", and the correct answer when wrong. Nothing about the score is stored.
@@ -7150,7 +9358,7 @@ The review loops over \`QUESTIONS\` and \`answers\` together: ✓ or ✗, "Your 
 
 The driver started the quiz, waited 2.2 s, pressed \`1\` and Enter, picked a wrong option and clicked Next, then waited out the full 10-second timer on question 3, pressed \`3\` on question 4, finished and restarted. Output, unedited:
 
-\`\`\`
+\`\`\`text
 [react] start    : Question 1 of 4 | timer 10s | heading: Which HTML element is the largest heading? | selected: none | Next disabled: true | focus: heading
 [react] +2.2s    : timer 8s
 [react] key 1    : Question 1 of 4 | timer 8s | heading: Which HTML element is the largest heading? | selected: 1 | Next disabled: false
@@ -7296,9 +9504,11 @@ export default function App() {
   useEffect(() => {
     if (phase !== "question") return;
     const onKey = (e) => {
-      if (e.target.closest && e.target.closest("button")) return; // let buttons handle their own Enter
+      // let buttons handle their own Enter
+      if (e.target.closest && e.target.closest("button")) return;
       const n = Number(e.key);
-      if (n >= 1 && n <= q.options.length) dispatch({ type: "SELECT", option: n - 1 });
+      if (n >= 1 && n <= q.options.length)
+        dispatch({ type: "SELECT", option: n - 1 });
       if (e.key === "Enter") dispatch({ type: "NEXT", at: Date.now() });
     };
     window.addEventListener("keydown", onKey);
@@ -7315,8 +9525,19 @@ export default function App() {
       <main className="app">
         <section className="card">
           <h1>Frontend quiz</h1>
-          <p>{QUESTIONS.length} questions, {SECONDS_PER_QUESTION} seconds each. Keys 1-4 pick an answer, Enter goes on.</p>
-          <button data-testid="start" onClick={() => { setNow(Date.now()); dispatch({ type: "START", at: Date.now() }); }}>Start quiz</button>
+          <p>
+            {QUESTIONS.length} questions, {SECONDS_PER_QUESTION} seconds each.
+            Keys 1-4 pick an answer, Enter goes on.
+          </p>
+          <button
+            data-testid="start"
+            onClick={() => {
+              setNow(Date.now());
+              dispatch({ type: "START", at: Date.now() });
+            }}
+          >
+            Start quiz
+          </button>
         </section>
       </main>
     );
@@ -7325,31 +9546,66 @@ export default function App() {
   if (phase === "review") {
     return (
       <main className="app">
-        <Review answers={state.answers} onRestart={() => { setNow(Date.now()); dispatch({ type: "RESTART", at: Date.now() }); }} />
+        <Review
+          answers={state.answers}
+          onRestart={() => {
+            setNow(Date.now());
+            dispatch({ type: "RESTART", at: Date.now() });
+          }}
+        />
       </main>
     );
   }
 
-  const left = Math.max(0, Math.min(SECONDS_PER_QUESTION, Math.ceil((state.deadline - now) / 1000)));
+  const left = Math.max(
+    0,
+    Math.min(SECONDS_PER_QUESTION, Math.ceil((state.deadline - now) / 1000)),
+  );
   return (
     <main className="app">
       <section className="card" aria-labelledby="q-title">
         <div className="top">
-          <span data-testid="progress">Question {index + 1} of {QUESTIONS.length}</span>
-          <span className={"timer" + (left <= 3 ? " low" : "")} role="timer" data-testid="timer">{left}s</span>
+          <span data-testid="progress">
+            Question {index + 1} of {QUESTIONS.length}
+          </span>
+          <span
+            className={"timer" + (left <= 3 ? " low" : "")}
+            role="timer"
+            data-testid="timer"
+          >
+            {left}s
+          </span>
         </div>
-        <progress max={QUESTIONS.length} value={index} aria-label="Quiz progress" />
-        <h2 id="q-title" tabIndex={-1} ref={heading} data-testid="heading">{q.prompt}</h2>
+        <progress
+          max={QUESTIONS.length}
+          value={index}
+          aria-label="Quiz progress"
+        />
+        <h2 id="q-title" tabIndex={-1} ref={heading} data-testid="heading">
+          {q.prompt}
+        </h2>
         <fieldset className="options">
           <legend className="sr-only">Choose one answer</legend>
           {q.options.map((opt, i) => (
-            <label key={opt} className={"option" + (selected === i ? " chosen" : "")}>
-              <input type="radio" name={q.id} checked={selected === i} onChange={() => dispatch({ type: "SELECT", option: i })} />
+            <label
+              key={opt}
+              className={"option" + (selected === i ? " chosen" : "")}
+            >
+              <input
+                type="radio"
+                name={q.id}
+                checked={selected === i}
+                onChange={() => dispatch({ type: "SELECT", option: i })}
+              />
               <kbd aria-hidden="true">{i + 1}</kbd> {opt}
             </label>
           ))}
         </fieldset>
-        <button data-testid="next" disabled={selected === null} onClick={() => dispatch({ type: "NEXT", at: Date.now() })}>
+        <button
+          data-testid="next"
+          disabled={selected === null}
+          onClick={() => dispatch({ type: "NEXT", at: Date.now() })}
+        >
           {index === QUESTIONS.length - 1 ? "Finish" : "Next"}
         </button>
       </section>
@@ -7368,15 +9624,22 @@ export default function Review({ answers, onRestart }) {
   return (
     <section className="card" aria-labelledby="review-title">
       <h2 id="review-title" tabIndex={-1} ref={heading} data-testid="heading">
-        You scored {score} / {QUESTIONS.length} ({Math.round((score / QUESTIONS.length) * 100)}%)
+        You scored {score} / {QUESTIONS.length} (
+        {Math.round((score / QUESTIONS.length) * 100)}%)
       </h2>
       <ol className="review">
         {QUESTIONS.map((q, i) => {
           const a = answers[i];
           const ok = a === q.answer;
           return (
-            <li key={q.id} className={ok ? "ok" : "bad"} data-testid={"review-" + q.id}>
-              <p className="prompt">{ok ? "✓" : "✗"} {q.prompt}</p>
+            <li
+              key={q.id}
+              className={ok ? "ok" : "bad"}
+              data-testid={"review-" + q.id}
+            >
+              <p className="prompt">
+                {ok ? "✓" : "✗"} {q.prompt}
+              </p>
               <p className="detail">
                 {a === null ? "Time ran out" : "Your answer: " + q.options[a]}
                 {!ok && " · Correct: " + q.options[q.answer]}
@@ -7385,23 +9648,56 @@ export default function Review({ answers, onRestart }) {
           );
         })}
       </ol>
-      <button data-testid="restart" onClick={onRestart}>Restart quiz</button>
+      <button data-testid="restart" onClick={onRestart}>
+        Restart quiz
+      </button>
     </section>
   );
 }
 `,
           "/src/questions.js": `// \`answer\` is the index of the correct option.
 export const QUESTIONS = [
-  { id: "q1", prompt: "Which HTML element is the largest heading?", options: ["<h1>", "<head>", "<heading>", "<h6>"], answer: 0 },
-  { id: "q2", prompt: "Which array method keeps only the items that pass a test?", options: ["map", "filter", "reduce", "forEach"], answer: 1 },
-  { id: "q3", prompt: "What does CSS stand for?", options: ["Creative Style Sheets", "Cascading Style Sheets", "Computer Style Sheets", "Colorful Style Sheets"], answer: 1 },
-  { id: "q4", prompt: "Which HTTP status code means Not Found?", options: ["200", "301", "404", "500"], answer: 2 },
+  {
+    id: "q1",
+    prompt: "Which HTML element is the largest heading?",
+    options: ["<h1>", "<head>", "<heading>", "<h6>"],
+    answer: 0,
+  },
+  {
+    id: "q2",
+    prompt: "Which array method keeps only the items that pass a test?",
+    options: ["map", "filter", "reduce", "forEach"],
+    answer: 1,
+  },
+  {
+    id: "q3",
+    prompt: "What does CSS stand for?",
+    options: [
+      "Creative Style Sheets",
+      "Cascading Style Sheets",
+      "Computer Style Sheets",
+      "Colorful Style Sheets",
+    ],
+    answer: 1,
+  },
+  {
+    id: "q4",
+    prompt: "Which HTTP status code means Not Found?",
+    options: ["200", "301", "404", "500"],
+    answer: 2,
+  },
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
           "/src/quizReducer.js": `import { QUESTIONS, SECONDS_PER_QUESTION } from "./questions";
 
-export const initialState = { phase: "intro", index: 0, selected: null, answers: [], deadline: 0 };
+export const initialState = {
+  phase: "intro",
+  index: 0,
+  selected: null,
+  answers: [],
+  deadline: 0,
+};
 
 // The whole quiz is one small state machine: intro -> question (x N) -> review.
 // The reducer is pure: the current time comes in on the action (\`at\`).
@@ -7412,18 +9708,30 @@ export function quizReducer(state, action) {
     case "RESTART":
       return { ...initialState, phase: "question", deadline };
     case "SELECT":
-      return state.phase === "question" ? { ...state, selected: action.option } : state;
+      return state.phase === "question"
+        ? { ...state, selected: action.option }
+        : state;
     case "NEXT":
     case "TIMEOUT": {
       if (state.phase !== "question") return state;
       // A late timer from a question we already left must not skip this one.
-      if (action.type === "TIMEOUT" && action.index !== state.index) return state;
+      if (action.type === "TIMEOUT" && action.index !== state.index)
+        return state;
       if (action.type === "NEXT" && state.selected === null) return state;
-      const answers = [...state.answers, action.type === "TIMEOUT" ? null : state.selected];
+      const answers = [
+        ...state.answers,
+        action.type === "TIMEOUT" ? null : state.selected,
+      ];
       const last = state.index === QUESTIONS.length - 1;
       return last
         ? { ...state, phase: "review", answers, selected: null }
-        : { ...state, index: state.index + 1, answers, selected: null, deadline };
+        : {
+            ...state,
+            index: state.index + 1,
+            answers,
+            selected: null,
+            deadline,
+          };
     }
     default:
       return state;
@@ -7431,32 +9739,130 @@ export function quizReducer(state, action) {
 }
 
 // Derived, never stored: recomputed from answers whenever needed.
-export const scoreOf = (answers) => answers.filter((a, i) => a === QUESTIONS[i].answer).length;
+export const scoreOf = (answers) =>
+  answers.filter((a, i) => a === QUESTIONS[i].answer).length;
 `,
-          "/styles.css": `body { margin: 0; background: #101218; color: #e9ebf1; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.card { background: #191c25; border: 1px solid #2a2f3c; border-radius: 14px; padding: 18px; }
-h1 { font-size: 1.3rem; margin-top: 0; }
-h2 { font-size: 1.1rem; margin: 14px 0; }
-h2:focus { outline: none; }
-.top { display: flex; justify-content: space-between; font-size: 0.85rem; color: #a0a7ba; }
-.timer { font-variant-numeric: tabular-nums; font-weight: 600; color: #8fd18f; }
-.timer.low { color: #ff8a80; }
-progress { width: 100%; height: 6px; margin-top: 8px; accent-color: #6c8cff; }
-.options { border: 0; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
-.option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2f3544; border-radius: 10px; cursor: pointer; }
-.option.chosen { border-color: #6c8cff; background: #20263a; }
-.option:focus-within { outline: 2px solid #6c8cff; outline-offset: 2px; }
-kbd { font-size: 0.75rem; background: #2a3042; border-radius: 4px; padding: 1px 6px; color: #c4cadb; }
-button { background: #6c8cff; color: #0d1020; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.review { padding-left: 18px; display: grid; gap: 10px; }
-.review p { margin: 0; }
-.review .detail { font-size: 0.85rem; color: #a0a7ba; }
-.review .ok .prompt { color: #8fd18f; }
-.review .bad .prompt { color: #ff8a80; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+          "/styles.css": `body {
+  margin: 0;
+  background: #101218;
+  color: #e9ebf1;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.card {
+  background: #191c25;
+  border: 1px solid #2a2f3c;
+  border-radius: 14px;
+  padding: 18px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.1rem;
+  margin: 14px 0;
+}
+h2:focus {
+  outline: none;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #a0a7ba;
+}
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #8fd18f;
+}
+.timer.low {
+  color: #ff8a80;
+}
+progress {
+  width: 100%;
+  height: 6px;
+  margin-top: 8px;
+  accent-color: #6c8cff;
+}
+.options {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #2f3544;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.option.chosen {
+  border-color: #6c8cff;
+  background: #20263a;
+}
+.option:focus-within {
+  outline: 2px solid #6c8cff;
+  outline-offset: 2px;
+}
+kbd {
+  font-size: 0.75rem;
+  background: #2a3042;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #c4cadb;
+}
+button {
+  background: #6c8cff;
+  color: #0d1020;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.review {
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+}
+.review p {
+  margin: 0;
+}
+.review .detail {
+  font-size: 0.85rem;
+  color: #a0a7ba;
+}
+.review .ok .prompt {
+  color: #8fd18f;
+}
+.review .bad .prompt {
+  color: #ff8a80;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 `,
         },
       },
@@ -7507,7 +9913,8 @@ function record(answer) {
   }
 }
 function next() {
-  if (phase.value === "question" && selected.value !== null) record(selected.value);
+  if (phase.value === "question" && selected.value !== null)
+    record(selected.value);
 }
 ~~~
 
@@ -7522,11 +9929,16 @@ watch(
     if (p !== "question") return;
     const id = setInterval(() => {
       now.value = Date.now();
-      if (now.value >= deadline.value && index.value === i && phase.value === "question") record(null);
+      if (
+        now.value >= deadline.value &&
+        index.value === i &&
+        phase.value === "question"
+      )
+        record(null);
     }, 200);
     onCleanup(() => clearInterval(id));
   },
-  { immediate: true }
+  { immediate: true },
 );
 ~~~
 
@@ -7539,7 +9951,8 @@ When \`index\` or \`phase\` changes, Vue first calls the previous run's \`onClea
 ~~~js
 const onKey = (e) => {
   if (phase.value !== "question") return;
-  if (e.target.closest && e.target.closest("button")) return; // buttons handle their own Enter
+  // buttons handle their own Enter
+  if (e.target.closest && e.target.closest("button")) return;
   const n = Number(e.key);
   if (n >= 1 && n <= current.value.options.length) select(n - 1);
   if (e.key === "Enter") next();
@@ -7554,9 +9967,13 @@ onScopeDispose(() => window.removeEventListener("keydown", onKey));
 
 ~~~js
 const heading = useTemplateRef("heading");
-watch([phase, index], () => {
-  if (phase.value === "question") heading.value?.focus();
-}, { flush: "post" });
+watch(
+  [phase, index],
+  () => {
+    if (phase.value === "question") heading.value?.focus();
+  },
+  { flush: "post" },
+);
 ~~~
 
 \`flush: "post"\` runs after Vue has patched the DOM, so the heading already shows the new question. The heading has \`tabindex="-1"\` so it can receive focus from script without joining the Tab order. \`ReviewList.vue\` focuses its score heading in \`onMounted\`.
@@ -7569,7 +9986,7 @@ watch([phase, index], () => {
 
 The driver started the quiz, waited 2.2 s, pressed \`1\` and Enter, picked a wrong option and clicked Next, waited out the 10-second timer on question 3, pressed \`3\` on question 4, finished and restarted. Vue 3.5.44, unedited:
 
-\`\`\`
+\`\`\`text
 [vue] start    : Question 1 of 4 | timer 10s | heading: Which HTML element is the largest heading? | selected: none | Next disabled: true | focus: heading
 [vue] +2.2s    : timer 8s
 [vue] key 1    : Question 1 of 4 | timer 8s | heading: Which HTML element is the largest heading? | selected: 1 | Next disabled: false
@@ -7686,14 +10103,30 @@ import { SECONDS_PER_QUESTION } from "./questions";
 import { useQuiz } from "./useQuiz";
 import ReviewList from "./components/ReviewList.vue";
 
-const { phase, index, selected, answers, current, score, secondsLeft, start, select, next, total } = useQuiz();
+const {
+  phase,
+  index,
+  selected,
+  answers,
+  current,
+  score,
+  secondsLeft,
+  start,
+  select,
+  next,
+  total,
+} = useQuiz();
 const heading = useTemplateRef("heading");
 
 // After each new question renders, move focus to its heading so screen
 // readers announce it. flush "post" = after the DOM update.
-watch([phase, index], () => {
-  if (phase.value === "question") heading.value?.focus();
-}, { flush: "post" });
+watch(
+  [phase, index],
+  () => {
+    if (phase.value === "question") heading.value?.focus();
+  },
+  { flush: "post" },
+);
 </script>
 
 <template>
@@ -7704,52 +10137,180 @@ watch([phase, index], () => {
       <button data-testid="start" @click="start">Start quiz</button>
     </section>
 
-    <ReviewList v-else-if="phase === 'review'" :answers="answers" :score="score" @restart="start" />
+    <ReviewList
+      v-else-if="phase === 'review'"
+      :answers="answers"
+      :score="score"
+      @restart="start"
+    />
 
     <section v-else class="card" aria-labelledby="q-title">
       <div class="top">
         <span data-testid="progress">Question {{ index + 1 }} of {{ total }}</span>
-        <span :class="['timer', { low: secondsLeft <= 3 }]" role="timer" data-testid="timer">{{ secondsLeft }}s</span>
+        <span
+          :class="['timer', { low: secondsLeft <= 3 }]"
+          role="timer"
+          data-testid="timer"
+        >{{ secondsLeft }}s</span>
       </div>
-      <progress :max="total" :value="index" aria-label="Quiz progress"></progress>
-      <h2 id="q-title" ref="heading" tabindex="-1" data-testid="heading">{{ current.prompt }}</h2>
+      <progress
+        :max="total"
+        :value="index"
+        aria-label="Quiz progress"
+      ></progress>
+      <h2
+        id="q-title"
+        ref="heading"
+        tabindex="-1"
+        data-testid="heading"
+      >{{ current.prompt }}</h2>
       <fieldset class="options">
         <legend class="sr-only">Choose one answer</legend>
-        <label v-for="(opt, i) in current.options" :key="current.id + opt" :class="['option', { chosen: selected === i }]">
-          <input type="radio" :name="current.id" :checked="selected === i" @change="select(i)" />
+        <label
+          v-for="(opt, i) in current.options"
+          :key="current.id + opt"
+          :class="['option', { chosen: selected === i }]"
+        >
+          <input
+            type="radio"
+            :name="current.id"
+            :checked="selected === i"
+            @change="select(i)"
+          />
           <kbd aria-hidden="true">{{ i + 1 }}</kbd> {{ opt }}
         </label>
       </fieldset>
-      <button data-testid="next" :disabled="selected === null" @click="next">{{ index === total - 1 ? "Finish" : "Next" }}</button>
+      <button
+        data-testid="next"
+        :disabled="selected === null"
+        @click="next"
+      >{{ index === total - 1 ? "Finish" : "Next" }}</button>
     </section>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #101218; color: #e9ebf1; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.card { background: #191c25; border: 1px solid #2a2f3c; border-radius: 14px; padding: 18px; }
-h1 { font-size: 1.3rem; margin-top: 0; }
-h2 { font-size: 1.1rem; margin: 14px 0; }
-h2:focus { outline: none; }
-.top { display: flex; justify-content: space-between; font-size: 0.85rem; color: #a0a7ba; }
-.timer { font-variant-numeric: tabular-nums; font-weight: 600; color: #8fd18f; }
-.timer.low { color: #ff8a80; }
-progress { width: 100%; height: 6px; margin-top: 8px; accent-color: #6c8cff; }
-.options { border: 0; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
-.option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2f3544; border-radius: 10px; cursor: pointer; }
-.option.chosen { border-color: #6c8cff; background: #20263a; }
-.option:focus-within { outline: 2px solid #6c8cff; outline-offset: 2px; }
-kbd { font-size: 0.75rem; background: #2a3042; border-radius: 4px; padding: 1px 6px; color: #c4cadb; }
-button { background: #6c8cff; color: #0d1020; border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: not-allowed; }
-button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-.review { padding-left: 18px; display: grid; gap: 10px; }
-.review p { margin: 0; }
-.review .detail { font-size: 0.85rem; color: #a0a7ba; }
-.review .ok .prompt { color: #8fd18f; }
-.review .bad .prompt { color: #ff8a80; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+body {
+  margin: 0;
+  background: #101218;
+  color: #e9ebf1;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.card {
+  background: #191c25;
+  border: 1px solid #2a2f3c;
+  border-radius: 14px;
+  padding: 18px;
+}
+h1 {
+  font-size: 1.3rem;
+  margin-top: 0;
+}
+h2 {
+  font-size: 1.1rem;
+  margin: 14px 0;
+}
+h2:focus {
+  outline: none;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #a0a7ba;
+}
+.timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #8fd18f;
+}
+.timer.low {
+  color: #ff8a80;
+}
+progress {
+  width: 100%;
+  height: 6px;
+  margin-top: 8px;
+  accent-color: #6c8cff;
+}
+.options {
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #2f3544;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.option.chosen {
+  border-color: #6c8cff;
+  background: #20263a;
+}
+.option:focus-within {
+  outline: 2px solid #6c8cff;
+  outline-offset: 2px;
+}
+kbd {
+  font-size: 0.75rem;
+  background: #2a3042;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: #c4cadb;
+}
+button {
+  background: #6c8cff;
+  color: #0d1020;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.review {
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+}
+.review p {
+  margin: 0;
+}
+.review .detail {
+  font-size: 0.85rem;
+  color: #a0a7ba;
+}
+.review .ok .prompt {
+  color: #8fd18f;
+}
+.review .bad .prompt {
+  color: #ff8a80;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
 </style>
 `,
           "/src/components/ReviewList.vue": `<script setup>
@@ -7768,7 +10329,12 @@ onMounted(() => heading.value.focus()); // announce the score on arrival
       You scored {{ score }} / {{ QUESTIONS.length }} ({{ Math.round((score / QUESTIONS.length) * 100) }}%)
     </h2>
     <ol class="review">
-      <li v-for="(q, i) in QUESTIONS" :key="q.id" :class="props.answers[i] === q.answer ? 'ok' : 'bad'" :data-testid="'review-' + q.id">
+      <li
+        v-for="(q, i) in QUESTIONS"
+        :key="q.id"
+        :class="props.answers[i] === q.answer ? 'ok' : 'bad'"
+        :data-testid="'review-' + q.id"
+      >
         <p class="prompt">{{ props.answers[i] === q.answer ? "✓" : "✗" }} {{ q.prompt }}</p>
         <p class="detail">
           {{ props.answers[i] === null ? "Time ran out" : "Your answer: " + q.options[props.answers[i]] }}
@@ -7776,16 +10342,44 @@ onMounted(() => heading.value.focus()); // announce the score on arrival
         </p>
       </li>
     </ol>
-    <button data-testid="restart" @click="$emit('restart')">Restart quiz</button>
+    <button
+      data-testid="restart"
+      @click="$emit('restart')"
+    >Restart quiz</button>
   </section>
 </template>
 `,
           "/src/questions.js": `// \`answer\` is the index of the correct option.
 export const QUESTIONS = [
-  { id: "q1", prompt: "Which HTML element is the largest heading?", options: ["<h1>", "<head>", "<heading>", "<h6>"], answer: 0 },
-  { id: "q2", prompt: "Which array method keeps only the items that pass a test?", options: ["map", "filter", "reduce", "forEach"], answer: 1 },
-  { id: "q3", prompt: "What does CSS stand for?", options: ["Creative Style Sheets", "Cascading Style Sheets", "Computer Style Sheets", "Colorful Style Sheets"], answer: 1 },
-  { id: "q4", prompt: "Which HTTP status code means Not Found?", options: ["200", "301", "404", "500"], answer: 2 },
+  {
+    id: "q1",
+    prompt: "Which HTML element is the largest heading?",
+    options: ["<h1>", "<head>", "<heading>", "<h6>"],
+    answer: 0,
+  },
+  {
+    id: "q2",
+    prompt: "Which array method keeps only the items that pass a test?",
+    options: ["map", "filter", "reduce", "forEach"],
+    answer: 1,
+  },
+  {
+    id: "q3",
+    prompt: "What does CSS stand for?",
+    options: [
+      "Creative Style Sheets",
+      "Cascading Style Sheets",
+      "Computer Style Sheets",
+      "Colorful Style Sheets",
+    ],
+    answer: 1,
+  },
+  {
+    id: "q4",
+    prompt: "Which HTTP status code means Not Found?",
+    options: ["200", "301", "404", "500"],
+    answer: 2,
+  },
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
@@ -7802,9 +10396,17 @@ export function useQuiz() {
   const now = ref(Date.now());
 
   const current = computed(() => QUESTIONS[index.value]);
-  const score = computed(() => answers.value.filter((a, i) => a === QUESTIONS[i].answer).length);
+  const score = computed(
+    () => answers.value.filter((a, i) => a === QUESTIONS[i].answer).length,
+  );
   const secondsLeft = computed(() =>
-    Math.max(0, Math.min(SECONDS_PER_QUESTION, Math.ceil((deadline.value - now.value) / 1000)))
+    Math.max(
+      0,
+      Math.min(
+        SECONDS_PER_QUESTION,
+        Math.ceil((deadline.value - now.value) / 1000),
+      ),
+    ),
   );
 
   function startClock() {
@@ -7831,7 +10433,8 @@ export function useQuiz() {
     }
   }
   function next() {
-    if (phase.value === "question" && selected.value !== null) record(selected.value);
+    if (phase.value === "question" && selected.value !== null)
+      record(selected.value);
   }
 
   // Timer: one interval per question. onCleanup clears it when the question
@@ -7843,17 +10446,23 @@ export function useQuiz() {
       const id = setInterval(() => {
         now.value = Date.now();
         // The index check stops a late tick from skipping the next question.
-        if (now.value >= deadline.value && index.value === i && phase.value === "question") record(null);
+        if (
+          now.value >= deadline.value &&
+          index.value === i &&
+          phase.value === "question"
+        )
+          record(null);
       }, 200);
       onCleanup(() => clearInterval(id));
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Keyboard: 1-4 pick an option, Enter goes on.
   const onKey = (e) => {
     if (phase.value !== "question") return;
-    if (e.target.closest && e.target.closest("button")) return; // buttons handle their own Enter
+    // buttons handle their own Enter
+    if (e.target.closest && e.target.closest("button")) return;
     const n = Number(e.key);
     if (n >= 1 && n <= current.value.options.length) select(n - 1);
     if (e.key === "Enter") next();
@@ -7861,7 +10470,19 @@ export function useQuiz() {
   window.addEventListener("keydown", onKey);
   onScopeDispose(() => window.removeEventListener("keydown", onKey));
 
-  return { phase, index, selected, answers, current, score, secondsLeft, start, select, next, total: QUESTIONS.length };
+  return {
+    phase,
+    index,
+    selected,
+    answers,
+    current,
+    score,
+    secondsLeft,
+    start,
+    select,
+    next,
+    total: QUESTIONS.length,
+  };
 }
 `,
         },
@@ -7925,7 +10546,12 @@ effect((onCleanup) => {
   const i = this.index();
   const id = setInterval(() => {
     this.now.set(Date.now());
-    if (this.now() >= this.deadline() && this.index() === i && this.phase() === "question") this.record(null);
+    if (
+      this.now() >= this.deadline() &&
+      this.index() === i &&
+      this.phase() === "question"
+    )
+      this.record(null);
   }, 200);
   onCleanup(() => clearInterval(id));
 });
@@ -7941,7 +10567,8 @@ The effect reads \`phase()\` and \`index()\` synchronously, so it re-runs exactl
 @HostListener("window:keydown", ["$event"])
 onKey(e: KeyboardEvent) {
   if (this.phase() !== "question") return;
-  if ((e.target as Element).closest?.("button")) return; // buttons handle their own Enter
+  // buttons handle their own Enter
+  if ((e.target as Element).closest?.("button")) return;
   const n = Number(e.key);
   if (n >= 1 && n <= this.current().options.length) this.select(n - 1);
   if (e.key === "Enter") this.next();
@@ -7968,7 +10595,12 @@ It re-runs after a render in which \`index\` or \`phase\` changed, when the head
 ~~~html
 @for (opt of current().options; track $index; let i = $index) {
   <label class="option" [class.chosen]="selected() === i">
-    <input type="radio" [name]="current().id" [checked]="selected() === i" (change)="select(i)" />
+    <input
+      type="radio"
+      [name]="current().id"
+      [checked]="selected() === i"
+      (change)="select(i)"
+    />
     <kbd aria-hidden="true">{{ i + 1 }}</kbd> {{ opt }}
   </label>
 }
@@ -7980,7 +10612,7 @@ The first version tracked by \`opt\`. Every new question has four different opti
 
 The driver started the quiz, waited 2.2 s, pressed \`1\` and Enter, picked a wrong option and clicked Next, waited out the 10-second timer on question 3, pressed \`3\` on question 4, finished and restarted. \`angular:app\` (AOT) run; the \`angular:playground\` (JIT) run printed the same lines:
 
-\`\`\`
+\`\`\`text
 [angular:app] start    : Question 1 of 4 | timer 10s | heading: Which HTML element is the largest heading? | selected: none | Next disabled: true | focus: heading
 [angular:app] +2.2s    : timer 8s
 [angular:app] key 1    : Question 1 of 4 | timer 8s | heading: Which HTML element is the largest heading? | selected: 1 | Next disabled: false
@@ -8091,7 +10723,16 @@ Same behaviour as the React and Vue runs (Angular's template whitespace adds a s
 ---
 **Conclusion:** In Angular a quiz is a small state machine in signals with \`computed\` for everything derived. An \`effect\` with \`onCleanup\` gives each question its own interval measured against a deadline, \`@HostListener\` handles shortcuts with automatic cleanup, and \`afterRenderEffect\` moves focus once each question is on screen. The verified AOT and JIT runs covered every path, from key presses to a full timeout and a 2 of 4 review, and the NG0956 warning from the first version showed why \`track\` deserves a moment of thought.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, HostListener, ViewChild, afterRenderEffect, computed, effect, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  afterRenderEffect,
+  computed,
+  effect,
+  signal,
+} from "@angular/core";
 import { QUESTIONS, SECONDS_PER_QUESTION } from "./questions";
 import { ReviewComponent } from "./review.component";
 
@@ -8111,32 +10752,59 @@ type Phase = "intro" | "question" | "review";
           </section>
         }
         @case ("review") {
-          <app-review [answers]="answers()" [score]="score()" (restart)="start()" />
+          <app-review
+            [answers]="answers()"
+            [score]="score()"
+            (restart)="start()"
+          />
         }
         @default {
           <section class="card" aria-labelledby="q-title">
             <div class="top">
               <span data-testid="progress">Question {{ index() + 1 }} of {{ total }}</span>
-              <span [class]="'timer' + (secondsLeft() <= 3 ? ' low' : '')" role="timer" data-testid="timer">{{ secondsLeft() }}s</span>
+              <span
+                [class]="'timer' + (secondsLeft() <= 3 ? ' low' : '')"
+                role="timer"
+                data-testid="timer"
+              >{{ secondsLeft() }}s</span>
             </div>
-            <progress [max]="total" [value]="index()" aria-label="Quiz progress"></progress>
-            <h2 #heading id="q-title" tabindex="-1" data-testid="heading">{{ current().prompt }}</h2>
+            <progress
+              [max]="total"
+              [value]="index()"
+              aria-label="Quiz progress"
+            ></progress>
+            <h2
+              #heading
+              id="q-title"
+              tabindex="-1"
+              data-testid="heading"
+            >{{ current().prompt }}</h2>
             <fieldset class="options">
               <legend class="sr-only">Choose one answer</legend>
               @for (opt of current().options; track $index; let i = $index) {
                 <label class="option" [class.chosen]="selected() === i">
-                  <input type="radio" [name]="current().id" [checked]="selected() === i" (change)="select(i)" />
+                  <input
+                    type="radio"
+                    [name]="current().id"
+                    [checked]="selected() === i"
+                    (change)="select(i)"
+                  />
                   <kbd aria-hidden="true">{{ i + 1 }}</kbd> {{ opt }}
                 </label>
               }
             </fieldset>
-            <button data-testid="next" [disabled]="selected() === null" (click)="next()">{{ index() === total - 1 ? "Finish" : "Next" }}</button>
+            <button
+              data-testid="next"
+              [disabled]="selected() === null"
+              (click)="next()"
+            >{{ index() === total - 1 ? "Finish" : "Next" }}</button>
           </section>
         }
       }
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #101218; color: #e9ebf1; font-family: system-ui, sans-serif; min-height: 100vh; }
     .app { max-width: 520px; margin: 0 auto; padding: 16px; }
     :host ::ng-deep .card { background: #191c25; border: 1px solid #2a2f3c; border-radius: 14px; padding: 18px; }
@@ -8161,7 +10829,8 @@ type Phase = "intro" | "question" | "review";
     :host ::ng-deep .review .ok .prompt { color: #8fd18f; }
     :host ::ng-deep .review .bad .prompt { color: #ff8a80; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly total = QUESTIONS.length;
@@ -8176,9 +10845,17 @@ export class AppComponent {
   private readonly now = signal(Date.now());
 
   readonly current = computed(() => QUESTIONS[this.index()]);
-  readonly score = computed(() => this.answers().filter((a, i) => a === QUESTIONS[i].answer).length);
+  readonly score = computed(
+    () => this.answers().filter((a, i) => a === QUESTIONS[i].answer).length,
+  );
   readonly secondsLeft = computed(() =>
-    Math.max(0, Math.min(SECONDS_PER_QUESTION, Math.ceil((this.deadline() - this.now()) / 1000)))
+    Math.max(
+      0,
+      Math.min(
+        SECONDS_PER_QUESTION,
+        Math.ceil((this.deadline() - this.now()) / 1000),
+      ),
+    ),
   );
 
   @ViewChild("heading") heading?: ElementRef<HTMLElement>;
@@ -8192,7 +10869,12 @@ export class AppComponent {
       const id = setInterval(() => {
         this.now.set(Date.now());
         // The index check stops a late tick from skipping the next question.
-        if (this.now() >= this.deadline() && this.index() === i && this.phase() === "question") this.record(null);
+        if (
+          this.now() >= this.deadline() &&
+          this.index() === i &&
+          this.phase() === "question"
+        )
+          this.record(null);
       }, 200);
       onCleanup(() => clearInterval(id));
     });
@@ -8207,7 +10889,8 @@ export class AppComponent {
   @HostListener("window:keydown", ["$event"])
   onKey(e: KeyboardEvent) {
     if (this.phase() !== "question") return;
-    if ((e.target as Element).closest?.("button")) return; // buttons handle their own Enter
+    // buttons handle their own Enter
+    if ((e.target as Element).closest?.("button")) return;
     const n = Number(e.key);
     if (n >= 1 && n <= this.current().options.length) this.select(n - 1);
     if (e.key === "Enter") this.next();
@@ -8247,17 +10930,55 @@ export class AppComponent {
 }
 `,
           "/src/app/questions.ts": `// \`answer\` is the index of the correct option.
-export interface Question { id: string; prompt: string; options: string[]; answer: number; }
+export interface Question {
+  id: string;
+  prompt: string;
+  options: string[];
+  answer: number;
+}
 
 export const QUESTIONS: Question[] = [
-  { id: "q1", prompt: "Which HTML element is the largest heading?", options: ["<h1>", "<head>", "<heading>", "<h6>"], answer: 0 },
-  { id: "q2", prompt: "Which array method keeps only the items that pass a test?", options: ["map", "filter", "reduce", "forEach"], answer: 1 },
-  { id: "q3", prompt: "What does CSS stand for?", options: ["Creative Style Sheets", "Cascading Style Sheets", "Computer Style Sheets", "Colorful Style Sheets"], answer: 1 },
-  { id: "q4", prompt: "Which HTTP status code means Not Found?", options: ["200", "301", "404", "500"], answer: 2 },
+  {
+    id: "q1",
+    prompt: "Which HTML element is the largest heading?",
+    options: ["<h1>", "<head>", "<heading>", "<h6>"],
+    answer: 0,
+  },
+  {
+    id: "q2",
+    prompt: "Which array method keeps only the items that pass a test?",
+    options: ["map", "filter", "reduce", "forEach"],
+    answer: 1,
+  },
+  {
+    id: "q3",
+    prompt: "What does CSS stand for?",
+    options: [
+      "Creative Style Sheets",
+      "Cascading Style Sheets",
+      "Computer Style Sheets",
+      "Colorful Style Sheets",
+    ],
+    answer: 1,
+  },
+  {
+    id: "q4",
+    prompt: "Which HTTP status code means Not Found?",
+    options: ["200", "301", "404", "500"],
+    answer: 2,
+  },
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
-          "/src/app/review.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild } from "@angular/core";
+          "/src/app/review.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+} from "@angular/core";
 import { QUESTIONS } from "./questions";
 
 @Component({
@@ -8269,7 +10990,10 @@ import { QUESTIONS } from "./questions";
       </h2>
       <ol class="review">
         @for (q of questions; track q.id; let i = $index) {
-          <li [class]="answers[i] === q.answer ? 'ok' : 'bad'" [attr.data-testid]="'review-' + q.id">
+          <li
+            [class]="answers[i] === q.answer ? 'ok' : 'bad'"
+            [attr.data-testid]="'review-' + q.id"
+          >
             <p class="prompt">{{ answers[i] === q.answer ? "✓" : "✗" }} {{ q.prompt }}</p>
             <p class="detail">
               {{ answers[i] === null ? "Time ran out" : "Your answer: " + q.options[answers[i]!] }}
@@ -8278,7 +11002,10 @@ import { QUESTIONS } from "./questions";
           </li>
         }
       </ol>
-      <button data-testid="restart" (click)="restart.emit()">Restart quiz</button>
+      <button
+        data-testid="restart"
+        (click)="restart.emit()"
+      >Restart quiz</button>
     </section>
   \`,
 })

@@ -138,7 +138,8 @@ The top row answers "what is wrong"; the bottom row answers "should the user see
 Start outside React. A function that takes values and returns an object of messages is trivial to test and can be shared with a Node server.
 
 \`\`\`js
-// Pure validation rules: values in, errors out. No React here, so the same
+// Pure validation rules: values in,
+// errors out. No React here, so the same
 // function can be unit tested on its own and reused on the server.
 export const FIELDS = ["name", "email", "message"];
 export const MESSAGE_MAX = 200;
@@ -151,18 +152,22 @@ export function validate(values) {
   const message = values.message.trim();
 
   if (!name) errors.name = "Name is required";
-  else if (name.length < 2) errors.name = "Name must be at least 2 characters";
+  else if (name.length < 2)
+    errors.name = "Name must be at least 2 characters";
 
   if (!email) errors.email = "Email is required";
-  else if (!EMAIL.test(email)) errors.email = "Enter a valid email address";
+  else if (!EMAIL.test(email))
+    errors.email = "Enter a valid email address";
 
   if (!message) errors.message = "Message is required";
-  else if (message.length < 10) errors.message = "Message must be at least 10 characters";
-  else if (message.length > MESSAGE_MAX) errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
+  else if (message.length < 10)
+    errors.message = "Message must be at least 10 characters";
+  else if (message.length > MESSAGE_MAX)
+    errors.message =
+      "Message must be " + MESSAGE_MAX + " characters or fewer";
 
   return errors;
 }
-
 \`\`\`
 
 Each field returns its *first* failing rule, so the user sees one clear message at a time. Trimming before checking means "   " counts as empty. If you need rules that compare two fields, the same shape scales; see the [form validation utility with cross-field rules](/interview-question/build-a-form-validation-utility-supporting-field-level-and-cross-field-rules).
@@ -175,7 +180,8 @@ export default function ContactForm() {
   const [touched, setTouched] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const [serverErrors, setServerErrors] = useState({});
-  const [status, setStatus] = useState("idle"); // idle | sending | success
+  // idle | sending | success
+  const [status, setStatus] = useState("idle");
   const refs = useRef({});
 
   // Derived, never stored: errors always match the current values.
@@ -202,9 +208,22 @@ Note three details. <code>errors</code> is a plain <code>const</code> computed o
 ### Step 3: an accessible Field component
 
 \`\`\`jsx
-export default function Field({ id, label, error, hint, multiline, inputRef, ...rest }) {
+export default function Field({
+  id,
+  label,
+  error,
+  hint,
+  multiline,
+  inputRef,
+  ...rest
+}) {
   const Control = multiline ? "textarea" : "input";
-  const describedBy = [hint ? id + "-hint" : null, error ? id + "-error" : null].filter(Boolean).join(" ");
+  const describedBy = [
+    hint ? id + "-hint" : null,
+    error ? id + "-error" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -217,8 +236,16 @@ export default function Field({ id, label, error, hint, multiline, inputRef, ...
         className={error ? "invalid" : ""}
         {...rest}
       />
-      {hint && <small id={id + "-hint"} className="hint">{hint}</small>}
-      {error && <p id={id + "-error"} className="error">{error}</p>}
+      {hint && (
+        <small id={id + "-hint"} className="hint">
+          {hint}
+        </small>
+      )}
+      {error && (
+        <p id={id + "-error"} className="error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -231,25 +258,25 @@ export default function Field({ id, label, error, hint, multiline, inputRef, ...
 ### Step 4: submit, focus and the server
 
 \`\`\`jsx
-  async function onSubmit(e) {
-    e.preventDefault();
-    if (status === "sending") return;
-    setSubmitted(true);
-    const first = FIELDS.find((f) => errors[f]);
-    if (first) {
-      refs.current[first].focus();
-      return;
-    }
-    setStatus("sending");
-    const res = await sendMessage(values);
-    if (res.ok) {
-      setStatus("success");
-    } else {
-      setServerErrors(res.fieldErrors);
-      setStatus("idle");
-      refs.current[Object.keys(res.fieldErrors)[0]].focus();
-    }
+async function onSubmit(e) {
+  e.preventDefault();
+  if (status === "sending") return;
+  setSubmitted(true);
+  const first = FIELDS.find((f) => errors[f]);
+  if (first) {
+    refs.current[first].focus();
+    return;
   }
+  setStatus("sending");
+  const res = await sendMessage(values);
+  if (res.ok) {
+    setStatus("success");
+  } else {
+    setServerErrors(res.fieldErrors);
+    setStatus("idle");
+    refs.current[Object.keys(res.fieldErrors)[0]].focus();
+  }
+}
 \`\`\`
 
 <code>noValidate</code> on the <code>&lt;form&gt;</code> turns off the browser bubbles so your messages are the only ones. Setting <code>submitted</code> reveals every error at once. Focus goes to the first invalid field so keyboard users land where the work is. The <code>status === "sending"</code> guard plus the disabled button stop a double submit.
@@ -268,7 +295,7 @@ One React 19 detail matters for the <code>inputRef</code> callbacks: a ref callb
 
 The solution was mounted exactly like the playground mounts it (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1, and a driver typed, blurred and clicked. The driver dispatches both <code>blur</code> and <code>focusout</code>, because React <code>onBlur</code> listens to <code>focusout</code>. Output, unedited apart from dropping the <code>[react]</code> prefix:
 
-\`\`\`
+\`\`\`text
 RENDERED: Contact usNameEmailMessage0/200Send
 initial                | name: (none) | email: (none) | message: (none) | summary: ""
 typed A (not blurred)  | name: (none) | email: (none) | message: (none) | summary: ""
@@ -427,7 +454,8 @@ export default function ContactForm() {
   function update(e) {
     const { name, value } = e.target;
     setValues((v) => ({ ...v, [name]: value }));
-    if (serverErrors[name]) setServerErrors((s) => ({ ...s, [name]: undefined }));
+    if (serverErrors[name])
+      setServerErrors((s) => ({ ...s, [name]: undefined }));
   }
 
   function blur(e) {
@@ -468,25 +496,66 @@ export default function ContactForm() {
       <div className="card" data-testid="success" role="status">
         <h2>Thanks, {values.name.trim()}!</h2>
         <p>We will reply to {values.email.trim()}.</p>
-        <button type="button" data-testid="reset" onClick={reset}>Send another</button>
+        <button type="button" data-testid="reset" onClick={reset}>
+          Send another
+        </button>
       </div>
     );
   }
 
   return (
-    <form className="card" onSubmit={onSubmit} noValidate aria-label="Contact form">
+    <form
+      className="card"
+      onSubmit={onSubmit}
+      noValidate
+      aria-label="Contact form"
+    >
       <h2>Contact us</h2>
-      <Field id="name" label="Name" value={values.name} onChange={update} onBlur={blur}
-        error={visible("name")} inputRef={(el) => (refs.current.name = el)} autoComplete="name" />
-      <Field id="email" label="Email" type="email" value={values.email} onChange={update} onBlur={blur}
-        error={visible("email")} inputRef={(el) => (refs.current.email = el)} autoComplete="email" />
-      <Field id="message" label="Message" multiline rows={4} value={values.message} onChange={update} onBlur={blur}
-        error={visible("message")} inputRef={(el) => (refs.current.message = el)}
-        hint={values.message.trim().length + "/" + MESSAGE_MAX} />
+      <Field
+        id="name"
+        label="Name"
+        value={values.name}
+        onChange={update}
+        onBlur={blur}
+        error={visible("name")}
+        inputRef={(el) => (refs.current.name = el)}
+        autoComplete="name"
+      />
+      <Field
+        id="email"
+        label="Email"
+        type="email"
+        value={values.email}
+        onChange={update}
+        onBlur={blur}
+        error={visible("email")}
+        inputRef={(el) => (refs.current.email = el)}
+        autoComplete="email"
+      />
+      <Field
+        id="message"
+        label="Message"
+        multiline
+        rows={4}
+        value={values.message}
+        onChange={update}
+        onBlur={blur}
+        error={visible("message")}
+        inputRef={(el) => (refs.current.message = el)}
+        hint={values.message.trim().length + "/" + MESSAGE_MAX}
+      />
       <p data-testid="summary" role="alert" className="summary">
-        {submitted && invalidCount > 0 ? "Please fix " + invalidCount + (invalidCount === 1 ? " field." : " fields.") : ""}
+        {submitted && invalidCount > 0
+          ? "Please fix " +
+            invalidCount +
+            (invalidCount === 1 ? " field." : " fields.")
+          : ""}
       </p>
-      <button type="submit" disabled={status === "sending"} aria-busy={status === "sending"}>
+      <button
+        type="submit"
+        disabled={status === "sending"}
+        aria-busy={status === "sending"}
+      >
         {status === "sending" ? "Sending..." : "Send"}
       </button>
     </form>
@@ -495,9 +564,19 @@ export default function ContactForm() {
 `,
           "/src/Field.js": `// One labelled control plus its error. The error element always exists when
 // there is an error, and the control points at it with aria-describedby.
-export default function Field({ id, label, error, hint, multiline, inputRef, ...rest }) {
+export default function Field({
+  id,
+  label,
+  error,
+  hint,
+  multiline,
+  inputRef,
+  ...rest
+}) {
   const Control = multiline ? "textarea" : "input";
-  const describedBy = [hint ? id + "-hint" : null, error ? id + "-error" : null].filter(Boolean).join(" ");
+  const describedBy = [hint ? id + "-hint" : null, error ? id + "-error" : null]
+    .filter(Boolean)
+    .join(" ");
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
@@ -510,8 +589,16 @@ export default function Field({ id, label, error, hint, multiline, inputRef, ...
         className={error ? "invalid" : ""}
         {...rest}
       />
-      {hint && <small id={id + "-hint"} className="hint">{hint}</small>}
-      {error && <p id={id + "-error"} className="error">{error}</p>}
+      {hint && (
+        <small id={id + "-hint"} className="hint">
+          {hint}
+        </small>
+      )}
+      {error && (
+        <p id={id + "-error"} className="error">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -522,7 +609,10 @@ export function sendMessage(values) {
   return new Promise((resolve) => {
     setTimeout(() => {
       if (values.email.trim().toLowerCase().endsWith("@blocked.test")) {
-        resolve({ ok: false, fieldErrors: { email: "This email address is blocked" } });
+        resolve({
+          ok: false,
+          fieldErrors: { email: "This email address is blocked" },
+        });
       } else {
         resolve({ ok: true });
       }
@@ -549,26 +639,93 @@ export function validate(values) {
   else if (!EMAIL.test(email)) errors.email = "Enter a valid email address";
 
   if (!message) errors.message = "Message is required";
-  else if (message.length < 10) errors.message = "Message must be at least 10 characters";
-  else if (message.length > MESSAGE_MAX) errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
+  else if (message.length < 10)
+    errors.message = "Message must be at least 10 characters";
+  else if (message.length > MESSAGE_MAX)
+    errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
 
   return errors;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.25rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input, textarea { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.invalid { border-color: #ff6b6b; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-.hint { color: #9aa3b5; align-self: flex-end; }
-.summary { min-height: 1.2em; color: #ffb4b4; margin: 0 0 10px; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button:disabled { opacity: 0.6; cursor: progress; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input,
+textarea {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.invalid {
+  border-color: #ff6b6b;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.hint {
+  color: #9aa3b5;
+  align-self: flex-end;
+}
+.summary {
+  min-height: 1.2em;
+  color: #ffb4b4;
+  margin: 0 0 10px;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
 `,
         },
       },
@@ -612,18 +769,22 @@ export function validate(values) {
   const message = values.message.trim();
 
   if (!name) errors.name = "Name is required";
-  else if (name.length < 2) errors.name = "Name must be at least 2 characters";
+  else if (name.length < 2)
+    errors.name = "Name must be at least 2 characters";
 
   if (!email) errors.email = "Email is required";
-  else if (!EMAIL.test(email)) errors.email = "Enter a valid email address";
+  else if (!EMAIL.test(email))
+    errors.email = "Enter a valid email address";
 
   if (!message) errors.message = "Message is required";
-  else if (message.length < 10) errors.message = "Message must be at least 10 characters";
-  else if (message.length > MESSAGE_MAX) errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
+  else if (message.length < 10)
+    errors.message = "Message must be at least 10 characters";
+  else if (message.length > MESSAGE_MAX)
+    errors.message =
+      "Message must be " + MESSAGE_MAX + " characters or fewer";
 
   return errors;
 }
-
 \`\`\`
 
 ### Step 2: a field component with defineModel
@@ -632,7 +793,8 @@ export function validate(values) {
 <script setup>
 import { computed, ref } from "vue";
 
-// v-model on the component: defineModel() creates the modelValue prop and
+// v-model on the component: defineModel()
+// creates the modelValue prop and
 // the update:modelValue event for us (Vue 3.4+).
 const model = defineModel({ type: String, default: "" });
 const props = defineProps({
@@ -647,7 +809,13 @@ const emit = defineEmits(["blur"]);
 
 const control = ref(null);
 const describedBy = computed(
-  () => [props.hint ? props.id + "-hint" : "", props.error ? props.id + "-error" : ""].filter(Boolean).join(" ") || undefined
+  () =>
+    [
+      props.hint ? props.id + "-hint" : "",
+      props.error ? props.id + "-error" : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined,
 );
 
 // The parent calls this to move focus to the first invalid field.
@@ -662,54 +830,52 @@ defineExpose({ focus: () => control.value?.focus() });
 ### Step 3: the form, derived errors and visibility
 
 \`\`\`vue
-const values = reactive({ name: "", email: "", message: "" });
-const touched = reactive({});
-const serverErrors = reactive({});
-const submitted = ref(false);
-const status = ref("idle"); // idle | sending | success
-const fields = { name: ref(null), email: ref(null), message: ref(null) };
-
-// Derived, never stored: recomputed whenever a value it reads changes.
-const errors = computed(() => ({ ...validate(values), ...serverErrors }));
-const invalidCount = computed(() => FIELDS.filter((f) => errors.value[f]).length);
-const visible = (f) => (touched[f] || submitted.value ? errors.value[f] || "" : "");
-
-function edit(f, v) {
-  values[f] = v;
-  delete serverErrors[f];
-}
+const values = reactive({ name: "", email: "", message: "" }); const
+touched = reactive({}); const serverErrors = reactive({}); const
+submitted = ref(false); const status = ref("idle"); // idle | sending |
+success const fields = { name: ref(null), email: ref(null), message:
+ref(null) }; // Derived, never stored: recomputed whenever a value it
+reads changes. const errors = computed(() => ({ ...validate(values),
+...serverErrors })); const invalidCount = computed(() =>
+FIELDS.filter((f) => errors.value[f]).length); const visible = (f) =>
+(touched[f] || submitted.value ? errors.value[f] || "" : ""); function
+edit(f, v) { values[f] = v; delete serverErrors[f]; }
 \`\`\`
 
 The parent does not use <code>v-model</code> on <code>FormField</code>. It uses the two halves that <code>v-model</code> expands to, <code>:model-value</code> and <code>@update:model-value</code>, so the update can also delete a server error for that field:
 
 \`\`\`vue
-    <FormField :ref="fields.name" id="name" label="Name" :model-value="values.name"
-      @update:model-value="edit('name', $event)" :error="visible('name')" @blur="touched.name = true" />
-    <FormField :ref="fields.email" id="email" label="Email" type="email" :model-value="values.email"
-      @update:model-value="edit('email', $event)" :error="visible('email')" @blur="touched.email = true" />
+<FormField
+  :ref="fields.name"
+  id="name"
+  label="Name"
+  :model-value="values.name"
+  @update:model-value="edit('name', $event)"
+  :error="visible('name')"
+  @blur="touched.name = true"
+/>
+<FormField
+  :ref="fields.email"
+  id="email"
+  label="Email"
+  type="email"
+  :model-value="values.email"
+  @update:model-value="edit('email', $event)"
+  :error="visible('email')"
+  @blur="touched.email = true"
+/>
 \`\`\`
 
 ### Step 4: submit, focus and the server
 
 \`\`\`vue
-async function onSubmit() {
-  if (status.value === "sending") return;
-  submitted.value = true;
-  const first = FIELDS.find((f) => errors.value[f]);
-  if (first) {
-    fields[first].value.focus();
-    return;
-  }
-  status.value = "sending";
-  const res = await sendMessage({ ...values });
-  if (res.ok) {
-    status.value = "success";
-  } else {
-    Object.assign(serverErrors, res.fieldErrors);
-    status.value = "idle";
-    fields[Object.keys(res.fieldErrors)[0]].value.focus();
-  }
-}
+async function onSubmit() { if (status.value === "sending") return;
+submitted.value = true; const first = FIELDS.find((f) =>
+errors.value[f]); if (first) { fields[first].value.focus(); return; }
+status.value = "sending"; const res = await sendMessage({ ...values });
+if (res.ok) { status.value = "success"; } else {
+Object.assign(serverErrors, res.fieldErrors); status.value = "idle";
+fields[Object.keys(res.fieldErrors)[0]].value.focus(); } }
 \`\`\`
 
 <code>@submit.prevent</code> replaces <code>event.preventDefault()</code>, and <code>novalidate</code> on the form turns off browser bubbles so these messages are the only ones. <code>fields[first].value</code> is the exposed child instance, so <code>.focus()</code> reaches the real input.
@@ -729,7 +895,7 @@ async function onSubmit() {
 
 Compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44, then driven by the same driver as the React and Angular tabs (it dispatches <code>blur</code> for Vue and <code>focusout</code> for React). Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Contact usNameEmailMessage0/200Send
 initial                | name: (none) | email: (none) | message: (none) | summary: ""
 typed A (not blurred)  | name: (none) | email: (none) | message: (none) | summary: ""
@@ -842,20 +1008,85 @@ import ContactForm from "./components/ContactForm.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.25rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input, textarea { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.invalid { border-color: #ff6b6b; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-.hint { color: #9aa3b5; align-self: flex-end; }
-.summary { min-height: 1.2em; color: #ffb4b4; margin: 0 0 10px; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button:disabled { opacity: 0.6; cursor: progress; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.25rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input,
+textarea {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.invalid {
+  border-color: #ff6b6b;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.hint {
+  color: #9aa3b5;
+  align-self: flex-end;
+}
+.summary {
+  min-height: 1.2em;
+  color: #ffb4b4;
+  margin: 0 0 10px;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
 </style>
 `,
           "/src/components/ContactForm.vue": `<script setup>
@@ -873,8 +1104,11 @@ const fields = { name: ref(null), email: ref(null), message: ref(null) };
 
 // Derived, never stored: recomputed whenever a value it reads changes.
 const errors = computed(() => ({ ...validate(values), ...serverErrors }));
-const invalidCount = computed(() => FIELDS.filter((f) => errors.value[f]).length);
-const visible = (f) => (touched[f] || submitted.value ? errors.value[f] || "" : "");
+const invalidCount = computed(
+  () => FIELDS.filter((f) => errors.value[f]).length,
+);
+const visible = (f) =>
+  touched[f] || submitted.value ? errors.value[f] || "" : "";
 
 function edit(f, v) {
   values[f] = v;
@@ -902,19 +1136,37 @@ async function onSubmit() {
 
 function reset() {
   Object.assign(values, { name: "", email: "", message: "" });
-  for (const f of FIELDS) { delete touched[f]; delete serverErrors[f]; }
+  for (const f of FIELDS) {
+    delete touched[f];
+    delete serverErrors[f];
+  }
   submitted.value = false;
   status.value = "idle";
 }
 </script>
 
 <template>
-  <div v-if="status === 'success'" class="card" data-testid="success" role="status">
+  <div
+    v-if="status === 'success'"
+    class="card"
+    data-testid="success"
+    role="status"
+  >
     <h2>Thanks, {{ values.name.trim() }}!</h2>
     <p>We will reply to {{ values.email.trim() }}.</p>
-    <button type="button" data-testid="reset" @click="reset">Send another</button>
+    <button
+      type="button"
+      data-testid="reset"
+      @click="reset"
+    >Send another</button>
   </div>
-  <form v-else class="card" novalidate aria-label="Contact form" @submit.prevent="onSubmit">
+  <form
+    v-else
+    class="card"
+    novalidate
+    aria-label="Contact form"
+    @submit.prevent="onSubmit"
+  >
     <h2>Contact us</h2>
     <FormField :ref="fields.name" id="name" label="Name" :model-value="values.name"
       @update:model-value="edit('name', $event)" :error="visible('name')" @blur="touched.name = true" />
@@ -926,7 +1178,11 @@ function reset() {
     <p data-testid="summary" role="alert" class="summary">
       {{ submitted && invalidCount > 0 ? "Please fix " + invalidCount + (invalidCount === 1 ? " field." : " fields.") : "" }}
     </p>
-    <button type="submit" :disabled="status === 'sending'" :aria-busy="status === 'sending'">
+    <button
+      type="submit"
+      :disabled="status === 'sending'"
+      :aria-busy="status === 'sending'"
+    >
       {{ status === "sending" ? "Sending..." : "Send" }}
     </button>
   </form>
@@ -950,7 +1206,13 @@ const emit = defineEmits(["blur"]);
 
 const control = ref(null);
 const describedBy = computed(
-  () => [props.hint ? props.id + "-hint" : "", props.error ? props.id + "-error" : ""].filter(Boolean).join(" ") || undefined
+  () =>
+    [
+      props.hint ? props.id + "-hint" : "",
+      props.error ? props.id + "-error" : "",
+    ]
+      .filter(Boolean)
+      .join(" ") || undefined,
 );
 
 // The parent calls this to move focus to the first invalid field.
@@ -993,7 +1255,10 @@ export function sendMessage(values) {
   return new Promise((resolve) => {
     setTimeout(() => {
       if (values.email.trim().toLowerCase().endsWith("@blocked.test")) {
-        resolve({ ok: false, fieldErrors: { email: "This email address is blocked" } });
+        resolve({
+          ok: false,
+          fieldErrors: { email: "This email address is blocked" },
+        });
       } else {
         resolve({ ok: true });
       }
@@ -1020,8 +1285,10 @@ export function validate(values) {
   else if (!EMAIL.test(email)) errors.email = "Enter a valid email address";
 
   if (!message) errors.message = "Message is required";
-  else if (message.length < 10) errors.message = "Message must be at least 10 characters";
-  else if (message.length > MESSAGE_MAX) errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
+  else if (message.length < 10)
+    errors.message = "Message must be at least 10 characters";
+  else if (message.length > MESSAGE_MAX)
+    errors.message = "Message must be " + MESSAGE_MAX + " characters or fewer";
 
   return errors;
 }
@@ -1063,21 +1330,33 @@ Angular ships a forms engine, so most of the state model already exists:
 Angular built-ins exist (<code>Validators.required</code>, <code>minLength</code>, <code>email</code>), but they behave differently from the rules here: run against Angular 22.2.3, <code>Validators.required</code> returned <code>null</code> (valid) for <code>"   "</code>, and <code>Validators.email</code> returned <code>null</code> for <code>"a@b"</code>. So each field gets a small custom validator that trims, applies the rules in order and returns one message:
 
 \`\`\`ts
-import { AbstractControl, ValidationErrors, ValidatorFn } from "@angular/forms";
+import {
+  AbstractControl,
+  ValidationErrors,
+  ValidatorFn,
+} from "@angular/forms";
 
 export const MESSAGE_MAX = 200;
 const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 
-// Each validator returns { message: "..." } or null. One error key per field
-// keeps the template simple: show errors["message"] when it should be visible.
-const rule = (check: (v: string) => string | null): ValidatorFn =>
+// Each validator returns { message: "..."
+// } or null. One error key per field
+// keeps the template simple: show
+// errors["message"] when it should be visible.
+const rule =
+  (check: (v: string) => string | null): ValidatorFn =>
   (c: AbstractControl): ValidationErrors | null => {
     const msg = check(String(c.value ?? "").trim());
     return msg ? { message: msg } : null;
   };
 
 export const nameRule = rule((v) =>
-  !v ? "Name is required" : v.length < 2 ? "Name must be at least 2 characters" : null);
+  !v
+    ? "Name is required"
+    : v.length < 2
+      ? "Name must be at least 2 characters"
+      : null,
+);
 \`\`\`
 
 More on this pattern in [custom validators in reactive forms](/interview-question/how-do-you-create-a-custom-validator-in-reactive-forms).
@@ -1085,19 +1364,33 @@ More on this pattern in [custom validators in reactive forms](/interview-questio
 ### Step 2: the form model and a visibility helper
 
 \`\`\`ts
-  readonly form = new FormGroup({
-    name: new FormControl("", { nonNullable: true, validators: nameRule }),
-    email: new FormControl("", { nonNullable: true, validators: emailRule }),
-    message: new FormControl("", { nonNullable: true, validators: messageRule }),
-  });
+readonly form = new FormGroup({
+  name: new FormControl("", {
+    nonNullable: true,
+    validators: nameRule,
+  }),
+  email: new FormControl("", {
+    nonNullable: true,
+    validators: emailRule,
+  }),
+  message: new FormControl("", {
+    nonNullable: true,
+    validators: messageRule,
+  }),
+});
 
-  // Reactive forms already track touched (set on blur) and re-run validators
-  // on every change, so the visible error is derived from control state.
-  errorFor(f: FieldName): string | null {
-    const c = this.form.controls[f];
-    if (!(c.touched || this.submitted())) return null;
-    return (c.errors?.["server"] as string) ?? (c.errors?.["message"] as string) ?? null;
-  }
+// Reactive forms already track touched
+// (set on blur) and re-run validators
+// on every change, so the visible error is derived from control state.
+errorFor(f: FieldName): string | null {
+  const c = this.form.controls[f];
+  if (!(c.touched || this.submitted())) return null;
+  return (
+    (c.errors?.["server"] as string) ??
+    (c.errors?.["message"] as string) ??
+    null
+  );
+}
 \`\`\`
 
 <code>nonNullable: true</code> makes <code>reset()</code> go back to <code>""</code> instead of <code>null</code>, and types each value as <code>string</code>. <code>errorFor</code> is the "when to show" rule in one place: touched or submitted, server error first.
@@ -1105,15 +1398,29 @@ More on this pattern in [custom validators in reactive forms](/interview-questio
 ### Step 3: the template
 
 \`\`\`html
-      <form class="card" novalidate aria-label="Contact form" [formGroup]="form" (ngSubmit)="onSubmit()">
-        <h2>Contact us</h2>
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" formControlName="name" autocomplete="name"
-            [class.invalid]="!!errorFor('name')" [attr.aria-invalid]="errorFor('name') ? 'true' : 'false'"
-            [attr.aria-describedby]="errorFor('name') ? 'name-error' : null" />
-          @if (errorFor("name"); as e) { <p id="name-error" class="error">{{ e }}</p> }
-        </div>
+<form
+  class="card"
+  novalidate
+  aria-label="Contact form"
+  [formGroup]="form"
+  (ngSubmit)="onSubmit()"
+>
+  <h2>Contact us</h2>
+  <div class="field">
+    <label for="name">Name</label>
+    <input
+      id="name"
+      formControlName="name"
+      autocomplete="name"
+      [class.invalid]="!!errorFor('name')"
+      [attr.aria-invalid]="errorFor('name') ? 'true' : 'false'"
+      [attr.aria-describedby]="errorFor('name') ? 'name-error' : null"
+    />
+    @if (errorFor("name"); as e) {
+      <p id="name-error" class="error">{{ e }}</p>
+    }
+  </div>
+</form>
 \`\`\`
 
 <code>[attr.aria-describedby]</code> uses the attribute binding because there is no DOM property of that name; binding <code>null</code> removes the attribute. <code>@if (...; as e)</code> is the built-in control flow, which needs no <code>NgIf</code> import.
@@ -1121,28 +1428,30 @@ More on this pattern in [custom validators in reactive forms](/interview-questio
 ### Step 4: submit, focus and the server
 
 \`\`\`ts
-  async onSubmit() {
-    if (this.status() === "sending") return;
-    this.submitted.set(true);
-    const first = FIELDS.find((f) => this.form.controls[f].invalid);
-    if (first) {
-      this.focus(first);
-      return;
-    }
-    this.status.set("sending");
-    const values = this.form.getRawValue();
-    const res = await sendMessage(values);
-    if (res.ok) {
-      this.sentName.set(values.name.trim());
-      this.sentEmail.set(values.email.trim());
-      this.status.set("success");
-    } else {
-      // A server error lives on the control until the next edit re-runs validators.
-      for (const [f, msg] of Object.entries(res.fieldErrors)) this.form.controls[f as FieldName].setErrors({ server: msg });
-      this.status.set("idle");
-      this.focus(Object.keys(res.fieldErrors)[0] as FieldName);
-    }
+async onSubmit() {
+  if (this.status() === "sending") return;
+  this.submitted.set(true);
+  const first = FIELDS.find((f) => this.form.controls[f].invalid);
+  if (first) {
+    this.focus(first);
+    return;
   }
+  this.status.set("sending");
+  const values = this.form.getRawValue();
+  const res = await sendMessage(values);
+  if (res.ok) {
+    this.sentName.set(values.name.trim());
+    this.sentEmail.set(values.email.trim());
+    this.status.set("success");
+  } else {
+    // A server error lives on the control
+    // until the next edit re-runs validators.
+    for (const [f, msg] of Object.entries(res.fieldErrors))
+      this.form.controls[f as FieldName].setErrors({ server: msg });
+    this.status.set("idle");
+    this.focus(Object.keys(res.fieldErrors)[0] as FieldName);
+  }
+}
 \`\`\`
 
 <code>(ngSubmit)</code> comes from the form directive and already prevents the native submit. The server error is written with <code>setErrors</code>, which lasts until the next keystroke re-runs the validator and replaces it, so "clear on edit" needs no code.
@@ -1164,7 +1473,7 @@ More on this pattern in [custom validators in reactive forms](/interview-questio
 
 The solution was booted with <code>bootstrapApplication(AppComponent)</code> and no providers, twice: compiled with <code>ngc</code> and <code>strictTemplates</code> (like <code>ng build</code>), and through the playground runtime JIT. Both runs printed the same lines; here is the AOT run with its prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Contact usNameEmailMessage0/200 Send
 initial                | name: (none) | email: (none) | message: (none) | summary: ""
 typed A (not blurred)  | name: (none) | email: (none) | message: (none) | summary: ""
@@ -1276,22 +1585,89 @@ import { ContactFormComponent } from "./contact-form.component";
   template: \`<main class="page"><app-contact-form /></main>\`,
   // Global styles for this small app, so child components share them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 0 0 16px; font-size: 1.25rem; }
-    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    input, textarea { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-    input:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .invalid { border-color: #ff6b6b; }
-    .error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-    .hint { color: #9aa3b5; align-self: flex-end; }
-    .summary { min-height: 1.2em; color: #ffb4b4; margin: 0 0 10px; }
-    button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: progress; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.25rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 14px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      input,
+      textarea {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: inherit;
+      }
+      input:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .invalid {
+        border-color: #ff6b6b;
+      }
+      .error {
+        color: #ff8a8a;
+        margin: 0;
+        font-size: 0.85rem;
+      }
+      .hint {
+        color: #9aa3b5;
+        align-self: flex-end;
+      }
+      .summary {
+        min-height: 1.2em;
+        color: #ffb4b4;
+        margin: 0 0 10px;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #4f7cff;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: progress;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -1312,10 +1688,20 @@ const FIELDS: FieldName[] = ["name", "email", "message"];
       <div class="card" data-testid="success" role="status">
         <h2>Thanks, {{ sentName() }}!</h2>
         <p>We will reply to {{ sentEmail() }}.</p>
-        <button type="button" data-testid="reset" (click)="reset()">Send another</button>
+        <button
+          type="button"
+          data-testid="reset"
+          (click)="reset()"
+        >Send another</button>
       </div>
     } @else {
-      <form class="card" novalidate aria-label="Contact form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <form
+        class="card"
+        novalidate
+        aria-label="Contact form"
+        [formGroup]="form"
+        (ngSubmit)="onSubmit()"
+      >
         <h2>Contact us</h2>
         <div class="field">
           <label for="name">Name</label>
@@ -1336,11 +1722,22 @@ const FIELDS: FieldName[] = ["name", "email", "message"];
           <textarea id="message" rows="4" formControlName="message"
             [class.invalid]="!!errorFor('message')" [attr.aria-invalid]="errorFor('message') ? 'true' : 'false'"
             [attr.aria-describedby]="errorFor('message') ? 'message-hint message-error' : 'message-hint'"></textarea>
-          <small id="message-hint" class="hint">{{ messageLength() }}/{{ max }}</small>
+          <small
+            id="message-hint"
+            class="hint"
+          >{{ messageLength() }}/{{ max }}</small>
           @if (errorFor("message"); as e) { <p id="message-error" class="error">{{ e }}</p> }
         </div>
-        <p data-testid="summary" role="alert" class="summary">{{ summary() }}</p>
-        <button type="submit" [disabled]="status() === 'sending'" [attr.aria-busy]="status() === 'sending'">
+        <p
+          data-testid="summary"
+          role="alert"
+          class="summary"
+        >{{ summary() }}</p>
+        <button
+          type="submit"
+          [disabled]="status() === 'sending'"
+          [attr.aria-busy]="status() === 'sending'"
+        >
           {{ status() === "sending" ? "Sending..." : "Send" }}
         </button>
       </form>
@@ -1358,7 +1755,10 @@ export class ContactFormComponent {
   readonly form = new FormGroup({
     name: new FormControl("", { nonNullable: true, validators: nameRule }),
     email: new FormControl("", { nonNullable: true, validators: emailRule }),
-    message: new FormControl("", { nonNullable: true, validators: messageRule }),
+    message: new FormControl("", {
+      nonNullable: true,
+      validators: messageRule,
+    }),
   });
 
   // Reactive forms already track touched (set on blur) and re-run validators
@@ -1366,7 +1766,11 @@ export class ContactFormComponent {
   errorFor(f: FieldName): string | null {
     const c = this.form.controls[f];
     if (!(c.touched || this.submitted())) return null;
-    return (c.errors?.["server"] as string) ?? (c.errors?.["message"] as string) ?? null;
+    return (
+      (c.errors?.["server"] as string) ??
+      (c.errors?.["message"] as string) ??
+      null
+    );
   }
 
   messageLength(): number {
@@ -1375,7 +1779,9 @@ export class ContactFormComponent {
 
   summary(): string {
     const n = FIELDS.filter((f) => this.form.controls[f].invalid).length;
-    return this.submitted() && n > 0 ? "Please fix " + n + (n === 1 ? " field." : " fields.") : "";
+    return this.submitted() && n > 0
+      ? "Please fix " + n + (n === 1 ? " field." : " fields.")
+      : "";
   }
 
   private focus(f: FieldName) {
@@ -1398,8 +1804,10 @@ export class ContactFormComponent {
       this.sentEmail.set(values.email.trim());
       this.status.set("success");
     } else {
-      // A server error lives on the control until the next edit re-runs validators.
-      for (const [f, msg] of Object.entries(res.fieldErrors)) this.form.controls[f as FieldName].setErrors({ server: msg });
+      // A server error lives on the control
+      // until the next edit re-runs validators.
+      for (const [f, msg] of Object.entries(res.fieldErrors))
+        this.form.controls[f as FieldName].setErrors({ server: msg });
       this.status.set("idle");
       this.focus(Object.keys(res.fieldErrors)[0] as FieldName);
     }
@@ -1414,13 +1822,21 @@ export class ContactFormComponent {
 `,
           "/src/app/fake-api.ts": `// Simulated server: there is no network in the playground. It answers after
 // 400 ms and rejects one domain with a field error, the way a real API might.
-export type SendResult = { ok: true } | { ok: false; fieldErrors: Record<string, string> };
+export type SendResult =
+  { ok: true } | { ok: false; fieldErrors: Record<string, string> };
 
-export function sendMessage(values: { name: string; email: string; message: string }): Promise<SendResult> {
+export function sendMessage(values: {
+  name: string;
+  email: string;
+  message: string;
+}): Promise<SendResult> {
   return new Promise((resolve) => {
     setTimeout(() => {
       if (values.email.trim().toLowerCase().endsWith("@blocked.test")) {
-        resolve({ ok: false, fieldErrors: { email: "This email address is blocked" } });
+        resolve({
+          ok: false,
+          fieldErrors: { email: "This email address is blocked" },
+        });
       } else {
         resolve({ ok: true });
       }
@@ -1435,23 +1851,38 @@ const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 
 // Each validator returns { message: "..." } or null. One error key per field
 // keeps the template simple: show errors["message"] when it should be visible.
-const rule = (check: (v: string) => string | null): ValidatorFn =>
+const rule =
+  (check: (v: string) => string | null): ValidatorFn =>
   (c: AbstractControl): ValidationErrors | null => {
     const msg = check(String(c.value ?? "").trim());
     return msg ? { message: msg } : null;
   };
 
 export const nameRule = rule((v) =>
-  !v ? "Name is required" : v.length < 2 ? "Name must be at least 2 characters" : null);
+  !v
+    ? "Name is required"
+    : v.length < 2
+      ? "Name must be at least 2 characters"
+      : null,
+);
 
 export const emailRule = rule((v) =>
-  !v ? "Email is required" : !EMAIL.test(v) ? "Enter a valid email address" : null);
+  !v
+    ? "Email is required"
+    : !EMAIL.test(v)
+      ? "Enter a valid email address"
+      : null,
+);
 
 export const messageRule = rule((v) =>
-  !v ? "Message is required"
-    : v.length < 10 ? "Message must be at least 10 characters"
-    : v.length > MESSAGE_MAX ? "Message must be " + MESSAGE_MAX + " characters or fewer"
-    : null);
+  !v
+    ? "Message is required"
+    : v.length < 10
+      ? "Message must be at least 10 characters"
+      : v.length > MESSAGE_MAX
+        ? "Message must be " + MESSAGE_MAX + " characters or fewer"
+        : null,
+);
 `,
         },
       },
@@ -1567,10 +1998,13 @@ export const STEPS = [
     validate: (d) => {
       const e = {};
       if (!d.email.trim()) e.email = "Email is required";
-      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim())) e.email = "Enter a valid email address";
+      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim()))
+        e.email = "Enter a valid email address";
       if (!d.password) e.password = "Password is required";
-      else if (d.password.length < 8) e.password = "Password must be at least 8 characters";
-      else if (!/[0-9]/.test(d.password)) e.password = "Password must contain a number";
+      else if (d.password.length < 8)
+        e.password = "Password must be at least 8 characters";
+      else if (!/[0-9]/.test(d.password))
+        e.password = "Password must contain a number";
       return e;
     },
   },
@@ -1595,15 +2029,20 @@ export const STEPS = [
 
 \`\`\`jsx
 export default function Wizard() {
-  const [data, setData] = useState(INITIAL);      // one object for ALL steps
+  // one object for ALL steps
+  const [data, setData] = useState(INITIAL);
   const [step, setStep] = useState(0);
-  const [attempted, setAttempted] = useState([]); // steps where Next was pressed
-  const [status, setStatus] = useState("editing"); // editing | submitting | done
+  // steps where Next was pressed
+  const [attempted, setAttempted] = useState([]);
+  // editing | submitting | done
+  const [status, setStatus] = useState("editing");
   const headingRef = useRef(null);
-  const focusedStep = useRef(step);              // which step we last moved focus for
+  // which step we last moved focus for
+  const focusedStep = useRef(step);
 
   const current = STEPS[step];
-  const allErrors = current.validate(data);       // derived for the current step
+  // derived for the current step
+  const allErrors = current.validate(data);
   const errors = attempted.includes(step) ? allErrors : {};
   const isLast = step === STEPS.length - 1;
 \`\`\`
@@ -1613,16 +2052,18 @@ export default function Wizard() {
 ### Step 3: the gate
 
 \`\`\`jsx
-  function next() {
-    const invalid = current.fields.filter((f) => allErrors[f]);
-    if (invalid.length) {
-      setAttempted((a) => (a.includes(step) ? a : [...a, step]));
-      const el = document.getElementById(invalid[0] === "plan" ? "plan-free" : invalid[0]);
-      el?.focus();
-      return;
-    }
-    setStep((s) => s + 1);
+function next() {
+  const invalid = current.fields.filter((f) => allErrors[f]);
+  if (invalid.length) {
+    setAttempted((a) => (a.includes(step) ? a : [...a, step]));
+    const el = document.getElementById(
+      invalid[0] === "plan" ? "plan-free" : invalid[0],
+    );
+    el?.focus();
+    return;
   }
+  setStep((s) => s + 1);
+}
 \`\`\`
 
 If the step is invalid, it marks the step as attempted (revealing errors) and focuses the first invalid control; for the radio group that is the first radio. Otherwise it advances. Back is simply <code>setStep((s) =&gt; s - 1)</code>, with no validation.
@@ -1630,15 +2071,17 @@ If the step is invalid, it marks the step as attempted (revealing errors) and fo
 ### Step 4: focus the new heading, safely under StrictMode
 
 \`\`\`jsx
-  // Move focus to the new step heading so keyboard and screen-reader users
-  // land at the top of the new content. Comparing with the last step we
-  // handled (not a "first render" flag) keeps this correct when StrictMode
-  // runs the effect twice on mount.
-  useEffect(() => {
-    if (focusedStep.current === step) return;
-    focusedStep.current = step;
-    headingRef.current?.focus();
-  }, [step]);
+// Move focus to the new step heading
+// so keyboard and screen-reader users
+// land at the top of the new content. Comparing with the last step we
+// handled (not a "first render" flag)
+// keeps this correct when StrictMode
+// runs the effect twice on mount.
+useEffect(() => {
+  if (focusedStep.current === step) return;
+  focusedStep.current = step;
+  headingRef.current?.focus();
+}, [step]);
 \`\`\`
 
 📌 **Interview term: Focus management** — moving keyboard focus deliberately when content changes. When the step changes, the old focused button may be gone, and focus would fall back to <code>&lt;body&gt;</code>. Focusing the new heading (with <code>tabIndex={-1}</code> so it can take focus without entering the Tab order) makes the screen reader announce "Step 2 of 3: Profile".
@@ -1650,11 +2093,11 @@ Why compare with the last handled step instead of a "skip the first render" flag
 The step list uses <code>aria-current="step"</code> on the current item, and the bar is a <code>role="progressbar"</code> with <code>aria-valuenow</code>, <code>aria-valuemin</code> and <code>aria-valuemax</code>, both derived from <code>step</code>. The form element wraps every step, so Enter submits; <code>onSubmit</code> calls <code>next()</code> on early steps and <code>submit()</code> on Review:
 
 \`\`\`jsx
-  async function submit() {
-    setStatus("submitting");
-    await createAccount(data);
-    setStatus("done");
-  }
+async function submit() {
+  setStatus("submitting");
+  await createAccount(data);
+  setStatus("done");
+}
 \`\`\`
 
 Review reads the same <code>data</code> object and its Edit buttons call <code>setStep(0)</code> or <code>setStep(1)</code>.
@@ -1667,7 +2110,7 @@ Each step body is a component picked from an array (<code>BODIES[step]</code>) a
 
 Mounted like the playground (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1 and driven by the shared driver. Output with the <code>[react]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: AccountProfileReviewStep 1 of 3: AccountEmailPasswordNext
 initial              | Step 1 of 3: Account | valuenow 1 | errors: (none) | focus: BODY
 Next on empty        | Step 1 of 3: Account | valuenow 1 | errors: email-error=Email is required, password-error=Password is required | focus: email
@@ -1691,7 +2134,7 @@ done: Welcome aboard, Ada!Your Team plan is ready.
 
 The focus effect was also tested against the "first render flag" version it replaced. A driver that only reports focus after mount printed, for the flag version and then for the shipped version:
 
-\`\`\`
+\`\`\`text
 [react] focus after mount: H2 step-heading
 [react] focus after mount: BODY
 \`\`\`
@@ -1814,15 +2257,34 @@ export default function App() {
 `,
           "/src/StepFields.js": `import { PLANS, planLabel } from "./steps";
 
-function Text({ id, label, type = "text", data, errors, onChange, autoComplete }) {
+function Text({
+  id,
+  label,
+  type = "text",
+  data,
+  errors,
+  onChange,
+  autoComplete,
+}) {
   const err = errors[id];
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <input id={id} name={id} type={type} value={data[id]} autoComplete={autoComplete}
+      <input
+        id={id}
+        name={id}
+        type={type}
+        value={data[id]}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(id, e.target.value)}
-        aria-invalid={err ? "true" : "false"} aria-describedby={err ? id + "-error" : undefined} />
-      {err && <p id={id + "-error"} className="error">{err}</p>}
+        aria-invalid={err ? "true" : "false"}
+        aria-describedby={err ? id + "-error" : undefined}
+      />
+      {err && (
+        <p id={id + "-error"} className="error">
+          {err}
+        </p>
+      )}
     </div>
   );
 }
@@ -1830,8 +2292,20 @@ function Text({ id, label, type = "text", data, errors, onChange, autoComplete }
 export function AccountStep(props) {
   return (
     <>
-      <Text id="email" label="Email" type="email" autoComplete="email" {...props} />
-      <Text id="password" label="Password" type="password" autoComplete="new-password" {...props} />
+      <Text
+        id="email"
+        label="Email"
+        type="email"
+        autoComplete="email"
+        {...props}
+      />
+      <Text
+        id="password"
+        label="Password"
+        type="password"
+        autoComplete="new-password"
+        {...props}
+      />
     </>
   );
 }
@@ -1841,16 +2315,29 @@ export function ProfileStep(props) {
   return (
     <>
       <Text id="fullName" label="Full name" autoComplete="name" {...props} />
-      <fieldset className="field" aria-describedby={errors.plan ? "plan-error" : undefined}>
+      <fieldset
+        className="field"
+        aria-describedby={errors.plan ? "plan-error" : undefined}
+      >
         <legend>Plan</legend>
         {PLANS.map((p) => (
           <label key={p.id} className="radio">
-            <input type="radio" name="plan" id={"plan-" + p.id} value={p.id}
-              checked={data.plan === p.id} onChange={() => onChange("plan", p.id)} />
+            <input
+              type="radio"
+              name="plan"
+              id={"plan-" + p.id}
+              value={p.id}
+              checked={data.plan === p.id}
+              onChange={() => onChange("plan", p.id)}
+            />
             {p.label}
           </label>
         ))}
-        {errors.plan && <p id="plan-error" className="error">{errors.plan}</p>}
+        {errors.plan && (
+          <p id="plan-error" className="error">
+            {errors.plan}
+          </p>
+        )}
       </fieldset>
     </>
   );
@@ -1859,12 +2346,34 @@ export function ProfileStep(props) {
 export function ReviewStep({ data, onEdit }) {
   return (
     <dl data-testid="review" className="review">
-      <dt>Email</dt><dd>{data.email}</dd>
-      <dt>Password</dt><dd>{"*".repeat(data.password.length)}</dd>
-      <dd><button type="button" className="link" data-testid="edit-account" onClick={() => onEdit(0)}>Edit account</button></dd>
-      <dt>Full name</dt><dd>{data.fullName}</dd>
-      <dt>Plan</dt><dd>{planLabel(data.plan)}</dd>
-      <dd><button type="button" className="link" data-testid="edit-profile" onClick={() => onEdit(1)}>Edit profile</button></dd>
+      <dt>Email</dt>
+      <dd>{data.email}</dd>
+      <dt>Password</dt>
+      <dd>{"*".repeat(data.password.length)}</dd>
+      <dd>
+        <button
+          type="button"
+          className="link"
+          data-testid="edit-account"
+          onClick={() => onEdit(0)}
+        >
+          Edit account
+        </button>
+      </dd>
+      <dt>Full name</dt>
+      <dd>{data.fullName}</dd>
+      <dt>Plan</dt>
+      <dd>{planLabel(data.plan)}</dd>
+      <dd>
+        <button
+          type="button"
+          className="link"
+          data-testid="edit-profile"
+          onClick={() => onEdit(1)}
+        >
+          Edit profile
+        </button>
+      </dd>
     </dl>
   );
 }
@@ -1877,15 +2386,17 @@ import { createAccount } from "./fakeApi";
 const BODIES = [AccountStep, ProfileStep, ReviewStep];
 
 export default function Wizard() {
-  const [data, setData] = useState(INITIAL);      // one object for ALL steps
+  const [data, setData] = useState(INITIAL); // one object for ALL steps
   const [step, setStep] = useState(0);
-  const [attempted, setAttempted] = useState([]); // steps where Next was pressed
-  const [status, setStatus] = useState("editing"); // editing | submitting | done
+  // steps where Next was pressed
+  const [attempted, setAttempted] = useState([]);
+  // editing | submitting | done
+  const [status, setStatus] = useState("editing");
   const headingRef = useRef(null);
-  const focusedStep = useRef(step);              // which step we last moved focus for
+  const focusedStep = useRef(step); // which step we last moved focus for
 
   const current = STEPS[step];
-  const allErrors = current.validate(data);       // derived for the current step
+  const allErrors = current.validate(data); // derived for the current step
   const errors = attempted.includes(step) ? allErrors : {};
   const isLast = step === STEPS.length - 1;
 
@@ -1907,7 +2418,9 @@ export default function Wizard() {
     const invalid = current.fields.filter((f) => allErrors[f]);
     if (invalid.length) {
       setAttempted((a) => (a.includes(step) ? a : [...a, step]));
-      const el = document.getElementById(invalid[0] === "plan" ? "plan-free" : invalid[0]);
+      const el = document.getElementById(
+        invalid[0] === "plan" ? "plan-free" : invalid[0],
+      );
       el?.focus();
       return;
     }
@@ -1931,14 +2444,33 @@ export default function Wizard() {
 
   const Body = BODIES[step];
   return (
-    <form className="card" noValidate onSubmit={(e) => { e.preventDefault(); isLast ? submit() : next(); }}>
+    <form
+      className="card"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        isLast ? submit() : next();
+      }}
+    >
       <ol className="steps" aria-label="Progress">
         {STEPS.map((s, i) => (
-          <li key={s.id} aria-current={i === step ? "step" : undefined} className={i <= step ? "on" : ""}>{s.title}</li>
+          <li
+            key={s.id}
+            aria-current={i === step ? "step" : undefined}
+            className={i <= step ? "on" : ""}
+          >
+            {s.title}
+          </li>
         ))}
       </ol>
-      <div role="progressbar" aria-label="Sign-up progress" aria-valuemin={1} aria-valuemax={STEPS.length}
-        aria-valuenow={step + 1} className="bar">
+      <div
+        role="progressbar"
+        aria-label="Sign-up progress"
+        aria-valuemin={1}
+        aria-valuemax={STEPS.length}
+        aria-valuenow={step + 1}
+        className="bar"
+      >
         <span style={{ width: ((step + 1) / STEPS.length) * 100 + "%" }} />
       </div>
       <h2 tabIndex={-1} ref={headingRef} data-testid="step-heading">
@@ -1947,15 +2479,28 @@ export default function Wizard() {
       <Body data={data} errors={errors} onChange={change} onEdit={setStep} />
       <div className="actions">
         {step > 0 && (
-          <button type="button" data-testid="back" className="secondary" onClick={() => setStep((s) => s - 1)}
-            disabled={status === "submitting"}>Back</button>
+          <button
+            type="button"
+            data-testid="back"
+            className="secondary"
+            onClick={() => setStep((s) => s - 1)}
+            disabled={status === "submitting"}
+          >
+            Back
+          </button>
         )}
         {isLast ? (
-          <button type="submit" data-testid="submit" disabled={status === "submitting"}>
+          <button
+            type="submit"
+            data-testid="submit"
+            disabled={status === "submitting"}
+          >
             {status === "submitting" ? "Creating account..." : "Create account"}
           </button>
         ) : (
-          <button type="submit" data-testid="next">Next</button>
+          <button type="submit" data-testid="next">
+            Next
+          </button>
         )}
       </div>
     </form>
@@ -1964,7 +2509,9 @@ export default function Wizard() {
 `,
           "/src/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
 export function createAccount(data) {
-  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400),
+  );
 }
 `,
           "/src/steps.js": `// The wizard is driven by this config: each step names its fields and
@@ -1985,10 +2532,13 @@ export const STEPS = [
     validate: (d) => {
       const e = {};
       if (!d.email.trim()) e.email = "Email is required";
-      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim())) e.email = "Enter a valid email address";
+      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim()))
+        e.email = "Enter a valid email address";
       if (!d.password) e.password = "Password is required";
-      else if (d.password.length < 8) e.password = "Password must be at least 8 characters";
-      else if (!/[0-9]/.test(d.password)) e.password = "Password must contain a number";
+      else if (d.password.length < 8)
+        e.password = "Password must be at least 8 characters";
+      else if (!/[0-9]/.test(d.password))
+        e.password = "Password must contain a number";
       return e;
     },
   },
@@ -2008,33 +2558,150 @@ export const STEPS = [
 
 export const planLabel = (id) => PLANS.find((p) => p.id === id)?.label ?? "";
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 440px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 12px 0 16px; font-size: 1.2rem; }
-h2:focus { outline: none; }
-.steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0 0 10px; font-size: 0.85rem; color: #8b93a7; }
-.steps li { flex: 1; }
-.steps li.on { color: #e6e8ee; }
-.steps li[aria-current="step"] { font-weight: 700; color: #9db7ff; }
-.bar { height: 6px; background: #2a2f3d; border-radius: 3px; overflow: hidden; }
-.bar span { display: block; height: 100%; background: #4f7cff; transition: width 0.25s; }
-.field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; border: 0; padding: 0; }
-label, legend { font-weight: 600; font-size: 0.9rem; }
-.radio { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-input[type="text"], input[type="email"], input[type="password"], input:not([type]) { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-.review { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 16px; }
-.review dt { color: #8b93a7; }
-.review dd { margin: 0; overflow-wrap: anywhere; }
-.review dd:has(button) { grid-column: 1 / -1; }
-.actions { display: flex; gap: 10px; justify-content: flex-end; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button.secondary { background: #2a2f3d; }
-button.link { background: none; color: #9db7ff; padding: 0; text-decoration: underline; }
-button:disabled { opacity: 0.6; }
-button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 12px 0 16px;
+  font-size: 1.2rem;
+}
+h2:focus {
+  outline: none;
+}
+.steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: #8b93a7;
+}
+.steps li {
+  flex: 1;
+}
+.steps li.on {
+  color: #e6e8ee;
+}
+.steps li[aria-current="step"] {
+  font-weight: 700;
+  color: #9db7ff;
+}
+.bar {
+  height: 6px;
+  background: #2a2f3d;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  background: #4f7cff;
+  transition: width 0.25s;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 14px;
+  border: 0;
+  padding: 0;
+}
+label,
+legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.radio {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 400;
+  padding: 4px 0;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input:not([type]) {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.review {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 0 0 16px;
+}
+.review dt {
+  color: #8b93a7;
+}
+.review dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.review dd:has(button) {
+  grid-column: 1 / -1;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button.secondary {
+  background: #2a2f3d;
+}
+button.link {
+  background: none;
+  color: #9db7ff;
+  padding: 0;
+  text-decoration: underline;
+}
+button:disabled {
+  opacity: 0.6;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
 `,
         },
       },
@@ -2075,16 +2742,14 @@ The whole question turns on one decision: the data lives in **one object owned b
 ### Step 2: state and derived values
 
 \`\`\`vue
-const data = reactive({ ...INITIAL });        // one object for ALL steps
-const step = ref(0);
-const attempted = reactive(new Set());        // steps where Next was pressed
-const status = ref("editing");                // editing | submitting | done
-const heading = ref(null);
-
-const current = computed(() => STEPS[step.value]);
-const allErrors = computed(() => current.value.validate(data));
-const errors = computed(() => (attempted.has(step.value) ? allErrors.value : {}));
-const isLast = computed(() => step.value === STEPS.length - 1);
+const data = reactive({ ...INITIAL }); // one object for ALL steps const
+step = ref(0); const attempted = reactive(new Set()); // steps where
+Next was pressed const status = ref("editing"); // editing | submitting
+| done const heading = ref(null); const current = computed(() =>
+STEPS[step.value]); const allErrors = computed(() =>
+current.value.validate(data)); const errors = computed(() =>
+(attempted.has(step.value) ? allErrors.value : {})); const isLast =
+computed(() => step.value === STEPS.length - 1);
 \`\`\`
 
 <code>errors</code> stays empty until Next was attempted on the step, the wizard version of "touched".
@@ -2093,20 +2758,11 @@ const isLast = computed(() => step.value === STEPS.length - 1);
 
 \`\`\`vue
 // Move focus to the new step heading once Vue has rendered it.
-watch(step, async () => {
-  await nextTick();
-  heading.value?.focus();
-});
-
-function next() {
-  const invalid = current.value.fields.filter((f) => allErrors.value[f]);
-  if (invalid.length) {
-    attempted.add(step.value);
-    document.getElementById(invalid[0] === "plan" ? "plan-free" : invalid[0])?.focus();
-    return;
-  }
-  step.value++;
-}
+watch(step, async () => { await nextTick(); heading.value?.focus(); });
+function next() { const invalid = current.value.fields.filter((f) =>
+allErrors.value[f]); if (invalid.length) { attempted.add(step.value);
+document.getElementById(invalid[0] === "plan" ? "plan-free" :
+invalid[0])?.focus(); return; } step.value++; }
 \`\`\`
 
 📌 **Interview term: nextTick** — a Promise that resolves after Vue has flushed pending DOM updates. Without it the watcher would run before the new heading text is rendered. <code>watch(step, fn, { flush: "post" })</code> is the equivalent option; see [watch flush timing](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5).
@@ -2154,7 +2810,7 @@ Unlike React, Vue does not mount components twice in development, so a plain wat
 
 Compiled with <code>@vue/compiler-sfc</code>, mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44, and driven by the same driver as the other tabs. Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: AccountProfileReviewStep 1 of 3: AccountEmailPasswordNext
 initial              | Step 1 of 3: Account | valuenow 1 | errors: (none) | focus: BODY
 Next on empty        | Step 1 of 3: Account | valuenow 1 | errors: email-error=Email is required, password-error=Password is required | focus: email
@@ -2268,33 +2924,150 @@ import SignupWizard from "./components/SignupWizard.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 440px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 12px 0 16px; font-size: 1.2rem; }
-h2:focus { outline: none; }
-.steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0 0 10px; font-size: 0.85rem; color: #8b93a7; }
-.steps li { flex: 1; }
-.steps li.on { color: #e6e8ee; }
-.steps li[aria-current="step"] { font-weight: 700; color: #9db7ff; }
-.bar { height: 6px; background: #2a2f3d; border-radius: 3px; overflow: hidden; }
-.bar span { display: block; height: 100%; background: #4f7cff; transition: width 0.25s; }
-.field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; border: 0; padding: 0; }
-label, legend { font-weight: 600; font-size: 0.9rem; }
-.radio { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-input[type="text"], input[type="email"], input[type="password"], input:not([type]) { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-.review { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 16px; }
-.review dt { color: #8b93a7; }
-.review dd { margin: 0; overflow-wrap: anywhere; }
-.review dd:has(button) { grid-column: 1 / -1; }
-.actions { display: flex; gap: 10px; justify-content: flex-end; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button.secondary { background: #2a2f3d; }
-button.link { background: none; color: #9db7ff; padding: 0; text-decoration: underline; }
-button:disabled { opacity: 0.6; }
-button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 440px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 12px 0 16px;
+  font-size: 1.2rem;
+}
+h2:focus {
+  outline: none;
+}
+.steps {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: #8b93a7;
+}
+.steps li {
+  flex: 1;
+}
+.steps li.on {
+  color: #e6e8ee;
+}
+.steps li[aria-current="step"] {
+  font-weight: 700;
+  color: #9db7ff;
+}
+.bar {
+  height: 6px;
+  background: #2a2f3d;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bar span {
+  display: block;
+  height: 100%;
+  background: #4f7cff;
+  transition: width 0.25s;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 14px;
+  border: 0;
+  padding: 0;
+}
+label,
+legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.radio {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 400;
+  padding: 4px 0;
+}
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input:not([type]) {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+}
+.review {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+  margin: 0 0 16px;
+}
+.review dt {
+  color: #8b93a7;
+}
+.review dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.review dd:has(button) {
+  grid-column: 1 / -1;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button.secondary {
+  background: #2a2f3d;
+}
+button.link {
+  background: none;
+  color: #9db7ff;
+  padding: 0;
+  text-decoration: underline;
+}
+button:disabled {
+  opacity: 0.6;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/ReviewList.vue": `<script setup>
@@ -2322,15 +3095,17 @@ import ReviewList from "./ReviewList.vue";
 import { INITIAL, PLANS, STEPS, planLabel } from "../steps.js";
 import { createAccount } from "../fakeApi.js";
 
-const data = reactive({ ...INITIAL });        // one object for ALL steps
+const data = reactive({ ...INITIAL }); // one object for ALL steps
 const step = ref(0);
-const attempted = reactive(new Set());        // steps where Next was pressed
-const status = ref("editing");                // editing | submitting | done
+const attempted = reactive(new Set()); // steps where Next was pressed
+const status = ref("editing"); // editing | submitting | done
 const heading = ref(null);
 
 const current = computed(() => STEPS[step.value]);
 const allErrors = computed(() => current.value.validate(data));
-const errors = computed(() => (attempted.has(step.value) ? allErrors.value : {}));
+const errors = computed(() =>
+  attempted.has(step.value) ? allErrors.value : {},
+);
 const isLast = computed(() => step.value === STEPS.length - 1);
 
 // Move focus to the new step heading once Vue has rendered it.
@@ -2343,7 +3118,9 @@ function next() {
   const invalid = current.value.fields.filter((f) => allErrors.value[f]);
   if (invalid.length) {
     attempted.add(step.value);
-    document.getElementById(invalid[0] === "plan" ? "plan-free" : invalid[0])?.focus();
+    document
+      .getElementById(invalid[0] === "plan" ? "plan-free" : invalid[0])
+      ?.focus();
     return;
   }
   step.value++;
@@ -2368,7 +3145,12 @@ function onSubmit() {
   </div>
   <form v-else class="card" novalidate @submit.prevent="onSubmit">
     <ol class="steps" aria-label="Progress">
-      <li v-for="(s, i) in STEPS" :key="s.id" :aria-current="i === step ? 'step' : undefined" :class="{ on: i <= step }">
+      <li
+        v-for="(s, i) in STEPS"
+        :key="s.id"
+        :aria-current="i === step ? 'step' : undefined"
+        :class="{ on: i <= step }"
+      >
         {{ s.title }}
       </li>
     </ol>
@@ -2376,28 +3158,77 @@ function onSubmit() {
       :aria-valuenow="step + 1" class="bar">
       <span :style="{ width: ((step + 1) / STEPS.length) * 100 + '%' }"></span>
     </div>
-    <h2 ref="heading" tabindex="-1" data-testid="step-heading">Step {{ step + 1 }} of {{ STEPS.length }}: {{ current.title }}</h2>
+    <h2
+      ref="heading"
+      tabindex="-1"
+      data-testid="step-heading"
+    >Step {{ step + 1 }} of {{ STEPS.length }}: {{ current.title }}</h2>
 
     <template v-if="current.id === 'account'">
-      <TextField id="email" label="Email" type="email" autocomplete="email" v-model="data.email" :error="errors.email" />
-      <TextField id="password" label="Password" type="password" autocomplete="new-password" v-model="data.password" :error="errors.password" />
+      <TextField
+        id="email"
+        label="Email"
+        type="email"
+        autocomplete="email"
+        v-model="data.email"
+        :error="errors.email"
+      />
+      <TextField
+        id="password"
+        label="Password"
+        type="password"
+        autocomplete="new-password"
+        v-model="data.password"
+        :error="errors.password"
+      />
     </template>
     <template v-else-if="current.id === 'profile'">
-      <TextField id="fullName" label="Full name" autocomplete="name" v-model="data.fullName" :error="errors.fullName" />
-      <fieldset class="field" :aria-describedby="errors.plan ? 'plan-error' : undefined">
+      <TextField
+        id="fullName"
+        label="Full name"
+        autocomplete="name"
+        v-model="data.fullName"
+        :error="errors.fullName"
+      />
+      <fieldset
+        class="field"
+        :aria-describedby="errors.plan ? 'plan-error' : undefined"
+      >
         <legend>Plan</legend>
         <label v-for="p in PLANS" :key="p.id" class="radio">
-          <input :id="'plan-' + p.id" v-model="data.plan" type="radio" name="plan" :value="p.id" />
+          <input
+            :id="'plan-' + p.id"
+            v-model="data.plan"
+            type="radio"
+            name="plan"
+            :value="p.id"
+          />
           {{ p.label }}
         </label>
-        <p v-if="errors.plan" id="plan-error" class="error">{{ errors.plan }}</p>
+        <p
+          v-if="errors.plan"
+          id="plan-error"
+          class="error"
+        >{{ errors.plan }}</p>
       </fieldset>
     </template>
     <ReviewList v-else :data="data" @edit="step = $event" />
 
     <div class="actions">
-      <button v-if="step > 0" type="button" data-testid="back" class="secondary" :disabled="status === 'submitting'" @click="step--">Back</button>
-      <button v-if="isLast" type="submit" data-testid="submit" :disabled="status === 'submitting'">
+      <button
+        v-if="step > 0"
+        type="button"
+        data-testid="back"
+        class="secondary"
+        :disabled="status === 'submitting'"
+        @click="step--"
+      >Back</button>
+      <button
+        v-if="isLast"
+        type="submit"
+        data-testid="submit"
+        :disabled="status === 'submitting'"
+      >
         {{ status === "submitting" ? "Creating account..." : "Create account" }}
       </button>
       <button v-else type="submit" data-testid="next">Next</button>
@@ -2419,15 +3250,23 @@ defineProps({
 <template>
   <div class="field">
     <label :for="id">{{ label }}</label>
-    <input :id="id" v-model="model" :type="type" :autocomplete="autocomplete"
-      :aria-invalid="error ? 'true' : 'false'" :aria-describedby="error ? id + '-error' : undefined" />
+    <input
+      :id="id"
+      v-model="model"
+      :type="type"
+      :autocomplete="autocomplete"
+      :aria-invalid="error ? 'true' : 'false'"
+      :aria-describedby="error ? id + '-error' : undefined"
+    />
     <p v-if="error" :id="id + '-error'" class="error">{{ error }}</p>
   </div>
 </template>
 `,
           "/src/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
 export function createAccount(data) {
-  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400),
+  );
 }
 `,
           "/src/steps.js": `// The wizard is driven by this config: each step names its fields and
@@ -2448,10 +3287,13 @@ export const STEPS = [
     validate: (d) => {
       const e = {};
       if (!d.email.trim()) e.email = "Email is required";
-      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim())) e.email = "Enter a valid email address";
+      else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(d.email.trim()))
+        e.email = "Enter a valid email address";
       if (!d.password) e.password = "Password is required";
-      else if (d.password.length < 8) e.password = "Password must be at least 8 characters";
-      else if (!/[0-9]/.test(d.password)) e.password = "Password must contain a number";
+      else if (d.password.length < 8)
+        e.password = "Password must be at least 8 characters";
+      else if (!/[0-9]/.test(d.password))
+        e.password = "Password must contain a number";
       return e;
     },
   },
@@ -2505,18 +3347,35 @@ In Angular the natural shape is a **nested FormGroup**: one parent group holds a
 ### Step 1: one model, one group per step
 
 \`\`\`ts
-  // One FormGroup per step, nested in one parent: the parent holds ALL the data,
-  // and each child group's validity gates its own Next button.
-  readonly form = new FormGroup({
-    account: new FormGroup({
-      email: new FormControl("", { nonNullable: true, validators: [Validators.required, Validators.pattern(EMAIL)] }),
-      password: new FormControl("", { nonNullable: true, validators: [Validators.required, Validators.minLength(8), Validators.pattern(/[0-9]/)] }),
+// One FormGroup per step, nested in one
+// parent: the parent holds ALL the data,
+// and each child group's validity gates its own Next button.
+readonly form = new FormGroup({
+  account: new FormGroup({
+    email: new FormControl("", {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(EMAIL)],
     }),
-    profile: new FormGroup({
-      fullName: new FormControl("", { nonNullable: true, validators: notBlank }),
-      plan: new FormControl("", { nonNullable: true, validators: Validators.required }),
+    password: new FormControl("", {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/[0-9]/),
+      ],
     }),
-  });
+  }),
+  profile: new FormGroup({
+    fullName: new FormControl("", {
+      nonNullable: true,
+      validators: notBlank,
+    }),
+    plan: new FormControl("", {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
+  }),
+});
 \`\`\`
 
 Built-ins work for the email pattern, password length and digit. Two notes from running them on 22.2.3: <code>Validators.required</code> treats <code>"   "</code> as valid, so the name uses a small <code>notBlank</code> validator, and a <code>RegExp</code> passed to <code>Validators.pattern</code> is used as is (a string pattern would be wrapped in <code>^...$</code>), which is why <code>/[0-9]/</code> means "contains a digit". Messages come from a lookup table in priority order:
@@ -2524,8 +3383,15 @@ Built-ins work for the email pattern, password length and digit. Two notes from 
 \`\`\`ts
 // First matching key wins, in the order listed.
 const MESSAGES: Record<string, [string, string][]> = {
-  email: [["required", "Email is required"], ["pattern", "Enter a valid email address"]],
-  password: [["required", "Password is required"], ["minlength", "Password must be at least 8 characters"], ["pattern", "Password must contain a number"]],
+  email: [
+    ["required", "Email is required"],
+    ["pattern", "Enter a valid email address"],
+  ],
+  password: [
+    ["required", "Password is required"],
+    ["minlength", "Password must be at least 8 characters"],
+    ["pattern", "Password must contain a number"],
+  ],
   fullName: [["required", "Full name is required"]],
   plan: [["required", "Choose a plan"]],
 };
@@ -2534,34 +3400,40 @@ const MESSAGES: Record<string, [string, string][]> = {
 ### Step 2: the gate and the error helper
 
 \`\`\`ts
-  error(group: "account" | "profile", field: string): string | null {
-    const index = group === "account" ? 0 : 1;
-    if (!this.attempted().has(index)) return null;
-    const g: FormGroup = this.form.controls[group];
-    const errs = g.get(field)?.errors;
-    if (!errs) return null;
-    return MESSAGES[field].find(([key]) => errs[key])?.[1] ?? null;
-  }
+error(group: "account" | "profile", field: string): string | null {
+  const index = group === "account" ? 0 : 1;
+  if (!this.attempted().has(index)) return null;
+  const g: FormGroup = this.form.controls[group];
+  const errs = g.get(field)?.errors;
+  if (!errs) return null;
+  return MESSAGES[field].find(([key]) => errs[key])?.[1] ?? null;
+}
 
-  goTo(i: number) {
-    this.step.set(i);
-    // Focus the new heading after Angular has rendered the new step.
-    afterNextRender(() => this.heading?.nativeElement.focus(), { injector: this.injector });
-  }
+goTo(i: number) {
+  this.step.set(i);
+  // Focus the new heading after Angular has rendered the new step.
+  afterNextRender(() => this.heading?.nativeElement.focus(), {
+    injector: this.injector,
+  });
+}
 
-  private next() {
-    const id = this.current().id;
-    if (id === "account" || id === "profile") {
-      const group: FormGroup = this.form.controls[id];
-      if (group.invalid) {
-        this.attempted.update((s) => new Set(s).add(this.step()));
-        const first = Object.keys(group.controls).find((k) => group.get(k)?.invalid);
-        document.getElementById(first === "plan" ? "plan-free" : first!)?.focus();
-        return;
-      }
+private next() {
+  const id = this.current().id;
+  if (id === "account" || id === "profile") {
+    const group: FormGroup = this.form.controls[id];
+    if (group.invalid) {
+      this.attempted.update((s) => new Set(s).add(this.step()));
+      const first = Object.keys(group.controls).find(
+        (k) => group.get(k)?.invalid,
+      );
+      document
+        .getElementById(first === "plan" ? "plan-free" : first!)
+        ?.focus();
+      return;
     }
-    this.goTo(this.step() + 1);
   }
+  this.goTo(this.step() + 1);
+}
 \`\`\`
 
 <code>attempted.update((s) =&gt; new Set(s).add(...))</code> creates a new Set on purpose: a signal compares values by identity, so mutating the old Set in place would not notify anything.
@@ -2611,7 +3483,7 @@ const MESSAGES: Record<string, [string, string][]> = {
 
 Booted with <code>bootstrapApplication(AppComponent)</code> and no providers, once compiled by <code>ngc</code> with <code>strictTemplates</code> and once through the playground JIT. Both runs printed the same lines; AOT run, prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: AccountProfileReviewStep 1 of 3: AccountEmailPasswordNext
 initial              | Step 1 of 3: Account | valuenow 1 | errors: (none) | focus: BODY
 Next on empty        | Step 1 of 3: Account | valuenow 1 | errors: email-error=Email is required, password-error=Password is required | focus: email
@@ -2724,50 +3596,190 @@ import { SignupWizardComponent } from "./signup-wizard.component";
   template: \`<main class="page"><app-signup-wizard /></main>\`,
   // Global styles for this small app, so the child component shares them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 440px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 12px 0 16px; font-size: 1.2rem; }
-    h2:focus { outline: none; }
-    .steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0 0 10px; font-size: 0.85rem; color: #8b93a7; }
-    .steps li { flex: 1; }
-    .steps li.on { color: #e6e8ee; }
-    .steps li[aria-current="step"] { font-weight: 700; color: #9db7ff; }
-    .bar { height: 6px; background: #2a2f3d; border-radius: 3px; overflow: hidden; }
-    .bar span { display: block; height: 100%; background: #4f7cff; transition: width 0.25s; }
-    .field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 14px; border: 0; padding: 0; }
-    label, legend { font-weight: 600; font-size: 0.9rem; }
-    .radio { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-    input[type="text"], input[type="email"], input[type="password"], input:not([type]) { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-    input[aria-invalid="true"] { border-color: #ff6b6b; }
-    .error { color: #ff8a8a; margin: 0; font-size: 0.85rem; }
-    .review { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 16px; }
-    .review dt { color: #8b93a7; }
-    .review dd { margin: 0; overflow-wrap: anywhere; }
-    .review dd:has(button) { grid-column: 1 / -1; }
-    .actions { display: flex; gap: 10px; justify-content: flex-end; }
-    button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-    button.secondary { background: #2a2f3d; }
-    button.link { background: none; color: #9db7ff; padding: 0; text-decoration: underline; }
-    button:disabled { opacity: 0.6; }
-    button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 440px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 12px 0 16px;
+        font-size: 1.2rem;
+      }
+      h2:focus {
+        outline: none;
+      }
+      .steps {
+        display: flex;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+        margin: 0 0 10px;
+        font-size: 0.85rem;
+        color: #8b93a7;
+      }
+      .steps li {
+        flex: 1;
+      }
+      .steps li.on {
+        color: #e6e8ee;
+      }
+      .steps li[aria-current="step"] {
+        font-weight: 700;
+        color: #9db7ff;
+      }
+      .bar {
+        height: 6px;
+        background: #2a2f3d;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .bar span {
+        display: block;
+        height: 100%;
+        background: #4f7cff;
+        transition: width 0.25s;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 0 0 14px;
+        border: 0;
+        padding: 0;
+      }
+      label,
+      legend {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .radio {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 400;
+        padding: 4px 0;
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input:not([type]) {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: inherit;
+      }
+      input[aria-invalid="true"] {
+        border-color: #ff6b6b;
+      }
+      .error {
+        color: #ff8a8a;
+        margin: 0;
+        font-size: 0.85rem;
+      }
+      .review {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 14px;
+        margin: 0 0 16px;
+      }
+      .review dt {
+        color: #8b93a7;
+      }
+      .review dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      .review dd:has(button) {
+        grid-column: 1 / -1;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #4f7cff;
+        color: #fff;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #2a2f3d;
+      }
+      button.link {
+        background: none;
+        color: #9db7ff;
+        padding: 0;
+        text-decoration: underline;
+      }
+      button:disabled {
+        opacity: 0.6;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/fake-api.ts": `// Simulated server (no network in the playground): answers after 400 ms.
-export function createAccount(data: { email: string }): Promise<{ ok: true; id: string }> {
-  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400));
+export function createAccount(data: {
+  email: string;
+}): Promise<{ ok: true; id: string }> {
+  return new Promise((resolve) =>
+    setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400),
+  );
 }
 `,
-          "/src/app/signup-wizard.component.ts": `import { Component, ElementRef, Injector, ViewChild, afterNextRender, computed, inject, signal } from "@angular/core";
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from "@angular/forms";
+          "/src/app/signup-wizard.component.ts": `import {
+  Component,
+  ElementRef,
+  Injector,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from "@angular/forms";
 import { createAccount } from "./fake-api";
 
 const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 // Validators.required accepts "   ", so names use a trimmed check instead.
-const notBlank = (c: AbstractControl): ValidationErrors | null => (String(c.value ?? "").trim() ? null : { required: true });
+const notBlank = (c: AbstractControl): ValidationErrors | null =>
+  String(c.value ?? "").trim() ? null : { required: true };
 
 export const PLANS = [
   { id: "free", label: "Free" },
@@ -2782,8 +3794,15 @@ const STEPS = [
 
 // First matching key wins, in the order listed.
 const MESSAGES: Record<string, [string, string][]> = {
-  email: [["required", "Email is required"], ["pattern", "Enter a valid email address"]],
-  password: [["required", "Password is required"], ["minlength", "Password must be at least 8 characters"], ["pattern", "Password must contain a number"]],
+  email: [
+    ["required", "Email is required"],
+    ["pattern", "Enter a valid email address"],
+  ],
+  password: [
+    ["required", "Password is required"],
+    ["minlength", "Password must be at least 8 characters"],
+    ["pattern", "Password must contain a number"],
+  ],
   fullName: [["required", "Full name is required"]],
   plan: [["required", "Choose a plan"]],
 };
@@ -2802,14 +3821,21 @@ const MESSAGES: Record<string, [string, string][]> = {
       <form class="card" novalidate [formGroup]="form" (ngSubmit)="onSubmit()">
         <ol class="steps" aria-label="Progress">
           @for (s of steps; track s.id; let i = $index) {
-            <li [attr.aria-current]="i === step() ? 'step' : null" [class.on]="i <= step()">{{ s.title }}</li>
+            <li
+              [attr.aria-current]="i === step() ? 'step' : null"
+              [class.on]="i <= step()"
+            >{{ s.title }}</li>
           }
         </ol>
         <div role="progressbar" aria-label="Sign-up progress" aria-valuemin="1" [attr.aria-valuemax]="steps.length"
           [attr.aria-valuenow]="step() + 1" class="bar">
           <span [style.width.%]="((step() + 1) / steps.length) * 100"></span>
         </div>
-        <h2 #heading tabindex="-1" data-testid="step-heading">Step {{ step() + 1 }} of {{ steps.length }}: {{ current().title }}</h2>
+        <h2
+          #heading
+          tabindex="-1"
+          data-testid="step-heading"
+        >Step {{ step() + 1 }} of {{ steps.length }}: {{ current().title }}</h2>
 
         @switch (current().id) {
           @case ("account") {
@@ -2839,11 +3865,20 @@ const MESSAGES: Record<string, [string, string][]> = {
                   [attr.aria-describedby]="error('profile', 'fullName') ? 'fullName-error' : null" />
                 @if (error("profile", "fullName"); as e) { <p id="fullName-error" class="error">{{ e }}</p> }
               </div>
-              <fieldset class="field" [attr.aria-describedby]="error('profile', 'plan') ? 'plan-error' : null">
+              <fieldset
+                class="field"
+                [attr.aria-describedby]="error('profile', 'plan') ? 'plan-error' : null"
+              >
                 <legend>Plan</legend>
                 @for (p of plans; track p.id) {
                   <label class="radio">
-                    <input type="radio" name="plan" [id]="'plan-' + p.id" formControlName="plan" [value]="p.id" />
+                    <input
+                      type="radio"
+                      name="plan"
+                      [id]="'plan-' + p.id"
+                      formControlName="plan"
+                      [value]="p.id"
+                    />
                     {{ p.label }}
                   </label>
                 }
@@ -2865,10 +3900,20 @@ const MESSAGES: Record<string, [string, string][]> = {
 
         <div class="actions">
           @if (step() > 0) {
-            <button type="button" data-testid="back" class="secondary" [disabled]="status() === 'submitting'" (click)="goTo(step() - 1)">Back</button>
+            <button
+              type="button"
+              data-testid="back"
+              class="secondary"
+              [disabled]="status() === 'submitting'"
+              (click)="goTo(step() - 1)"
+            >Back</button>
           }
           @if (isLast()) {
-            <button type="submit" data-testid="submit" [disabled]="status() === 'submitting'">
+            <button
+              type="submit"
+              data-testid="submit"
+              [disabled]="status() === 'submitting'"
+            >
               {{ status() === "submitting" ? "Creating account..." : "Create account" }}
             </button>
           } @else {
@@ -2891,16 +3936,33 @@ export class SignupWizardComponent {
   readonly current = computed(() => STEPS[this.step()]);
   readonly isLast = computed(() => this.step() === STEPS.length - 1);
 
-  // One FormGroup per step, nested in one parent: the parent holds ALL the data,
+  // One FormGroup per step, nested in one
+  // parent: the parent holds ALL the data,
   // and each child group's validity gates its own Next button.
   readonly form = new FormGroup({
     account: new FormGroup({
-      email: new FormControl("", { nonNullable: true, validators: [Validators.required, Validators.pattern(EMAIL)] }),
-      password: new FormControl("", { nonNullable: true, validators: [Validators.required, Validators.minLength(8), Validators.pattern(/[0-9]/)] }),
+      email: new FormControl("", {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(EMAIL)],
+      }),
+      password: new FormControl("", {
+        nonNullable: true,
+        validators: [
+          Validators.required,
+          Validators.minLength(8),
+          Validators.pattern(/[0-9]/),
+        ],
+      }),
     }),
     profile: new FormGroup({
-      fullName: new FormControl("", { nonNullable: true, validators: notBlank }),
-      plan: new FormControl("", { nonNullable: true, validators: Validators.required }),
+      fullName: new FormControl("", {
+        nonNullable: true,
+        validators: notBlank,
+      }),
+      plan: new FormControl("", {
+        nonNullable: true,
+        validators: Validators.required,
+      }),
     }),
   });
 
@@ -2908,10 +3970,14 @@ export class SignupWizardComponent {
     return PLANS.find((p) => p.id === id)?.label ?? "";
   }
   masked() {
-    return "*".repeat(this.form.controls.account.controls.password.value.length);
+    return "*".repeat(
+      this.form.controls.account.controls.password.value.length,
+    );
   }
   firstName() {
-    return this.form.controls.profile.controls.fullName.value.trim().split(" ")[0];
+    return this.form.controls.profile.controls.fullName.value
+      .trim()
+      .split(" ")[0];
   }
 
   error(group: "account" | "profile", field: string): string | null {
@@ -2926,7 +3992,9 @@ export class SignupWizardComponent {
   goTo(i: number) {
     this.step.set(i);
     // Focus the new heading after Angular has rendered the new step.
-    afterNextRender(() => this.heading?.nativeElement.focus(), { injector: this.injector });
+    afterNextRender(() => this.heading?.nativeElement.focus(), {
+      injector: this.injector,
+    });
   }
 
   private next() {
@@ -2935,8 +4003,12 @@ export class SignupWizardComponent {
       const group: FormGroup = this.form.controls[id];
       if (group.invalid) {
         this.attempted.update((s) => new Set(s).add(this.step()));
-        const first = Object.keys(group.controls).find((k) => group.get(k)?.invalid);
-        document.getElementById(first === "plan" ? "plan-free" : first!)?.focus();
+        const first = Object.keys(group.controls).find(
+          (k) => group.get(k)?.invalid,
+        );
+        document
+          .getElementById(first === "plan" ? "plan-free" : first!)
+          ?.focus();
         return;
       }
     }
@@ -3067,18 +4139,19 @@ export const DEBOUNCE_MS = 400;
 export function usernameError(v) {
   if (!v) return "Username is required";
   if (v.length < 3 || v.length > 16) return "Use 3 to 16 characters";
-  if (!/^[a-z0-9_]+$/.test(v)) return "Use lowercase letters, numbers and _ only";
+  if (!/^[a-z0-9_]+$/.test(v))
+    return "Use lowercase letters, numbers and _ only";
   return "";
 }
 \`\`\`
 
 \`\`\`jsx
-  const uErr = username ? usernameError(username) : "";
-  const eErr = emailError(email);
-  const { status, log } = useUsernameCheck(username, !!username && !uErr);
-  const canSubmit = status === "available" && !eErr && phase === "form";
-  const text = STATUS_TEXT[status];
-  const statusText = typeof text === "function" ? text(username) : text;
+const uErr = username ? usernameError(username) : "";
+const eErr = emailError(email);
+const { status, log } = useUsernameCheck(username, !!username && !uErr);
+const canSubmit = status === "available" && !eErr && phase === "form";
+const text = STATUS_TEXT[status];
+const statusText = typeof text === "function" ? text(username) : text;
 \`\`\`
 
 The hook is only <code>enabled</code> for a non-empty name that passes the rules, so "Ja" never reaches the server.
@@ -3086,27 +4159,43 @@ The hook is only <code>enabled</code> for a non-empty name that passes the rules
 ### Step 2: debounce inside an effect
 
 \`\`\`jsx
-  useEffect(() => {
-    if (!enabled) return;
-    let stale = false; // flipped by cleanup when username changes or we unmount
-    const timer = setTimeout(() => {
-      const id = nextId.current++;
-      setLog((l) => [...l, { id, name: username, outcome: "pending" }]);
-      checkUsername(username).then(
-        (res) => finish(id, { name: username, available: res.available }),
-        () => finish(id, { name: username, error: true })
+useEffect(() => {
+  if (!enabled) return;
+  // flipped by cleanup when username changes or we unmount
+  let stale = false;
+  const timer = setTimeout(() => {
+    const id = nextId.current++;
+    setLog((l) => [...l, { id, name: username, outcome: "pending" }]);
+    checkUsername(username).then(
+      (res) => finish(id, { name: username, available: res.available }),
+      () => finish(id, { name: username, error: true }),
+    );
+    function finish(reqId, value) {
+      const label = value.error
+        ? "error"
+        : value.available
+          ? "available"
+          : "taken";
+      setLog((l) =>
+        l.map((e) =>
+          e.id === reqId
+            ? {
+                ...e,
+                outcome:
+                  label + (stale ? ", ignored (stale)" : ", applied"),
+              }
+            : e,
+        ),
       );
-      function finish(reqId, value) {
-        const label = value.error ? "error" : value.available ? "available" : "taken";
-        setLog((l) => l.map((e) => (e.id === reqId ? { ...e, outcome: label + (stale ? ", ignored (stale)" : ", applied") } : e)));
-        if (!stale) setResult(value);
-      }
-    }, DEBOUNCE_MS);
-    return () => {
-      stale = true;
-      clearTimeout(timer); // a keystroke inside the window cancels the request entirely
-    };
-  }, [username, enabled]);
+      if (!stale) setResult(value);
+    }
+  }, DEBOUNCE_MS);
+  return () => {
+    stale = true;
+    // a keystroke inside the window cancels the request entirely
+    clearTimeout(timer);
+  };
+}, [username, enabled]);
 \`\`\`
 
 Each change of <code>username</code> runs the effect again, and React first runs the previous cleanup. That cleanup does two jobs:
@@ -3121,13 +4210,18 @@ Because <code>stale</code> is a local variable, every effect run has its own fla
 ### Step 3: derive the status from the current name
 
 \`\`\`jsx
-  // Derived: a result only counts if it answers the name currently typed.
-  let status = "idle";
-  if (enabled) {
-    if (result?.name !== username) status = "checking";
-    else status = result.error ? "error" : result.available ? "available" : "taken";
-  }
-  return { status, log };
+// Derived: a result only counts if it answers the name currently typed.
+let status = "idle";
+if (enabled) {
+  if (result?.name !== username) status = "checking";
+  else
+    status = result.error
+      ? "error"
+      : result.available
+        ? "available"
+        : "taken";
+}
+return { status, log };
 \`\`\`
 
 📌 **Interview term: Tagging responses** — storing which input a response answers (<code>result.name</code>) next to the answer itself. Even if a stale answer slipped through, a result for "jane" can never be shown as the status of "janet": the comparison turns it into "checking". The stale flag and the tag are two independent layers; section 6 shows what happens with neither.
@@ -3176,7 +4270,7 @@ In development, StrictMode runs each effect, its cleanup, then the effect again 
 
 Mounted like the playground (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1. The driver uses real timers: four keystrokes 50 ms apart, waits, then types "janet" while "jane" is still in flight. Output with the <code>[react]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Create your accountUsernameEmailSign upRequest log (demo)
 typed j, ja, jan, jane     | status: Checking availability... | log: (no requests)
 debounce fired for jane    | status: Checking availability... | log: #1 jane: pending
@@ -3199,7 +4293,7 @@ What this proves: four keystrokes produced one request (debounce); request 1 was
 
 To show the bug is real, the same driver ran against a copy of the hook with both layers removed (no stale check, no name comparison). The relevant lines:
 
-\`\`\`
+\`\`\`text
 [react] janet answered first       | status: janet is available | log: #1 jane: pending | #2 janet: available, applied
 [react] jane answered last         | status: janet is taken | log: #1 jane: taken, applied | #2 janet: available, applied
 \`\`\`
@@ -3334,7 +4428,12 @@ export default function SignupForm() {
   }
 
   if (phase === "done") {
-    return <div className="card" role="status" data-testid="done"><h2>Welcome, @{username}!</h2><p>Your account is ready.</p></div>;
+    return (
+      <div className="card" role="status" data-testid="done">
+        <h2>Welcome, @{username}!</h2>
+        <p>Your account is ready.</p>
+      </div>
+    );
   }
 
   return (
@@ -3342,19 +4441,42 @@ export default function SignupForm() {
       <h2>Create your account</h2>
       <div className="field">
         <label htmlFor="username">Username</label>
-        <input id="username" value={username} autoComplete="username" spellCheck={false}
+        <input
+          id="username"
+          value={username}
+          autoComplete="username"
+          spellCheck={false}
           onChange={(e) => setUsername(e.target.value)}
           aria-invalid={uErr || status === "taken" ? "true" : "false"}
-          aria-describedby="username-error username-status" />
-        <p id="username-error" className="error">{uErr}</p>
-        <p id="username-status" data-testid="username-status" className={"status " + status} aria-live="polite">{statusText}</p>
+          aria-describedby="username-error username-status"
+        />
+        <p id="username-error" className="error">
+          {uErr}
+        </p>
+        <p
+          id="username-status"
+          data-testid="username-status"
+          className={"status " + status}
+          aria-live="polite"
+        >
+          {statusText}
+        </p>
       </div>
       <div className="field">
         <label htmlFor="email">Email</label>
-        <input id="email" type="email" value={email} autoComplete="email"
-          onChange={(e) => setEmail(e.target.value)} onBlur={() => setTouched({ ...touched, email: true })}
-          aria-invalid={touched.email && eErr ? "true" : "false"} aria-describedby="email-error" />
-        <p id="email-error" className="error">{touched.email ? eErr : ""}</p>
+        <input
+          id="email"
+          type="email"
+          value={email}
+          autoComplete="email"
+          onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => setTouched({ ...touched, email: true })}
+          aria-invalid={touched.email && eErr ? "true" : "false"}
+          aria-describedby="email-error"
+        />
+        <p id="email-error" className="error">
+          {touched.email ? eErr : ""}
+        </p>
       </div>
       <button type="submit" data-testid="submit" disabled={!canSubmit}>
         {phase === "saving" ? "Creating..." : "Sign up"}
@@ -3362,7 +4484,11 @@ export default function SignupForm() {
       <details className="log" open>
         <summary>Request log (demo)</summary>
         <ol data-testid="log">
-          {log.map((e) => <li key={e.id}>#{e.id} {e.name}: {e.outcome}</li>)}
+          {log.map((e) => (
+            <li key={e.id}>
+              #{e.id} {e.name}: {e.outcome}
+            </li>
+          ))}
         </ol>
       </details>
     </form>
@@ -3390,7 +4516,9 @@ export function checkUsername(name) {
 }
 
 export function createUser(user) {
-  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, user }), 300));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve({ ok: true, user }), 300),
+  );
 }
 `,
           "/src/rules.js": `export const DEBOUNCE_MS = 400;
@@ -3398,13 +4526,15 @@ export function createUser(user) {
 export function usernameError(v) {
   if (!v) return "Username is required";
   if (v.length < 3 || v.length > 16) return "Use 3 to 16 characters";
-  if (!/^[a-z0-9_]+$/.test(v)) return "Use lowercase letters, numbers and _ only";
+  if (!/^[a-z0-9_]+$/.test(v))
+    return "Use lowercase letters, numbers and _ only";
   return "";
 }
 
 export function emailError(v) {
   if (!v.trim()) return "Email is required";
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())) return "Enter a valid email address";
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim()))
+    return "Enter a valid email address";
   return "";
 }
 
@@ -3423,7 +4553,8 @@ import { DEBOUNCE_MS } from "./rules";
 // Debounced availability check that ignores stale responses.
 // Returns the derived status plus a request log for the demo panel.
 export function useUsernameCheck(username, enabled) {
-  const [result, setResult] = useState(null); // { name, available } | { name, error }
+  // { name, available } | { name, error }
+  const [result, setResult] = useState(null);
   const [log, setLog] = useState([]);
   const nextId = useRef(1);
 
@@ -3435,17 +4566,31 @@ export function useUsernameCheck(username, enabled) {
       setLog((l) => [...l, { id, name: username, outcome: "pending" }]);
       checkUsername(username).then(
         (res) => finish(id, { name: username, available: res.available }),
-        () => finish(id, { name: username, error: true })
+        () => finish(id, { name: username, error: true }),
       );
       function finish(reqId, value) {
-        const label = value.error ? "error" : value.available ? "available" : "taken";
-        setLog((l) => l.map((e) => (e.id === reqId ? { ...e, outcome: label + (stale ? ", ignored (stale)" : ", applied") } : e)));
+        const label = value.error
+          ? "error"
+          : value.available
+            ? "available"
+            : "taken";
+        setLog((l) =>
+          l.map((e) =>
+            e.id === reqId
+              ? {
+                  ...e,
+                  outcome: label + (stale ? ", ignored (stale)" : ", applied"),
+                }
+              : e,
+          ),
+        );
         if (!stale) setResult(value);
       }
     }, DEBOUNCE_MS);
     return () => {
       stale = true;
-      clearTimeout(timer); // a keystroke inside the window cancels the request entirely
+      // a keystroke inside the window cancels the request entirely
+      clearTimeout(timer);
     };
   }, [username, enabled]);
 
@@ -3453,28 +4598,108 @@ export function useUsernameCheck(username, enabled) {
   let status = "idle";
   if (enabled) {
     if (result?.name !== username) status = "checking";
-    else status = result.error ? "error" : result.available ? "available" : "taken";
+    else
+      status = result.error
+        ? "error"
+        : result.available
+          ? "available"
+          : "taken";
   }
   return { status, log };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-input:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-.status { margin: 0; font-size: 0.85rem; min-height: 1em; color: #9aa3b5; }
-.status.available { color: #7ee2a8; }
-.status.taken, .status.error { color: #ffb36b; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.log { margin-top: 16px; font-size: 0.8rem; color: #9aa3b5; }
-.log ol { margin: 6px 0 0; padding-left: 18px; font-family: ui-monospace, monospace; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+.status {
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+  color: #9aa3b5;
+}
+.status.available {
+  color: #7ee2a8;
+}
+.status.taken,
+.status.error {
+  color: #ffb36b;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.log {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: #9aa3b5;
+}
+.log ol {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-family: ui-monospace, monospace;
+}
 `,
         },
       },
@@ -3513,14 +4738,14 @@ The build: local rules first (3 to 16 characters of <code>a-z</code>, <code>0-9<
 ### Step 1: rules first, then the composable
 
 \`\`\`vue
-const uErr = computed(() => (username.value ? usernameError(username.value) : ""));
-const eErr = computed(() => emailError(email.value));
-const { status, log } = useUsernameCheck(username, () => !!username.value && !uErr.value);
-const canSubmit = computed(() => status.value === "available" && !eErr.value && phase.value === "form");
-const statusText = computed(() => {
-  const t = STATUS_TEXT[status.value];
-  return typeof t === "function" ? t(username.value) : t;
-});
+const uErr = computed(() => (username.value ?
+usernameError(username.value) : "")); const eErr = computed(() =>
+emailError(email.value)); const { status, log } =
+useUsernameCheck(username, () => !!username.value && !uErr.value); const
+canSubmit = computed(() => status.value === "available" && !eErr.value
+&& phase.value === "form"); const statusText = computed(() => { const t
+= STATUS_TEXT[status.value]; return typeof t === "function" ?
+t(username.value) : t; });
 \`\`\`
 
 The composable receives getters (<code>() =&gt; ...</code>) or refs and reads them with <code>toValue</code>, which unwraps either. The check is enabled only for a name that passes the rules.
@@ -3528,32 +4753,38 @@ The composable receives getters (<code>() =&gt; ...</code>) or refs and reads th
 ### Step 2: debounce and staleness in one watcher
 
 \`\`\`js
-  watch(
-    () => [toValue(username), toValue(enabled)],
-    ([name, on]) => {
-      if (!on) return;
-      let stale = false;
-      const timer = setTimeout(() => {
-        const id = nextId++;
-        log.value.push({ id, name, outcome: "pending" });
-        const finish = (value) => {
-          const label = value.error ? "error" : value.available ? "available" : "taken";
-          const entry = log.value.find((e) => e.id === id);
-          entry.outcome = label + (stale ? ", ignored (stale)" : ", applied");
-          if (!stale) result.value = value;
-        };
-        checkUsername(name).then(
-          (res) => finish({ name, available: res.available }),
-          () => finish({ name, error: true })
-        );
-      }, DEBOUNCE_MS);
-      // Vue 3.5: runs before the next run of this watcher, or when it stops.
-      onWatcherCleanup(() => {
-        stale = true;
-        clearTimeout(timer);
-      });
-    }
-  );
+watch(
+  () => [toValue(username), toValue(enabled)],
+  ([name, on]) => {
+    if (!on) return;
+    let stale = false;
+    const timer = setTimeout(() => {
+      const id = nextId++;
+      log.value.push({ id, name, outcome: "pending" });
+      const finish = (value) => {
+        const label = value.error
+          ? "error"
+          : value.available
+            ? "available"
+            : "taken";
+        const entry = log.value.find((e) => e.id === id);
+        entry.outcome =
+          label + (stale ? ", ignored (stale)" : ", applied");
+        if (!stale) result.value = value;
+      };
+      checkUsername(name).then(
+        (res) => finish({ name, available: res.available }),
+        () => finish({ name, error: true }),
+      );
+    }, DEBOUNCE_MS);
+    // Vue 3.5: runs before the next run
+    // of this watcher, or when it stops.
+    onWatcherCleanup(() => {
+      stale = true;
+      clearTimeout(timer);
+    });
+  },
+);
 \`\`\`
 
 📌 **Interview term: onWatcherCleanup** — registers a function that Vue runs before the same watcher runs again, or when the watcher stops (for example, on unmount). It was added in Vue 3.5 (listed in the official 3.5 release post). The older equivalent is the third <code>onCleanup</code> argument of the watch callback.
@@ -3563,15 +4794,15 @@ When the name changes, the cleanup runs first: <code>clearTimeout</code> drops a
 ### Step 3: derive the status
 
 \`\`\`js
-  // Derived: a result only counts if it answers the name currently typed.
-  const status = computed(() => {
-    if (!toValue(enabled)) return "idle";
-    const r = result.value;
-    if (r?.name !== toValue(username)) return "checking";
-    return r.error ? "error" : r.available ? "available" : "taken";
-  });
+// Derived: a result only counts if it answers the name currently typed.
+const status = computed(() => {
+  if (!toValue(enabled)) return "idle";
+  const r = result.value;
+  if (r?.name !== toValue(username)) return "checking";
+  return r.error ? "error" : r.available ? "available" : "taken";
+});
 
-  return { status, log };
+return { status, log };
 \`\`\`
 
 📌 **Interview term: Tagging responses** — storing which input an answer belongs to. Even a stale answer that slipped through could never be displayed for a different name: the comparison turns it into "checking". The stale flag and the tag are two independent safety layers.
@@ -3594,7 +4825,7 @@ Because <code>log</code> is a <code>ref</code> holding an array, Vue tracks the 
 
 Compiled with <code>@vue/compiler-sfc</code>, mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44, real timers, same driver as the React and Angular tabs. Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Create your accountUsernameEmailSign upRequest log (demo)
 typed j, ja, jan, jane     | status: Checking availability... | log: (no requests)
 debounce fired for jane    | status: Checking availability... | log: #1 jane: pending
@@ -3707,23 +4938,98 @@ import SignupForm from "./components/SignupForm.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input[aria-invalid="true"] { border-color: #ff6b6b; }
-input:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-.status { margin: 0; font-size: 0.85rem; min-height: 1em; color: #9aa3b5; }
-.status.available { color: #7ee2a8; }
-.status.taken, .status.error { color: #ffb36b; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.log { margin-top: 16px; font-size: 0.8rem; color: #9aa3b5; }
-.log ol { margin: 6px 0 0; padding-left: 18px; font-family: ui-monospace, monospace; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+}
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+.status {
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+  color: #9aa3b5;
+}
+.status.available {
+  color: #7ee2a8;
+}
+.status.taken,
+.status.error {
+  color: #ffb36b;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.log {
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: #9aa3b5;
+}
+.log ol {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-family: ui-monospace, monospace;
+}
 </style>
 `,
           "/src/components/SignupForm.vue": `<script setup>
@@ -3737,10 +5043,17 @@ const email = ref("");
 const emailTouched = ref(false);
 const phase = ref("form"); // form | saving | done
 
-const uErr = computed(() => (username.value ? usernameError(username.value) : ""));
+const uErr = computed(() =>
+  username.value ? usernameError(username.value) : "",
+);
 const eErr = computed(() => emailError(email.value));
-const { status, log } = useUsernameCheck(username, () => !!username.value && !uErr.value);
-const canSubmit = computed(() => status.value === "available" && !eErr.value && phase.value === "form");
+const { status, log } = useUsernameCheck(
+  username,
+  () => !!username.value && !uErr.value,
+);
+const canSubmit = computed(
+  () => status.value === "available" && !eErr.value && phase.value === "form",
+);
 const statusText = computed(() => {
   const t = STATUS_TEXT[status.value];
   return typeof t === "function" ? t(username.value) : t;
@@ -3759,14 +5072,25 @@ async function onSubmit() {
     <h2>Welcome, @{{ username }}!</h2>
     <p>Your account is ready.</p>
   </div>
-  <form v-else class="card" novalidate aria-label="Sign up" @submit.prevent="onSubmit">
+  <form
+    v-else
+    class="card"
+    novalidate
+    aria-label="Sign up"
+    @submit.prevent="onSubmit"
+  >
     <h2>Create your account</h2>
     <div class="field">
       <label for="username">Username</label>
       <input id="username" v-model="username" autocomplete="username" spellcheck="false"
         :aria-invalid="uErr || status === 'taken' ? 'true' : 'false'" aria-describedby="username-error username-status" />
       <p id="username-error" class="error">{{ uErr }}</p>
-      <p id="username-status" data-testid="username-status" :class="['status', status]" aria-live="polite">{{ statusText }}</p>
+      <p
+        id="username-status"
+        data-testid="username-status"
+        :class="['status', status]"
+        aria-live="polite"
+      >{{ statusText }}</p>
     </div>
     <div class="field">
       <label for="email">Email</label>
@@ -3774,11 +5098,18 @@ async function onSubmit() {
         :aria-invalid="emailTouched && eErr ? 'true' : 'false'" aria-describedby="email-error" />
       <p id="email-error" class="error">{{ emailTouched ? eErr : "" }}</p>
     </div>
-    <button type="submit" data-testid="submit" :disabled="!canSubmit">{{ phase === "saving" ? "Creating..." : "Sign up" }}</button>
+    <button
+      type="submit"
+      data-testid="submit"
+      :disabled="!canSubmit"
+    >{{ phase === "saving" ? "Creating..." : "Sign up" }}</button>
     <details class="log" open>
       <summary>Request log (demo)</summary>
       <ol data-testid="log">
-        <li v-for="e in log" :key="e.id">#{{ e.id }} {{ e.name }}: {{ e.outcome }}</li>
+        <li
+          v-for="e in log"
+          :key="e.id"
+        >#{{ e.id }} {{ e.name }}: {{ e.outcome }}</li>
       </ol>
     </details>
   </form>
@@ -3805,7 +5136,9 @@ export function checkUsername(name) {
 }
 
 export function createUser(user) {
-  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, user }), 300));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve({ ok: true, user }), 300),
+  );
 }
 `,
           "/src/rules.js": `export const DEBOUNCE_MS = 400;
@@ -3813,13 +5146,15 @@ export function createUser(user) {
 export function usernameError(v) {
   if (!v) return "Username is required";
   if (v.length < 3 || v.length > 16) return "Use 3 to 16 characters";
-  if (!/^[a-z0-9_]+$/.test(v)) return "Use lowercase letters, numbers and _ only";
+  if (!/^[a-z0-9_]+$/.test(v))
+    return "Use lowercase letters, numbers and _ only";
   return "";
 }
 
 export function emailError(v) {
   if (!v.trim()) return "Email is required";
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())) return "Enter a valid email address";
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim()))
+    return "Enter a valid email address";
   return "";
 }
 
@@ -3851,14 +5186,18 @@ export function useUsernameCheck(username, enabled) {
         const id = nextId++;
         log.value.push({ id, name, outcome: "pending" });
         const finish = (value) => {
-          const label = value.error ? "error" : value.available ? "available" : "taken";
+          const label = value.error
+            ? "error"
+            : value.available
+              ? "available"
+              : "taken";
           const entry = log.value.find((e) => e.id === id);
           entry.outcome = label + (stale ? ", ignored (stale)" : ", applied");
           if (!stale) result.value = value;
         };
         checkUsername(name).then(
           (res) => finish({ name, available: res.available }),
-          () => finish({ name, error: true })
+          () => finish({ name, error: true }),
         );
       }, DEBOUNCE_MS);
       // Vue 3.5: runs before the next run of this watcher, or when it stops.
@@ -3866,7 +5205,7 @@ export function useUsernameCheck(username, enabled) {
         stale = true;
         clearTimeout(timer);
       });
-    }
+    },
   );
 
   // Derived: a result only counts if it answers the name currently typed.
@@ -3915,21 +5254,30 @@ Typing "jane" then "janet" on a sign-up form can send two availability requests.
 ### Step 1: the pipeline
 
 \`\`\`ts
-  constructor() {
-    const sub = this.usernameCtrl.valueChanges
-      .pipe(
-        // switchMap on EVERY keystroke: unsubscribing cancels both the pending
-        // debounce timer and any in-flight request for the previous value.
-        switchMap((name) => {
-          this.username.set(name);
-          if (!name || usernameError(name)) return EMPTY;
-          return timer(DEBOUNCE_MS).pipe(switchMap(() => this.request(name)));
-        })
-      )
-      .subscribe((r) => this.result.set(r));
-    const emailSub = this.emailCtrl.valueChanges.subscribe((v) => this.email.set(v));
-    inject(DestroyRef).onDestroy(() => { sub.unsubscribe(); emailSub.unsubscribe(); });
-  }
+constructor() {
+  const sub = this.usernameCtrl.valueChanges
+    .pipe(
+      // switchMap on EVERY keystroke:
+      // unsubscribing cancels both the pending
+      // debounce timer and any in-flight
+      // request for the previous value.
+      switchMap((name) => {
+        this.username.set(name);
+        if (!name || usernameError(name)) return EMPTY;
+        return timer(DEBOUNCE_MS).pipe(
+          switchMap(() => this.request(name)),
+        );
+      }),
+    )
+    .subscribe((r) => this.result.set(r));
+  const emailSub = this.emailCtrl.valueChanges.subscribe((v) =>
+    this.email.set(v),
+  );
+  inject(DestroyRef).onDestroy(() => {
+    sub.unsubscribe();
+    emailSub.unsubscribe();
+  });
+}
 \`\`\`
 
 The common textbook pipeline is <code>debounceTime(400)</code> then <code>switchMap(request)</code>. This solution puts the timer *inside* <code>switchMap</code> instead, so every keystroke immediately cancels both the pending timer and any request still in flight. With <code>debounceTime</code> first, a keystroke does not reach <code>switchMap</code> until the pause is over, so for those 400 ms the older request is still subscribed and can be applied. Section 5 shows both behaviours.
@@ -3939,25 +5287,44 @@ The common textbook pipeline is <code>debounceTime(400)</code> then <code>switch
 ### Step 2: wrap the Promise so switchMap can drop it
 
 \`\`\`ts
-  // Wrap the Promise so unsubscribing marks it stale. A Promise cannot be
-  // cancelled; we can only stop listening to it.
-  private request(name: string): Observable<Result> {
-    return new Observable<Result>((subscriber) => {
-      const id = this.nextId++;
-      let stale = false;
-      this.log.update((l) => [...l, { id, name, outcome: "pending" }]);
-      const finish = (value: Result) => {
-        const label = value.error ? "error" : value.available ? "available" : "taken";
-        this.log.update((l) => l.map((e) => (e.id === id ? { ...e, outcome: label + (stale ? ", ignored (stale)" : ", applied") } : e)));
-        if (!stale) { subscriber.next(value); subscriber.complete(); }
-      };
-      checkUsername(name).then(
-        (res) => finish({ name, available: res.available }),
-        () => finish({ name, error: true })
+// Wrap the Promise so unsubscribing marks it stale. A Promise cannot be
+// cancelled; we can only stop listening to it.
+private request(name: string): Observable<Result> {
+  return new Observable<Result>((subscriber) => {
+    const id = this.nextId++;
+    let stale = false;
+    this.log.update((l) => [...l, { id, name, outcome: "pending" }]);
+    const finish = (value: Result) => {
+      const label = value.error
+        ? "error"
+        : value.available
+          ? "available"
+          : "taken";
+      this.log.update((l) =>
+        l.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                outcome:
+                  label + (stale ? ", ignored (stale)" : ", applied"),
+              }
+            : e,
+        ),
       );
-      return () => { stale = true; }; // teardown: runs when switchMap moves on
-    });
-  }
+      if (!stale) {
+        subscriber.next(value);
+        subscriber.complete();
+      }
+    };
+    checkUsername(name).then(
+      (res) => finish({ name, available: res.available }),
+      () => finish({ name, error: true }),
+    );
+    return () => {
+      stale = true;
+    }; // teardown: runs when switchMap moves on
+  });
+}
 \`\`\`
 
 A Promise cannot be cancelled, so the teardown only flips <code>stale</code>; when the Promise settles later, the log records "ignored (stale)" and nothing is emitted. With <code>HttpClient</code> (not available in this provider-less playground) unsubscribing aborts the real request too. Converting the Promise with <code>from(promise)</code> would also be dropped by <code>switchMap</code>, but then there would be nothing to log, which is the point of the demo.
@@ -3965,14 +5332,17 @@ A Promise cannot be cancelled, so the teardown only flips <code>stale</code>; wh
 ### Step 3: status as a computed
 
 \`\`\`ts
-  readonly uErr = computed(() => (this.username() ? usernameError(this.username()) : ""));
-  readonly eErr = computed(() => emailError(this.email()));
-  readonly status = computed(() => {
-    if (!this.username() || this.uErr()) return "idle";
-    const r = this.result();
-    if (r?.name !== this.username()) return "checking"; // a result only counts for the name typed now
-    return r.error ? "error" : r.available ? "available" : "taken";
-  });
+readonly uErr = computed(() =>
+  this.username() ? usernameError(this.username()) : "",
+);
+readonly eErr = computed(() => emailError(this.email()));
+readonly status = computed(() => {
+  if (!this.username() || this.uErr()) return "idle";
+  const r = this.result();
+  // a result only counts for the name typed now
+  if (r?.name !== this.username()) return "checking";
+  return r.error ? "error" : r.available ? "available" : "taken";
+});
 \`\`\`
 
 📌 **Interview term: Tagging responses** — keeping the name next to its answer. Even an answer that slipped through could not be displayed for a different name: the comparison returns "checking".
@@ -3994,7 +5364,7 @@ A Promise cannot be cancelled, so the teardown only flips <code>stale</code>; wh
 
 Booted with <code>bootstrapApplication(AppComponent)</code> and no providers, compiled by <code>ngc</code> with <code>strictTemplates</code> and also run through the playground JIT, with real timers and the same driver as the other tabs. Both runs printed the same lines; AOT run, prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Create your accountUsernameEmailSign upRequest log (demo)
 typed j, ja, jan, jane     | status: Checking availability... | log: (no requests)
 debounce fired for jane    | status: Checking availability... | log: #1 jane: pending
@@ -4017,14 +5387,14 @@ One request per typing burst; the slow "jane" answer arrived after "janet" was a
 
 A second driver tested the debounce gap: type "alex" (400 ms answer), wait 450 ms so its request is in flight, type "alexa", then check after 400 ms. The shipped pipeline (playground JIT run):
 
-\`\`\`
+\`\`\`text
 alex answered, alexa pending | status: Checking availability... | log: #1 alex: taken, ignored (stale) | #2 alexa: pending
 alexa answered               | status: alexa is available | log: #1 alex: taken, ignored (stale) | #2 alexa: available, applied
 \`\`\`
 
 The same component rewritten as <code>tap</code>, <code>debounceTime(400)</code>, <code>switchMap(request)</code>:
 
-\`\`\`
+\`\`\`text
 alex answered, alexa pending | status: Checking availability... | log: #1 alex: taken, applied | #2 alexa: pending
 alexa answered               | status: alexa is available | log: #1 alex: taken, applied | #2 alexa: available, applied
 \`\`\`
@@ -4122,25 +5492,102 @@ import { SignupFormComponent } from "./signup-form.component";
   template: \`<main class="page"><app-signup-form /></main>\`,
   // Global styles for this small app, so the child component shares them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 0 0 16px; font-size: 1.2rem; }
-    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    input { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-    input[aria-invalid="true"] { border-color: #ff6b6b; }
-    input:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-    .status { margin: 0; font-size: 0.85rem; min-height: 1em; color: #9aa3b5; }
-    .status.available { color: #7ee2a8; }
-    .status.taken, .status.error { color: #ffb36b; }
-    button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .log { margin-top: 16px; font-size: 0.8rem; color: #9aa3b5; }
-    .log ol { margin: 6px 0 0; padding-left: 18px; font-family: ui-monospace, monospace; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.2rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 12px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      input {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: inherit;
+      }
+      input[aria-invalid="true"] {
+        border-color: #ff6b6b;
+      }
+      input:focus-visible,
+      button:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .error {
+        color: #ff8a8a;
+        margin: 0;
+        font-size: 0.85rem;
+        min-height: 1em;
+      }
+      .status {
+        margin: 0;
+        font-size: 0.85rem;
+        min-height: 1em;
+        color: #9aa3b5;
+      }
+      .status.available {
+        color: #7ee2a8;
+      }
+      .status.taken,
+      .status.error {
+        color: #ffb36b;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #4f7cff;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .log {
+        margin-top: 16px;
+        font-size: 0.8rem;
+        color: #9aa3b5;
+      }
+      .log ol {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        font-family: ui-monospace, monospace;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -4164,7 +5611,10 @@ export function checkUsername(name: string): Promise<{ available: boolean }> {
   });
 }
 
-export function createUser(user: { username: string; email: string }): Promise<{ ok: true }> {
+export function createUser(user: {
+  username: string;
+  email: string;
+}): Promise<{ ok: true }> {
   return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 300));
 }
 `,
@@ -4173,13 +5623,15 @@ export function createUser(user: { username: string; email: string }): Promise<{
 export function usernameError(v: string): string {
   if (!v) return "Username is required";
   if (v.length < 3 || v.length > 16) return "Use 3 to 16 characters";
-  if (!/^[a-z0-9_]+$/.test(v)) return "Use lowercase letters, numbers and _ only";
+  if (!/^[a-z0-9_]+$/.test(v))
+    return "Use lowercase letters, numbers and _ only";
   return "";
 }
 
 export function emailError(v: string): string {
   if (!v.trim()) return "Email is required";
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim())) return "Enter a valid email address";
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(v.trim()))
+    return "Enter a valid email address";
   return "";
 }
 `,
@@ -4203,22 +5655,39 @@ type LogEntry = { id: number; name: string; outcome: string };
         <p>Your account is ready.</p>
       </div>
     } @else {
-      <form class="card" novalidate aria-label="Sign up" (submit)="onSubmit($event)">
+      <form
+        class="card"
+        novalidate
+        aria-label="Sign up"
+        (submit)="onSubmit($event)"
+      >
         <h2>Create your account</h2>
         <div class="field">
           <label for="username">Username</label>
           <input id="username" [formControl]="usernameCtrl" autocomplete="username" spellcheck="false"
             [attr.aria-invalid]="uErr() || status() === 'taken' ? 'true' : 'false'" aria-describedby="username-error username-status" />
           <p id="username-error" class="error">{{ uErr() }}</p>
-          <p id="username-status" data-testid="username-status" [class]="'status ' + status()" aria-live="polite">{{ statusText() }}</p>
+          <p
+            id="username-status"
+            data-testid="username-status"
+            [class]="'status ' + status()"
+            aria-live="polite"
+          >{{ statusText() }}</p>
         </div>
         <div class="field">
           <label for="email">Email</label>
           <input id="email" type="email" [formControl]="emailCtrl" autocomplete="email" (blur)="emailTouched.set(true)"
             [attr.aria-invalid]="emailTouched() && eErr() ? 'true' : 'false'" aria-describedby="email-error" />
-          <p id="email-error" class="error">{{ emailTouched() ? eErr() : "" }}</p>
+          <p
+            id="email-error"
+            class="error"
+          >{{ emailTouched() ? eErr() : "" }}</p>
         </div>
-        <button type="submit" data-testid="submit" [disabled]="!canSubmit()">{{ phase() === "saving" ? "Creating..." : "Sign up" }}</button>
+        <button
+          type="submit"
+          data-testid="submit"
+          [disabled]="!canSubmit()"
+        >{{ phase() === "saving" ? "Creating..." : "Sign up" }}</button>
         <details class="log" open>
           <summary>Request log (demo)</summary>
           <ol data-testid="log">
@@ -4242,12 +5711,15 @@ export class SignupFormComponent {
   readonly phase = signal<"form" | "saving" | "done">("form");
   private nextId = 1;
 
-  readonly uErr = computed(() => (this.username() ? usernameError(this.username()) : ""));
+  readonly uErr = computed(() =>
+    this.username() ? usernameError(this.username()) : "",
+  );
   readonly eErr = computed(() => emailError(this.email()));
   readonly status = computed(() => {
     if (!this.username() || this.uErr()) return "idle";
     const r = this.result();
-    if (r?.name !== this.username()) return "checking"; // a result only counts for the name typed now
+    // a result only counts for the name typed now
+    if (r?.name !== this.username()) return "checking";
     return r.error ? "error" : r.available ? "available" : "taken";
   });
   readonly statusText = computed(() => {
@@ -4255,10 +5727,14 @@ export class SignupFormComponent {
     if (s === "checking") return "Checking availability...";
     if (s === "available") return this.username() + " is available";
     if (s === "taken") return this.username() + " is taken";
-    if (s === "error") return "Could not check right now. Edit the name to retry.";
+    if (s === "error")
+      return "Could not check right now. Edit the name to retry.";
     return "";
   });
-  readonly canSubmit = computed(() => this.status() === "available" && !this.eErr() && this.phase() === "form");
+  readonly canSubmit = computed(
+    () =>
+      this.status() === "available" && !this.eErr() && this.phase() === "form",
+  );
 
   constructor() {
     const sub = this.usernameCtrl.valueChanges
@@ -4269,11 +5745,16 @@ export class SignupFormComponent {
           this.username.set(name);
           if (!name || usernameError(name)) return EMPTY;
           return timer(DEBOUNCE_MS).pipe(switchMap(() => this.request(name)));
-        })
+        }),
       )
       .subscribe((r) => this.result.set(r));
-    const emailSub = this.emailCtrl.valueChanges.subscribe((v) => this.email.set(v));
-    inject(DestroyRef).onDestroy(() => { sub.unsubscribe(); emailSub.unsubscribe(); });
+    const emailSub = this.emailCtrl.valueChanges.subscribe((v) =>
+      this.email.set(v),
+    );
+    inject(DestroyRef).onDestroy(() => {
+      sub.unsubscribe();
+      emailSub.unsubscribe();
+    });
   }
 
   // Wrap the Promise so unsubscribing marks it stale. A Promise cannot be
@@ -4284,15 +5765,33 @@ export class SignupFormComponent {
       let stale = false;
       this.log.update((l) => [...l, { id, name, outcome: "pending" }]);
       const finish = (value: Result) => {
-        const label = value.error ? "error" : value.available ? "available" : "taken";
-        this.log.update((l) => l.map((e) => (e.id === id ? { ...e, outcome: label + (stale ? ", ignored (stale)" : ", applied") } : e)));
-        if (!stale) { subscriber.next(value); subscriber.complete(); }
+        const label = value.error
+          ? "error"
+          : value.available
+            ? "available"
+            : "taken";
+        this.log.update((l) =>
+          l.map((e) =>
+            e.id === id
+              ? {
+                  ...e,
+                  outcome: label + (stale ? ", ignored (stale)" : ", applied"),
+                }
+              : e,
+          ),
+        );
+        if (!stale) {
+          subscriber.next(value);
+          subscriber.complete();
+        }
       };
       checkUsername(name).then(
         (res) => finish({ name, available: res.available }),
-        () => finish({ name, error: true })
+        () => finish({ name, error: true }),
       );
-      return () => { stale = true; }; // teardown: runs when switchMap moves on
+      return () => {
+        stale = true;
+      }; // teardown: runs when switchMap moves on
     });
   }
 
@@ -4416,17 +5915,24 @@ Nothing on the right is stored. That is why the booker can never show "Book" ena
 ### Step 1: a strict date parser
 
 \`\`\`js
-// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
-// so we build the date from its parts and check that they survive the trip.
+// Strict YYYY-MM-DD parsing. new
+// Date("2026-02-30") rolls over to March 2,
+// so we build the date from its parts
+// and check that they survive the trip.
 const FORMAT = /^(\\d{4})-(\\d{2})-(\\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function parseDate(text) {
   const m = FORMAT.exec(text.trim());
   if (!m) return null;
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const y = Number(m[1]),
+    mo = Number(m[2]),
+    d = Number(m[3]);
   const date = new Date(Date.UTC(y, mo - 1, d));
-  const ok = date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const ok =
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d;
   return ok ? date : null;
 }
 
@@ -4441,7 +5947,8 @@ export function nightsBetween(a, b) {
   return Math.round((b.getTime() - a.getTime()) / DAY_MS);
 }
 
-// In a real app this would be today; fixed here so the demo is reproducible.
+// In a real app this would be today;
+// fixed here so the demo is reproducible.
 export const DEFAULT_DATE = "2026-12-01";
 \`\`\`
 
@@ -4474,16 +5981,26 @@ The cross-field check only runs when the return date has no error of its own and
 ### Step 3: edits clear the confirmation, Book submits
 
 \`\`\`jsx
-  function book(e) {
-    e.preventDefault();
-    if (!canBook) return;
-    setBooked(isReturn
-      ? "You have booked a return flight departing " + depart.trim() + " and returning " + ret.trim() + "."
-      : "You have booked a one-way flight on " + depart.trim() + ".");
-  }
+function book(e) {
+  e.preventDefault();
+  if (!canBook) return;
+  setBooked(
+    isReturn
+      ? "You have booked a return flight departing " +
+          depart.trim() +
+          " and returning " +
+          ret.trim() +
+          "."
+      : "You have booked a one-way flight on " + depart.trim() + ".",
+  );
+}
 
-  // Editing anything clears the old confirmation, so it never describes stale input.
-  const edit = (setter) => (e) => { setter(e.target.value); setBooked(""); };
+// Editing anything clears the old confirmation,
+// so it never describes stale input.
+const edit = (setter) => (e) => {
+  setter(e.target.value);
+  setBooked("");
+};
 \`\`\`
 
 <code>edit</code> is a small handler factory so every field also clears <code>booked</code>; otherwise a confirmation could describe dates that are no longer on screen. The form <code>onSubmit</code> handles both the button and Enter.
@@ -4500,7 +6017,7 @@ A native picker is a reasonable production choice. Its <code>value</code> is alw
 
 First, the <code>Date</code> facts this design relies on, run on Node 22.22.0:
 
-\`\`\`
+\`\`\`text
 new Date("2026-02-30") -> 2026-03-02T00:00:00.000Z
 Date.UTC(2026, 1, 30) -> 2026-03-02T00:00:00.000Z
 TZ=America/New_York new Date("2026-12-01").toDateString() -> Mon Nov 30 2026
@@ -4509,7 +6026,7 @@ TZ=America/New_York new Date("2026-12-01T00:00").toDateString() -> Tue Dec 01 20
 
 The first two lines are the rollover. The last two show the time-zone trap: a date-only ISO string is parsed as UTC midnight, which is still 30 November in New York, while a date-time string without an offset is parsed as local time. The parser itself, called directly in Node on a few edge cases:
 
-\`\`\`
+\`\`\`text
 Date.UTC(50,0,1) -> 1950-01-01T00:00:00.000Z
 0050-01-01 -> "That date does not exist"
 2028-02-29 -> ""
@@ -4519,7 +6036,7 @@ Date.UTC(50,0,1) -> 1950-01-01T00:00:00.000Z
 
 Then the component, mounted like the playground (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1. The driver changes the select and types into the inputs. Output with the <code>[react]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Book a flightTrip typeOne-way flightReturn flightDeparture dateReturn dateBook
 initial (one-way)          | return disabled: true | errors: ["",""] | nights: "" | book enabled: true
 confirmation: You have booked a one-way flight on 2026-12-01.
@@ -4661,23 +6178,39 @@ export default function FlightBooker() {
   let returnErr = isReturn ? dateError(ret) : "";
   const d = parseDate(depart);
   const r = isReturn ? parseDate(ret) : null;
-  if (isReturn && !returnErr && d && r && r < d) returnErr = "Return must be on or after departure";
+  if (isReturn && !returnErr && d && r && r < d)
+    returnErr = "Return must be on or after departure";
   const canBook = !departErr && !returnErr;
   const nights = isReturn && canBook ? nightsBetween(d, r) : null;
 
   function book(e) {
     e.preventDefault();
     if (!canBook) return;
-    setBooked(isReturn
-      ? "You have booked a return flight departing " + depart.trim() + " and returning " + ret.trim() + "."
-      : "You have booked a one-way flight on " + depart.trim() + ".");
+    setBooked(
+      isReturn
+        ? "You have booked a return flight departing " +
+            depart.trim() +
+            " and returning " +
+            ret.trim() +
+            "."
+        : "You have booked a one-way flight on " + depart.trim() + ".",
+    );
   }
 
-  // Editing anything clears the old confirmation, so it never describes stale input.
-  const edit = (setter) => (e) => { setter(e.target.value); setBooked(""); };
+  // Editing anything clears the old confirmation,
+  // so it never describes stale input.
+  const edit = (setter) => (e) => {
+    setter(e.target.value);
+    setBooked("");
+  };
 
   return (
-    <form className="card" onSubmit={book} noValidate aria-label="Flight booker">
+    <form
+      className="card"
+      onSubmit={book}
+      noValidate
+      aria-label="Flight booker"
+    >
       <h2>Book a flight</h2>
       <div className="field">
         <label htmlFor="trip">Trip type</label>
@@ -4688,19 +6221,44 @@ export default function FlightBooker() {
       </div>
       <div className="field">
         <label htmlFor="depart">Departure date</label>
-        <input id="depart" value={depart} onChange={edit(setDepart)} placeholder="YYYY-MM-DD" inputMode="numeric"
-          aria-invalid={departErr ? "true" : "false"} aria-describedby="depart-error" />
-        <p id="depart-error" className="error">{departErr}</p>
+        <input
+          id="depart"
+          value={depart}
+          onChange={edit(setDepart)}
+          placeholder="YYYY-MM-DD"
+          inputMode="numeric"
+          aria-invalid={departErr ? "true" : "false"}
+          aria-describedby="depart-error"
+        />
+        <p id="depart-error" className="error">
+          {departErr}
+        </p>
       </div>
       <div className="field">
         <label htmlFor="return">Return date</label>
-        <input id="return" value={ret} onChange={edit(setRet)} placeholder="YYYY-MM-DD" inputMode="numeric"
-          disabled={!isReturn} aria-invalid={returnErr ? "true" : "false"} aria-describedby="return-error" />
-        <p id="return-error" className="error">{returnErr}</p>
+        <input
+          id="return"
+          value={ret}
+          onChange={edit(setRet)}
+          placeholder="YYYY-MM-DD"
+          inputMode="numeric"
+          disabled={!isReturn}
+          aria-invalid={returnErr ? "true" : "false"}
+          aria-describedby="return-error"
+        />
+        <p id="return-error" className="error">
+          {returnErr}
+        </p>
       </div>
-      <p className="nights" data-testid="nights">{nights === null ? "" : nights + (nights === 1 ? " night" : " nights")}</p>
-      <button type="submit" data-testid="book" disabled={!canBook}>Book</button>
-      <p role="status" data-testid="confirmation" className="ok">{booked}</p>
+      <p className="nights" data-testid="nights">
+        {nights === null ? "" : nights + (nights === 1 ? " night" : " nights")}
+      </p>
+      <button type="submit" data-testid="book" disabled={!canBook}>
+        Book
+      </button>
+      <p role="status" data-testid="confirmation" className="ok">
+        {booked}
+      </p>
     </form>
   );
 }
@@ -4713,9 +6271,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function parseDate(text) {
   const m = FORMAT.exec(text.trim());
   if (!m) return null;
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const y = Number(m[1]),
+    mo = Number(m[2]),
+    d = Number(m[3]);
   const date = new Date(Date.UTC(y, mo - 1, d));
-  const ok = date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const ok =
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d;
   return ok ? date : null;
 }
 
@@ -4733,21 +6296,92 @@ export function nightsBetween(a, b) {
 // In a real app this would be today; fixed here so the demo is reproducible.
 export const DEFAULT_DATE = "2026-12-01";
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input, select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input:disabled { opacity: 0.45; }
-input[aria-invalid="true"] { border-color: #ff6b6b; background: #2a1517; }
-input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-.nights { color: #9aa3b5; margin: 0 0 10px; min-height: 1em; }
-.ok { color: #7ee2a8; margin: 12px 0 0; min-height: 1em; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; width: 100%; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input,
+select {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input:disabled {
+  opacity: 0.45;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+  background: #2a1517;
+}
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+.nights {
+  color: #9aa3b5;
+  margin: 0 0 10px;
+  min-height: 1em;
+}
+.ok {
+  color: #7ee2a8;
+  margin: 12px 0 0;
+  min-height: 1em;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 `,
         },
       },
@@ -4787,35 +6421,24 @@ The build: a select (one-way or return), two text inputs in <code>YYYY-MM-DD</co
 ### Step 2: state and derived values
 
 \`\`\`vue
-const trip = ref("one-way"); // one-way | return
-const depart = ref(DEFAULT_DATE);
-const ret = ref(DEFAULT_DATE);
-const booked = ref("");
-
-// Derived state: each computed caches until a ref it reads changes.
-const isReturn = computed(() => trip.value === "return");
-const departErr = computed(() => dateError(depart.value));
-const returnErr = computed(() => {
-  if (!isReturn.value) return "";
-  const own = dateError(ret.value);
-  if (own) return own;
-  const d = parseDate(depart.value);
-  return d && parseDate(ret.value) < d ? "Return must be on or after departure" : "";
-});
-const canBook = computed(() => !departErr.value && !returnErr.value);
-const nights = computed(() =>
-  isReturn.value && canBook.value ? nightsBetween(parseDate(depart.value), parseDate(ret.value)) : null
-);
-
-// Editing anything clears the old confirmation, so it never describes stale input.
-watch([trip, depart, ret], () => { booked.value = ""; });
-
-function book() {
-  if (!canBook.value) return;
-  booked.value = isReturn.value
-    ? "You have booked a return flight departing " + depart.value.trim() + " and returning " + ret.value.trim() + "."
-    : "You have booked a one-way flight on " + depart.value.trim() + ".";
-}
+const trip = ref("one-way"); // one-way | return const depart =
+ref(DEFAULT_DATE); const ret = ref(DEFAULT_DATE); const booked =
+ref(""); // Derived state: each computed caches until a ref it reads
+changes. const isReturn = computed(() => trip.value === "return"); const
+departErr = computed(() => dateError(depart.value)); const returnErr =
+computed(() => { if (!isReturn.value) return ""; const own =
+dateError(ret.value); if (own) return own; const d =
+parseDate(depart.value); return d && parseDate(ret.value) < d ? "Return
+must be on or after departure" : ""; }); const canBook = computed(() =>
+!departErr.value && !returnErr.value); const nights = computed(() =>
+isReturn.value && canBook.value ? nightsBetween(parseDate(depart.value),
+parseDate(ret.value)) : null ); // Editing anything clears the old
+confirmation, so it never describes stale input. watch([trip, depart,
+ret], () => { booked.value = ""; }); function book() { if
+(!canBook.value) return; booked.value = isReturn.value ? "You have
+booked a return flight departing " + depart.value.trim() + " and
+returning " + ret.value.trim() + "." : "You have booked a one-way flight
+on " + depart.value.trim() + "."; }
 \`\`\`
 
 The <code>watch</code> is the right tool for clearing the confirmation, because it is an action in response to a change, not a value. Everything that *is* a value is a computed.
@@ -4835,9 +6458,20 @@ The <code>watch</code> is the right tool for clearing the confirmation, because 
         :aria-invalid="returnErr ? 'true' : 'false'" aria-describedby="return-error" />
       <p id="return-error" class="error">{{ returnErr }}</p>
     </div>
-    <p class="nights" data-testid="nights">{{ nights === null ? "" : nights + (nights === 1 ? " night" : " nights") }}</p>
-    <button type="submit" data-testid="book" :disabled="!canBook">Book</button>
-    <p role="status" data-testid="confirmation" class="ok">{{ booked }}</p>
+    <p
+      class="nights"
+      data-testid="nights"
+    >{{ nights === null ? "" : nights + (nights === 1 ? " night" : " nights") }}</p>
+    <button
+      type="submit"
+      data-testid="book"
+      :disabled="!canBook"
+    >Book</button>
+    <p
+      role="status"
+      data-testid="confirmation"
+      class="ok"
+    >{{ booked }}</p>
 \`\`\`
 
 <code>:disabled="!isReturn"</code> takes the return input out of use and out of the Tab order, but <code>ret</code> keeps its value, so switching back restores it. <code>v-model</code> on the select writes the option <code>value</code> into <code>trip</code>. See [v-model on form inputs](/interview-question/how-does-v-model-work-on-form-inputs).
@@ -4857,7 +6491,7 @@ The <code>watch</code> is the right tool for clearing the confirmation, because 
 
 The <code>Date</code> behaviour the parser guards against, on Node 22.22.0:
 
-\`\`\`
+\`\`\`text
 new Date("2026-02-30") -> 2026-03-02T00:00:00.000Z
 Date.UTC(2026, 1, 30) -> 2026-03-02T00:00:00.000Z
 TZ=America/New_York new Date("2026-12-01").toDateString() -> Mon Nov 30 2026
@@ -4868,7 +6502,7 @@ Rollover on the first two lines; on the last two, a date-only string is UTC midn
 
 The component, compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44, driven by the same driver as the other tabs. Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Book a flightTrip typeOne-way flightReturn flightDeparture dateReturn dateBook
 initial (one-way)          | return disabled: true | errors: ["",""] | nights: "" | book enabled: true
 confirmation: You have booked a one-way flight on 2026-12-01.
@@ -4980,21 +6614,92 @@ import FlightBooker from "./components/FlightBooker.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input, select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-input:disabled { opacity: 0.45; }
-input[aria-invalid="true"] { border-color: #ff6b6b; background: #2a1517; }
-input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-.nights { color: #9aa3b5; margin: 0 0 10px; min-height: 1em; }
-.ok { color: #7ee2a8; margin: 12px 0 0; min-height: 1em; }
-button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; width: 100%; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input,
+select {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+input:disabled {
+  opacity: 0.45;
+}
+input[aria-invalid="true"] {
+  border-color: #ff6b6b;
+  background: #2a1517;
+}
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.error {
+  color: #ff8a8a;
+  margin: 0;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+.nights {
+  color: #9aa3b5;
+  margin: 0 0 10px;
+  min-height: 1em;
+}
+.ok {
+  color: #7ee2a8;
+  margin: 12px 0 0;
+  min-height: 1em;
+}
+button {
+  font: inherit;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 </style>
 `,
           "/src/components/FlightBooker.vue": `<script setup>
@@ -5014,26 +6719,42 @@ const returnErr = computed(() => {
   const own = dateError(ret.value);
   if (own) return own;
   const d = parseDate(depart.value);
-  return d && parseDate(ret.value) < d ? "Return must be on or after departure" : "";
+  return d && parseDate(ret.value) < d
+    ? "Return must be on or after departure"
+    : "";
 });
 const canBook = computed(() => !departErr.value && !returnErr.value);
 const nights = computed(() =>
-  isReturn.value && canBook.value ? nightsBetween(parseDate(depart.value), parseDate(ret.value)) : null
+  isReturn.value && canBook.value
+    ? nightsBetween(parseDate(depart.value), parseDate(ret.value))
+    : null,
 );
 
-// Editing anything clears the old confirmation, so it never describes stale input.
-watch([trip, depart, ret], () => { booked.value = ""; });
+// Editing anything clears the old confirmation,
+// so it never describes stale input.
+watch([trip, depart, ret], () => {
+  booked.value = "";
+});
 
 function book() {
   if (!canBook.value) return;
   booked.value = isReturn.value
-    ? "You have booked a return flight departing " + depart.value.trim() + " and returning " + ret.value.trim() + "."
+    ? "You have booked a return flight departing " +
+      depart.value.trim() +
+      " and returning " +
+      ret.value.trim() +
+      "."
     : "You have booked a one-way flight on " + depart.value.trim() + ".";
 }
 </script>
 
 <template>
-  <form class="card" novalidate aria-label="Flight booker" @submit.prevent="book">
+  <form
+    class="card"
+    novalidate
+    aria-label="Flight booker"
+    @submit.prevent="book"
+  >
     <h2>Book a flight</h2>
     <div class="field">
       <label for="trip">Trip type</label>
@@ -5044,17 +6765,34 @@ function book() {
     </div>
     <div class="field">
       <label for="depart">Departure date</label>
-      <input id="depart" v-model="depart" placeholder="YYYY-MM-DD" inputmode="numeric"
-        :aria-invalid="departErr ? 'true' : 'false'" aria-describedby="depart-error" />
+      <input
+        id="depart"
+        v-model="depart"
+        placeholder="YYYY-MM-DD"
+        inputmode="numeric"
+        :aria-invalid="departErr ? 'true' : 'false'"
+        aria-describedby="depart-error"
+      />
       <p id="depart-error" class="error">{{ departErr }}</p>
     </div>
     <div class="field">
       <label for="return">Return date</label>
-      <input id="return" v-model="ret" placeholder="YYYY-MM-DD" inputmode="numeric" :disabled="!isReturn"
-        :aria-invalid="returnErr ? 'true' : 'false'" aria-describedby="return-error" />
+      <input
+        id="return"
+        v-model="ret"
+        placeholder="YYYY-MM-DD"
+        inputmode="numeric"
+        :disabled="!isReturn"
+        :aria-invalid="returnErr ? 'true' : 'false'"
+        aria-describedby="return-error"
+      />
       <p id="return-error" class="error">{{ returnErr }}</p>
     </div>
-    <p class="nights" data-testid="nights">{{ nights === null ? "" : nights + (nights === 1 ? " night" : " nights") }}</p>
+    <p class="nights" data-testid="nights">
+      {{
+        nights === null ? "" : nights + (nights === 1 ? " night" : " nights")
+      }}
+    </p>
     <button type="submit" data-testid="book" :disabled="!canBook">Book</button>
     <p role="status" data-testid="confirmation" class="ok">{{ booked }}</p>
   </form>
@@ -5068,9 +6806,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function parseDate(text) {
   const m = FORMAT.exec(text.trim());
   if (!m) return null;
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const y = Number(m[1]),
+    mo = Number(m[2]),
+    d = Number(m[3]);
   const date = new Date(Date.UTC(y, mo - 1, d));
-  const ok = date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const ok =
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d;
   return ok ? date : null;
 }
 
@@ -5127,44 +6870,60 @@ This is small enough that Angular forms add little. Plain signals make the "mini
 ### Step 2: signals and computeds
 
 \`\`\`ts
-  // Three writable signals are the whole state; everything else is computed.
-  readonly trip = signal<Trip>("one-way");
-  readonly depart = signal(DEFAULT_DATE);
-  readonly ret = signal(DEFAULT_DATE);
-  readonly booked = signal("");
+// Three writable signals are the whole
+// state; everything else is computed.
+readonly trip = signal<Trip>("one-way");
+readonly depart = signal(DEFAULT_DATE);
+readonly ret = signal(DEFAULT_DATE);
+readonly booked = signal("");
 
-  readonly isReturn = computed(() => this.trip() === "return");
-  readonly departErr = computed(() => dateError(this.depart()));
-  readonly returnErr = computed(() => {
-    if (!this.isReturn()) return "";
-    const own = dateError(this.ret());
-    if (own) return own;
-    const d = parseDate(this.depart());
-    const r = parseDate(this.ret());
-    return d && r && r < d ? "Return must be on or after departure" : "";
-  });
-  readonly canBook = computed(() => !this.departErr() && !this.returnErr());
-  readonly nightsText = computed(() => {
-    if (!this.isReturn() || !this.canBook()) return "";
-    const n = nightsBetween(parseDate(this.depart())!, parseDate(this.ret())!);
-    return n + (n === 1 ? " night" : " nights");
-  });
+readonly isReturn = computed(() => this.trip() === "return");
+readonly departErr = computed(() => dateError(this.depart()));
+readonly returnErr = computed(() => {
+  if (!this.isReturn()) return "";
+  const own = dateError(this.ret());
+  if (own) return own;
+  const d = parseDate(this.depart());
+  const r = parseDate(this.ret());
+  return d && r && r < d ? "Return must be on or after departure" : "";
+});
+readonly canBook = computed(
+  () => !this.departErr() && !this.returnErr(),
+);
+readonly nightsText = computed(() => {
+  if (!this.isReturn() || !this.canBook()) return "";
+  const n = nightsBetween(
+    parseDate(this.depart())!,
+    parseDate(this.ret())!,
+  );
+  return n + (n === 1 ? " night" : " nights");
+});
 
-  // One handler for every field: write the signal, clear the old confirmation.
-  edit(field: "trip" | "depart" | "ret", event: Event) {
-    const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
-    if (field === "trip") this.trip.set(value as Trip);
-    else this[field].set(value);
-    this.booked.set("");
-  }
+// One handler for every field: write the
+// signal, clear the old confirmation.
+edit(field: "trip" | "depart" | "ret", event: Event) {
+  const value = (event.target as HTMLInputElement | HTMLSelectElement)
+    .value;
+  if (field === "trip") this.trip.set(value as Trip);
+  else this[field].set(value);
+  this.booked.set("");
+}
 
-  book(event: Event) {
-    event.preventDefault();
-    if (!this.canBook()) return;
-    this.booked.set(this.isReturn()
-      ? "You have booked a return flight departing " + this.depart().trim() + " and returning " + this.ret().trim() + "."
-      : "You have booked a one-way flight on " + this.depart().trim() + ".");
-  }
+book(event: Event) {
+  event.preventDefault();
+  if (!this.canBook()) return;
+  this.booked.set(
+    this.isReturn()
+      ? "You have booked a return flight departing " +
+          this.depart().trim() +
+          " and returning " +
+          this.ret().trim() +
+          "."
+      : "You have booked a one-way flight on " +
+          this.depart().trim() +
+          ".",
+  );
+}
 \`\`\`
 
 <code>edit</code> is the only writer: it sets the right signal and clears the confirmation in the same call. Because <code>returnErr</code> starts with <code>if (!this.isReturn()) return ""</code>, a garbage return value has no effect on a one-way trip.
@@ -5172,11 +6931,20 @@ This is small enough that Angular forms add little. Plain signals make the "mini
 ### Step 3: the template
 
 \`\`\`html
-    <form class="card" novalidate aria-label="Flight booker" (submit)="book($event)">
+    <form
+      class="card"
+      novalidate
+      aria-label="Flight booker"
+      (submit)="book($event)"
+    >
       <h2>Book a flight</h2>
       <div class="field">
         <label for="trip">Trip type</label>
-        <select id="trip" [value]="trip()" (change)="edit('trip', $event)">
+        <select
+          id="trip"
+          [value]="trip()"
+          (change)="edit('trip', $event)"
+        >
           <option value="one-way">One-way flight</option>
           <option value="return">Return flight</option>
         </select>
@@ -5194,8 +6962,16 @@ This is small enough that Angular forms add little. Plain signals make the "mini
         <p id="return-error" class="error">{{ returnErr() }}</p>
       </div>
       <p class="nights" data-testid="nights">{{ nightsText() }}</p>
-      <button type="submit" data-testid="book" [disabled]="!canBook()">Book</button>
-      <p role="status" data-testid="confirmation" class="ok">{{ booked() }}</p>
+      <button
+        type="submit"
+        data-testid="book"
+        [disabled]="!canBook()"
+      >Book</button>
+      <p
+        role="status"
+        data-testid="confirmation"
+        class="ok"
+      >{{ booked() }}</p>
     </form>
 \`\`\`
 
@@ -5216,7 +6992,7 @@ This is small enough that Angular forms add little. Plain signals make the "mini
 
 The <code>Date</code> behaviour the parser guards against, on Node 22.22.0:
 
-\`\`\`
+\`\`\`text
 new Date("2026-02-30") -> 2026-03-02T00:00:00.000Z
 Date.UTC(2026, 1, 30) -> 2026-03-02T00:00:00.000Z
 TZ=America/New_York new Date("2026-12-01").toDateString() -> Mon Nov 30 2026
@@ -5225,7 +7001,7 @@ TZ=America/New_York new Date("2026-12-01T00:00").toDateString() -> Tue Dec 01 20
 
 The component, booted with <code>bootstrapApplication(AppComponent)</code> and no providers, compiled with <code>ngc</code> and <code>strictTemplates</code>, and again through the playground JIT. Both printed the same lines; AOT run, prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Book a flightTrip typeOne-way flightReturn flightDeparture dateReturn dateBook
 initial (one-way)          | return disabled: true | errors: ["",""] | nights: "" | book enabled: true
 confirmation: You have booked a one-way flight on 2026-12-01.
@@ -5336,23 +7112,96 @@ import { FlightBookerComponent } from "./flight-booker.component";
   template: \`<main class="page"><app-flight-booker /></main>\`,
   // Global styles for this small app, so the child component shares them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 0 0 16px; font-size: 1.2rem; }
-    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    input, select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-    input:disabled { opacity: 0.45; }
-    input[aria-invalid="true"] { border-color: #ff6b6b; background: #2a1517; }
-    input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .error { color: #ff8a8a; margin: 0; font-size: 0.85rem; min-height: 1em; }
-    .nights { color: #9aa3b5; margin: 0 0 10px; min-height: 1em; }
-    .ok { color: #7ee2a8; margin: 12px 0 0; min-height: 1em; }
-    button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #4f7cff; color: #fff; cursor: pointer; width: 100%; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 380px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.2rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      input,
+      select {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: inherit;
+      }
+      input:disabled {
+        opacity: 0.45;
+      }
+      input[aria-invalid="true"] {
+        border-color: #ff6b6b;
+        background: #2a1517;
+      }
+      input:focus-visible,
+      select:focus-visible,
+      button:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .error {
+        color: #ff8a8a;
+        margin: 0;
+        font-size: 0.85rem;
+        min-height: 1em;
+      }
+      .nights {
+        color: #9aa3b5;
+        margin: 0 0 10px;
+        min-height: 1em;
+      }
+      .ok {
+        color: #7ee2a8;
+        margin: 12px 0 0;
+        min-height: 1em;
+      }
+      button {
+        font: inherit;
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: 0;
+        background: #4f7cff;
+        color: #fff;
+        cursor: pointer;
+        width: 100%;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -5364,9 +7213,14 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function parseDate(text: string): Date | null {
   const m = FORMAT.exec(text.trim());
   if (!m) return null;
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  const y = Number(m[1]),
+    mo = Number(m[2]),
+    d = Number(m[3]);
   const date = new Date(Date.UTC(y, mo - 1, d));
-  const ok = date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+  const ok =
+    date.getUTCFullYear() === y &&
+    date.getUTCMonth() === mo - 1 &&
+    date.getUTCDate() === d;
   return ok ? date : null;
 }
 
@@ -5393,7 +7247,12 @@ type Trip = "one-way" | "return";
   selector: "app-flight-booker",
   standalone: true,
   template: \`
-    <form class="card" novalidate aria-label="Flight booker" (submit)="book($event)">
+    <form
+      class="card"
+      novalidate
+      aria-label="Flight booker"
+      (submit)="book($event)"
+    >
       <h2>Book a flight</h2>
       <div class="field">
         <label for="trip">Trip type</label>
@@ -5415,7 +7274,11 @@ type Trip = "one-way" | "return";
         <p id="return-error" class="error">{{ returnErr() }}</p>
       </div>
       <p class="nights" data-testid="nights">{{ nightsText() }}</p>
-      <button type="submit" data-testid="book" [disabled]="!canBook()">Book</button>
+      <button
+        type="submit"
+        data-testid="book"
+        [disabled]="!canBook()"
+      >Book</button>
       <p role="status" data-testid="confirmation" class="ok">{{ booked() }}</p>
     </form>
   \`,
@@ -5455,9 +7318,15 @@ export class FlightBookerComponent {
   book(event: Event) {
     event.preventDefault();
     if (!this.canBook()) return;
-    this.booked.set(this.isReturn()
-      ? "You have booked a return flight departing " + this.depart().trim() + " and returning " + this.ret().trim() + "."
-      : "You have booked a one-way flight on " + this.depart().trim() + ".");
+    this.booked.set(
+      this.isReturn()
+        ? "You have booked a return flight departing " +
+            this.depart().trim() +
+            " and returning " +
+            this.ret().trim() +
+            "."
+        : "You have booked a one-way flight on " + this.depart().trim() + ".",
+    );
   }
 }
 `,
@@ -5576,7 +7445,8 @@ const fakeServer = (ms, value) => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 };
 
-// The cache stores the PROMISE, so two callers asking at once share one request.
+// The cache stores the PROMISE, so two
+// callers asking at once share one request.
 const cache = new Map();
 function cached(key, start) {
   if (!cache.has(key)) cache.set(key, start());
@@ -5584,13 +7454,28 @@ function cached(key, start) {
 }
 
 export const getCountries = () =>
-  cached("countries", () => fakeServer(150, Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name }))));
+  cached("countries", () =>
+    fakeServer(
+      150,
+      Object.entries(DATA).map(([code, c]) => ({
+        value: code,
+        label: c.name,
+      })),
+    ),
+  );
 
 export const getStates = (country) =>
-  cached("states:" + country, () => fakeServer(STATE_LATENCY[country], Object.keys(DATA[country].states)));
+  cached("states:" + country, () =>
+    fakeServer(
+      STATE_LATENCY[country],
+      Object.keys(DATA[country].states),
+    ),
+  );
 
 export const getCities = (country, state) =>
-  cached("cities:" + country + "/" + state, () => fakeServer(200, DATA[country].states[state]));
+  cached("cities:" + country + "/" + state, () =>
+    fakeServer(200, DATA[country].states[state]),
+  );
 \`\`\`
 
 📌 **Interview term: Promise cache** — caching the *Promise* for a key, not the resolved value. Two callers asking for the same key at the same time share one request (deduplication), and later callers get an already-resolved Promise. One caveat: a rejected Promise would stay cached forever, so a real version deletes the key on failure.
@@ -5606,7 +7491,8 @@ export default function LocationPicker() {
   const [states, setStates] = useState(IDLE);
   const [cities, setCities] = useState(IDLE);
   const [requests, setRequests] = useState(0);
-  // One counter per level: a response is used only if no newer request started.
+  // One counter per level: a response is
+  // used only if no newer request started.
   const latest = useRef({ states: 0, cities: 0 });
 
   useEffect(() => {
@@ -5623,33 +7509,40 @@ In development, StrictMode runs this effect twice on mount. Both runs call <code
 ### Step 3: resets in the handlers, not in effects
 
 \`\`\`jsx
-  // Resets happen here, in the event handler, in the same update as the change.
-  async function chooseCountry(code) {
-    setCountry(code);
-    setState("");
-    setCity("");
-    setCities(IDLE);
-    const id = ++latest.current.states;
-    latest.current.cities++; // also invalidate any city request in flight
-    if (!code) { setStates(IDLE); return; }
-    setStates(LOADING);
-    const p = getStates(code);
-    setRequests(countRequests());
-    const items = await p;
-    if (id === latest.current.states) setStates(ready(items));
+// Resets happen here, in the event handler,
+// in the same update as the change.
+async function chooseCountry(code) {
+  setCountry(code);
+  setState("");
+  setCity("");
+  setCities(IDLE);
+  const id = ++latest.current.states;
+  latest.current.cities++; // also invalidate any city request in flight
+  if (!code) {
+    setStates(IDLE);
+    return;
   }
+  setStates(LOADING);
+  const p = getStates(code);
+  setRequests(countRequests());
+  const items = await p;
+  if (id === latest.current.states) setStates(ready(items));
+}
 
-  async function chooseState(name) {
-    setState(name);
-    setCity("");
-    const id = ++latest.current.cities;
-    if (!name) { setCities(IDLE); return; }
-    setCities(LOADING);
-    const p = getCities(country, name);
-    setRequests(countRequests());
-    const items = await p;
-    if (id === latest.current.cities) setCities(ready(items));
+async function chooseState(name) {
+  setState(name);
+  setCity("");
+  const id = ++latest.current.cities;
+  if (!name) {
+    setCities(IDLE);
+    return;
   }
+  setCities(LOADING);
+  const p = getCities(country, name);
+  setRequests(countRequests());
+  const items = await p;
+  if (id === latest.current.cities) setCities(ready(items));
+}
 \`\`\`
 
 Three things happen in <code>chooseCountry</code>:
@@ -5680,7 +7573,7 @@ The tempting alternative is a chain of effects: one effect on <code>country</cod
 
 Mounted like the playground (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1, with real timers. The driver picks India and immediately the United States, then waits for both answers. Each line lists the State and City selects as value, disabled flag and option texts. Output with the <code>[react]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Where are you based?CountryLoading countries...StateChoose a country firstCityChoose a state firstRequests sent: 0
 on mount: country="" (disabled) [Loading countries...]
 countries loaded: country="" [Select a country, India, Singapore, United States] | Requests sent: 1
@@ -5798,8 +7691,18 @@ export default function App() {
   );
 }
 `,
-          "/src/LevelSelect.js": `// One dropdown level. \`options\` is { status: "idle" | "loading" | "ready", items }.
-export default function LevelSelect({ id, label, noun, plural, value, options, onChange, waitingFor }) {
+          "/src/LevelSelect.js": `// One dropdown level. \`options\` is { status:
+// "idle" | "loading" | "ready", items }.
+export default function LevelSelect({
+  id,
+  label,
+  noun,
+  plural,
+  value,
+  options,
+  onChange,
+  waitingFor,
+}) {
   const { status, items } = options;
   const empty = status === "ready" && items.length === 0;
   let placeholder = "Select a " + noun;
@@ -5810,11 +7713,18 @@ export default function LevelSelect({ id, label, noun, plural, value, options, o
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
-      <select id={id} value={value} onChange={(e) => onChange(e.target.value)}
-        disabled={status !== "ready" || empty} aria-busy={status === "loading"}>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={status !== "ready" || empty}
+        aria-busy={status === "loading"}
+      >
         <option value="">{placeholder}</option>
         {items.map((it) => (
-          <option key={it.value ?? it} value={it.value ?? it}>{it.label ?? it}</option>
+          <option key={it.value ?? it} value={it.value ?? it}>
+            {it.label ?? it}
+          </option>
         ))}
       </select>
     </div>
@@ -5823,7 +7733,13 @@ export default function LevelSelect({ id, label, noun, plural, value, options, o
 `,
           "/src/LocationPicker.js": `import { useEffect, useRef, useState } from "react";
 import LevelSelect from "./LevelSelect";
-import { countRequests, countryName, getCities, getCountries, getStates } from "./locationApi";
+import {
+  countRequests,
+  countryName,
+  getCities,
+  getCountries,
+  getStates,
+} from "./locationApi";
 
 const IDLE = { status: "idle", items: [] };
 const LOADING = { status: "loading", items: [] };
@@ -5843,9 +7759,14 @@ export default function LocationPicker() {
   useEffect(() => {
     let ignore = false;
     getCountries().then((items) => {
-      if (!ignore) { setCountries(ready(items)); setRequests(countRequests()); }
+      if (!ignore) {
+        setCountries(ready(items));
+        setRequests(countRequests());
+      }
     });
-    return () => { ignore = true; };
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   // Resets happen here, in the event handler, in the same update as the change.
@@ -5856,7 +7777,10 @@ export default function LocationPicker() {
     setCities(IDLE);
     const id = ++latest.current.states;
     latest.current.cities++; // also invalidate any city request in flight
-    if (!code) { setStates(IDLE); return; }
+    if (!code) {
+      setStates(IDLE);
+      return;
+    }
     setStates(LOADING);
     const p = getStates(code);
     setRequests(countRequests());
@@ -5868,7 +7792,10 @@ export default function LocationPicker() {
     setState(name);
     setCity("");
     const id = ++latest.current.cities;
-    if (!name) { setCities(IDLE); return; }
+    if (!name) {
+      setCities(IDLE);
+      return;
+    }
     setCities(LOADING);
     const p = getCities(country, name);
     setRequests(countRequests());
@@ -5879,24 +7806,71 @@ export default function LocationPicker() {
   const summary = city ? city + ", " + state + ", " + countryName(country) : "";
 
   return (
-    <form className="card" aria-label="Location" onSubmit={(e) => e.preventDefault()}>
+    <form
+      className="card"
+      aria-label="Location"
+      onSubmit={(e) => e.preventDefault()}
+    >
       <h2>Where are you based?</h2>
-      <LevelSelect id="country" label="Country" noun="country" plural="countries" value={country} options={countries} onChange={chooseCountry} />
-      <LevelSelect id="state" label="State" noun="state" plural="states" waitingFor="country" value={state} options={states} onChange={chooseState} />
-      <LevelSelect id="city" label="City" noun="city" plural="cities" waitingFor="state" value={city} options={cities} onChange={setCity} />
-      <p role="status" data-testid="summary" className="summary">{summary && "Selected: " + summary}</p>
-      <p className="meta" data-testid="requests">Requests sent: {requests}</p>
+      <LevelSelect
+        id="country"
+        label="Country"
+        noun="country"
+        plural="countries"
+        value={country}
+        options={countries}
+        onChange={chooseCountry}
+      />
+      <LevelSelect
+        id="state"
+        label="State"
+        noun="state"
+        plural="states"
+        waitingFor="country"
+        value={state}
+        options={states}
+        onChange={chooseState}
+      />
+      <LevelSelect
+        id="city"
+        label="City"
+        noun="city"
+        plural="cities"
+        waitingFor="state"
+        value={city}
+        options={cities}
+        onChange={setCity}
+      />
+      <p role="status" data-testid="summary" className="summary">
+        {summary && "Selected: " + summary}
+      </p>
+      <p className="meta" data-testid="requests">
+        Requests sent: {requests}
+      </p>
     </form>
   );
 }
 `,
           "/src/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
 const DATA = {
-  IN: { name: "India", states: { Karnataka: ["Bengaluru", "Mysuru"], Maharashtra: ["Mumbai", "Nagpur", "Pune"] } },
+  IN: {
+    name: "India",
+    states: {
+      Karnataka: ["Bengaluru", "Mysuru"],
+      Maharashtra: ["Mumbai", "Nagpur", "Pune"],
+    },
+  },
   SG: { name: "Singapore", states: {} },
-  US: { name: "United States", states: { California: ["Los Angeles", "San Francisco"], Texas: ["Austin", "Houston"] } },
+  US: {
+    name: "United States",
+    states: {
+      California: ["Los Angeles", "San Francisco"],
+      Texas: ["Austin", "Houston"],
+    },
+  },
 };
-// India is deliberately slow, so a quick India -> US switch makes India answer last.
+// India is deliberately slow, so a quick
+// India -> US switch makes India answer last.
 const STATE_LATENCY = { IN: 600, SG: 200, US: 200 };
 
 let requestsSent = 0;
@@ -5905,7 +7879,8 @@ const fakeServer = (ms, value) => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 };
 
-// The cache stores the PROMISE, so two callers asking at once share one request.
+// The cache stores the PROMISE, so two
+// callers asking at once share one request.
 const cache = new Map();
 function cached(key, start) {
   if (!cache.has(key)) cache.set(key, start());
@@ -5913,29 +7888,88 @@ function cached(key, start) {
 }
 
 export const getCountries = () =>
-  cached("countries", () => fakeServer(150, Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name }))));
+  cached("countries", () =>
+    fakeServer(
+      150,
+      Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name })),
+    ),
+  );
 
 export const getStates = (country) =>
-  cached("states:" + country, () => fakeServer(STATE_LATENCY[country], Object.keys(DATA[country].states)));
+  cached("states:" + country, () =>
+    fakeServer(STATE_LATENCY[country], Object.keys(DATA[country].states)),
+  );
 
 export const getCities = (country, state) =>
-  cached("cities:" + country + "/" + state, () => fakeServer(200, DATA[country].states[state]));
+  cached("cities:" + country + "/" + state, () =>
+    fakeServer(200, DATA[country].states[state]),
+  );
 
 export const countRequests = () => requestsSent;
 export const countryName = (code) => DATA[code]?.name ?? "";
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-select:disabled { opacity: 0.5; }
-select[aria-busy="true"] { border-style: dashed; }
-select:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.summary { color: #7ee2a8; min-height: 1.2em; margin: 8px 0 4px; }
-.meta { color: #8b93a7; font-size: 0.8rem; margin: 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+select {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+select:disabled {
+  opacity: 0.5;
+}
+select[aria-busy="true"] {
+  border-style: dashed;
+}
+select:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.summary {
+  color: #7ee2a8;
+  min-height: 1.2em;
+  margin: 8px 0 4px;
+}
+.meta {
+  color: #8b93a7;
+  font-size: 0.8rem;
+  margin: 0;
+}
 `,
         },
       },
@@ -5978,32 +8012,18 @@ The build: Country, State and City selects backed by an in-file fake API (no net
 ### Step 2: watchers drive the cascade
 
 \`\`\`vue
-// Parent changed: reset the children, then load the new level.
-// onWatcherCleanup (Vue 3.5) marks the previous run stale when country changes again.
-watch(country, async (code) => {
-  let stale = false;
-  onWatcherCleanup(() => { stale = true; });
-  state.value = "";
-  city.value = "";
-  if (!code) { states.value = IDLE; return; }
-  states.value = LOADING;
-  const p = getStates(code);
-  requests.value = countRequests();
-  const items = await p;
-  if (!stale) states.value = ready(items);
-});
-
-watch(state, async (name) => {
-  let stale = false;
-  onWatcherCleanup(() => { stale = true; });
-  city.value = "";
-  if (!name) { cities.value = IDLE; return; }
-  cities.value = LOADING;
-  const p = getCities(country.value, name);
-  requests.value = countRequests();
-  const items = await p;
-  if (!stale) cities.value = ready(items);
-});
+// Parent changed: reset the children, then load the new level. //
+onWatcherCleanup (Vue 3.5) marks the previous run stale when country
+changes again. watch(country, async (code) => { let stale = false;
+onWatcherCleanup(() => { stale = true; }); state.value = ""; city.value
+= ""; if (!code) { states.value = IDLE; return; } states.value =
+LOADING; const p = getStates(code); requests.value = countRequests();
+const items = await p; if (!stale) states.value = ready(items); });
+watch(state, async (name) => { let stale = false; onWatcherCleanup(() =>
+{ stale = true; }); city.value = ""; if (!name) { cities.value = IDLE;
+return; } cities.value = LOADING; const p = getCities(country.value,
+name); requests.value = countRequests(); const items = await p; if
+(!stale) cities.value = ready(items); });
 \`\`\`
 
 Watchers are the idiomatic Vue tool here, and they do not cause the flash of inconsistent values that an effect chain causes in React. By default a watcher runs with <code>flush: "pre"</code>, before Vue re-renders the component, so when the country changes, the country watcher clears <code>state</code>, that change queues the state watcher, which clears <code>city</code>, and only then does the template render once with all three consistent. See [watch flush timing](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5).
@@ -6030,7 +8050,7 @@ Because clearing <code>state</code> re-runs the state watcher, a city request fo
 
 Compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44, real timers, same driver as the other tabs. Each line shows the State and City selects (value, disabled flag, option texts). Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Where are you based?CountryLoading countries...StateChoose a country firstCityChoose a state firstRequests sent: 0
 on mount: country="" (disabled) [Loading countries...]
 countries loaded: country="" [Select a country, India, Singapore, United States] | Requests sent: 1
@@ -6140,18 +8160,68 @@ import LocationPicker from "./components/LocationPicker.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-select:disabled { opacity: 0.5; }
-select[aria-busy="true"] { border-style: dashed; }
-select:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.summary { color: #7ee2a8; min-height: 1.2em; margin: 8px 0 4px; }
-.meta { color: #8b93a7; font-size: 0.8rem; margin: 0; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+select {
+  font: inherit;
+  padding: 9px 11px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: inherit;
+}
+select:disabled {
+  opacity: 0.5;
+}
+select[aria-busy="true"] {
+  border-style: dashed;
+}
+select:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.summary {
+  color: #7ee2a8;
+  min-height: 1.2em;
+  margin: 8px 0 4px;
+}
+.meta {
+  color: #8b93a7;
+  font-size: 0.8rem;
+  margin: 0;
+}
 </style>
 `,
           "/src/components/LevelSelect.vue": `<script setup>
@@ -6165,14 +8235,20 @@ const props = defineProps({
   noun: String,
   plural: String,
   waitingFor: String,
-  options: { type: Object, required: true }, // { status: "idle" | "loading" | "ready", items }
+  // { status: "idle" | "loading" | "ready", items }
+  options: { type: Object, required: true },
 });
 
-const empty = computed(() => props.options.status === "ready" && props.options.items.length === 0);
+const empty = computed(
+  () => props.options.status === "ready" && props.options.items.length === 0,
+);
 const placeholder = computed(() => {
-  if (props.options.status === "idle") return "Choose a " + props.waitingFor + " first";
-  if (props.options.status === "loading") return "Loading " + props.plural + "...";
-  if (empty.value) return "No " + props.plural + " for this " + props.waitingFor;
+  if (props.options.status === "idle")
+    return "Choose a " + props.waitingFor + " first";
+  if (props.options.status === "loading")
+    return "Loading " + props.plural + "...";
+  if (empty.value)
+    return "No " + props.plural + " for this " + props.waitingFor;
   return "Select a " + props.noun;
 });
 const valueOf = (it) => (typeof it === "string" ? it : it.value);
@@ -6182,9 +8258,20 @@ const labelOf = (it) => (typeof it === "string" ? it : it.label);
 <template>
   <div class="field">
     <label :for="id">{{ label }}</label>
-    <select :id="id" v-model="model" :disabled="options.status !== 'ready' || empty" :aria-busy="options.status === 'loading'">
+    <select
+      :id="id"
+      v-model="model"
+      :disabled="options.status !== 'ready' || empty"
+      :aria-busy="options.status === 'loading'"
+    >
       <option value="">{{ placeholder }}</option>
-      <option v-for="it in options.items" :key="valueOf(it)" :value="valueOf(it)">{{ labelOf(it) }}</option>
+      <option
+        v-for="it in options.items"
+        :key="valueOf(it)"
+        :value="valueOf(it)"
+      >
+        {{ labelOf(it) }}
+      </option>
     </select>
   </div>
 </template>
@@ -6192,7 +8279,13 @@ const labelOf = (it) => (typeof it === "string" ? it : it.label);
           "/src/components/LocationPicker.vue": `<script setup>
 import { computed, onWatcherCleanup, ref, shallowRef, watch } from "vue";
 import LevelSelect from "./LevelSelect.vue";
-import { countRequests, countryName, getCities, getCountries, getStates } from "../locationApi.js";
+import {
+  countRequests,
+  countryName,
+  getCities,
+  getCountries,
+  getStates,
+} from "../locationApi.js";
 
 const IDLE = { status: "idle", items: [] };
 const LOADING = { status: "loading", items: [] };
@@ -6213,13 +8306,19 @@ getCountries().then((items) => {
 });
 
 // Parent changed: reset the children, then load the new level.
-// onWatcherCleanup (Vue 3.5) marks the previous run stale when country changes again.
+// onWatcherCleanup (Vue 3.5) marks the previous
+// run stale when country changes again.
 watch(country, async (code) => {
   let stale = false;
-  onWatcherCleanup(() => { stale = true; });
+  onWatcherCleanup(() => {
+    stale = true;
+  });
   state.value = "";
   city.value = "";
-  if (!code) { states.value = IDLE; return; }
+  if (!code) {
+    states.value = IDLE;
+    return;
+  }
   states.value = LOADING;
   const p = getStates(code);
   requests.value = countRequests();
@@ -6229,9 +8328,14 @@ watch(country, async (code) => {
 
 watch(state, async (name) => {
   let stale = false;
-  onWatcherCleanup(() => { stale = true; });
+  onWatcherCleanup(() => {
+    stale = true;
+  });
   city.value = "";
-  if (!name) { cities.value = IDLE; return; }
+  if (!name) {
+    cities.value = IDLE;
+    return;
+  }
   cities.value = LOADING;
   const p = getCities(country.value, name);
   requests.value = countRequests();
@@ -6239,27 +8343,69 @@ watch(state, async (name) => {
   if (!stale) cities.value = ready(items);
 });
 
-const summary = computed(() => (city.value ? city.value + ", " + state.value + ", " + countryName(country.value) : ""));
+const summary = computed(() =>
+  city.value
+    ? city.value + ", " + state.value + ", " + countryName(country.value)
+    : "",
+);
 </script>
 
 <template>
   <form class="card" aria-label="Location" @submit.prevent>
     <h2>Where are you based?</h2>
-    <LevelSelect id="country" v-model="country" label="Country" noun="country" plural="countries" :options="countries" />
-    <LevelSelect id="state" v-model="state" label="State" noun="state" plural="states" waiting-for="country" :options="states" />
-    <LevelSelect id="city" v-model="city" label="City" noun="city" plural="cities" waiting-for="state" :options="cities" />
-    <p role="status" data-testid="summary" class="summary">{{ summary && "Selected: " + summary }}</p>
+    <LevelSelect
+      id="country"
+      v-model="country"
+      label="Country"
+      noun="country"
+      plural="countries"
+      :options="countries"
+    />
+    <LevelSelect
+      id="state"
+      v-model="state"
+      label="State"
+      noun="state"
+      plural="states"
+      waiting-for="country"
+      :options="states"
+    />
+    <LevelSelect
+      id="city"
+      v-model="city"
+      label="City"
+      noun="city"
+      plural="cities"
+      waiting-for="state"
+      :options="cities"
+    />
+    <p role="status" data-testid="summary" class="summary">
+      {{ summary && "Selected: " + summary }}
+    </p>
     <p class="meta" data-testid="requests">Requests sent: {{ requests }}</p>
   </form>
 </template>
 `,
           "/src/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
 const DATA = {
-  IN: { name: "India", states: { Karnataka: ["Bengaluru", "Mysuru"], Maharashtra: ["Mumbai", "Nagpur", "Pune"] } },
+  IN: {
+    name: "India",
+    states: {
+      Karnataka: ["Bengaluru", "Mysuru"],
+      Maharashtra: ["Mumbai", "Nagpur", "Pune"],
+    },
+  },
   SG: { name: "Singapore", states: {} },
-  US: { name: "United States", states: { California: ["Los Angeles", "San Francisco"], Texas: ["Austin", "Houston"] } },
+  US: {
+    name: "United States",
+    states: {
+      California: ["Los Angeles", "San Francisco"],
+      Texas: ["Austin", "Houston"],
+    },
+  },
 };
-// India is deliberately slow, so a quick India -> US switch makes India answer last.
+// India is deliberately slow, so a quick
+// India -> US switch makes India answer last.
 const STATE_LATENCY = { IN: 600, SG: 200, US: 200 };
 
 let requestsSent = 0;
@@ -6268,7 +8414,8 @@ const fakeServer = (ms, value) => {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 };
 
-// The cache stores the PROMISE, so two callers asking at once share one request.
+// The cache stores the PROMISE, so two
+// callers asking at once share one request.
 const cache = new Map();
 function cached(key, start) {
   if (!cache.has(key)) cache.set(key, start());
@@ -6276,13 +8423,22 @@ function cached(key, start) {
 }
 
 export const getCountries = () =>
-  cached("countries", () => fakeServer(150, Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name }))));
+  cached("countries", () =>
+    fakeServer(
+      150,
+      Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name })),
+    ),
+  );
 
 export const getStates = (country) =>
-  cached("states:" + country, () => fakeServer(STATE_LATENCY[country], Object.keys(DATA[country].states)));
+  cached("states:" + country, () =>
+    fakeServer(STATE_LATENCY[country], Object.keys(DATA[country].states)),
+  );
 
 export const getCities = (country, state) =>
-  cached("cities:" + country + "/" + state, () => fakeServer(200, DATA[country].states[state]));
+  cached("cities:" + country + "/" + state, () =>
+    fakeServer(200, DATA[country].states[state]),
+  );
 
 export const countRequests = () => requestsSent;
 export const countryName = (code) => DATA[code]?.name ?? "";
@@ -6347,7 +8503,8 @@ The build: three selects backed by an in-file fake API (no network in the playgr
   \`,
 })
 export class LevelSelectComponent {
-  // Not called "id": a static id="..." would also stay on the host element
+  // Not called "id": a static id="..."
+  // would also stay on the host element
   // and the page would have two elements with the same id.
   @Input({ required: true }) selectId = "";
   @Input() label = "";
@@ -6356,7 +8513,8 @@ export class LevelSelectComponent {
   @Input() waitingFor = "";
   @Input() value = "";
   @Input({ required: true }) options: Level = { status: "idle", items: [] };
-  // value + valueChange is the naming that allows [(value)] two-way binding.
+  // value + valueChange is the naming that
+  // allows [(value)] two-way binding.
   @Output() valueChange = new EventEmitter<string>();
 \`\`\`
 
@@ -6367,33 +8525,40 @@ The input is named <code>selectId</code>, not <code>id</code>. The first version
 ### Step 3: resets and the guard in the handlers
 
 \`\`\`ts
-  // Resets happen in the handler, together with the change that causes them.
-  async chooseCountry(code: string) {
-    this.country.set(code);
-    this.state.set("");
-    this.city.set("");
-    this.cities.set(IDLE);
-    const id = ++this.latest.states;
-    this.latest.cities++; // also invalidate any city request in flight
-    if (!code) { this.states.set(IDLE); return; }
-    this.states.set(LOADING);
-    const p = getStates(code);
-    this.requests.set(countRequests());
-    const items = await p;
-    if (id === this.latest.states) this.states.set(ready(items));
+// Resets happen in the handler, together
+// with the change that causes them.
+async chooseCountry(code: string) {
+  this.country.set(code);
+  this.state.set("");
+  this.city.set("");
+  this.cities.set(IDLE);
+  const id = ++this.latest.states;
+  this.latest.cities++; // also invalidate any city request in flight
+  if (!code) {
+    this.states.set(IDLE);
+    return;
   }
+  this.states.set(LOADING);
+  const p = getStates(code);
+  this.requests.set(countRequests());
+  const items = await p;
+  if (id === this.latest.states) this.states.set(ready(items));
+}
 
-  async chooseState(name: string) {
-    this.state.set(name);
-    this.city.set("");
-    const id = ++this.latest.cities;
-    if (!name) { this.cities.set(IDLE); return; }
-    this.cities.set(LOADING);
-    const p = getCities(this.country(), name);
-    this.requests.set(countRequests());
-    const items = await p;
-    if (id === this.latest.cities) this.cities.set(ready(items));
+async chooseState(name: string) {
+  this.state.set(name);
+  this.city.set("");
+  const id = ++this.latest.cities;
+  if (!name) {
+    this.cities.set(IDLE);
+    return;
   }
+  this.cities.set(LOADING);
+  const p = getCities(this.country(), name);
+  this.requests.set(countRequests());
+  const items = await p;
+  if (id === this.latest.cities) this.cities.set(ready(items));
+}
 \`\`\`
 
 <code>++this.latest.states</code> starts a new generation for the State level; <code>this.latest.cities++</code> also invalidates any city request for the old country. After <code>await</code>, the answer is applied only if its generation is still current. Signals are written after the <code>await</code>, which is what makes the zoneless view refresh.
@@ -6412,7 +8577,7 @@ The input is named <code>selectId</code>, not <code>id</code>. The first version
 
 Booted with <code>bootstrapApplication(AppComponent)</code> and no providers, compiled with <code>ngc</code> and <code>strictTemplates</code>, and again through the playground JIT, with real timers and the same driver as the other tabs. Both runs printed the same lines; AOT run, prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Where are you based?CountryLoading countries...StateChoose a country firstCityChoose a state firstRequests sent: 0
 on mount: country="" (disabled) [Loading countries...]
 countries loaded: country="" [Select a country, India, Singapore, United States] | Requests sent: 1
@@ -6521,20 +8686,72 @@ import { LocationPickerComponent } from "./location-picker.component";
   template: \`<main class="page"><app-location-picker /></main>\`,
   // Global styles for this small app, so the child components share them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 380px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 0 0 16px; font-size: 1.2rem; }
-    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    select { font: inherit; padding: 9px 11px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: inherit; }
-    select:disabled { opacity: 0.5; }
-    select[aria-busy="true"] { border-style: dashed; }
-    select:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .summary { color: #7ee2a8; min-height: 1.2em; margin: 8px 0 4px; }
-    .meta { color: #8b93a7; font-size: 0.8rem; margin: 0; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 380px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.2rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 12px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      select {
+        font: inherit;
+        padding: 9px 11px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: inherit;
+      }
+      select:disabled {
+        opacity: 0.5;
+      }
+      select[aria-busy="true"] {
+        border-style: dashed;
+      }
+      select:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .summary {
+        color: #7ee2a8;
+        min-height: 1.2em;
+        margin: 8px 0 4px;
+      }
+      .meta {
+        color: #8b93a7;
+        font-size: 0.8rem;
+        margin: 0;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -6551,8 +8768,13 @@ export type Level = { status: "idle" | "loading" | "ready"; items: Option[] };
   template: \`
     <div class="field">
       <label [for]="selectId">{{ label }}</label>
-      <select [id]="selectId" [ngModel]="value" (ngModelChange)="valueChange.emit($event)"
-        [disabled]="options.status !== 'ready' || empty()" [attr.aria-busy]="options.status === 'loading'">
+      <select
+        [id]="selectId"
+        [ngModel]="value"
+        (ngModelChange)="valueChange.emit($event)"
+        [disabled]="options.status !== 'ready' || empty()"
+        [attr.aria-busy]="options.status === 'loading'"
+      >
         <option value="">{{ placeholder() }}</option>
         @for (it of options.items; track it.value) {
           <option [value]="it.value">{{ it.label }}</option>
@@ -6578,21 +8800,38 @@ export class LevelSelectComponent {
     return this.options.status === "ready" && this.options.items.length === 0;
   }
   placeholder() {
-    if (this.options.status === "idle") return "Choose a " + this.waitingFor + " first";
-    if (this.options.status === "loading") return "Loading " + this.plural + "...";
-    if (this.empty()) return "No " + this.plural + " for this " + this.waitingFor;
+    if (this.options.status === "idle")
+      return "Choose a " + this.waitingFor + " first";
+    if (this.options.status === "loading")
+      return "Loading " + this.plural + "...";
+    if (this.empty())
+      return "No " + this.plural + " for this " + this.waitingFor;
     return "Select a " + this.noun;
   }
 }
 `,
           "/src/app/location-api.ts": `// Simulated server (no network in the playground) plus a small client cache.
 export type Option = { value: string; label: string };
-const DATA: Record<string, { name: string; states: Record<string, string[]> }> = {
-  IN: { name: "India", states: { Karnataka: ["Bengaluru", "Mysuru"], Maharashtra: ["Mumbai", "Nagpur", "Pune"] } },
-  SG: { name: "Singapore", states: {} },
-  US: { name: "United States", states: { California: ["Los Angeles", "San Francisco"], Texas: ["Austin", "Houston"] } },
-};
-// India is deliberately slow, so a quick India -> US switch makes India answer last.
+const DATA: Record<string, { name: string; states: Record<string, string[]> }> =
+  {
+    IN: {
+      name: "India",
+      states: {
+        Karnataka: ["Bengaluru", "Mysuru"],
+        Maharashtra: ["Mumbai", "Nagpur", "Pune"],
+      },
+    },
+    SG: { name: "Singapore", states: {} },
+    US: {
+      name: "United States",
+      states: {
+        California: ["Los Angeles", "San Francisco"],
+        Texas: ["Austin", "Houston"],
+      },
+    },
+  };
+// India is deliberately slow, so a quick
+// India -> US switch makes India answer last.
 const STATE_LATENCY: Record<string, number> = { IN: 600, SG: 200, US: 200 };
 
 let requestsSent = 0;
@@ -6601,27 +8840,51 @@ function fakeServer<T>(ms: number, value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
-// The cache stores the PROMISE, so two callers asking at once share one request.
+// The cache stores the PROMISE, so two
+// callers asking at once share one request.
 const cache = new Map<string, Promise<Option[]>>();
-function cached(key: string, start: () => Promise<Option[]>): Promise<Option[]> {
+function cached(
+  key: string,
+  start: () => Promise<Option[]>,
+): Promise<Option[]> {
   if (!cache.has(key)) cache.set(key, start());
   return cache.get(key)!;
 }
-const toOptions = (names: string[]): Option[] => names.map((n) => ({ value: n, label: n }));
+const toOptions = (names: string[]): Option[] =>
+  names.map((n) => ({ value: n, label: n }));
 
 export const getCountries = () =>
-  cached("countries", () => fakeServer(150, Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name }))));
+  cached("countries", () =>
+    fakeServer(
+      150,
+      Object.entries(DATA).map(([code, c]) => ({ value: code, label: c.name })),
+    ),
+  );
 export const getStates = (country: string) =>
-  cached("states:" + country, () => fakeServer(STATE_LATENCY[country], toOptions(Object.keys(DATA[country].states))));
+  cached("states:" + country, () =>
+    fakeServer(
+      STATE_LATENCY[country],
+      toOptions(Object.keys(DATA[country].states)),
+    ),
+  );
 export const getCities = (country: string, state: string) =>
-  cached("cities:" + country + "/" + state, () => fakeServer(200, toOptions(DATA[country].states[state])));
+  cached("cities:" + country + "/" + state, () =>
+    fakeServer(200, toOptions(DATA[country].states[state])),
+  );
 
 export const countRequests = () => requestsSent;
 export const countryName = (code: string) => DATA[code]?.name ?? "";
 `,
           "/src/app/location-picker.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { Level, LevelSelectComponent } from "./level-select.component";
-import { countRequests, countryName, getCities, getCountries, getStates, Option } from "./location-api";
+import {
+  countRequests,
+  countryName,
+  getCities,
+  getCountries,
+  getStates,
+  Option,
+} from "./location-api";
 
 const IDLE: Level = { status: "idle", items: [] };
 const LOADING: Level = { status: "loading", items: [] };
@@ -6640,7 +8903,11 @@ const ready = (items: Option[]): Level => ({ status: "ready", items });
         [value]="state()" (valueChange)="chooseState($event)" [options]="states()" />
       <app-level-select selectId="city" label="City" noun="city" plural="cities" waitingFor="state"
         [(value)]="city" [options]="cities()" />
-      <p role="status" data-testid="summary" class="summary">{{ summary() ? "Selected: " + summary() : "" }}</p>
+      <p
+        role="status"
+        data-testid="summary"
+        class="summary"
+      >{{ summary() ? "Selected: " + summary() : "" }}</p>
       <p class="meta" data-testid="requests">Requests sent: {{ requests() }}</p>
     </form>
   \`,
@@ -6654,7 +8921,10 @@ export class LocationPickerComponent {
   readonly cities = signal<Level>(IDLE);
   readonly requests = signal(0);
   readonly summary = computed(() =>
-    this.city() ? this.city() + ", " + this.state() + ", " + countryName(this.country()) : "");
+    this.city()
+      ? this.city() + ", " + this.state() + ", " + countryName(this.country())
+      : "",
+  );
   // One counter per level: a response is used only if no newer request started.
   private latest = { states: 0, cities: 0 };
 
@@ -6673,7 +8943,10 @@ export class LocationPickerComponent {
     this.cities.set(IDLE);
     const id = ++this.latest.states;
     this.latest.cities++; // also invalidate any city request in flight
-    if (!code) { this.states.set(IDLE); return; }
+    if (!code) {
+      this.states.set(IDLE);
+      return;
+    }
     this.states.set(LOADING);
     const p = getStates(code);
     this.requests.set(countRequests());
@@ -6685,7 +8958,10 @@ export class LocationPickerComponent {
     this.state.set(name);
     this.city.set("");
     const id = ++this.latest.cities;
-    if (!name) { this.cities.set(IDLE); return; }
+    if (!name) {
+      this.cities.set(IDLE);
+      return;
+    }
     this.cities.set(LOADING);
     const p = getCities(this.country(), name);
     this.requests.set(countRequests());
@@ -6795,8 +9071,10 @@ All three stages draw their randomness from one function, <code>randomInt(n)</co
 ### Step 1: an unbiased random integer
 
 \`\`\`js
-// Uniform integer in [0, n) from a CSPRNG. Plain "random % n" is biased when
-// 2^32 is not a multiple of n, so values at or above the largest multiple of n
+// Uniform integer in [0, n) from a CSPRNG.
+// Plain "random % n" is biased when
+// 2^32 is not a multiple of n, so values
+// at or above the largest multiple of n
 // are thrown away and drawn again (rejection sampling).
 const buf = new Uint32Array(1);
 export function randomInt(n) {
@@ -6820,13 +9098,17 @@ export function randomInt(n) {
 
 \`\`\`js
 export function generatePassword(length, enabledIds) {
-  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map((c) => c.chars);
+  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map(
+    (c) => c.chars,
+  );
   if (sets.length === 0) return "";
   const pool = sets.join("");
-  // One guaranteed character from each chosen class, the rest from the pool.
+  // One guaranteed character from each
+  // chosen class, the rest from the pool.
   const out = sets.map((s) => s[randomInt(s.length)]);
   while (out.length < length) out.push(pool[randomInt(pool.length)]);
-  // Fisher-Yates shuffle so the guaranteed characters are not always first.
+  // Fisher-Yates shuffle so the guaranteed
+  // characters are not always first.
   for (let i = out.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);
     [out[i], out[j]] = [out[j], out[i]];
@@ -6844,10 +9126,20 @@ Without the shuffle, the first four characters would always be one uppercase, on
 \`\`\`js
 // Entropy estimate: length x log2(pool size), assuming uniform choice.
 export function strength(length, enabledIds) {
-  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce((n, c) => n + c.chars.length, 0);
+  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce(
+    (n, c) => n + c.chars.length,
+    0,
+  );
   if (!pool) return { bits: 0, label: "None" };
   const bits = Math.round(length * Math.log2(pool));
-  const label = bits < 40 ? "Weak" : bits < 60 ? "Fair" : bits < 80 ? "Strong" : "Very strong";
+  const label =
+    bits < 40
+      ? "Weak"
+      : bits < 60
+        ? "Fair"
+        : bits < 80
+          ? "Strong"
+          : "Very strong";
   return { bits, label };
 }
 \`\`\`
@@ -6861,12 +9153,15 @@ This formula is only valid for *generated* passwords. A typed password like <cod
 \`\`\`jsx
 export default function PasswordGenerator() {
   const [settings, setSettings] = useState(DEFAULT);
-  // Random values are not derived state: generate in an initializer or a
-  // handler, never during render (render must be pure; StrictMode renders twice).
+  // Random values are not derived state:
+  // generate in an initializer or a
+  // handler, never during render (render
+  // must be pure; StrictMode renders twice).
   const [password, setPassword] = useState(() => generatePassword(DEFAULT.length, DEFAULT.enabled));
   const [copyStatus, setCopyStatus] = useState("");
   const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []); // no setState after unmount
+  // no setState after unmount
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const { length, enabled } = settings;
   const meter = strength(length, enabled);
@@ -6916,7 +9211,7 @@ export default function PasswordGenerator() {
 
 First the generator alone, imported into Node 22.22.0 (whose global <code>crypto</code> is the Web Crypto API):
 
-\`\`\`
+\`\`\`text
 randomInt(86) x 860000: min 9718, max 10383, expected 10000, chi-square 86.4 (df 85)
 byte % 86 over all 256 bytes: 84 chars get 3/256, 2 chars get 2/256
 generatePassword(4, all classes) x 100000: 100000 had all four classes
@@ -6927,7 +9222,7 @@ Line 1: 860,000 draws of <code>randomInt(86)</code> landed close to the expected
 
 Then the component, mounted like the playground (<code>createRoot</code> plus <code>&lt;StrictMode&gt;</code>) in jsdom with React 19.3.1. jsdom has no <code>navigator.clipboard</code>, so the driver installs a fake one (and later a refusing one). <code>crypto</code> in this run is Node's global Web Crypto. Output with the <code>[react]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Password generatorCopyLength: 16IncludeUppercase (A-Z)Lowercase (a-z)Digits (0-9)Symbols (!@#...)Very strong (103 bits)Generate new password
 initial: length 16 | classes: upper+lower+digits+symbols | strength: Very strong (103 bits)
 length now: 8 | strength: Fair (51 bits)
@@ -7045,18 +9340,28 @@ export default function App() {
 }
 `,
           "/src/PasswordGenerator.js": `import { useEffect, useRef, useState } from "react";
-import { CLASSES, MAX_LENGTH, MIN_LENGTH, generatePassword, strength } from "./password";
+import {
+  CLASSES,
+  MAX_LENGTH,
+  MIN_LENGTH,
+  generatePassword,
+  strength,
+} from "./password";
 
 const DEFAULT = { length: 16, enabled: CLASSES.map((c) => c.id) };
 
 export default function PasswordGenerator() {
   const [settings, setSettings] = useState(DEFAULT);
   // Random values are not derived state: generate in an initializer or a
-  // handler, never during render (render must be pure; StrictMode renders twice).
-  const [password, setPassword] = useState(() => generatePassword(DEFAULT.length, DEFAULT.enabled));
+  // handler, never during render (render
+  // must be pure; StrictMode renders twice).
+  const [password, setPassword] = useState(() =>
+    generatePassword(DEFAULT.length, DEFAULT.enabled),
+  );
   const [copyStatus, setCopyStatus] = useState("");
   const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []); // no setState after unmount
+  // no setState after unmount
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const { length, enabled } = settings;
   const meter = strength(length, enabled);
@@ -7069,8 +9374,13 @@ export default function PasswordGenerator() {
   }
 
   function toggle(id) {
-    const on = enabled.includes(id) ? enabled.filter((x) => x !== id) : [...enabled, id];
-    apply({ length, enabled: CLASSES.map((c) => c.id).filter((x) => on.includes(x)) });
+    const on = enabled.includes(id)
+      ? enabled.filter((x) => x !== id)
+      : [...enabled, id];
+    apply({
+      length,
+      enabled: CLASSES.map((c) => c.id).filter((x) => on.includes(x)),
+    });
   }
 
   async function copy() {
@@ -7088,45 +9398,103 @@ export default function PasswordGenerator() {
     <section className="card" aria-labelledby="pg-title">
       <h2 id="pg-title">Password generator</h2>
       <div className="output">
-        <input id="password" data-testid="password" readOnly value={password} aria-label="Generated password"
-          spellCheck={false} onFocus={(e) => e.target.select()} />
-        <button type="button" data-testid="copy" onClick={copy} disabled={none}>Copy</button>
+        <input
+          id="password"
+          data-testid="password"
+          readOnly
+          value={password}
+          aria-label="Generated password"
+          spellCheck={false}
+          onFocus={(e) => e.target.select()}
+        />
+        <button type="button" data-testid="copy" onClick={copy} disabled={none}>
+          Copy
+        </button>
       </div>
-      <p className="copy-status" data-testid="copy-status" role="status">{copyStatus}</p>
+      <p className="copy-status" data-testid="copy-status" role="status">
+        {copyStatus}
+      </p>
 
       <div className="field">
-        <label htmlFor="length">Length: <output htmlFor="length" data-testid="length-value">{length}</output></label>
-        <input id="length" type="range" min={MIN_LENGTH} max={MAX_LENGTH} value={length}
-          onChange={(e) => apply({ length: Number(e.target.value), enabled })} />
+        <label htmlFor="length">
+          Length:{" "}
+          <output htmlFor="length" data-testid="length-value">
+            {length}
+          </output>
+        </label>
+        <input
+          id="length"
+          type="range"
+          min={MIN_LENGTH}
+          max={MAX_LENGTH}
+          value={length}
+          onChange={(e) => apply({ length: Number(e.target.value), enabled })}
+        />
       </div>
 
       <fieldset className="classes">
         <legend>Include</legend>
         {CLASSES.map((c) => (
           <label key={c.id} className="check">
-            <input type="checkbox" id={c.id} checked={enabled.includes(c.id)} onChange={() => toggle(c.id)} />
+            <input
+              type="checkbox"
+              id={c.id}
+              checked={enabled.includes(c.id)}
+              onChange={() => toggle(c.id)}
+            />
             {c.label}
           </label>
         ))}
       </fieldset>
-      <p className="error" data-testid="none-error" role="alert">{none ? "Select at least one character type" : ""}</p>
+      <p className="error" data-testid="none-error" role="alert">
+        {none ? "Select at least one character type" : ""}
+      </p>
 
       <div className="meter" data-testid="strength">
-        <meter min={0} max={128} low={40} high={80} optimum={128} value={meter.bits} aria-label="Password strength" />
-        <span>{meter.label} ({meter.bits} bits)</span>
+        <meter
+          min={0}
+          max={128}
+          low={40}
+          high={80}
+          optimum={128}
+          value={meter.bits}
+          aria-label="Password strength"
+        />
+        <span>
+          {meter.label} ({meter.bits} bits)
+        </span>
       </div>
-      <button type="button" data-testid="generate" className="primary" disabled={none}
-        onClick={() => apply(settings)}>Generate new password</button>
+      <button
+        type="button"
+        data-testid="generate"
+        className="primary"
+        disabled={none}
+        onClick={() => apply(settings)}
+      >
+        Generate new password
+      </button>
     </section>
   );
 }
 `,
           "/src/password.js": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
-  { id: "upper", label: "Uppercase (A-Z)", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
-  { id: "lower", label: "Lowercase (a-z)", chars: "abcdefghijklmnopqrstuvwxyz" },
+  {
+    id: "upper",
+    label: "Uppercase (A-Z)",
+    chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  },
+  {
+    id: "lower",
+    label: "Lowercase (a-z)",
+    chars: "abcdefghijklmnopqrstuvwxyz",
+  },
   { id: "digits", label: "Digits (0-9)", chars: "0123456789" },
-  { id: "symbols", label: "Symbols (!@#...)", chars: "!@#$%^&*()-_=+[]{};:,.?/" },
+  {
+    id: "symbols",
+    label: "Symbols (!@#...)",
+    chars: "!@#$%^&*()-_=+[]{};:,.?/",
+  },
 ];
 export const MIN_LENGTH = 8;
 export const MAX_LENGTH = 64;
@@ -7146,7 +9514,9 @@ export function randomInt(n) {
 }
 
 export function generatePassword(length, enabledIds) {
-  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map((c) => c.chars);
+  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map(
+    (c) => c.chars,
+  );
   if (sets.length === 0) return "";
   const pool = sets.join("");
   // One guaranteed character from each chosen class, the rest from the pool.
@@ -7162,32 +9532,135 @@ export function generatePassword(length, enabledIds) {
 
 // Entropy estimate: length x log2(pool size), assuming uniform choice.
 export function strength(length, enabledIds) {
-  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce((n, c) => n + c.chars.length, 0);
+  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce(
+    (n, c) => n + c.chars.length,
+    0,
+  );
   if (!pool) return { bits: 0, label: "None" };
   const bits = Math.round(length * Math.log2(pool));
-  const label = bits < 40 ? "Weak" : bits < 60 ? "Fair" : bits < 80 ? "Strong" : "Very strong";
+  const label =
+    bits < 40
+      ? "Weak"
+      : bits < 60
+        ? "Fair"
+        : bits < 80
+          ? "Strong"
+          : "Very strong";
   return { bits, label };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.output { display: flex; gap: 8px; }
-.output input { flex: 1; min-width: 0; font: 1rem ui-monospace, monospace; padding: 10px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: #e6e8ee; }
-.copy-status { min-height: 1.2em; margin: 6px 0 10px; color: #7ee2a8; font-size: 0.85rem; }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input[type="range"] { width: 100%; accent-color: #4f7cff; }
-.classes { border: 1px solid #2a2f3d; border-radius: 8px; padding: 8px 12px; margin: 0; }
-.check { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-.error { color: #ff8a8a; min-height: 1.2em; margin: 6px 0; font-size: 0.85rem; }
-.meter { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; font-size: 0.9rem; }
-.meter meter { flex: 1; height: 12px; }
-button { font: inherit; padding: 10px 14px; border-radius: 8px; border: 0; background: #2a2f3d; color: #fff; cursor: pointer; }
-button.primary { background: #4f7cff; width: 100%; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.output {
+  display: flex;
+  gap: 8px;
+}
+.output input {
+  flex: 1;
+  min-width: 0;
+  font:
+    1rem ui-monospace,
+    monospace;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: #e6e8ee;
+}
+.copy-status {
+  min-height: 1.2em;
+  margin: 6px 0 10px;
+  color: #7ee2a8;
+  font-size: 0.85rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: #4f7cff;
+}
+.classes {
+  border: 1px solid #2a2f3d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 400;
+  padding: 4px 0;
+}
+.error {
+  color: #ff8a8a;
+  min-height: 1.2em;
+  margin: 6px 0;
+  font-size: 0.85rem;
+}
+.meter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+.meter meter {
+  flex: 1;
+  height: 12px;
+}
+button {
+  font: inherit;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: #2a2f3d;
+  color: #fff;
+  cursor: pointer;
+}
+button.primary {
+  background: #4f7cff;
+  width: 100%;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
 `,
         },
       },
@@ -7236,35 +9709,22 @@ Why not a <code>computed</code> for the password? A computed must be a pure func
 ### Step 3: the component
 
 \`\`\`vue
-const length = ref(16);
-// Checkbox v-model bound to an array collects the checked values.
-const enabled = ref(CLASSES.map((c) => c.id));
-const password = ref(generatePassword(length.value, enabled.value));
-const copyStatus = ref("");
-let timer;
-
-const meter = computed(() => strength(length.value, enabled.value));
-const none = computed(() => enabled.value.length === 0);
-
-function regenerate() {
-  password.value = generatePassword(length.value, enabled.value);
-  copyStatus.value = "";
-}
+const length = ref(16); // Checkbox v-model bound to an array collects
+the checked values. const enabled = ref(CLASSES.map((c) => c.id)); const
+password = ref(generatePassword(length.value, enabled.value)); const
+copyStatus = ref(""); let timer; const meter = computed(() =>
+strength(length.value, enabled.value)); const none = computed(() =>
+enabled.value.length === 0); function regenerate() { password.value =
+generatePassword(length.value, enabled.value); copyStatus.value = ""; }
 // Any settings change produces a fresh password. No deep option needed:
 // checkbox v-model on an array assigns a NEW array on every toggle.
-watch([length, enabled], regenerate);
-
-async function copy() {
-  clearTimeout(timer);
-  try {
-    await navigator.clipboard.writeText(password.value);
-    copyStatus.value = "Copied to clipboard";
-  } catch {
-    copyStatus.value = "Copy failed. Select the password and copy it manually.";
-  }
-  timer = setTimeout(() => (copyStatus.value = ""), 2000);
-}
-onUnmounted(() => clearTimeout(timer));
+watch([length, enabled], regenerate); async function copy() {
+clearTimeout(timer); try { await
+navigator.clipboard.writeText(password.value); copyStatus.value =
+"Copied to clipboard"; } catch { copyStatus.value = "Copy failed. Select
+the password and copy it manually."; } timer = setTimeout(() =>
+(copyStatus.value = ""), 2000); } onUnmounted(() =>
+clearTimeout(timer));
 \`\`\`
 
 📌 **Interview term: Entropy (bits)** — the strength estimate, <code>length × log2(pool)</code>, valid for passwords chosen uniformly from the pool. 16 characters from 86 is about 103 bits. It says nothing about typed passwords.
@@ -7277,23 +9737,47 @@ The watcher needs no <code>deep</code> option. In Vue 3.5.44's <code>runtime-dom
     <div class="output">
       <input id="password" data-testid="password" readonly :value="password" aria-label="Generated password"
         spellcheck="false" @focus="$event.target.select()" />
-      <button type="button" data-testid="copy" :disabled="none" @click="copy">Copy</button>
+      <button
+        type="button"
+        data-testid="copy"
+        :disabled="none"
+        @click="copy"
+      >Copy</button>
     </div>
-    <p class="copy-status" data-testid="copy-status" role="status">{{ copyStatus }}</p>
+    <p
+      class="copy-status"
+      data-testid="copy-status"
+      role="status"
+    >{{ copyStatus }}</p>
 
     <div class="field">
       <label for="length">Length: <output for="length" data-testid="length-value">{{ length }}</output></label>
-      <input id="length" v-model.number="length" type="range" :min="MIN_LENGTH" :max="MAX_LENGTH" />
+      <input
+        id="length"
+        v-model.number="length"
+        type="range"
+        :min="MIN_LENGTH"
+        :max="MAX_LENGTH"
+      />
     </div>
 
     <fieldset class="classes">
       <legend>Include</legend>
       <label v-for="c in CLASSES" :key="c.id" class="check">
-        <input :id="c.id" v-model="enabled" type="checkbox" :value="c.id" />
+        <input
+          :id="c.id"
+          v-model="enabled"
+          type="checkbox"
+          :value="c.id"
+        />
         {{ c.label }}
       </label>
     </fieldset>
-    <p class="error" data-testid="none-error" role="alert">{{ none ? "Select at least one character type" : "" }}</p>
+    <p
+      class="error"
+      data-testid="none-error"
+      role="alert"
+    >{{ none ? "Select at least one character type" : "" }}</p>
 \`\`\`
 
 ## 4. Edge Cases and Accessibility
@@ -7312,7 +9796,7 @@ The watcher needs no <code>deep</code> option. In Vue 3.5.44's <code>runtime-dom
 
 The generator on its own, in Node 22.22.0 (shared file, same as the other tabs):
 
-\`\`\`
+\`\`\`text
 randomInt(86) x 860000: min 9718, max 10383, expected 10000, chi-square 86.4 (df 85)
 byte % 86 over all 256 bytes: 84 chars get 3/256, 2 chars get 2/256
 generatePassword(4, all classes) x 100000: 100000 had all four classes
@@ -7323,7 +9807,7 @@ Near-uniform counts over 860,000 draws (the chi-square near its 85 degrees of fr
 
 The component, compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom on Vue 3.5.44. jsdom has no <code>navigator.clipboard</code>, so the driver installs a fake one, and later a refusing one. Output with the <code>[vue]</code> prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Password generatorCopyLength: 16Include Uppercase (A-Z) Lowercase (a-z) Digits (0-9) Symbols (!@#...)Very strong (103 bits)Generate new password
 initial: length 16 | classes: upper+lower+digits+symbols | strength: Very strong (103 bits)
 length now: 8 | strength: Fair (51 bits)
@@ -7432,30 +9916,129 @@ import PasswordGenerator from "./components/PasswordGenerator.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { display: flex; justify-content: center; padding: 24px 16px; }
-.card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-h2 { margin: 0 0 16px; font-size: 1.2rem; }
-.output { display: flex; gap: 8px; }
-.output input { flex: 1; min-width: 0; font: 1rem ui-monospace, monospace; padding: 10px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: #e6e8ee; }
-.copy-status { min-height: 1.2em; margin: 6px 0 10px; color: #7ee2a8; font-size: 0.85rem; }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-label { font-weight: 600; font-size: 0.9rem; }
-input[type="range"] { width: 100%; accent-color: #4f7cff; }
-.classes { border: 1px solid #2a2f3d; border-radius: 8px; padding: 8px 12px; margin: 0; }
-.check { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-.error { color: #ff8a8a; min-height: 1.2em; margin: 6px 0; font-size: 0.85rem; }
-.meter { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; font-size: 0.9rem; }
-.meter meter { flex: 1; height: 12px; }
-button { font: inherit; padding: 10px 14px; border-radius: 8px; border: 0; background: #2a2f3d; color: #fff; cursor: pointer; }
-button.primary { background: #4f7cff; width: 100%; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+.card {
+  width: 100%;
+  max-width: 420px;
+  background: #181b24;
+  border: 1px solid #2a2f3d;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h2 {
+  margin: 0 0 16px;
+  font-size: 1.2rem;
+}
+.output {
+  display: flex;
+  gap: 8px;
+}
+.output input {
+  flex: 1;
+  min-width: 0;
+  font:
+    1rem ui-monospace,
+    monospace;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #3a4152;
+  background: #0f1117;
+  color: #e6e8ee;
+}
+.copy-status {
+  min-height: 1.2em;
+  margin: 6px 0 10px;
+  color: #7ee2a8;
+  font-size: 0.85rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+input[type="range"] {
+  width: 100%;
+  accent-color: #4f7cff;
+}
+.classes {
+  border: 1px solid #2a2f3d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+}
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 400;
+  padding: 4px 0;
+}
+.error {
+  color: #ff8a8a;
+  min-height: 1.2em;
+  margin: 6px 0;
+  font-size: 0.85rem;
+}
+.meter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+.meter meter {
+  flex: 1;
+  height: 12px;
+}
+button {
+  font: inherit;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: #2a2f3d;
+  color: #fff;
+  cursor: pointer;
+}
+button.primary {
+  background: #4f7cff;
+  width: 100%;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/PasswordGenerator.vue": `<script setup>
 import { computed, onUnmounted, ref, watch } from "vue";
-import { CLASSES, MAX_LENGTH, MIN_LENGTH, generatePassword, strength } from "../password.js";
+import {
+  CLASSES,
+  MAX_LENGTH,
+  MIN_LENGTH,
+  generatePassword,
+  strength,
+} from "../password.js";
 
 const length = ref(16);
 // Checkbox v-model bound to an array collects the checked values.
@@ -7494,13 +10077,28 @@ onUnmounted(() => clearTimeout(timer));
     <div class="output">
       <input id="password" data-testid="password" readonly :value="password" aria-label="Generated password"
         spellcheck="false" @focus="$event.target.select()" />
-      <button type="button" data-testid="copy" :disabled="none" @click="copy">Copy</button>
+      <button
+        type="button"
+        data-testid="copy"
+        :disabled="none"
+        @click="copy"
+      >Copy</button>
     </div>
-    <p class="copy-status" data-testid="copy-status" role="status">{{ copyStatus }}</p>
+    <p
+      class="copy-status"
+      data-testid="copy-status"
+      role="status"
+    >{{ copyStatus }}</p>
 
     <div class="field">
       <label for="length">Length: <output for="length" data-testid="length-value">{{ length }}</output></label>
-      <input id="length" v-model.number="length" type="range" :min="MIN_LENGTH" :max="MAX_LENGTH" />
+      <input
+        id="length"
+        v-model.number="length"
+        type="range"
+        :min="MIN_LENGTH"
+        :max="MAX_LENGTH"
+      />
     </div>
 
     <fieldset class="classes">
@@ -7510,22 +10108,52 @@ onUnmounted(() => clearTimeout(timer));
         {{ c.label }}
       </label>
     </fieldset>
-    <p class="error" data-testid="none-error" role="alert">{{ none ? "Select at least one character type" : "" }}</p>
+    <p
+      class="error"
+      data-testid="none-error"
+      role="alert"
+    >{{ none ? "Select at least one character type" : "" }}</p>
 
     <div class="meter" data-testid="strength">
-      <meter min="0" max="128" low="40" high="80" optimum="128" :value="meter.bits" aria-label="Password strength"></meter>
+      <meter
+        min="0"
+        max="128"
+        low="40"
+        high="80"
+        optimum="128"
+        :value="meter.bits"
+        aria-label="Password strength"
+      ></meter>
       <span>{{ meter.label }} ({{ meter.bits }} bits)</span>
     </div>
-    <button type="button" data-testid="generate" class="primary" :disabled="none" @click="regenerate">Generate new password</button>
+    <button
+      type="button"
+      data-testid="generate"
+      class="primary"
+      :disabled="none"
+      @click="regenerate"
+    >Generate new password</button>
   </section>
 </template>
 `,
           "/src/password.js": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
-  { id: "upper", label: "Uppercase (A-Z)", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
-  { id: "lower", label: "Lowercase (a-z)", chars: "abcdefghijklmnopqrstuvwxyz" },
+  {
+    id: "upper",
+    label: "Uppercase (A-Z)",
+    chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  },
+  {
+    id: "lower",
+    label: "Lowercase (a-z)",
+    chars: "abcdefghijklmnopqrstuvwxyz",
+  },
   { id: "digits", label: "Digits (0-9)", chars: "0123456789" },
-  { id: "symbols", label: "Symbols (!@#...)", chars: "!@#$%^&*()-_=+[]{};:,.?/" },
+  {
+    id: "symbols",
+    label: "Symbols (!@#...)",
+    chars: "!@#$%^&*()-_=+[]{};:,.?/",
+  },
 ];
 export const MIN_LENGTH = 8;
 export const MAX_LENGTH = 64;
@@ -7545,7 +10173,9 @@ export function randomInt(n) {
 }
 
 export function generatePassword(length, enabledIds) {
-  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map((c) => c.chars);
+  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map(
+    (c) => c.chars,
+  );
   if (sets.length === 0) return "";
   const pool = sets.join("");
   // One guaranteed character from each chosen class, the rest from the pool.
@@ -7561,10 +10191,20 @@ export function generatePassword(length, enabledIds) {
 
 // Entropy estimate: length x log2(pool size), assuming uniform choice.
 export function strength(length, enabledIds) {
-  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce((n, c) => n + c.chars.length, 0);
+  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce(
+    (n, c) => n + c.chars.length,
+    0,
+  );
   if (!pool) return { bits: 0, label: "None" };
   const bits = Math.round(length * Math.log2(pool));
-  const label = bits < 40 ? "Weak" : bits < 60 ? "Fair" : bits < 80 ? "Strong" : "Very strong";
+  const label =
+    bits < 40
+      ? "Weak"
+      : bits < 60
+        ? "Fair"
+        : bits < 80
+          ? "Strong"
+          : "Very strong";
   return { bits, label };
 }
 `,
@@ -7619,11 +10259,15 @@ export class PasswordGeneratorComponent {
   readonly max = MAX_LENGTH;
   readonly length = signal(16);
   readonly enabled = signal<string[]>(ALL);
-  // Random output is state, not computed(): a computed must be a pure function
-  // of its inputs, and the Regenerate button must change it with no input change.
+  // Random output is state, not computed():
+  // a computed must be a pure function
+  // of its inputs, and the Regenerate button
+  // must change it with no input change.
   readonly password = signal(generatePassword(16, ALL));
   readonly copyStatus = signal("");
-  readonly meter = computed(() => strength(this.length(), this.enabled()));
+  readonly meter = computed(() =>
+    strength(this.length(), this.enabled()),
+  );
   readonly none = computed(() => this.enabled().length === 0);
   private timer?: ReturnType<typeof setTimeout>;
 
@@ -7641,8 +10285,11 @@ export class PasswordGeneratorComponent {
   }
   toggle(id: string) {
     const on = this.enabled();
-    const next = on.includes(id) ? on.filter((x) => x !== id) : [...on, id];
-    this.enabled.set(ALL.filter((x) => next.includes(x))); // keep a stable order
+    const next = on.includes(id)
+      ? on.filter((x) => x !== id)
+      : [...on, id];
+    // keep a stable order
+    this.enabled.set(ALL.filter((x) => next.includes(x)));
     this.regenerate();
   }
   select(event: Event) {
@@ -7655,7 +10302,9 @@ export class PasswordGeneratorComponent {
       await navigator.clipboard.writeText(this.password());
       this.copyStatus.set("Copied to clipboard");
     } catch {
-      this.copyStatus.set("Copy failed. Select the password and copy it manually.");
+      this.copyStatus.set(
+        "Copy failed. Select the password and copy it manually.",
+      );
     }
     this.timer = setTimeout(() => this.copyStatus.set(""), 2000);
   }
@@ -7674,31 +10323,70 @@ Each handler writes the setting and calls <code>regenerate()</code> in the same 
       <div class="output">
         <input id="password" data-testid="password" readonly [value]="password()" aria-label="Generated password"
           spellcheck="false" (focus)="select($event)" />
-        <button type="button" data-testid="copy" [disabled]="none()" (click)="copy()">Copy</button>
+        <button
+          type="button"
+          data-testid="copy"
+          [disabled]="none()"
+          (click)="copy()"
+        >Copy</button>
       </div>
-      <p class="copy-status" data-testid="copy-status" role="status">{{ copyStatus() }}</p>
+      <p
+        class="copy-status"
+        data-testid="copy-status"
+        role="status"
+      >{{ copyStatus() }}</p>
 
       <div class="field">
         <label for="length">Length: <output for="length" data-testid="length-value">{{ length() }}</output></label>
-        <input id="length" type="range" [min]="min" [max]="max" [value]="length()" (input)="setLength($event)" />
+        <input
+          id="length"
+          type="range"
+          [min]="min"
+          [max]="max"
+          [value]="length()"
+          (input)="setLength($event)"
+        />
       </div>
 
       <fieldset class="classes">
         <legend>Include</legend>
         @for (c of classes; track c.id) {
           <label class="check">
-            <input type="checkbox" [id]="c.id" [checked]="enabled().includes(c.id)" (change)="toggle(c.id)" />
+            <input
+              type="checkbox"
+              [id]="c.id"
+              [checked]="enabled().includes(c.id)"
+              (change)="toggle(c.id)"
+            />
             {{ c.label }}
           </label>
         }
       </fieldset>
-      <p class="error" data-testid="none-error" role="alert">{{ none() ? "Select at least one character type" : "" }}</p>
+      <p
+        class="error"
+        data-testid="none-error"
+        role="alert"
+      >{{ none() ? "Select at least one character type" : "" }}</p>
 
       <div class="meter" data-testid="strength">
-        <meter min="0" max="128" low="40" high="80" optimum="128" [value]="meter().bits" aria-label="Password strength"></meter>
+        <meter
+          min="0"
+          max="128"
+          low="40"
+          high="80"
+          optimum="128"
+          [value]="meter().bits"
+          aria-label="Password strength"
+        ></meter>
         <span>{{ meter().label }} ({{ meter().bits }} bits)</span>
       </div>
-      <button type="button" data-testid="generate" class="primary" [disabled]="none()" (click)="regenerate()">Generate new password</button>
+      <button
+        type="button"
+        data-testid="generate"
+        class="primary"
+        [disabled]="none()"
+        (click)="regenerate()"
+      >Generate new password</button>
     </section>
 \`\`\`
 
@@ -7719,7 +10407,7 @@ The checkboxes use <code>[checked]</code> plus <code>(change)</code>, so the <co
 
 The generator alone in Node 22.22.0 (same logic as the other tabs, typed for TypeScript):
 
-\`\`\`
+\`\`\`text
 randomInt(86) x 860000: min 9718, max 10383, expected 10000, chi-square 86.4 (df 85)
 byte % 86 over all 256 bytes: 84 chars get 3/256, 2 chars get 2/256
 generatePassword(4, all classes) x 100000: 100000 had all four classes
@@ -7730,7 +10418,7 @@ Near-uniform counts over 860,000 draws (figures vary per run), the exact modulo-
 
 The component, booted with <code>bootstrapApplication(AppComponent)</code> and no providers, compiled with <code>ngc</code> and <code>strictTemplates</code>, and again through the playground JIT. jsdom has no <code>navigator.clipboard</code>, so the driver installs a fake one, then a refusing one. Both runs printed the same lines; AOT run, prefix removed:
 
-\`\`\`
+\`\`\`text
 RENDERED: Password generatorCopyLength: 16Include Uppercase (A-Z) Lowercase (a-z) Digits (0-9) Symbols (!@#...) Very strong (103 bits)Generate new password
 initial: length 16 | classes: upper+lower+digits+symbols | strength: Very strong (103 bits)
 length now: 8 | strength: Fair (51 bits)
@@ -7838,32 +10526,133 @@ import { PasswordGeneratorComponent } from "./password-generator.component";
   template: \`<main class="page"><app-password-generator /></main>\`,
   // Global styles for this small app, so the child component shares them.
   encapsulation: ViewEncapsulation.None,
-  styles: [\`
-    body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { display: flex; justify-content: center; padding: 24px 16px; }
-    .card { width: 100%; max-width: 420px; background: #181b24; border: 1px solid #2a2f3d; border-radius: 12px; padding: 20px; box-sizing: border-box; }
-    h2 { margin: 0 0 16px; font-size: 1.2rem; }
-    .output { display: flex; gap: 8px; }
-    .output input { flex: 1; min-width: 0; font: 1rem ui-monospace, monospace; padding: 10px; border-radius: 8px; border: 1px solid #3a4152; background: #0f1117; color: #e6e8ee; }
-    .copy-status { min-height: 1.2em; margin: 6px 0 10px; color: #7ee2a8; font-size: 0.85rem; }
-    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    label { font-weight: 600; font-size: 0.9rem; }
-    input[type="range"] { width: 100%; accent-color: #4f7cff; }
-    .classes { border: 1px solid #2a2f3d; border-radius: 8px; padding: 8px 12px; margin: 0; }
-    .check { display: flex; gap: 8px; align-items: center; font-weight: 400; padding: 4px 0; }
-    .error { color: #ff8a8a; min-height: 1.2em; margin: 6px 0; font-size: 0.85rem; }
-    .meter { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; font-size: 0.9rem; }
-    .meter meter { flex: 1; height: 12px; }
-    button { font: inherit; padding: 10px 14px; border-radius: 8px; border: 0; background: #2a2f3d; color: #fff; cursor: pointer; }
-    button.primary { background: #4f7cff; width: 100%; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    button:focus-visible, input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        display: flex;
+        justify-content: center;
+        padding: 24px 16px;
+      }
+      .card {
+        width: 100%;
+        max-width: 420px;
+        background: #181b24;
+        border: 1px solid #2a2f3d;
+        border-radius: 12px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.2rem;
+      }
+      .output {
+        display: flex;
+        gap: 8px;
+      }
+      .output input {
+        flex: 1;
+        min-width: 0;
+        font:
+          1rem ui-monospace,
+          monospace;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #3a4152;
+        background: #0f1117;
+        color: #e6e8ee;
+      }
+      .copy-status {
+        min-height: 1.2em;
+        margin: 6px 0 10px;
+        color: #7ee2a8;
+        font-size: 0.85rem;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: #4f7cff;
+      }
+      .classes {
+        border: 1px solid #2a2f3d;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin: 0;
+      }
+      .check {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 400;
+        padding: 4px 0;
+      }
+      .error {
+        color: #ff8a8a;
+        min-height: 1.2em;
+        margin: 6px 0;
+        font-size: 0.85rem;
+      }
+      .meter {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+        font-size: 0.9rem;
+      }
+      .meter meter {
+        flex: 1;
+        height: 12px;
+      }
+      button {
+        font: inherit;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 0;
+        background: #2a2f3d;
+        color: #fff;
+        cursor: pointer;
+      }
+      button.primary {
+        background: #4f7cff;
+        width: 100%;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/password-generator.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { CLASSES, MAX_LENGTH, MIN_LENGTH, generatePassword, strength } from "./password";
+import {
+  CLASSES,
+  MAX_LENGTH,
+  MIN_LENGTH,
+  generatePassword,
+  strength,
+} from "./password";
 
 const ALL = CLASSES.map((c) => c.id);
 
@@ -7876,31 +10665,70 @@ const ALL = CLASSES.map((c) => c.id);
       <div class="output">
         <input id="password" data-testid="password" readonly [value]="password()" aria-label="Generated password"
           spellcheck="false" (focus)="select($event)" />
-        <button type="button" data-testid="copy" [disabled]="none()" (click)="copy()">Copy</button>
+        <button
+          type="button"
+          data-testid="copy"
+          [disabled]="none()"
+          (click)="copy()"
+        >Copy</button>
       </div>
-      <p class="copy-status" data-testid="copy-status" role="status">{{ copyStatus() }}</p>
+      <p
+        class="copy-status"
+        data-testid="copy-status"
+        role="status"
+      >{{ copyStatus() }}</p>
 
       <div class="field">
         <label for="length">Length: <output for="length" data-testid="length-value">{{ length() }}</output></label>
-        <input id="length" type="range" [min]="min" [max]="max" [value]="length()" (input)="setLength($event)" />
+        <input
+          id="length"
+          type="range"
+          [min]="min"
+          [max]="max"
+          [value]="length()"
+          (input)="setLength($event)"
+        />
       </div>
 
       <fieldset class="classes">
         <legend>Include</legend>
         @for (c of classes; track c.id) {
           <label class="check">
-            <input type="checkbox" [id]="c.id" [checked]="enabled().includes(c.id)" (change)="toggle(c.id)" />
+            <input
+              type="checkbox"
+              [id]="c.id"
+              [checked]="enabled().includes(c.id)"
+              (change)="toggle(c.id)"
+            />
             {{ c.label }}
           </label>
         }
       </fieldset>
-      <p class="error" data-testid="none-error" role="alert">{{ none() ? "Select at least one character type" : "" }}</p>
+      <p
+        class="error"
+        data-testid="none-error"
+        role="alert"
+      >{{ none() ? "Select at least one character type" : "" }}</p>
 
       <div class="meter" data-testid="strength">
-        <meter min="0" max="128" low="40" high="80" optimum="128" [value]="meter().bits" aria-label="Password strength"></meter>
+        <meter
+          min="0"
+          max="128"
+          low="40"
+          high="80"
+          optimum="128"
+          [value]="meter().bits"
+          aria-label="Password strength"
+        ></meter>
         <span>{{ meter().label }} ({{ meter().bits }} bits)</span>
       </div>
-      <button type="button" data-testid="generate" class="primary" [disabled]="none()" (click)="regenerate()">Generate new password</button>
+      <button
+        type="button"
+        data-testid="generate"
+        class="primary"
+        [disabled]="none()"
+        (click)="regenerate()"
+      >Generate new password</button>
     </section>
   \`,
 })
@@ -7911,7 +10739,8 @@ export class PasswordGeneratorComponent {
   readonly length = signal(16);
   readonly enabled = signal<string[]>(ALL);
   // Random output is state, not computed(): a computed must be a pure function
-  // of its inputs, and the Regenerate button must change it with no input change.
+  // of its inputs, and the Regenerate button
+  // must change it with no input change.
   readonly password = signal(generatePassword(16, ALL));
   readonly copyStatus = signal("");
   readonly meter = computed(() => strength(this.length(), this.enabled()));
@@ -7933,7 +10762,8 @@ export class PasswordGeneratorComponent {
   toggle(id: string) {
     const on = this.enabled();
     const next = on.includes(id) ? on.filter((x) => x !== id) : [...on, id];
-    this.enabled.set(ALL.filter((x) => next.includes(x))); // keep a stable order
+    // keep a stable order
+    this.enabled.set(ALL.filter((x) => next.includes(x)));
     this.regenerate();
   }
   select(event: Event) {
@@ -7946,7 +10776,9 @@ export class PasswordGeneratorComponent {
       await navigator.clipboard.writeText(this.password());
       this.copyStatus.set("Copied to clipboard");
     } catch {
-      this.copyStatus.set("Copy failed. Select the password and copy it manually.");
+      this.copyStatus.set(
+        "Copy failed. Select the password and copy it manually.",
+      );
     }
     this.timer = setTimeout(() => this.copyStatus.set(""), 2000);
   }
@@ -7954,10 +10786,22 @@ export class PasswordGeneratorComponent {
 `,
           "/src/app/password.ts": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
-  { id: "upper", label: "Uppercase (A-Z)", chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ" },
-  { id: "lower", label: "Lowercase (a-z)", chars: "abcdefghijklmnopqrstuvwxyz" },
+  {
+    id: "upper",
+    label: "Uppercase (A-Z)",
+    chars: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  },
+  {
+    id: "lower",
+    label: "Lowercase (a-z)",
+    chars: "abcdefghijklmnopqrstuvwxyz",
+  },
   { id: "digits", label: "Digits (0-9)", chars: "0123456789" },
-  { id: "symbols", label: "Symbols (!@#...)", chars: "!@#$%^&*()-_=+[]{};:,.?/" },
+  {
+    id: "symbols",
+    label: "Symbols (!@#...)",
+    chars: "!@#$%^&*()-_=+[]{};:,.?/",
+  },
 ];
 export const MIN_LENGTH = 8;
 export const MAX_LENGTH = 64;
@@ -7977,7 +10821,9 @@ export function randomInt(n: number): number {
 }
 
 export function generatePassword(length: number, enabledIds: string[]): string {
-  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map((c) => c.chars);
+  const sets = CLASSES.filter((c) => enabledIds.includes(c.id)).map(
+    (c) => c.chars,
+  );
   if (sets.length === 0) return "";
   const pool = sets.join("");
   // One guaranteed character from each chosen class, the rest from the pool.
@@ -7992,11 +10838,24 @@ export function generatePassword(length: number, enabledIds: string[]): string {
 }
 
 // Entropy estimate: length x log2(pool size), assuming uniform choice.
-export function strength(length: number, enabledIds: string[]): { bits: number; label: string } {
-  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce((n, c) => n + c.chars.length, 0);
+export function strength(
+  length: number,
+  enabledIds: string[],
+): { bits: number; label: string } {
+  const pool = CLASSES.filter((c) => enabledIds.includes(c.id)).reduce(
+    (n, c) => n + c.chars.length,
+    0,
+  );
   if (!pool) return { bits: 0, label: "None" };
   const bits = Math.round(length * Math.log2(pool));
-  const label = bits < 40 ? "Weak" : bits < 60 ? "Fair" : bits < 80 ? "Strong" : "Very strong";
+  const label =
+    bits < 40
+      ? "Weak"
+      : bits < 60
+        ? "Fair"
+        : bits < 80
+          ? "Strong"
+          : "Very strong";
   return { bits, label };
 }
 `,

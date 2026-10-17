@@ -144,7 +144,8 @@ export function ToastProvider({ children }) {
       const type = options.type || "info";
       const duration = options.duration ?? DEFAULT_DURATION[type];
       const id = nextId.current++;
-      setToasts((list) => [{ id, type, message, duration }, ...list]); // newest first
+      // newest first
+      setToasts((list) => [{ id, type, message, duration }, ...list]);
       return id;
     }
     toast.success = (message, options) => toast(message, { ...options, type: "success" });
@@ -166,18 +167,25 @@ Three choices worth saying out loud:
 ### Step 2: the provider and the portal
 
 ~~~jsx
-  return (
-    <ToastContext value={api}>
-      {children}
-      {createPortal(
-        <div className="toast-viewport" data-testid="toast-viewport" role="region"
-             aria-label="Notifications" aria-live="polite">
-          {toasts.map((t) => <Toast key={t.id} toast={t} onDismiss={dismiss} />)}
-        </div>,
-        document.body
-      )}
-    </ToastContext>
-  );
+return (
+  <ToastContext value={api}>
+    {children}
+    {createPortal(
+      <div
+        className="toast-viewport"
+        data-testid="toast-viewport"
+        role="region"
+        aria-label="Notifications"
+        aria-live="polite"
+      >
+        {toasts.map((t) => (
+          <Toast key={t.id} toast={t} onDismiss={dismiss} />
+        ))}
+      </div>,
+      document.body,
+    )}
+  </ToastContext>
+);
 ~~~
 
 \`<ToastContext value={api}>\` is the React 19 way to provide a context: the context object itself is the provider, no \`.Provider\` needed ([what changed with Context in React 19](/interview-question/what-changed-with-context-in-react-19-context-as-a-provider)). It ran as written on React 19.3.1.
@@ -199,12 +207,24 @@ export default function Toast({ toast, onDismiss }) {
   }, [id, duration, onDismiss]);
 
   return (
-    <div className={"toast toast-" + type} data-testid="toast" data-type={type}
-         role={type === "error" ? "alert" : "status"}>
-      <span className="toast-icon" aria-hidden="true">{ICON[type]}</span>
+    <div
+      className={"toast toast-" + type}
+      data-testid="toast"
+      data-type={type}
+      role={type === "error" ? "alert" : "status"}
+    >
+      <span className="toast-icon" aria-hidden="true">
+        {ICON[type]}
+      </span>
       <p className="toast-message">{message}</p>
-      <button type="button" className="toast-close" aria-label="Dismiss notification"
-              onClick={() => onDismiss(id)}>×</button>
+      <button
+        type="button"
+        className="toast-close"
+        aria-label="Dismiss notification"
+        onClick={() => onDismiss(id)}
+      >
+        ×
+      </button>
     </div>
   );
 }
@@ -223,10 +243,27 @@ function Demo() {
   const toast = useToast();
   return (
     <div className="buttons">
-      <button data-testid="btn-success" onClick={() => toast.success("Profile saved")}>Success</button>
-      <button data-testid="btn-error" onClick={() => toast.error("Upload failed. Try again.")}>Error</button>
-      <button data-testid="btn-sticky" onClick={() => toast.info("You are offline", { duration: 0 })}>Sticky</button>
-      <button data-testid="btn-clear" onClick={() => toast.dismiss()}>Dismiss all</button>
+      <button
+        data-testid="btn-success"
+        onClick={() => toast.success("Profile saved")}
+      >
+        Success
+      </button>
+      <button
+        data-testid="btn-error"
+        onClick={() => toast.error("Upload failed. Try again.")}
+      >
+        Error
+      </button>
+      <button
+        data-testid="btn-sticky"
+        onClick={() => toast.info("You are offline", { duration: 0 })}
+      >
+        Sticky
+      </button>
+      <button data-testid="btn-clear" onClick={() => toast.dismiss()}>
+        Dismiss all
+      </button>
     </div>
   );
 }
@@ -242,7 +279,7 @@ The viewport is \`position: fixed\` at the bottom right with \`pointer-events: n
 
 The solution was bundled with esbuild and mounted with \`createRoot(#root).render(<StrictMode><App /></StrictMode>)\` in jsdom by \`scripts/verify-mc-solution.mjs\`. The driver clicked Success, Error, Info and Sticky, closed the Info toast with its button, then let real time pass. Each toast prints as \`type(role): message\`, newest first:
 
-~~~
+~~~text
 viewport live region: polite | inside app root: false
 after 4 clicks: ["info(status): You are offline","info(status): New version available","error(alert): Upload failed. Try again.","success(status): Profile saved"]
 after closing info: ["info(status): You are offline","error(alert): Upload failed. Try again.","success(status): Profile saved"]
@@ -363,13 +400,38 @@ function Demo() {
   return (
     <main className="demo">
       <h1>Toast notifications</h1>
-      <p>Any component can call the toast API. Success and info close after 3 s, errors after 5 s.</p>
+      <p>
+        Any component can call the toast API. Success and info close after 3 s,
+        errors after 5 s.
+      </p>
       <div className="buttons">
-        <button data-testid="btn-success" onClick={() => toast.success("Profile saved")}>Success</button>
-        <button data-testid="btn-error" onClick={() => toast.error("Upload failed. Try again.")}>Error</button>
-        <button data-testid="btn-info" onClick={() => toast.info("New version available")}>Info</button>
-        <button data-testid="btn-sticky" onClick={() => toast.info("You are offline", { duration: 0 })}>Sticky</button>
-        <button data-testid="btn-clear" onClick={() => toast.dismiss()}>Dismiss all</button>
+        <button
+          data-testid="btn-success"
+          onClick={() => toast.success("Profile saved")}
+        >
+          Success
+        </button>
+        <button
+          data-testid="btn-error"
+          onClick={() => toast.error("Upload failed. Try again.")}
+        >
+          Error
+        </button>
+        <button
+          data-testid="btn-info"
+          onClick={() => toast.info("New version available")}
+        >
+          Info
+        </button>
+        <button
+          data-testid="btn-sticky"
+          onClick={() => toast.info("You are offline", { duration: 0 })}
+        >
+          Sticky
+        </button>
+        <button data-testid="btn-clear" onClick={() => toast.dismiss()}>
+          Dismiss all
+        </button>
       </div>
     </main>
   );
@@ -406,16 +468,30 @@ export default function Toast({ toast, onDismiss }) {
       data-type={type}
       role={type === "error" ? "alert" : "status"}
     >
-      <span className="toast-icon" aria-hidden="true">{ICON[type]}</span>
+      <span className="toast-icon" aria-hidden="true">
+        {ICON[type]}
+      </span>
       <p className="toast-message">{message}</p>
-      <button type="button" className="toast-close" aria-label="Dismiss notification" onClick={() => onDismiss(id)}>
+      <button
+        type="button"
+        className="toast-close"
+        aria-label="Dismiss notification"
+        onClick={() => onDismiss(id)}
+      >
         ×
       </button>
     </div>
   );
 }
 `,
-          "/src/ToastProvider.js": `import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
+          "/src/ToastProvider.js": `import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import Toast from "./Toast";
 
@@ -430,7 +506,9 @@ export function ToastProvider({ children }) {
 
   // dismiss(id) removes one toast; dismiss() with no id clears them all.
   const dismiss = useCallback((id) => {
-    setToasts((list) => (id === undefined ? [] : list.filter((t) => t.id !== id)));
+    setToasts((list) =>
+      id === undefined ? [] : list.filter((t) => t.id !== id),
+    );
   }, []);
 
   // The public API is created once, so components that only call toast.*()
@@ -440,12 +518,16 @@ export function ToastProvider({ children }) {
       const type = options.type || "info";
       const duration = options.duration ?? DEFAULT_DURATION[type];
       const id = nextId.current++;
-      setToasts((list) => [{ id, type, message, duration }, ...list]); // newest first
+      // newest first
+      setToasts((list) => [{ id, type, message, duration }, ...list]);
       return id;
     }
-    toast.success = (message, options) => toast(message, { ...options, type: "success" });
-    toast.error = (message, options) => toast(message, { ...options, type: "error" });
-    toast.info = (message, options) => toast(message, { ...options, type: "info" });
+    toast.success = (message, options) =>
+      toast(message, { ...options, type: "success" });
+    toast.error = (message, options) =>
+      toast(message, { ...options, type: "error" });
+    toast.info = (message, options) =>
+      toast(message, { ...options, type: "info" });
     toast.dismiss = dismiss;
     return toast;
   }, [dismiss]);
@@ -454,12 +536,18 @@ export function ToastProvider({ children }) {
     <ToastContext value={api}>
       {children}
       {createPortal(
-        <div className="toast-viewport" data-testid="toast-viewport" role="region" aria-label="Notifications" aria-live="polite">
+        <div
+          className="toast-viewport"
+          data-testid="toast-viewport"
+          role="region"
+          aria-label="Notifications"
+          aria-live="polite"
+        >
           {toasts.map((t) => (
             <Toast key={t.id} toast={t} onDismiss={dismiss} />
           ))}
         </div>,
-        document.body
+        document.body,
       )}
     </ToastContext>
   );
@@ -471,25 +559,120 @@ export function useToast() {
   return api;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.demo h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.demo p { color: #a9b0bc; }
-.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.buttons button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-.buttons button:hover { border-color: #5b8def; }
-.toast-viewport { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; }
-.toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; padding: 10px 12px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
-.toast-message { flex: 1; margin: 0; font-size: 0.95rem; }
-.toast-icon { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: bold; font-size: 0.8rem; color: #0f1117; }
-.toast-success .toast-icon { background: #4caf50; }
-.toast-error .toast-icon { background: #ef5350; }
-.toast-info .toast-icon { background: #5b8def; }
-.toast-error { border-color: #ef5350; }
-.toast-close { background: none; border: 0; color: #a9b0bc; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
-.toast-close:hover, .toast-close:focus-visible { color: #fff; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.demo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.demo h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.demo p {
+  color: #a9b0bc;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.buttons button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
+.buttons button:hover {
+  border-color: #5b8def;
+}
+.toast-viewport {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 1000;
+}
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: toast-in 180ms ease-out;
+}
+.toast-message {
+  flex: 1;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.toast-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #0f1117;
+}
+.toast-success .toast-icon {
+  background: #4caf50;
+}
+.toast-error .toast-icon {
+  background: #ef5350;
+}
+.toast-info .toast-icon {
+  background: #5b8def;
+}
+.toast-error {
+  border-color: #ef5350;
+}
+.toast-close {
+  background: none;
+  border: 0;
+  color: #a9b0bc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.toast-close:hover,
+.toast-close:focus-visible {
+  color: #fff;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
 `,
         },
       },
@@ -538,9 +721,12 @@ export function createToaster() {
     toasts.unshift({ id, type, message, duration }); // newest first
     return id;
   }
-  toast.success = (message, options) => toast(message, { ...options, type: "success" });
-  toast.error = (message, options) => toast(message, { ...options, type: "error" });
-  toast.info = (message, options) => toast(message, { ...options, type: "info" });
+  toast.success = (message, options) =>
+    toast(message, { ...options, type: "success" });
+  toast.error = (message, options) =>
+    toast(message, { ...options, type: "error" });
+  toast.info = (message, options) =>
+    toast(message, { ...options, type: "info" });
   toast.dismiss = (id) => {
     if (id === undefined) return toasts.splice(0);
     const index = toasts.findIndex((t) => t.id === id);
@@ -551,7 +737,10 @@ export function createToaster() {
 
 export function useToaster() {
   const toaster = inject(ToasterKey, null);
-  if (!toaster) throw new Error("useToast() needs a toaster provided by an ancestor");
+  if (!toaster)
+    throw new Error(
+      "useToast() needs a toaster provided by an ancestor",
+    );
   return toaster;
 }
 export const useToast = () => useToaster().toast;
@@ -581,9 +770,19 @@ provide(ToasterKey, createToaster());
 ~~~vue
 <template>
   <Teleport to="body">
-    <div class="toast-viewport" data-testid="toast-viewport" role="region"
-         aria-label="Notifications" aria-live="polite">
-      <ToastItem v-for="t in toasts" :key="t.id" :toast="t" @dismiss="toast.dismiss(t.id)" />
+    <div
+      class="toast-viewport"
+      data-testid="toast-viewport"
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
+      <ToastItem
+        v-for="t in toasts"
+        :key="t.id"
+        :toast="t"
+        @dismiss="toast.dismiss(t.id)"
+      />
     </div>
   </Teleport>
 </template>
@@ -603,7 +802,8 @@ const emit = defineEmits(["dismiss"]);
 
 let timer;
 onMounted(() => {
-  if (props.toast.duration) timer = setTimeout(() => emit("dismiss"), props.toast.duration);
+  if (props.toast.duration)
+    timer = setTimeout(() => emit("dismiss"), props.toast.duration);
 });
 onBeforeUnmount(() => clearTimeout(timer));
 </script>
@@ -617,7 +817,7 @@ The item template sets \`:role="toast.type === 'error' ? 'alert' : 'status'"\` a
 
 Mounted on Vue 3.5.44 with the shared driver: click Success, Error, Info, Sticky; close Info; wait 3.1 s and 5.1 s; add one; Dismiss all.
 
-~~~
+~~~text
 viewport live region: polite | inside app root: false
 after 4 clicks: ["info(status): You are offline","info(status): New version available","error(alert): Upload failed. Try again.","success(status): Profile saved"]
 after closing info: ["info(status): You are offline","error(alert): Upload failed. Try again.","success(status): Profile saved"]
@@ -734,7 +934,12 @@ provide(ToasterKey, createToaster());
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
 </style>
 `,
           "/src/components/ToastDemo.vue": `<script setup>
@@ -748,22 +953,59 @@ const toast = useToast();
     <h1>Toast notifications</h1>
     <p>Any component can call the toast API. Success and info close after 3 s, errors after 5 s.</p>
     <div class="buttons">
-      <button data-testid="btn-success" @click="toast.success('Profile saved')">Success</button>
-      <button data-testid="btn-error" @click="toast.error('Upload failed. Try again.')">Error</button>
-      <button data-testid="btn-info" @click="toast.info('New version available')">Info</button>
-      <button data-testid="btn-sticky" @click="toast.info('You are offline', { duration: 0 })">Sticky</button>
-      <button data-testid="btn-clear" @click="toast.dismiss()">Dismiss all</button>
+      <button
+        data-testid="btn-success"
+        @click="toast.success('Profile saved')"
+      >Success</button>
+      <button
+        data-testid="btn-error"
+        @click="toast.error('Upload failed. Try again.')"
+      >Error</button>
+      <button
+        data-testid="btn-info"
+        @click="toast.info('New version available')"
+      >Info</button>
+      <button
+        data-testid="btn-sticky"
+        @click="toast.info('You are offline', { duration: 0 })"
+      >Sticky</button>
+      <button
+        data-testid="btn-clear"
+        @click="toast.dismiss()"
+      >Dismiss all</button>
     </div>
   </main>
 </template>
 
 <style scoped>
-.demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 8px; }
-p { color: #a9b0bc; }
-.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-button:hover { border-color: #5b8def; }
+.demo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+p {
+  color: #a9b0bc;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
+button:hover {
+  border-color: #5b8def;
+}
 </style>
 `,
           "/src/components/ToastItem.vue": `<script setup>
@@ -777,7 +1019,8 @@ const ICON = { success: "✓", error: "!", info: "i" };
 // (closed early, dismissed all, or the whole app torn down).
 let timer;
 onMounted(() => {
-  if (props.toast.duration) timer = setTimeout(() => emit("dismiss"), props.toast.duration);
+  if (props.toast.duration)
+    timer = setTimeout(() => emit("dismiss"), props.toast.duration);
 });
 onBeforeUnmount(() => clearTimeout(timer));
 </script>
@@ -791,22 +1034,84 @@ onBeforeUnmount(() => clearTimeout(timer));
   >
     <span class="toast-icon" aria-hidden="true">{{ ICON[toast.type] }}</span>
     <p class="toast-message">{{ toast.message }}</p>
-    <button type="button" class="toast-close" aria-label="Dismiss notification" @click="emit('dismiss')">×</button>
+    <button
+      type="button"
+      class="toast-close"
+      aria-label="Dismiss notification"
+      @click="emit('dismiss')"
+    >×</button>
   </div>
 </template>
 
 <style scoped>
-.toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; padding: 10px 12px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
-.toast-message { flex: 1; margin: 0; font-size: 0.95rem; }
-.toast-icon { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-weight: bold; font-size: 0.8rem; color: #0f1117; }
-.toast-success .toast-icon { background: #4caf50; }
-.toast-error .toast-icon { background: #ef5350; }
-.toast-info .toast-icon { background: #5b8def; }
-.toast-error { border-color: #ef5350; }
-.toast-close { background: none; border: 0; color: #a9b0bc; font-size: 1.2rem; cursor: pointer; padding: 0 4px; }
-.toast-close:hover, .toast-close:focus-visible { color: #fff; }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: toast-in 180ms ease-out;
+}
+.toast-message {
+  flex: 1;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.toast-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #0f1117;
+}
+.toast-success .toast-icon {
+  background: #4caf50;
+}
+.toast-error .toast-icon {
+  background: #ef5350;
+}
+.toast-info .toast-icon {
+  background: #5b8def;
+}
+.toast-error {
+  border-color: #ef5350;
+}
+.toast-close {
+  background: none;
+  border: 0;
+  color: #a9b0bc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+.toast-close:hover,
+.toast-close:focus-visible {
+  color: #fff;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
 </style>
 `,
           "/src/components/ToastViewport.vue": `<script setup>
@@ -819,14 +1124,36 @@ const { toasts, toast } = useToaster();
 <template>
   <!-- Teleport moves the stack to <body>, out of any overflow or z-index trap. -->
   <Teleport to="body">
-    <div class="toast-viewport" data-testid="toast-viewport" role="region" aria-label="Notifications" aria-live="polite">
-      <ToastItem v-for="t in toasts" :key="t.id" :toast="t" @dismiss="toast.dismiss(t.id)" />
+    <div
+      class="toast-viewport"
+      data-testid="toast-viewport"
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
+      <ToastItem
+        v-for="t in toasts"
+        :key="t.id"
+        :toast="t"
+        @dismiss="toast.dismiss(t.id)"
+      />
     </div>
   </Teleport>
 </template>
 
 <style>
-.toast-viewport { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; }
+.toast-viewport {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 1000;
+}
 </style>
 `,
           "/src/toaster.js": `import { inject, reactive, readonly } from "vue";
@@ -848,9 +1175,12 @@ export function createToaster() {
     toasts.unshift({ id, type, message, duration }); // newest first
     return id;
   }
-  toast.success = (message, options) => toast(message, { ...options, type: "success" });
-  toast.error = (message, options) => toast(message, { ...options, type: "error" });
-  toast.info = (message, options) => toast(message, { ...options, type: "info" });
+  toast.success = (message, options) =>
+    toast(message, { ...options, type: "success" });
+  toast.error = (message, options) =>
+    toast(message, { ...options, type: "error" });
+  toast.info = (message, options) =>
+    toast(message, { ...options, type: "info" });
   toast.dismiss = (id) => {
     if (id === undefined) return toasts.splice(0);
     const index = toasts.findIndex((t) => t.id === id);
@@ -863,7 +1193,8 @@ export function createToaster() {
 
 export function useToaster() {
   const toaster = inject(ToasterKey, null);
-  if (!toaster) throw new Error("useToast() needs a toaster provided by an ancestor");
+  if (!toaster)
+    throw new Error("useToast() needs a toaster provided by an ancestor");
   return toaster;
 }
 
@@ -910,25 +1241,50 @@ The Angular flavour of this question checks whether you reach for a root service
 export class ToastService implements OnDestroy {
   private readonly list = signal<Toast[]>([]);
   readonly toasts = this.list.asReadonly();
-  private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
+  private readonly timers = new Map<
+    number,
+    ReturnType<typeof setTimeout>
+  >();
   private nextId = 1;
 
-  show(message: string, type: ToastType = "info", options: ToastOptions = {}): number {
+  show(
+    message: string,
+    type: ToastType = "info",
+    options: ToastOptions = {},
+  ): number {
     const duration = options.duration ?? DEFAULT_DURATION[type];
     const id = this.nextId++;
-    this.list.update((list) => [{ id, type, message, duration }, ...list]); // newest first
-    if (duration) this.timers.set(id, setTimeout(() => this.dismiss(id), duration));
+    this.list.update((list) => [
+      { id, type, message, duration },
+      ...list,
+    ]); // newest first
+    if (duration)
+      this.timers.set(
+        id,
+        setTimeout(() => this.dismiss(id), duration),
+      );
     return id;
   }
 
-  success(message: string, options?: ToastOptions) { return this.show(message, "success", options); }
-  error(message: string, options?: ToastOptions) { return this.show(message, "error", options); }
-  info(message: string, options?: ToastOptions) { return this.show(message, "info", options); }
+  success(message: string, options?: ToastOptions) {
+    return this.show(message, "success", options);
+  }
+  error(message: string, options?: ToastOptions) {
+    return this.show(message, "error", options);
+  }
+  info(message: string, options?: ToastOptions) {
+    return this.show(message, "info", options);
+  }
 
   dismiss(id?: number): void {
     const ids = id === undefined ? [...this.timers.keys()] : [id];
-    for (const key of ids) { clearTimeout(this.timers.get(key)); this.timers.delete(key); }
-    this.list.update((list) => (id === undefined ? [] : list.filter((t) => t.id !== id)));
+    for (const key of ids) {
+      clearTimeout(this.timers.get(key));
+      this.timers.delete(key);
+    }
+    this.list.update((list) =>
+      id === undefined ? [] : list.filter((t) => t.id !== id),
+    );
   }
 
   ngOnDestroy(): void {
@@ -954,7 +1310,10 @@ Every exit path clears a timer: the timer firing (it calls \`dismiss\`), the clo
       @for (t of service.toasts(); track t.id) {
         <div [class]="'toast toast-' + t.type" data-testid="toast" [attr.data-type]="t.type"
              [attr.role]="t.type === 'error' ? 'alert' : 'status'">
-          <span class="toast-icon" aria-hidden="true">{{ icon[t.type] }}</span>
+          <span
+            class="toast-icon"
+            aria-hidden="true"
+          >{{ icon[t.type] }}</span>
           <p class="toast-message">{{ t.message }}</p>
           <button type="button" class="toast-close" aria-label="Dismiss notification"
                   (click)="service.dismiss(t.id)">×</button>
@@ -965,8 +1324,12 @@ Every exit path clears a timer: the timer firing (it calls \`dismiss\`), the clo
 export class ToastViewportComponent implements OnInit, OnDestroy {
   readonly service = inject(ToastService);
   private readonly host = inject(ElementRef<HTMLElement>);
-  ngOnInit(): void { document.body.appendChild(this.host.nativeElement); }
-  ngOnDestroy(): void { this.host.nativeElement.remove(); }
+  ngOnInit(): void {
+    document.body.appendChild(this.host.nativeElement);
+  }
+  ngOnDestroy(): void {
+    this.host.nativeElement.remove();
+  }
 }
 ~~~
 
@@ -982,7 +1345,8 @@ Moving the host element is a small, honest portal: Angular keeps managing the co
 export class AppComponent {
   readonly toast = inject(ToastService);
 }
-// template: <button (click)="toast.success('Profile saved')">Success</button>
+// template: <button (click)="toast.success('Profile
+// saved')">Success</button>
 //           <app-toast-viewport />
 ~~~
 
@@ -990,7 +1354,7 @@ export class AppComponent {
 
 Booted on Angular 22.2.3 in both modes with the shared driver. AOT (\`ngc\` with \`strictTemplates\`) printed:
 
-~~~
+~~~text
 viewport live region: polite | inside app root: false
 after 4 clicks: ["info(status): You are offline","info(status): New version available","error(alert): Upload failed. Try again.","success(status): Profile saved"]
 after closing info: ["info(status): You are offline","error(alert): Upload failed. Try again.","success(status): Profile saved"]
@@ -1106,16 +1470,32 @@ import { ToastViewportComponent } from "./toast-viewport.component";
       <h1>Toast notifications</h1>
       <p>Any component can call the toast API. Success and info close after 3 s, errors after 5 s.</p>
       <div class="buttons">
-        <button data-testid="btn-success" (click)="toast.success('Profile saved')">Success</button>
-        <button data-testid="btn-error" (click)="toast.error('Upload failed. Try again.')">Error</button>
-        <button data-testid="btn-info" (click)="toast.info('New version available')">Info</button>
-        <button data-testid="btn-sticky" (click)="toast.info('You are offline', { duration: 0 })">Sticky</button>
-        <button data-testid="btn-clear" (click)="toast.dismiss()">Dismiss all</button>
+        <button
+          data-testid="btn-success"
+          (click)="toast.success('Profile saved')"
+        >Success</button>
+        <button
+          data-testid="btn-error"
+          (click)="toast.error('Upload failed. Try again.')"
+        >Error</button>
+        <button
+          data-testid="btn-info"
+          (click)="toast.info('New version available')"
+        >Info</button>
+        <button
+          data-testid="btn-sticky"
+          (click)="toast.info('You are offline', { duration: 0 })"
+        >Sticky</button>
+        <button
+          data-testid="btn-clear"
+          (click)="toast.dismiss()"
+        >Dismiss all</button>
       </div>
     </main>
     <app-toast-viewport />
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
     .demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 8px; }
@@ -1123,13 +1503,20 @@ import { ToastViewportComponent } from "./toast-viewport.component";
     .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
     button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
     button:hover { border-color: #5b8def; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly toast = inject(ToastService);
 }
 `,
-          "/src/app/toast-viewport.component.ts": `import { Component, ElementRef, OnDestroy, OnInit, inject } from "@angular/core";
+          "/src/app/toast-viewport.component.ts": `import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  inject,
+} from "@angular/core";
 import { ToastService } from "./toast.service";
 
 const ICON = { success: "✓", error: "!", info: "i" };
@@ -1138,17 +1525,34 @@ const ICON = { success: "✓", error: "!", info: "i" };
   selector: "app-toast-viewport",
   standalone: true,
   template: \`
-    <div class="toast-viewport" data-testid="toast-viewport" role="region" aria-label="Notifications" aria-live="polite">
+    <div
+      class="toast-viewport"
+      data-testid="toast-viewport"
+      role="region"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
       @for (t of service.toasts(); track t.id) {
-        <div [class]="'toast toast-' + t.type" data-testid="toast" [attr.data-type]="t.type" [attr.role]="t.type === 'error' ? 'alert' : 'status'">
+        <div
+          [class]="'toast toast-' + t.type"
+          data-testid="toast"
+          [attr.data-type]="t.type"
+          [attr.role]="t.type === 'error' ? 'alert' : 'status'"
+        >
           <span class="toast-icon" aria-hidden="true">{{ icon[t.type] }}</span>
           <p class="toast-message">{{ t.message }}</p>
-          <button type="button" class="toast-close" aria-label="Dismiss notification" (click)="service.dismiss(t.id)">×</button>
+          <button
+            type="button"
+            class="toast-close"
+            aria-label="Dismiss notification"
+            (click)="service.dismiss(t.id)"
+          >×</button>
         </div>
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .toast-viewport { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; }
     .toast { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; padding: 10px 12px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; color: #e6e6e6; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
     .toast-message { flex: 1; margin: 0; font-size: 0.95rem; }
@@ -1161,7 +1565,8 @@ const ICON = { success: "✓", error: "!", info: "i" };
     .toast-close:hover, .toast-close:focus-visible { color: #fff; }
     @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
-  \`],
+  \`,
+  ],
 })
 export class ToastViewportComponent implements OnInit, OnDestroy {
   readonly service = inject(ToastService);
@@ -1170,18 +1575,33 @@ export class ToastViewportComponent implements OnInit, OnDestroy {
 
   // A hand-rolled portal: move this component's host element to <body> so
   // the stack escapes any parent with overflow: hidden or a z-index context.
-  ngOnInit(): void { document.body.appendChild(this.host.nativeElement); }
-  ngOnDestroy(): void { this.host.nativeElement.remove(); }
+  ngOnInit(): void {
+    document.body.appendChild(this.host.nativeElement);
+  }
+  ngOnDestroy(): void {
+    this.host.nativeElement.remove();
+  }
 }
 `,
           "/src/app/toast.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
 
 export type ToastType = "success" | "error" | "info";
-export interface Toast { id: number; type: ToastType; message: string; duration: number; }
-export interface ToastOptions { duration?: number; }
+export interface Toast {
+  id: number;
+  type: ToastType;
+  message: string;
+  duration: number;
+}
+export interface ToastOptions {
+  duration?: number;
+}
 
 // How long each type stays on screen by default (ms). 0 means "until closed".
-const DEFAULT_DURATION: Record<ToastType, number> = { success: 3000, info: 3000, error: 5000 };
+const DEFAULT_DURATION: Record<ToastType, number> = {
+  success: 3000,
+  info: 3000,
+  error: 5000,
+};
 
 // providedIn: "root" makes one shared instance for the whole app with no
 // providers array, so any component can inject() it and raise a toast.
@@ -1192,17 +1612,32 @@ export class ToastService implements OnDestroy {
   private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
   private nextId = 1;
 
-  show(message: string, type: ToastType = "info", options: ToastOptions = {}): number {
+  show(
+    message: string,
+    type: ToastType = "info",
+    options: ToastOptions = {},
+  ): number {
     const duration = options.duration ?? DEFAULT_DURATION[type];
     const id = this.nextId++;
-    this.list.update((list) => [{ id, type, message, duration }, ...list]); // newest first
-    if (duration) this.timers.set(id, setTimeout(() => this.dismiss(id), duration));
+    // newest first
+    this.list.update((list) => [{ id, type, message, duration }, ...list]);
+    if (duration)
+      this.timers.set(
+        id,
+        setTimeout(() => this.dismiss(id), duration),
+      );
     return id;
   }
 
-  success(message: string, options?: ToastOptions) { return this.show(message, "success", options); }
-  error(message: string, options?: ToastOptions) { return this.show(message, "error", options); }
-  info(message: string, options?: ToastOptions) { return this.show(message, "info", options); }
+  success(message: string, options?: ToastOptions) {
+    return this.show(message, "success", options);
+  }
+  error(message: string, options?: ToastOptions) {
+    return this.show(message, "error", options);
+  }
+  info(message: string, options?: ToastOptions) {
+    return this.show(message, "info", options);
+  }
 
   /** dismiss(id) closes one toast; dismiss() closes them all. */
   dismiss(id?: number): void {
@@ -1211,7 +1646,9 @@ export class ToastService implements OnDestroy {
       clearTimeout(this.timers.get(key));
       this.timers.delete(key);
     }
-    this.list.update((list) => (id === undefined ? [] : list.filter((t) => t.id !== id)));
+    this.list.update((list) =>
+      id === undefined ? [] : list.filter((t) => t.id !== id),
+    );
   }
 
   // Root services are destroyed with the app: do not leave timers behind.
@@ -1367,21 +1804,34 @@ export function ToastQueueProvider({ children }) {
 ### Step 2: render the first three and the count
 
 ~~~jsx
-  return (
-    <ToastContext value={api}>
-      {children}
-      {createPortal(
-        <section className="toast-stack" data-testid="toast-viewport"
-                 aria-label="Notifications" aria-live="polite">
-          {visible.map((t) => (
-            <QueuedToast key={t.id} toast={t} duration={DURATION} onDismiss={api.dismiss} />
-          ))}
-          {waiting > 0 && <p className="toast-more" data-testid="queue-count">+{waiting} more</p>}
-        </section>,
-        document.body
-      )}
-    </ToastContext>
-  );
+return (
+  <ToastContext value={api}>
+    {children}
+    {createPortal(
+      <section
+        className="toast-stack"
+        data-testid="toast-viewport"
+        aria-label="Notifications"
+        aria-live="polite"
+      >
+        {visible.map((t) => (
+          <QueuedToast
+            key={t.id}
+            toast={t}
+            duration={DURATION}
+            onDismiss={api.dismiss}
+          />
+        ))}
+        {waiting > 0 && (
+          <p className="toast-more" data-testid="queue-count">
+            +{waiting} more
+          </p>
+        )}
+      </section>,
+      document.body,
+    )}
+  </ToastContext>
+);
 ~~~
 
 Because each \`QueuedToast\` mounts only when it enters the slice, **its timer starts when it becomes visible**. A toast that waited ten seconds in line still gets its full three seconds on screen. \`key={t.id}\` matters even more here than in a plain toast system: when the first toast closes, the others keep their component instances (and their paused state) instead of shifting into each other.
@@ -1414,11 +1864,11 @@ Read the effect as a sentence: "while not paused, a timer counts down \`remainin
 ### Step 4: freezing the clock exactly once
 
 ~~~jsx
-  function freeze() {
-    if (paused) return;
-    const elapsed = Date.now() - startedAt.current;
-    setRemaining((r) => Math.max(0, r - elapsed));
-  }
+function freeze() {
+  if (paused) return;
+  const elapsed = Date.now() - startedAt.current;
+  setRemaining((r) => Math.max(0, r - elapsed));
+}
 
   return (
     <div className={"toast toast-" + type} data-testid="toast" data-paused={paused}
@@ -1436,9 +1886,14 @@ Read the effect as a sentence: "while not paused, a timer counts down \`remainin
 ### Step 5: the progress bar
 
 ~~~jsx
-      <div className="toast-progress" aria-hidden="true"
-           style={{ animationDuration: duration + "ms",
-                    animationPlayState: paused ? "paused" : "running" }} />
+<div
+  className="toast-progress"
+  aria-hidden="true"
+  style={{
+    animationDuration: duration + "ms",
+    animationPlayState: paused ? "paused" : "running",
+  }}
+/>
 ~~~
 
 A CSS \`scaleX(1)\` to \`scaleX(0)\` animation runs over the full duration and is simply paused alongside the timer, so the bar and the timer stay in step without a \`requestAnimationFrame\` loop or a re-render per frame. It is \`aria-hidden\` because the countdown is decoration.
@@ -1451,7 +1906,7 @@ The stack is fixed at the bottom right with 16 px gutters and \`pointer-events: 
 
 Mounted with \`<StrictMode>\` on React 19.3.1 in jsdom. The driver clicked "Burst of 5", hovered Notification 1 at about 1 s, let real time run in 20 ms steps (so React flushes each timer promptly), un-hovered at 3.5 s, then tested the close button and keyboard focus. Hover was dispatched as \`mouseover\` plus \`mouseenter\`, because React listens for \`mouseover\`/\`mouseout\` to produce \`onMouseEnter\` (a separate run confirmed it: a raw \`mouseenter\` alone left \`data-paused\` at \`false\`, and a \`mouseover\` then set it to \`true\`):
 
-~~~
+~~~text
 t=0 burst of 5         ["Notification 1","Notification 2","Notification 3"] | queued: +2 more
 t=1.0 hover #1         ["Notification 1 (paused)","Notification 2","Notification 3"] | queued: +2 more
 remaining on #1 after pausing: 2013 ms | between 1900 and 2050: true
@@ -1573,7 +2028,12 @@ Not checked here: that the progress bar visually stops (jsdom runs no CSS animat
 **Conclusion:** The toast queue adds two ideas to a basic toast system: derive visible and waiting from one array, so promotion is automatic, and make each timer pausable by remembering how much time is left. In React the timer is a single effect that runs while not paused and is cleaned up when paused, and the verified run on React 19.3.1 shows a hovered toast surviving its neighbours and closing about 2 s after the mouse left, exactly the time it had left.`,
         files: {
           "/App.js": `import { useRef } from "react";
-import { ToastQueueProvider, useToast, MAX_VISIBLE, DURATION } from "./src/ToastQueue";
+import {
+  ToastQueueProvider,
+  useToast,
+  MAX_VISIBLE,
+  DURATION,
+} from "./src/ToastQueue";
 
 function Demo() {
   const toast = useToast();
@@ -1583,13 +2043,29 @@ function Demo() {
     <main className="demo">
       <h1>Toast queue</h1>
       <p>
-        At most {MAX_VISIBLE} toasts show at once; the rest wait in line. Each closes after {DURATION / 1000} s.
-        Hover or focus a toast to pause its timer.
+        At most {MAX_VISIBLE} toasts show at once; the rest wait in line. Each
+        closes after {DURATION / 1000} s. Hover or focus a toast to pause its
+        timer.
       </p>
       <div className="buttons">
-        <button data-testid="btn-success" onClick={() => toast.success("Saved item " + next())}>Success</button>
-        <button data-testid="btn-error" onClick={() => toast.error("Sync failed " + next())}>Error</button>
-        <button data-testid="btn-burst" onClick={() => { for (let i = 0; i < 5; i++) toast.info("Notification " + next()); }}>
+        <button
+          data-testid="btn-success"
+          onClick={() => toast.success("Saved item " + next())}
+        >
+          Success
+        </button>
+        <button
+          data-testid="btn-error"
+          onClick={() => toast.error("Sync failed " + next())}
+        >
+          Error
+        </button>
+        <button
+          data-testid="btn-burst"
+          onClick={() => {
+            for (let i = 0; i < 5; i++) toast.info("Notification " + next());
+          }}
+        >
           Burst of 5
         </button>
       </div>
@@ -1609,7 +2085,8 @@ export default function App() {
 
 export default function QueuedToast({ toast, duration, onDismiss }) {
   const { id, message, type } = toast;
-  const [remaining, setRemaining] = useState(duration); // ms left when the timer next starts
+  // ms left when the timer next starts
+  const [remaining, setRemaining] = useState(duration);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const startedAt = useRef(0);
@@ -1639,20 +2116,36 @@ export default function QueuedToast({ toast, duration, onDismiss }) {
       data-paused={paused}
       data-remaining={remaining}
       role={type === "error" ? "alert" : "status"}
-      onMouseEnter={() => { freeze(); setHovered(true); }}
+      onMouseEnter={() => {
+        freeze();
+        setHovered(true);
+      }}
       onMouseLeave={() => setHovered(false)}
-      onFocus={() => { freeze(); setFocused(true); }}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false); }}
+      onFocus={() => {
+        freeze();
+        setFocused(true);
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      }}
     >
       <p className="toast-message">{message}</p>
-      <button type="button" className="toast-close" aria-label="Dismiss notification" onClick={() => onDismiss(id)}>
+      <button
+        type="button"
+        className="toast-close"
+        aria-label="Dismiss notification"
+        onClick={() => onDismiss(id)}
+      >
         ×
       </button>
       {/* The bar animates over the full duration and simply stops while paused. */}
       <div
         className="toast-progress"
         aria-hidden="true"
-        style={{ animationDuration: duration + "ms", animationPlayState: paused ? "paused" : "running" }}
+        style={{
+          animationDuration: duration + "ms",
+          animationPlayState: paused ? "paused" : "running",
+        }}
       />
     </div>
   );
@@ -1705,15 +2198,27 @@ export function ToastQueueProvider({ children }) {
     <ToastContext value={api}>
       {children}
       {createPortal(
-        <section className="toast-stack" data-testid="toast-viewport" aria-label="Notifications" aria-live="polite">
+        <section
+          className="toast-stack"
+          data-testid="toast-viewport"
+          aria-label="Notifications"
+          aria-live="polite"
+        >
           {visible.map((t) => (
-            <QueuedToast key={t.id} toast={t} duration={DURATION} onDismiss={api.dismiss} />
+            <QueuedToast
+              key={t.id}
+              toast={t}
+              duration={DURATION}
+              onDismiss={api.dismiss}
+            />
           ))}
           {waiting > 0 && (
-            <p className="toast-more" data-testid="queue-count">+{waiting} more</p>
+            <p className="toast-more" data-testid="queue-count">
+              +{waiting} more
+            </p>
           )}
         </section>,
-        document.body
+        document.body,
       )}
     </ToastContext>
   );
@@ -1721,29 +2226,138 @@ export function ToastQueueProvider({ children }) {
 
 export function useToast() {
   const api = useContext(ToastContext);
-  if (!api) throw new Error("useToast must be used inside <ToastQueueProvider>");
+  if (!api)
+    throw new Error("useToast must be used inside <ToastQueueProvider>");
   return api;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.demo h1 { font-size: 1.4rem; margin: 0 0 8px; }
-.demo p { color: #a9b0bc; }
-.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.buttons button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-.toast-stack { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; }
-.toast { pointer-events: auto; position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; padding: 12px 12px 14px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
-.toast-message { flex: 1; margin: 0; }
-.toast-close { background: none; border: 0; color: #a9b0bc; font-size: 1.2rem; cursor: pointer; }
-.toast-close:hover, .toast-close:focus-visible { color: #fff; }
-.toast-progress { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: #5b8def; transform-origin: left; animation-name: toast-progress; animation-timing-function: linear; animation-fill-mode: forwards; }
-.toast-success .toast-progress { background: #4caf50; }
-.toast-error { border-color: #ef5350; }
-.toast-error .toast-progress { background: #ef5350; }
-.toast-more { pointer-events: auto; margin: 0; padding: 4px 10px; border-radius: 999px; background: #262b38; color: #a9b0bc; font-size: 0.85rem; }
-@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.demo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.demo h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+.demo p {
+  color: #a9b0bc;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.buttons button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
+.toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 1000;
+}
+.toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+  padding: 12px 12px 14px;
+  border-radius: 10px;
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: toast-in 180ms ease-out;
+}
+.toast-message {
+  flex: 1;
+  margin: 0;
+}
+.toast-close {
+  background: none;
+  border: 0;
+  color: #a9b0bc;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.toast-close:hover,
+.toast-close:focus-visible {
+  color: #fff;
+}
+.toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: #5b8def;
+  transform-origin: left;
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+.toast-success .toast-progress {
+  background: #4caf50;
+}
+.toast-error {
+  border-color: #ef5350;
+}
+.toast-error .toast-progress {
+  background: #ef5350;
+}
+.toast-more {
+  pointer-events: auto;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #262b38;
+  color: #a9b0bc;
+  font-size: 0.85rem;
+}
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
 `,
         },
       },
@@ -1787,7 +2401,9 @@ export function createToastQueue() {
   const queue = ref([]);
   let nextId = 1;
   const visible = computed(() => queue.value.slice(0, MAX_VISIBLE));
-  const waiting = computed(() => queue.value.length - visible.value.length);
+  const waiting = computed(
+    () => queue.value.length - visible.value.length,
+  );
 
   function show(message, type = "info") {
     const id = nextId++;
@@ -1797,8 +2413,14 @@ export function createToastQueue() {
   function dismiss(id) {
     queue.value = queue.value.filter((t) => t.id !== id);
   }
-  return { visible, waiting, dismiss,
-    success: (m) => show(m, "success"), error: (m) => show(m, "error"), info: (m) => show(m, "info") };
+  return {
+    visible,
+    waiting,
+    dismiss,
+    success: (m) => show(m, "success"),
+    error: (m) => show(m, "error"),
+    info: (m) => show(m, "info"),
+  };
 }
 ~~~
 
@@ -1813,7 +2435,11 @@ export function createPausableTimer(callback, delay) {
   function resume() {
     if (handle !== null || remaining <= 0) return;
     startedAt = Date.now();
-    handle = setTimeout(() => { handle = null; remaining = 0; callback(); }, remaining);
+    handle = setTimeout(() => {
+      handle = null;
+      remaining = 0;
+      callback();
+    }, remaining);
   }
   function pause() {
     if (handle === null) return;
@@ -1821,8 +2447,18 @@ export function createPausableTimer(callback, delay) {
     handle = null;
     remaining = Math.max(0, remaining - (Date.now() - startedAt));
   }
-  function clear() { clearTimeout(handle); handle = null; }
-  return { resume, pause, clear, get remaining() { return remaining; } };
+  function clear() {
+    clearTimeout(handle);
+    handle = null;
+  }
+  return {
+    resume,
+    pause,
+    clear,
+    get remaining() {
+      return remaining;
+    },
+  };
 }
 ~~~
 
@@ -1836,7 +2472,10 @@ The guards make both calls idempotent: \`pause()\` on a paused timer does nothin
 
 ~~~vue
 <script setup>
-const props = defineProps({ toast: { type: Object, required: true }, duration: { type: Number, required: true } });
+const props = defineProps({
+  toast: { type: Object, required: true },
+  duration: { type: Number, required: true },
+});
 const emit = defineEmits(["dismiss"]);
 
 const hovered = ref(false);
@@ -1844,14 +2483,26 @@ const focused = ref(false);
 const paused = computed(() => hovered.value || focused.value);
 const remaining = ref(props.duration);
 
-const timer = createPausableTimer(() => emit("dismiss"), props.duration);
-onMounted(() => timer.resume());          // starts when it becomes visible
+const timer = createPausableTimer(
+  () => emit("dismiss"),
+  props.duration,
+);
+onMounted(() => timer.resume()); // starts when it becomes visible
 onBeforeUnmount(() => timer.clear());
 
-function setHover(value) { hovered.value = value; sync(); }
-function onFocusIn() { focused.value = true; sync(); }
+function setHover(value) {
+  hovered.value = value;
+  sync();
+}
+function onFocusIn() {
+  focused.value = true;
+  sync();
+}
 function onFocusOut(event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) { focused.value = false; sync(); }
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    focused.value = false;
+    sync();
+  }
 }
 function sync() {
   if (paused.value) timer.pause();
@@ -1874,9 +2525,24 @@ The template wires \`@mouseenter\`, \`@mouseleave\`, \`@focusin\` and \`@focusou
 
 ~~~vue
 <Teleport to="body">
-  <section class="toast-stack" data-testid="toast-viewport" aria-label="Notifications" aria-live="polite">
-    <QueuedToast v-for="t in visible" :key="t.id" :toast="t" :duration="DURATION" @dismiss="dismiss(t.id)" />
-    <p v-if="waiting > 0" class="toast-more" data-testid="queue-count">+{{ waiting }} more</p>
+  <section
+    class="toast-stack"
+    data-testid="toast-viewport"
+    aria-label="Notifications"
+    aria-live="polite"
+  >
+    <QueuedToast
+      v-for="t in visible"
+      :key="t.id"
+      :toast="t"
+      :duration="DURATION"
+      @dismiss="dismiss(t.id)"
+    />
+    <p
+      v-if="waiting > 0"
+      class="toast-more"
+      data-testid="queue-count"
+    >+{{ waiting }} more</p>
   </section>
 </Teleport>
 ~~~
@@ -1887,7 +2553,7 @@ The template wires \`@mouseenter\`, \`@mouseleave\`, \`@focusin\` and \`@focusou
 
 Same driver as React and Angular: Burst of 5, hover Notification 1 at about 1 s, un-hover at 3.5 s, then the close button and keyboard focus. Vue 3.5.44 printed:
 
-~~~
+~~~text
 t=0 burst of 5         ["Notification 1","Notification 2","Notification 3"] | queued: +2 more
 t=1.0 hover #1         ["Notification 1 (paused)","Notification 2","Notification 3"] | queued: +2 more
 remaining on #1 after pausing: 2002 ms | between 1900 and 2050: true
@@ -2010,7 +2676,12 @@ provide(ToastQueueKey, createToastQueue());
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
 </style>
 `,
           "/src/components/QueueDemo.vue": `<script setup>
@@ -2032,19 +2703,45 @@ function burst() {
       Hover or focus a toast to pause its timer.
     </p>
     <div class="buttons">
-      <button data-testid="btn-success" @click="toast.success('Saved item ' + next())">Success</button>
-      <button data-testid="btn-error" @click="toast.error('Sync failed ' + next())">Error</button>
+      <button
+        data-testid="btn-success"
+        @click="toast.success('Saved item ' + next())"
+      >Success</button>
+      <button
+        data-testid="btn-error"
+        @click="toast.error('Sync failed ' + next())"
+      >Error</button>
       <button data-testid="btn-burst" @click="burst">Burst of 5</button>
     </div>
   </main>
 </template>
 
 <style scoped>
-.demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 8px; }
-p { color: #a9b0bc; }
-.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
+.demo {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 8px;
+}
+p {
+  color: #a9b0bc;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/components/QueuedToast.vue": `<script setup>
@@ -2068,11 +2765,20 @@ const timer = createPausableTimer(() => emit("dismiss"), props.duration);
 onMounted(() => timer.resume());
 onBeforeUnmount(() => timer.clear());
 
-function setHover(value) { hovered.value = value; sync(); }
-function onFocusOut(event) {
-  if (!event.currentTarget.contains(event.relatedTarget)) { focused.value = false; sync(); }
+function setHover(value) {
+  hovered.value = value;
+  sync();
 }
-function onFocusIn() { focused.value = true; sync(); }
+function onFocusOut(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    focused.value = false;
+    sync();
+  }
+}
+function onFocusIn() {
+  focused.value = true;
+  sync();
+}
 function sync() {
   if (paused.value) timer.pause();
   else timer.resume();
@@ -2093,7 +2799,12 @@ function sync() {
     @focusout="onFocusOut"
   >
     <p class="toast-message">{{ toast.message }}</p>
-    <button type="button" class="toast-close" aria-label="Dismiss notification" @click="emit('dismiss')">×</button>
+    <button
+      type="button"
+      class="toast-close"
+      aria-label="Dismiss notification"
+      @click="emit('dismiss')"
+    >×</button>
     <div
       class="toast-progress"
       aria-hidden="true"
@@ -2103,17 +2814,81 @@ function sync() {
 </template>
 
 <style scoped>
-.toast { pointer-events: auto; position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; padding: 12px 12px 14px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
-.toast-message { flex: 1; margin: 0; }
-.toast-close { background: none; border: 0; color: #a9b0bc; font-size: 1.2rem; cursor: pointer; }
-.toast-close:hover, .toast-close:focus-visible { color: #fff; }
-.toast-progress { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: #5b8def; transform-origin: left; animation-name: toast-progress; animation-timing-function: linear; animation-fill-mode: forwards; }
-.toast-success .toast-progress { background: #4caf50; }
-.toast-error { border-color: #ef5350; }
-.toast-error .toast-progress { background: #ef5350; }
-@keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 340px;
+  padding: 12px 12px 14px;
+  border-radius: 10px;
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: toast-in 180ms ease-out;
+}
+.toast-message {
+  flex: 1;
+  margin: 0;
+}
+.toast-close {
+  background: none;
+  border: 0;
+  color: #a9b0bc;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.toast-close:hover,
+.toast-close:focus-visible {
+  color: #fff;
+}
+.toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: #5b8def;
+  transform-origin: left;
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+.toast-success .toast-progress {
+  background: #4caf50;
+}
+.toast-error {
+  border-color: #ef5350;
+}
+.toast-error .toast-progress {
+  background: #ef5350;
+}
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
 </style>
 `,
           "/src/components/ToastStack.vue": `<script setup>
@@ -2125,16 +2900,50 @@ const { visible, waiting, dismiss } = useToast();
 
 <template>
   <Teleport to="body">
-    <section class="toast-stack" data-testid="toast-viewport" aria-label="Notifications" aria-live="polite">
-      <QueuedToast v-for="t in visible" :key="t.id" :toast="t" :duration="DURATION" @dismiss="dismiss(t.id)" />
-      <p v-if="waiting > 0" class="toast-more" data-testid="queue-count">+{{ waiting }} more</p>
+    <section
+      class="toast-stack"
+      data-testid="toast-viewport"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
+      <QueuedToast
+        v-for="t in visible"
+        :key="t.id"
+        :toast="t"
+        :duration="DURATION"
+        @dismiss="dismiss(t.id)"
+      />
+      <p
+        v-if="waiting > 0"
+        class="toast-more"
+        data-testid="queue-count"
+      >+{{ waiting }} more</p>
     </section>
   </Teleport>
 </template>
 
 <style>
-.toast-stack { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; }
-.toast-more { pointer-events: auto; margin: 0; padding: 4px 10px; border-radius: 999px; background: #262b38; color: #a9b0bc; font-size: 0.85rem; }
+.toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 1000;
+}
+.toast-more {
+  pointer-events: auto;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #262b38;
+  color: #a9b0bc;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/pausableTimer.js": `// A setTimeout you can pause and resume. It remembers how much time is left,
@@ -2147,7 +2956,11 @@ export function createPausableTimer(callback, delay) {
   function resume() {
     if (handle !== null || remaining <= 0) return;
     startedAt = Date.now();
-    handle = setTimeout(() => { handle = null; remaining = 0; callback(); }, remaining);
+    handle = setTimeout(() => {
+      handle = null;
+      remaining = 0;
+      callback();
+    }, remaining);
   }
   function pause() {
     if (handle === null) return;
@@ -2155,9 +2968,19 @@ export function createPausableTimer(callback, delay) {
     handle = null;
     remaining = Math.max(0, remaining - (Date.now() - startedAt));
   }
-  function clear() { clearTimeout(handle); handle = null; }
+  function clear() {
+    clearTimeout(handle);
+    handle = null;
+  }
 
-  return { resume, pause, clear, get remaining() { return remaining; } };
+  return {
+    resume,
+    pause,
+    clear,
+    get remaining() {
+      return remaining;
+    },
+  };
 }
 `,
           "/src/toastQueue.js": `import { computed, inject, ref } from "vue";
@@ -2196,7 +3019,10 @@ export function createToastQueue() {
 
 export function useToast() {
   const api = inject(ToastQueueKey, null);
-  if (!api) throw new Error("useToast() needs createToastQueue() provided by an ancestor");
+  if (!api)
+    throw new Error(
+      "useToast() needs createToastQueue() provided by an ancestor",
+    );
   return api;
 }
 `,
@@ -2237,7 +3063,9 @@ At most 3 visible in FIFO order with "+N more", 3 s each, the timer starts when 
 export class ToastQueueService {
   private readonly queue = signal<QueuedToastData[]>([]);
   readonly visible = computed(() => this.queue().slice(0, MAX_VISIBLE));
-  readonly waiting = computed(() => this.queue().length - this.visible().length);
+  readonly waiting = computed(
+    () => this.queue().length - this.visible().length,
+  );
   private nextId = 1;
 
   private show(message: string, type: ToastType): number {
@@ -2245,10 +3073,18 @@ export class ToastQueueService {
     this.queue.update((q) => [...q, { id, message, type }]);
     return id;
   }
-  success(message: string) { return this.show(message, "success"); }
-  error(message: string) { return this.show(message, "error"); }
-  info(message: string) { return this.show(message, "info"); }
-  dismiss(id: number): void { this.queue.update((q) => q.filter((t) => t.id !== id)); }
+  success(message: string) {
+    return this.show(message, "success");
+  }
+  error(message: string) {
+    return this.show(message, "error");
+  }
+  info(message: string) {
+    return this.show(message, "info");
+  }
+  dismiss(id: number): void {
+    this.queue.update((q) => q.filter((t) => t.id !== id));
+  }
 }
 ~~~
 
@@ -2261,13 +3097,24 @@ export class PausableTimer {
   private handle: ReturnType<typeof setTimeout> | null = null;
   private startedAt = 0;
   private left: number;
-  constructor(private readonly callback: () => void, delay: number) { this.left = delay; }
-  get remaining(): number { return this.left; }
+  constructor(
+    private readonly callback: () => void,
+    delay: number,
+  ) {
+    this.left = delay;
+  }
+  get remaining(): number {
+    return this.left;
+  }
 
   resume(): void {
     if (this.handle !== null || this.left <= 0) return;
     this.startedAt = Date.now();
-    this.handle = setTimeout(() => { this.handle = null; this.left = 0; this.callback(); }, this.left);
+    this.handle = setTimeout(() => {
+      this.handle = null;
+      this.left = 0;
+      this.callback();
+    }, this.left);
   }
   pause(): void {
     if (this.handle === null) return;
@@ -2275,7 +3122,10 @@ export class PausableTimer {
     this.handle = null;
     this.left = Math.max(0, this.left - (Date.now() - this.startedAt));
   }
-  clear(): void { if (this.handle !== null) clearTimeout(this.handle); this.handle = null; }
+  clear(): void {
+    if (this.handle !== null) clearTimeout(this.handle);
+    this.handle = null;
+  }
 }
 ~~~
 
@@ -2296,27 +3146,51 @@ export class QueuedToastComponent implements OnInit, OnDestroy {
   private timer!: PausableTimer;
 
   @HostBinding("attr.data-testid") readonly testId = "toast";
-  @HostBinding("class") get hostClass() { return "toast toast-" + this.toast.type; }
-  @HostBinding("attr.role") get role() { return this.toast.type === "error" ? "alert" : "status"; }
-  @HostBinding("attr.data-paused") get pausedAttr() { return String(this.paused()); }
+  @HostBinding("class") get hostClass() {
+    return "toast toast-" + this.toast.type;
+  }
+  @HostBinding("attr.role") get role() {
+    return this.toast.type === "error" ? "alert" : "status";
+  }
+  @HostBinding("attr.data-paused") get pausedAttr() {
+    return String(this.paused());
+  }
 
   ngOnInit(): void {
-    this.timer = new PausableTimer(() => this.dismiss.emit(), this.duration);
+    this.timer = new PausableTimer(
+      () => this.dismiss.emit(),
+      this.duration,
+    );
     this.remaining.set(this.duration);
     this.timer.resume(); // starts when it becomes visible
   }
-  ngOnDestroy(): void { this.timer.clear(); }
+  ngOnDestroy(): void {
+    this.timer.clear();
+  }
 
-  @HostListener("mouseenter") onEnter() { this.hovered.set(true); this.sync(); }
-  @HostListener("mouseleave") onLeave() { this.hovered.set(false); this.sync(); }
-  @HostListener("focusin") onFocusIn() { this.focused.set(true); this.sync(); }
+  @HostListener("mouseenter") onEnter() {
+    this.hovered.set(true);
+    this.sync();
+  }
+  @HostListener("mouseleave") onLeave() {
+    this.hovered.set(false);
+    this.sync();
+  }
+  @HostListener("focusin") onFocusIn() {
+    this.focused.set(true);
+    this.sync();
+  }
   @HostListener("focusout", ["$event"]) onFocusOut(event: FocusEvent) {
     const host = event.currentTarget as HTMLElement;
-    if (!host.contains(event.relatedTarget as Node | null)) { this.focused.set(false); this.sync(); }
+    if (!host.contains(event.relatedTarget as Node | null)) {
+      this.focused.set(false);
+      this.sync();
+    }
   }
 
   private sync(): void {
-    if (this.paused()) this.timer.pause(); else this.timer.resume();
+    if (this.paused()) this.timer.pause();
+    else this.timer.resume();
     this.remaining.set(this.timer.remaining);
   }
 }
@@ -2329,12 +3203,24 @@ The template binds the bar with \`[style.animation-duration.ms]="duration"\` and
 ### Step 4: the stack
 
 ~~~html
-<section class="toast-stack" data-testid="toast-viewport" aria-label="Notifications" aria-live="polite">
+<section
+  class="toast-stack"
+  data-testid="toast-viewport"
+  aria-label="Notifications"
+  aria-live="polite"
+>
   @for (t of queue.visible(); track t.id) {
-    <app-queued-toast [toast]="t" [duration]="duration" (dismiss)="queue.dismiss(t.id)" />
+    <app-queued-toast
+      [toast]="t"
+      [duration]="duration"
+      (dismiss)="queue.dismiss(t.id)"
+    />
   }
   @if (queue.waiting() > 0) {
-    <p class="toast-more" data-testid="queue-count">+{{ queue.waiting() }} more</p>
+    <p
+      class="toast-more"
+      data-testid="queue-count"
+    >+{{ queue.waiting() }} more</p>
   }
 </section>
 ~~~
@@ -2345,7 +3231,7 @@ The template binds the bar with \`[style.animation-duration.ms]="duration"\` and
 
 The shared driver (Burst of 5, hover Notification 1 at about 1 s, un-hover at 3.5 s, then close and focus) printed this in the AOT build:
 
-~~~
+~~~text
 t=0 burst of 5         ["Notification 1","Notification 2","Notification 3"] | queued: +2 more
 t=1.0 hover #1         ["Notification 1 (paused)","Notification 2","Notification 3"] | queued: +2 more
 remaining on #1 after pausing: 2013 ms | between 1900 and 2050: true
@@ -2453,8 +3339,18 @@ The JIT run printed the same lines except the remaining time (2007 ms; it varies
 ---
 **Conclusion:** In Angular the queue is a root service with one signal and two computed views, and each toast component owns a guarded \`PausableTimer\` driven by host listeners for hover and focus. Both the AOT and JIT runs on Angular 22.2.3 match React and Vue: queued toasts get their full time once visible, and a hovered toast closes about two seconds after the pointer leaves because it resumes with the time it had left.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, OnDestroy, OnInit, inject } from "@angular/core";
-import { DURATION, MAX_VISIBLE, ToastQueueService } from "./toast-queue.service";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  inject,
+} from "@angular/core";
+import {
+  DURATION,
+  MAX_VISIBLE,
+  ToastQueueService,
+} from "./toast-queue.service";
 import { QueuedToastComponent } from "./queued-toast.component";
 
 @Component({
@@ -2462,27 +3358,45 @@ import { QueuedToastComponent } from "./queued-toast.component";
   standalone: true,
   imports: [QueuedToastComponent],
   template: \`
-    <section class="toast-stack" data-testid="toast-viewport" aria-label="Notifications" aria-live="polite">
+    <section
+      class="toast-stack"
+      data-testid="toast-viewport"
+      aria-label="Notifications"
+      aria-live="polite"
+    >
       @for (t of queue.visible(); track t.id) {
-        <app-queued-toast [toast]="t" [duration]="duration" (dismiss)="queue.dismiss(t.id)" />
+        <app-queued-toast
+          [toast]="t"
+          [duration]="duration"
+          (dismiss)="queue.dismiss(t.id)"
+        />
       }
       @if (queue.waiting() > 0) {
-        <p class="toast-more" data-testid="queue-count">+{{ queue.waiting() }} more</p>
+        <p
+          class="toast-more"
+          data-testid="queue-count"
+        >+{{ queue.waiting() }} more</p>
       }
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .toast-stack { position: fixed; right: 16px; bottom: 16px; left: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; z-index: 1000; font-family: system-ui, sans-serif; }
     .toast-more { pointer-events: auto; margin: 0; padding: 4px 10px; border-radius: 999px; background: #262b38; color: #a9b0bc; font-size: 0.85rem; }
-  \`],
+  \`,
+  ],
 })
 export class ToastStackComponent implements OnInit, OnDestroy {
   readonly queue = inject(ToastQueueService);
   readonly duration = DURATION;
   private readonly host = inject(ElementRef<HTMLElement>);
   // Same hand-rolled portal as a plain toast system: live under <body>.
-  ngOnInit(): void { document.body.appendChild(this.host.nativeElement); }
-  ngOnDestroy(): void { this.host.nativeElement.remove(); }
+  ngOnInit(): void {
+    document.body.appendChild(this.host.nativeElement);
+  }
+  ngOnDestroy(): void {
+    this.host.nativeElement.remove();
+  }
 }
 
 @Component({
@@ -2497,29 +3411,41 @@ export class ToastStackComponent implements OnInit, OnDestroy {
         Hover or focus a toast to pause its timer.
       </p>
       <div class="buttons">
-        <button data-testid="btn-success" (click)="toast.success('Saved item ' + next())">Success</button>
-        <button data-testid="btn-error" (click)="toast.error('Sync failed ' + next())">Error</button>
+        <button
+          data-testid="btn-success"
+          (click)="toast.success('Saved item ' + next())"
+        >Success</button>
+        <button
+          data-testid="btn-error"
+          (click)="toast.error('Sync failed ' + next())"
+        >Error</button>
         <button data-testid="btn-burst" (click)="burst()">Burst of 5</button>
       </div>
     </main>
     <app-toast-stack />
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
     .demo { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 8px; }
     p { color: #a9b0bc; }
     .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
     button { padding: 8px 14px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly toast = inject(ToastQueueService);
   readonly max = MAX_VISIBLE;
   readonly seconds = DURATION / 1000;
   private count = 0;
-  next(): number { return ++this.count; }
-  burst(): void { for (let i = 0; i < 5; i++) this.toast.info("Notification " + this.next()); }
+  next(): number {
+    return ++this.count;
+  }
+  burst(): void {
+    for (let i = 0; i < 5; i++) this.toast.info("Notification " + this.next());
+  }
 }
 `,
           "/src/app/pausable-timer.ts": `// A setTimeout you can pause and resume. It remembers how much time is left,
@@ -2529,16 +3455,25 @@ export class PausableTimer {
   private startedAt = 0;
   private left: number;
 
-  constructor(private readonly callback: () => void, delay: number) {
+  constructor(
+    private readonly callback: () => void,
+    delay: number,
+  ) {
     this.left = delay;
   }
 
-  get remaining(): number { return this.left; }
+  get remaining(): number {
+    return this.left;
+  }
 
   resume(): void {
     if (this.handle !== null || this.left <= 0) return;
     this.startedAt = Date.now();
-    this.handle = setTimeout(() => { this.handle = null; this.left = 0; this.callback(); }, this.left);
+    this.handle = setTimeout(() => {
+      this.handle = null;
+      this.left = 0;
+      this.callback();
+    }, this.left);
   }
 
   pause(): void {
@@ -2554,7 +3489,18 @@ export class PausableTimer {
   }
 }
 `,
-          "/src/app/queued-toast.component.ts": `import { Component, EventEmitter, HostBinding, HostListener, Input, OnDestroy, OnInit, Output, computed, signal } from "@angular/core";
+          "/src/app/queued-toast.component.ts": `import {
+  Component,
+  EventEmitter,
+  HostBinding,
+  HostListener,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 import { PausableTimer } from "./pausable-timer";
 import { QueuedToastData } from "./toast-queue.service";
 
@@ -2563,7 +3509,12 @@ import { QueuedToastData } from "./toast-queue.service";
   standalone: true,
   template: \`
     <p class="toast-message">{{ toast.message }}</p>
-    <button type="button" class="toast-close" aria-label="Dismiss notification" (click)="dismiss.emit()">×</button>
+    <button
+      type="button"
+      class="toast-close"
+      aria-label="Dismiss notification"
+      (click)="dismiss.emit()"
+    >×</button>
     <div
       class="toast-progress"
       aria-hidden="true"
@@ -2571,7 +3522,8 @@ import { QueuedToastData } from "./toast-queue.service";
       [style.animation-play-state]="paused() ? 'paused' : 'running'"
     ></div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { pointer-events: auto; position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; width: 100%; max-width: 340px; box-sizing: border-box; padding: 12px 12px 14px; border-radius: 10px; background: #1b1f2a; border: 1px solid #333a48; color: #e6e6e6; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); animation: toast-in 180ms ease-out; }
     :host(.toast-error) { border-color: #ef5350; }
     .toast-message { flex: 1; margin: 0; }
@@ -2583,7 +3535,8 @@ import { QueuedToastData } from "./toast-queue.service";
     @keyframes toast-progress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
     @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
-  \`],
+  \`,
+  ],
 })
 export class QueuedToastComponent implements OnInit, OnDestroy {
   @Input({ required: true }) toast!: QueuedToastData;
@@ -2598,10 +3551,18 @@ export class QueuedToastComponent implements OnInit, OnDestroy {
 
   // The host element is the toast itself, so its attributes are host bindings.
   @HostBinding("attr.data-testid") readonly testId = "toast";
-  @HostBinding("class") get hostClass() { return "toast toast-" + this.toast.type; }
-  @HostBinding("attr.role") get role() { return this.toast.type === "error" ? "alert" : "status"; }
-  @HostBinding("attr.data-paused") get pausedAttr() { return String(this.paused()); }
-  @HostBinding("attr.data-remaining") get remainingAttr() { return this.remaining(); }
+  @HostBinding("class") get hostClass() {
+    return "toast toast-" + this.toast.type;
+  }
+  @HostBinding("attr.role") get role() {
+    return this.toast.type === "error" ? "alert" : "status";
+  }
+  @HostBinding("attr.data-paused") get pausedAttr() {
+    return String(this.paused());
+  }
+  @HostBinding("attr.data-remaining") get remainingAttr() {
+    return this.remaining();
+  }
 
   // The timer starts when this toast becomes visible, not when it was queued.
   ngOnInit(): void {
@@ -2609,14 +3570,28 @@ export class QueuedToastComponent implements OnInit, OnDestroy {
     this.remaining.set(this.duration);
     this.timer.resume();
   }
-  ngOnDestroy(): void { this.timer.clear(); }
+  ngOnDestroy(): void {
+    this.timer.clear();
+  }
 
-  @HostListener("mouseenter") onEnter() { this.hovered.set(true); this.sync(); }
-  @HostListener("mouseleave") onLeave() { this.hovered.set(false); this.sync(); }
-  @HostListener("focusin") onFocusIn() { this.focused.set(true); this.sync(); }
+  @HostListener("mouseenter") onEnter() {
+    this.hovered.set(true);
+    this.sync();
+  }
+  @HostListener("mouseleave") onLeave() {
+    this.hovered.set(false);
+    this.sync();
+  }
+  @HostListener("focusin") onFocusIn() {
+    this.focused.set(true);
+    this.sync();
+  }
   @HostListener("focusout", ["$event"]) onFocusOut(event: FocusEvent) {
     const host = event.currentTarget as HTMLElement;
-    if (!host.contains(event.relatedTarget as Node | null)) { this.focused.set(false); this.sync(); }
+    if (!host.contains(event.relatedTarget as Node | null)) {
+      this.focused.set(false);
+      this.sync();
+    }
   }
 
   private sync(): void {
@@ -2629,7 +3604,11 @@ export class QueuedToastComponent implements OnInit, OnDestroy {
           "/src/app/toast-queue.service.ts": `import { Injectable, computed, signal } from "@angular/core";
 
 export type ToastType = "success" | "error" | "info";
-export interface QueuedToastData { id: number; message: string; type: ToastType; }
+export interface QueuedToastData {
+  id: number;
+  message: string;
+  type: ToastType;
+}
 
 export const MAX_VISIBLE = 3;
 export const DURATION = 3000;
@@ -2640,7 +3619,9 @@ export const DURATION = 3000;
 export class ToastQueueService {
   private readonly queue = signal<QueuedToastData[]>([]);
   readonly visible = computed(() => this.queue().slice(0, MAX_VISIBLE));
-  readonly waiting = computed(() => this.queue().length - this.visible().length);
+  readonly waiting = computed(
+    () => this.queue().length - this.visible().length,
+  );
   private nextId = 1;
 
   private show(message: string, type: ToastType): number {
@@ -2649,9 +3630,15 @@ export class ToastQueueService {
     return id;
   }
 
-  success(message: string) { return this.show(message, "success"); }
-  error(message: string) { return this.show(message, "error"); }
-  info(message: string) { return this.show(message, "info"); }
+  success(message: string) {
+    return this.show(message, "success");
+  }
+  error(message: string) {
+    return this.show(message, "error");
+  }
+  info(message: string) {
+    return this.show(message, "info");
+  }
 
   dismiss(id: number): void {
     this.queue.update((q) => q.filter((t) => t.id !== id));
@@ -2762,17 +3749,22 @@ Everything right of the inputs is derived during render with \`useMemo\`; the on
 📌 **Interview term: Fuzzy matching** — matching when the query letters appear in the text **in order but not necessarily next to each other** (a subsequence). "gs" matches "**G**o to **S**ettings". Ranking then decides which of the matches is best.
 
 ~~~js
-const isWordStart = (text, i) => i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
+const isWordStart = (text, i) =>
+  i === 0 ||
+  text[i - 1] === " " ||
+  text[i - 1] === "-" ||
+  text[i - 1] === "/";
 
 function scoreIndices(text, indices) {
   let score = 0;
   indices.forEach((i, k) => {
-    score += 1;                                   // every matched letter
-    if (isWordStart(text, i)) score += 8;         // start of a word
+    score += 1; // every matched letter
+    if (isWordStart(text, i)) score += 8; // start of a word
     if (k > 0) {
       const gap = i - indices[k - 1] - 1;
-      if (gap === 0) score += 5;                  // consecutive letters
-      else score -= Math.min(gap, 4);             // letters far apart
+      if (gap === 0)
+        score += 5; // consecutive letters
+      else score -= Math.min(gap, 4); // letters far apart
     }
   });
   return score;
@@ -2783,7 +3775,11 @@ export function fuzzyMatch(query, text) {
   if (!q) return { score: 0, indices: [] };
   const t = text.toLowerCase();
   let best = null;
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -2792,7 +3788,8 @@ export function fuzzyMatch(query, text) {
       indices.push(found);
       from = found + 1;
     }
-    if (indices.length < q.length) break;         // a later start cannot match either
+    // a later start cannot match either
+    if (indices.length < q.length) break;
     const score = scoreIndices(text, indices);
     if (!best || score > best.score) best = { score, indices };
   }
@@ -2808,7 +3805,7 @@ How it works: try every position of the first query letter, match the remaining 
 
 Running the matcher directly with node on this registry printed (score in \`=\`, matched letters in angle brackets):
 
-~~~
+~~~text
 set    Go to Settings=21 [Go to <Set>tings]
 gs     Go to Settings=14 [<G>o to <S>ettings] | Go to Dashboard=6 [<G>o to Da<s>hboard] | Go to Team members=6 [<G>o to Team member<s>]
 tm     Toggle dark mode=14 [<T>oggle dark <m>ode] | Invite teammate=8 [Invite <t>ea<m>mate] | Go to Team members=8 [Go to <T>ea<m> members]
@@ -2823,10 +3820,19 @@ Two word-start hits beat scattered letters ("gs": Settings 14, Dashboard 6), and
 ### Step 2: sections and one flat list
 
 ~~~jsx
-const sections = useMemo(() => buildSections(commands, recentIds, query), [commands, recentIds, query]);
+const sections = useMemo(
+  () => buildSections(commands, recentIds, query),
+  [commands, recentIds, query],
+);
 const flat = useMemo(
-  () => sections.flatMap((s) => s.items.map((item) => ({ ...item, optionId: "opt-" + s.name + "-" + item.command.id }))),
-  [sections]
+  () =>
+    sections.flatMap((s) =>
+      s.items.map((item) => ({
+        ...item,
+        optionId: "opt-" + s.name + "-" + item.command.id,
+      })),
+    ),
+  [sections],
 );
 const current = flat[Math.min(active, flat.length - 1)];
 ~~~
@@ -2838,11 +3844,20 @@ const current = flat[Math.min(active, flat.length - 1)];
 ~~~jsx
 function onKeyDown(e) {
   const n = flat.length;
-  if (e.key === "ArrowDown" && n) { e.preventDefault(); setActive((i) => (i + 1) % n); }
-  else if (e.key === "ArrowUp" && n) { e.preventDefault(); setActive((i) => (i - 1 + n) % n); }
-  else if (e.key === "Enter" && current) { e.preventDefault(); onRun(current.command); }
-  else if (e.key === "Escape") { e.preventDefault(); onClose(); }
-  else if (e.key === "Tab") e.preventDefault(); // the input is the only stop: focus stays trapped
+  if (e.key === "ArrowDown" && n) {
+    e.preventDefault();
+    setActive((i) => (i + 1) % n);
+  } else if (e.key === "ArrowUp" && n) {
+    e.preventDefault();
+    setActive((i) => (i - 1 + n) % n);
+  } else if (e.key === "Enter" && current) {
+    e.preventDefault();
+    onRun(current.command);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    onClose();
+    // the input is the only stop: focus stays trapped
+  } else if (e.key === "Tab") e.preventDefault();
 }
 ~~~
 
@@ -2851,9 +3866,20 @@ function onKeyDown(e) {
 📌 **Interview term: aria-activedescendant** — an attribute on the focused element (the input) that names the id of the "virtually focused" option. Focus never leaves the input, so the user can keep typing, yet a screen reader announces the active option. This is the combobox pattern from the WAI-ARIA Authoring Practices.
 
 ~~~jsx
-<input ref={inputRef} role="combobox" aria-expanded="true" aria-controls="palette-listbox"
-       aria-autocomplete="list" aria-activedescendant={current ? current.optionId : undefined}
-       value={query} onChange={(e) => { setQuery(e.target.value); setActive(0); }} onKeyDown={onKeyDown} />
+<input
+  ref={inputRef}
+  role="combobox"
+  aria-expanded="true"
+  aria-controls="palette-listbox"
+  aria-autocomplete="list"
+  aria-activedescendant={current ? current.optionId : undefined}
+  value={query}
+  onChange={(e) => {
+    setQuery(e.target.value);
+    setActive(0);
+  }}
+  onKeyDown={onKeyDown}
+/>
 <div id="palette-listbox" role="listbox" aria-label="Commands">
   {/* role="group" per section, role="option" + aria-selected per item, <mark> for matched letters */}
 </div>
@@ -2881,7 +3907,13 @@ useEffect(() => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
       setOpen((o) => !o);
-    } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+    } else if (
+      e.key === "/" &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !isTypingTarget(e.target)
+    ) {
       e.preventDefault();
       setOpen(true);
     }
@@ -2900,12 +3932,21 @@ With cmdk the same palette is mostly markup; scoring, filtering and ARIA come bu
 ~~~jsx
 import { Command } from "cmdk";
 
-<Command.Dialog open={open} onOpenChange={setOpen} label="Command palette">
+<Command.Dialog
+  open={open}
+  onOpenChange={setOpen}
+  label="Command palette"
+>
   <Command.Input placeholder="Type a command or search" />
   <Command.List>
     <Command.Empty>No results.</Command.Empty>
     <Command.Group heading="Navigation">
-      <Command.Item onSelect={() => go("Settings")} keywords={["preferences"]}>Go to Settings</Command.Item>
+      <Command.Item
+        onSelect={() => go("Settings")}
+        keywords={["preferences"]}
+      >
+        Go to Settings
+      </Command.Item>
     </Command.Group>
   </Command.List>
 </Command.Dialog>
@@ -2919,7 +3960,7 @@ The backdrop is a fixed, semi-transparent layer with the panel 12vh from the top
 
 Booted with \`<StrictMode>\` on React 19.3.1 in jsdom, driven by the shared driver. Options print with \`>\` for the active one and matched letters in square brackets:
 
-~~~
+~~~text
 start: Dashboard | Theme: dark | Last action: none yet
 Ctrl+K -> open: true | focus: palette-input | groups: Navigation:4, Actions:5, Help:3
 first options: > Go to Dashboard | Go to Settings | Go to Billing
@@ -3047,7 +4088,12 @@ Every requirement shows up: Ctrl+K and Cmd+K both open it with focus in the inpu
           "/App.js": `import { useCallback, useEffect, useMemo, useState } from "react";
 import CommandPalette from "./src/CommandPalette";
 
-const isTypingTarget = (el) => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+const isTypingTarget = (el) =>
+  el &&
+  (el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.tagName === "SELECT" ||
+    el.isContentEditable);
 
 export default function App() {
   const [open, setOpen] = useState(false);
@@ -3058,20 +4104,94 @@ export default function App() {
 
   // The registry: plain data plus a perform() callback per command.
   const commands = useMemo(() => {
-    const go = (name) => () => { setPage(name); setLastAction("Opened " + name); };
+    const go = (name) => () => {
+      setPage(name);
+      setLastAction("Opened " + name);
+    };
     return [
-      { id: "dashboard", group: "Navigation", label: "Go to Dashboard", shortcut: "G D", perform: go("Dashboard") },
-      { id: "settings", group: "Navigation", label: "Go to Settings", shortcut: "G S", perform: go("Settings") },
-      { id: "billing", group: "Navigation", label: "Go to Billing", perform: go("Billing") },
-      { id: "team", group: "Navigation", label: "Go to Team members", perform: go("Team members") },
-      { id: "project", group: "Actions", label: "Create new project", keywords: ["add"], perform: () => setLastAction("Created a project") },
-      { id: "invite", group: "Actions", label: "Invite teammate", keywords: ["add user"], perform: () => setLastAction("Invite sent") },
-      { id: "theme", group: "Actions", label: "Toggle dark mode", keywords: ["theme"], shortcut: "Ctrl T", perform: () => { setDark((d) => !d); setLastAction("Toggled theme"); } },
-      { id: "copy", group: "Actions", label: "Copy current URL", keywords: ["link", "share"], perform: () => setLastAction("Copied URL") },
-      { id: "logout", group: "Actions", label: "Log out", keywords: ["sign out", "exit"], perform: () => setLastAction("Logged out") },
-      { id: "docs", group: "Help", label: "Open documentation", perform: () => setLastAction("Opened docs") },
-      { id: "keys", group: "Help", label: "Keyboard shortcuts", perform: () => setLastAction("Showed shortcuts") },
-      { id: "support", group: "Help", label: "Contact support", perform: () => setLastAction("Opened support") },
+      {
+        id: "dashboard",
+        group: "Navigation",
+        label: "Go to Dashboard",
+        shortcut: "G D",
+        perform: go("Dashboard"),
+      },
+      {
+        id: "settings",
+        group: "Navigation",
+        label: "Go to Settings",
+        shortcut: "G S",
+        perform: go("Settings"),
+      },
+      {
+        id: "billing",
+        group: "Navigation",
+        label: "Go to Billing",
+        perform: go("Billing"),
+      },
+      {
+        id: "team",
+        group: "Navigation",
+        label: "Go to Team members",
+        perform: go("Team members"),
+      },
+      {
+        id: "project",
+        group: "Actions",
+        label: "Create new project",
+        keywords: ["add"],
+        perform: () => setLastAction("Created a project"),
+      },
+      {
+        id: "invite",
+        group: "Actions",
+        label: "Invite teammate",
+        keywords: ["add user"],
+        perform: () => setLastAction("Invite sent"),
+      },
+      {
+        id: "theme",
+        group: "Actions",
+        label: "Toggle dark mode",
+        keywords: ["theme"],
+        shortcut: "Ctrl T",
+        perform: () => {
+          setDark((d) => !d);
+          setLastAction("Toggled theme");
+        },
+      },
+      {
+        id: "copy",
+        group: "Actions",
+        label: "Copy current URL",
+        keywords: ["link", "share"],
+        perform: () => setLastAction("Copied URL"),
+      },
+      {
+        id: "logout",
+        group: "Actions",
+        label: "Log out",
+        keywords: ["sign out", "exit"],
+        perform: () => setLastAction("Logged out"),
+      },
+      {
+        id: "docs",
+        group: "Help",
+        label: "Open documentation",
+        perform: () => setLastAction("Opened docs"),
+      },
+      {
+        id: "keys",
+        group: "Help",
+        label: "Keyboard shortcuts",
+        perform: () => setLastAction("Showed shortcuts"),
+      },
+      {
+        id: "support",
+        group: "Help",
+        label: "Contact support",
+        perform: () => setLastAction("Opened support"),
+      },
     ];
   }, []);
 
@@ -3081,7 +4201,13 @@ export default function App() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((o) => !o);
-      } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+      } else if (
+        e.key === "/" &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !isTypingTarget(e.target)
+      ) {
         e.preventDefault();
         setOpen(true);
       }
@@ -3092,7 +4218,9 @@ export default function App() {
 
   const run = useCallback((command) => {
     setOpen(false);
-    setRecentIds((ids) => [command.id, ...ids.filter((id) => id !== command.id)].slice(0, 3));
+    setRecentIds((ids) =>
+      [command.id, ...ids.filter((id) => id !== command.id)].slice(0, 3),
+    );
     command.perform();
   }, []);
   const close = useCallback(() => setOpen(false), []);
@@ -3101,19 +4229,32 @@ export default function App() {
     <div className={"app " + (dark ? "dark" : "light")} data-testid="app">
       <header className="topbar">
         <strong>Acme</strong>
-        <button className="trigger" data-testid="open-palette" onClick={() => setOpen(true)}>
+        <button
+          className="trigger"
+          data-testid="open-palette"
+          onClick={() => setOpen(true)}
+        >
           Search commands <kbd>Ctrl K</kbd>
         </button>
       </header>
       <main className="content">
         <h1 data-testid="page">{page}</h1>
-        <p data-testid="status">Theme: {dark ? "dark" : "light"} | Last action: {lastAction}</p>
+        <p data-testid="status">
+          Theme: {dark ? "dark" : "light"} | Last action: {lastAction}
+        </p>
         <label className="note">
           Quick note (typing / here does not open the palette)
           <input data-testid="note" placeholder="Try typing /" />
         </label>
       </main>
-      {open && <CommandPalette commands={commands} recentIds={recentIds} onRun={run} onClose={close} />}
+      {open && (
+        <CommandPalette
+          commands={commands}
+          recentIds={recentIds}
+          onRun={run}
+          onClose={close}
+        />
+      )}
     </div>
   );
 }
@@ -3130,32 +4271,59 @@ function buildSections(commands, recentIds, query) {
   if (!query.trim()) {
     const byId = new Map(commands.map((c) => [c.id, c]));
     const recent = recentIds.map((id) => byId.get(id)).filter(Boolean);
-    const sections = recent.length ? [{ name: "Recent", items: recent.map((command) => ({ command, indices: [] })) }] : [];
+    const sections = recent.length
+      ? [
+          {
+            name: "Recent",
+            items: recent.map((command) => ({ command, indices: [] })),
+          },
+        ]
+      : [];
     for (const name of GROUPS) {
-      sections.push({ name, items: commands.filter((c) => c.group === name).map((command) => ({ command, indices: [] })) });
+      sections.push({
+        name,
+        items: commands
+          .filter((c) => c.group === name)
+          .map((command) => ({ command, indices: [] })),
+      });
     }
     return sections;
   }
   const sections = [];
   for (const hit of searchCommands(commands, query)) {
     let section = sections.find((s) => s.name === hit.command.group);
-    if (!section) sections.push((section = { name: hit.command.group, items: [] }));
+    if (!section)
+      sections.push((section = { name: hit.command.group, items: [] }));
     section.items.push(hit);
   }
   return sections;
 }
 
-export default function CommandPalette({ commands, recentIds, onRun, onClose }) {
+export default function CommandPalette({
+  commands,
+  recentIds,
+  onRun,
+  onClose,
+}) {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);
 
-  const sections = useMemo(() => buildSections(commands, recentIds, query), [commands, recentIds, query]);
+  const sections = useMemo(
+    () => buildSections(commands, recentIds, query),
+    [commands, recentIds, query],
+  );
   // One flat list drives the arrow keys; each entry knows its DOM id.
   const flat = useMemo(
-    () => sections.flatMap((s) => s.items.map((item) => ({ ...item, optionId: "opt-" + s.name + "-" + item.command.id }))),
-    [sections]
+    () =>
+      sections.flatMap((s) =>
+        s.items.map((item) => ({
+          ...item,
+          optionId: "opt-" + s.name + "-" + item.command.id,
+        })),
+      ),
+    [sections],
   );
   const current = flat[Math.min(active, flat.length - 1)];
 
@@ -3175,16 +4343,34 @@ export default function CommandPalette({ commands, recentIds, onRun, onClose }) 
 
   function onKeyDown(e) {
     const n = flat.length;
-    if (e.key === "ArrowDown" && n) { e.preventDefault(); setActive((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp" && n) { e.preventDefault(); setActive((i) => (i - 1 + n) % n); }
-    else if (e.key === "Enter" && current) { e.preventDefault(); onRun(current.command); }
-    else if (e.key === "Escape") { e.preventDefault(); onClose(); }
-    else if (e.key === "Tab") e.preventDefault(); // the input is the only stop: focus stays trapped
+    if (e.key === "ArrowDown" && n) {
+      e.preventDefault();
+      setActive((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp" && n) {
+      e.preventDefault();
+      setActive((i) => (i - 1 + n) % n);
+    } else if (e.key === "Enter" && current) {
+      e.preventDefault();
+      onRun(current.command);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      // the input is the only stop: focus stays trapped
+    } else if (e.key === "Tab") e.preventDefault();
   }
 
   return createPortal(
-    <div className="palette-backdrop" data-testid="palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div
+      className="palette-backdrop"
+      data-testid="palette-backdrop"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+      >
         <input
           ref={inputRef}
           className="palette-input"
@@ -3196,13 +4382,32 @@ export default function CommandPalette({ commands, recentIds, onRun, onClose }) 
           aria-activedescendant={current ? current.optionId : undefined}
           placeholder="Type a command or search"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setActive(0); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActive(0);
+          }}
           onKeyDown={onKeyDown}
         />
-        <div ref={listRef} id="palette-listbox" role="listbox" aria-label="Commands" className="palette-list">
+        <div
+          ref={listRef}
+          id="palette-listbox"
+          role="listbox"
+          aria-label="Commands"
+          className="palette-list"
+        >
           {sections.map((section) => (
-            <div key={section.name} role="group" aria-labelledby={"grp-" + section.name}>
-              <div id={"grp-" + section.name} className="palette-group" role="presentation">{section.name}</div>
+            <div
+              key={section.name}
+              role="group"
+              aria-labelledby={"grp-" + section.name}
+            >
+              <div
+                id={"grp-" + section.name}
+                className="palette-group"
+                role="presentation"
+              >
+                {section.name}
+              </div>
               {section.items.map((item) => {
                 const optionId = "opt-" + section.name + "-" + item.command.id;
                 const selected = current && current.optionId === optionId;
@@ -3213,34 +4418,46 @@ export default function CommandPalette({ commands, recentIds, onRun, onClose }) 
                     role="option"
                     aria-selected={selected}
                     className={"palette-option" + (selected ? " active" : "")}
-                    onMouseMove={() => setActive(flat.findIndex((f) => f.optionId === optionId))}
+                    onMouseMove={() =>
+                      setActive(flat.findIndex((f) => f.optionId === optionId))
+                    }
                     onClick={() => onRun(item.command)}
                   >
                     <span className="palette-label">
-                      {highlight(item.command.label, item.indices).map((part, i) =>
-                        part.match ? <mark key={i}>{part.text}</mark> : <span key={i}>{part.text}</span>
+                      {highlight(item.command.label, item.indices).map(
+                        (part, i) =>
+                          part.match ? (
+                            <mark key={i}>{part.text}</mark>
+                          ) : (
+                            <span key={i}>{part.text}</span>
+                          ),
                       )}
                     </span>
-                    {item.command.shortcut && <kbd>{item.command.shortcut}</kbd>}
+                    {item.command.shortcut && (
+                      <kbd>{item.command.shortcut}</kbd>
+                    )}
                   </div>
                 );
               })}
             </div>
           ))}
           {flat.length === 0 && (
-            <p className="palette-empty" data-testid="palette-empty">No results for "{query}"</p>
+            <p className="palette-empty" data-testid="palette-empty">
+              No results for "{query}"
+            </p>
           )}
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 `,
           "/src/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
 // order (a subsequence). Among the possible placements we keep the best score.
 
-const isWordStart = (text, i) => i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
+const isWordStart = (text, i) =>
+  i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
 
 function scoreIndices(text, indices) {
   let score = 0;
@@ -3249,7 +4466,8 @@ function scoreIndices(text, indices) {
     if (isWordStart(text, i)) score += 8; // "gs" hitting Go + Settings
     if (k > 0) {
       const gap = i - indices[k - 1] - 1;
-      if (gap === 0) score += 5; // consecutive letters, "set" in Settings
+      if (gap === 0)
+        score += 5; // consecutive letters, "set" in Settings
       else score -= Math.min(gap, 4); // letters scattered far apart
     }
   });
@@ -3263,7 +4481,11 @@ export function fuzzyMatch(query, text) {
   const t = text.toLowerCase();
   let best = null;
   // Try each place the first letter occurs, then match the rest greedily.
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -3296,10 +4518,14 @@ export function searchCommands(commands, query) {
       const k = fuzzyMatch(query, word);
       if (k && (!best || k.score > best.score)) best = k;
     }
-    if (best && best.score - 3 > 0) results.push({ command, score: best.score - 3, indices: [] });
+    if (best && best.score - 3 > 0)
+      results.push({ command, score: best.score - 3, indices: [] });
   }
   // Array sort is stable, so equal scores keep their original order.
-  return results.sort((a, b) => b.score - a.score || a.command.label.length - b.command.label.length);
+  return results.sort(
+    (a, b) =>
+      b.score - a.score || a.command.label.length - b.command.label.length,
+  );
 }
 
 /** Splits a label into plain and matched runs for highlighting. */
@@ -3315,25 +4541,134 @@ export function highlight(text, indices) {
   return parts;
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; }
-.app { min-height: 100vh; }
-.app.dark { background: #0f1117; color: #e6e6e6; }
-.app.light { background: #f6f7f9; color: #1b1f2a; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #333a48; }
-.trigger { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid #333a48; background: transparent; color: inherit; cursor: pointer; }
-kbd { font: 0.75rem ui-monospace, monospace; padding: 1px 6px; border-radius: 4px; border: 1px solid #4a5163; color: #a9b0bc; }
-.content { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.note { display: grid; gap: 6px; margin-top: 16px; font-size: 0.9rem; color: #a9b0bc; }
-.note input { padding: 8px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: #e6e6e6; }
-.palette-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; z-index: 1000; }
-.palette { width: 100%; max-width: 560px; background: #1b1f2a; color: #e6e6e6; border: 1px solid #333a48; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
-.palette-input { width: 100%; box-sizing: border-box; padding: 14px 16px; font-size: 1rem; border: 0; border-bottom: 1px solid #333a48; background: transparent; color: inherit; outline: none; }
-.palette-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
-.palette-group { padding: 8px 10px 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d8596; }
-.palette-option { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
-.palette-option.active { background: #2a3142; }
-.palette-option mark { background: transparent; color: #8ab4ff; font-weight: 700; }
-.palette-empty { padding: 16px; margin: 0; color: #a9b0bc; text-align: center; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  min-height: 100vh;
+}
+.app.dark {
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.app.light {
+  background: #f6f7f9;
+  color: #1b1f2a;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333a48;
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+kbd {
+  font:
+    0.75rem ui-monospace,
+    monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #4a5163;
+  color: #a9b0bc;
+}
+.content {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.note {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #a9b0bc;
+}
+.note input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: #e6e6e6;
+}
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  z-index: 1000;
+}
+.palette {
+  width: 100%;
+  max-width: 560px;
+  background: #1b1f2a;
+  color: #e6e6e6;
+  border: 1px solid #333a48;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.palette-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  font-size: 1rem;
+  border: 0;
+  border-bottom: 1px solid #333a48;
+  background: transparent;
+  color: inherit;
+  outline: none;
+}
+.palette-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 6px;
+}
+.palette-group {
+  padding: 8px 10px 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d8596;
+}
+.palette-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.palette-option.active {
+  background: #2a3142;
+}
+.palette-option mark {
+  background: transparent;
+  color: #8ab4ff;
+  font-weight: 700;
+}
+.palette-empty {
+  padding: 16px;
+  margin: 0;
+  color: #a9b0bc;
+  text-align: center;
+}
 `,
         },
       },
@@ -3374,7 +4709,11 @@ export function fuzzyMatch(query, text) {
   if (!q) return { score: 0, indices: [] };
   const t = text.toLowerCase();
   let best = null;
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -3405,16 +4744,29 @@ const sections = computed(() => {
   const list = [];
   for (const hit of searchCommands(props.commands, query.value)) {
     let section = list.find((s) => s.name === hit.command.group);
-    if (!section) list.push((section = { name: hit.command.group, items: [] }));
+    if (!section)
+      list.push((section = { name: hit.command.group, items: [] }));
     section.items.push(hit);
   }
   return list;
 });
-const optionId = (sectionName, command) => "opt-" + sectionName + "-" + command.id;
-const flat = computed(() => sections.value.flatMap((s) => s.items.map((item) => ({ ...item, id: optionId(s.name, item.command) }))));
-const current = computed(() => flat.value[Math.min(active.value, flat.value.length - 1)]);
+const optionId = (sectionName, command) =>
+  "opt-" + sectionName + "-" + command.id;
+const flat = computed(() =>
+  sections.value.flatMap((s) =>
+    s.items.map((item) => ({
+      ...item,
+      id: optionId(s.name, item.command),
+    })),
+  ),
+);
+const current = computed(
+  () => flat.value[Math.min(active.value, flat.value.length - 1)],
+);
 
-watch(query, () => { active.value = 0; });
+watch(query, () => {
+  active.value = 0;
+});
 ~~~
 
 📌 **Interview term: computed vs watch** — \`computed\` derives a value; \`watch\` runs a side effect when something changes. Sections are a value (computed); resetting \`active\` when the query changes is an effect (watch). More in [computed vs watch](/interview-question/what-is-the-difference-between-computed-and-watch).
@@ -3429,8 +4781,17 @@ The arrow keys walk the flat list; groups are only a rendering detail. Recent co
        :aria-activedescendant="current ? current.id : undefined"
        @keydown="onKeydown" />
 <div id="palette-listbox" role="listbox" aria-label="Commands">
-  <div v-for="section in sections" :key="section.name" role="group" :aria-labelledby="'grp-' + section.name">
-    <div :id="'grp-' + section.name" class="palette-group" role="presentation">{{ section.name }}</div>
+  <div
+    v-for="section in sections"
+    :key="section.name"
+    role="group"
+    :aria-labelledby="'grp-' + section.name"
+  >
+    <div
+      :id="'grp-' + section.name"
+      class="palette-group"
+      role="presentation"
+    >{{ section.name }}</div>
     <div v-for="item in section.items" :key="optionId(section.name, item.command)"
          :id="optionId(section.name, item.command)" role="option"
          :aria-selected="current?.id === optionId(section.name, item.command)"
@@ -3449,8 +4810,13 @@ Highlighting is rendered with \`<mark>\` elements from data, never with \`v-html
 
 ~~~js
 let previous = null;
-onMounted(() => { previous = document.activeElement; inputEl.value.focus(); });
-onBeforeUnmount(() => { if (previous && previous.focus) previous.focus(); });
+onMounted(() => {
+  previous = document.activeElement;
+  inputEl.value.focus();
+});
+onBeforeUnmount(() => {
+  if (previous && previous.focus) previous.focus();
+});
 ~~~
 
 The whole overlay sits in \`<Teleport to="body">\`, and the backdrop uses \`@mousedown.self="emit('close')"\`: the \`.self\` modifier fires only when the backdrop itself, not the panel inside it, is pressed.
@@ -3464,13 +4830,21 @@ function onKeydown(e) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     open.value = !open.value;
-  } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+  } else if (
+    e.key === "/" &&
+    !e.metaKey &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !isTypingTarget(e.target)
+  ) {
     e.preventDefault();
     open.value = true;
   }
 }
 onMounted(() => document.addEventListener("keydown", onKeydown));
-onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
+onBeforeUnmount(() =>
+  document.removeEventListener("keydown", onKeydown),
+);
 ~~~
 
 \`run(command)\` closes the palette, moves the id to the front of \`recentIds\` (max 3, no duplicates) and calls \`perform()\`.
@@ -3479,7 +4853,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 
 Vue 3.5.44, same driver as React and Angular (\`>\` marks the active option, brackets mark highlighted letters):
 
-~~~
+~~~text
 Ctrl+K -> open: true | focus: palette-input | groups: Navigation:4, Actions:5, Help:3
 "set": > Go to [Set]tings
 "gs": > [G]o to [S]ettings | [G]o to Da[s]hboard | [G]o to Team member[s]
@@ -3602,31 +4976,118 @@ const lastAction = ref("none yet");
 const recentIds = ref([]);
 
 // The registry: plain data plus a perform() callback per command.
-const go = (name) => () => { page.value = name; lastAction.value = "Opened " + name; };
-const say = (text) => () => { lastAction.value = text; };
+const go = (name) => () => {
+  page.value = name;
+  lastAction.value = "Opened " + name;
+};
+const say = (text) => () => {
+  lastAction.value = text;
+};
 const commands = [
-  { id: "dashboard", group: "Navigation", label: "Go to Dashboard", shortcut: "G D", perform: go("Dashboard") },
-  { id: "settings", group: "Navigation", label: "Go to Settings", shortcut: "G S", perform: go("Settings") },
-  { id: "billing", group: "Navigation", label: "Go to Billing", perform: go("Billing") },
-  { id: "team", group: "Navigation", label: "Go to Team members", perform: go("Team members") },
-  { id: "project", group: "Actions", label: "Create new project", keywords: ["add"], perform: say("Created a project") },
-  { id: "invite", group: "Actions", label: "Invite teammate", keywords: ["add user"], perform: say("Invite sent") },
-  { id: "theme", group: "Actions", label: "Toggle dark mode", keywords: ["theme"], shortcut: "Ctrl T", perform: () => { dark.value = !dark.value; lastAction.value = "Toggled theme"; } },
-  { id: "copy", group: "Actions", label: "Copy current URL", keywords: ["link", "share"], perform: say("Copied URL") },
-  { id: "logout", group: "Actions", label: "Log out", keywords: ["sign out", "exit"], perform: say("Logged out") },
-  { id: "docs", group: "Help", label: "Open documentation", perform: say("Opened docs") },
-  { id: "keys", group: "Help", label: "Keyboard shortcuts", perform: say("Showed shortcuts") },
-  { id: "support", group: "Help", label: "Contact support", perform: say("Opened support") },
+  {
+    id: "dashboard",
+    group: "Navigation",
+    label: "Go to Dashboard",
+    shortcut: "G D",
+    perform: go("Dashboard"),
+  },
+  {
+    id: "settings",
+    group: "Navigation",
+    label: "Go to Settings",
+    shortcut: "G S",
+    perform: go("Settings"),
+  },
+  {
+    id: "billing",
+    group: "Navigation",
+    label: "Go to Billing",
+    perform: go("Billing"),
+  },
+  {
+    id: "team",
+    group: "Navigation",
+    label: "Go to Team members",
+    perform: go("Team members"),
+  },
+  {
+    id: "project",
+    group: "Actions",
+    label: "Create new project",
+    keywords: ["add"],
+    perform: say("Created a project"),
+  },
+  {
+    id: "invite",
+    group: "Actions",
+    label: "Invite teammate",
+    keywords: ["add user"],
+    perform: say("Invite sent"),
+  },
+  {
+    id: "theme",
+    group: "Actions",
+    label: "Toggle dark mode",
+    keywords: ["theme"],
+    shortcut: "Ctrl T",
+    perform: () => {
+      dark.value = !dark.value;
+      lastAction.value = "Toggled theme";
+    },
+  },
+  {
+    id: "copy",
+    group: "Actions",
+    label: "Copy current URL",
+    keywords: ["link", "share"],
+    perform: say("Copied URL"),
+  },
+  {
+    id: "logout",
+    group: "Actions",
+    label: "Log out",
+    keywords: ["sign out", "exit"],
+    perform: say("Logged out"),
+  },
+  {
+    id: "docs",
+    group: "Help",
+    label: "Open documentation",
+    perform: say("Opened docs"),
+  },
+  {
+    id: "keys",
+    group: "Help",
+    label: "Keyboard shortcuts",
+    perform: say("Showed shortcuts"),
+  },
+  {
+    id: "support",
+    group: "Help",
+    label: "Contact support",
+    perform: say("Opened support"),
+  },
 ];
 
-const isTypingTarget = (el) => el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable);
+const isTypingTarget = (el) =>
+  el &&
+  (el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.tagName === "SELECT" ||
+    el.isContentEditable);
 
 // Global hotkeys: Ctrl+K or Cmd+K toggles, "/" opens unless you are typing.
 function onKeydown(e) {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     open.value = !open.value;
-  } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+  } else if (
+    e.key === "/" &&
+    !e.metaKey &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !isTypingTarget(e.target)
+  ) {
     e.preventDefault();
     open.value = true;
   }
@@ -3636,7 +5097,10 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 
 function run(command) {
   open.value = false;
-  recentIds.value = [command.id, ...recentIds.value.filter((id) => id !== command.id)].slice(0, 3);
+  recentIds.value = [
+    command.id,
+    ...recentIds.value.filter((id) => id !== command.id),
+  ].slice(0, 3);
   command.perform();
 }
 </script>
@@ -3645,7 +5109,11 @@ function run(command) {
   <div :class="['app', dark ? 'dark' : 'light']" data-testid="app">
     <header class="topbar">
       <strong>Acme</strong>
-      <button class="trigger" data-testid="open-palette" @click="open = true">Search commands <kbd>Ctrl K</kbd></button>
+      <button
+        class="trigger"
+        data-testid="open-palette"
+        @click="open = true"
+      >Search commands <kbd>Ctrl K</kbd></button>
     </header>
     <main class="content">
       <h1 data-testid="page">{{ page }}</h1>
@@ -3655,25 +5123,90 @@ function run(command) {
         <input data-testid="note" placeholder="Try typing /" />
       </label>
     </main>
-    <CommandPalette v-if="open" :commands="commands" :recent-ids="recentIds" @run="run" @close="open = false" />
+    <CommandPalette
+      v-if="open"
+      :commands="commands"
+      :recent-ids="recentIds"
+      @run="run"
+      @close="open = false"
+    />
   </div>
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; }
-.app { min-height: 100vh; }
-.app.dark { background: #0f1117; color: #e6e6e6; }
-.app.light { background: #f6f7f9; color: #1b1f2a; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #333a48; }
-.trigger { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; border: 1px solid #333a48; background: transparent; color: inherit; cursor: pointer; }
-.trigger kbd { font: 0.75rem ui-monospace, monospace; padding: 1px 6px; border-radius: 4px; border: 1px solid #4a5163; color: #a9b0bc; }
-.content { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.note { display: grid; gap: 6px; margin-top: 16px; font-size: 0.9rem; color: #a9b0bc; }
-.note input { padding: 8px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: #e6e6e6; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  min-height: 100vh;
+}
+.app.dark {
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.app.light {
+  background: #f6f7f9;
+  color: #1b1f2a;
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #333a48;
+}
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.trigger kbd {
+  font:
+    0.75rem ui-monospace,
+    monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #4a5163;
+  color: #a9b0bc;
+}
+.content {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.note {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #a9b0bc;
+}
+.note input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: #e6e6e6;
+}
 </style>
 `,
           "/src/components/CommandPalette.vue": `<script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { highlight, searchCommands } from "../fuzzy";
 
 const props = defineProps({
@@ -3693,9 +5226,21 @@ const sections = computed(() => {
   if (!query.value.trim()) {
     const byId = new Map(props.commands.map((c) => [c.id, c]));
     const recent = props.recentIds.map((id) => byId.get(id)).filter(Boolean);
-    const list = recent.length ? [{ name: "Recent", items: recent.map((command) => ({ command, indices: [] })) }] : [];
+    const list = recent.length
+      ? [
+          {
+            name: "Recent",
+            items: recent.map((command) => ({ command, indices: [] })),
+          },
+        ]
+      : [];
     for (const name of GROUPS) {
-      list.push({ name, items: props.commands.filter((c) => c.group === name).map((command) => ({ command, indices: [] })) });
+      list.push({
+        name,
+        items: props.commands
+          .filter((c) => c.group === name)
+          .map((command) => ({ command, indices: [] })),
+      });
     }
     return list;
   }
@@ -3708,13 +5253,23 @@ const sections = computed(() => {
   return list;
 });
 
-const optionId = (sectionName, command) => "opt-" + sectionName + "-" + command.id;
+const optionId = (sectionName, command) =>
+  "opt-" + sectionName + "-" + command.id;
 // One flat list drives the arrow keys.
-const flat = computed(() => sections.value.flatMap((s) => s.items.map((item) => ({ ...item, id: optionId(s.name, item.command) }))));
-const current = computed(() => flat.value[Math.min(active.value, flat.value.length - 1)]);
+const flat = computed(() =>
+  sections.value.flatMap((s) =>
+    s.items.map((item) => ({ ...item, id: optionId(s.name, item.command) })),
+  ),
+);
+const current = computed(
+  () => flat.value[Math.min(active.value, flat.value.length - 1)],
+);
 
-watch(query, () => { active.value = 0; });
-// Keep the highlighted option in view (scrollIntoView is missing in some test DOMs).
+watch(query, () => {
+  active.value = 0;
+});
+// Keep the highlighted option in view
+// (scrollIntoView is missing in some test DOMs).
 watch(current, async (item) => {
   await nextTick();
   const el = item && document.getElementById(item.id);
@@ -3723,23 +5278,46 @@ watch(current, async (item) => {
 
 // Focus the input on open and give focus back to whoever had it on close.
 let previous = null;
-onMounted(() => { previous = document.activeElement; inputEl.value.focus(); });
-onBeforeUnmount(() => { if (previous && previous.focus) previous.focus(); });
+onMounted(() => {
+  previous = document.activeElement;
+  inputEl.value.focus();
+});
+onBeforeUnmount(() => {
+  if (previous && previous.focus) previous.focus();
+});
 
 function onKeydown(e) {
   const n = flat.value.length;
-  if (e.key === "ArrowDown" && n) { e.preventDefault(); active.value = (active.value + 1) % n; }
-  else if (e.key === "ArrowUp" && n) { e.preventDefault(); active.value = (active.value - 1 + n) % n; }
-  else if (e.key === "Enter" && current.value) { e.preventDefault(); emit("run", current.value.command); }
-  else if (e.key === "Escape") { e.preventDefault(); emit("close"); }
-  else if (e.key === "Tab") e.preventDefault(); // the input is the only stop: focus stays trapped
+  if (e.key === "ArrowDown" && n) {
+    e.preventDefault();
+    active.value = (active.value + 1) % n;
+  } else if (e.key === "ArrowUp" && n) {
+    e.preventDefault();
+    active.value = (active.value - 1 + n) % n;
+  } else if (e.key === "Enter" && current.value) {
+    e.preventDefault();
+    emit("run", current.value.command);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    emit("close");
+    // the input is the only stop: focus stays trapped
+  } else if (e.key === "Tab") e.preventDefault();
 }
 </script>
 
 <template>
   <Teleport to="body">
-    <div class="palette-backdrop" data-testid="palette-backdrop" @mousedown.self="emit('close')">
-      <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div
+      class="palette-backdrop"
+      data-testid="palette-backdrop"
+      @mousedown.self="emit('close')"
+    >
+      <div
+        class="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+      >
         <input
           ref="inputEl"
           v-model="query"
@@ -3753,9 +5331,23 @@ function onKeydown(e) {
           placeholder="Type a command or search"
           @keydown="onKeydown"
         />
-        <div id="palette-listbox" role="listbox" aria-label="Commands" class="palette-list">
-          <div v-for="section in sections" :key="section.name" role="group" :aria-labelledby="'grp-' + section.name">
-            <div :id="'grp-' + section.name" class="palette-group" role="presentation">{{ section.name }}</div>
+        <div
+          id="palette-listbox"
+          role="listbox"
+          aria-label="Commands"
+          class="palette-list"
+        >
+          <div
+            v-for="section in sections"
+            :key="section.name"
+            role="group"
+            :aria-labelledby="'grp-' + section.name"
+          >
+            <div
+              :id="'grp-' + section.name"
+              class="palette-group"
+              role="presentation"
+            >{{ section.name }}</div>
             <div
               v-for="item in section.items"
               :key="optionId(section.name, item.command)"
@@ -3770,7 +5362,11 @@ function onKeydown(e) {
               <kbd v-if="item.command.shortcut">{{ item.command.shortcut }}</kbd>
             </div>
           </div>
-          <p v-if="flat.length === 0" class="palette-empty" data-testid="palette-empty">No results for "{{ query }}"</p>
+          <p
+            v-if="flat.length === 0"
+            class="palette-empty"
+            data-testid="palette-empty"
+          >No results for "{{ query }}"</p>
         </div>
       </div>
     </div>
@@ -3778,22 +5374,89 @@ function onKeydown(e) {
 </template>
 
 <style>
-.palette-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; z-index: 1000; font-family: system-ui, sans-serif; }
-.palette { width: 100%; max-width: 560px; background: #1b1f2a; color: #e6e6e6; border: 1px solid #333a48; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
-.palette-input { width: 100%; box-sizing: border-box; padding: 14px 16px; font-size: 1rem; border: 0; border-bottom: 1px solid #333a48; background: transparent; color: inherit; outline: none; }
-.palette-list { max-height: 50vh; overflow-y: auto; padding: 6px; }
-.palette-group { padding: 8px 10px 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d8596; }
-.palette-option { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
-.palette-option.active { background: #2a3142; }
-.palette-option mark { background: transparent; color: #8ab4ff; font-weight: 700; }
-.palette-option kbd { font: 0.75rem ui-monospace, monospace; padding: 1px 6px; border-radius: 4px; border: 1px solid #4a5163; color: #a9b0bc; }
-.palette-empty { padding: 16px; margin: 0; color: #a9b0bc; text-align: center; }
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 16px 16px;
+  z-index: 1000;
+  font-family: system-ui, sans-serif;
+}
+.palette {
+  width: 100%;
+  max-width: 560px;
+  background: #1b1f2a;
+  color: #e6e6e6;
+  border: 1px solid #333a48;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.palette-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  font-size: 1rem;
+  border: 0;
+  border-bottom: 1px solid #333a48;
+  background: transparent;
+  color: inherit;
+  outline: none;
+}
+.palette-list {
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 6px;
+}
+.palette-group {
+  padding: 8px 10px 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d8596;
+}
+.palette-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.palette-option.active {
+  background: #2a3142;
+}
+.palette-option mark {
+  background: transparent;
+  color: #8ab4ff;
+  font-weight: 700;
+}
+.palette-option kbd {
+  font:
+    0.75rem ui-monospace,
+    monospace;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid #4a5163;
+  color: #a9b0bc;
+}
+.palette-empty {
+  padding: 16px;
+  margin: 0;
+  color: #a9b0bc;
+  text-align: center;
+}
 </style>
 `,
           "/src/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
 // order (a subsequence). Among the possible placements we keep the best score.
 
-const isWordStart = (text, i) => i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
+const isWordStart = (text, i) =>
+  i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
 
 function scoreIndices(text, indices) {
   let score = 0;
@@ -3802,7 +5465,8 @@ function scoreIndices(text, indices) {
     if (isWordStart(text, i)) score += 8; // "gs" hitting Go + Settings
     if (k > 0) {
       const gap = i - indices[k - 1] - 1;
-      if (gap === 0) score += 5; // consecutive letters, "set" in Settings
+      if (gap === 0)
+        score += 5; // consecutive letters, "set" in Settings
       else score -= Math.min(gap, 4); // letters scattered far apart
     }
   });
@@ -3816,7 +5480,11 @@ export function fuzzyMatch(query, text) {
   const t = text.toLowerCase();
   let best = null;
   // Try each place the first letter occurs, then match the rest greedily.
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -3849,10 +5517,14 @@ export function searchCommands(commands, query) {
       const k = fuzzyMatch(query, word);
       if (k && (!best || k.score > best.score)) best = k;
     }
-    if (best && best.score - 3 > 0) results.push({ command, score: best.score - 3, indices: [] });
+    if (best && best.score - 3 > 0)
+      results.push({ command, score: best.score - 3, indices: [] });
   }
   // Array sort is stable, so equal scores keep their original order.
-  return results.sort((a, b) => b.score - a.score || a.command.label.length - b.command.label.length);
+  return results.sort(
+    (a, b) =>
+      b.score - a.score || a.command.label.length - b.command.label.length,
+  );
 }
 
 /** Splits a label into plain and matched runs for highlighting. */
@@ -3900,14 +5572,25 @@ Ctrl+K or Cmd+K toggles, \`/\` opens outside text fields, grouped results with a
 ### Step 1: a typed matcher
 
 ~~~ts
-export interface Command { id: string; group: string; label: string; keywords?: string[]; shortcut?: string; perform: () => void; }
+export interface Command {
+  id: string;
+  group: string;
+  label: string;
+  keywords?: string[];
+  shortcut?: string;
+  perform: () => void;
+}
 
 export function fuzzyMatch(query: string, text: string): Match | null {
   const q = query.toLowerCase().split(" ").join("");
   if (!q) return { score: 0, indices: [] };
   const t = text.toLowerCase();
   let best: Match | null = null;
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -3933,8 +5616,12 @@ Scoring: +1 per letter, +8 at a word start, +5 for a consecutive letter, minus t
 ~~~ts
 private readonly commandList = signal<Command[]>([]);
 private readonly recent = signal<string[]>([]);
-@Input({ required: true }) set commands(value: Command[]) { this.commandList.set(value); }
-@Input() set recentIds(value: string[]) { this.recent.set(value); }
+@Input({ required: true }) set commands(value: Command[]) {
+  this.commandList.set(value);
+}
+@Input() set recentIds(value: string[]) {
+  this.recent.set(value);
+}
 @Output() run = new EventEmitter<Command>();
 @Output() closed = new EventEmitter<void>();
 @ViewChild("search") private search!: ElementRef<HTMLInputElement>;
@@ -3947,17 +5634,22 @@ An \`@Input\` setter that writes into a private signal gives you the reactivity 
 ~~~ts
 readonly sections = computed<Section[]>(() => {
   const commands = this.commandList();
-  if (!this.query().trim()) { /* Recent + every group */ }
+  if (!this.query().trim()) {
+    /* Recent + every group */
+  }
   const list: Section[] = [];
   for (const hit of searchCommands(commands, this.query())) {
     let section = list.find((s) => s.name === hit.command.group);
-    if (!section) list.push((section = { name: hit.command.group, items: [] }));
+    if (!section)
+      list.push((section = { name: hit.command.group, items: [] }));
     section.items.push(toItem(section.name, hit.command, hit.indices));
   }
   return list;
 });
 readonly flat = computed(() => this.sections().flatMap((s) => s.items));
-readonly current = computed<Item | undefined>(() => this.flat()[Math.min(this.active(), this.flat().length - 1)]);
+readonly current = computed<Item | undefined>(
+  () => this.flat()[Math.min(this.active(), this.flat().length - 1)],
+);
 ~~~
 
 Each item carries its option id (\`"opt-" + section + "-" + id\`) and pre-split highlight \`parts\`, so the template does no work. 📌 **Interview term: computed signal** — a cached, read-only signal derived from others, recalculated only when they change. See [Angular signals](/interview-question/what-are-angular-signals).
@@ -3967,16 +5659,37 @@ An \`effect()\` in the constructor scrolls the current option into view (guarded
 ### Step 4: the template
 
 ~~~html
-<input #search role="combobox" aria-expanded="true" aria-controls="palette-listbox"
-       aria-autocomplete="list" [attr.aria-activedescendant]="current()?.id ?? null"
-       [value]="query()" (input)="onInput($event)" (keydown)="onKeydown($event)" />
+<input
+  #search
+  role="combobox"
+  aria-expanded="true"
+  aria-controls="palette-listbox"
+  aria-autocomplete="list"
+  [attr.aria-activedescendant]="current()?.id ?? null"
+  [value]="query()"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+/>
 <div id="palette-listbox" role="listbox" aria-label="Commands">
   @for (section of sections(); track section.name) {
     <div role="group" [attr.aria-labelledby]="'grp-' + section.name">
       @for (item of section.items; track item.id) {
-        <div [id]="item.id" role="option" [attr.aria-selected]="current()?.id === item.id"
-             (mousemove)="activate(item.id)" (click)="run.emit(item.command)">
-          <span class="palette-label">@for (part of item.parts; track $index) {@if (part.match) {<mark>{{ part.text }}</mark>} @else {<span>{{ part.text }}</span>}}</span>
+        <div
+          [id]="item.id"
+          role="option"
+          [attr.aria-selected]="current()?.id === item.id"
+          (mousemove)="activate(item.id)"
+          (click)="run.emit(item.command)"
+        >
+          <span class="palette-label">
+            @for (part of item.parts; track $index) {
+              @if (part.match) {
+                <mark>{{ part.text }}</mark>
+              } @else {
+                <span>{{ part.text }}</span>
+              }
+            }
+          </span>
         </div>
       }
     </div>
@@ -3995,7 +5708,9 @@ ngAfterViewInit(): void {
   this.previous = document.activeElement as HTMLElement | null;
   this.search.nativeElement.focus();
 }
-ngOnDestroy(): void { this.previous?.focus?.(); }
+ngOnDestroy(): void {
+  this.previous?.focus?.();
+}
 ~~~
 
 The palette lives in \`@if (open()) { <app-command-palette ... /> }\`, so it is created on every open and destroyed on close, and its query resets for free.
@@ -4006,7 +5721,13 @@ onKeydown(e: KeyboardEvent): void {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
     e.preventDefault();
     this.open.update((o) => !o);
-  } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+  } else if (
+    e.key === "/" &&
+    !e.metaKey &&
+    !e.ctrlKey &&
+    !e.altKey &&
+    !isTypingTarget(e.target)
+  ) {
     e.preventDefault();
     this.open.set(true);
   }
@@ -4019,7 +5740,7 @@ onKeydown(e: KeyboardEvent): void {
 
 The AOT build printed (trimmed: start and "click trigger" lines omitted):
 
-~~~
+~~~text
 Ctrl+K -> open: true | focus: palette-input | groups: Navigation:4, Actions:5, Help:3
 "set": > Go to [Set]tings
 "gs": > [G]o to [S]ettings | [G]o to Da[s]hboard | [G]o to Team member[s]
@@ -4137,7 +5858,13 @@ import { Command } from "./fuzzy";
 
 const isTypingTarget = (el: EventTarget | null) => {
   const node = el as HTMLElement | null;
-  return !!node && (node.tagName === "INPUT" || node.tagName === "TEXTAREA" || node.tagName === "SELECT" || node.isContentEditable);
+  return (
+    !!node &&
+    (node.tagName === "INPUT" ||
+      node.tagName === "TEXTAREA" ||
+      node.tagName === "SELECT" ||
+      node.isContentEditable)
+  );
 };
 
 @Component({
@@ -4148,7 +5875,11 @@ const isTypingTarget = (el: EventTarget | null) => {
     <div [class]="'app ' + (dark() ? 'dark' : 'light')" data-testid="app">
       <header class="topbar">
         <strong>Acme</strong>
-        <button class="trigger" data-testid="open-palette" (click)="open.set(true)">Search commands <kbd>Ctrl K</kbd></button>
+        <button
+          class="trigger"
+          data-testid="open-palette"
+          (click)="open.set(true)"
+        >Search commands <kbd>Ctrl K</kbd></button>
       </header>
       <main class="content">
         <h1 data-testid="page">{{ page() }}</h1>
@@ -4159,11 +5890,17 @@ const isTypingTarget = (el: EventTarget | null) => {
         </label>
       </main>
       @if (open()) {
-        <app-command-palette [commands]="commands" [recentIds]="recentIds()" (run)="run($event)" (closed)="open.set(false)" />
+        <app-command-palette
+          [commands]="commands"
+          [recentIds]="recentIds()"
+          (run)="run($event)"
+          (closed)="open.set(false)"
+        />
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; font-family: system-ui, sans-serif; }
     .app { min-height: 100vh; }
     .app.dark { background: #0f1117; color: #e6e6e6; }
@@ -4174,7 +5911,8 @@ const isTypingTarget = (el: EventTarget | null) => {
     .content { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
     .note { display: grid; gap: 6px; margin-top: 16px; font-size: 0.9rem; color: #a9b0bc; }
     .note input { padding: 8px; border-radius: 8px; border: 1px solid #333a48; background: #1b1f2a; color: #e6e6e6; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly open = signal(false);
@@ -4183,23 +5921,97 @@ export class AppComponent {
   readonly lastAction = signal("none yet");
   readonly recentIds = signal<string[]>([]);
 
-  private go = (name: string) => () => { this.page.set(name); this.lastAction.set("Opened " + name); };
+  private go = (name: string) => () => {
+    this.page.set(name);
+    this.lastAction.set("Opened " + name);
+  };
   private say = (text: string) => () => this.lastAction.set(text);
 
   // The registry: plain data plus a perform() callback per command.
   readonly commands: Command[] = [
-    { id: "dashboard", group: "Navigation", label: "Go to Dashboard", shortcut: "G D", perform: this.go("Dashboard") },
-    { id: "settings", group: "Navigation", label: "Go to Settings", shortcut: "G S", perform: this.go("Settings") },
-    { id: "billing", group: "Navigation", label: "Go to Billing", perform: this.go("Billing") },
-    { id: "team", group: "Navigation", label: "Go to Team members", perform: this.go("Team members") },
-    { id: "project", group: "Actions", label: "Create new project", keywords: ["add"], perform: this.say("Created a project") },
-    { id: "invite", group: "Actions", label: "Invite teammate", keywords: ["add user"], perform: this.say("Invite sent") },
-    { id: "theme", group: "Actions", label: "Toggle dark mode", keywords: ["theme"], shortcut: "Ctrl T", perform: () => { this.dark.update((d) => !d); this.lastAction.set("Toggled theme"); } },
-    { id: "copy", group: "Actions", label: "Copy current URL", keywords: ["link", "share"], perform: this.say("Copied URL") },
-    { id: "logout", group: "Actions", label: "Log out", keywords: ["sign out", "exit"], perform: this.say("Logged out") },
-    { id: "docs", group: "Help", label: "Open documentation", perform: this.say("Opened docs") },
-    { id: "keys", group: "Help", label: "Keyboard shortcuts", perform: this.say("Showed shortcuts") },
-    { id: "support", group: "Help", label: "Contact support", perform: this.say("Opened support") },
+    {
+      id: "dashboard",
+      group: "Navigation",
+      label: "Go to Dashboard",
+      shortcut: "G D",
+      perform: this.go("Dashboard"),
+    },
+    {
+      id: "settings",
+      group: "Navigation",
+      label: "Go to Settings",
+      shortcut: "G S",
+      perform: this.go("Settings"),
+    },
+    {
+      id: "billing",
+      group: "Navigation",
+      label: "Go to Billing",
+      perform: this.go("Billing"),
+    },
+    {
+      id: "team",
+      group: "Navigation",
+      label: "Go to Team members",
+      perform: this.go("Team members"),
+    },
+    {
+      id: "project",
+      group: "Actions",
+      label: "Create new project",
+      keywords: ["add"],
+      perform: this.say("Created a project"),
+    },
+    {
+      id: "invite",
+      group: "Actions",
+      label: "Invite teammate",
+      keywords: ["add user"],
+      perform: this.say("Invite sent"),
+    },
+    {
+      id: "theme",
+      group: "Actions",
+      label: "Toggle dark mode",
+      keywords: ["theme"],
+      shortcut: "Ctrl T",
+      perform: () => {
+        this.dark.update((d) => !d);
+        this.lastAction.set("Toggled theme");
+      },
+    },
+    {
+      id: "copy",
+      group: "Actions",
+      label: "Copy current URL",
+      keywords: ["link", "share"],
+      perform: this.say("Copied URL"),
+    },
+    {
+      id: "logout",
+      group: "Actions",
+      label: "Log out",
+      keywords: ["sign out", "exit"],
+      perform: this.say("Logged out"),
+    },
+    {
+      id: "docs",
+      group: "Help",
+      label: "Open documentation",
+      perform: this.say("Opened docs"),
+    },
+    {
+      id: "keys",
+      group: "Help",
+      label: "Keyboard shortcuts",
+      perform: this.say("Showed shortcuts"),
+    },
+    {
+      id: "support",
+      group: "Help",
+      label: "Contact support",
+      perform: this.say("Opened support"),
+    },
   ];
 
   // Global hotkeys: Ctrl+K or Cmd+K toggles, "/" opens unless you are typing.
@@ -4208,7 +6020,13 @@ export class AppComponent {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
       this.open.update((o) => !o);
-    } else if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+    } else if (
+      e.key === "/" &&
+      !e.metaKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !isTypingTarget(e.target)
+    ) {
       e.preventDefault();
       this.open.set(true);
     }
@@ -4216,16 +6034,38 @@ export class AppComponent {
 
   run(command: Command): void {
     this.open.set(false);
-    this.recentIds.update((ids) => [command.id, ...ids.filter((id) => id !== command.id)].slice(0, 3));
+    this.recentIds.update((ids) =>
+      [command.id, ...ids.filter((id) => id !== command.id)].slice(0, 3),
+    );
     command.perform();
   }
 }
 `,
-          "/src/app/command-palette.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild, computed, effect, signal } from "@angular/core";
+          "/src/app/command-palette.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  Output,
+  ViewChild,
+  computed,
+  effect,
+  signal,
+} from "@angular/core";
 import { Command, highlight, searchCommands } from "./fuzzy";
 
-interface Item { command: Command; indices: number[]; id: string; parts: { text: string; match: boolean }[]; }
-interface Section { name: string; items: Item[]; }
+interface Item {
+  command: Command;
+  indices: number[];
+  id: string;
+  parts: { text: string; match: boolean }[];
+}
+interface Section {
+  name: string;
+  items: Item[];
+}
 
 const GROUPS = ["Navigation", "Actions", "Help"];
 
@@ -4233,8 +6073,17 @@ const GROUPS = ["Navigation", "Actions", "Help"];
   selector: "app-command-palette",
   standalone: true,
   template: \`
-    <div class="palette-backdrop" data-testid="palette-backdrop" (mousedown)="onBackdrop($event)">
-      <div class="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div
+      class="palette-backdrop"
+      data-testid="palette-backdrop"
+      (mousedown)="onBackdrop($event)"
+    >
+      <div
+        class="palette"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
+      >
         <input
           #search
           class="palette-input"
@@ -4249,10 +6098,19 @@ const GROUPS = ["Navigation", "Actions", "Help"];
           (input)="onInput($event)"
           (keydown)="onKeydown($event)"
         />
-        <div id="palette-listbox" role="listbox" aria-label="Commands" class="palette-list">
+        <div
+          id="palette-listbox"
+          role="listbox"
+          aria-label="Commands"
+          class="palette-list"
+        >
           @for (section of sections(); track section.name) {
             <div role="group" [attr.aria-labelledby]="'grp-' + section.name">
-              <div [id]="'grp-' + section.name" class="palette-group" role="presentation">{{ section.name }}</div>
+              <div
+                [id]="'grp-' + section.name"
+                class="palette-group"
+                role="presentation"
+              >{{ section.name }}</div>
               @for (item of section.items; track item.id) {
                 <div
                   [id]="item.id"
@@ -4270,13 +6128,17 @@ const GROUPS = ["Navigation", "Actions", "Help"];
             </div>
           }
           @if (flat().length === 0) {
-            <p class="palette-empty" data-testid="palette-empty">No results for "{{ query() }}"</p>
+            <p
+              class="palette-empty"
+              data-testid="palette-empty"
+            >No results for "{{ query() }}"</p>
           }
         </div>
       </div>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .palette-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; z-index: 1000; }
     .palette { width: 100%; max-width: 560px; background: #1b1f2a; color: #e6e6e6; border: 1px solid #333a48; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); overflow: hidden; }
     .palette-input { width: 100%; box-sizing: border-box; padding: 14px 16px; font-size: 1rem; border: 0; border-bottom: 1px solid #333a48; background: transparent; color: inherit; outline: none; }
@@ -4287,14 +6149,19 @@ const GROUPS = ["Navigation", "Actions", "Help"];
     .palette-option mark { background: transparent; color: #8ab4ff; font-weight: 700; }
     kbd { font: 0.75rem ui-monospace, monospace; padding: 1px 6px; border-radius: 4px; border: 1px solid #4a5163; color: #a9b0bc; }
     .palette-empty { padding: 16px; margin: 0; color: #a9b0bc; text-align: center; }
-  \`],
+  \`,
+  ],
 })
 export class CommandPaletteComponent implements AfterViewInit, OnDestroy {
   // Plain @Input setters feed signals, so computed() below can depend on them.
   private readonly commandList = signal<Command[]>([]);
   private readonly recent = signal<string[]>([]);
-  @Input({ required: true }) set commands(value: Command[]) { this.commandList.set(value); }
-  @Input() set recentIds(value: string[]) { this.recent.set(value); }
+  @Input({ required: true }) set commands(value: Command[]) {
+    this.commandList.set(value);
+  }
+  @Input() set recentIds(value: string[]) {
+    this.recent.set(value);
+  }
   @Output() run = new EventEmitter<Command>();
   @Output() closed = new EventEmitter<void>();
   @ViewChild("search") private search!: ElementRef<HTMLInputElement>;
@@ -4306,31 +6173,57 @@ export class CommandPaletteComponent implements AfterViewInit, OnDestroy {
   // Visible sections: Recent + every group for an empty query, otherwise only
   // groups with matches, ordered by their best match.
   readonly sections = computed<Section[]>(() => {
-    const toItem = (name: string, command: Command, indices: number[]): Item => ({
-      command, indices, id: "opt-" + name + "-" + command.id, parts: highlight(command.label, indices),
+    const toItem = (
+      name: string,
+      command: Command,
+      indices: number[],
+    ): Item => ({
+      command,
+      indices,
+      id: "opt-" + name + "-" + command.id,
+      parts: highlight(command.label, indices),
     });
     const commands = this.commandList();
     if (!this.query().trim()) {
       const byId = new Map(commands.map((c) => [c.id, c]));
-      const recent = this.recent().map((id) => byId.get(id)).filter((c): c is Command => !!c);
-      const list: Section[] = recent.length ? [{ name: "Recent", items: recent.map((c) => toItem("Recent", c, [])) }] : [];
-      for (const name of GROUPS) list.push({ name, items: commands.filter((c) => c.group === name).map((c) => toItem(name, c, [])) });
+      const recent = this.recent()
+        .map((id) => byId.get(id))
+        .filter((c): c is Command => !!c);
+      const list: Section[] = recent.length
+        ? [
+            {
+              name: "Recent",
+              items: recent.map((c) => toItem("Recent", c, [])),
+            },
+          ]
+        : [];
+      for (const name of GROUPS)
+        list.push({
+          name,
+          items: commands
+            .filter((c) => c.group === name)
+            .map((c) => toItem(name, c, [])),
+        });
       return list;
     }
     const list: Section[] = [];
     for (const hit of searchCommands(commands, this.query())) {
       let section = list.find((s) => s.name === hit.command.group);
-      if (!section) list.push((section = { name: hit.command.group, items: [] }));
+      if (!section)
+        list.push((section = { name: hit.command.group, items: [] }));
       section.items.push(toItem(section.name, hit.command, hit.indices));
     }
     return list;
   });
   // One flat list drives the arrow keys.
   readonly flat = computed(() => this.sections().flatMap((s) => s.items));
-  readonly current = computed<Item | undefined>(() => this.flat()[Math.min(this.active(), this.flat().length - 1)]);
+  readonly current = computed<Item | undefined>(
+    () => this.flat()[Math.min(this.active(), this.flat().length - 1)],
+  );
 
   constructor() {
-    // Keep the highlighted option in view (scrollIntoView is missing in some test DOMs).
+    // Keep the highlighted option in view
+    // (scrollIntoView is missing in some test DOMs).
     effect(() => {
       const item = this.current();
       const el = item && document.getElementById(item.id);
@@ -4343,23 +6236,38 @@ export class CommandPaletteComponent implements AfterViewInit, OnDestroy {
     this.previous = document.activeElement as HTMLElement | null;
     this.search.nativeElement.focus();
   }
-  ngOnDestroy(): void { this.previous?.focus?.(); }
+  ngOnDestroy(): void {
+    this.previous?.focus?.();
+  }
 
   onInput(event: Event): void {
     this.query.set((event.target as HTMLInputElement).value);
     this.active.set(0);
   }
-  activate(id: string): void { this.active.set(this.flat().findIndex((f) => f.id === id)); }
-  onBackdrop(event: MouseEvent): void { if (event.target === event.currentTarget) this.closed.emit(); }
+  activate(id: string): void {
+    this.active.set(this.flat().findIndex((f) => f.id === id));
+  }
+  onBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closed.emit();
+  }
 
   onKeydown(e: KeyboardEvent): void {
     const n = this.flat().length;
     const current = this.current();
-    if (e.key === "ArrowDown" && n) { e.preventDefault(); this.active.update((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp" && n) { e.preventDefault(); this.active.update((i) => (i - 1 + n) % n); }
-    else if (e.key === "Enter" && current) { e.preventDefault(); this.run.emit(current.command); }
-    else if (e.key === "Escape") { e.preventDefault(); this.closed.emit(); }
-    else if (e.key === "Tab") e.preventDefault(); // the input is the only stop: focus stays trapped
+    if (e.key === "ArrowDown" && n) {
+      e.preventDefault();
+      this.active.update((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp" && n) {
+      e.preventDefault();
+      this.active.update((i) => (i - 1 + n) % n);
+    } else if (e.key === "Enter" && current) {
+      e.preventDefault();
+      this.run.emit(current.command);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      this.closed.emit();
+      // the input is the only stop: focus stays trapped
+    } else if (e.key === "Tab") e.preventDefault();
   }
 }
 `,
@@ -4374,10 +6282,16 @@ export interface Command {
   shortcut?: string;
   perform: () => void;
 }
-export interface Match { score: number; indices: number[]; }
-export interface Hit extends Match { command: Command; }
+export interface Match {
+  score: number;
+  indices: number[];
+}
+export interface Hit extends Match {
+  command: Command;
+}
 
-const isWordStart = (text: string, i: number) => i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
+const isWordStart = (text: string, i: number) =>
+  i === 0 || text[i - 1] === " " || text[i - 1] === "-" || text[i - 1] === "/";
 
 function scoreIndices(text: string, indices: number[]): number {
   let score = 0;
@@ -4386,7 +6300,8 @@ function scoreIndices(text: string, indices: number[]): number {
     if (isWordStart(text, i)) score += 8; // "gs" hitting Go + Settings
     if (k > 0) {
       const gap = i - indices[k - 1] - 1;
-      if (gap === 0) score += 5; // consecutive letters, "set" in Settings
+      if (gap === 0)
+        score += 5; // consecutive letters, "set" in Settings
       else score -= Math.min(gap, 4); // letters scattered far apart
     }
   });
@@ -4400,7 +6315,11 @@ export function fuzzyMatch(query: string, text: string): Match | null {
   const t = text.toLowerCase();
   let best: Match | null = null;
   // Try each place the first letter occurs, then match the rest greedily.
-  for (let start = t.indexOf(q[0]); start !== -1; start = t.indexOf(q[0], start + 1)) {
+  for (
+    let start = t.indexOf(q[0]);
+    start !== -1;
+    start = t.indexOf(q[0], start + 1)
+  ) {
     const indices = [start];
     let from = start + 1;
     for (let k = 1; k < q.length; k++) {
@@ -4433,14 +6352,21 @@ export function searchCommands(commands: Command[], query: string): Hit[] {
       const k = fuzzyMatch(query, word);
       if (k && (!best || k.score > best.score)) best = k;
     }
-    if (best && best.score - 3 > 0) results.push({ command, score: best.score - 3, indices: [] });
+    if (best && best.score - 3 > 0)
+      results.push({ command, score: best.score - 3, indices: [] });
   }
   // Array sort is stable, so equal scores keep their original order.
-  return results.sort((a, b) => b.score - a.score || a.command.label.length - b.command.label.length);
+  return results.sort(
+    (a, b) =>
+      b.score - a.score || a.command.label.length - b.command.label.length,
+  );
 }
 
 /** Splits a label into plain and matched runs for highlighting. */
-export function highlight(text: string, indices: number[]): { text: string; match: boolean }[] {
+export function highlight(
+  text: string,
+  indices: number[],
+): { text: string; match: boolean }[] {
   const set = new Set(indices);
   const parts: { text: string; match: boolean }[] = [];
   for (let i = 0; i < text.length; i++) {
@@ -4568,8 +6494,10 @@ export function findMentionQuery(text, caret) {
     const ch = text[i];
     if (ch === "@") {
       const before = i === 0 ? " " : text[i - 1];
-      if (before === " " || before === "\\n" || before === "(") return { start: i, query: text.slice(i + 1, caret) };
-      return null; // an email address like ada@example.com is not a mention
+      if (before === " " || before === "\\n" || before === "(")
+        return { start: i, query: text.slice(i + 1, caret) };
+      // an email address like ada@example.com is not a mention
+      return null;
     }
     if (!HANDLE_CHAR.test(ch)) return null;
     i--;
@@ -4580,7 +6508,7 @@ export function findMentionQuery(text, caret) {
 
 Walk backwards from the caret: handle characters are fine, an \`@\` with a valid character before it starts a token, anything else (a space, a comma) means "not in a mention". The 20-character cap stops a long word from being scanned on every keystroke. These helpers are plain functions, so they were run directly with node first:
 
-~~~
+~~~text
 "Hi @al" 6 {"start":3,"query":"al"}
 "@" 1 {"start":0,"query":""}
 "mail ada@example.com" 20 null
@@ -4596,7 +6524,14 @@ Walk backwards from the caret: handle characters are fine, an \`@\` with a valid
 export function filterUsers(users, query) {
   const q = query.toLowerCase();
   const byHandle = users.filter((u) => u.handle.startsWith(q));
-  const byName = users.filter((u) => !byHandle.includes(u) && u.name.toLowerCase().split(" ").some((w) => w.startsWith(q)));
+  const byName = users.filter(
+    (u) =>
+      !byHandle.includes(u) &&
+      u.name
+        .toLowerCase()
+        .split(" ")
+        .some((w) => w.startsWith(q)),
+  );
   return [...byHandle, ...byName].slice(0, 5);
 }
 
@@ -4604,7 +6539,11 @@ export function insertMention(text, start, caret, handle) {
   const before = text.slice(0, start);
   const after = text.slice(caret);
   const token = "@" + handle + (after.startsWith(" ") ? "" : " ");
-  return { text: before + token + after, caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0) };
+  return {
+    text: before + token + after,
+    caret:
+      before.length + token.length + (after.startsWith(" ") ? 1 : 0),
+  };
 }
 ~~~
 
@@ -4617,7 +6556,8 @@ export function insertMention(text, start, caret, handle) {
 ~~~jsx
 const token = findMentionQuery(value, caret);
 const matches = token ? filterUsers(users, token.query) : [];
-const open = !!token && token.start !== dismissedAt && matches.length > 0;
+const open =
+  !!token && token.start !== dismissedAt && matches.length > 0;
 const current = matches[Math.min(active, matches.length - 1)];
 ~~~
 
@@ -4626,11 +6566,24 @@ const current = matches[Math.min(active, matches.length - 1)];
 The caret is synced on \`onChange\` (typing), \`onKeyUp\` (arrow keys move it), \`onClick\` and \`onSelect\`:
 
 ~~~jsx
-<textarea ref={ref} value={value}
-  onChange={(e) => { onChange(e.target.value); setCaret(e.target.selectionStart); setActive(0); }}
-  onKeyDown={onKeyDown} onKeyUp={sync} onClick={sync} onSelect={sync}
-  aria-autocomplete="list" aria-controls="mention-list"
-  aria-activedescendant={open && current ? "mention-" + current.handle : undefined} />
+<textarea
+  ref={ref}
+  value={value}
+  onChange={(e) => {
+    onChange(e.target.value);
+    setCaret(e.target.selectionStart);
+    setActive(0);
+  }}
+  onKeyDown={onKeyDown}
+  onKeyUp={sync}
+  onClick={sync}
+  onSelect={sync}
+  aria-autocomplete="list"
+  aria-controls="mention-list"
+  aria-activedescendant={
+    open && current ? "mention-" + current.handle : undefined
+  }
+/>
 ~~~
 
 ### Step 3: keyboard, only while open
@@ -4639,10 +6592,19 @@ The caret is synced on \`onChange\` (typing), \`onKeyUp\` (arrow keys move it), 
 function onKeyDown(e) {
   if (!open) return;
   const n = matches.length;
-  if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % n); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + n) % n); }
-  else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); choose(current); }
-  else if (e.key === "Escape") { e.preventDefault(); setDismissedAt(token.start); }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    setActive((i) => (i + 1) % n);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    setActive((i) => (i - 1 + n) % n);
+  } else if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    choose(current);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    setDismissedAt(token.start);
+  }
 }
 ~~~
 
@@ -4661,7 +6623,10 @@ function choose(user) {
 
 useLayoutEffect(() => {
   if (pendingCaret.current === null) return;
-  ref.current.setSelectionRange(pendingCaret.current, pendingCaret.current);
+  ref.current.setSelectionRange(
+    pendingCaret.current,
+    pendingCaret.current,
+  );
   pendingCaret.current = null;
 });
 ~~~
@@ -4678,7 +6643,8 @@ Mouse selection uses \`onMouseDown={(e) => { e.preventDefault(); choose(u); }}\`
 export function getCaretCoordinates(textarea, position) {
   const div = document.createElement("div");
   const style = getComputedStyle(textarea);
-  for (const prop of MIRRORED) div.style[prop] = style[prop]; // font, padding, border, width, line-height...
+  // font, padding, border, width, line-height...
+  for (const prop of MIRRORED) div.style[prop] = style[prop];
   div.style.position = "absolute";
   div.style.visibility = "hidden";
   div.style.whiteSpace = "pre-wrap";
@@ -4688,9 +6654,13 @@ export function getCaretCoordinates(textarea, position) {
   marker.textContent = textarea.value.slice(position) || ".";
   div.appendChild(marker);
   document.body.appendChild(div);
-  const top = marker.offsetTop + px(style.borderTopWidth) - textarea.scrollTop;
-  const left = marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
-  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20; // "normal" is not a number
+  const top =
+    marker.offsetTop + px(style.borderTopWidth) - textarea.scrollTop;
+  const left =
+    marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
+  const lineHeight =
+    // "normal" is not a number
+    px(style.lineHeight) || px(style.fontSize) * 1.2 || 20;
   document.body.removeChild(div);
   return { top, left, height: lineHeight };
 }
@@ -4708,7 +6678,7 @@ The textarea wrapper is \`position: relative\`, so the menu coordinates are rela
 
 **In jsdom (logic and keyboard).** Mounted with \`<StrictMode>\` on React 19.3.1 and driven by the shared driver; \`>\` marks the active option:
 
-~~~
+~~~text
 typed "Hi @al"             menu: > Alan Turing @alan | Alana Rivera @alana
 aria-activedescendant: mention-alan | status: 2 people found, use up and down arrows to choose
 ArrowDown                  menu: Alan Turing @alan | > Alana Rivera @alana
@@ -4735,7 +6705,7 @@ The caret numbers are what \`selectionStart\` reported after the layout effect, 
 
 **In real Chromium 141 (positioning).** The same React app was bundled with esbuild, opened in headless Chromium via playwright-core and typed into with real key presses. For each open menu, the expected left edge was computed independently with a canvas \`measureText\` of the text before the \`@\` on that line, plus the textarea padding and border:
 
-~~~
+~~~text
 "Hello @a"               {"top":41,"left":56,"lineHeight":"24px","expectedLeft":56.1}
 line 2: ...line @g       {"top":65,"left":104,"lineHeight":"24px","expectedLeft":104.3}
 line 4: @t               {"top":113,"left":13,"lineHeight":"24px","expectedLeft":13}
@@ -4869,12 +6839,19 @@ export default function App() {
 }
 `,
           "/src/MentionsTextarea.js": `import { useLayoutEffect, useRef, useState } from "react";
-import { extractMentions, filterUsers, findMentionQuery, getCaretCoordinates, insertMention } from "./mentions";
+import {
+  extractMentions,
+  filterUsers,
+  findMentionQuery,
+  getCaretCoordinates,
+  insertMention,
+} from "./mentions";
 
 export default function MentionsTextarea({ users, value, onChange }) {
   const [caret, setCaret] = useState(0);
   const [active, setActive] = useState(0);
-  const [dismissedAt, setDismissedAt] = useState(-1); // token start closed with Escape
+  // token start closed with Escape
+  const [dismissedAt, setDismissedAt] = useState(-1);
   const [coords, setCoords] = useState({ top: 0, left: 0, height: 20 });
   const ref = useRef(null);
   const pendingCaret = useRef(null);
@@ -4912,10 +6889,19 @@ export default function MentionsTextarea({ users, value, onChange }) {
   function onKeyDown(e) {
     if (!open) return;
     const n = matches.length;
-    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + n) % n); }
-    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); choose(current); }
-    else if (e.key === "Escape") { e.preventDefault(); setDismissedAt(token.start); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActive((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActive((i) => (i - 1 + n) % n);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      choose(current);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setDismissedAt(token.start);
+    }
   }
 
   const mentioned = extractMentions(value, users);
@@ -4929,11 +6915,17 @@ export default function MentionsTextarea({ users, value, onChange }) {
           aria-label="Message"
           aria-autocomplete="list"
           aria-controls="mention-list"
-          aria-activedescendant={open && current ? "mention-" + current.handle : undefined}
+          aria-activedescendant={
+            open && current ? "mention-" + current.handle : undefined
+          }
           rows={5}
           value={value}
           placeholder="Type @ to mention someone"
-          onChange={(e) => { onChange(e.target.value); setCaret(e.target.selectionStart); setActive(0); }}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setCaret(e.target.selectionStart);
+            setActive(0);
+          }}
           onKeyDown={onKeyDown}
           onKeyUp={sync}
           onClick={sync}
@@ -4955,19 +6947,28 @@ export default function MentionsTextarea({ users, value, onChange }) {
                 role="option"
                 aria-selected={u === current}
                 className={u === current ? "active" : ""}
-                onMouseDown={(e) => { e.preventDefault(); choose(u); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(u);
+                }}
               >
-                <span className="mention-name">{u.name}</span> <span className="mention-handle">@{u.handle}</span>
+                <span className="mention-name">{u.name}</span>{" "}
+                <span className="mention-handle">@{u.handle}</span>
               </li>
             ))}
           </ul>
         )}
       </div>
       <p className="sr-only" aria-live="polite" data-testid="mention-status">
-        {open ? matches.length + " people found, use up and down arrows to choose" : ""}
+        {open
+          ? matches.length + " people found, use up and down arrows to choose"
+          : ""}
       </p>
       <p className="mentioned" data-testid="mentioned">
-        Mentioned: {mentioned.length ? mentioned.map((u) => u.name).join(", ") : "nobody yet"}
+        Mentioned:{" "}
+        {mentioned.length
+          ? mentioned.map((u) => u.name).join(", ")
+          : "nobody yet"}
       </p>
     </div>
   );
@@ -4989,7 +6990,8 @@ export function findMentionQuery(text, caret) {
     const ch = text[i];
     if (ch === "@") {
       const before = i === 0 ? " " : text[i - 1];
-      if (before === " " || before === "\\n" || before === "(") return { start: i, query: text.slice(i + 1, caret) };
+      if (before === " " || before === "\\n" || before === "(")
+        return { start: i, query: text.slice(i + 1, caret) };
       return null; // an email address like ada@example.com is not a mention
     }
     if (!HANDLE_CHAR.test(ch)) return null;
@@ -5003,7 +7005,12 @@ export function filterUsers(users, query) {
   const q = query.toLowerCase();
   const byHandle = users.filter((u) => u.handle.startsWith(q));
   const byName = users.filter(
-    (u) => !byHandle.includes(u) && u.name.toLowerCase().split(" ").some((w) => w.startsWith(q))
+    (u) =>
+      !byHandle.includes(u) &&
+      u.name
+        .toLowerCase()
+        .split(" ")
+        .some((w) => w.startsWith(q)),
   );
   return [...byHandle, ...byName].slice(0, 5);
 }
@@ -5016,7 +7023,10 @@ export function insertMention(text, start, caret, handle) {
   const before = text.slice(0, start);
   const after = text.slice(caret);
   const token = "@" + handle + (after.startsWith(" ") ? "" : " ");
-  return { text: before + token + after, caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0) };
+  return {
+    text: before + token + after,
+    caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0),
+  };
 }
 
 /** The users actually mentioned in the text, in order, without repeats. */
@@ -5025,7 +7035,8 @@ export function extractMentions(text, users) {
   const re = /(^|[\\s(])@([a-z0-9_.]+)/gi;
   let m;
   while ((m = re.exec(text))) {
-    const handle = m[2].toLowerCase().replace(/[.]+$/, ""); // "@alan." at the end of a sentence
+    // "@alan." at the end of a sentence
+    const handle = m[2].toLowerCase().replace(/[.]+$/, "");
     const user = users.find((u) => u.handle === handle);
     if (user && !found.includes(user)) found.push(user);
   }
@@ -5034,10 +7045,30 @@ export function extractMentions(text, users) {
 
 // Styles that change where text wraps, so the mirror must copy them.
 const MIRRORED = [
-  "boxSizing", "width", "height", "overflowX", "overflowY", "borderTopWidth", "borderRightWidth",
-  "borderBottomWidth", "borderLeftWidth", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
-  "fontStyle", "fontVariant", "fontWeight", "fontSize", "lineHeight", "fontFamily", "letterSpacing",
-  "textTransform", "textIndent", "wordSpacing", "tabSize",
+  "boxSizing",
+  "width",
+  "height",
+  "overflowX",
+  "overflowY",
+  "borderTopWidth",
+  "borderRightWidth",
+  "borderBottomWidth",
+  "borderLeftWidth",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "fontStyle",
+  "fontVariant",
+  "fontWeight",
+  "fontSize",
+  "lineHeight",
+  "fontFamily",
+  "letterSpacing",
+  "textTransform",
+  "textIndent",
+  "wordSpacing",
+  "tabSize",
 ];
 
 /**
@@ -5060,24 +7091,87 @@ export function getCaretCoordinates(textarea, position) {
   div.appendChild(marker);
   document.body.appendChild(div);
   const top = marker.offsetTop + px(style.borderTopWidth) - textarea.scrollTop;
-  const left = marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
-  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20; // "normal" is not a number
+  const left =
+    marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
+  // "normal" is not a number
+  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20;
   document.body.removeChild(div);
   return { top, left, height: lineHeight };
 }
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.page h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.mentions-field { position: relative; }
-.mentions textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 1rem/1.5 system-ui, sans-serif; resize: vertical; }
-.mentions textarea:focus { outline: 2px solid #5b8def; outline-offset: 1px; }
-.mention-menu { position: absolute; z-index: 10; margin: 0; padding: 4px; list-style: none; min-width: 220px; max-width: calc(100% - 16px); background: #1b1f2a; border: 1px solid #333a48; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-.mention-menu li { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.mention-menu li.active { background: #2a3142; }
-.mention-handle { color: #8ab4ff; font-size: 0.85rem; }
-.mentioned, .count { color: #a9b0bc; font-size: 0.9rem; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.page h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.mentions-field {
+  position: relative;
+}
+.mentions textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+  resize: vertical;
+}
+.mentions textarea:focus {
+  outline: 2px solid #5b8def;
+  outline-offset: 1px;
+}
+.mention-menu {
+  position: absolute;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  min-width: 220px;
+  max-width: calc(100% - 16px);
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.mention-menu li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mention-menu li.active {
+  background: #2a3142;
+}
+.mention-handle {
+  color: #8ab4ff;
+  font-size: 0.85rem;
+}
+.mentioned,
+.count {
+  color: #a9b0bc;
+  font-size: 0.9rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -5113,7 +7207,7 @@ Detect \`@query\` at the caret (not inside emails), filter by handle then name, 
 
 \`findMentionQuery(text, caret)\` walks backwards from the caret over handle characters; an \`@\` at the start or after a space, newline or \`(\` starts a token, anything else returns \`null\`. \`filterUsers\` ranks handle-prefix matches before name-word matches and keeps 5. \`insertMention(text, start, caret, handle)\` returns \`{ text, caret }\` with the text after the caret preserved and a following space reused. node printed, for example:
 
-~~~
+~~~text
 "mail ada@example.com" 20 null
 "Hi @al there" 6 {"start":3,"query":"al"}
 {"text":"Hi @alana there","caret":10}
@@ -5130,9 +7224,18 @@ const active = ref(0);
 const dismissedAt = ref(-1);
 
 const token = computed(() => findMentionQuery(text.value, caret.value));
-const matches = computed(() => (token.value ? filterUsers(props.users, token.value.query) : []));
-const open = computed(() => !!token.value && token.value.start !== dismissedAt.value && matches.value.length > 0);
-const current = computed(() => matches.value[Math.min(active.value, matches.value.length - 1)]);
+const matches = computed(() =>
+  token.value ? filterUsers(props.users, token.value.query) : [],
+);
+const open = computed(
+  () =>
+    !!token.value &&
+    token.value.start !== dismissedAt.value &&
+    matches.value.length > 0,
+);
+const current = computed(
+  () => matches.value[Math.min(active.value, matches.value.length - 1)],
+);
 ~~~
 
 The textarea binds \`:value="text"\` with an \`@input\` handler (instead of \`v-model\`) because the handler also needs \`selectionStart\`:
@@ -5143,7 +7246,9 @@ function onInput(e) {
   caret.value = e.target.selectionStart;
   active.value = 0;
 }
-function sync(e) { caret.value = e.target.selectionStart; } // @keyup, @click, @select
+function sync(e) {
+  caret.value = e.target.selectionStart;
+} // @keyup, @click, @select
 ~~~
 
 \`dismissedAt\` stores the start of the token closed with Escape, so typing more letters keeps it closed but a new \`@\` opens again.
@@ -5152,10 +7257,16 @@ function sync(e) { caret.value = e.target.selectionStart; } // @keyup, @click, @
 
 ~~~js
 async function choose(user) {
-  const next = insertMention(text.value, token.value.start, caret.value, user.handle);
+  const next = insertMention(
+    text.value,
+    token.value.start,
+    caret.value,
+    user.handle,
+  );
   text.value = next.text;
   caret.value = next.caret;
-  await nextTick();             // Vue has now written the new value into the textarea
+  // Vue has now written the new value into the textarea
+  await nextTick();
   el.value.focus();
   el.value.setSelectionRange(next.caret, next.caret);
 }
@@ -5174,7 +7285,7 @@ watch(
     if (start < 0) return;
     await nextTick();
     coords.value = getCaretCoordinates(el.value, start);
-  }
+  },
 );
 ~~~
 
@@ -5186,7 +7297,7 @@ Watching a getter that returns the token start (or -1) means the measurement run
 
 Vue 3.5.44, shared driver (\`>\` marks the active option):
 
-~~~
+~~~text
 typed "Hi @al"             menu: > Alan Turing @alan | Alana Rivera @alana
 aria-activedescendant: mention-alan | status: 2 people found, use up and down arrows to choose
 ArrowDown                  menu: Alan Turing @alan | > Alana Rivera @alana
@@ -5328,15 +7439,36 @@ const text = ref("");
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-.page h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.count { color: #a9b0bc; font-size: 0.9rem; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.page h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.count {
+  color: #a9b0bc;
+  font-size: 0.9rem;
+}
 </style>
 `,
           "/src/components/MentionsTextarea.vue": `<script setup>
 import { computed, nextTick, ref, watch } from "vue";
-import { extractMentions, filterUsers, findMentionQuery, getCaretCoordinates, insertMention } from "../mentions";
+import {
+  extractMentions,
+  filterUsers,
+  findMentionQuery,
+  getCaretCoordinates,
+  insertMention,
+} from "../mentions";
 
 const props = defineProps({ users: { type: Array, required: true } });
 // defineModel (Vue 3.4+) gives a two-way bound "modelValue" ref.
@@ -5350,9 +7482,18 @@ const el = ref(null);
 
 // Everything about the menu is derived from (text, caret).
 const token = computed(() => findMentionQuery(text.value, caret.value));
-const matches = computed(() => (token.value ? filterUsers(props.users, token.value.query) : []));
-const open = computed(() => !!token.value && token.value.start !== dismissedAt.value && matches.value.length > 0);
-const current = computed(() => matches.value[Math.min(active.value, matches.value.length - 1)]);
+const matches = computed(() =>
+  token.value ? filterUsers(props.users, token.value.query) : [],
+);
+const open = computed(
+  () =>
+    !!token.value &&
+    token.value.start !== dismissedAt.value &&
+    matches.value.length > 0,
+);
+const current = computed(
+  () => matches.value[Math.min(active.value, matches.value.length - 1)],
+);
 const mentioned = computed(() => extractMentions(text.value, props.users));
 
 // Measure the "@" position (needs layout) whenever a new token opens.
@@ -5362,10 +7503,12 @@ watch(
     if (start < 0) return;
     await nextTick();
     coords.value = getCaretCoordinates(el.value, start);
-  }
+  },
 );
 
-function sync(e) { caret.value = e.target.selectionStart; }
+function sync(e) {
+  caret.value = e.target.selectionStart;
+}
 function onInput(e) {
   text.value = e.target.value;
   caret.value = e.target.selectionStart;
@@ -5373,7 +7516,12 @@ function onInput(e) {
 }
 
 async function choose(user) {
-  const next = insertMention(text.value, token.value.start, caret.value, user.handle);
+  const next = insertMention(
+    text.value,
+    token.value.start,
+    caret.value,
+    user.handle,
+  );
   text.value = next.text;
   caret.value = next.caret;
   // Wait for Vue to patch the textarea value, then place the caret.
@@ -5385,10 +7533,19 @@ async function choose(user) {
 function onKeydown(e) {
   if (!open.value) return;
   const n = matches.value.length;
-  if (e.key === "ArrowDown") { e.preventDefault(); active.value = (active.value + 1) % n; }
-  else if (e.key === "ArrowUp") { e.preventDefault(); active.value = (active.value - 1 + n) % n; }
-  else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); choose(current.value); }
-  else if (e.key === "Escape") { e.preventDefault(); dismissedAt.value = token.value.start; }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    active.value = (active.value + 1) % n;
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    active.value = (active.value - 1 + n) % n;
+  } else if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    choose(current.value);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    dismissedAt.value = token.value.start;
+  }
 }
 </script>
 
@@ -5443,15 +7600,63 @@ function onKeydown(e) {
 </template>
 
 <style scoped>
-.mentions-field { position: relative; }
-textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 1rem/1.5 system-ui, sans-serif; resize: vertical; }
-textarea:focus { outline: 2px solid #5b8def; outline-offset: 1px; }
-.mention-menu { position: absolute; z-index: 10; margin: 0; padding: 4px; list-style: none; min-width: 220px; max-width: calc(100% - 16px); background: #1b1f2a; border: 1px solid #333a48; border-radius: 10px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-.mention-menu li { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.mention-menu li.active { background: #2a3142; }
-.mention-handle { color: #8ab4ff; font-size: 0.85rem; }
-.mentioned { color: #a9b0bc; font-size: 0.9rem; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.mentions-field {
+  position: relative;
+}
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  font:
+    1rem/1.5 system-ui,
+    sans-serif;
+  resize: vertical;
+}
+textarea:focus {
+  outline: 2px solid #5b8def;
+  outline-offset: 1px;
+}
+.mention-menu {
+  position: absolute;
+  z-index: 10;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  min-width: 220px;
+  max-width: calc(100% - 16px);
+  background: #1b1f2a;
+  border: 1px solid #333a48;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.mention-menu li {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.mention-menu li.active {
+  background: #2a3142;
+}
+.mention-handle {
+  color: #8ab4ff;
+  font-size: 0.85rem;
+}
+.mentioned {
+  color: #a9b0bc;
+  font-size: 0.9rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/mentions.js": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
@@ -5470,7 +7675,8 @@ export function findMentionQuery(text, caret) {
     const ch = text[i];
     if (ch === "@") {
       const before = i === 0 ? " " : text[i - 1];
-      if (before === " " || before === "\\n" || before === "(") return { start: i, query: text.slice(i + 1, caret) };
+      if (before === " " || before === "\\n" || before === "(")
+        return { start: i, query: text.slice(i + 1, caret) };
       return null; // an email address like ada@example.com is not a mention
     }
     if (!HANDLE_CHAR.test(ch)) return null;
@@ -5484,7 +7690,12 @@ export function filterUsers(users, query) {
   const q = query.toLowerCase();
   const byHandle = users.filter((u) => u.handle.startsWith(q));
   const byName = users.filter(
-    (u) => !byHandle.includes(u) && u.name.toLowerCase().split(" ").some((w) => w.startsWith(q))
+    (u) =>
+      !byHandle.includes(u) &&
+      u.name
+        .toLowerCase()
+        .split(" ")
+        .some((w) => w.startsWith(q)),
   );
   return [...byHandle, ...byName].slice(0, 5);
 }
@@ -5497,7 +7708,10 @@ export function insertMention(text, start, caret, handle) {
   const before = text.slice(0, start);
   const after = text.slice(caret);
   const token = "@" + handle + (after.startsWith(" ") ? "" : " ");
-  return { text: before + token + after, caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0) };
+  return {
+    text: before + token + after,
+    caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0),
+  };
 }
 
 /** The users actually mentioned in the text, in order, without repeats. */
@@ -5506,7 +7720,8 @@ export function extractMentions(text, users) {
   const re = /(^|[\\s(])@([a-z0-9_.]+)/gi;
   let m;
   while ((m = re.exec(text))) {
-    const handle = m[2].toLowerCase().replace(/[.]+$/, ""); // "@alan." at the end of a sentence
+    // "@alan." at the end of a sentence
+    const handle = m[2].toLowerCase().replace(/[.]+$/, "");
     const user = users.find((u) => u.handle === handle);
     if (user && !found.includes(user)) found.push(user);
   }
@@ -5515,10 +7730,30 @@ export function extractMentions(text, users) {
 
 // Styles that change where text wraps, so the mirror must copy them.
 const MIRRORED = [
-  "boxSizing", "width", "height", "overflowX", "overflowY", "borderTopWidth", "borderRightWidth",
-  "borderBottomWidth", "borderLeftWidth", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
-  "fontStyle", "fontVariant", "fontWeight", "fontSize", "lineHeight", "fontFamily", "letterSpacing",
-  "textTransform", "textIndent", "wordSpacing", "tabSize",
+  "boxSizing",
+  "width",
+  "height",
+  "overflowX",
+  "overflowY",
+  "borderTopWidth",
+  "borderRightWidth",
+  "borderBottomWidth",
+  "borderLeftWidth",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "fontStyle",
+  "fontVariant",
+  "fontWeight",
+  "fontSize",
+  "lineHeight",
+  "fontFamily",
+  "letterSpacing",
+  "textTransform",
+  "textIndent",
+  "wordSpacing",
+  "tabSize",
 ];
 
 /**
@@ -5541,8 +7776,10 @@ export function getCaretCoordinates(textarea, position) {
   div.appendChild(marker);
   document.body.appendChild(div);
   const top = marker.offsetTop + px(style.borderTopWidth) - textarea.scrollTop;
-  const left = marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
-  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20; // "normal" is not a number
+  const left =
+    marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
+  // "normal" is not a number
+  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20;
   document.body.removeChild(div);
   return { top, left, height: lineHeight };
 }
@@ -5578,14 +7815,19 @@ Detect \`@query\` at the caret (not in emails), filter by handle then name, at m
 ### Step 1: typed helpers
 
 ~~~ts
-export function findMentionQuery(text: string, caret: number): MentionToken | null {
+export function findMentionQuery(
+  text: string,
+  caret: number,
+): MentionToken | null {
   let i = caret - 1;
   while (i >= 0 && caret - i <= MAX_QUERY + 1) {
     const ch = text[i];
     if (ch === "@") {
       const before = i === 0 ? " " : text[i - 1];
-      if (before === " " || before === "\\n" || before === "(") return { start: i, query: text.slice(i + 1, caret) };
-      return null; // an email address like ada@example.com is not a mention
+      if (before === " " || before === "\\n" || before === "(")
+        return { start: i, query: text.slice(i + 1, caret) };
+      // an email address like ada@example.com is not a mention
+      return null;
     }
     if (!HANDLE_CHAR.test(ch)) return null;
     i--;
@@ -5606,10 +7848,23 @@ private readonly caret = signal(0);
 private readonly active = signal(0);
 private readonly dismissedAt = signal(-1);
 
-private readonly token = computed(() => findMentionQuery(this.text(), this.caret()));
-readonly matches = computed(() => { const t = this.token(); return t ? filterUsers(this.userList(), t.query) : []; });
-readonly open = computed(() => { const t = this.token(); return !!t && t.start !== this.dismissedAt() && this.matches().length > 0; });
-readonly current = computed<User | undefined>(() => this.matches()[Math.min(this.active(), this.matches().length - 1)]);
+private readonly token = computed(() =>
+  findMentionQuery(this.text(), this.caret()),
+);
+readonly matches = computed(() => {
+  const t = this.token();
+  return t ? filterUsers(this.userList(), t.query) : [];
+});
+readonly open = computed(() => {
+  const t = this.token();
+  return (
+    !!t && t.start !== this.dismissedAt() && this.matches().length > 0
+  );
+});
+readonly current = computed<User | undefined>(
+  () =>
+    this.matches()[Math.min(this.active(), this.matches().length - 1)],
+);
 ~~~
 
 📌 **Interview term: Selection API** — \`selectionStart\` gives the caret offset; \`setSelectionRange(a, b)\` moves it. The template calls \`sync()\` on \`(keyup)\`, \`(click)\` and \`(select)\` to copy \`selectionStart\` into the \`caret\` signal.
@@ -5622,19 +7877,34 @@ private set(text: string, caret: number): void {
   this.caret.set(caret);
   this.valueChange.emit(text);
   const t = this.token();
-  if (t) afterNextRender(() => this.coords.set(getCaretCoordinates(this.box.nativeElement, t.start)), { injector: this.injector });
+  if (t)
+    afterNextRender(
+      () =>
+        this.coords.set(
+          getCaretCoordinates(this.box.nativeElement, t.start),
+        ),
+      { injector: this.injector },
+    );
 }
 
 choose(user: User): void {
   const t = this.token();
   if (!t) return;
-  const next = insertMention(this.text(), t.start, this.caret(), user.handle);
+  const next = insertMention(
+    this.text(),
+    t.start,
+    this.caret(),
+    user.handle,
+  );
   this.set(next.text, next.caret);
-  afterNextRender(() => {
-    const el = this.box.nativeElement;
-    el.focus();
-    el.setSelectionRange(next.caret, next.caret);
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      const el = this.box.nativeElement;
+      el.focus();
+      el.setSelectionRange(next.caret, next.caret);
+    },
+    { injector: this.injector },
+  );
 }
 ~~~
 
@@ -5645,17 +7915,39 @@ Without it, \`setSelectionRange\` would run before Angular writes the new \`[val
 ### Step 4: template details
 
 ~~~html
-<textarea #box [value]="text()" (input)="onInput($event)" (keydown)="onKeydown($event)"
-          (keyup)="sync()" (click)="sync()" (select)="sync()"
-          aria-autocomplete="list" aria-controls="mention-list"
-          [attr.aria-activedescendant]="open() && current() ? 'mention-' + current()!.handle : null"></textarea>
+<textarea
+  #box
+  [value]="text()"
+  (input)="onInput($event)"
+  (keydown)="onKeydown($event)"
+  (keyup)="sync()"
+  (click)="sync()"
+  (select)="sync()"
+  aria-autocomplete="list"
+  aria-controls="mention-list"
+  [attr.aria-activedescendant]="
+    open() && current() ? 'mention-' + current()!.handle : null
+  "
+></textarea>
 @if (open()) {
-  <ul id="mention-list" role="listbox" aria-label="People" class="mention-menu"
-      [style.top.px]="coords().top + coords().height + 4" [style.left.px]="coords().left">
+  <ul
+    id="mention-list"
+    role="listbox"
+    aria-label="People"
+    class="mention-menu"
+    [style.top.px]="coords().top + coords().height + 4"
+    [style.left.px]="coords().left"
+  >
     @for (u of matches(); track u.handle) {
-      <li [id]="'mention-' + u.handle" role="option" [attr.aria-selected]="u === current()"
-          (mousedown)="$event.preventDefault(); choose(u)">
-        <span class="mention-name">{{ u.name }}</span>{{ " " }}<span class="mention-handle">&#64;{{ u.handle }}</span>
+      <li
+        [id]="'mention-' + u.handle"
+        role="option"
+        [attr.aria-selected]="u === current()"
+        (mousedown)="$event.preventDefault(); choose(u)"
+      >
+        <span class="mention-name">{{ u.name }}</span
+        >{{ " "
+        }}<span class="mention-handle">&#64;{{ u.handle }}</span>
       </li>
     }
   </ul>
@@ -5670,7 +7962,7 @@ Two Angular-specific details. \`&#64;\` is needed because a bare \`@\` in an Ang
 
 AOT build, shared driver:
 
-~~~
+~~~text
 typed "Hi @al"             menu: > Alan Turing @alan | Alana Rivera @alana
 aria-activedescendant: mention-alan | status: 2 people found, use up and down arrows to choose
 ArrowDown                  menu: Alan Turing @alan | > Alana Rivera @alana
@@ -5801,12 +8093,30 @@ import { User } from "./mentions";
       <p class="count">{{ text().length }} characters</p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 12px; }
-    .count { color: #a9b0bc; font-size: 0.9rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        background: #0f1117;
+        color: #e6e6e6;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 12px;
+      }
+      .count {
+        color: #a9b0bc;
+        font-size: 0.9rem;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly users: User[] = [
@@ -5821,8 +8131,28 @@ export class AppComponent {
   readonly text = signal("");
 }
 `,
-          "/src/app/mentions-textarea.component.ts": `import { Component, ElementRef, EventEmitter, Injector, Input, Output, ViewChild, afterNextRender, computed, inject, signal } from "@angular/core";
-import { CaretCoords, User, extractMentions, filterUsers, findMentionQuery, getCaretCoordinates, insertMention } from "./mentions";
+          "/src/app/mentions-textarea.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Injector,
+  Input,
+  Output,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import {
+  CaretCoords,
+  User,
+  extractMentions,
+  filterUsers,
+  findMentionQuery,
+  getCaretCoordinates,
+  insertMention,
+} from "./mentions";
 
 @Component({
   selector: "app-mentions-textarea",
@@ -5872,9 +8202,13 @@ import { CaretCoords, User, extractMentions, filterUsers, findMentionQuery, getC
     <p class="sr-only" aria-live="polite" data-testid="mention-status">
       {{ open() ? matches().length + " people found, use up and down arrows to choose" : "" }}
     </p>
-    <p class="mentioned" data-testid="mentioned">Mentioned: {{ mentionedNames() }}</p>
+    <p
+      class="mentioned"
+      data-testid="mentioned"
+    >Mentioned: {{ mentionedNames() }}</p>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .mentions-field { position: relative; }
     textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 1rem/1.5 system-ui, sans-serif; resize: vertical; }
@@ -5885,14 +8219,21 @@ import { CaretCoords, User, extractMentions, filterUsers, findMentionQuery, getC
     .mention-handle { color: #8ab4ff; font-size: 0.85rem; }
     .mentioned { color: #a9b0bc; font-size: 0.9rem; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class MentionsTextareaComponent {
   private readonly userList = signal<User[]>([]);
-  @Input({ required: true }) set users(value: User[]) { this.userList.set(value); }
-  @Input() set value(v: string) { this.text.set(v); }
-  @Output() valueChange = new EventEmitter<string>(); // [(value)] two-way binding
-  @ViewChild("box", { static: true }) private box!: ElementRef<HTMLTextAreaElement>;
+  @Input({ required: true }) set users(value: User[]) {
+    this.userList.set(value);
+  }
+  @Input() set value(v: string) {
+    this.text.set(v);
+  }
+  // [(value)] two-way binding
+  @Output() valueChange = new EventEmitter<string>();
+  @ViewChild("box", { static: true })
+  private box!: ElementRef<HTMLTextAreaElement>;
   private readonly injector = inject(Injector);
 
   readonly text = signal("");
@@ -5902,7 +8243,9 @@ export class MentionsTextareaComponent {
   readonly coords = signal<CaretCoords>({ top: 0, left: 0, height: 20 });
 
   // Everything about the menu is derived from (text, caret).
-  private readonly token = computed(() => findMentionQuery(this.text(), this.caret()));
+  private readonly token = computed(() =>
+    findMentionQuery(this.text(), this.caret()),
+  );
   readonly matches = computed(() => {
     const t = this.token();
     return t ? filterUsers(this.userList(), t.query) : [];
@@ -5911,7 +8254,9 @@ export class MentionsTextareaComponent {
     const t = this.token();
     return !!t && t.start !== this.dismissedAt() && this.matches().length > 0;
   });
-  readonly current = computed<User | undefined>(() => this.matches()[Math.min(this.active(), this.matches().length - 1)]);
+  readonly current = computed<User | undefined>(
+    () => this.matches()[Math.min(this.active(), this.matches().length - 1)],
+  );
   readonly mentionedNames = computed(() => {
     const list = extractMentions(this.text(), this.userList());
     return list.length ? list.map((u) => u.name).join(", ") : "nobody yet";
@@ -5923,10 +8268,17 @@ export class MentionsTextareaComponent {
     this.valueChange.emit(text);
     const t = this.token();
     // Measure the "@" position (needs layout) once the view is updated.
-    if (t) afterNextRender(() => this.coords.set(getCaretCoordinates(this.box.nativeElement, t.start)), { injector: this.injector });
+    if (t)
+      afterNextRender(
+        () =>
+          this.coords.set(getCaretCoordinates(this.box.nativeElement, t.start)),
+        { injector: this.injector },
+      );
   }
 
-  sync(): void { this.caret.set(this.box.nativeElement.selectionStart); }
+  sync(): void {
+    this.caret.set(this.box.nativeElement.selectionStart);
+  }
 
   onInput(event: Event): void {
     const el = event.target as HTMLTextAreaElement;
@@ -5940,21 +8292,34 @@ export class MentionsTextareaComponent {
     const next = insertMention(this.text(), t.start, this.caret(), user.handle);
     this.set(next.text, next.caret);
     // After Angular writes the new [value], put the caret back.
-    afterNextRender(() => {
-      const el = this.box.nativeElement;
-      el.focus();
-      el.setSelectionRange(next.caret, next.caret);
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        const el = this.box.nativeElement;
+        el.focus();
+        el.setSelectionRange(next.caret, next.caret);
+      },
+      { injector: this.injector },
+    );
   }
 
   onKeydown(e: KeyboardEvent): void {
     if (!this.open()) return;
     const n = this.matches().length;
     const t = this.token();
-    if (e.key === "ArrowDown") { e.preventDefault(); this.active.update((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); this.active.update((i) => (i - 1 + n) % n); }
-    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); const u = this.current(); if (u) this.choose(u); }
-    else if (e.key === "Escape" && t) { e.preventDefault(); this.dismissedAt.set(t.start); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.active.update((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.active.update((i) => (i - 1 + n) % n);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      const u = this.current();
+      if (u) this.choose(u);
+    } else if (e.key === "Escape" && t) {
+      e.preventDefault();
+      this.dismissedAt.set(t.start);
+    }
   }
 }
 `,
@@ -5968,17 +8333,31 @@ const MAX_QUERY = 20;
  * at the start of the text or after whitespace or "(", followed only by
  * handle characters up to the caret. Returns { start, query } or null.
  */
-export interface User { handle: string; name: string; }
-export interface MentionToken { start: number; query: string; }
-export interface CaretCoords { top: number; left: number; height: number; }
+export interface User {
+  handle: string;
+  name: string;
+}
+export interface MentionToken {
+  start: number;
+  query: string;
+}
+export interface CaretCoords {
+  top: number;
+  left: number;
+  height: number;
+}
 
-export function findMentionQuery(text: string, caret: number): MentionToken | null {
+export function findMentionQuery(
+  text: string,
+  caret: number,
+): MentionToken | null {
   let i = caret - 1;
   while (i >= 0 && caret - i <= MAX_QUERY + 1) {
     const ch = text[i];
     if (ch === "@") {
       const before = i === 0 ? " " : text[i - 1];
-      if (before === " " || before === "\\n" || before === "(") return { start: i, query: text.slice(i + 1, caret) };
+      if (before === " " || before === "\\n" || before === "(")
+        return { start: i, query: text.slice(i + 1, caret) };
       return null; // an email address like ada@example.com is not a mention
     }
     if (!HANDLE_CHAR.test(ch)) return null;
@@ -5992,7 +8371,12 @@ export function filterUsers(users: User[], query: string): User[] {
   const q = query.toLowerCase();
   const byHandle = users.filter((u) => u.handle.startsWith(q));
   const byName = users.filter(
-    (u) => !byHandle.includes(u) && u.name.toLowerCase().split(" ").some((w) => w.startsWith(q))
+    (u) =>
+      !byHandle.includes(u) &&
+      u.name
+        .toLowerCase()
+        .split(" ")
+        .some((w) => w.startsWith(q)),
   );
   return [...byHandle, ...byName].slice(0, 5);
 }
@@ -6001,11 +8385,19 @@ export function filterUsers(users: User[], query: string): User[] {
  * Replaces the "@query" token (start up to caret) with "@handle " and says
  * where the caret should go. Reuses a space that already follows the caret.
  */
-export function insertMention(text: string, start: number, caret: number, handle: string): { text: string; caret: number } {
+export function insertMention(
+  text: string,
+  start: number,
+  caret: number,
+  handle: string,
+): { text: string; caret: number } {
   const before = text.slice(0, start);
   const after = text.slice(caret);
   const token = "@" + handle + (after.startsWith(" ") ? "" : " ");
-  return { text: before + token + after, caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0) };
+  return {
+    text: before + token + after,
+    caret: before.length + token.length + (after.startsWith(" ") ? 1 : 0),
+  };
 }
 
 /** The users actually mentioned in the text, in order, without repeats. */
@@ -6014,7 +8406,8 @@ export function extractMentions(text: string, users: User[]): User[] {
   const re = /(^|[\\s(])@([a-z0-9_.]+)/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    const handle = m[2].toLowerCase().replace(/[.]+$/, ""); // "@alan." at the end of a sentence
+    // "@alan." at the end of a sentence
+    const handle = m[2].toLowerCase().replace(/[.]+$/, "");
     const user = users.find((u) => u.handle === handle);
     if (user && !found.includes(user)) found.push(user);
   }
@@ -6023,10 +8416,30 @@ export function extractMentions(text: string, users: User[]): User[] {
 
 // Styles that change where text wraps, so the mirror must copy them.
 const MIRRORED: string[] = [
-  "boxSizing", "width", "height", "overflowX", "overflowY", "borderTopWidth", "borderRightWidth",
-  "borderBottomWidth", "borderLeftWidth", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
-  "fontStyle", "fontVariant", "fontWeight", "fontSize", "lineHeight", "fontFamily", "letterSpacing",
-  "textTransform", "textIndent", "wordSpacing", "tabSize",
+  "boxSizing",
+  "width",
+  "height",
+  "overflowX",
+  "overflowY",
+  "borderTopWidth",
+  "borderRightWidth",
+  "borderBottomWidth",
+  "borderLeftWidth",
+  "paddingTop",
+  "paddingRight",
+  "paddingBottom",
+  "paddingLeft",
+  "fontStyle",
+  "fontVariant",
+  "fontWeight",
+  "fontSize",
+  "lineHeight",
+  "fontFamily",
+  "letterSpacing",
+  "textTransform",
+  "textIndent",
+  "wordSpacing",
+  "tabSize",
 ];
 
 /**
@@ -6035,7 +8448,10 @@ const MIRRORED: string[] = [
  */
 const px = (value: string) => parseFloat(value) || 0;
 
-export function getCaretCoordinates(textarea: HTMLTextAreaElement, position: number): CaretCoords {
+export function getCaretCoordinates(
+  textarea: HTMLTextAreaElement,
+  position: number,
+): CaretCoords {
   const div = document.createElement("div");
   const style = getComputedStyle(textarea);
   const from = style as unknown as Record<string, string>;
@@ -6051,8 +8467,10 @@ export function getCaretCoordinates(textarea: HTMLTextAreaElement, position: num
   div.appendChild(marker);
   document.body.appendChild(div);
   const top = marker.offsetTop + px(style.borderTopWidth) - textarea.scrollTop;
-  const left = marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
-  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20; // "normal" is not a number
+  const left =
+    marker.offsetLeft + px(style.borderLeftWidth) - textarea.scrollLeft;
+  // "normal" is not a number
+  const lineHeight = px(style.lineHeight) || px(style.fontSize) * 1.2 || 20;
   document.body.removeChild(div);
   return { top, left, height: lineHeight };
 }
@@ -6181,10 +8599,19 @@ function inline(raw) {
   return raw
     .split(/(\`[^\`]+\`)/)
     .map((part) => {
-      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
       let html = escapeHtml(part);
-      html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match, label, url) =>
-        SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label
+      html = html.replace(
+        /\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,
+        (match, label, url) =>
+          SAFE_URL.test(url)
+            ? '<a href="' +
+              url +
+              '" target="_blank" rel="noopener noreferrer">' +
+              label +
+              "</a>"
+            : label,
       );
       html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
       html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
@@ -6217,8 +8644,11 @@ export function markdownToHtml(source) {
       flushAll();
       const code = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("\`\`\`")) code.push(lines[i++]);
-      out.push("<pre><code>" + escapeHtml(code.join("\\n")) + "</code></pre>");
+      while (i < lines.length && !lines[i].startsWith("\`\`\`"))
+        code.push(lines[i++]);
+      out.push(
+        "<pre><code>" + escapeHtml(code.join("\\n")) + "</code></pre>",
+      );
       continue;
     }
     const heading = /^(#{1,3}) (.*)$/.exec(line);
@@ -6227,11 +8657,31 @@ export function markdownToHtml(source) {
     const quoted = /^> ?(.*)$/.exec(line);
 
     if (!line.trim()) flushAll();
-    else if (heading) { flushAll(); out.push("<h" + heading[1].length + ">" + inline(heading[2]) + "</h" + heading[1].length + ">"); }
-    else if (/^-{3,}$/.test(line.trim())) { flushAll(); out.push("<hr>"); }
-    else if (bullet || numbered) { /* start or continue a ul or ol */ }
-    else if (quoted) { flushParagraph(); flushList(); quote.push(quoted[1]); }
-    else { flushList(); flushQuote(); paragraph.push(line.trim()); }
+    else if (heading) {
+      flushAll();
+      out.push(
+        "<h" +
+          heading[1].length +
+          ">" +
+          inline(heading[2]) +
+          "</h" +
+          heading[1].length +
+          ">",
+      );
+    } else if (/^-{3,}$/.test(line.trim())) {
+      flushAll();
+      out.push("<hr>");
+    } else if (bullet || numbered) {
+      /* start or continue a ul or ol */
+    } else if (quoted) {
+      flushParagraph();
+      flushList();
+      quote.push(quoted[1]);
+    } else {
+      flushList();
+      flushQuote();
+      paragraph.push(line.trim());
+    }
   }
   flushAll();
   return out.join("\\n");
@@ -6244,7 +8694,7 @@ Order of checks matters: \`---\` is tested before the list rule, so a rule is no
 
 Running it with node on a few inputs printed:
 
-~~~
+~~~text
 "> quoted \`code <b>\` here\\n\\n---\\n\`\`\`\\nconst a = 1 < 2 && \\"x\\";\\n<script>\\n\`\`\`"
   => <blockquote>quoted <code>code &lt;b&gt;</code> here</blockquote> <hr> <pre><code>const a = 1 &lt; 2 &amp;&amp; &quot;x&quot;; &lt;script&gt;</code></pre>
 "[site](https://example.com?a=1&b=2) and [bad](javascript:alert(1))"
@@ -6266,16 +8716,29 @@ export default function MarkdownPreviewer() {
   return (
     <div className="md">
       <section className="md-pane">
-        <label htmlFor="md-source" className="md-label">Markdown</label>
-        <textarea id="md-source" data-testid="md-input" value={source} spellCheck={false}
-                  onChange={(e) => setSource(e.target.value)} />
+        <label htmlFor="md-source" className="md-label">
+          Markdown
+        </label>
+        <textarea
+          id="md-source"
+          data-testid="md-input"
+          value={source}
+          spellCheck={false}
+          onChange={(e) => setSource(e.target.value)}
+        />
       </section>
       <section className="md-pane" aria-labelledby="md-preview-label">
         {/* header with a toggle button using aria-pressed */}
         {showHtml ? (
-          <pre className="md-html" data-testid="md-html">{html}</pre>
+          <pre className="md-html" data-testid="md-html">
+            {html}
+          </pre>
         ) : (
-          <div className="md-preview" data-testid="md-preview" dangerouslySetInnerHTML={{ __html: html }} />
+          <div
+            className="md-preview"
+            data-testid="md-preview"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         )}
       </section>
     </div>
@@ -6293,7 +8756,7 @@ Two columns on wide screens, one column under 640 px. Long words and URLs wrap w
 
 **jsdom, React 19.3.1 under StrictMode**, shared driver:
 
-~~~
+~~~text
 sample tags: h1,p,strong,em,code,ul,li,li,blockquote,a
 sample text: Release notes Version 2.1 adds dark mode and a --quiet flag. Faster searchFewer bugs Tip: read the docs.
 lists + fence tags: h2,ol,li,li,ul,li,pre,code
@@ -6311,7 +8774,7 @@ The payload paragraph contains no \`img\` or \`script\` element and no \`on*\` a
 
 **Real Chromium 141** (playwright-core): the React app was bundled with esbuild, the same payload typed with \`page.fill\`, the pointer moved over the link, and a dialog listener counted alerts. As a control, the \`<img onerror>\` payload was then inserted with plain unescaped \`innerHTML\`:
 
-~~~
+~~~text
 img elements: 0
 alert dialogs fired: 0
 preview text: "<img src=x onerror=\\"alert(1)\\"> <script>alert(2)</script>\\n\\nx) bad)"
@@ -6447,21 +8910,43 @@ export default function MarkdownPreviewer() {
   return (
     <div className="md">
       <section className="md-pane">
-        <label htmlFor="md-source" className="md-label">Markdown</label>
-        <textarea id="md-source" data-testid="md-input" value={source} spellCheck={false} onChange={(e) => setSource(e.target.value)} />
+        <label htmlFor="md-source" className="md-label">
+          Markdown
+        </label>
+        <textarea
+          id="md-source"
+          data-testid="md-input"
+          value={source}
+          spellCheck={false}
+          onChange={(e) => setSource(e.target.value)}
+        />
       </section>
       <section className="md-pane" aria-labelledby="md-preview-label">
         <div className="md-head">
-          <span id="md-preview-label" className="md-label">Preview</span>
-          <button type="button" data-testid="toggle-html" aria-pressed={showHtml} onClick={() => setShowHtml((s) => !s)}>
+          <span id="md-preview-label" className="md-label">
+            Preview
+          </span>
+          <button
+            type="button"
+            data-testid="toggle-html"
+            aria-pressed={showHtml}
+            onClick={() => setShowHtml((s) => !s)}
+          >
             {showHtml ? "Show preview" : "Show HTML"}
           </button>
         </div>
         {showHtml ? (
-          <pre className="md-html" data-testid="md-html">{html}</pre>
+          <pre className="md-html" data-testid="md-html">
+            {html}
+          </pre>
         ) : (
-          // Safe only because markdownToHtml escapes every piece of user text first.
-          <div className="md-preview" data-testid="md-preview" dangerouslySetInnerHTML={{ __html: html }} />
+          // Safe only because markdownToHtml
+          // escapes every piece of user text first.
+          <div
+            className="md-preview"
+            data-testid="md-preview"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         )}
       </section>
     </div>
@@ -6484,7 +8969,8 @@ export function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-// Only these URL schemes become links; javascript:, data: and the rest stay text.
+// Only these URL schemes become links;
+// javascript:, data: and the rest stay text.
 const SAFE_URL = /^(https?:|mailto:|#|\\/)/i;
 
 function inline(raw) {
@@ -6492,10 +8978,17 @@ function inline(raw) {
   return raw
     .split(/(\`[^\`]+\`)/)
     .map((part) => {
-      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
       let html = escapeHtml(part);
       html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match, label, url) =>
-        SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label
+        SAFE_URL.test(url)
+          ? '<a href="' +
+            url +
+            '" target="_blank" rel="noopener noreferrer">' +
+            label +
+            "</a>"
+          : label,
       );
       html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
       html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
@@ -6511,10 +9004,34 @@ export function markdownToHtml(source) {
   let list = null; // { tag: "ul" | "ol", items: [] }
   let quote = [];
 
-  const flushParagraph = () => { if (paragraph.length) out.push("<p>" + inline(paragraph.join(" ")) + "</p>"); paragraph = []; };
-  const flushList = () => { if (list) out.push("<" + list.tag + ">" + list.items.map((i) => "<li>" + inline(i) + "</li>").join("") + "</" + list.tag + ">"); list = null; };
-  const flushQuote = () => { if (quote.length) out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); quote = []; };
-  const flushAll = () => { flushParagraph(); flushList(); flushQuote(); };
+  const flushParagraph = () => {
+    if (paragraph.length)
+      out.push("<p>" + inline(paragraph.join(" ")) + "</p>");
+    paragraph = [];
+  };
+  const flushList = () => {
+    if (list)
+      out.push(
+        "<" +
+          list.tag +
+          ">" +
+          list.items.map((i) => "<li>" + inline(i) + "</li>").join("") +
+          "</" +
+          list.tag +
+          ">",
+      );
+    list = null;
+  };
+  const flushQuote = () => {
+    if (quote.length)
+      out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>");
+    quote = [];
+  };
+  const flushAll = () => {
+    flushParagraph();
+    flushList();
+    flushQuote();
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -6523,7 +9040,8 @@ export function markdownToHtml(source) {
       flushAll();
       const code = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("\`\`\`")) code.push(lines[i++]);
+      while (i < lines.length && !lines[i].startsWith("\`\`\`"))
+        code.push(lines[i++]);
       out.push("<pre><code>" + escapeHtml(code.join("\\n")) + "</code></pre>");
       continue;
     }
@@ -6534,17 +9052,36 @@ export function markdownToHtml(source) {
     const quoted = /^> ?(.*)$/.exec(line);
 
     if (!line.trim()) flushAll();
-    else if (heading) { flushAll(); out.push("<h" + heading[1].length + ">" + inline(heading[2]) + "</h" + heading[1].length + ">"); }
-    else if (/^-{3,}$/.test(line.trim())) { flushAll(); out.push("<hr>"); }
-    else if (bullet || numbered) {
+    else if (heading) {
+      flushAll();
+      out.push(
+        "<h" +
+          heading[1].length +
+          ">" +
+          inline(heading[2]) +
+          "</h" +
+          heading[1].length +
+          ">",
+      );
+    } else if (/^-{3,}$/.test(line.trim())) {
+      flushAll();
+      out.push("<hr>");
+    } else if (bullet || numbered) {
       const tag = bullet ? "ul" : "ol";
-      flushParagraph(); flushQuote();
+      flushParagraph();
+      flushQuote();
       if (list && list.tag !== tag) flushList();
       if (!list) list = { tag, items: [] };
       list.items.push((bullet || numbered)[1]);
+    } else if (quoted) {
+      flushParagraph();
+      flushList();
+      quote.push(quoted[1]);
+    } else {
+      flushList();
+      flushQuote();
+      paragraph.push(line.trim());
     }
-    else if (quoted) { flushParagraph(); flushList(); quote.push(quoted[1]); }
-    else { flushList(); flushQuote(); paragraph.push(line.trim()); }
   }
   flushAll();
   return out.join("\\n");
@@ -6560,23 +9097,109 @@ Version **2.1** adds *dark mode* and a \\\`--quiet\\\` flag.
 > Tip: read the [docs](https://example.com/docs).
 \`;
 `,
-          "/styles.css": `body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.page { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
-.title { font-size: 1.4rem; margin: 0 0 12px; }
-.md { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .md { grid-template-columns: 1fr; } }
-.md-pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.md-head { display: flex; justify-content: space-between; align-items: center; }
-.md-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d8596; }
-.md-head button { padding: 4px 10px; border-radius: 6px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-.md textarea { min-height: 320px; padding: 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 0.9rem/1.5 ui-monospace, monospace; resize: vertical; }
-.md-preview, .md-html { min-height: 320px; margin: 0; padding: 12px 16px; border-radius: 10px; border: 1px solid #333a48; background: #151821; overflow-wrap: anywhere; }
-.md-html { white-space: pre-wrap; font: 0.8rem/1.5 ui-monospace, monospace; color: #a9b0bc; }
-.md-preview code { background: #262b38; padding: 1px 5px; border-radius: 4px; }
-.md-preview pre { background: #262b38; padding: 10px; border-radius: 8px; overflow-x: auto; }
-.md-preview pre code { background: none; padding: 0; }
-.md-preview blockquote { margin: 0; padding-left: 12px; border-left: 3px solid #5b8def; color: #a9b0bc; }
-.md-preview a { color: #8ab4ff; }
+          "/styles.css": `body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.title {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.md {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .md {
+    grid-template-columns: 1fr;
+  }
+}
+.md-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.md-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.md-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d8596;
+}
+.md-head button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
+.md textarea {
+  min-height: 320px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  font:
+    0.9rem/1.5 ui-monospace,
+    monospace;
+  resize: vertical;
+}
+.md-preview,
+.md-html {
+  min-height: 320px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #151821;
+  overflow-wrap: anywhere;
+}
+.md-html {
+  white-space: pre-wrap;
+  font:
+    0.8rem/1.5 ui-monospace,
+    monospace;
+  color: #a9b0bc;
+}
+.md-preview code {
+  background: #262b38;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.md-preview pre {
+  background: #262b38;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.md-preview pre code {
+  background: none;
+  padding: 0;
+}
+.md-preview blockquote {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid #5b8def;
+  color: #a9b0bc;
+}
+.md-preview a {
+  color: #8ab4ff;
+}
 `,
         },
       },
@@ -6614,8 +9237,12 @@ Headings, paragraphs, bold, italic, inline and fenced code, lists, quotes, rules
 
 ~~~js
 export function escapeHtml(text) {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 ~~~
 
@@ -6629,15 +9256,28 @@ export function escapeHtml(text) {
 const SAFE_URL = /^(https?:|mailto:|#|\\/)/i;
 
 function inline(raw) {
-  return raw.split(/(\`[^\`]+\`)/).map((part) => {
-    if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
-    let html = escapeHtml(part);
-    html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match, label, url) =>
-      SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label);
-    html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
-    html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
-    return html;
-  }).join("");
+  return raw
+    .split(/(\`[^\`]+\`)/)
+    .map((part) => {
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      let html = escapeHtml(part);
+      html = html.replace(
+        /\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,
+        (match, label, url) =>
+          SAFE_URL.test(url)
+            ? '<a href="' +
+              url +
+              '" target="_blank" rel="noopener noreferrer">' +
+              label +
+              "</a>"
+            : label,
+      );
+      html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
+      html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
+      return html;
+    })
+    .join("");
 }
 ~~~
 
@@ -6665,10 +9305,22 @@ const html = computed(() => markdownToHtml(source.value));
 </script>
 
 <template>
-  <textarea id="md-source" v-model="source" data-testid="md-input" spellcheck="false" />
-  <pre v-if="showHtml" class="md-html" data-testid="md-html">{{ html }}</pre>
+  <textarea
+    id="md-source"
+    v-model="source"
+    data-testid="md-input"
+    spellcheck="false"
+  />
+  <pre v-if="showHtml" class="md-html" data-testid="md-html">{{
+    html
+  }}</pre>
   <!-- v-html is safe here only because markdownToHtml escapes all user text first. -->
-  <div v-else class="md-preview" data-testid="md-preview" v-html="html" />
+  <div
+    v-else
+    class="md-preview"
+    data-testid="md-preview"
+    v-html="html"
+  />
 </template>
 ~~~
 
@@ -6682,7 +9334,7 @@ One styling gotcha: content inserted with \`v-html\` does not get the scoped-sty
 
 Vue 3.5.44 in jsdom, shared driver:
 
-~~~
+~~~text
 sample tags: h1,p,strong,em,code,ul,li,li,blockquote,a
 sample text: Release notes Version 2.1 adds dark mode and a --quiet flag. Faster searchFewer bugs Tip: read the docs.
 lists + fence tags: h2,ol,li,li,ul,li,pre,code
@@ -6804,9 +9456,21 @@ import MarkdownPreviewer from "./components/MarkdownPreviewer.vue";
 </template>
 
 <style>
-body { margin: 0; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-.page { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
-.title { font-size: 1.4rem; margin: 0 0 12px; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1117;
+  color: #e6e6e6;
+}
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.title {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
 </style>
 `,
           "/src/components/MarkdownPreviewer.vue": `<script setup>
@@ -6824,16 +9488,28 @@ const html = computed(() => markdownToHtml(source.value));
   <div class="md">
     <section class="md-pane">
       <label for="md-source" class="md-label">Markdown</label>
-      <textarea id="md-source" v-model="source" data-testid="md-input" spellcheck="false" />
+      <textarea
+        id="md-source"
+        v-model="source"
+        data-testid="md-input"
+        spellcheck="false"
+      />
     </section>
     <section class="md-pane" aria-labelledby="md-preview-label">
       <div class="md-head">
         <span id="md-preview-label" class="md-label">Preview</span>
-        <button type="button" data-testid="toggle-html" :aria-pressed="showHtml" @click="showHtml = !showHtml">
+        <button
+          type="button"
+          data-testid="toggle-html"
+          :aria-pressed="showHtml"
+          @click="showHtml = !showHtml"
+        >
           {{ showHtml ? "Show preview" : "Show HTML" }}
         </button>
       </div>
-      <pre v-if="showHtml" class="md-html" data-testid="md-html">{{ html }}</pre>
+      <pre v-if="showHtml" class="md-html" data-testid="md-html">{{
+        html
+      }}</pre>
       <!-- v-html is safe here only because markdownToHtml escapes all user text first. -->
       <div v-else class="md-preview" data-testid="md-preview" v-html="html" />
     </section>
@@ -6841,21 +9517,95 @@ const html = computed(() => markdownToHtml(source.value));
 </template>
 
 <style scoped>
-.md { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .md { grid-template-columns: 1fr; } }
-.md-pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.md-head { display: flex; justify-content: space-between; align-items: center; }
-.md-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d8596; }
-.md-head button { padding: 4px 10px; border-radius: 6px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-textarea { min-height: 320px; padding: 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 0.9rem/1.5 ui-monospace, monospace; resize: vertical; }
-.md-preview, .md-html { min-height: 320px; margin: 0; padding: 12px 16px; border-radius: 10px; border: 1px solid #333a48; background: #151821; overflow-wrap: anywhere; }
-.md-html { white-space: pre-wrap; font: 0.8rem/1.5 ui-monospace, monospace; color: #a9b0bc; }
+.md {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) {
+  .md {
+    grid-template-columns: 1fr;
+  }
+}
+.md-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.md-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.md-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d8596;
+}
+.md-head button {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  cursor: pointer;
+}
+textarea {
+  min-height: 320px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #1b1f2a;
+  color: inherit;
+  font:
+    0.9rem/1.5 ui-monospace,
+    monospace;
+  resize: vertical;
+}
+.md-preview,
+.md-html {
+  min-height: 320px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #333a48;
+  background: #151821;
+  overflow-wrap: anywhere;
+}
+.md-html {
+  white-space: pre-wrap;
+  font:
+    0.8rem/1.5 ui-monospace,
+    monospace;
+  color: #a9b0bc;
+}
 /* v-html content is not scoped, so reach it with :deep(). */
-.md-preview :deep(code) { background: #262b38; padding: 1px 5px; border-radius: 4px; }
-.md-preview :deep(pre) { background: #262b38; padding: 10px; border-radius: 8px; overflow-x: auto; }
-.md-preview :deep(pre code) { background: none; padding: 0; }
-.md-preview :deep(blockquote) { margin: 0; padding-left: 12px; border-left: 3px solid #5b8def; color: #a9b0bc; }
-.md-preview :deep(a) { color: #8ab4ff; }
+.md-preview :deep(code) {
+  background: #262b38;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.md-preview :deep(pre) {
+  background: #262b38;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+.md-preview :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+.md-preview :deep(blockquote) {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 3px solid #5b8def;
+  color: #a9b0bc;
+}
+.md-preview :deep(a) {
+  color: #8ab4ff;
+}
 </style>
 `,
           "/src/markdown.js": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
@@ -6874,7 +9624,8 @@ export function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-// Only these URL schemes become links; javascript:, data: and the rest stay text.
+// Only these URL schemes become links;
+// javascript:, data: and the rest stay text.
 const SAFE_URL = /^(https?:|mailto:|#|\\/)/i;
 
 function inline(raw) {
@@ -6882,10 +9633,17 @@ function inline(raw) {
   return raw
     .split(/(\`[^\`]+\`)/)
     .map((part) => {
-      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
       let html = escapeHtml(part);
       html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match, label, url) =>
-        SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label
+        SAFE_URL.test(url)
+          ? '<a href="' +
+            url +
+            '" target="_blank" rel="noopener noreferrer">' +
+            label +
+            "</a>"
+          : label,
       );
       html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
       html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
@@ -6901,10 +9659,34 @@ export function markdownToHtml(source) {
   let list = null; // { tag: "ul" | "ol", items: [] }
   let quote = [];
 
-  const flushParagraph = () => { if (paragraph.length) out.push("<p>" + inline(paragraph.join(" ")) + "</p>"); paragraph = []; };
-  const flushList = () => { if (list) out.push("<" + list.tag + ">" + list.items.map((i) => "<li>" + inline(i) + "</li>").join("") + "</" + list.tag + ">"); list = null; };
-  const flushQuote = () => { if (quote.length) out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); quote = []; };
-  const flushAll = () => { flushParagraph(); flushList(); flushQuote(); };
+  const flushParagraph = () => {
+    if (paragraph.length)
+      out.push("<p>" + inline(paragraph.join(" ")) + "</p>");
+    paragraph = [];
+  };
+  const flushList = () => {
+    if (list)
+      out.push(
+        "<" +
+          list.tag +
+          ">" +
+          list.items.map((i) => "<li>" + inline(i) + "</li>").join("") +
+          "</" +
+          list.tag +
+          ">",
+      );
+    list = null;
+  };
+  const flushQuote = () => {
+    if (quote.length)
+      out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>");
+    quote = [];
+  };
+  const flushAll = () => {
+    flushParagraph();
+    flushList();
+    flushQuote();
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -6913,7 +9695,8 @@ export function markdownToHtml(source) {
       flushAll();
       const code = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("\`\`\`")) code.push(lines[i++]);
+      while (i < lines.length && !lines[i].startsWith("\`\`\`"))
+        code.push(lines[i++]);
       out.push("<pre><code>" + escapeHtml(code.join("\\n")) + "</code></pre>");
       continue;
     }
@@ -6924,17 +9707,36 @@ export function markdownToHtml(source) {
     const quoted = /^> ?(.*)$/.exec(line);
 
     if (!line.trim()) flushAll();
-    else if (heading) { flushAll(); out.push("<h" + heading[1].length + ">" + inline(heading[2]) + "</h" + heading[1].length + ">"); }
-    else if (/^-{3,}$/.test(line.trim())) { flushAll(); out.push("<hr>"); }
-    else if (bullet || numbered) {
+    else if (heading) {
+      flushAll();
+      out.push(
+        "<h" +
+          heading[1].length +
+          ">" +
+          inline(heading[2]) +
+          "</h" +
+          heading[1].length +
+          ">",
+      );
+    } else if (/^-{3,}$/.test(line.trim())) {
+      flushAll();
+      out.push("<hr>");
+    } else if (bullet || numbered) {
       const tag = bullet ? "ul" : "ol";
-      flushParagraph(); flushQuote();
+      flushParagraph();
+      flushQuote();
       if (list && list.tag !== tag) flushList();
       if (!list) list = { tag, items: [] };
       list.items.push((bullet || numbered)[1]);
+    } else if (quoted) {
+      flushParagraph();
+      flushList();
+      quote.push(quoted[1]);
+    } else {
+      flushList();
+      flushQuote();
+      paragraph.push(line.trim());
     }
-    else if (quoted) { flushParagraph(); flushList(); quote.push(quoted[1]); }
-    else { flushList(); flushQuote(); paragraph.push(line.trim()); }
   }
   flushAll();
   return out.join("\\n");
@@ -6986,8 +9788,12 @@ Headings, paragraphs, bold, italic, inline and fenced code, lists, quotes, rules
 
 ~~~ts
 export function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 ~~~
 
@@ -6999,15 +9805,28 @@ export function escapeHtml(text: string): string {
 const SAFE_URL = /^(https?:|mailto:|#|\\/)/i;
 
 function inline(raw: string): string {
-  return raw.split(/(\`[^\`]+\`)/).map((part) => {
-    if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
-    let html = escapeHtml(part);
-    html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match: string, label: string, url: string) =>
-      SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label);
-    html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
-    html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
-    return html;
-  }).join("");
+  return raw
+    .split(/(\`[^\`]+\`)/)
+    .map((part) => {
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      let html = escapeHtml(part);
+      html = html.replace(
+        /\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,
+        (match: string, label: string, url: string) =>
+          SAFE_URL.test(url)
+            ? '<a href="' +
+              url +
+              '" target="_blank" rel="noopener noreferrer">' +
+              label +
+              "</a>"
+            : label,
+      );
+      html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
+      html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
+      return html;
+    })
+    .join("");
 }
 ~~~
 
@@ -7025,20 +9844,30 @@ function inline(raw: string): string {
 @Component({
   selector: "app-root",
   standalone: true,
-  template: \`
-    <textarea id="md-source" data-testid="md-input" spellcheck="false"
-              [value]="source()" (input)="onInput($event)"></textarea>
+  template: \` <textarea
+      id="md-source"
+      data-testid="md-input"
+      spellcheck="false"
+      [value]="source()"
+      (input)="onInput($event)"
+    ></textarea>
     @if (showHtml()) {
       <pre class="md-html" data-testid="md-html">{{ html() }}</pre>
     } @else {
-      <div class="md-preview" data-testid="md-preview" [innerHTML]="html()"></div>
+      <div
+        class="md-preview"
+        data-testid="md-preview"
+        [innerHTML]="html()"
+      ></div>
     }\`,
 })
 export class AppComponent {
   readonly source = signal(SAMPLE);
   readonly showHtml = signal(false);
   readonly html = computed(() => markdownToHtml(this.source()));
-  onInput(event: Event): void { this.source.set((event.target as HTMLTextAreaElement).value); }
+  onInput(event: Event): void {
+    this.source.set((event.target as HTMLTextAreaElement).value);
+  }
 }
 ~~~
 
@@ -7050,7 +9879,7 @@ Styling note: \`[innerHTML]\` content gets no emulated-encapsulation attributes,
 
 AOT build, shared driver:
 
-~~~
+~~~text
 sample tags: h1,p,strong,em,code,ul,li,li,blockquote,a
 sample text: Release notes Version 2.1 adds dark mode and a --quiet flag. Faster searchFewer bugs Tip: read the docs.
 lists + fence tags: h2,ol,li,li,ul,li,pre,code
@@ -7171,12 +10000,23 @@ import { SAMPLE } from "./sample";
       <div class="md">
         <section class="md-pane">
           <label for="md-source" class="md-label">Markdown</label>
-          <textarea id="md-source" data-testid="md-input" spellcheck="false" [value]="source()" (input)="onInput($event)"></textarea>
+          <textarea
+            id="md-source"
+            data-testid="md-input"
+            spellcheck="false"
+            [value]="source()"
+            (input)="onInput($event)"
+          ></textarea>
         </section>
         <section class="md-pane" aria-labelledby="md-preview-label">
           <div class="md-head">
             <span id="md-preview-label" class="md-label">Preview</span>
-            <button type="button" data-testid="toggle-html" [attr.aria-pressed]="showHtml()" (click)="showHtml.set(!showHtml())">
+            <button
+              type="button"
+              data-testid="toggle-html"
+              [attr.aria-pressed]="showHtml()"
+              (click)="showHtml.set(!showHtml())"
+            >
               {{ showHtml() ? "Show preview" : "Show HTML" }}
             </button>
           </div>
@@ -7184,32 +10024,125 @@ import { SAMPLE } from "./sample";
             <pre class="md-html" data-testid="md-html">{{ html() }}</pre>
           } @else {
             <!-- Angular also sanitizes [innerHTML]: a second line of defence behind escapeHtml. -->
-            <div class="md-preview" data-testid="md-preview" [innerHTML]="html()"></div>
+            <div
+              class="md-preview"
+              data-testid="md-preview"
+              [innerHTML]="html()"
+            ></div>
           }
         </section>
       </div>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; font-family: system-ui, sans-serif; background: #0f1117; color: #e6e6e6; }
-    .page { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
-    .title { font-size: 1.4rem; margin: 0 0 12px; }
-    .md { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 640px) { .md { grid-template-columns: 1fr; } }
-    .md-pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-    .md-head { display: flex; justify-content: space-between; align-items: center; }
-    .md-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d8596; }
-    .md-head button { padding: 4px 10px; border-radius: 6px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; cursor: pointer; }
-    textarea { min-height: 320px; padding: 12px; border-radius: 10px; border: 1px solid #333a48; background: #1b1f2a; color: inherit; font: 0.9rem/1.5 ui-monospace, monospace; resize: vertical; }
-    .md-preview, .md-html { min-height: 320px; margin: 0; padding: 12px 16px; border-radius: 10px; border: 1px solid #333a48; background: #151821; overflow-wrap: anywhere; }
-    .md-html { white-space: pre-wrap; font: 0.8rem/1.5 ui-monospace, monospace; color: #a9b0bc; }
-    /* [innerHTML] content gets no component scoping attributes, so style it with ::ng-deep. */
-    .md-preview ::ng-deep code { background: #262b38; padding: 1px 5px; border-radius: 4px; }
-    .md-preview ::ng-deep pre { background: #262b38; padding: 10px; border-radius: 8px; overflow-x: auto; }
-    .md-preview ::ng-deep pre code { background: none; padding: 0; }
-    .md-preview ::ng-deep blockquote { margin: 0; padding-left: 12px; border-left: 3px solid #5b8def; color: #a9b0bc; }
-    .md-preview ::ng-deep a { color: #8ab4ff; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        font-family: system-ui, sans-serif;
+        background: #0f1117;
+        color: #e6e6e6;
+      }
+      .page {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      .title {
+        font-size: 1.4rem;
+        margin: 0 0 12px;
+      }
+      .md {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      @media (max-width: 640px) {
+        .md {
+          grid-template-columns: 1fr;
+        }
+      }
+      .md-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+      }
+      .md-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .md-label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #7d8596;
+      }
+      .md-head button {
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid #333a48;
+        background: #1b1f2a;
+        color: inherit;
+        cursor: pointer;
+      }
+      textarea {
+        min-height: 320px;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid #333a48;
+        background: #1b1f2a;
+        color: inherit;
+        font:
+          0.9rem/1.5 ui-monospace,
+          monospace;
+        resize: vertical;
+      }
+      .md-preview,
+      .md-html {
+        min-height: 320px;
+        margin: 0;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 1px solid #333a48;
+        background: #151821;
+        overflow-wrap: anywhere;
+      }
+      .md-html {
+        white-space: pre-wrap;
+        font:
+          0.8rem/1.5 ui-monospace,
+          monospace;
+        color: #a9b0bc;
+      }
+      /* [innerHTML] content gets no component scoping attributes, so style it with ::ng-deep. */
+      .md-preview ::ng-deep code {
+        background: #262b38;
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+      .md-preview ::ng-deep pre {
+        background: #262b38;
+        padding: 10px;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+      .md-preview ::ng-deep pre code {
+        background: none;
+        padding: 0;
+      }
+      .md-preview ::ng-deep blockquote {
+        margin: 0;
+        padding-left: 12px;
+        border-left: 3px solid #5b8def;
+        color: #a9b0bc;
+      }
+      .md-preview ::ng-deep a {
+        color: #8ab4ff;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly source = signal(SAMPLE);
@@ -7238,7 +10171,8 @@ export function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Only these URL schemes become links; javascript:, data: and the rest stay text.
+// Only these URL schemes become links;
+// javascript:, data: and the rest stay text.
 const SAFE_URL = /^(https?:|mailto:|#|\\/)/i;
 
 function inline(raw: string): string {
@@ -7246,10 +10180,19 @@ function inline(raw: string): string {
   return raw
     .split(/(\`[^\`]+\`)/)
     .map((part) => {
-      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`")) return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
+      if (part.length > 1 && part.startsWith("\`") && part.endsWith("\`"))
+        return "<code>" + escapeHtml(part.slice(1, -1)) + "</code>";
       let html = escapeHtml(part);
-      html = html.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g, (match: string, label: string, url: string) =>
-        SAFE_URL.test(url) ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + "</a>" : label
+      html = html.replace(
+        /\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,
+        (match: string, label: string, url: string) =>
+          SAFE_URL.test(url)
+            ? '<a href="' +
+              url +
+              '" target="_blank" rel="noopener noreferrer">' +
+              label +
+              "</a>"
+            : label,
       );
       html = html.replace(/\\*\\*([^*]+)\\*\\*/g, "<strong>$1</strong>");
       html = html.replace(/\\*([^*]+)\\*/g, "<em>$1</em>");
@@ -7265,10 +10208,34 @@ export function markdownToHtml(source: string): string {
   let list: { tag: "ul" | "ol"; items: string[] } | null = null;
   let quote: string[] = [];
 
-  const flushParagraph = () => { if (paragraph.length) out.push("<p>" + inline(paragraph.join(" ")) + "</p>"); paragraph = []; };
-  const flushList = () => { if (list) out.push("<" + list.tag + ">" + list.items.map((i: string) => "<li>" + inline(i) + "</li>").join("") + "</" + list.tag + ">"); list = null; };
-  const flushQuote = () => { if (quote.length) out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>"); quote = []; };
-  const flushAll = () => { flushParagraph(); flushList(); flushQuote(); };
+  const flushParagraph = () => {
+    if (paragraph.length)
+      out.push("<p>" + inline(paragraph.join(" ")) + "</p>");
+    paragraph = [];
+  };
+  const flushList = () => {
+    if (list)
+      out.push(
+        "<" +
+          list.tag +
+          ">" +
+          list.items.map((i: string) => "<li>" + inline(i) + "</li>").join("") +
+          "</" +
+          list.tag +
+          ">",
+      );
+    list = null;
+  };
+  const flushQuote = () => {
+    if (quote.length)
+      out.push("<blockquote>" + inline(quote.join(" ")) + "</blockquote>");
+    quote = [];
+  };
+  const flushAll = () => {
+    flushParagraph();
+    flushList();
+    flushQuote();
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -7277,7 +10244,8 @@ export function markdownToHtml(source: string): string {
       flushAll();
       const code: string[] = [];
       i++;
-      while (i < lines.length && !lines[i].startsWith("\`\`\`")) code.push(lines[i++]);
+      while (i < lines.length && !lines[i].startsWith("\`\`\`"))
+        code.push(lines[i++]);
       out.push("<pre><code>" + escapeHtml(code.join("\\n")) + "</code></pre>");
       continue;
     }
@@ -7288,17 +10256,36 @@ export function markdownToHtml(source: string): string {
     const quoted = /^> ?(.*)$/.exec(line);
 
     if (!line.trim()) flushAll();
-    else if (heading) { flushAll(); out.push("<h" + heading[1].length + ">" + inline(heading[2]) + "</h" + heading[1].length + ">"); }
-    else if (/^-{3,}$/.test(line.trim())) { flushAll(); out.push("<hr>"); }
-    else if (bullet || numbered) {
+    else if (heading) {
+      flushAll();
+      out.push(
+        "<h" +
+          heading[1].length +
+          ">" +
+          inline(heading[2]) +
+          "</h" +
+          heading[1].length +
+          ">",
+      );
+    } else if (/^-{3,}$/.test(line.trim())) {
+      flushAll();
+      out.push("<hr>");
+    } else if (bullet || numbered) {
       const tag = bullet ? "ul" : "ol";
-      flushParagraph(); flushQuote();
+      flushParagraph();
+      flushQuote();
       if (list && list.tag !== tag) flushList();
       if (!list) list = { tag, items: [] };
       list.items.push((bullet || numbered)![1]);
+    } else if (quoted) {
+      flushParagraph();
+      flushList();
+      quote.push(quoted[1]);
+    } else {
+      flushList();
+      flushQuote();
+      paragraph.push(line.trim());
     }
-    else if (quoted) { flushParagraph(); flushList(); quote.push(quoted[1]); }
-    else { flushList(); flushQuote(); paragraph.push(line.trim()); }
   }
   flushAll();
   return out.join("\\n");

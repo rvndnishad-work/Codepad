@@ -169,7 +169,7 @@ useEffect(() => {
         update("loading");
       }
     },
-    { rootMargin }
+    { rootMargin },
   );
   io.observe(boxRef.current);
   return () => io.disconnect();
@@ -189,18 +189,22 @@ Three details make this effect correct:
 ### Step 3: Render the image only when requested, and fade it in
 
 ~~~jsx
-{(status === "loading" || status === "loaded") && (
-  <img
-    src={src}
-    alt={alt}
-    width={width}
-    height={height}
-    decoding="async"
-    className={status === "loaded" ? "lazy-img is-loaded" : "lazy-img"}
-    onLoad={() => update("loaded")}
-    onError={() => update("error")}
-  />
-)}
+{
+  (status === "loading" || status === "loaded") && (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      decoding="async"
+      className={
+        status === "loaded" ? "lazy-img is-loaded" : "lazy-img"
+      }
+      onLoad={() => update("loaded")}
+      onError={() => update("error")}
+    />
+  );
+}
 ~~~
 
 Not rendering the \`<img>\` at all while idle is the core trick: no \`src\`, no request. The CSS keeps the image at \`opacity: 0\` until the \`is-loaded\` class arrives, then a 0.4s transition fades it in (switched off under \`prefers-reduced-motion\`).
@@ -210,12 +214,16 @@ Not rendering the \`<img>\` at all while idle is the core trick: no \`src\`, no 
 ### Step 4: Error state and a real retry
 
 ~~~jsx
-{status === "error" && (
-  <div className="lazy-error" role="alert">
-    <span>Could not load "{alt}"</span>
-    <button type="button" onClick={retry}>Retry</button>
-  </div>
-)}
+{
+  status === "error" && (
+    <div className="lazy-error" role="alert">
+      <span>Could not load "{alt}"</span>
+      <button type="button" onClick={retry}>
+        Retry
+      </button>
+    </div>
+  );
+}
 ~~~
 
 The error branch unmounts the \`<img>\`. Retry sets the status back to \`loading\`, which mounts a brand new \`<img>\` element, so the browser really requests the file again. For an HTTP URL that the server might cache as a failure, you would also add a cache-busting query such as \`?retry=2\`.
@@ -251,7 +259,7 @@ A strong answer mentions both and says which one you would ship. A pragmatic hyb
 
 The solution was mounted in jsdom with \`createRoot(...).render(<StrictMode><App /></StrictMode>)\`, the way the playground boots it. jsdom has no \`IntersectionObserver\` and never downloads images, so the driver first records the fallback path, then installs a **fake IntersectionObserver** that records each instance and lets it trigger intersections by hand, clicks Reset demo to remount the feed, and fires \`load\` / \`error\` events on the \`<img>\` tags itself. Letters per photo: \`.\` idle, \`o\` loading, \`#\` loaded, \`x\` error.
 
-\`\`\`
+\`\`\`text
 no IO   : oooooooo | 8 img tags | Requested 8 of 8 · loaded 0 · failed 0
 reset   : ........ | 0 img tags | live observers 8 | rootMargin 200px
 2 in view: oo...... | 2 img tags | Requested 2 of 8 · loaded 0 · failed 0 | live observers 6
@@ -267,7 +275,7 @@ Read it line by line: without the API every image loads at once (the fallback). 
 
 The same files were then bundled and opened in **headless Chromium 141** with a real \`IntersectionObserver\`, a 400 × 700 viewport and real image decoding:
 
-\`\`\`
+\`\`\`text
 at top      : ###..... | Requested 3 of 8 · loaded 3 · failed 0
 after 1000px: #####x#. | Requested 7 of 8 · loaded 6 · failed 1
 at bottom   : #####x## | Requested 8 of 8 · loaded 7 · failed 1
@@ -396,7 +404,9 @@ function Feed({ onStatus }) {
             placeholder={p.placeholder}
             onStatus={(s) => onStatus(p.id, s)}
           />
-          <figcaption>{p.id}. {p.alt}</figcaption>
+          <figcaption>
+            {p.id}. {p.alt}
+          </figcaption>
         </figure>
       ))}
     </div>
@@ -407,7 +417,8 @@ export default function App() {
   const [run, setRun] = useState(0); // bump to remount the feed
   const [statuses, setStatuses] = useState({});
 
-  const report = (id, s) => setStatuses((prev) => (prev[id] === s ? prev : { ...prev, [id]: s }));
+  const report = (id, s) =>
+    setStatuses((prev) => (prev[id] === s ? prev : { ...prev, [id]: s }));
   const values = Object.values(statuses);
   const requested = values.length;
   const loaded = values.filter((s) => s === "loaded").length;
@@ -423,11 +434,17 @@ export default function App() {
       <header className="bar">
         <h1>Lazy-loaded images</h1>
         <p data-testid="stats" aria-live="polite">
-          Requested {requested} of {photos.length} · loaded {loaded} · failed {failed}
+          Requested {requested} of {photos.length} · loaded {loaded} · failed{" "}
+          {failed}
         </p>
-        <button type="button" onClick={reset}>Reset demo</button>
+        <button type="button" onClick={reset}>
+          Reset demo
+        </button>
       </header>
-      <p className="hint">Scroll the feed: each photo is requested only when it comes within 200px of the view.</p>
+      <p className="hint">
+        Scroll the feed: each photo is requested only when it comes within 200px
+        of the view.
+      </p>
       <Feed key={run} onStatus={report} />
     </main>
   );
@@ -436,7 +453,15 @@ export default function App() {
           "/src/LazyImage.js": `import { useEffect, useRef, useState } from "react";
 
 // status: "idle" (not requested) -> "loading" (src set) -> "loaded" | "error"
-export default function LazyImage({ src, alt, width, height, placeholder, rootMargin = "200px", onStatus }) {
+export default function LazyImage({
+  src,
+  alt,
+  width,
+  height,
+  placeholder,
+  rootMargin = "200px",
+  onStatus,
+}) {
   const [status, setStatus] = useState("idle");
   const boxRef = useRef(null);
 
@@ -459,7 +484,7 @@ export default function LazyImage({ src, alt, width, height, placeholder, rootMa
           update("loading");
         }
       },
-      { rootMargin }
+      { rootMargin },
     );
     io.observe(boxRef.current);
     return () => io.disconnect();
@@ -495,7 +520,9 @@ export default function LazyImage({ src, alt, width, height, placeholder, rootMa
       {status === "error" && (
         <div className="lazy-error" role="alert">
           <span>Could not load "{alt}"</span>
-          <button type="button" onClick={retry}>Retry</button>
+          <button type="button" onClick={retry}>
+            Retry
+          </button>
         </div>
       )}
     </div>
@@ -505,27 +532,70 @@ export default function LazyImage({ src, alt, width, height, placeholder, rootMa
           "/src/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue, label) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 640, height: 400, viewBox: "0 0 640 400" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 40) + ",70%,30%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 640,
+      height: 400,
+      viewBox: "0 0 640 400",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 40) + ",70%,30%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 640, height: 400, fill: "url(#g)" }),
-    el("circle", { cx: 500, cy: 110, r: 60, fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)" }),
-    el("path", { d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z", fill: "hsla(" + hue + ",40%,15%,0.7)" }),
-    el("text", { x: 32, y: 64, "font-family": "sans-serif", "font-size": 40, fill: "white" }, [label]),
-  ]);
+      el("rect", { width: 640, height: 400, fill: "url(#g)" }),
+      el("circle", {
+        cx: 500,
+        cy: 110,
+        r: 60,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)",
+      }),
+      el("path", {
+        d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z",
+        fill: "hsla(" + hue + ",40%,15%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 32,
+          y: 64,
+          "font-family": "sans-serif",
+          "font-size": 40,
+          fill: "white",
+        },
+        [label],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const names = ["Dunes", "Lagoon", "Forest", "Canyon", "Glacier", "Broken link", "Meadow", "Volcano"];
+const names = [
+  "Dunes",
+  "Lagoon",
+  "Forest",
+  "Canyon",
+  "Glacier",
+  "Broken link",
+  "Meadow",
+  "Volcano",
+];
 
 export const photos = names.map((name, i) => {
   const hue = (i * 45) % 360;
@@ -533,31 +603,140 @@ export const photos = names.map((name, i) => {
     id: i + 1,
     alt: name,
     // Photo 6 points at a corrupt file on purpose, to show the error state.
-    src: name === "Broken link" ? "data:image/png;base64,AAAA" : svgPhoto(hue, name),
+    src:
+      name === "Broken link"
+        ? "data:image/png;base64,AAAA"
+        : svgPhoto(hue, name),
     // Low-quality placeholder: the photo dominant colours as a CSS gradient.
-    placeholder: "linear-gradient(135deg, hsl(" + hue + ",45%,40%), hsl(" + (hue + 40) + ",45%,22%))",
+    placeholder:
+      "linear-gradient(135deg, hsl(" +
+      hue +
+      ",45%,40%), hsl(" +
+      (hue + 40) +
+      ",45%,22%))",
   };
 });
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 640px; margin: 0 auto; padding: 16px; }
-.bar { position: sticky; top: 0; z-index: 1; background: #0f1115; padding: 8px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
-.bar h1 { font-size: 1.2rem; margin: 0; flex: 1 1 100%; }
-.bar p { margin: 0; color: #a8b3c7; font-size: 0.9rem; flex: 1; }
-button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-button:hover { background: #343d52; }
-button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.feed { display: grid; gap: 24px; }
-figure { margin: 0; }
-figcaption { margin-top: 6px; color: #a8b3c7; font-size: 0.9rem; }
-.lazy { position: relative; width: 100%; border-radius: 10px; overflow: hidden; }
-.lazy[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); animation: shimmer 1.2s infinite; }
-@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-.lazy-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; }
-.lazy-img.is-loaded { opacity: 1; }
-.lazy-error { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; background: rgba(20, 10, 10, 0.75); color: #ffb4a8; }
-@media (prefers-reduced-motion: reduce) { .lazy-img { transition: none; } .lazy[aria-busy="true"]::after { animation: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f1115;
+  padding: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.bar h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  flex: 1 1 100%;
+}
+.bar p {
+  margin: 0;
+  color: #a8b3c7;
+  font-size: 0.9rem;
+  flex: 1;
+}
+button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover {
+  background: #343d52;
+}
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.feed {
+  display: grid;
+  gap: 24px;
+}
+figure {
+  margin: 0;
+}
+figcaption {
+  margin-top: 6px;
+  color: #a8b3c7;
+  font-size: 0.9rem;
+}
+.lazy {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lazy[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.lazy-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.lazy-img.is-loaded {
+  opacity: 1;
+}
+.lazy-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 10, 10, 0.75);
+  color: #ffb4a8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lazy-img {
+    transition: none;
+  }
+  .lazy[aria-busy="true"]::after {
+    animation: none;
+  }
+}
 `,
         },
       },
@@ -619,7 +798,10 @@ const box = useTemplateRef("box");
 let io = null;
 
 function stop() {
-  if (io) { io.disconnect(); io = null; }
+  if (io) {
+    io.disconnect();
+    io = null;
+  }
 }
 
 onMounted(() => {
@@ -634,7 +816,7 @@ onMounted(() => {
         update("loading");
       }
     },
-    { rootMargin: props.rootMargin }
+    { rootMargin: props.rootMargin },
   );
   io.observe(box.value);
 });
@@ -686,7 +868,7 @@ function update(next) {
 
 Mounted in jsdom with \`createApp(App).mount("#app")\`. jsdom has no \`IntersectionObserver\` and never downloads images, so the driver records the no-observer fallback, installs a **fake IntersectionObserver** that it triggers by hand, clicks Reset demo, and dispatches \`load\` / \`error\` on the \`<img>\` tags. \`.\` idle, \`o\` loading, \`#\` loaded, \`x\` error:
 
-\`\`\`
+\`\`\`text
 no IO   : oooooooo | 8 img tags | Requested 8 of 8 · loaded 0 · failed 0
 reset   : ........ | 0 img tags | live observers 8 | rootMargin 200px
 2 in view: oo...... | 2 img tags | Requested 2 of 8 · loaded 0 · failed 0 | live observers 6
@@ -792,7 +974,9 @@ const run = ref(0); // bump to remount the feed
 const statuses = ref({});
 
 const values = computed(() => Object.values(statuses.value));
-const loaded = computed(() => values.value.filter((s) => s === "loaded").length);
+const loaded = computed(
+  () => values.value.filter((s) => s === "loaded").length,
+);
 const failed = computed(() => values.value.filter((s) => s === "error").length);
 
 function report(id, s) {
@@ -831,18 +1015,70 @@ function reset() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 640px; margin: 0 auto; padding: 16px; }
-.bar { position: sticky; top: 0; z-index: 1; background: #0f1115; padding: 8px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
-.bar h1 { font-size: 1.2rem; margin: 0; flex: 1 1 100%; }
-.bar p { margin: 0; color: #a8b3c7; font-size: 0.9rem; flex: 1; }
-button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-button:hover { background: #343d52; }
-button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.feed { display: grid; gap: 24px; }
-figure { margin: 0; }
-figcaption { margin-top: 6px; color: #a8b3c7; font-size: 0.9rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f1115;
+  padding: 8px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.bar h1 {
+  font-size: 1.2rem;
+  margin: 0;
+  flex: 1 1 100%;
+}
+.bar p {
+  margin: 0;
+  color: #a8b3c7;
+  font-size: 0.9rem;
+  flex: 1;
+}
+button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover {
+  background: #343d52;
+}
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.feed {
+  display: grid;
+  gap: 24px;
+}
+figure {
+  margin: 0;
+}
+figcaption {
+  margin-top: 6px;
+  color: #a8b3c7;
+  font-size: 0.9rem;
+}
 </style>
 `,
           "/src/components/LazyImage.vue": `<script setup>
@@ -869,7 +1105,10 @@ function update(next) {
 }
 
 function stop() {
-  if (io) { io.disconnect(); io = null; }
+  if (io) {
+    io.disconnect();
+    io = null;
+  }
 }
 
 onMounted(() => {
@@ -884,7 +1123,7 @@ onMounted(() => {
         update("loading");
       }
     },
-    { rootMargin: props.rootMargin }
+    { rootMargin: props.rootMargin },
   );
   io.observe(box.value);
 });
@@ -925,39 +1164,131 @@ function retry() {
 </template>
 
 <style>
-.lazy { position: relative; width: 100%; border-radius: 10px; overflow: hidden; }
-.lazy[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); animation: shimmer 1.2s infinite; }
-@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-.lazy-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; }
-.lazy-img.is-loaded { opacity: 1; }
-.lazy-error { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; background: rgba(20, 10, 10, 0.75); color: #ffb4a8; }
-@media (prefers-reduced-motion: reduce) { .lazy-img { transition: none; } .lazy[aria-busy="true"]::after { animation: none; } }
+.lazy {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lazy[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.lazy-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.lazy-img.is-loaded {
+  opacity: 1;
+}
+.lazy-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 10, 10, 0.75);
+  color: #ffb4a8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lazy-img {
+    transition: none;
+  }
+  .lazy[aria-busy="true"]::after {
+    animation: none;
+  }
+}
 </style>
 `,
           "/src/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue, label) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 640, height: 400, viewBox: "0 0 640 400" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 40) + ",70%,30%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 640,
+      height: 400,
+      viewBox: "0 0 640 400",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 40) + ",70%,30%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 640, height: 400, fill: "url(#g)" }),
-    el("circle", { cx: 500, cy: 110, r: 60, fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)" }),
-    el("path", { d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z", fill: "hsla(" + hue + ",40%,15%,0.7)" }),
-    el("text", { x: 32, y: 64, "font-family": "sans-serif", "font-size": 40, fill: "white" }, [label]),
-  ]);
+      el("rect", { width: 640, height: 400, fill: "url(#g)" }),
+      el("circle", {
+        cx: 500,
+        cy: 110,
+        r: 60,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)",
+      }),
+      el("path", {
+        d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z",
+        fill: "hsla(" + hue + ",40%,15%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 32,
+          y: 64,
+          "font-family": "sans-serif",
+          "font-size": 40,
+          fill: "white",
+        },
+        [label],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const names = ["Dunes", "Lagoon", "Forest", "Canyon", "Glacier", "Broken link", "Meadow", "Volcano"];
+const names = [
+  "Dunes",
+  "Lagoon",
+  "Forest",
+  "Canyon",
+  "Glacier",
+  "Broken link",
+  "Meadow",
+  "Volcano",
+];
 
 export const photos = names.map((name, i) => {
   const hue = (i * 45) % 360;
@@ -965,9 +1296,17 @@ export const photos = names.map((name, i) => {
     id: i + 1,
     alt: name,
     // Photo 6 points at a corrupt file on purpose, to show the error state.
-    src: name === "Broken link" ? "data:image/png;base64,AAAA" : svgPhoto(hue, name),
+    src:
+      name === "Broken link"
+        ? "data:image/png;base64,AAAA"
+        : svgPhoto(hue, name),
     // Low-quality placeholder: the photo dominant colours as a CSS gradient.
-    placeholder: "linear-gradient(135deg, hsl(" + hue + ",45%,40%), hsl(" + (hue + 40) + ",45%,22%))",
+    placeholder:
+      "linear-gradient(135deg, hsl(" +
+      hue +
+      ",45%,40%), hsl(" +
+      (hue + 40) +
+      ",45%,22%))",
   };
 });
 `,
@@ -1022,7 +1361,7 @@ ngAfterViewInit(): void {
         this.update("loading");
       }
     },
-    { rootMargin: this.rootMargin }
+    { rootMargin: this.rootMargin },
   );
   this.io.observe(this.box.nativeElement);
 }
@@ -1041,13 +1380,27 @@ ngOnDestroy(): void {
 ### Step 2: The template follows the status with \`@if\`
 
 ~~~html
-<div #box class="lazy" [attr.data-status]="status()" [attr.aria-busy]="status() === 'loading'"
-     [style.aspect-ratio]="width + ' / ' + height" [style.background]="placeholder">
-  @if (status() === 'loading' || status() === 'loaded') {
-    <img [src]="src" [alt]="alt" [width]="width" [height]="height" decoding="async"
-         class="lazy-img" [class.is-loaded]="status() === 'loaded'"
-         (load)="update('loaded')" (error)="update('error')" />
-  } @else if (status() === 'error') {
+<div
+  #box
+  class="lazy"
+  [attr.data-status]="status()"
+  [attr.aria-busy]="status() === 'loading'"
+  [style.aspect-ratio]="width + ' / ' + height"
+  [style.background]="placeholder"
+>
+  @if (status() === "loading" || status() === "loaded") {
+    <img
+      [src]="src"
+      [alt]="alt"
+      [width]="width"
+      [height]="height"
+      decoding="async"
+      class="lazy-img"
+      [class.is-loaded]="status() === 'loaded'"
+      (load)="update('loaded')"
+      (error)="update('error')"
+    />
+  } @else if (status() === "error") {
     <div class="lazy-error" role="alert">
       <span>Could not load "{{ alt }}"</span>
       <button type="button" (click)="retry()">Retry</button>
@@ -1081,7 +1434,7 @@ A new \`run\` value is a new key, so the block is destroyed and recreated, which
 
 Booted with \`bootstrapApplication(AppComponent)\` in jsdom, AOT (\`ngc\` with \`strictTemplates\`) and runtime JIT, both passing. jsdom has no \`IntersectionObserver\` and never loads images, so the driver records the fallback, installs a **fake IntersectionObserver** it triggers by hand, clicks Reset demo, and dispatches \`load\` / \`error\` itself. \`.\` idle, \`o\` loading, \`#\` loaded, \`x\` error:
 
-\`\`\`
+\`\`\`text
 no IO   : oooooooo | 8 img tags | Requested 8 of 8 · loaded 0 · failed 0
 reset   : ........ | 0 img tags | live observers 8 | rootMargin 200px
 2 in view: oo...... | 2 img tags | Requested 2 of 8 · loaded 0 · failed 0 | live observers 6
@@ -1216,7 +1569,8 @@ import { photos } from "./photos";
       }
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 640px; margin: 0 auto; padding: 16px; }
     .bar { position: sticky; top: 0; z-index: 1; background: #0f1115; padding: 8px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
@@ -1228,7 +1582,8 @@ import { photos } from "./photos";
     .feed { display: grid; gap: 24px; }
     figure { margin: 0; }
     figcaption { margin-top: 6px; color: #a8b3c7; font-size: 0.9rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly photos = photos;
@@ -1237,8 +1592,12 @@ export class AppComponent {
   readonly statuses = signal<Record<number, LoadStatus>>({});
 
   readonly requested = computed(() => Object.keys(this.statuses()).length);
-  readonly loaded = computed(() => Object.values(this.statuses()).filter((s) => s === "loaded").length);
-  readonly failed = computed(() => Object.values(this.statuses()).filter((s) => s === "error").length);
+  readonly loaded = computed(
+    () => Object.values(this.statuses()).filter((s) => s === "loaded").length,
+  );
+  readonly failed = computed(
+    () => Object.values(this.statuses()).filter((s) => s === "error").length,
+  );
 
   report(id: number, s: LoadStatus): void {
     this.statuses.update((prev) => ({ ...prev, [id]: s }));
@@ -1250,7 +1609,17 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/lazy-image.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, AfterViewInit, OnDestroy, signal } from "@angular/core";
+          "/src/app/lazy-image.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  AfterViewInit,
+  OnDestroy,
+  signal,
+} from "@angular/core";
 
 export type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -1267,7 +1636,7 @@ export type LoadStatus = "idle" | "loading" | "loaded" | "error";
       [style.aspect-ratio]="width + ' / ' + height"
       [style.background]="placeholder"
     >
-      @if (status() === 'loading' || status() === 'loaded') {
+      @if (status() === "loading" || status() === "loaded") {
         <img
           [src]="src"
           [alt]="alt"
@@ -1279,7 +1648,7 @@ export type LoadStatus = "idle" | "loading" | "loaded" | "error";
           (load)="update('loaded')"
           (error)="update('error')"
         />
-      } @else if (status() === 'error') {
+      } @else if (status() === "error") {
         <div class="lazy-error" role="alert">
           <span>Could not load "{{ alt }}"</span>
           <button type="button" (click)="retry()">Retry</button>
@@ -1287,17 +1656,77 @@ export type LoadStatus = "idle" | "loading" | "loaded" | "error";
       }
     </div>
   \`,
-  styles: [\`
-    :host { display: block; }
-    .lazy { position: relative; width: 100%; border-radius: 10px; overflow: hidden; }
-    .lazy[aria-busy="true"]::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); animation: shimmer 1.2s infinite; }
-    @keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
-    .lazy-img { display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s ease; }
-    .lazy-img.is-loaded { opacity: 1; }
-    .lazy-error { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; background: rgba(20, 10, 10, 0.75); color: #ffb4a8; }
-    button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-    @media (prefers-reduced-motion: reduce) { .lazy-img { transition: none; } .lazy[aria-busy="true"]::after { animation: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .lazy {
+        position: relative;
+        width: 100%;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .lazy[aria-busy="true"]::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.12),
+          transparent
+        );
+        animation: shimmer 1.2s infinite;
+      }
+      @keyframes shimmer {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(100%);
+        }
+      }
+      .lazy-img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      .lazy-img.is-loaded {
+        opacity: 1;
+      }
+      .lazy-error {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 10, 10, 0.75);
+        color: #ffb4a8;
+      }
+      button {
+        background: #2a3142;
+        color: #e6e6e6;
+        border: 1px solid #3d4760;
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .lazy-img {
+          transition: none;
+        }
+        .lazy[aria-busy="true"]::after {
+          animation: none;
+        }
+      }
+    \`,
+  ],
 })
 export class LazyImageComponent implements AfterViewInit, OnDestroy {
   @Input({ required: true }) src = "";
@@ -1326,7 +1755,7 @@ export class LazyImageComponent implements AfterViewInit, OnDestroy {
           this.update("loading");
         }
       },
-      { rootMargin: this.rootMargin }
+      { rootMargin: this.rootMargin },
     );
     this.io.observe(this.box.nativeElement);
   }
@@ -1356,30 +1785,82 @@ export class LazyImageComponent implements AfterViewInit, OnDestroy {
 `,
           "/src/app/photos.ts": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
-function el(tag: string, attrs: Record<string, string | number>, children?: string[]): string {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+function el(
+  tag: string,
+  attrs: Record<string, string | number>,
+  children?: string[],
+): string {
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue: number, label: string): string {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 640, height: 400, viewBox: "0 0 640 400" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 40) + ",70%,30%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 640,
+      height: 400,
+      viewBox: "0 0 640 400",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 40) + ",70%,30%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 640, height: 400, fill: "url(#g)" }),
-    el("circle", { cx: 500, cy: 110, r: 60, fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)" }),
-    el("path", { d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z", fill: "hsla(" + hue + ",40%,15%,0.7)" }),
-    el("text", { x: 32, y: 64, "font-family": "sans-serif", "font-size": 40, fill: "white" }, [label]),
-  ]);
+      el("rect", { width: 640, height: 400, fill: "url(#g)" }),
+      el("circle", {
+        cx: 500,
+        cy: 110,
+        r: 60,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.6)",
+      }),
+      el("path", {
+        d: "M0 400 L180 220 L300 330 L420 200 L640 400 Z",
+        fill: "hsla(" + hue + ",40%,15%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 32,
+          y: 64,
+          "font-family": "sans-serif",
+          "font-size": 40,
+          fill: "white",
+        },
+        [label],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const names = ["Dunes", "Lagoon", "Forest", "Canyon", "Glacier", "Broken link", "Meadow", "Volcano"];
+const names = [
+  "Dunes",
+  "Lagoon",
+  "Forest",
+  "Canyon",
+  "Glacier",
+  "Broken link",
+  "Meadow",
+  "Volcano",
+];
 
-export interface Photo { id: number; alt: string; src: string; placeholder: string; }
+export interface Photo {
+  id: number;
+  alt: string;
+  src: string;
+  placeholder: string;
+}
 
 export const photos: Photo[] = names.map((name, i) => {
   const hue = (i * 45) % 360;
@@ -1387,9 +1868,17 @@ export const photos: Photo[] = names.map((name, i) => {
     id: i + 1,
     alt: name,
     // Photo 6 points at a corrupt file on purpose, to show the error state.
-    src: name === "Broken link" ? "data:image/png;base64,AAAA" : svgPhoto(hue, name),
+    src:
+      name === "Broken link"
+        ? "data:image/png;base64,AAAA"
+        : svgPhoto(hue, name),
     // Low-quality placeholder: the photo dominant colours as a CSS gradient.
-    placeholder: "linear-gradient(135deg, hsl(" + hue + ",45%,40%), hsl(" + (hue + 40) + ",45%,22%))",
+    placeholder:
+      "linear-gradient(135deg, hsl(" +
+      hue +
+      ",45%,40%), hsl(" +
+      (hue + 40) +
+      ",45%,22%))",
   };
 });
 `,
@@ -1509,10 +1998,19 @@ const go = (i) => setIndex(((i % n) + n) % n);
 ### Step 2: The sliding track
 
 ~~~jsx
-<div className="track" style={{ transform: "translateX(-" + index * 100 + "%)" }}>
+<div
+  className="track"
+  style={{ transform: "translateX(-" + index * 100 + "%)" }}
+>
   {slides.map((s, i) => (
-    <div key={s.id} className="slide" role="group" aria-roledescription="slide"
-         aria-label={i + 1 + " of " + n} aria-hidden={i !== index}>
+    <div
+      key={s.id}
+      className="slide"
+      role="group"
+      aria-roledescription="slide"
+      aria-label={i + 1 + " of " + n}
+      aria-hidden={i !== index}
+    >
       <img src={s.src} alt={s.alt} draggable={false} />
     </div>
   ))}
@@ -1548,7 +2046,8 @@ function onFocus(e) {
   if (e.target.matches(":focus-visible")) setFocused(true);
 }
 function onBlur(e) {
-  // focusout fires when moving between our own buttons too: ignore that.
+  // focusout fires when moving between
+  // our own buttons too: ignore that.
   if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
 }
 ~~~
@@ -1565,7 +2064,12 @@ The Play / Pause button flips \`playing\`, the user's permanent choice. It is la
 
 ~~~jsx
 function onKeyDown(e) {
-  const moves = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: n - 1 };
+  const moves = {
+    ArrowLeft: index - 1,
+    ArrowRight: index + 1,
+    Home: 0,
+    End: n - 1,
+  };
   if (!(e.key in moves)) return;
   e.preventDefault();
   go(moves[e.key]);
@@ -1580,7 +2084,7 @@ The \`<section>\` has \`tabIndex={0}\`, \`aria-roledescription="carousel"\` and 
 
 Mounted in jsdom with \`createRoot(...).render(<StrictMode><App /></StrictMode>)\`. The driver uses real timers (\`settle(ms)\` lets time pass). For hover it dispatches \`mouseover\` / \`mouseout\` (what React listens to) and \`mouseenter\` / \`mouseleave\` (what Vue and Angular listen to), so one driver serves all three. To imitate keyboard focus, it dispatches a Tab \`keydown\` before focusing, which makes jsdom report \`:focus-visible\` the way a browser would. \`V\` marks the slide not hidden from screen readers.
 
-\`\`\`
+\`\`\`text
 start   : 1 / 5 · Sunrise · auto | translateX(-0%) | V---- | aria-live off
 pause   : 1 / 5 · Sunrise · paused | button: Start automatic slide show | aria-live polite
 next x2 : 3 / 5 · Pine ridge · paused | translateX(-200%) | --V--
@@ -1607,7 +2111,7 @@ focus out: 4 / 5 · Red rocks · auto
 
 Wrap-around works both ways, a paused carousel did not move in 3.3s, a playing one moved once per three seconds, hover and keyboard focus paused it and leaving resumed it, and a click-style focus did not pause it. jsdom has no layout or transitions, so the same build was opened in **headless Chromium 141** with a real mouse:
 
-\`\`\`
+\`\`\`text
 start            : 1 / 5 · Sunrise · auto
 mouse click next : 2 / 5 · Harbour · paused | focused: next | focus-visible: false
 mouse away 3.3s  : 3 / 5 · Pine ridge · auto
@@ -1730,7 +2234,10 @@ export default function App() {
     <main className="app">
       <h1>Image carousel</h1>
       <Carousel slides={slides} interval={3000} label="Featured photos" />
-      <p className="hint">Arrows, dots or the Left / Right keys move; hover or focus pauses autoplay.</p>
+      <p className="hint">
+        Arrows, dots or the Left / Right keys move; hover or focus pauses
+        autoplay.
+      </p>
     </main>
   );
 }
@@ -1738,12 +2245,19 @@ export default function App() {
           "/src/Carousel.js": `import { useEffect, useState } from "react";
 
 const prefersReducedMotion = () =>
-  typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window !== "undefined" &&
+  !!window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export default function Carousel({ slides, interval = 3000, label = "Photos" }) {
+export default function Carousel({
+  slides,
+  interval = 3000,
+  label = "Photos",
+}) {
   const n = slides.length;
   const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(() => !prefersReducedMotion()); // user choice
+  // user choice
+  const [playing, setPlaying] = useState(() => !prefersReducedMotion());
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const running = playing && !hovered && !focused; // derived, never stored
@@ -1759,7 +2273,12 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
   }, [running, index, interval, n]);
 
   function onKeyDown(e) {
-    const moves = { ArrowLeft: index - 1, ArrowRight: index + 1, Home: 0, End: n - 1 };
+    const moves = {
+      ArrowLeft: index - 1,
+      ArrowRight: index + 1,
+      Home: 0,
+      End: n - 1,
+    };
     if (!(e.key in moves)) return;
     e.preventDefault();
     go(moves[e.key]);
@@ -1790,7 +2309,10 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
       onBlur={onBlur}
     >
       <div className="viewport" aria-live={running ? "off" : "polite"}>
-        <div className="track" style={{ transform: "translateX(-" + index * 100 + "%)" }}>
+        <div
+          className="track"
+          style={{ transform: "translateX(-" + index * 100 + "%)" }}
+        >
           {slides.map((s, i) => (
             <div
               key={s.id}
@@ -1804,10 +2326,22 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
             </div>
           ))}
         </div>
-        <button type="button" className="arrow prev" data-testid="prev" aria-label="Previous slide" onClick={() => go(index - 1)}>
+        <button
+          type="button"
+          className="arrow prev"
+          data-testid="prev"
+          aria-label="Previous slide"
+          onClick={() => go(index - 1)}
+        >
           ‹
         </button>
-        <button type="button" className="arrow next" data-testid="next" aria-label="Next slide" onClick={() => go(index + 1)}>
+        <button
+          type="button"
+          className="arrow next"
+          data-testid="next"
+          aria-label="Next slide"
+          onClick={() => go(index + 1)}
+        >
           ›
         </button>
       </div>
@@ -1816,7 +2350,9 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
         <button
           type="button"
           data-testid="toggle"
-          aria-label={playing ? "Stop automatic slide show" : "Start automatic slide show"}
+          aria-label={
+            playing ? "Stop automatic slide show" : "Start automatic slide show"
+          }
           onClick={() => setPlaying((p) => !p)}
         >
           {playing ? "Pause" : "Play"}
@@ -1835,7 +2371,8 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
           ))}
         </div>
         <p className="status" data-testid="status">
-          {index + 1} / {n} · {slides[index].alt} · {running ? "auto" : "paused"}
+          {index + 1} / {n} · {slides[index].alt} ·{" "}
+          {running ? "auto" : "paused"}
         </p>
       </div>
     </section>
@@ -1845,23 +2382,57 @@ export default function Carousel({ slides, interval = 3000, label = "Photos" }) 
           "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
@@ -1873,27 +2444,123 @@ export const slides = titles.map((title, i) => ({
   src: svgSlide((i * 70 + 10) % 360, title, i + 1),
 }));
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
-.carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
-.viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; }
-.track { display: flex; height: 100%; transition: transform 0.45s ease; }
-.slide { flex: 0 0 100%; height: 100%; }
-.slide img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; }
-.arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-.arrow:focus-visible, .controls button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.prev { left: 8px; }
-.next { right: 8px; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 4px 2px; }
-.controls > button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-.dots { display: flex; gap: 6px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8a93a6; background: transparent; padding: 0; cursor: pointer; }
-.dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
-.status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
-@media (prefers-reduced-motion: reduce) { .track { transition: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.carousel {
+  border-radius: 12px;
+  background: #181b22;
+  padding: 8px;
+  outline: none;
+}
+.carousel:focus-visible {
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
+.viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+}
+.track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.45s ease;
+}
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.arrow:focus-visible,
+.controls button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.prev {
+  left: 8px;
+}
+.next {
+  right: 8px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 4px 2px;
+}
+.controls > button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dots {
+  display: flex;
+  gap: 6px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #8a93a6;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.dot[aria-current="true"] {
+  background: #7aa2ff;
+  border-color: #7aa2ff;
+}
+.status {
+  margin: 0;
+  margin-left: auto;
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -1939,9 +2606,19 @@ function go(i) {
 📌 **Interview term: Modulo wrap-around** — \`-1 % 5\` is \`-1\` in JavaScript, so adding \`n\` and taking \`% n\` again maps every integer into \`0..n-1\`: Previous on slide 1 goes to slide 5.
 
 ~~~vue
-<div class="track" :style="{ transform: 'translateX(-' + index * 100 + '%)' }">
-  <div v-for="(s, i) in slides" :key="s.id" class="slide" role="group"
-       aria-roledescription="slide" :aria-label="i + 1 + ' of ' + n" :aria-hidden="i !== index">
+<div
+  class="track"
+  :style="{ transform: 'translateX(-' + index * 100 + '%)' }"
+>
+  <div
+    v-for="(s, i) in slides"
+    :key="s.id"
+    class="slide"
+    role="group"
+    aria-roledescription="slide"
+    :aria-label="i + 1 + ' of ' + n"
+    :aria-hidden="i !== index"
+  >
     <img :src="s.src" :alt="s.alt" draggable="false" />
   </div>
 </div>
@@ -1959,7 +2636,7 @@ watch(
     const id = setTimeout(() => go(index.value + 1), props.interval);
     onCleanup(() => clearTimeout(id));
   },
-  { immediate: true }
+  { immediate: true },
 );
 ~~~
 
@@ -1994,7 +2671,7 @@ The Play / Pause button toggles \`playing\`, labelled "Stop automatic slide show
 
 Mounted in jsdom with \`createApp(App).mount("#app")\`, real timers. The driver dispatches \`mouseenter\` / \`mouseleave\` for hover and a Tab \`keydown\` before focusing, which makes jsdom report \`:focus-visible\` like a browser. \`V\` marks the slide not hidden from screen readers:
 
-\`\`\`
+\`\`\`text
 start   : 1 / 5 · Sunrise · auto | translateX(-0%) | V---- | aria-live off
 pause   : 1 / 5 · Sunrise · paused | button: Start automatic slide show | aria-live polite
 next x2 : 3 / 5 · Pine ridge · paused | translateX(-200%) | --V--
@@ -2111,10 +2788,24 @@ import { slides } from "./slides.js";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/ImageCarousel.vue": `<script setup>
@@ -2127,14 +2818,18 @@ const props = defineProps({
 });
 
 const prefersReducedMotion = () =>
-  typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window !== "undefined" &&
+  !!window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const n = computed(() => props.slides.length);
 const index = ref(0);
 const playing = ref(!prefersReducedMotion()); // user choice
 const hovered = ref(false);
 const focused = ref(false);
-const running = computed(() => playing.value && !hovered.value && !focused.value);
+const running = computed(
+  () => playing.value && !hovered.value && !focused.value,
+);
 
 // Wrap-around: ((i % n) + n) % n also handles -1.
 function go(i) {
@@ -2150,11 +2845,16 @@ watch(
     const id = setTimeout(() => go(index.value + 1), props.interval);
     onCleanup(() => clearTimeout(id));
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function onKeydown(e) {
-  const moves = { ArrowLeft: index.value - 1, ArrowRight: index.value + 1, Home: 0, End: n.value - 1 };
+  const moves = {
+    ArrowLeft: index.value - 1,
+    ArrowRight: index.value + 1,
+    Home: 0,
+    End: n.value - 1,
+  };
   if (!(e.key in moves)) return;
   e.preventDefault();
   go(moves[e.key]);
@@ -2185,7 +2885,10 @@ function onFocusout(e) {
     @focusout="onFocusout"
   >
     <div class="viewport" :aria-live="running ? 'off' : 'polite'">
-      <div class="track" :style="{ transform: 'translateX(-' + index * 100 + '%)' }">
+      <div
+        class="track"
+        :style="{ transform: 'translateX(-' + index * 100 + '%)' }"
+      >
         <div
           v-for="(s, i) in slides"
           :key="s.id"
@@ -2198,8 +2901,20 @@ function onFocusout(e) {
           <img :src="s.src" :alt="s.alt" draggable="false" />
         </div>
       </div>
-      <button type="button" class="arrow prev" data-testid="prev" aria-label="Previous slide" @click="go(index - 1)">‹</button>
-      <button type="button" class="arrow next" data-testid="next" aria-label="Next slide" @click="go(index + 1)">›</button>
+      <button
+        type="button"
+        class="arrow prev"
+        data-testid="prev"
+        aria-label="Previous slide"
+        @click="go(index - 1)"
+      >‹</button>
+      <button
+        type="button"
+        class="arrow next"
+        data-testid="next"
+        aria-label="Next slide"
+        @click="go(index + 1)"
+      >›</button>
     </div>
 
     <div class="controls">
@@ -2231,45 +2946,161 @@ function onFocusout(e) {
 </template>
 
 <style scoped>
-.carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
-.carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
-.viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; }
-.track { display: flex; height: 100%; transition: transform 0.45s ease; }
-.slide { flex: 0 0 100%; height: 100%; }
-.slide img { width: 100%; height: 100%; object-fit: cover; display: block; user-select: none; }
-.arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-.arrow:focus-visible, .controls button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.prev { left: 8px; }
-.next { right: 8px; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 4px 2px; }
-.controls > button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-.dots { display: flex; gap: 6px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8a93a6; background: transparent; padding: 0; cursor: pointer; }
-.dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
-.status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
-@media (prefers-reduced-motion: reduce) { .track { transition: none; } }
+.carousel {
+  border-radius: 12px;
+  background: #181b22;
+  padding: 8px;
+  outline: none;
+}
+.carousel:focus-visible {
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
+.viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+}
+.track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.45s ease;
+}
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.arrow:focus-visible,
+.controls button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.prev {
+  left: 8px;
+}
+.next {
+  right: 8px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 4px 2px;
+}
+.controls > button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dots {
+  display: flex;
+  gap: 6px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #8a93a6;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.dot[aria-current="true"] {
+  background: #7aa2ff;
+  border-color: #7aa2ff;
+}
+.status {
+  margin: 0;
+  margin-left: auto;
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none;
+  }
+}
 </style>
 `,
           "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
@@ -2341,10 +3172,18 @@ go(i: number): void {
 📌 **Interview term: Modulo wrap-around** — JavaScript's \`-1 % 5\` is \`-1\`; adding \`n\` and taking \`% n\` again maps any integer into \`0..n-1\`.
 
 ~~~html
-<div class="track" [style.transform]="'translateX(-' + index() * 100 + '%)'">
+<div
+  class="track"
+  [style.transform]="'translateX(-' + index() * 100 + '%)'"
+>
   @for (s of slides; track s.id; let i = $index) {
-    <div class="slide" role="group" aria-roledescription="slide"
-         [attr.aria-label]="i + 1 + ' of ' + slides.length" [attr.aria-hidden]="i !== index()">
+    <div
+      class="slide"
+      role="group"
+      aria-roledescription="slide"
+      [attr.aria-label]="i + 1 + ' of ' + slides.length"
+      [attr.aria-hidden]="i !== index()"
+    >
       <img [src]="s.src" [alt]="s.alt" draggable="false" />
     </div>
   }
@@ -2374,11 +3213,13 @@ The timeout callback sets a signal, which is what makes the view update. This pl
 
 ~~~ts
 onFocusin(e: FocusEvent): void {
-  if ((e.target as HTMLElement).matches(":focus-visible")) this.focused.set(true);
+  if ((e.target as HTMLElement).matches(":focus-visible"))
+    this.focused.set(true);
 }
 onFocusout(e: FocusEvent): void {
   const host = e.currentTarget as HTMLElement;
-  if (!host.contains(e.relatedTarget as Node | null)) this.focused.set(false);
+  if (!host.contains(e.relatedTarget as Node | null))
+    this.focused.set(false);
 }
 ~~~
 
@@ -2398,7 +3239,7 @@ Play / Pause toggles \`playing\` with labels "Stop automatic slide show" / "Star
 
 Booted with \`bootstrapApplication(AppComponent)\` in jsdom under AOT (\`ngc\`, \`strictTemplates\`) and runtime JIT; both printed identical lines, which also matched the React and Vue runs exactly. Real timers; hover is dispatched as \`mouseenter\` / \`mouseleave\`, and a Tab \`keydown\` before focusing makes jsdom report \`:focus-visible\`:
 
-\`\`\`
+\`\`\`text
 start   : 1 / 5 · Sunrise · auto | translateX(-0%) | V---- | aria-live off
 pause   : 1 / 5 · Sunrise · paused | button: Start automatic slide show | aria-live polite
 next x2 : 3 / 5 · Pine ridge · paused | translateX(-200%) | --V--
@@ -2510,16 +3351,22 @@ import { slides } from "./slides";
   template: \`
     <main class="app">
       <h1>Image carousel</h1>
-      <app-image-carousel [slides]="slides" [interval]="3000" label="Featured photos" />
+      <app-image-carousel
+        [slides]="slides"
+        [interval]="3000"
+        label="Featured photos"
+      />
       <p class="hint">Arrows, dots or the Left / Right keys move; hover or focus pauses autoplay.</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 720px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.2rem; }
     .hint { color: #8a93a6; font-size: 0.85rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly slides = slides;
@@ -2529,7 +3376,9 @@ export class AppComponent {
 import { Slide } from "./slides";
 
 const prefersReducedMotion = (): boolean =>
-  typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  typeof window !== "undefined" &&
+  !!window.matchMedia &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 @Component({
   selector: "app-image-carousel",
@@ -2548,7 +3397,10 @@ const prefersReducedMotion = (): boolean =>
       (focusout)="onFocusout($event)"
     >
       <div class="viewport" [attr.aria-live]="running() ? 'off' : 'polite'">
-        <div class="track" [style.transform]="'translateX(-' + index() * 100 + '%)'">
+        <div
+          class="track"
+          [style.transform]="'translateX(-' + index() * 100 + '%)'"
+        >
           @for (s of slides; track s.id; let i = $index) {
             <div
               class="slide"
@@ -2561,8 +3413,20 @@ const prefersReducedMotion = (): boolean =>
             </div>
           }
         </div>
-        <button type="button" class="arrow prev" data-testid="prev" aria-label="Previous slide" (click)="go(index() - 1)">‹</button>
-        <button type="button" class="arrow next" data-testid="next" aria-label="Next slide" (click)="go(index() + 1)">›</button>
+        <button
+          type="button"
+          class="arrow prev"
+          data-testid="prev"
+          aria-label="Previous slide"
+          (click)="go(index() - 1)"
+        >‹</button>
+        <button
+          type="button"
+          class="arrow next"
+          data-testid="next"
+          aria-label="Next slide"
+          (click)="go(index() + 1)"
+        >›</button>
       </div>
 
       <div class="controls">
@@ -2592,7 +3456,8 @@ const prefersReducedMotion = (): boolean =>
       </div>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
     .carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
     .viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; }
@@ -2610,7 +3475,8 @@ const prefersReducedMotion = (): boolean =>
     .dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
     .status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
     @media (prefers-reduced-motion: reduce) { .track { transition: none; } }
-  \`],
+  \`,
+  ],
 })
 export class ImageCarouselComponent {
   @Input({ required: true }) slides: Slide[] = [];
@@ -2621,7 +3487,9 @@ export class ImageCarouselComponent {
   readonly playing = signal(!prefersReducedMotion()); // user choice
   readonly hovered = signal(false);
   readonly focused = signal(false);
-  readonly running = computed(() => this.playing() && !this.hovered() && !this.focused());
+  readonly running = computed(
+    () => this.playing() && !this.hovered() && !this.focused(),
+  );
 
   constructor() {
     // One timeout per visible slide: reading index() makes any navigation
@@ -2642,7 +3510,12 @@ export class ImageCarouselComponent {
 
   onKeydown(e: KeyboardEvent): void {
     const n = this.slides.length;
-    const moves: Record<string, number> = { ArrowLeft: this.index() - 1, ArrowRight: this.index() + 1, Home: 0, End: n - 1 };
+    const moves: Record<string, number> = {
+      ArrowLeft: this.index() - 1,
+      ArrowRight: this.index() + 1,
+      Home: 0,
+      End: n - 1,
+    };
     if (!(e.key in moves)) return;
     e.preventDefault();
     this.go(moves[e.key]);
@@ -2651,7 +3524,8 @@ export class ImageCarouselComponent {
   // Pause for keyboard focus only: a mouse click also focuses a button, but
   // then :focus-visible is false and hover already covers the mouse user.
   onFocusin(e: FocusEvent): void {
-    if ((e.target as HTMLElement).matches(":focus-visible")) this.focused.set(true);
+    if ((e.target as HTMLElement).matches(":focus-visible"))
+      this.focused.set(true);
   }
 
   onFocusout(e: FocusEvent): void {
@@ -2663,30 +3537,72 @@ export class ImageCarouselComponent {
 `,
           "/src/app/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
-function el(tag: string, attrs: Record<string, string | number>, children?: string[]): string {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+function el(
+  tag: string,
+  attrs: Record<string, string | number>,
+  children?: string[],
+): string {
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue: number, title: string, n: number): string {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
 const titles = ["Sunrise", "Harbour", "Pine ridge", "Red rocks", "Night sky"];
 
-export interface Slide { id: number; alt: string; src: string; }
+export interface Slide {
+  id: number;
+  alt: string;
+  src: string;
+}
 
 export const slides: Slide[] = titles.map((title, i) => ({
   id: i + 1,
@@ -2827,7 +3743,8 @@ function moveTo(next) {
   moving.current = true;
   setAnimate(true);
   setPos(next);
-  // transitionend never fires with reduced motion or a cancelled transition.
+  // transitionend never fires with reduced
+  // motion or a cancelled transition.
   clearTimeout(fallback.current);
   fallback.current = setTimeout(settle, DURATION + 100);
 }
@@ -2868,9 +3785,11 @@ After the jump the DOM has \`transition: none\` and the new position. If the ver
 ~~~jsx
 function onPointerDown(e) {
   // Arrow buttons sit inside the viewport: let their clicks through.
-  if (e.target.closest("button") || moving.current || e.button !== 0) return;
+  if (e.target.closest("button") || moving.current || e.button !== 0)
+    return;
   drag.current = { startX: e.clientX, id: e.pointerId };
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   setDragging(true);
   setAnimate(false); // the track follows the finger 1:1
 }
@@ -2934,7 +3853,7 @@ The countdown restarts on every \`pos\` change, including the silent jump, so ea
 
 Mounted in jsdom with \`<StrictMode>\`. jsdom has no layout and never runs CSS transitions, so the driver fires \`transitionend\` on the track by hand (and once deliberately does not, to exercise the fallback timer), and swipes with synthetic \`PointerEvent\`s. Autoplay is paused first so timers do not race the steps. Each line shows the status, the inline transform and the inline transition:
 
-\`\`\`
+\`\`\`text
 start     : 1 / 5 · Sunrise · auto | 7 slide nodes, 2 clones | translateX(calc(-100% + 0px)) / transform 400ms ease
 prev      : 5 / 5 · Night sky · paused | translateX(calc(0% + 0px)) / transform 400ms ease
 after end : 5 / 5 · Night sky · paused | translateX(calc(-500% + 0px)) / none
@@ -2961,7 +3880,7 @@ Previous from slide 1 animated to the clone at \`0%\`, then, after \`transitione
 
 jsdom cannot show whether the jump is invisible, so the same build ran in **headless Chromium 141** with a real mouse and real CSS transitions (the computed transform is read back and divided by the viewport width):
 
-\`\`\`
+\`\`\`text
 start           : 1 / 5 · Sunrise · paused | -352px (-1.00 widths)
 prev, mid-flight: 5 / 5 · Night sky · paused | -125px (-0.35 widths)
 prev, settled   : 5 / 5 · Night sky · paused | -1760px (-5.00 widths)
@@ -3085,8 +4004,15 @@ export default function App() {
   return (
     <main className="app">
       <h1>Infinite carousel with swipe</h1>
-      <InfiniteCarousel slides={slides} interval={3000} label="Featured photos" />
-      <p className="hint">Drag or swipe the photo, use the arrows, dots or Left / Right keys. It never rewinds.</p>
+      <InfiniteCarousel
+        slides={slides}
+        interval={3000}
+        label="Featured photos"
+      />
+      <p className="hint">
+        Drag or swipe the photo, use the arrows, dots or Left / Right keys. It
+        never rewinds.
+      </p>
     </main>
   );
 }
@@ -3096,9 +4022,14 @@ export default function App() {
 const DURATION = 400; // ms, must match the CSS transition below
 const SWIPE_PX = 40; // drag distance that commits a slide change
 
-export default function InfiniteCarousel({ slides, interval = 3000, label = "Photos" }) {
+export default function InfiniteCarousel({
+  slides,
+  interval = 3000,
+  label = "Photos",
+}) {
   const n = slides.length;
-  // Track = [clone of last, ...slides, clone of first]; pos 1..n are real slides.
+  // Track = [clone of last, ...slides, clone
+  // of first]; pos 1..n are real slides.
   const track = [slides[n - 1], ...slides, slides[0]];
   const [pos, setPos] = useState(1);
   const [animate, setAnimate] = useState(true);
@@ -3167,7 +4098,8 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
     // Arrow buttons sit inside the viewport: let their clicks through.
     if (e.target.closest("button") || moving.current || e.button !== 0) return;
     drag.current = { startX: e.clientX, id: e.pointerId };
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+    if (e.currentTarget.setPointerCapture)
+      e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
     setAnimate(false); // the track follows the finger 1:1
   }
@@ -3186,8 +4118,14 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
   }
 
   function onKeyDown(e) {
-    if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-    if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      next();
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      prev();
+    }
   }
 
   return (
@@ -3200,8 +4138,12 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
       onKeyDown={onKeyDown}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onFocus={(e) => { if (e.target.matches(":focus-visible")) setFocused(true); }}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false); }}
+      onFocus={(e) => {
+        if (e.target.matches(":focus-visible")) setFocused(true);
+      }}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false);
+      }}
     >
       <div
         className="viewport"
@@ -3217,9 +4159,14 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
           data-testid="track"
           style={{
             transform: "translateX(calc(" + -pos * 100 + "% + " + dx + "px))",
-            transition: animate && !dragging ? "transform " + DURATION + "ms ease" : "none",
+            transition:
+              animate && !dragging
+                ? "transform " + DURATION + "ms ease"
+                : "none",
           }}
-          onTransitionEnd={(e) => { if (e.target === e.currentTarget) settle(); }}
+          onTransitionEnd={(e) => {
+            if (e.target === e.currentTarget) settle();
+          }}
         >
           {track.map((s, i) => {
             const clone = i === 0 || i === n + 1;
@@ -3238,24 +4185,57 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
             );
           })}
         </div>
-        <button type="button" className="arrow prev" data-testid="prev" aria-label="Previous slide" onClick={prev}>‹</button>
-        <button type="button" className="arrow next" data-testid="next" aria-label="Next slide" onClick={next}>›</button>
+        <button
+          type="button"
+          className="arrow prev"
+          data-testid="prev"
+          aria-label="Previous slide"
+          onClick={prev}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          className="arrow next"
+          data-testid="next"
+          aria-label="Next slide"
+          onClick={next}
+        >
+          ›
+        </button>
       </div>
 
       <div className="controls">
-        <button type="button" data-testid="toggle" onClick={() => setPlaying((p) => !p)}
-          aria-label={playing ? "Stop automatic slide show" : "Start automatic slide show"}>
+        <button
+          type="button"
+          data-testid="toggle"
+          onClick={() => setPlaying((p) => !p)}
+          aria-label={
+            playing ? "Stop automatic slide show" : "Start automatic slide show"
+          }
+        >
           {playing ? "Pause" : "Play"}
         </button>
         <div className="dots">
           {slides.map((s, i) => (
-            <button key={s.id} type="button" className="dot" data-testid="dot"
-              aria-label={"Go to slide " + (i + 1)} aria-current={i === index ? "true" : undefined}
-              onClick={() => moveTo(i + 1)} />
+            <button
+              key={s.id}
+              type="button"
+              className="dot"
+              data-testid="dot"
+              aria-label={"Go to slide " + (i + 1)}
+              aria-current={i === index ? "true" : undefined}
+              onClick={() => moveTo(i + 1)}
+            />
           ))}
         </div>
-        <p className="status" data-testid="status" aria-live={running ? "off" : "polite"}>
-          {index + 1} / {n} · {slides[index].alt} · {running ? "auto" : "paused"}
+        <p
+          className="status"
+          data-testid="status"
+          aria-live={running ? "off" : "polite"}
+        >
+          {index + 1} / {n} · {slides[index].alt} ·{" "}
+          {running ? "auto" : "paused"}
         </p>
       </div>
     </section>
@@ -3265,23 +4245,57 @@ export default function InfiniteCarousel({ slides, interval = 3000, label = "Pho
           "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
@@ -3293,28 +4307,129 @@ export const slides = titles.map((title, i) => ({
   src: svgSlide((i * 70 + 10) % 360, title, i + 1),
 }));
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
-.carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
-.viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; touch-action: pan-y; cursor: grab; user-select: none; }
-.viewport:active { cursor: grabbing; }
-.track { display: flex; height: 100%; will-change: transform; }
-.slide { flex: 0 0 100%; height: 100%; }
-.slide img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
-.arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-.arrow:focus-visible, .controls button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.prev { left: 8px; }
-.next { right: 8px; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 4px 2px; }
-.controls > button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-.dots { display: flex; gap: 6px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8a93a6; background: transparent; padding: 0; cursor: pointer; }
-.dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
-.status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
-@media (prefers-reduced-motion: reduce) { .track { transition: none !important; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.carousel {
+  border-radius: 12px;
+  background: #181b22;
+  padding: 8px;
+  outline: none;
+}
+.carousel:focus-visible {
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
+.viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+.viewport:active {
+  cursor: grabbing;
+}
+.track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+}
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.arrow:focus-visible,
+.controls button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.prev {
+  left: 8px;
+}
+.next {
+  right: 8px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 4px 2px;
+}
+.controls > button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dots {
+  display: flex;
+  gap: 6px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #8a93a6;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.dot[aria-current="true"] {
+  background: #7aa2ff;
+  border-color: #7aa2ff;
+}
+.status {
+  margin: 0;
+  margin-left: auto;
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none !important;
+  }
+}
 `,
         },
       },
@@ -3351,8 +4466,12 @@ Keeping the lock and the drag start in plain variables is a Vue-specific choice 
 
 ~~~js
 const trackStyle = computed(() => ({
-  transform: "translateX(calc(" + -pos.value * 100 + "% + " + dx.value + "px))",
-  transition: animate.value && !dragging.value ? "transform " + DURATION + "ms ease" : "none",
+  transform:
+    "translateX(calc(" + -pos.value * 100 + "% + " + dx.value + "px))",
+  transition:
+    animate.value && !dragging.value
+      ? "transform " + DURATION + "ms ease"
+      : "none",
 }));
 ~~~
 
@@ -3387,9 +4506,13 @@ The template listens with \`@transitionend.self="settle"\`. The \`.self\` modifi
 ### Step 3: Make the jump invisible
 
 ~~~js
-watch(pos, () => {
-  if (!animate.value && trackEl.value) void trackEl.value.offsetWidth;
-}, { flush: "post" });
+watch(
+  pos,
+  () => {
+    if (!animate.value && trackEl.value) void trackEl.value.offsetWidth;
+  },
+  { flush: "post" },
+);
 ~~~
 
 📌 **Interview term: \`flush: "post"\`** — runs the watcher after Vue has patched the DOM. Reading \`offsetWidth\` there forces a reflow, so the browser commits the jumped position before the next move switches the transition back on and cannot animate the jump.
@@ -3401,7 +4524,8 @@ function onPointerdown(e) {
   // Arrow buttons sit inside the viewport: let their clicks through.
   if (e.target.closest("button") || moving || e.button !== 0) return;
   drag = { startX: e.clientX };
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   dragging.value = true;
   animate.value = false; // the track follows the finger 1:1
 }
@@ -3414,14 +4538,22 @@ function onPointerdown(e) {
 ### Step 5: Autoplay that knows about hidden tabs
 
 ~~~js
-watch([running, pos], ([isRunning], _old, onCleanup) => {
-  if (!isRunning) return;
-  const id = setTimeout(next, props.interval);
-  onCleanup(() => clearTimeout(id));
-}, { immediate: true });
+watch(
+  [running, pos],
+  ([isRunning], _old, onCleanup) => {
+    if (!isRunning) return;
+    const id = setTimeout(next, props.interval);
+    onCleanup(() => clearTimeout(id));
+  },
+  { immediate: true },
+);
 
-const onVisibility = () => { hidden.value = document.hidden; };
-onMounted(() => document.addEventListener("visibilitychange", onVisibility));
+const onVisibility = () => {
+  hidden.value = document.hidden;
+};
+onMounted(() =>
+  document.addEventListener("visibilitychange", onVisibility),
+);
 onBeforeUnmount(() => {
   document.removeEventListener("visibilitychange", onVisibility);
   clearTimeout(fallback);
@@ -3434,7 +4566,7 @@ onBeforeUnmount(() => {
 
 Mounted in jsdom with \`createApp(App).mount("#app")\`. jsdom runs no CSS transitions, so the driver dispatches \`transitionend\` on the track by hand (once deliberately not, to test the fallback) and swipes with synthetic \`PointerEvent\`s; autoplay is paused first:
 
-\`\`\`
+\`\`\`text
 start     : 1 / 5 · Sunrise · auto | 7 slide nodes, 2 clones | translateX(calc(-100% + 0px)) / transform 400ms ease
 prev      : 5 / 5 · Night sky · paused | translateX(calc(0% + 0px)) / transform 400ms ease
 after end : 5 / 5 · Night sky · paused | translateX(calc(-500% + 0px)) / none
@@ -3545,20 +4677,45 @@ import { slides } from "./slides.js";
 <template>
   <main class="app">
     <h1>Infinite carousel with swipe</h1>
-    <InfiniteCarousel :slides="slides" :interval="3000" label="Featured photos" />
+    <InfiniteCarousel
+      :slides="slides"
+      :interval="3000"
+      label="Featured photos"
+    />
     <p class="hint">Drag or swipe the photo, use the arrows, dots or Left / Right keys. It never rewinds.</p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 720px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/InfiniteCarousel.vue": `<script setup>
-import { ref, computed, watch, onMounted, onBeforeUnmount, useTemplateRef } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  useTemplateRef,
+} from "vue";
 
 const props = defineProps({
   slides: { type: Array, required: true },
@@ -3571,7 +4728,11 @@ const SWIPE_PX = 40; // drag distance that commits a slide change
 
 const n = computed(() => props.slides.length);
 // Track = [clone of last, ...slides, clone of first]; pos 1..n are real slides.
-const trackSlides = computed(() => [props.slides[n.value - 1], ...props.slides, props.slides[0]]);
+const trackSlides = computed(() => [
+  props.slides[n.value - 1],
+  ...props.slides,
+  props.slides[0],
+]);
 const pos = ref(1);
 const animate = ref(true);
 const dx = ref(0); // live drag offset in px
@@ -3582,10 +4743,20 @@ const hidden = ref(false);
 const playing = ref(true);
 
 const index = computed(() => (pos.value - 1 + n.value) % n.value);
-const running = computed(() => playing.value && !hovered.value && !focused.value && !hidden.value && !dragging.value);
+const running = computed(
+  () =>
+    playing.value &&
+    !hovered.value &&
+    !focused.value &&
+    !hidden.value &&
+    !dragging.value,
+);
 const trackStyle = computed(() => ({
   transform: "translateX(calc(" + -pos.value * 100 + "% + " + dx.value + "px))",
-  transition: animate.value && !dragging.value ? "transform " + DURATION + "ms ease" : "none",
+  transition:
+    animate.value && !dragging.value
+      ? "transform " + DURATION + "ms ease"
+      : "none",
 }));
 
 const trackEl = useTemplateRef("track");
@@ -3595,9 +4766,13 @@ let drag = null;
 
 // After a jump made with the transition off, force a reflow so the browser
 // commits the new position before the transition is switched back on.
-watch(pos, () => {
-  if (!animate.value && trackEl.value) void trackEl.value.offsetWidth;
-}, { flush: "post" });
+watch(
+  pos,
+  () => {
+    if (!animate.value && trackEl.value) void trackEl.value.offsetWidth;
+  },
+  { flush: "post" },
+);
 
 function settle() {
   clearTimeout(fallback);
@@ -3621,13 +4796,19 @@ const next = () => moveTo(pos.value + 1);
 const prev = () => moveTo(pos.value - 1);
 
 // Autoplay: one timeout per position, so any move restarts the countdown.
-watch([running, pos], ([isRunning], _old, onCleanup) => {
-  if (!isRunning) return;
-  const id = setTimeout(next, props.interval);
-  onCleanup(() => clearTimeout(id));
-}, { immediate: true });
+watch(
+  [running, pos],
+  ([isRunning], _old, onCleanup) => {
+    if (!isRunning) return;
+    const id = setTimeout(next, props.interval);
+    onCleanup(() => clearTimeout(id));
+  },
+  { immediate: true },
+);
 
-const onVisibility = () => { hidden.value = document.hidden; };
+const onVisibility = () => {
+  hidden.value = document.hidden;
+};
 onMounted(() => document.addEventListener("visibilitychange", onVisibility));
 onBeforeUnmount(() => {
   document.removeEventListener("visibilitychange", onVisibility);
@@ -3638,7 +4819,8 @@ function onPointerdown(e) {
   // Arrow buttons sit inside the viewport: let their clicks through.
   if (e.target.closest("button") || moving || e.button !== 0) return;
   drag = { startX: e.clientX };
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   dragging.value = true;
   animate.value = false; // the track follows the finger 1:1
 }
@@ -3657,8 +4839,14 @@ function onPointerup(e) {
 }
 
 function onKeydown(e) {
-  if (e.key === "ArrowRight") { e.preventDefault(); next(); }
-  if (e.key === "ArrowLeft") { e.preventDefault(); prev(); }
+  if (e.key === "ArrowRight") {
+    e.preventDefault();
+    next();
+  }
+  if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    prev();
+  }
 }
 function onFocusin(e) {
   if (e.target.matches(":focus-visible")) focused.value = true;
@@ -3690,7 +4878,13 @@ const isClone = (i) => i === 0 || i === n.value + 1;
       @pointerup="onPointerup"
       @pointercancel="onPointerup"
     >
-      <div ref="track" class="track" data-testid="track" :style="trackStyle" @transitionend.self="settle">
+      <div
+        ref="track"
+        class="track"
+        data-testid="track"
+        :style="trackStyle"
+        @transitionend.self="settle"
+      >
         <div
           v-for="(s, i) in trackSlides"
           :key="(isClone(i) ? 'clone-' : '') + i"
@@ -3704,8 +4898,20 @@ const isClone = (i) => i === 0 || i === n.value + 1;
           <img :src="s.src" :alt="isClone(i) ? '' : s.alt" draggable="false" />
         </div>
       </div>
-      <button type="button" class="arrow prev" data-testid="prev" aria-label="Previous slide" @click="prev">‹</button>
-      <button type="button" class="arrow next" data-testid="next" aria-label="Next slide" @click="next">›</button>
+      <button
+        type="button"
+        class="arrow prev"
+        data-testid="prev"
+        aria-label="Previous slide"
+        @click="prev"
+      >‹</button>
+      <button
+        type="button"
+        class="arrow next"
+        data-testid="next"
+        aria-label="Next slide"
+        @click="next"
+      >›</button>
     </div>
 
     <div class="controls">
@@ -3718,7 +4924,11 @@ const isClone = (i) => i === 0 || i === n.value + 1;
           :aria-label="'Go to slide ' + (i + 1)" :aria-current="i === index ? 'true' : undefined"
           @click="moveTo(i + 1)" />
       </div>
-      <p class="status" data-testid="status" :aria-live="running ? 'off' : 'polite'">
+      <p
+        class="status"
+        data-testid="status"
+        :aria-live="running ? 'off' : 'polite'"
+      >
         {{ index + 1 }} / {{ n }} · {{ slides[index].alt }} · {{ running ? "auto" : "paused" }}
       </p>
     </div>
@@ -3726,46 +4936,167 @@ const isClone = (i) => i === 0 || i === n.value + 1;
 </template>
 
 <style scoped>
-.carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
-.carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
-.viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; touch-action: pan-y; cursor: grab; user-select: none; }
-.viewport:active { cursor: grabbing; }
-.track { display: flex; height: 100%; will-change: transform; }
-.slide { flex: 0 0 100%; height: 100%; }
-.slide img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
-.arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
-.arrow:focus-visible, .controls button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.prev { left: 8px; }
-.next { right: 8px; }
-.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 4px 2px; }
-.controls > button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
-.dots { display: flex; gap: 6px; }
-.dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #8a93a6; background: transparent; padding: 0; cursor: pointer; }
-.dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
-.status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
-@media (prefers-reduced-motion: reduce) { .track { transition: none !important; } }
+.carousel {
+  border-radius: 12px;
+  background: #181b22;
+  padding: 8px;
+  outline: none;
+}
+.carousel:focus-visible {
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
+.viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 16 / 9;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+.viewport:active {
+  cursor: grabbing;
+}
+.track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+}
+.slide {
+  flex: 0 0 100%;
+  height: 100%;
+}
+.slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.arrow:focus-visible,
+.controls button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.prev {
+  left: 8px;
+}
+.next {
+  right: 8px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 4px 2px;
+}
+.controls > button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dots {
+  display: flex;
+  gap: 6px;
+}
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #8a93a6;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+.dot[aria-current="true"] {
+  background: #7aa2ff;
+  border-color: #7aa2ff;
+}
+.status {
+  margin: 0;
+  margin-left: auto;
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    transition: none !important;
+  }
+}
 </style>
 `,
           "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
@@ -3811,15 +5142,37 @@ A merry-go-round keeps turning in one direction; it never reverses through every
 ### Step 1: Bindings for rest, animation and drag
 
 ~~~ts
-readonly transform = computed(() => "translateX(calc(" + -this.pos() * 100 + "% + " + this.dx() + "px))");
-readonly transition = computed(() => (this.animate() && !this.dragging() ? "transform " + DURATION + "ms ease" : "none"));
+readonly transform = computed(
+  () =>
+    "translateX(calc(" +
+    -this.pos() * 100 +
+    "% + " +
+    this.dx() +
+    "px))",
+);
+readonly transition = computed(() =>
+  this.animate() && !this.dragging()
+    ? "transform " + DURATION + "ms ease"
+    : "none",
+);
 ~~~
 
 ~~~html
-<div #track class="track" [style.transform]="transform()" [style.transition]="transition()"
-     (transitionend)="onTransitionEnd($event)">
+<div
+  #track
+  class="track"
+  [style.transform]="transform()"
+  [style.transition]="transition()"
+  (transitionend)="onTransitionEnd($event)"
+>
   @for (s of trackSlides(); track $index; let i = $index) {
-    <div class="slide" [attr.role]="isClone(i) ? null : 'group'" [attr.aria-hidden]="isClone(i) || i !== pos()"> ... </div>
+    <div
+      class="slide"
+      [attr.role]="isClone(i) ? null : 'group'"
+      [attr.aria-hidden]="isClone(i) || i !== pos()"
+    >
+      ...
+    </div>
   }
 </div>
 ~~~
@@ -3844,7 +5197,8 @@ settle(): void {
   const p = this.pos();
   const n = this.slides.length;
   if (p === n + 1 || p === 0) {
-    this.animate.set(false); // silent jump from a clone to its real twin
+    // silent jump from a clone to its real twin
+    this.animate.set(false);
     this.pos.set(p === 0 ? n : 1);
   }
 }
@@ -3870,7 +5224,12 @@ afterRenderEffect(() => {
 ~~~ts
 onPointerdown(e: PointerEvent): void {
   // Arrow buttons sit inside the viewport: let their clicks through.
-  if ((e.target as HTMLElement).closest("button") || this.moving || e.button !== 0) return;
+  if (
+    (e.target as HTMLElement).closest("button") ||
+    this.moving ||
+    e.button !== 0
+  )
+    return;
   this.drag = { startX: e.clientX };
   const el = e.currentTarget as HTMLElement;
   if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
@@ -3900,7 +5259,7 @@ The section binds \`(document:visibilitychange)="hidden.set(doc.hidden)"\`: a gl
 
 Booted in jsdom under AOT (\`ngc\`, \`strictTemplates\`) and runtime JIT; both printed identical lines, matching the React and Vue runs exactly. The driver dispatches \`transitionend\` by hand (once not at all, to test the fallback) and swipes with synthetic \`PointerEvent\`s:
 
-\`\`\`
+\`\`\`text
 start     : 1 / 5 · Sunrise · auto | 7 slide nodes, 2 clones | translateX(calc(-100% + 0px)) / transform 400ms ease
 prev      : 5 / 5 · Night sky · paused | translateX(calc(0% + 0px)) / transform 400ms ease
 after end : 5 / 5 · Night sky · paused | translateX(calc(-500% + 0px)) / none
@@ -4009,22 +5368,39 @@ import { slides } from "./slides";
   template: \`
     <main class="app">
       <h1>Infinite carousel with swipe</h1>
-      <app-infinite-carousel [slides]="slides" [interval]="3000" label="Featured photos" />
+      <app-infinite-carousel
+        [slides]="slides"
+        [interval]="3000"
+        label="Featured photos"
+      />
       <p class="hint">Drag or swipe the photo, use the arrows, dots or Left / Right keys. It never rewinds.</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 720px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.2rem; }
     .hint { color: #8a93a6; font-size: 0.85rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly slides = slides;
 }
 `,
-          "/src/app/infinite-carousel.component.ts": `import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild, afterRenderEffect, computed, effect, signal } from "@angular/core";
+          "/src/app/infinite-carousel.component.ts": `import {
+  Component,
+  ElementRef,
+  Input,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  afterRenderEffect,
+  computed,
+  effect,
+  signal,
+} from "@angular/core";
 import { Slide } from "./slides";
 
 const DURATION = 400; // ms, must match the transition below
@@ -4072,12 +5448,28 @@ const SWIPE_PX = 40; // drag distance that commits a slide change
               [attr.aria-hidden]="isClone(i) || i !== pos()"
               [attr.data-clone]="isClone(i) ? 'true' : null"
             >
-              <img [src]="s.src" [alt]="isClone(i) ? '' : s.alt" draggable="false" />
+              <img
+                [src]="s.src"
+                [alt]="isClone(i) ? '' : s.alt"
+                draggable="false"
+              />
             </div>
           }
         </div>
-        <button type="button" class="arrow prev" data-testid="prev" aria-label="Previous slide" (click)="prev()">‹</button>
-        <button type="button" class="arrow next" data-testid="next" aria-label="Next slide" (click)="next()">›</button>
+        <button
+          type="button"
+          class="arrow prev"
+          data-testid="prev"
+          aria-label="Previous slide"
+          (click)="prev()"
+        >‹</button>
+        <button
+          type="button"
+          class="arrow next"
+          data-testid="next"
+          aria-label="Next slide"
+          (click)="next()"
+        >›</button>
       </div>
 
       <div class="controls">
@@ -4092,13 +5484,18 @@ const SWIPE_PX = 40; // drag distance that commits a slide change
               (click)="moveTo(i + 1)"></button>
           }
         </div>
-        <p class="status" data-testid="status" [attr.aria-live]="running() ? 'off' : 'polite'">
+        <p
+          class="status"
+          data-testid="status"
+          [attr.aria-live]="running() ? 'off' : 'polite'"
+        >
           {{ index() + 1 }} / {{ slides.length }} · {{ slides[index()].alt }} · {{ running() ? "auto" : "paused" }}
         </p>
       </div>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .carousel { border-radius: 12px; background: #181b22; padding: 8px; outline: none; }
     .carousel:focus-visible { box-shadow: 0 0 0 2px #7aa2ff; }
     .viewport { position: relative; overflow: hidden; border-radius: 8px; aspect-ratio: 16 / 9; touch-action: pan-y; cursor: grab; user-select: none; }
@@ -4117,7 +5514,8 @@ const SWIPE_PX = 40; // drag distance that commits a slide change
     .dot[aria-current="true"] { background: #7aa2ff; border-color: #7aa2ff; }
     .status { margin: 0; margin-left: auto; color: #a8b3c7; font-size: 0.85rem; }
     @media (prefers-reduced-motion: reduce) { .track { transition: none !important; } }
-  \`],
+  \`,
+  ],
 })
 export class InfiniteCarouselComponent implements OnInit, OnDestroy {
   @Input({ required: true }) slides: Slide[] = [];
@@ -4126,7 +5524,8 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
   @ViewChild("track", { static: true }) trackEl!: ElementRef<HTMLDivElement>;
 
   readonly doc = document;
-  // Track = [clone of last, ...slides, clone of first]; pos 1..n are real slides.
+  // Track = [clone of last, ...slides, clone
+  // of first]; pos 1..n are real slides.
   readonly pos = signal(1);
   readonly animate = signal(true);
   readonly dx = signal(0); // live drag offset in px
@@ -4137,10 +5536,25 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
   readonly playing = signal(true);
 
   readonly trackSlides = signal<Slide[]>([]);
-  readonly index = computed(() => (this.pos() - 1 + this.slides.length) % this.slides.length);
-  readonly running = computed(() => this.playing() && !this.hovered() && !this.focused() && !this.hidden() && !this.dragging());
-  readonly transform = computed(() => "translateX(calc(" + -this.pos() * 100 + "% + " + this.dx() + "px))");
-  readonly transition = computed(() => (this.animate() && !this.dragging() ? "transform " + DURATION + "ms ease" : "none"));
+  readonly index = computed(
+    () => (this.pos() - 1 + this.slides.length) % this.slides.length,
+  );
+  readonly running = computed(
+    () =>
+      this.playing() &&
+      !this.hovered() &&
+      !this.focused() &&
+      !this.hidden() &&
+      !this.dragging(),
+  );
+  readonly transform = computed(
+    () => "translateX(calc(" + -this.pos() * 100 + "% + " + this.dx() + "px))",
+  );
+  readonly transition = computed(() =>
+    this.animate() && !this.dragging()
+      ? "transform " + DURATION + "ms ease"
+      : "none",
+  );
 
   private moving = false; // plain fields: nothing renders from them
   private fallback: ReturnType<typeof setTimeout> | undefined;
@@ -4195,8 +5609,12 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
     clearTimeout(this.fallback);
     this.fallback = setTimeout(() => this.settle(), DURATION + 100);
   }
-  next(): void { this.moveTo(this.pos() + 1); }
-  prev(): void { this.moveTo(this.pos() - 1); }
+  next(): void {
+    this.moveTo(this.pos() + 1);
+  }
+  prev(): void {
+    this.moveTo(this.pos() - 1);
+  }
 
   onTransitionEnd(e: Event): void {
     if (e.target === e.currentTarget) this.settle();
@@ -4204,7 +5622,12 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
 
   onPointerdown(e: PointerEvent): void {
     // Arrow buttons sit inside the viewport: let their clicks through.
-    if ((e.target as HTMLElement).closest("button") || this.moving || e.button !== 0) return;
+    if (
+      (e.target as HTMLElement).closest("button") ||
+      this.moving ||
+      e.button !== 0
+    )
+      return;
     this.drag = { startX: e.clientX };
     const el = e.currentTarget as HTMLElement;
     if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
@@ -4226,43 +5649,95 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
   }
 
   onKeydown(e: KeyboardEvent): void {
-    if (e.key === "ArrowRight") { e.preventDefault(); this.next(); }
-    if (e.key === "ArrowLeft") { e.preventDefault(); this.prev(); }
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      this.next();
+    }
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      this.prev();
+    }
   }
   onFocusin(e: FocusEvent): void {
-    if ((e.target as HTMLElement).matches(":focus-visible")) this.focused.set(true);
+    if ((e.target as HTMLElement).matches(":focus-visible"))
+      this.focused.set(true);
   }
   onFocusout(e: FocusEvent): void {
-    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)) this.focused.set(false);
+    if (
+      !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node | null)
+    )
+      this.focused.set(false);
   }
 }
 `,
           "/src/app/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
-function el(tag: string, attrs: Record<string, string | number>, children?: string[]): string {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+function el(
+  tag: string,
+  attrs: Record<string, string | number>,
+  children?: string[],
+): string {
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgSlide(hue: number, title: string, n: number): string {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
 const titles = ["Sunrise", "Harbour", "Pine ridge", "Red rocks", "Night sky"];
 
-export interface Slide { id: number; alt: string; src: string; }
+export interface Slide {
+  id: number;
+  alt: string;
+  src: string;
+}
 
 export const slides: Slide[] = titles.map((title, i) => ({
   id: i + 1,
@@ -4373,8 +5848,15 @@ A lightbox is that viewing room. The grid is the wall. The hard parts are the gu
 <ul className="grid" data-testid="grid">
   {items.map((p, i) => (
     <li key={p.id}>
-      <button ref={(el) => { thumbs.current[i] = el; }} type="button" className="thumb"
-              aria-label={"Open " + p.title} onClick={() => open(i)}>
+      <button
+        ref={(el) => {
+          thumbs.current[i] = el;
+        }}
+        type="button"
+        className="thumb"
+        aria-label={"Open " + p.title}
+        onClick={() => open(i)}
+      >
         <img src={p.src} alt="" loading="lazy" />
       </button>
     </li>
@@ -4405,22 +5887,55 @@ function close() {
 
 ~~~jsx
 return createPortal(
-  <div className="backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={dialogRef} className="lightbox" role="dialog" aria-modal="true"
-         aria-labelledby="lightbox-title" onKeyDown={onKeyDown}>
-      <button ref={closeRef} type="button" className="close" aria-label="Close" onClick={onClose}>✕</button>
+  <div
+    className="backdrop"
+    onClick={(e) => {
+      if (e.target === e.currentTarget) onClose();
+    }}
+  >
+    <div
+      ref={dialogRef}
+      className="lightbox"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lightbox-title"
+      onKeyDown={onKeyDown}
+    >
+      <button
+        ref={closeRef}
+        type="button"
+        className="close"
+        aria-label="Close"
+        onClick={onClose}
+      >
+        ✕
+      </button>
       <figure>
         <img src={item.src} alt={item.alt} />
         <figcaption>
           <span id="lightbox-title">{item.title}</span>
-          <span aria-live="polite">{index + 1} / {n}</span>
+          <span aria-live="polite">
+            {index + 1} / {n}
+          </span>
         </figcaption>
       </figure>
-      <button type="button" aria-label="Previous photo" onClick={() => go(index - 1)}>‹</button>
-      <button type="button" aria-label="Next photo" onClick={() => go(index + 1)}>›</button>
+      <button
+        type="button"
+        aria-label="Previous photo"
+        onClick={() => go(index - 1)}
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        aria-label="Next photo"
+        onClick={() => go(index + 1)}
+      >
+        ›
+      </button>
     </div>
   </div>,
-  document.body
+  document.body,
 );
 ~~~
 
@@ -4491,7 +6006,7 @@ Saying "in production I would start from \`<dialog>\`, and here is what it does 
 
 Mounted in jsdom with \`<StrictMode>\`. The lightbox renders into \`document.body\` through the portal, so the driver queries the whole document. It replaces \`window.Image\` with a spy that records which photo each preload requested:
 
-\`\`\`
+\`\`\`text
 grid    : 9 thumbnails | lightbox: (closed) | body overflow: ""
 open #3 : Pine ridge · 3 / 9 | role dialog aria-modal true | labelledby -> Pine ridge
 focus   : Close | body overflow: "hidden" | preloaded: Harbour, Red rocks
@@ -4621,7 +6136,10 @@ export default function App() {
   return (
     <main className="app">
       <h1>Photo gallery</h1>
-      <p className="hint">Click a photo. In the lightbox use the arrows or Left / Right keys, Esc or the backdrop to close.</p>
+      <p className="hint">
+        Click a photo. In the lightbox use the arrows or Left / Right keys, Esc
+        or the backdrop to close.
+      </p>
       <Gallery items={photos} />
     </main>
   );
@@ -4650,7 +6168,9 @@ export default function Gallery({ items }) {
         {items.map((p, i) => (
           <li key={p.id}>
             <button
-              ref={(el) => { thumbs.current[i] = el; }}
+              ref={(el) => {
+                thumbs.current[i] = el;
+              }}
               type="button"
               className="thumb"
               data-testid="thumb"
@@ -4663,7 +6183,12 @@ export default function Gallery({ items }) {
         ))}
       </ul>
       {openIndex !== null && (
-        <Lightbox items={items} index={openIndex} onIndexChange={setOpenIndex} onClose={close} />
+        <Lightbox
+          items={items}
+          index={openIndex}
+          onIndexChange={setOpenIndex}
+          onClose={close}
+        />
       )}
     </>
   );
@@ -4678,7 +6203,8 @@ export default function Lightbox({ items, index, onIndexChange, onClose }) {
   const item = items[index];
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
-  const preloaded = useRef(new Set()).current; // per open lightbox; each file fetched once
+  // per open lightbox; each file fetched once
+  const preloaded = useRef(new Set()).current;
 
   const go = (i) => onIndexChange(((i % n) + n) % n);
 
@@ -4704,21 +6230,38 @@ export default function Lightbox({ items, index, onIndexChange, onClose }) {
   }, [index, items, n, preloaded]);
 
   function onKeyDown(e) {
-    if (e.key === "Escape") { e.preventDefault(); onClose(); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); go(index + 1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); go(index - 1); }
-    else if (e.key === "Tab") {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      go(index + 1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      go(index - 1);
+    } else if (e.key === "Tab") {
       // Focus trap: wrap Tab / Shift+Tab inside the dialog.
       const f = dialogRef.current.querySelectorAll("button");
       const first = f[0];
       const last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
 
   return createPortal(
-    <div className="backdrop" data-testid="backdrop" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div
+      className="backdrop"
+      data-testid="backdrop"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
         ref={dialogRef}
         className="lightbox"
@@ -4728,46 +6271,117 @@ export default function Lightbox({ items, index, onIndexChange, onClose }) {
         data-testid="lightbox"
         onKeyDown={onKeyDown}
       >
-        <button ref={closeRef} type="button" className="close" data-testid="close" aria-label="Close" onClick={onClose}>✕</button>
+        <button
+          ref={closeRef}
+          type="button"
+          className="close"
+          data-testid="close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          ✕
+        </button>
         <figure>
           <img src={item.src} alt={item.alt} />
           <figcaption>
             <span id="lightbox-title">{item.title}</span>
-            <span data-testid="counter" aria-live="polite">{index + 1} / {n}</span>
+            <span data-testid="counter" aria-live="polite">
+              {index + 1} / {n}
+            </span>
           </figcaption>
         </figure>
-        <button type="button" className="nav prev" data-testid="prev" aria-label="Previous photo" onClick={() => go(index - 1)}>‹</button>
-        <button type="button" className="nav next" data-testid="next" aria-label="Next photo" onClick={() => go(index + 1)}>›</button>
+        <button
+          type="button"
+          className="nav prev"
+          data-testid="prev"
+          aria-label="Previous photo"
+          onClick={() => go(index - 1)}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          className="nav next"
+          data-testid="next"
+          aria-label="Next photo"
+          onClick={() => go(index + 1)}
+        >
+          ›
+        </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 `,
           "/src/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const titles = ["Sunrise", "Harbour", "Pine ridge", "Red rocks", "Night sky", "Lavender", "Old town", "Waterfall", "Snow peak"];
+const titles = [
+  "Sunrise",
+  "Harbour",
+  "Pine ridge",
+  "Red rocks",
+  "Night sky",
+  "Lavender",
+  "Old town",
+  "Waterfall",
+  "Snow peak",
+];
 
 export const photos = titles.map((title, i) => ({
   id: i + 1,
@@ -4776,26 +6390,118 @@ export const photos = titles.map((title, i) => ({
   src: svgPhoto((i * 40 + 10) % 360, title, i + 1),
 }));
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 900px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.thumb { display: block; width: 100%; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: zoom-in; background: #181b22; aspect-ratio: 16 / 9; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s; }
-.thumb:hover img { transform: scale(1.05); }
-.thumb:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.backdrop { position: fixed; inset: 0; z-index: 10; background: rgba(5, 6, 10, 0.88); display: flex; align-items: center; justify-content: center; padding: 16px; }
-.lightbox { position: relative; width: min(960px, 100%); }
-.lightbox figure { margin: 0; }
-.lightbox img { width: 100%; max-height: 80vh; object-fit: contain; display: block; border-radius: 8px; }
-.lightbox figcaption { display: flex; justify-content: space-between; padding: 8px 2px; color: #cfd6e4; }
-.lightbox button { border: 0; border-radius: 50%; width: 42px; height: 42px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 22px; cursor: pointer; }
-.lightbox button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.close { position: absolute; top: 8px; right: 8px; z-index: 1; }
-.nav { position: absolute; top: 45%; transform: translateY(-50%); }
-.prev { left: 8px; }
-.next { right: 8px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #181b22;
+  aspect-ratio: 16 / 9;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+.thumb:hover img {
+  transform: scale(1.05);
+}
+.thumb:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(5, 6, 10, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.lightbox {
+  position: relative;
+  width: min(960px, 100%);
+}
+.lightbox figure {
+  margin: 0;
+}
+.lightbox img {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+.lightbox figcaption {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 2px;
+  color: #cfd6e4;
+}
+.lightbox button {
+  border: 0;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+.lightbox button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+.nav {
+  position: absolute;
+  top: 45%;
+  transform: translateY(-50%);
+}
+.prev {
+  left: 8px;
+}
+.next {
+  right: 8px;
+}
 `,
         },
       },
@@ -4833,7 +6539,13 @@ A museum wall of small prints, and a viewing room for the full-size piece. A goo
 
 ~~~vue
 <li v-for="(p, i) in items" :key="p.id">
-  <button ref="thumbs" type="button" class="thumb" :aria-label="'Open ' + p.title" @click="open(i)">
+  <button
+    ref="thumbs"
+    type="button"
+    class="thumb"
+    :aria-label="'Open ' + p.title"
+    @click="open(i)"
+  >
     <img :src="p.src" alt="" loading="lazy" />
   </button>
 </li>
@@ -4844,8 +6556,14 @@ const openIndex = ref(null); // null = closed
 const thumbs = ref([]); // filled by ref="thumbs" inside v-for
 let opener = null;
 
-function open(i) { opener = thumbs.value[i]; openIndex.value = i; }
-function close() { openIndex.value = null; if (opener) opener.focus(); }
+function open(i) {
+  opener = thumbs.value[i];
+  openIndex.value = i;
+}
+function close() {
+  openIndex.value = null;
+  if (opener) opener.focus();
+}
 ~~~
 
 A \`ref\` attribute inside \`v-for\` gives an array of elements. Buttons are focusable and keyboard-activatable for free; the label lives on the button and the thumbnail has \`alt=""\`.
@@ -4859,7 +6577,13 @@ A \`ref\` attribute inside \`v-for\` gives an array of elements. Buttons are foc
   <div class="backdrop" @click.self="emit('close')">
     <div ref="dialog" class="lightbox" role="dialog" aria-modal="true"
          aria-labelledby="lightbox-title" @keydown="onKeydown">
-      <button ref="closeBtn" type="button" class="close" aria-label="Close" @click="emit('close')">✕</button>
+      <button
+        ref="closeBtn"
+        type="button"
+        class="close"
+        aria-label="Close"
+        @click="emit('close')"
+      >✕</button>
       <figure>
         <img :src="item.src" :alt="item.alt" />
         <figcaption>
@@ -4900,16 +6624,21 @@ onBeforeUnmount(() => {
 ### Step 4: Preload neighbours
 
 ~~~js
-const preloaded = new Set(); // per open lightbox; each file fetched once
-watch(index, (i) => {
-  preloaded.add(props.items[i].src); // on screen already
-  for (const j of [i - 1, i + 1]) {
-    const src = props.items[wrap(j)].src;
-    if (preloaded.has(src)) continue;
-    preloaded.add(src);
-    new Image().src = src;
-  }
-}, { immediate: true });
+// per open lightbox; each file fetched once
+const preloaded = new Set();
+watch(
+  index,
+  (i) => {
+    preloaded.add(props.items[i].src); // on screen already
+    for (const j of [i - 1, i + 1]) {
+      const src = props.items[wrap(j)].src;
+      if (preloaded.has(src)) continue;
+      preloaded.add(src);
+      new Image().src = src;
+    }
+  },
+  { immediate: true },
+);
 ~~~
 
 \`immediate: true\` runs it on open as well as on every move.
@@ -4918,7 +6647,7 @@ watch(index, (i) => {
 
 Mounted in jsdom with \`createApp(App).mount("#app")\`. The lightbox is teleported into \`body\`, so the driver queries the whole document, and it replaces \`window.Image\` with a spy that records preloads:
 
-\`\`\`
+\`\`\`text
 grid    : 9 thumbnails | lightbox: (closed) | body overflow: ""
 open #3 : Pine ridge · 3 / 9 | role dialog aria-modal true | labelledby -> Pine ridge
 focus   : Close | body overflow: "hidden" | preloaded: Harbour, Red rocks
@@ -5031,10 +6760,24 @@ import { photos } from "./photos.js";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 900px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/Gallery.vue": `<script setup>
@@ -5060,24 +6803,70 @@ function close() {
 <template>
   <ul class="grid" data-testid="grid">
     <li v-for="(p, i) in items" :key="p.id">
-      <button ref="thumbs" type="button" class="thumb" data-testid="thumb" :aria-label="'Open ' + p.title" @click="open(i)">
+      <button
+        ref="thumbs"
+        type="button"
+        class="thumb"
+        data-testid="thumb"
+        :aria-label="'Open ' + p.title"
+        @click="open(i)"
+      >
         <img :src="p.src" alt="" loading="lazy" />
       </button>
     </li>
   </ul>
-  <Lightbox v-if="openIndex !== null" v-model:index="openIndex" :items="items" @close="close" />
+  <Lightbox
+    v-if="openIndex !== null"
+    v-model:index="openIndex"
+    :items="items"
+    @close="close"
+  />
 </template>
 
 <style>
-.grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.thumb { display: block; width: 100%; padding: 0; border: 0; border-radius: 8px; overflow: hidden; cursor: zoom-in; background: #181b22; aspect-ratio: 16 / 9; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s; }
-.thumb:hover img { transform: scale(1.05); }
-.thumb:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+  background: #181b22;
+  aspect-ratio: 16 / 9;
+}
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s;
+}
+.thumb:hover img {
+  transform: scale(1.05);
+}
+.thumb:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/components/Lightbox.vue": `<script setup>
-import { onMounted, onBeforeUnmount, watch, computed, useTemplateRef } from "vue";
+import {
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  computed,
+  useTemplateRef,
+} from "vue";
 
 const props = defineProps({ items: { type: Array, required: true } });
 // v-model:index — the parent owns the index; we only ask to change it.
@@ -5089,7 +6878,9 @@ const item = computed(() => props.items[index.value]);
 const dialog = useTemplateRef("dialog");
 const closeBtn = useTemplateRef("closeBtn");
 const wrap = (i) => ((i % n.value) + n.value) % n.value;
-const go = (i) => { index.value = wrap(i); };
+const go = (i) => {
+  index.value = wrap(i);
+};
 
 // Move focus in on open; lock page scroll while open, restore the old value.
 let prevOverflow = "";
@@ -5104,27 +6895,42 @@ onBeforeUnmount(() => {
 
 // Preload the neighbours so next / previous feel instant.
 const preloaded = new Set(); // per open lightbox; each file fetched once
-watch(index, (i) => {
-  preloaded.add(props.items[i].src); // on screen already
-  for (const j of [i - 1, i + 1]) {
-    const src = props.items[wrap(j)].src;
-    if (preloaded.has(src)) continue;
-    preloaded.add(src);
-    new Image().src = src;
-  }
-}, { immediate: true });
+watch(
+  index,
+  (i) => {
+    preloaded.add(props.items[i].src); // on screen already
+    for (const j of [i - 1, i + 1]) {
+      const src = props.items[wrap(j)].src;
+      if (preloaded.has(src)) continue;
+      preloaded.add(src);
+      new Image().src = src;
+    }
+  },
+  { immediate: true },
+);
 
 function onKeydown(e) {
-  if (e.key === "Escape") { e.preventDefault(); emit("close"); }
-  else if (e.key === "ArrowRight") { e.preventDefault(); go(index.value + 1); }
-  else if (e.key === "ArrowLeft") { e.preventDefault(); go(index.value - 1); }
-  else if (e.key === "Tab") {
+  if (e.key === "Escape") {
+    e.preventDefault();
+    emit("close");
+  } else if (e.key === "ArrowRight") {
+    e.preventDefault();
+    go(index.value + 1);
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    go(index.value - 1);
+  } else if (e.key === "Tab") {
     // Focus trap: wrap Tab / Shift+Tab inside the dialog.
     const f = dialog.value.querySelectorAll("button");
     const first = f[0];
     const last = f[f.length - 1];
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
   }
 }
 </script>
@@ -5141,59 +6947,175 @@ function onKeydown(e) {
         data-testid="lightbox"
         @keydown="onKeydown"
       >
-        <button ref="closeBtn" type="button" class="close" data-testid="close" aria-label="Close" @click="emit('close')">✕</button>
+        <button
+          ref="closeBtn"
+          type="button"
+          class="close"
+          data-testid="close"
+          aria-label="Close"
+          @click="emit('close')"
+        >✕</button>
         <figure>
           <img :src="item.src" :alt="item.alt" />
           <figcaption>
             <span id="lightbox-title">{{ item.title }}</span>
-            <span data-testid="counter" aria-live="polite">{{ index + 1 }} / {{ n }}</span>
+            <span
+              data-testid="counter"
+              aria-live="polite"
+            >{{ index + 1 }} / {{ n }}</span>
           </figcaption>
         </figure>
-        <button type="button" class="nav prev" data-testid="prev" aria-label="Previous photo" @click="go(index - 1)">‹</button>
-        <button type="button" class="nav next" data-testid="next" aria-label="Next photo" @click="go(index + 1)">›</button>
+        <button
+          type="button"
+          class="nav prev"
+          data-testid="prev"
+          aria-label="Previous photo"
+          @click="go(index - 1)"
+        >‹</button>
+        <button
+          type="button"
+          class="nav next"
+          data-testid="next"
+          aria-label="Next photo"
+          @click="go(index + 1)"
+        >›</button>
       </div>
     </div>
   </Teleport>
 </template>
 
 <style>
-.backdrop { position: fixed; inset: 0; z-index: 10; background: rgba(5, 6, 10, 0.88); display: flex; align-items: center; justify-content: center; padding: 16px; }
-.lightbox { position: relative; width: min(960px, 100%); }
-.lightbox figure { margin: 0; }
-.lightbox img { width: 100%; max-height: 80vh; object-fit: contain; display: block; border-radius: 8px; }
-.lightbox figcaption { display: flex; justify-content: space-between; padding: 8px 2px; color: #cfd6e4; }
-.lightbox button { border: 0; border-radius: 50%; width: 42px; height: 42px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 22px; cursor: pointer; }
-.lightbox button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.lightbox .close { position: absolute; top: 8px; right: 8px; z-index: 1; }
-.lightbox .nav { position: absolute; top: 45%; transform: translateY(-50%); }
-.lightbox .prev { left: 8px; }
-.lightbox .next { right: 8px; }
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(5, 6, 10, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.lightbox {
+  position: relative;
+  width: min(960px, 100%);
+}
+.lightbox figure {
+  margin: 0;
+}
+.lightbox img {
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+}
+.lightbox figcaption {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 2px;
+  color: #cfd6e4;
+}
+.lightbox button {
+  border: 0;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+.lightbox button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.lightbox .close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+.lightbox .nav {
+  position: absolute;
+  top: 45%;
+  transform: translateY(-50%);
+}
+.lightbox .prev {
+  left: 8px;
+}
+.lightbox .next {
+  right: 8px;
+}
 </style>
 `,
           "/src/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue, title, n) {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const titles = ["Sunrise", "Harbour", "Pine ridge", "Red rocks", "Night sky", "Lavender", "Old town", "Waterfall", "Snow peak"];
+const titles = [
+  "Sunrise",
+  "Harbour",
+  "Pine ridge",
+  "Red rocks",
+  "Night sky",
+  "Lavender",
+  "Old town",
+  "Waterfall",
+  "Snow peak",
+];
 
 export const photos = titles.map((title, i) => ({
   id: i + 1,
@@ -5241,13 +7163,23 @@ The output is named \`closed\`, not \`close\`, to avoid confusion with the DOM \
 ~~~html
 @for (p of photos; track p.id; let i = $index) {
   <li>
-    <button type="button" class="thumb" [attr.aria-label]="'Open ' + p.title" (click)="open(i, $event)">
+    <button
+      type="button"
+      class="thumb"
+      [attr.aria-label]="'Open ' + p.title"
+      (click)="open(i, $event)"
+    >
       <img [src]="p.src" alt="" loading="lazy" />
     </button>
   </li>
 }
 @if (openIndex() !== null) {
-  <app-lightbox [items]="photos" [index]="openIndex()!" (indexChange)="openIndex.set($event)" (closed)="close()" />
+  <app-lightbox
+    [items]="photos"
+    [index]="openIndex()!"
+    (indexChange)="openIndex.set($event)"
+    (closed)="close()"
+  />
 }
 ~~~
 
@@ -5270,7 +7202,13 @@ close(): void {
 <div class="backdrop" (click)="onBackdrop($event)">
   <div #dialog class="lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title"
        (keydown)="onKeydown($event)">
-    <button #closeBtn type="button" class="close" aria-label="Close" (click)="closed.emit()">✕</button>
+    <button
+      #closeBtn
+      type="button"
+      class="close"
+      aria-label="Close"
+      (click)="closed.emit()"
+    >✕</button>
     <figure>
       <img [src]="items[index].src" [alt]="items[index].alt" />
       <figcaption>
@@ -5327,7 +7265,7 @@ ngOnChanges(): void {
 
 Booted in jsdom under AOT (\`ngc\`, \`strictTemplates\`) and runtime JIT; both printed identical lines that also matched the React and Vue runs. \`window.Image\` is replaced by a spy that records preloads:
 
-\`\`\`
+\`\`\`text
 grid    : 9 thumbnails | lightbox: (closed) | body overflow: ""
 open #3 : Pine ridge · 3 / 9 | role dialog aria-modal true | labelledby -> Pine ridge
 focus   : Close | body overflow: "hidden" | preloaded: Harbour, Red rocks
@@ -5441,18 +7379,30 @@ import { photos } from "./photos";
       <ul class="grid" data-testid="grid">
         @for (p of photos; track p.id; let i = $index) {
           <li>
-            <button type="button" class="thumb" data-testid="thumb" [attr.aria-label]="'Open ' + p.title" (click)="open(i, $event)">
+            <button
+              type="button"
+              class="thumb"
+              data-testid="thumb"
+              [attr.aria-label]="'Open ' + p.title"
+              (click)="open(i, $event)"
+            >
               <img [src]="p.src" alt="" loading="lazy" />
             </button>
           </li>
         }
       </ul>
       @if (openIndex() !== null) {
-        <app-lightbox [items]="photos" [index]="openIndex()!" (indexChange)="openIndex.set($event)" (closed)="close()" />
+        <app-lightbox
+          [items]="photos"
+          [index]="openIndex()!"
+          (indexChange)="openIndex.set($event)"
+          (closed)="close()"
+        />
       }
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 900px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.2rem; }
@@ -5462,7 +7412,8 @@ import { photos } from "./photos";
     .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.2s; }
     .thumb:hover img { transform: scale(1.05); }
     .thumb:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly photos = photos;
@@ -5480,7 +7431,17 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/lightbox.component.ts": `import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, AfterViewInit, Output, ViewChild } from "@angular/core";
+          "/src/app/lightbox.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  AfterViewInit,
+  Output,
+  ViewChild,
+} from "@angular/core";
 import { Photo } from "./photos";
 
 // Controlled: the parent owns index ([(index)] two-way binding); we only ask
@@ -5499,20 +7460,43 @@ import { Photo } from "./photos";
         data-testid="lightbox"
         (keydown)="onKeydown($event)"
       >
-        <button #closeBtn type="button" class="close" data-testid="close" aria-label="Close" (click)="closed.emit()">✕</button>
+        <button
+          #closeBtn
+          type="button"
+          class="close"
+          data-testid="close"
+          aria-label="Close"
+          (click)="closed.emit()"
+        >✕</button>
         <figure>
           <img [src]="items[index].src" [alt]="items[index].alt" />
           <figcaption>
             <span id="lightbox-title">{{ items[index].title }}</span>
-            <span data-testid="counter" aria-live="polite">{{ index + 1 }} / {{ items.length }}</span>
+            <span
+              data-testid="counter"
+              aria-live="polite"
+            >{{ index + 1 }} / {{ items.length }}</span>
           </figcaption>
         </figure>
-        <button type="button" class="nav prev" data-testid="prev" aria-label="Previous photo" (click)="go(index - 1)">‹</button>
-        <button type="button" class="nav next" data-testid="next" aria-label="Next photo" (click)="go(index + 1)">›</button>
+        <button
+          type="button"
+          class="nav prev"
+          data-testid="prev"
+          aria-label="Previous photo"
+          (click)="go(index - 1)"
+        >‹</button>
+        <button
+          type="button"
+          class="nav next"
+          data-testid="next"
+          aria-label="Next photo"
+          (click)="go(index + 1)"
+        >›</button>
       </div>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .backdrop { position: fixed; inset: 0; z-index: 10; background: rgba(5, 6, 10, 0.88); display: flex; align-items: center; justify-content: center; padding: 16px; }
     .lightbox { position: relative; width: min(960px, 100%); }
     figure { margin: 0; }
@@ -5524,7 +7508,8 @@ import { Photo } from "./photos";
     .nav { position: absolute; top: 45%; transform: translateY(-50%); }
     .prev { left: 8px; }
     .next { right: 8px; }
-  \`],
+  \`,
+  ],
 })
 export class LightboxComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Input({ required: true }) items: Photo[] = [];
@@ -5532,10 +7517,12 @@ export class LightboxComponent implements OnChanges, AfterViewInit, OnDestroy {
   @Output() indexChange = new EventEmitter<number>();
   @Output() closed = new EventEmitter<void>();
   @ViewChild("dialog", { static: true }) dialog!: ElementRef<HTMLDivElement>;
-  @ViewChild("closeBtn", { static: true }) closeBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild("closeBtn", { static: true })
+  closeBtn!: ElementRef<HTMLButtonElement>;
 
   private prevOverflow = "";
-  private preloaded = new Set<string>(); // per open lightbox; each file fetched once
+  // per open lightbox; each file fetched once
+  private preloaded = new Set<string>();
 
   // Move focus in on open; lock page scroll while open, restore the old value.
   ngAfterViewInit(): void {
@@ -5573,46 +7560,110 @@ export class LightboxComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 
   onKeydown(e: KeyboardEvent): void {
-    if (e.key === "Escape") { e.preventDefault(); this.closed.emit(); }
-    else if (e.key === "ArrowRight") { e.preventDefault(); this.go(this.index + 1); }
-    else if (e.key === "ArrowLeft") { e.preventDefault(); this.go(this.index - 1); }
-    else if (e.key === "Tab") {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      this.closed.emit();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      this.go(this.index + 1);
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      this.go(this.index - 1);
+    } else if (e.key === "Tab") {
       // Focus trap: wrap Tab / Shift+Tab inside the dialog.
       const f = this.dialog.nativeElement.querySelectorAll("button");
       const first = f[0];
       const last = f[f.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   }
 }
 `,
           "/src/app/photos.ts": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
-function el(tag: string, attrs: Record<string, string | number>, children?: string[]): string {
-  const a = Object.keys(attrs).map((k) => " " + k + "=\\"" + attrs[k] + "\\"").join("");
-  return children ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">" : "<" + tag + a + "/>";
+function el(
+  tag: string,
+  attrs: Record<string, string | number>,
+  children?: string[],
+): string {
+  const a = Object.keys(attrs)
+    .map((k) => " " + k + '="' + attrs[k] + '"')
+    .join("");
+  return children
+    ? "<" + tag + a + ">" + children.join("") + "</" + tag + ">"
+    : "<" + tag + a + "/>";
 }
 
 function svgPhoto(hue: number, title: string, n: number): string {
-  const svg = el("svg", { xmlns: "http://www.w3.org/2000/svg", width: 800, height: 450, viewBox: "0 0 800 450" }, [
-    el("defs", {}, [
-      el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
-        el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
-        el("stop", { offset: 1, "stop-color": "hsl(" + (hue + 50) + ",65%,28%)" }),
+  const svg = el(
+    "svg",
+    {
+      xmlns: "http://www.w3.org/2000/svg",
+      width: 800,
+      height: 450,
+      viewBox: "0 0 800 450",
+    },
+    [
+      el("defs", {}, [
+        el("linearGradient", { id: "g", x1: 0, y1: 0, x2: 1, y2: 1 }, [
+          el("stop", { offset: 0, "stop-color": "hsl(" + hue + ",70%,55%)" }),
+          el("stop", {
+            offset: 1,
+            "stop-color": "hsl(" + (hue + 50) + ",65%,28%)",
+          }),
+        ]),
       ]),
-    ]),
-    el("rect", { width: 800, height: 450, fill: "url(#g)" }),
-    el("circle", { cx: 640, cy: 120, r: 70, fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)" }),
-    el("path", { d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z", fill: "hsla(" + hue + ",40%,14%,0.7)" }),
-    el("text", { x: 40, y: 80, "font-family": "sans-serif", "font-size": 48, fill: "white" }, [n + ". " + title]),
-  ]);
+      el("rect", { width: 800, height: 450, fill: "url(#g)" }),
+      el("circle", {
+        cx: 640,
+        cy: 120,
+        r: 70,
+        fill: "hsla(" + (hue + 180) + ",80%,85%,0.55)",
+      }),
+      el("path", {
+        d: "M0 450 L220 250 L360 370 L520 220 L800 450 Z",
+        fill: "hsla(" + hue + ",40%,14%,0.7)",
+      }),
+      el(
+        "text",
+        {
+          x: 40,
+          y: 80,
+          "font-family": "sans-serif",
+          "font-size": 48,
+          fill: "white",
+        },
+        [n + ". " + title],
+      ),
+    ],
+  );
   return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
-const titles = ["Sunrise", "Harbour", "Pine ridge", "Red rocks", "Night sky", "Lavender", "Old town", "Waterfall", "Snow peak"];
+const titles = [
+  "Sunrise",
+  "Harbour",
+  "Pine ridge",
+  "Red rocks",
+  "Night sky",
+  "Lavender",
+  "Old town",
+  "Waterfall",
+  "Snow peak",
+];
 
-export interface Photo { id: number; title: string; alt: string; src: string; }
+export interface Photo {
+  id: number;
+  title: string;
+  alt: string;
+  src: string;
+}
 
 export const photos: Photo[] = titles.map((title, i) => ({
   id: i + 1,
@@ -5734,10 +7785,16 @@ export function historyReducer(state, action) {
       return { done: [...state.done, action.item], undone: [] };
     case "undo":
       if (!state.done.length) return state;
-      return { done: state.done.slice(0, -1), undone: [...state.undone, state.done[state.done.length - 1]] };
+      return {
+        done: state.done.slice(0, -1),
+        undone: [...state.undone, state.done[state.done.length - 1]],
+      };
     case "redo":
       if (!state.undone.length) return state;
-      return { done: [...state.done, state.undone[state.undone.length - 1]], undone: state.undone.slice(0, -1) };
+      return {
+        done: [...state.done, state.undone[state.undone.length - 1]],
+        undone: state.undone.slice(0, -1),
+      };
     default:
       return state;
   }
@@ -5745,7 +7802,9 @@ export function historyReducer(state, action) {
 
 export function visibleStrokes(done) {
   let start = 0;
-  done.forEach((a, i) => { if (a.type === "clear") start = i + 1; });
+  done.forEach((a, i) => {
+    if (a.type === "clear") start = i + 1;
+  });
   return done.slice(start);
 }
 ~~~
@@ -5786,26 +7845,39 @@ function toPoint(e) {
   const r = canvasRef.current.getBoundingClientRect();
   const sx = r.width ? W / r.width : 1;
   const sy = r.height ? H / r.height : 1;
-  return [Math.round((e.clientX - r.left) * sx), Math.round((e.clientY - r.top) * sy)];
+  return [
+    Math.round((e.clientX - r.left) * sx),
+    Math.round((e.clientY - r.top) * sy),
+  ];
 }
 
 function onPointerDown(e) {
   if (e.button !== 0) return;
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-  current.current = { type: "stroke", color, size, erase, points: [toPoint(e)] };
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
+  current.current = {
+    type: "stroke",
+    color,
+    size,
+    erase,
+    points: [toPoint(e)],
+  };
   drawStroke(getCtx(), current.current); // the dot shows at once
 }
 
 function onPointerMove(e) {
   const s = current.current;
   if (!s) return;
-  const events = e.nativeEvent.getCoalescedEvents ? e.nativeEvent.getCoalescedEvents() : [];
+  const events = e.nativeEvent.getCoalescedEvents
+    ? e.nativeEvent.getCoalescedEvents()
+    : [];
   const ctx = getCtx();
   for (const ev of events.length ? events : [e]) {
     const p = toPoint(ev);
     const last = s.points[s.points.length - 1];
     s.points.push(p);
-    drawStroke(ctx, { ...s, points: [last, p] }); // just the new segment
+    // just the new segment
+    drawStroke(ctx, { ...s, points: [last, p] });
   }
 }
 
@@ -5826,7 +7898,9 @@ The live stroke lives in a **ref**, not state: a \`pointermove\` can fire 60 or 
 
 ~~~js
 export function drawStroke(ctx, s) {
-  ctx.globalCompositeOperation = s.erase ? "destination-out" : "source-over";
+  ctx.globalCompositeOperation = s.erase
+    ? "destination-out"
+    : "source-over";
   ctx.strokeStyle = s.color;
   ctx.fillStyle = s.color;
   ctx.lineWidth = s.size;
@@ -5841,7 +7915,8 @@ export function drawStroke(ctx, s) {
   }
   ctx.beginPath();
   ctx.moveTo(x0, y0);
-  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+  for (let i = 1; i < s.points.length; i++)
+    ctx.lineTo(s.points[i][0], s.points[i][1]);
   ctx.stroke();
 }
 ~~~
@@ -5896,7 +7971,7 @@ Real apps often combine them: strokes as the source of truth, plus a cached bitm
 
 jsdom has no 2D context: calling \`getContext\` there logs "Not implemented" through \`console.error\`, and \`toDataURL\` is missing. So the driver installs a **recording fake context** on \`HTMLCanvasElement.prototype\` (it counts \`beginPath\`, \`lineTo\`, \`arc\`, \`stroke\`, \`fill\`, \`clearRect\` and records \`strokeStyle\`, \`lineWidth\` and the composite mode), fakes \`toDataURL\`, and draws with synthetic \`PointerEvent\`s. jsdom has no layout, so \`getBoundingClientRect()\` is all zeros and points map 1:1. Mounted with \`<StrictMode>\`:
 
-\`\`\`
+\`\`\`text
 mount   : On the board: 0 · undo steps: 0 · redo steps: 0 | getContext calls 0 | undo off | redo off | clear off | canvas 800x500
 stroke 1: On the board: 1 · undo steps: 1 · redo steps: 0
   while moving: clearRect 0, beginPath 4, lineTo 3, arc 1, stroke 3, fill 1 | on release: clearRect 1, beginPath 1, lineTo 3, arc 0, stroke 1, fill 0 | style ["#ff6b6b",6,"source-over"]
@@ -5919,7 +7994,7 @@ What this proves: no context was created on mount; a 4-point stroke drew a dot a
 
 The fake proves which calls are made, not what the pixels look like, so the same build was run in **headless Chromium 141** with a real mouse, reading pixels back with \`getImageData\`:
 
-\`\`\`
+\`\`\`text
 canvas css 368x230 | backing 800x500 at devicePixelRatio 1
 before   : pixel 0,0,0,0
 drawn    : On the board: 1 · undo steps: 1 · redo steps: 0 | pixel 255,107,107,255
@@ -6044,13 +8119,21 @@ export default function App() {
     <main className="app">
       <h1>Drawing board</h1>
       <DrawingBoard />
-      <p className="hint">Draw with a mouse, pen or finger. Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes.</p>
+      <p className="hint">
+        Draw with a mouse, pen or finger. Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y
+        redoes.
+      </p>
     </main>
   );
 }
 `,
           "/src/DrawingBoard.js": `import { useEffect, useReducer, useRef, useState } from "react";
-import { initialHistory, historyReducer, visibleStrokes, drawStroke } from "./history";
+import {
+  initialHistory,
+  historyReducer,
+  visibleStrokes,
+  drawStroke,
+} from "./history";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -6092,8 +8175,13 @@ export default function DrawingBoard() {
     function onKey(e) {
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
-      if (k === "z" && !e.shiftKey) { e.preventDefault(); dispatch({ type: "undo" }); }
-      else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); dispatch({ type: "redo" }); }
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        dispatch({ type: "undo" });
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        dispatch({ type: "redo" });
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -6103,13 +8191,23 @@ export default function DrawingBoard() {
     const r = canvasRef.current.getBoundingClientRect();
     const sx = r.width ? W / r.width : 1;
     const sy = r.height ? H / r.height : 1;
-    return [Math.round((e.clientX - r.left) * sx), Math.round((e.clientY - r.top) * sy)];
+    return [
+      Math.round((e.clientX - r.left) * sx),
+      Math.round((e.clientY - r.top) * sy),
+    ];
   }
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-    current.current = { type: "stroke", color, size, erase, points: [toPoint(e)] };
+    if (e.currentTarget.setPointerCapture)
+      e.currentTarget.setPointerCapture(e.pointerId);
+    current.current = {
+      type: "stroke",
+      color,
+      size,
+      erase,
+      points: [toPoint(e)],
+    };
     drawStroke(getCtx(), current.current); // the dot shows at once
   }
 
@@ -6117,7 +8215,9 @@ export default function DrawingBoard() {
     const s = current.current;
     if (!s) return;
     // Fast pointers deliver several positions per event: use them all.
-    const events = e.nativeEvent.getCoalescedEvents ? e.nativeEvent.getCoalescedEvents() : [];
+    const events = e.nativeEvent.getCoalescedEvents
+      ? e.nativeEvent.getCoalescedEvents()
+      : [];
     const list = events.length ? events : [e];
     const ctx = getCtx();
     for (const ev of list) {
@@ -6154,23 +8254,67 @@ export default function DrawingBoard() {
       <div className="toolbar" role="toolbar" aria-label="Drawing tools">
         <div className="swatches">
           {COLORS.map((c) => (
-            <button key={c} type="button" className="swatch" style={{ background: c }}
-              aria-label={"Colour " + c} aria-pressed={!erase && color === c}
-              onClick={() => { setColor(c); setErase(false); }} />
+            <button
+              key={c}
+              type="button"
+              className="swatch"
+              style={{ background: c }}
+              aria-label={"Colour " + c}
+              aria-pressed={!erase && color === c}
+              onClick={() => {
+                setColor(c);
+                setErase(false);
+              }}
+            />
           ))}
         </div>
         <label className="size">
           Size
-          <input type="range" min="2" max="40" value={size} data-testid="size"
-            onChange={(e) => setSize(Number(e.target.value))} />
+          <input
+            type="range"
+            min="2"
+            max="40"
+            value={size}
+            data-testid="size"
+            onChange={(e) => setSize(Number(e.target.value))}
+          />
           <span>{size}px</span>
         </label>
-        <button type="button" data-testid="eraser" aria-pressed={erase} onClick={() => setErase((v) => !v)}>Eraser</button>
-        <button type="button" data-testid="undo" disabled={!history.done.length} onClick={() => dispatch({ type: "undo" })}>Undo</button>
-        <button type="button" data-testid="redo" disabled={!history.undone.length} onClick={() => dispatch({ type: "redo" })}>Redo</button>
-        <button type="button" data-testid="clear" disabled={!strokes.length}
-          onClick={() => dispatch({ type: "commit", item: { type: "clear" } })}>Clear</button>
-        <button type="button" data-testid="export" onClick={exportPng}>Export PNG</button>
+        <button
+          type="button"
+          data-testid="eraser"
+          aria-pressed={erase}
+          onClick={() => setErase((v) => !v)}
+        >
+          Eraser
+        </button>
+        <button
+          type="button"
+          data-testid="undo"
+          disabled={!history.done.length}
+          onClick={() => dispatch({ type: "undo" })}
+        >
+          Undo
+        </button>
+        <button
+          type="button"
+          data-testid="redo"
+          disabled={!history.undone.length}
+          onClick={() => dispatch({ type: "redo" })}
+        >
+          Redo
+        </button>
+        <button
+          type="button"
+          data-testid="clear"
+          disabled={!strokes.length}
+          onClick={() => dispatch({ type: "commit", item: { type: "clear" } })}
+        >
+          Clear
+        </button>
+        <button type="button" data-testid="export" onClick={exportPng}>
+          Export PNG
+        </button>
       </div>
 
       <canvas
@@ -6188,12 +8332,15 @@ export default function DrawingBoard() {
       />
 
       <p className="status" data-testid="status" aria-live="polite">
-        On the board: {strokes.length} · undo steps: {history.done.length} · redo steps: {history.undone.length}
+        On the board: {strokes.length} · undo steps: {history.done.length} ·
+        redo steps: {history.undone.length}
       </p>
       {exportUrl && (
         <div className="export">
           <img src={exportUrl} alt="Exported drawing preview" />
-          <a href={exportUrl} download="drawing.png" data-testid="download">Download drawing.png</a>
+          <a href={exportUrl} download="drawing.png" data-testid="download">
+            Download drawing.png
+          </a>
         </div>
       )}
     </div>
@@ -6211,10 +8358,16 @@ export function historyReducer(state, action) {
       return { done: [...state.done, action.item], undone: [] };
     case "undo":
       if (!state.done.length) return state;
-      return { done: state.done.slice(0, -1), undone: [...state.undone, state.done[state.done.length - 1]] };
+      return {
+        done: state.done.slice(0, -1),
+        undone: [...state.undone, state.done[state.done.length - 1]],
+      };
     case "redo":
       if (!state.undone.length) return state;
-      return { done: [...state.done, state.undone[state.undone.length - 1]], undone: state.undone.slice(0, -1) };
+      return {
+        done: [...state.done, state.undone[state.undone.length - 1]],
+        undone: state.undone.slice(0, -1),
+      };
     default:
       return state;
   }
@@ -6223,7 +8376,9 @@ export function historyReducer(state, action) {
 // Only what comes after the last "clear" is on the board.
 export function visibleStrokes(done) {
   let start = 0;
-  done.forEach((a, i) => { if (a.type === "clear") start = i + 1; });
+  done.forEach((a, i) => {
+    if (a.type === "clear") start = i + 1;
+  });
   return done.slice(start);
 }
 
@@ -6244,28 +8399,104 @@ export function drawStroke(ctx, s) {
   }
   ctx.beginPath();
   ctx.moveTo(x0, y0);
-  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+  for (let i = 1; i < s.points.length; i++)
+    ctx.lineTo(s.points[i][0], s.points[i][1]);
   ctx.stroke();
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 840px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-.toolbar button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
-.toolbar button:disabled { opacity: 0.4; cursor: default; }
-.toolbar button[aria-pressed="true"] { border-color: #7aa2ff; box-shadow: 0 0 0 1px #7aa2ff; }
-.toolbar button:focus-visible, .toolbar input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.swatches { display: flex; gap: 6px; }
-.toolbar .swatch { width: 26px; height: 26px; border-radius: 50%; padding: 0; }
-.size { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #a8b3c7; }
-.size input { width: 90px; }
-.canvas { display: block; width: 100%; aspect-ratio: 8 / 5; background: #ffffff; border-radius: 8px; touch-action: none; cursor: crosshair; }
-.status { color: #a8b3c7; font-size: 0.85rem; }
-.export { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.export img { width: 160px; border-radius: 6px; border: 1px solid #3d4760; }
-.export a { color: #7aa2ff; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.toolbar button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.toolbar button[aria-pressed="true"] {
+  border-color: #7aa2ff;
+  box-shadow: 0 0 0 1px #7aa2ff;
+}
+.toolbar button:focus-visible,
+.toolbar input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.swatches {
+  display: flex;
+  gap: 6px;
+}
+.toolbar .swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  padding: 0;
+}
+.size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a8b3c7;
+}
+.size input {
+  width: 90px;
+}
+.canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  background: #ffffff;
+  border-radius: 8px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.status {
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+.export {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.export img {
+  width: 160px;
+  border-radius: 6px;
+  border: 1px solid #3d4760;
+}
+.export a {
+  color: #7aa2ff;
+}
 `,
         },
       },
@@ -6299,7 +8530,9 @@ The pure history logic lives in \`src/history.js\` (no Vue in it): a reducer ove
 
 ~~~js
 const history = shallowRef(initialHistory);
-const dispatch = (action) => { history.value = historyReducer(history.value, action); };
+const dispatch = (action) => {
+  history.value = historyReducer(history.value, action);
+};
 const strokes = computed(() => visibleStrokes(history.value.done));
 ~~~
 
@@ -6312,10 +8545,18 @@ The reducer is the same file as the React build: commit pushes and empties \`und
 ### Step 1: A sharp canvas
 
 ~~~vue
-<canvas ref="canvas" class="canvas" :width="W * dpr" :height="H * dpr" role="img"
-        :aria-label="'Drawing canvas, ' + strokes.length + ' strokes'"
-        @pointerdown="onPointerdown" @pointermove="onPointermove"
-        @pointerup="onPointerup" @pointercancel="onPointerup" />
+<canvas
+  ref="canvas"
+  class="canvas"
+  :width="W * dpr"
+  :height="H * dpr"
+  role="img"
+  :aria-label="'Drawing canvas, ' + strokes.length + ' strokes'"
+  @pointerdown="onPointerdown"
+  @pointermove="onPointermove"
+  @pointerup="onPointerup"
+  @pointercancel="onPointerup"
+/>
 ~~~
 
 📌 **Interview term: \`devicePixelRatio\`** — physical pixels per CSS pixel. The backing store is 800 × 500 logical units times DPR, and \`getCtx()\` calls \`ctx.setTransform(dpr, 0, 0, dpr, 0, 0)\` once so all drawing code works in logical units. Strokes are stored in those units too, so they replay identically on any screen.
@@ -6325,8 +8566,15 @@ The reducer is the same file as the React build: commit pushes and empties \`und
 ~~~js
 function onPointerdown(e) {
   if (e.button !== 0) return;
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-  current = { type: "stroke", color: color.value, size: size.value, erase: erase.value, points: [toPoint(e)] };
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
+  current = {
+    type: "stroke",
+    color: color.value,
+    size: size.value,
+    erase: erase.value,
+    points: [toPoint(e)],
+  };
   drawStroke(getCtx(), current); // the dot shows at once
 }
 
@@ -6338,7 +8586,8 @@ function onPointermove(e) {
     const p = toPoint(ev);
     const last = current.points[current.points.length - 1];
     current.points.push(p);
-    drawStroke(c, { ...current, points: [last, p] }); // just the new segment
+    // just the new segment
+    drawStroke(c, { ...current, points: [last, p] });
   }
 }
 
@@ -6358,12 +8607,16 @@ function onPointerup() {
 ### Step 3: Repaint from data after the DOM updates
 
 ~~~js
-watch(history, () => {
-  if (!ctx && !strokes.value.length) return;
-  const c = getCtx();
-  c.clearRect(0, 0, W, H);
-  strokes.value.forEach((s) => drawStroke(c, s));
-}, { flush: "post" });
+watch(
+  history,
+  () => {
+    if (!ctx && !strokes.value.length) return;
+    const c = getCtx();
+    c.clearRect(0, 0, W, H);
+    strokes.value.forEach((s) => drawStroke(c, s));
+  },
+  { flush: "post" },
+);
 ~~~
 
 \`flush: "post"\` runs the repaint after Vue has patched the DOM. The context is created lazily, so an untouched board never asks for one. \`drawStroke\` sets \`globalCompositeOperation\` to \`destination-out\` for the eraser, which erases to transparency.
@@ -6378,7 +8631,7 @@ The size slider is \`v-model.number="size"\`, so \`size\` stays a number ([v-mod
 
 jsdom has no 2D context (\`getContext\` logs "Not implemented" through \`console.error\`) and no \`toDataURL\`, so the driver installs a **recording fake context** on \`HTMLCanvasElement.prototype\` and a fake \`toDataURL\`, then draws with synthetic \`PointerEvent\`s; with no layout, points map 1:1:
 
-\`\`\`
+\`\`\`text
 mount   : On the board: 0 · undo steps: 0 · redo steps: 0 | getContext calls 0 | undo off | redo off | clear off | canvas 800x500
 stroke 1: On the board: 1 · undo steps: 1 · redo steps: 0
   while moving: clearRect 0, beginPath 4, lineTo 3, arc 1, stroke 3, fill 1 | on release: clearRect 1, beginPath 1, lineTo 3, arc 0, stroke 1, fill 0 | style ["#ff6b6b",6,"source-over"]
@@ -6491,15 +8744,42 @@ import DrawingBoard from "./components/DrawingBoard.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 840px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 1.2rem; }
-.hint { color: #8a93a6; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 1.2rem;
+}
+.hint {
+  color: #8a93a6;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/DrawingBoard.vue": `<script setup>
-import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, useTemplateRef } from "vue";
-import { initialHistory, historyReducer, visibleStrokes, drawStroke } from "../history.js";
+import {
+  ref,
+  shallowRef,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+  useTemplateRef,
+} from "vue";
+import {
+  initialHistory,
+  historyReducer,
+  visibleStrokes,
+  drawStroke,
+} from "../history.js";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -6508,7 +8788,9 @@ const COLORS = ["#f5f5f5", "#ff6b6b", "#ffd166", "#06d6a0", "#4dabf7"];
 // shallowRef: history is replaced, never mutated, so deep tracking of every
 // point would be wasted work.
 const history = shallowRef(initialHistory);
-const dispatch = (action) => { history.value = historyReducer(history.value, action); };
+const dispatch = (action) => {
+  history.value = historyReducer(history.value, action);
+};
 const strokes = computed(() => visibleStrokes(history.value.done));
 
 const color = ref(COLORS[1]);
@@ -6531,19 +8813,28 @@ function getCtx() {
 
 // Full repaint from data whenever the history changes (undo, redo, clear).
 // An untouched board needs no paint, so the context is created lazily.
-watch(history, () => {
-  if (!ctx && !strokes.value.length) return;
-  const c = getCtx();
-  c.clearRect(0, 0, W, H);
-  strokes.value.forEach((s) => drawStroke(c, s));
-}, { flush: "post" });
+watch(
+  history,
+  () => {
+    if (!ctx && !strokes.value.length) return;
+    const c = getCtx();
+    c.clearRect(0, 0, W, H);
+    strokes.value.forEach((s) => drawStroke(c, s));
+  },
+  { flush: "post" },
+);
 
 // Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z or Ctrl+Y redo.
 function onKey(e) {
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
-  if (k === "z" && !e.shiftKey) { e.preventDefault(); dispatch({ type: "undo" }); }
-  else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); dispatch({ type: "redo" }); }
+  if (k === "z" && !e.shiftKey) {
+    e.preventDefault();
+    dispatch({ type: "undo" });
+  } else if ((k === "z" && e.shiftKey) || k === "y") {
+    e.preventDefault();
+    dispatch({ type: "redo" });
+  }
 }
 onMounted(() => window.addEventListener("keydown", onKey));
 onBeforeUnmount(() => window.removeEventListener("keydown", onKey));
@@ -6552,13 +8843,23 @@ function toPoint(e) {
   const r = canvas.value.getBoundingClientRect();
   const sx = r.width ? W / r.width : 1;
   const sy = r.height ? H / r.height : 1;
-  return [Math.round((e.clientX - r.left) * sx), Math.round((e.clientY - r.top) * sy)];
+  return [
+    Math.round((e.clientX - r.left) * sx),
+    Math.round((e.clientY - r.top) * sy),
+  ];
 }
 
 function onPointerdown(e) {
   if (e.button !== 0) return;
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-  current = { type: "stroke", color: color.value, size: size.value, erase: erase.value, points: [toPoint(e)] };
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
+  current = {
+    type: "stroke",
+    color: color.value,
+    size: size.value,
+    erase: erase.value,
+    points: [toPoint(e)],
+  };
   drawStroke(getCtx(), current); // the dot shows at once
 }
 
@@ -6609,14 +8910,44 @@ function exportPng() {
       </div>
       <label class="size">
         Size
-        <input v-model.number="size" type="range" min="2" max="40" data-testid="size" />
+        <input
+          v-model.number="size"
+          type="range"
+          min="2"
+          max="40"
+          data-testid="size"
+        />
         <span>{{ size }}px</span>
       </label>
-      <button type="button" data-testid="eraser" :aria-pressed="erase" @click="erase = !erase">Eraser</button>
-      <button type="button" data-testid="undo" :disabled="!history.done.length" @click="dispatch({ type: 'undo' })">Undo</button>
-      <button type="button" data-testid="redo" :disabled="!history.undone.length" @click="dispatch({ type: 'redo' })">Redo</button>
-      <button type="button" data-testid="clear" :disabled="!strokes.length" @click="dispatch({ type: 'commit', item: { type: 'clear' } })">Clear</button>
-      <button type="button" data-testid="export" @click="exportPng">Export PNG</button>
+      <button
+        type="button"
+        data-testid="eraser"
+        :aria-pressed="erase"
+        @click="erase = !erase"
+      >Eraser</button>
+      <button
+        type="button"
+        data-testid="undo"
+        :disabled="!history.done.length"
+        @click="dispatch({ type: 'undo' })"
+      >Undo</button>
+      <button
+        type="button"
+        data-testid="redo"
+        :disabled="!history.undone.length"
+        @click="dispatch({ type: 'redo' })"
+      >Redo</button>
+      <button
+        type="button"
+        data-testid="clear"
+        :disabled="!strokes.length"
+        @click="dispatch({ type: 'commit', item: { type: 'clear' } })"
+      >Clear</button>
+      <button
+        type="button"
+        data-testid="export"
+        @click="exportPng"
+      >Export PNG</button>
     </div>
 
     <canvas
@@ -6638,26 +8969,91 @@ function exportPng() {
     </p>
     <div v-if="exportUrl" class="export">
       <img :src="exportUrl" alt="Exported drawing preview" />
-      <a :href="exportUrl" download="drawing.png" data-testid="download">Download drawing.png</a>
+      <a
+        :href="exportUrl"
+        download="drawing.png"
+        data-testid="download"
+      >Download drawing.png</a>
     </div>
   </div>
 </template>
 
 <style scoped>
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-.toolbar button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
-.toolbar button:disabled { opacity: 0.4; cursor: default; }
-.toolbar button[aria-pressed="true"] { border-color: #7aa2ff; box-shadow: 0 0 0 1px #7aa2ff; }
-.toolbar button:focus-visible, .toolbar input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.swatches { display: flex; gap: 6px; }
-.toolbar .swatch { width: 26px; height: 26px; border-radius: 50%; padding: 0; }
-.size { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #a8b3c7; }
-.size input { width: 90px; }
-.canvas { display: block; width: 100%; aspect-ratio: 8 / 5; background: #ffffff; border-radius: 8px; touch-action: none; cursor: crosshair; }
-.status { color: #a8b3c7; font-size: 0.85rem; }
-.export { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.export img { width: 160px; border-radius: 6px; border: 1px solid #3d4760; }
-.export a { color: #7aa2ff; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.toolbar button {
+  background: #2a3142;
+  color: #e6e6e6;
+  border: 1px solid #3d4760;
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.toolbar button[aria-pressed="true"] {
+  border-color: #7aa2ff;
+  box-shadow: 0 0 0 1px #7aa2ff;
+}
+.toolbar button:focus-visible,
+.toolbar input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.swatches {
+  display: flex;
+  gap: 6px;
+}
+.toolbar .swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  padding: 0;
+}
+.size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a8b3c7;
+}
+.size input {
+  width: 90px;
+}
+.canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  background: #ffffff;
+  border-radius: 8px;
+  touch-action: none;
+  cursor: crosshair;
+}
+.status {
+  color: #a8b3c7;
+  font-size: 0.85rem;
+}
+.export {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.export img {
+  width: 160px;
+  border-radius: 6px;
+  border: 1px solid #3d4760;
+}
+.export a {
+  color: #7aa2ff;
+}
 </style>
 `,
           "/src/history.js": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
@@ -6671,10 +9067,16 @@ export function historyReducer(state, action) {
       return { done: [...state.done, action.item], undone: [] };
     case "undo":
       if (!state.done.length) return state;
-      return { done: state.done.slice(0, -1), undone: [...state.undone, state.done[state.done.length - 1]] };
+      return {
+        done: state.done.slice(0, -1),
+        undone: [...state.undone, state.done[state.done.length - 1]],
+      };
     case "redo":
       if (!state.undone.length) return state;
-      return { done: [...state.done, state.undone[state.undone.length - 1]], undone: state.undone.slice(0, -1) };
+      return {
+        done: [...state.done, state.undone[state.undone.length - 1]],
+        undone: state.undone.slice(0, -1),
+      };
     default:
       return state;
   }
@@ -6683,7 +9085,9 @@ export function historyReducer(state, action) {
 // Only what comes after the last "clear" is on the board.
 export function visibleStrokes(done) {
   let start = 0;
-  done.forEach((a, i) => { if (a.type === "clear") start = i + 1; });
+  done.forEach((a, i) => {
+    if (a.type === "clear") start = i + 1;
+  });
   return done.slice(start);
 }
 
@@ -6704,7 +9108,8 @@ export function drawStroke(ctx, s) {
   }
   ctx.beginPath();
   ctx.moveTo(x0, y0);
-  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+  for (let i = 1; i < s.points.length; i++)
+    ctx.lineTo(s.points[i][0], s.points[i][1]);
   ctx.stroke();
 }
 `,
@@ -6728,10 +9133,19 @@ A painting's history can be a shoebox of photos, one per brush stroke, or a writ
 \`history.ts\` holds the types and pure functions: \`Stroke\`, \`Clear\`, \`History { done, undone }\`, a discriminated-union \`Action\`, \`historyReducer\`, \`visibleStrokes\` and \`drawStroke\`.
 
 ~~~ts
-export interface Stroke { type: "stroke"; color: string; size: number; erase: boolean; points: [number, number][]; }
-export interface Clear { type: "clear"; }
+export interface Stroke {
+  type: "stroke";
+  color: string;
+  size: number;
+  erase: boolean;
+  points: [number, number][];
+}
+export interface Clear {
+  type: "clear";
+}
 export type Item = Stroke | Clear;
-export type Action = { type: "commit"; item: Item } | { type: "undo" } | { type: "redo" };
+export type Action =
+  { type: "commit"; item: Item } | { type: "undo" } | { type: "redo" };
 ~~~
 
 📌 **Interview term: Discriminated union** — a union of object types that share a literal \`type\` field, so a \`switch (action.type)\` narrows each case. With strict mode, the reducer's \`switch\` covers every case and TypeScript knows nothing else can arrive.
@@ -6759,10 +9173,18 @@ dispatch(action: Action): void {
 ### Step 1: A sharp canvas
 
 ~~~html
-<canvas #canvas class="canvas" [width]="W * dpr" [height]="H * dpr" role="img"
-        [attr.aria-label]="'Drawing canvas, ' + strokes().length + ' strokes'"
-        (pointerdown)="onPointerdown($event)" (pointermove)="onPointermove($event)"
-        (pointerup)="onPointerup()" (pointercancel)="onPointerup()"></canvas>
+<canvas
+  #canvas
+  class="canvas"
+  [width]="W * dpr"
+  [height]="H * dpr"
+  role="img"
+  [attr.aria-label]="'Drawing canvas, ' + strokes().length + ' strokes'"
+  (pointerdown)="onPointerdown($event)"
+  (pointermove)="onPointermove($event)"
+  (pointerup)="onPointerup()"
+  (pointercancel)="onPointerup()"
+></canvas>
 ~~~
 
 📌 **Interview term: \`devicePixelRatio\`** — physical pixels per CSS pixel. The backing store is 800 × 500 logical units times DPR, and the context is scaled once with \`setTransform(dpr, 0, 0, dpr, 0, 0)\` so all drawing uses logical units, the same units the strokes are stored in.
@@ -6774,7 +9196,13 @@ onPointerdown(e: PointerEvent): void {
   if (e.button !== 0) return;
   const el = e.currentTarget as HTMLElement;
   if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
-  this.current = { type: "stroke", color: this.color(), size: this.size(), erase: this.erase(), points: [this.toPoint(e)] };
+  this.current = {
+    type: "stroke",
+    color: this.color(),
+    size: this.size(),
+    erase: this.erase(),
+    points: [this.toPoint(e)],
+  };
   drawStroke(this.getCtx(), this.current); // the dot shows at once
 }
 
@@ -6821,8 +9249,13 @@ afterRenderEffect(() => {
 onKey(e: KeyboardEvent): void {
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
-  if (k === "z" && !e.shiftKey) { e.preventDefault(); this.dispatch({ type: "undo" }); }
-  else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); this.dispatch({ type: "redo" }); }
+  if (k === "z" && !e.shiftKey) {
+    e.preventDefault();
+    this.dispatch({ type: "undo" });
+  } else if ((k === "z" && e.shiftKey) || k === "y") {
+    e.preventDefault();
+    this.dispatch({ type: "redo" });
+  }
 }
 ~~~
 
@@ -6832,7 +9265,7 @@ onKey(e: KeyboardEvent): void {
 
 jsdom has no 2D context (\`getContext\` logs "Not implemented" through \`console.error\`) and no \`toDataURL\`, so the driver installs a **recording fake context** and a fake \`toDataURL\` on \`HTMLCanvasElement.prototype\`, then draws with synthetic \`PointerEvent\`s. Booted under AOT (\`ngc\`, \`strictTemplates\`) and runtime JIT; both printed identical lines, matching the React and Vue runs:
 
-\`\`\`
+\`\`\`text
 mount   : On the board: 0 · undo steps: 0 · redo steps: 0 | getContext calls 0 | undo off | redo off | clear off | canvas 800x500
 stroke 1: On the board: 1 · undo steps: 1 · redo steps: 0
   while moving: clearRect 0, beginPath 4, lineTo 3, arc 1, stroke 3, fill 1 | on release: clearRect 1, beginPath 1, lineTo 3, arc 0, stroke 1, fill 0 | style ["#ff6b6b",6,"source-over"]
@@ -6944,17 +9377,34 @@ import { DrawingBoardComponent } from "./drawing-board.component";
       <p class="hint">Draw with a mouse, pen or finger. Ctrl+Z undoes, Ctrl+Shift+Z or Ctrl+Y redoes.</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 840px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.2rem; }
     .hint { color: #8a93a6; font-size: 0.85rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/drawing-board.component.ts": `import { Component, ElementRef, HostListener, ViewChild, afterRenderEffect, computed, signal } from "@angular/core";
-import { Action, Stroke, drawStroke, historyReducer, initialHistory, visibleStrokes } from "./history";
+          "/src/app/drawing-board.component.ts": `import {
+  Component,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  afterRenderEffect,
+  computed,
+  signal,
+} from "@angular/core";
+import {
+  Action,
+  Stroke,
+  drawStroke,
+  historyReducer,
+  initialHistory,
+  visibleStrokes,
+} from "./history";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -6972,14 +9422,45 @@ const H = 500; // so strokes survive any CSS size or devicePixelRatio
       </div>
       <label class="size">
         Size
-        <input type="range" min="2" max="40" data-testid="size" [value]="size()" (input)="onSize($event)" />
+        <input
+          type="range"
+          min="2"
+          max="40"
+          data-testid="size"
+          [value]="size()"
+          (input)="onSize($event)"
+        />
         <span>{{ size() }}px</span>
       </label>
-      <button type="button" data-testid="eraser" [attr.aria-pressed]="erase()" (click)="erase.set(!erase())">Eraser</button>
-      <button type="button" data-testid="undo" [disabled]="!history().done.length" (click)="dispatch({ type: 'undo' })">Undo</button>
-      <button type="button" data-testid="redo" [disabled]="!history().undone.length" (click)="dispatch({ type: 'redo' })">Redo</button>
-      <button type="button" data-testid="clear" [disabled]="!strokes().length" (click)="dispatch({ type: 'commit', item: { type: 'clear' } })">Clear</button>
-      <button type="button" data-testid="export" (click)="exportPng()">Export PNG</button>
+      <button
+        type="button"
+        data-testid="eraser"
+        [attr.aria-pressed]="erase()"
+        (click)="erase.set(!erase())"
+      >Eraser</button>
+      <button
+        type="button"
+        data-testid="undo"
+        [disabled]="!history().done.length"
+        (click)="dispatch({ type: 'undo' })"
+      >Undo</button>
+      <button
+        type="button"
+        data-testid="redo"
+        [disabled]="!history().undone.length"
+        (click)="dispatch({ type: 'redo' })"
+      >Redo</button>
+      <button
+        type="button"
+        data-testid="clear"
+        [disabled]="!strokes().length"
+        (click)="dispatch({ type: 'commit', item: { type: 'clear' } })"
+      >Clear</button>
+      <button
+        type="button"
+        data-testid="export"
+        (click)="exportPng()"
+      >Export PNG</button>
     </div>
 
     <canvas
@@ -7002,11 +9483,16 @@ const H = 500; // so strokes survive any CSS size or devicePixelRatio
     @if (exportUrl(); as url) {
       <div class="export">
         <img [src]="url" alt="Exported drawing preview" />
-        <a [href]="url" download="drawing.png" data-testid="download">Download drawing.png</a>
+        <a
+          [href]="url"
+          download="drawing.png"
+          data-testid="download"
+        >Download drawing.png</a>
       </div>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
     .toolbar button { background: #2a3142; color: #e6e6e6; border: 1px solid #3d4760; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
@@ -7022,14 +9508,16 @@ const H = 500; // so strokes survive any CSS size or devicePixelRatio
     .export { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .export img { width: 160px; border-radius: 6px; border: 1px solid #3d4760; }
     .export a { color: #7aa2ff; }
-  \`],
+  \`,
+  ],
 })
 export class DrawingBoardComponent {
   @ViewChild("canvas", { static: true }) canvas!: ElementRef<HTMLCanvasElement>;
 
   readonly W = W;
   readonly H = H;
-  readonly dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  readonly dpr =
+    typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   readonly colors = ["#f5f5f5", "#ff6b6b", "#ffd166", "#06d6a0", "#4dabf7"];
 
   readonly history = signal(initialHistory);
@@ -7064,8 +9552,13 @@ export class DrawingBoardComponent {
   onKey(e: KeyboardEvent): void {
     if (!(e.ctrlKey || e.metaKey)) return;
     const k = e.key.toLowerCase();
-    if (k === "z" && !e.shiftKey) { e.preventDefault(); this.dispatch({ type: "undo" }); }
-    else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); this.dispatch({ type: "redo" }); }
+    if (k === "z" && !e.shiftKey) {
+      e.preventDefault();
+      this.dispatch({ type: "undo" });
+    } else if ((k === "z" && e.shiftKey) || k === "y") {
+      e.preventDefault();
+      this.dispatch({ type: "redo" });
+    }
   }
 
   pick(c: string): void {
@@ -7079,7 +9572,9 @@ export class DrawingBoardComponent {
 
   private getCtx(): CanvasRenderingContext2D {
     if (!this.ctx) {
-      const ctx = this.canvas.nativeElement.getContext("2d") as CanvasRenderingContext2D;
+      const ctx = this.canvas.nativeElement.getContext(
+        "2d",
+      ) as CanvasRenderingContext2D;
       ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); // draw in logical units
       this.ctx = ctx;
     }
@@ -7090,14 +9585,23 @@ export class DrawingBoardComponent {
     const r = this.canvas.nativeElement.getBoundingClientRect();
     const sx = r.width ? W / r.width : 1;
     const sy = r.height ? H / r.height : 1;
-    return [Math.round((e.clientX - r.left) * sx), Math.round((e.clientY - r.top) * sy)];
+    return [
+      Math.round((e.clientX - r.left) * sx),
+      Math.round((e.clientY - r.top) * sy),
+    ];
   }
 
   onPointerdown(e: PointerEvent): void {
     if (e.button !== 0) return;
     const el = e.currentTarget as HTMLElement;
     if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
-    this.current = { type: "stroke", color: this.color(), size: this.size(), erase: this.erase(), points: [this.toPoint(e)] };
+    this.current = {
+      type: "stroke",
+      color: this.color(),
+      size: this.size(),
+      erase: this.erase(),
+      points: [this.toPoint(e)],
+    };
     drawStroke(this.getCtx(), this.current); // the dot shows at once
   }
 
@@ -7139,11 +9643,23 @@ export class DrawingBoardComponent {
           "/src/app/history.ts": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
 // done: actions in order (strokes or clears)
 // undone: actions popped by undo, newest last; any new action empties it.
-export interface Stroke { type: "stroke"; color: string; size: number; erase: boolean; points: [number, number][]; }
-export interface Clear { type: "clear"; }
+export interface Stroke {
+  type: "stroke";
+  color: string;
+  size: number;
+  erase: boolean;
+  points: [number, number][];
+}
+export interface Clear {
+  type: "clear";
+}
 export type Item = Stroke | Clear;
-export interface History { done: Item[]; undone: Item[]; }
-export type Action = { type: "commit"; item: Item } | { type: "undo" } | { type: "redo" };
+export interface History {
+  done: Item[];
+  undone: Item[];
+}
+export type Action =
+  { type: "commit"; item: Item } | { type: "undo" } | { type: "redo" };
 
 export const initialHistory: History = { done: [], undone: [] };
 
@@ -7153,17 +9669,25 @@ export function historyReducer(state: History, action: Action): History {
       return { done: [...state.done, action.item], undone: [] };
     case "undo":
       if (!state.done.length) return state;
-      return { done: state.done.slice(0, -1), undone: [...state.undone, state.done[state.done.length - 1]] };
+      return {
+        done: state.done.slice(0, -1),
+        undone: [...state.undone, state.done[state.done.length - 1]],
+      };
     case "redo":
       if (!state.undone.length) return state;
-      return { done: [...state.done, state.undone[state.undone.length - 1]], undone: state.undone.slice(0, -1) };
+      return {
+        done: [...state.done, state.undone[state.undone.length - 1]],
+        undone: state.undone.slice(0, -1),
+      };
   }
 }
 
 // Only what comes after the last "clear" is on the board.
 export function visibleStrokes(done: Item[]): Stroke[] {
   let start = 0;
-  done.forEach((a, i) => { if (a.type === "clear") start = i + 1; });
+  done.forEach((a, i) => {
+    if (a.type === "clear") start = i + 1;
+  });
   return done.slice(start) as Stroke[];
 }
 
@@ -7184,7 +9708,8 @@ export function drawStroke(ctx: CanvasRenderingContext2D, s: Stroke): void {
   }
   ctx.beginPath();
   ctx.moveTo(x0, y0);
-  for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i][0], s.points[i][1]);
+  for (let i = 1; i < s.points.length; i++)
+    ctx.lineTo(s.points[i][0], s.points[i][1]);
   ctx.stroke();
 }
 `,

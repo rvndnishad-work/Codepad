@@ -388,8 +388,8 @@ Only the photos within 200px of the first screen were requested at the top; scro
 **Conclusion:** A lazy-loaded image is a four-state machine (idle, loading, loaded, error) wrapped around an IntersectionObserver. Reserve the box so nothing jumps, render no \`<img>\` until the observer fires, disconnect the observer as soon as it has done its job and on unmount, fade in on \`load\`, and give \`error\` a real retry. As verified in jsdom and in Chromium 141, only the photos near the screen are requested, the broken one is announced and retryable, and every observer is cleaned up. Mention native \`loading="lazy"\` first; build the component when the product needs thresholds, placeholders or status. The same idea, applied to whole pages of data, is [infinite scroll with IntersectionObserver](/interview-question/build-infinite-scroll-with-intersectionobserver-skeleton).`,
         files: {
           "/App.js": `import { useState } from "react";
-import LazyImage from "./src/LazyImage";
-import { photos } from "./src/photos";
+import LazyImage from "./src/components/LazyImage";
+import { photos } from "./src/data/photos";
 
 function Feed({ onStatus }) {
   return (
@@ -450,7 +450,7 @@ export default function App() {
   );
 }
 `,
-          "/src/LazyImage.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/LazyImage.js": `import { useEffect, useRef, useState } from "react";
 
 // status: "idle" (not requested) -> "loading" (src set) -> "loaded" | "error"
 export default function LazyImage({
@@ -529,7 +529,7 @@ export default function LazyImage({
   );
 }
 `,
-          "/src/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
+          "/src/data/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -968,7 +968,7 @@ Sixteen observers in total: 8 per mount, one per image, and the 5 still waiting 
           "/src/App.vue": `<script setup>
 import { ref, computed } from "vue";
 import LazyImage from "./components/LazyImage.vue";
-import { photos } from "./photos.js";
+import { photos } from "./data/photos.js";
 
 const run = ref(0); // bump to remount the feed
 const statuses = ref({});
@@ -1222,7 +1222,7 @@ function retry() {
 }
 </style>
 `,
-          "/src/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
+          "/src/data/photos.js": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -1532,8 +1532,8 @@ The AOT and JIT runs printed identical lines (shown once). In headless Chromium 
 **Conclusion:** In Angular, a lazy image is a \`status\` signal, an \`@if\` that keeps the \`<img>\` out of the DOM until an IntersectionObserver created in \`ngAfterViewInit\` fires, a disconnect on first intersection and in \`ngOnDestroy\`, and an \`@Output()\` that lets the parent count with \`computed()\`. Verified on Angular 22.2.3 under AOT and JIT, nothing downloads before an intersection and every observer is cleaned up; the one surprise was NG0956 for an identity-tracked remount, fixed by tracking a property.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { LazyImageComponent, LoadStatus } from "./lazy-image.component";
-import { photos } from "./photos";
+import { LazyImageComponent, LoadStatus } from "./components/lazy-image.component";
+import { photos } from "./data/photos";
 
 @Component({
   selector: "app-root",
@@ -1609,7 +1609,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/lazy-image.component.ts": `import {
+          "/src/app/components/lazy-image.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -1783,7 +1783,7 @@ export class LazyImageComponent implements AfterViewInit, OnDestroy {
   }
 }
 `,
-          "/src/app/photos.ts": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
+          "/src/app/data/photos.ts": `// Offline "photos": inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(
   tag: string,
@@ -2226,8 +2226,8 @@ After a real click the button was focused but not \`:focus-visible\`, so once th
 ---
 **Conclusion:** A basic carousel is one \`index\`, a transform track and a handful of rules. Wrap with modulo, derive \`running\` from the user choice plus hover and keyboard focus, restart a \`setTimeout\` on every slide change and clear it in the cleanup, and give screen readers carousel and slide roles with a live region that is quiet while rotating. Verified on React 19.3.1 in jsdom and in Chromium 141, it wraps both ways, advances every three seconds, pauses for hover and keyboard focus but not for a mouse click, and stops for good with the button. When the interviewer asks for no visible rewind and touch swipe, that is the [infinite-loop carousel](/interview-question/build-an-image-carousel-with-infinite-loop-swipe).`,
         files: {
-          "/App.js": `import Carousel from "./src/Carousel";
-import { slides } from "./src/slides";
+          "/App.js": `import Carousel from "./src/components/Carousel";
+import { slides } from "./src/data/slides";
 
 export default function App() {
   return (
@@ -2242,7 +2242,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Carousel.js": `import { useEffect, useState } from "react";
+          "/src/components/Carousel.js": `import { useEffect, useState } from "react";
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" &&
@@ -2379,7 +2379,7 @@ export default function Carousel({
   );
 }
 `,
-          "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/data/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -2776,7 +2776,7 @@ focus out: 4 / 5 · Red rocks · auto
         files: {
           "/src/App.vue": `<script setup>
 import ImageCarousel from "./components/ImageCarousel.vue";
-import { slides } from "./slides.js";
+import { slides } from "./data/slides.js";
 </script>
 
 <template>
@@ -3047,7 +3047,7 @@ function onFocusout(e) {
 }
 </style>
 `,
-          "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/data/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -3341,8 +3341,8 @@ focus out: 4 / 5 · Red rocks · auto
 **Conclusion:** In Angular the basic carousel is an \`index\` signal, a \`running\` computed from \`playing\`, \`hovered\` and \`focused\`, and one \`effect()\` that sets a timeout and clears it in \`onCleanup\`, so pausing, manual moves and destroy are all handled in one place. Add modulo wrap-around, a transform track, \`[attr.]\` ARIA bindings and a Pause button. Verified on Angular 22.2.3 under AOT and JIT, it matches the React and Vue builds line for line. For a seamless loop and touch swipe, see the [infinite-loop carousel](/interview-question/build-an-image-carousel-with-infinite-loop-swipe).`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { ImageCarouselComponent } from "./image-carousel.component";
-import { slides } from "./slides";
+import { ImageCarouselComponent } from "./components/image-carousel.component";
+import { slides } from "./data/slides";
 
 @Component({
   selector: "app-root",
@@ -3372,8 +3372,8 @@ export class AppComponent {
   readonly slides = slides;
 }
 `,
-          "/src/app/image-carousel.component.ts": `import { Component, Input, computed, effect, signal } from "@angular/core";
-import { Slide } from "./slides";
+          "/src/app/components/image-carousel.component.ts": `import { Component, Input, computed, effect, signal } from "@angular/core";
+import { Slide } from "../data/slides";
 
 const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" &&
@@ -3535,7 +3535,7 @@ export class ImageCarouselComponent {
   }
 }
 `,
-          "/src/app/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/app/data/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(
   tag: string,
@@ -3997,8 +3997,8 @@ Mid-flight, the track was travelling from \`-1\` towards the clone at \`0\`, not
 ---
 **Conclusion:** A seamless carousel is a basic carousel plus stage magic: put a clone at each end, animate onto the clone, and on \`transitionend\` (or a fallback timer) jump to the real twin with the transition switched off and a forced reflow. Lock moves while animating, drive the drag with Pointer Events and capture, commit past 40px, and pause autoplay for hover, keyboard focus, dragging and hidden tabs. Verified on React 19.3.1 in jsdom and with real transitions in Chromium 141, it never rewinds, ignores clicks mid-move, recovers without \`transitionend\`, and swipes both ways. For the fundamentals it builds on, see [the basic image carousel](/interview-question/build-an-image-carousel).`,
         files: {
-          "/App.js": `import InfiniteCarousel from "./src/InfiniteCarousel";
-import { slides } from "./src/slides";
+          "/App.js": `import InfiniteCarousel from "./src/components/InfiniteCarousel";
+import { slides } from "./src/data/slides";
 
 export default function App() {
   return (
@@ -4017,7 +4017,7 @@ export default function App() {
   );
 }
 `,
-          "/src/InfiniteCarousel.js": `import { useEffect, useLayoutEffect, useRef, useState } from "react";
+          "/src/components/InfiniteCarousel.js": `import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const DURATION = 400; // ms, must match the CSS transition below
 const SWIPE_PX = 40; // drag distance that commits a slide change
@@ -4242,7 +4242,7 @@ export default function InfiniteCarousel({
   );
 }
 `,
-          "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/data/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -4671,7 +4671,7 @@ visible 3.3s: 2 / 5 · Harbour · auto | translateX(calc(-200% + 0px)) / transfo
         files: {
           "/src/App.vue": `<script setup>
 import InfiniteCarousel from "./components/InfiniteCarousel.vue";
-import { slides } from "./slides.js";
+import { slides } from "./data/slides.js";
 </script>
 
 <template>
@@ -5043,7 +5043,7 @@ const isClone = (i) => i === 0 || i === n.value + 1;
 }
 </style>
 `,
-          "/src/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/data/slides.js": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -5358,8 +5358,8 @@ visible 3.3s: 2 / 5 · Harbour · auto | translateX(calc(-200% + 0px)) / transfo
 **Conclusion:** In Angular the seamless carousel is a \`pos\` signal over a track with a clone at each end, computed \`transform\` and \`transition\` strings, a private-field lock, \`transitionend\` plus a fallback timer for the silent jump, an \`afterRenderEffect\` that forces the reflow, Pointer Events with capture, and an \`effect()\` autoplay that pauses for hover, keyboard focus, dragging and hidden tabs. Verified on Angular 22.2.3 under AOT and JIT, it matches the React and Vue builds line for line, and Chromium confirmed it never rewinds.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { InfiniteCarouselComponent } from "./infinite-carousel.component";
-import { slides } from "./slides";
+import { InfiniteCarouselComponent } from "./components/infinite-carousel.component";
+import { slides } from "./data/slides";
 
 @Component({
   selector: "app-root",
@@ -5389,7 +5389,7 @@ export class AppComponent {
   readonly slides = slides;
 }
 `,
-          "/src/app/infinite-carousel.component.ts": `import {
+          "/src/app/components/infinite-carousel.component.ts": `import {
   Component,
   ElementRef,
   Input,
@@ -5401,7 +5401,7 @@ export class AppComponent {
   effect,
   signal,
 } from "@angular/core";
-import { Slide } from "./slides";
+import { Slide } from "../data/slides";
 
 const DURATION = 400; // ms, must match the transition below
 const SWIPE_PX = 40; // drag distance that commits a slide change
@@ -5670,7 +5670,7 @@ export class InfiniteCarouselComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
+          "/src/app/data/slides.ts": `// Offline slides: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(
   tag: string,
@@ -6129,8 +6129,8 @@ In **headless Chromium 141** (400 × 700 viewport): opening photo 5 put focus on
 ---
 **Conclusion:** An image gallery with a lightbox is a grid of real buttons, one \`openIndex\` owned by the gallery, and a controlled lightbox rendered in a portal. The lightbox's manners carry the interview: focus moves in on open, Tab is trapped, Escape and the backdrop close, the page is scroll-locked and restored, focus returns to the opener, and neighbours are preloaded. Verified on React 19.3.1 in jsdom and Chromium 141, all of those behaviours held. Mention native \`<dialog>\` as the production starting point and the URL as the place for the index if Back must close it.`,
         files: {
-          "/App.js": `import Gallery from "./src/Gallery";
-import { photos } from "./src/photos";
+          "/App.js": `import Gallery from "./src/components/Gallery";
+import { photos } from "./src/data/photos";
 
 export default function App() {
   return (
@@ -6145,7 +6145,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Gallery.js": `import { useRef, useState } from "react";
+          "/src/components/Gallery.js": `import { useRef, useState } from "react";
 import Lightbox from "./Lightbox";
 
 export default function Gallery({ items }) {
@@ -6194,7 +6194,7 @@ export default function Gallery({ items }) {
   );
 }
 `,
-          "/src/Lightbox.js": `import { useEffect, useRef } from "react";
+          "/src/components/Lightbox.js": `import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 // Controlled: the parent owns \`index\`; the lightbox only asks to change it.
@@ -6314,7 +6314,7 @@ export default function Lightbox({ items, index, onIndexChange, onClose }) {
   );
 }
 `,
-          "/src/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
+          "/src/data/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -6748,7 +6748,7 @@ close button: (closed) | focus back on: Open Snow peak
         files: {
           "/src/App.vue": `<script setup>
 import Gallery from "./components/Gallery.vue";
-import { photos } from "./photos.js";
+import { photos } from "./data/photos.js";
 </script>
 
 <template>
@@ -7048,7 +7048,7 @@ function onKeydown(e) {
 }
 </style>
 `,
-          "/src/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
+          "/src/data/photos.js": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(tag, attrs, children) {
   const a = Object.keys(attrs)
@@ -7365,8 +7365,8 @@ close button: (closed) | focus back on: Open Snow peak
 **Conclusion:** In Angular the gallery owns an \`openIndex\` signal and remembers the opener from \`$event.currentTarget\`; the lightbox is created by \`@if\`, controlled through \`[index]\` and \`(indexChange)\`, focuses Close and locks scroll in \`ngAfterViewInit\`, restores in \`ngOnDestroy\`, traps Tab, and preloads neighbours in \`ngOnChanges\`. Verified on Angular 22.2.3 under AOT and JIT, it matches the React and Vue builds line for line; the one structural difference is that it renders in place rather than in a portal, which a real app would solve with the CDK Overlay.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { LightboxComponent } from "./lightbox.component";
-import { photos } from "./photos";
+import { LightboxComponent } from "./components/lightbox.component";
+import { photos } from "./data/photos";
 
 @Component({
   selector: "app-root",
@@ -7431,7 +7431,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/lightbox.component.ts": `import {
+          "/src/app/components/lightbox.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -7442,7 +7442,7 @@ export class AppComponent {
   Output,
   ViewChild,
 } from "@angular/core";
-import { Photo } from "./photos";
+import { Photo } from "../data/photos";
 
 // Controlled: the parent owns index ([(index)] two-way binding); we only ask
 // to change it through indexChange.
@@ -7585,7 +7585,7 @@ export class LightboxComponent implements OnChanges, AfterViewInit, OnDestroy {
   }
 }
 `,
-          "/src/app/photos.ts": `// Offline photos: inline SVG data URLs, so the demo needs no network.
+          "/src/app/data/photos.ts": `// Offline photos: inline SVG data URLs, so the demo needs no network.
 // Tiny markup helper: el("rect", { width: 9 }) gives <rect width="9"/>.
 function el(
   tag: string,
@@ -7735,7 +7735,7 @@ The shoebox gets heavy fast: an 800 × 500 canvas at double density is 1600 × 1
 
 ## 3. Requirements and Plan
 
-**Component tree:** \`App\` → \`DrawingBoard\` (toolbar, canvas, status, export preview). The pure history logic lives in \`src/history.js\`, with no React in it, so it can be tested on its own and reused unchanged in the Vue build.
+**Component tree:** \`App\` → \`DrawingBoard\` (toolbar, canvas, status, export preview). The pure history logic lives in \`src/utils/history.js\`, with no React in it, so it can be tested on its own and reused unchanged in the Vue build.
 
 <svg class="iq-diagram" width="100%" viewBox="0 0 720 250" role="img" aria-label="Pointer events build the live stroke in a ref and draw each new segment; on pointerup the stroke is committed to the done stack; undo and redo move items between done and undone; every history change triggers a full repaint from the visible strokes">
   <defs>
@@ -8112,7 +8112,7 @@ A canvas cannot be drawn on with a keyboard; say so, and offer the alternative (
 ---
 **Conclusion:** A drawing board is a small vector app on top of an immediate-mode canvas. Store each stroke as data in logical units, keep a \`done\` and an \`undone\` stack in a pure reducer where Clear is just another action and any new action empties redo, draw the live stroke incrementally from a ref, and repaint everything from data when the history changes. Scale the backing store by \`devicePixelRatio\`, erase with \`destination-out\`, and composite on white to export. Verified on React 19.3.1 with a recording context in jsdom and with real pixels in Chromium 141, undo, redo, clear-undo, the eraser and export all behaved exactly as designed.`,
         files: {
-          "/App.js": `import DrawingBoard from "./src/DrawingBoard";
+          "/App.js": `import DrawingBoard from "./src/components/DrawingBoard";
 
 export default function App() {
   return (
@@ -8127,13 +8127,13 @@ export default function App() {
   );
 }
 `,
-          "/src/DrawingBoard.js": `import { useEffect, useReducer, useRef, useState } from "react";
+          "/src/components/DrawingBoard.js": `import { useEffect, useReducer, useRef, useState } from "react";
 import {
   initialHistory,
   historyReducer,
   visibleStrokes,
   drawStroke,
-} from "./history";
+} from "../utils/history";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -8347,7 +8347,7 @@ export default function DrawingBoard() {
   );
 }
 `,
-          "/src/history.js": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
+          "/src/utils/history.js": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
 // done: actions in order ({ type: "stroke", ... } or { type: "clear" })
 // undone: actions popped by undo, newest last; any new action empties it.
 export const initialHistory = { done: [], undone: [] };
@@ -8515,7 +8515,7 @@ You can keep a painting's history as a shoebox of photos, one after every brush 
 
 ## 2. The Vue State Model
 
-The pure history logic lives in \`src/history.js\` (no Vue in it): a reducer over \`{ done, undone }\`, \`visibleStrokes()\` (everything after the last Clear) and \`drawStroke()\`.
+The pure history logic lives in \`src/utils/history.js\` (no Vue in it): a reducer over \`{ done, undone }\`, \`visibleStrokes()\` (everything after the last Clear) and \`drawStroke()\`.
 
 | Value | Vue tool | Why |
 | :--- | :--- | :--- |
@@ -8779,7 +8779,7 @@ import {
   historyReducer,
   visibleStrokes,
   drawStroke,
-} from "../history.js";
+} from "../utils/history.js";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -9056,7 +9056,7 @@ function exportPng() {
 }
 </style>
 `,
-          "/src/history.js": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
+          "/src/utils/history.js": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
 // done: actions in order ({ type: "stroke", ... } or { type: "clear" })
 // undone: actions popped by undo, newest last; any new action empties it.
 export const initialHistory = { done: [], undone: [] };
@@ -9364,7 +9364,7 @@ getContext calls in total: 2
 **Conclusion:** In Angular the drawing board is a typed, pure reducer behind a \`history\` signal, a \`computed\` of the visible strokes, a private field for the live stroke so nothing re-renders per point, and an \`afterRenderEffect\` that repaints from data whenever the history changes. \`@HostListener\` handles the shortcuts, DPR scaling keeps it sharp, and export composites onto white. Verified on Angular 22.2.3 under AOT and JIT with a recording context, and with real pixels in Chromium 141, it matches the React and Vue builds line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { DrawingBoardComponent } from "./drawing-board.component";
+import { DrawingBoardComponent } from "./components/drawing-board.component";
 
 @Component({
   selector: "app-root",
@@ -9388,7 +9388,7 @@ import { DrawingBoardComponent } from "./drawing-board.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/drawing-board.component.ts": `import {
+          "/src/app/components/drawing-board.component.ts": `import {
   Component,
   ElementRef,
   HostListener,
@@ -9404,7 +9404,7 @@ import {
   historyReducer,
   initialHistory,
   visibleStrokes,
-} from "./history";
+} from "../utils/history";
 
 const W = 800; // logical drawing size: points are stored in these units,
 const H = 500; // so strokes survive any CSS size or devicePixelRatio
@@ -9640,7 +9640,7 @@ export class DrawingBoardComponent {
   }
 }
 `,
-          "/src/app/history.ts": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
+          "/src/app/utils/history.ts": `// Drawing history as plain data, so undo / redo / clear never touch pixels.
 // done: actions in order (strokes or clears)
 // undone: actions popped by undo, newest last; any new action empties it.
 export interface Stroke {

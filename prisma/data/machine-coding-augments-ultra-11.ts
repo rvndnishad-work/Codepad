@@ -82,8 +82,8 @@ A React dashboard has the same problem. A header, a sidebar and a profile card a
 
 The plan has two layers, and the separation is the main design decision:
 
-1. A **query client** in plain JavaScript (\`src/queryClient.js\`) that owns a \`Map\` from key to cache entry. It knows nothing about React.
-2. A thin **hook** (\`src/useQuery.js\`) that subscribes a component to one entry and asks the client to fetch.
+1. A **query client** in plain JavaScript (\`src/api/queryClient.js\`) that owns a \`Map\` from key to cache entry. It knows nothing about React.
+2. A thin **hook** (\`src/hooks/useQuery.js\`) that subscribes a component to one entry and asks the client to fetch.
 
 <svg class="iq-diagram" width="100%" viewBox="0 0 700 330" role="img" aria-label="Three components call useQuery with the same key, which reads one cache entry; the entry holds one in-flight promise that calls the fetcher once">
   <defs>
@@ -423,9 +423,9 @@ The Vue and Angular versions of this question print the same lines from the same
 **Conclusion:** A data-fetching hook with caching, deduplication and retry is a small external store plus a thin React adapter. The store keeps one entry per key with an immutable snapshot, the in-flight promise and its listeners; \`fetchQuery\` applies four rules in order (dedupe, cache, fetch with stale-while-revalidate, retry with backoff); and \`useSyncExternalStore\` connects components to it. The verified run shows the payoff in numbers: two readers under StrictMode cost one call, a flaky endpoint costs three, a late mount costs zero, and invalidation refreshes every reader together without blanking the screen.`,
         files: {
           "/App.js": `import { useState, useSyncExternalStore } from "react";
-import UserCard from "./src/UserCard";
-import { getCalls, subscribeCalls } from "./src/fakeApi";
-import { invalidate } from "./src/queryClient";
+import UserCard from "./src/components/UserCard";
+import { getCalls, subscribeCalls } from "./src/api/fakeApi";
+import { invalidate } from "./src/api/queryClient";
 
 function CallLog() {
   // Re-render on every fetcher call; the string is the snapshot.
@@ -474,8 +474,8 @@ export default function App() {
   );
 }
 `,
-          "/src/UserCard.js": `import { useQuery } from "./useQuery";
-import { fetchUser } from "./fakeApi";
+          "/src/components/UserCard.js": `import { useQuery } from "../hooks/useQuery";
+import { fetchUser } from "../api/fakeApi";
 
 export default function UserCard({ label, id, testId }) {
   const { status, data, error, isFetching, failureCount } = useQuery(
@@ -510,7 +510,7 @@ export default function UserCard({ label, id, testId }) {
   );
 }
 `,
-          "/src/fakeApi.js": `// A simulated server. Nothing here touches the network: every "request" is a
+          "/src/api/fakeApi.js": `// A simulated server. Nothing here touches the network: every "request" is a
 // Promise that settles after a short setTimeout, and every call is counted so
 // the UI (and the test driver) can prove caching, dedupe and retry.
 const NAMES = { 1: "Ada Lovelace", 2: "Grace Hopper", 3: "Alan Turing" };
@@ -541,7 +541,7 @@ export function fetchUser(id) {
   });
 }
 `,
-          "/src/queryClient.js": `// The cache lives OUTSIDE React, in a module-level Map, so every component
+          "/src/api/queryClient.js": `// The cache lives OUTSIDE React, in a module-level Map, so every component
 // that asks for the same key shares one entry (and one in-flight request).
 const DEFAULTS = { staleTime: 5000, retry: 2, retryDelay: 100 };
 const cache = new Map();
@@ -645,8 +645,8 @@ export function invalidate(key) {
     fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
 }
 `,
-          "/src/useQuery.js": `import { useCallback, useEffect, useSyncExternalStore } from "react";
-import { fetchQuery, getState, subscribe } from "./queryClient";
+          "/src/hooks/useQuery.js": `import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { fetchQuery, getState, subscribe } from "../api/queryClient";
 
 export function useQuery(key, fetcher, options) {
   // Re-render whenever this key's cache entry changes.
@@ -1003,8 +1003,8 @@ Two readers of \`user/1\` cost one call; the flaky key costs three and ends on \
           "/src/App.vue": `<script setup>
 import { computed, ref } from "vue";
 import UserCard from "./components/UserCard.vue";
-import { calls } from "./fakeApi";
-import { invalidate } from "./queryClient";
+import { calls } from "./api/fakeApi";
+import { invalidate } from "./api/queryClient";
 
 const showLate = ref(false);
 const showBroken = ref(false);
@@ -1127,8 +1127,8 @@ button:focus-visible {
 `,
           "/src/components/UserCard.vue": `<script setup>
 import { computed } from "vue";
-import { useQuery } from "../useQuery";
-import { fetchUser } from "../fakeApi";
+import { useQuery } from "../composables/useQuery";
+import { fetchUser } from "../api/fakeApi";
 
 const props = defineProps({ label: String, id: Number });
 const { state } = useQuery(
@@ -1160,7 +1160,7 @@ const body = computed(() => {
   </div>
 </template>
 `,
-          "/src/fakeApi.js": `// A simulated server. Nothing here touches the network: every "request" is a
+          "/src/api/fakeApi.js": `// A simulated server. Nothing here touches the network: every "request" is a
 // Promise that settles after a short setTimeout, and every call is counted so
 // the UI (and the test driver) can prove caching, dedupe and retry.
 import { reactive } from "vue";
@@ -1185,7 +1185,7 @@ export function fetchUser(id) {
   });
 }
 `,
-          "/src/queryClient.js": `// The cache lives outside any component, in a module-level Map, so every
+          "/src/api/queryClient.js": `// The cache lives outside any component, in a module-level Map, so every
 // component that asks for the same key shares one entry and one request.
 // Each entry holds a shallowRef: replacing .value notifies every reader.
 import { shallowRef } from "vue";
@@ -1274,8 +1274,8 @@ export function invalidate(key) {
     fetchQuery(key, e.fetcher, e.options, true).catch(() => {});
 }
 `,
-          "/src/useQuery.js": `import { computed, shallowRef, toValue, watch } from "vue";
-import { entryFor, fetchQuery } from "./queryClient";
+          "/src/composables/useQuery.js": `import { computed, shallowRef, toValue, watch } from "vue";
+import { entryFor, fetchQuery } from "../api/queryClient";
 
 // A composable: call it in <script setup>. \`key\` may be a plain string, a ref
 // or a getter, so a component can switch keys and the query follows.
@@ -1571,9 +1571,9 @@ One call for two readers, three for the flaky key, none for the late card, a bac
 **Conclusion:** In Angular the cache belongs in a root-provided service: a \`Map\` of entries whose state is a signal, plus the in-flight promise that makes dedupe work. Components call \`query()\` in \`ngOnInit\`, register cleanup through \`DestroyRef\`, and read a read-only signal that the zoneless scheduler tracks. The verified AOT and JIT runs both prove the behaviour by counting calls: one for two readers, three for a flaky endpoint, zero for a late reader inside \`staleTime\`.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, inject, signal } from "@angular/core";
-import { UserCardComponent } from "./user-card.component";
-import { QueryClient } from "./query-client";
-import { calls } from "./fake-api";
+import { UserCardComponent } from "./components/user-card.component";
+import { QueryClient } from "./services/query-client";
+import { calls } from "./api/fake-api";
 
 @Component({
   selector: "app-root",
@@ -1649,7 +1649,7 @@ export class AppComponent {
   );
 }
 `,
-          "/src/app/fake-api.ts": `// A simulated server. Nothing here touches the network: every "request" is a
+          "/src/app/api/fake-api.ts": `// A simulated server. Nothing here touches the network: every "request" is a
 // Promise that settles after a short setTimeout, and every call is counted in
 // a signal so the UI (and the test driver) can prove caching, dedupe and retry.
 import { signal } from "@angular/core";
@@ -1684,7 +1684,7 @@ export function fetchUser(id: number): Promise<User> {
   });
 }
 `,
-          "/src/app/query-client.ts": `import {
+          "/src/app/services/query-client.ts": `import {
   DestroyRef,
   Injectable,
   Signal,
@@ -1835,7 +1835,7 @@ export class QueryClient {
   }
 }
 `,
-          "/src/app/user-card.component.ts": `import {
+          "/src/app/components/user-card.component.ts": `import {
   Component,
   DestroyRef,
   Input,
@@ -1844,8 +1844,8 @@ export class QueryClient {
   computed,
   inject,
 } from "@angular/core";
-import { QueryClient, QueryState } from "./query-client";
-import { User, fetchUser } from "./fake-api";
+import { QueryClient, QueryState } from "../services/query-client";
+import { User, fetchUser } from "../api/fake-api";
 
 @Component({
   selector: "app-user-card",
@@ -2220,8 +2220,8 @@ What jsdom cannot show is the visual smoothness itself; that needs a real browse
 **Conclusion:** A live ticker stays smooth when the number of renders is decoupled from the number of messages. Buffer messages in a ref keyed by symbol so the latest price wins, book exactly one flush per animation frame or fixed window, apply the batch with one functional update, and compare arrows with what the user last saw. The measured run makes the case in numbers: the same 200 messages produced about 200 renders unbatched, about 27-31 per frame and 2 with a 250 ms throttle, while the final prices were identical in every mode.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import { useTicker } from "./src/useTicker";
-import TickerTable from "./src/TickerTable";
+import { useTicker } from "./src/hooks/useTicker";
+import TickerTable from "./src/components/TickerTable";
 
 export default function App() {
   const [mode, setMode] = useState("raf");
@@ -2271,7 +2271,7 @@ export default function App() {
   );
 }
 `,
-          "/src/TickerTable.js": `import { memo } from "react";
+          "/src/components/TickerTable.js": `import { memo } from "react";
 
 const fmt = (n) => n.toFixed(2);
 
@@ -2317,7 +2317,7 @@ export default function TickerTable({ quotes }) {
   );
 }
 `,
-          "/src/feed.js": `// A simulated market-data socket. No network: prices come from a seeded
+          "/src/utils/feed.js": `// A simulated market-data socket. No network: prices come from a seeded
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
@@ -2378,8 +2378,8 @@ export function createFeed(onMessage) {
   return { stream, stop, reset };
 }
 `,
-          "/src/useTicker.js": `import { useCallback, useEffect, useRef, useState } from "react";
-import { SYMBOLS, createFeed } from "./feed";
+          "/src/hooks/useTicker.js": `import { useCallback, useEffect, useRef, useState } from "react";
+import { SYMBOLS, createFeed } from "../utils/feed";
 
 const initialQuotes = () =>
   Object.fromEntries(
@@ -2777,7 +2777,7 @@ For each mode the driver selected it with \`v-model\` on the \`<select>\`, reset
         files: {
           "/src/App.vue": `<script setup>
 import { onMounted, onUpdated, ref } from "vue";
-import { useTicker } from "./useTicker";
+import { useTicker } from "./composables/useTicker";
 import TickerRow from "./components/TickerRow.vue";
 
 const mode = ref("raf");
@@ -2940,7 +2940,7 @@ const dir = computed(() =>
   </tr>
 </template>
 `,
-          "/src/feed.js": `// A simulated market-data socket. No network: prices come from a seeded
+          "/src/utils/feed.js": `// A simulated market-data socket. No network: prices come from a seeded
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
@@ -3001,8 +3001,8 @@ export function createFeed(onMessage) {
   return { stream, stop, reset };
 }
 `,
-          "/src/useTicker.js": `import { onScopeDispose, shallowRef, toValue } from "vue";
-import { SYMBOLS, createFeed } from "./feed";
+          "/src/composables/useTicker.js": `import { onScopeDispose, shallowRef, toValue } from "vue";
+import { SYMBOLS, createFeed } from "../utils/feed";
 
 const initialQuotes = () =>
   Object.fromEntries(
@@ -3310,7 +3310,7 @@ For each mode the driver selected it, reset prices, clicked "Stream 200 messages
   inject,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { Mode, Quote, TickerService } from "./ticker.service";
+import { Mode, Quote, TickerService } from "./services/ticker.service";
 
 @Component({
   selector: "app-root",
@@ -3411,7 +3411,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/feed.ts": `// A simulated market-data socket. No network: prices come from a seeded
+          "/src/app/utils/feed.ts": `// A simulated market-data socket. No network: prices come from a seeded
 // random walk, so every run (and every framework) sees the same sequence.
 // Each message is delivered in its OWN macrotask (setTimeout), the way
 // WebSocket onmessage events arrive in a real browser.
@@ -3476,8 +3476,8 @@ export function createFeed(onMessage: (t: Tick) => void) {
   return { stream, stop, reset };
 }
 `,
-          "/src/app/ticker.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
-import { SYMBOLS, Tick, createFeed } from "./feed";
+          "/src/app/services/ticker.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
+import { SYMBOLS, Tick, createFeed } from "../utils/feed";
 
 export interface Quote {
   symbol: string;
@@ -3901,10 +3901,10 @@ What this cannot check: real pixel heights, smooth scrolling and how a real scre
 **Conclusion:** A chat UI is three small systems working together: a message model with client ids and a pending, sent or failed status; an optimistic send that appends first and reconciles on ack or error; and a stick-to-bottom hook that tracks "at bottom" in a ref and pins the list in a layout effect only when the reader is already there. The verified run shows each one: messages appear instantly, failures stay visible with a working Retry, and scrolling up to read history stops the list from moving while a "new messages" button waits.`,
         files: {
           "/App.js": `import { useCallback, useEffect, useRef, useState } from "react";
-import { createSocket } from "./src/fakeSocket";
-import { useStickToBottom } from "./src/useStickToBottom";
-import MessageList from "./src/MessageList";
-import Composer from "./src/Composer";
+import { createSocket } from "./src/api/fakeSocket";
+import { useStickToBottom } from "./src/hooks/useStickToBottom";
+import MessageList from "./src/components/MessageList";
+import Composer from "./src/components/Composer";
 
 const SEED = [
   {
@@ -4016,7 +4016,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Composer.js": `import { useState } from "react";
+          "/src/components/Composer.js": `import { useState } from "react";
 
 export default function Composer({ onSend }) {
   const [draft, setDraft] = useState("");
@@ -4059,7 +4059,7 @@ export default function Composer({ onSend }) {
   );
 }
 `,
-          "/src/MessageList.js": `export default function MessageList({
+          "/src/components/MessageList.js": `export default function MessageList({
   messages,
   typing,
   listRef,
@@ -4108,7 +4108,7 @@ export default function Composer({ onSend }) {
   );
 }
 `,
-          "/src/fakeSocket.js": `// A simulated chat socket. No network: acks, replies and "typing" events are
+          "/src/api/fakeSocket.js": `// A simulated chat socket. No network: acks, replies and "typing" events are
 // setTimeout callbacks. Server timestamps come from a fake clock that starts
 // at 09:40 and ticks one minute per server event, so output is repeatable.
 // Any message containing "fail" is rejected on its FIRST attempt only, so
@@ -4164,7 +4164,7 @@ export function createSocket({ onMessage, onTyping }) {
   return { send, pushIncoming, close };
 }
 `,
-          "/src/useStickToBottom.js": `import { useLayoutEffect, useRef } from "react";
+          "/src/hooks/useStickToBottom.js": `import { useLayoutEffect, useRef } from "react";
 
 // px: "close enough" to the bottom counts as at the bottom
 const THRESHOLD = 40;
@@ -4575,7 +4575,7 @@ The message appears as "Sending..." at once and gets its time 200 ms later; the 
         files: {
           "/src/App.vue": `<script setup>
 import { onUnmounted, ref } from "vue";
-import { createSocket } from "./fakeSocket";
+import { createSocket } from "./api/fakeSocket";
 import MessageList from "./components/MessageList.vue";
 import Composer from "./components/Composer.vue";
 
@@ -4918,7 +4918,7 @@ watch(
   </ol>
 </template>
 `,
-          "/src/fakeSocket.js": `// A simulated chat socket. No network: acks, replies and "typing" events are
+          "/src/api/fakeSocket.js": `// A simulated chat socket. No network: acks, replies and "typing" events are
 // setTimeout callbacks. Server timestamps come from a fake clock that starts
 // at 09:40 and ticks one minute per server event, so output is repeatable.
 // Any message containing "fail" is rejected on its FIRST attempt only, so
@@ -5223,8 +5223,8 @@ The pending message appears instantly and gets its time 200 ms later; the list s
   inject,
   signal,
 } from "@angular/core";
-import { ComposerComponent } from "./composer.component";
-import { createSocket } from "./fake-socket";
+import { ComposerComponent } from "./components/composer.component";
+import { createSocket } from "./api/fake-socket";
 
 interface Message {
   id: string; // client id: stays the key for the message whole life
@@ -5416,7 +5416,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/composer.component.ts": `import {
+          "/src/app/components/composer.component.ts": `import {
   Component,
   EventEmitter,
   Output,
@@ -5465,7 +5465,7 @@ export class ComposerComponent {
   }
 }
 `,
-          "/src/app/fake-socket.ts": `// A simulated chat socket. No network: acks, replies and "typing" events are
+          "/src/app/api/fake-socket.ts": `// A simulated chat socket. No network: acks, replies and "typing" events are
 // setTimeout callbacks. Server timestamps come from a fake clock that starts
 // at 09:40 and ticks one minute per server event, so output is repeatable.
 // Any message containing "fail" is rejected on its FIRST attempt only, so
@@ -5843,7 +5843,7 @@ For comparison, the variant with the guard outside the updater printed \`Vue (yo
 ---
 **Conclusion:** A good poll widget keeps very little state (counts, the voted option and the current selection) and derives everything else. A pure \`castVote\` updates counts immutably and refuses a second vote, and calling it through a functional update makes that guard reliable even for two clicks in one tick, which the verified run demonstrated against a broken variant that counted 29. The largest remainder method makes the bars add up to exactly 100, and native radios inside a \`fieldset\` give keyboard and screen-reader support without extra code.`,
         files: {
-          "/App.js": `import Poll from "./src/Poll";
+          "/App.js": `import Poll from "./src/components/Poll";
 
 const OPTIONS = [
   { id: "react", label: "React", votes: 12 },
@@ -5863,8 +5863,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Poll.js": `import { useId, useState } from "react";
-import { percentages } from "./percentages";
+          "/src/components/Poll.js": `import { useId, useState } from "react";
+import { percentages } from "../utils/percentages";
 
 // Pure function: returns a NEW poll, never mutates the old one.
 function castVote(poll, optionId) {
@@ -5958,7 +5958,7 @@ export default function Poll({ question, options }) {
   );
 }
 `,
-          "/src/percentages.js": `// Whole-number percentages that always add up to exactly 100
+          "/src/utils/percentages.js": `// Whole-number percentages that always add up to exactly 100
 // (largest remainder method). Plain Math.round can give 99 or 101.
 export function percentages(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
@@ -6422,7 +6422,7 @@ button:disabled {
 `,
           "/src/components/Poll.vue": `<script setup>
 import { computed, ref, useId } from "vue";
-import { percentages } from "../percentages";
+import { percentages } from "../utils/percentages";
 
 const props = defineProps({
   question: { type: String, required: true },
@@ -6494,7 +6494,7 @@ function submit() {
   </section>
 </template>
 `,
-          "/src/percentages.js": `// Whole-number percentages that always add up to exactly 100
+          "/src/utils/percentages.js": `// Whole-number percentages that always add up to exactly 100
 // (largest remainder method). Plain Math.round can give 99 or 101.
 export function percentages(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
@@ -6726,7 +6726,7 @@ Two clicks, one vote; bars summing to 100 where plain rounding gives 101; no vot
 **Conclusion:** The Angular poll receives its data through \`@Input\`, copies it into a \`tally\` signal in \`ngOnInit\`, keeps the choice and the vote in signals, and derives total and percentages with \`computed\`. The built-in \`@if\` and \`@for\` blocks switch views and render rows, the synchronous \`set\` makes the double-vote guard reliable, and largest remainder rounding keeps the bars at exactly 100, all confirmed by the AOT and JIT runs.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { PollComponent, PollOption } from "./poll.component";
+import { PollComponent, PollOption } from "./components/poll.component";
 
 @Component({
   selector: "app-root",
@@ -6858,7 +6858,7 @@ export class AppComponent {
   ];
 }
 `,
-          "/src/app/percentages.ts": `// Whole-number percentages that always add up to exactly 100
+          "/src/app/utils/percentages.ts": `// Whole-number percentages that always add up to exactly 100
 // (largest remainder method). Plain Math.round can give 99 or 101.
 export function percentages(counts: number[]): number[] {
   const total = counts.reduce((a, b) => a + b, 0);
@@ -6877,7 +6877,7 @@ export function percentages(counts: number[]): number[] {
   return floors;
 }
 `,
-          "/src/app/poll.component.ts": `import {
+          "/src/app/components/poll.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -6886,7 +6886,7 @@ export function percentages(counts: number[]): number[] {
   computed,
   signal,
 } from "@angular/core";
-import { percentages } from "./percentages";
+import { percentages } from "../utils/percentages";
 
 export interface PollOption {
   id: string;
@@ -7361,8 +7361,8 @@ Exact counts depend on timer timing, since live votes are on a real 1000 ms inte
 **Conclusion:** The live poll builds on the basic one with three ideas: deltas applied with functional updates after the snapshot loads, an optimistic vote whose rollback subtracts only your own change, and persistence that records only what the server accepted. A hand-made confetti burst of CSS-variable spans adds the delight without a library and steps aside for reduced motion. The verified run shows why the rollback detail matters: the delta undo kept a colleague's vote that a snapshot restore lost.`,
         files: {
           "/App.js": `import { useState } from "react";
-import LivePoll from "./src/LivePoll";
-import { server } from "./src/pollServer";
+import LivePoll from "./src/components/LivePoll";
+import { server } from "./src/api/pollServer";
 
 export default function App() {
   // Changing the key unmounts and remounts the widget: a cheap "page reload".
@@ -7381,7 +7381,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Confetti.js": `import { useEffect, useState } from "react";
+          "/src/components/Confetti.js": `import { useEffect, useState } from "react";
 
 const COLORS = [
   "#ffca28",
@@ -7429,9 +7429,9 @@ export default function Confetti({ burst }) {
   );
 }
 `,
-          "/src/LivePoll.js": `import { useEffect, useRef, useState } from "react";
-import { percentages } from "./percentages";
-import { loadVote, saveVote } from "./storage";
+          "/src/components/LivePoll.js": `import { useEffect, useRef, useState } from "react";
+import { percentages } from "../utils/percentages";
+import { loadVote, saveVote } from "../utils/storage";
 import Confetti from "./Confetti";
 
 const bump = (poll, optionId, delta) => ({
@@ -7579,7 +7579,7 @@ export default function LivePoll({ server }) {
   );
 }
 `,
-          "/src/percentages.js": `// Whole-number percentages that add up to exactly 100 (largest remainder).
+          "/src/utils/percentages.js": `// Whole-number percentages that add up to exactly 100 (largest remainder).
 export function percentages(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   if (!total) return counts.map(() => 0);
@@ -7595,7 +7595,7 @@ export function percentages(counts) {
   return out;
 }
 `,
-          "/src/pollServer.js": `// A simulated poll backend. No network: every call is a setTimeout. Other
+          "/src/api/pollServer.js": `// A simulated poll backend. No network: every call is a setTimeout. Other
 // people "vote" on a fixed schedule (one vote every 1000 ms, from a fixed
 // sequence) so the live results move by themselves and runs are repeatable.
 const OTHERS = ["ramen", "tacos", "ramen", "pizza", "ramen", "tacos"];
@@ -7649,7 +7649,7 @@ export function createPollServer() {
 
 export const server = createPollServer();
 `,
-          "/src/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
+          "/src/utils/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
 // access is wrapped. The widget still works without it; it just forgets.
 export const loadVote = (pollId) => {
   try {
@@ -8082,7 +8082,7 @@ The key line is \`t~2550\`: a pushed tacos vote landed while the failing request
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import LivePoll from "./components/LivePoll.vue";
-import { server } from "./pollServer";
+import { server } from "./api/pollServer";
 
 // Changing the key unmounts and remounts the widget: a cheap "page reload".
 const mountKey = ref(0);
@@ -8322,8 +8322,8 @@ onBeforeUnmount(() => clearTimeout(timer));
 `,
           "/src/components/LivePoll.vue": `<script setup>
 import { computed, onUnmounted, ref } from "vue";
-import { percentages } from "../percentages";
-import { loadVote, saveVote } from "../storage";
+import { percentages } from "../utils/percentages";
+import { loadVote, saveVote } from "../utils/storage";
 import Confetti from "./Confetti.vue";
 
 const props = defineProps({ server: { type: Object, required: true } });
@@ -8441,7 +8441,7 @@ function forget() {
   </section>
 </template>
 `,
-          "/src/percentages.js": `// Whole-number percentages that add up to exactly 100 (largest remainder).
+          "/src/utils/percentages.js": `// Whole-number percentages that add up to exactly 100 (largest remainder).
 export function percentages(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   if (!total) return counts.map(() => 0);
@@ -8457,7 +8457,7 @@ export function percentages(counts) {
   return out;
 }
 `,
-          "/src/pollServer.js": `// A simulated poll backend. No network: every call is a setTimeout. Other
+          "/src/api/pollServer.js": `// A simulated poll backend. No network: every call is a setTimeout. Other
 // people "vote" on a fixed schedule (one vote every 1000 ms, from a fixed
 // sequence) so the live results move by themselves and runs are repeatable.
 const OTHERS = ["ramen", "tacos", "ramen", "pizza", "ramen", "tacos"];
@@ -8511,7 +8511,7 @@ export function createPollServer() {
 
 export const server = createPollServer();
 `,
-          "/src/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
+          "/src/utils/storage.js": `// localStorage can throw (private mode, blocked storage, quota), so every
 // access is wrapped. The widget still works without it; it just forgets.
 export const loadVote = (pollId) => {
   try {
@@ -8778,8 +8778,8 @@ At \`t~2550\` Tacos is 15 after the rollback, because a colleague's tacos vote w
 **Conclusion:** In Angular the live poll is a signal updated immutably by pushed deltas after the snapshot loads, an optimistic vote whose rollback subtracts only your own change, and persistence that records only what the server accepted. A small confetti component turns a new \`burst\` input into 30 CSS-variable spans through a \`[style]\` object binding and cleans up after itself. The verified AOT and JIT runs both show the rollback keeping a colleague's vote and the vote surviving a remount.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { LivePollComponent } from "./live-poll.component";
-import { server } from "./poll-server";
+import { LivePollComponent } from "./components/live-poll.component";
+import { server } from "./api/poll-server";
 
 @Component({
   selector: "app-root",
@@ -8842,7 +8842,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/confetti.component.ts": `import { Component, Input, OnChanges, OnDestroy, signal } from "@angular/core";
+          "/src/app/components/confetti.component.ts": `import { Component, Input, OnChanges, OnDestroy, signal } from "@angular/core";
 
 const COLORS = [
   "#ffca28",
@@ -8904,7 +8904,7 @@ export class ConfettiComponent implements OnChanges, OnDestroy {
   }
 }
 `,
-          "/src/app/live-poll.component.ts": `import {
+          "/src/app/components/live-poll.component.ts": `import {
   Component,
   Input,
   OnDestroy,
@@ -8913,8 +8913,8 @@ export class ConfettiComponent implements OnChanges, OnDestroy {
   signal,
 } from "@angular/core";
 import { ConfettiComponent } from "./confetti.component";
-import { Poll, PollServer } from "./poll-server";
-import { loadVote, percentages, saveVote } from "./util";
+import { Poll, PollServer } from "../api/poll-server";
+import { loadVote, percentages, saveVote } from "../utils/util";
 
 @Component({
   selector: "app-live-poll",
@@ -9054,7 +9054,7 @@ export class LivePollComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/poll-server.ts": `// A simulated poll backend. No network: every call is a setTimeout. Other
+          "/src/app/api/poll-server.ts": `// A simulated poll backend. No network: every call is a setTimeout. Other
 // people "vote" on a fixed schedule (one vote every 1000 ms, from a fixed
 // sequence) so the live results move by themselves and runs are repeatable.
 export interface Option {
@@ -9120,7 +9120,7 @@ export function createPollServer() {
 export type PollServer = ReturnType<typeof createPollServer>;
 export const server = createPollServer();
 `,
-          "/src/app/util.ts": `// Whole-number percentages that add up to exactly 100 (largest remainder).
+          "/src/app/utils/util.ts": `// Whole-number percentages that add up to exactly 100 (largest remainder).
 export function percentages(counts: number[]): number[] {
   const total = counts.reduce((a, b) => a + b, 0);
   if (!total) return counts.map(() => 0);
@@ -9478,9 +9478,9 @@ What jsdom cannot show is how a real screen reader voices the focused heading; t
 **Conclusion:** A quiz app is a small state machine: intro, a loop of questions and a review, all held in one reducer whose actions are pure and guarded. The timer measures against a deadline, keyboard shortcuts and intervals are removed by effect cleanups, focus follows each new question, and the score is derived from the answers. The verified run covered every path: keys and clicks, a full 10-second timeout recorded as "Time ran out", a correct 2 of 4 score and a clean restart.`,
         files: {
           "/App.js": `import { useEffect, useReducer, useRef, useState } from "react";
-import { QUESTIONS, SECONDS_PER_QUESTION } from "./src/questions";
-import { initialState, quizReducer } from "./src/quizReducer";
-import Review from "./src/Review";
+import { QUESTIONS, SECONDS_PER_QUESTION } from "./src/data/questions";
+import { initialState, quizReducer } from "./src/utils/quizReducer";
+import Review from "./src/components/Review";
 
 export default function App() {
   const [state, dispatch] = useReducer(quizReducer, initialState);
@@ -9613,9 +9613,9 @@ export default function App() {
   );
 }
 `,
-          "/src/Review.js": `import { useEffect, useRef } from "react";
-import { QUESTIONS } from "./questions";
-import { scoreOf } from "./quizReducer";
+          "/src/components/Review.js": `import { useEffect, useRef } from "react";
+import { QUESTIONS } from "../data/questions";
+import { scoreOf } from "../utils/quizReducer";
 
 export default function Review({ answers, onRestart }) {
   const score = scoreOf(answers);
@@ -9655,7 +9655,7 @@ export default function Review({ answers, onRestart }) {
   );
 }
 `,
-          "/src/questions.js": `// \`answer\` is the index of the correct option.
+          "/src/data/questions.js": `// \`answer\` is the index of the correct option.
 export const QUESTIONS = [
   {
     id: "q1",
@@ -9689,7 +9689,7 @@ export const QUESTIONS = [
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
-          "/src/quizReducer.js": `import { QUESTIONS, SECONDS_PER_QUESTION } from "./questions";
+          "/src/utils/quizReducer.js": `import { QUESTIONS, SECONDS_PER_QUESTION } from "../data/questions";
 
 export const initialState = {
   phase: "intro",
@@ -10099,8 +10099,8 @@ The countdown shows 8 s after 2.2 s and resets per question; keys select and adv
         files: {
           "/src/App.vue": `<script setup>
 import { useTemplateRef, watch } from "vue";
-import { SECONDS_PER_QUESTION } from "./questions";
-import { useQuiz } from "./useQuiz";
+import { SECONDS_PER_QUESTION } from "./data/questions";
+import { useQuiz } from "./composables/useQuiz";
 import ReviewList from "./components/ReviewList.vue";
 
 const {
@@ -10315,7 +10315,7 @@ button:focus-visible {
 `,
           "/src/components/ReviewList.vue": `<script setup>
 import { onMounted, useTemplateRef } from "vue";
-import { QUESTIONS } from "../questions";
+import { QUESTIONS } from "../data/questions";
 
 const props = defineProps({ answers: Array, score: Number });
 defineEmits(["restart"]);
@@ -10349,7 +10349,7 @@ onMounted(() => heading.value.focus()); // announce the score on arrival
   </section>
 </template>
 `,
-          "/src/questions.js": `// \`answer\` is the index of the correct option.
+          "/src/data/questions.js": `// \`answer\` is the index of the correct option.
 export const QUESTIONS = [
   {
     id: "q1",
@@ -10383,8 +10383,8 @@ export const QUESTIONS = [
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
-          "/src/useQuiz.js": `import { computed, onScopeDispose, ref, watch } from "vue";
-import { QUESTIONS, SECONDS_PER_QUESTION } from "./questions";
+          "/src/composables/useQuiz.js": `import { computed, onScopeDispose, ref, watch } from "vue";
+import { QUESTIONS, SECONDS_PER_QUESTION } from "../data/questions";
 
 // The quiz is one small state machine: intro -> question (x N) -> review.
 export function useQuiz() {
@@ -10733,8 +10733,8 @@ Same behaviour as the React and Vue runs (Angular's template whitespace adds a s
   effect,
   signal,
 } from "@angular/core";
-import { QUESTIONS, SECONDS_PER_QUESTION } from "./questions";
-import { ReviewComponent } from "./review.component";
+import { QUESTIONS, SECONDS_PER_QUESTION } from "./data/questions";
+import { ReviewComponent } from "./components/review.component";
 
 type Phase = "intro" | "question" | "review";
 
@@ -10929,7 +10929,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/questions.ts": `// \`answer\` is the index of the correct option.
+          "/src/app/data/questions.ts": `// \`answer\` is the index of the correct option.
 export interface Question {
   id: string;
   prompt: string;
@@ -10970,7 +10970,7 @@ export const QUESTIONS: Question[] = [
 ];
 export const SECONDS_PER_QUESTION = 10;
 `,
-          "/src/app/review.component.ts": `import {
+          "/src/app/components/review.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -10979,7 +10979,7 @@ export const SECONDS_PER_QUESTION = 10;
   Output,
   ViewChild,
 } from "@angular/core";
-import { QUESTIONS } from "./questions";
+import { QUESTIONS } from "../data/questions";
 
 @Component({
   selector: "app-review",

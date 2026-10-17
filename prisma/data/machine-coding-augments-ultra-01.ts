@@ -367,7 +367,7 @@ The button that disabled itself dropped focus to <code>&lt;body&gt;</code>; the 
 ---
 **Conclusion:** A counter is small, but it tests the habits every larger widget needs: keep the minimal state (<code>count</code> and the raw step text), derive everything else, update through a functional setter, enforce bounds in one clamp, and make the control usable without a mouse. The verified run shows the edges behaving: blocked at 0, clamped at 10, a bad step falling back to 1 and Reset returning home. Say that out loud while you build it and the interviewer hears a developer who will not leave stale or impossible state behind in bigger features.`,
         files: {
-          "/App.js": `import Counter from "./src/Counter";
+          "/App.js": `import Counter from "./src/components/Counter";
 
 export default function App() {
   return (
@@ -381,7 +381,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Counter.js": `import { useState } from "react";
+          "/src/components/Counter.js": `import { useState } from "react";
 
 // Keep a number inside [min, max].
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -1199,7 +1199,7 @@ No <code>console.error</code> in either mode. jsdom cannot show focus movement, 
 **Conclusion:** The Angular counter is a small showcase of modern Angular: signals for state, computed signals for everything derived, inputs read in <code>ngOnInit</code>, and attribute bindings for ARIA. Verified under both ahead-of-time and runtime compilation, it blocks at 0, clamps at 10, treats a bad step as 1 and resets cleanly. Explaining the lifecycle and the signal choices out loud is what makes this easy question a strong answer.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { CounterComponent } from "./counter.component";
+import { CounterComponent } from "./components/counter.component";
 
 @Component({
   selector: "app-root",
@@ -1240,7 +1240,7 @@ import { CounterComponent } from "./counter.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/counter.component.ts": `import { Component, Input, OnInit, computed, signal } from "@angular/core";
+          "/src/app/components/counter.component.ts": `import { Component, Input, OnInit, computed, signal } from "@angular/core";
 
 @Component({
   selector: "app-counter",
@@ -1684,8 +1684,8 @@ Line 2 is the optimistic update: 30 ms after the click, long before the 600 ms s
 **Conclusion:** A good like button feels instant because it is optimistic, and stays honest because it can roll back. The recipe is short: guard with a ref, snapshot, update, await, restore the snapshot on failure, and always release the guard. The verified run shows the count moving 30 ms after the click, a second click being ignored, and a rejected save restoring the exact previous state with a message. Mention request ids and <code>useOptimistic</code> as the next steps and you have answered the question at the level an interviewer hopes for.`,
         files: {
           "/App.js": `import { useState } from "react";
-import LikeButton from "./src/LikeButton";
-import { saveLike } from "./src/api";
+import LikeButton from "./src/components/LikeButton";
+import { saveLike } from "./src/api/api";
 
 export default function App() {
   const [fail, setFail] = useState(false);
@@ -1712,7 +1712,7 @@ export default function App() {
   );
 }
 `,
-          "/src/LikeButton.js": `import { useRef, useState } from "react";
+          "/src/components/LikeButton.js": `import { useRef, useState } from "react";
 
 const label = (n) => \`\${n} \${n === 1 ? "like" : "likes"}\`;
 
@@ -1774,7 +1774,7 @@ export default function LikeButton({
   );
 }
 `,
-          "/src/api.js": `// A simulated server: no network. Resolves after
+          "/src/api/api.js": `// A simulated server: no network. Resolves after
 // 600 ms, or rejects when shouldFail is true.
 export function saveLike(liked, shouldFail) {
   return new Promise((resolve, reject) => {
@@ -2120,7 +2120,7 @@ The count is 42 just 30 ms after the click (optimistic), the second click is ign
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import LikeButton from "./components/LikeButton.vue";
-import { saveLike } from "./api.js";
+import { saveLike } from "./api/api.js";
 
 const fail = ref(false);
 const save = (liked) => saveLike(liked, fail.value);
@@ -2175,7 +2175,7 @@ h1 {
 }
 </style>
 `,
-          "/src/api.js": `// A simulated server: no network. Resolves after
+          "/src/api/api.js": `// A simulated server: no network. Resolves after
 // 600 ms, or rejects when shouldFail is true.
 export function saveLike(liked, shouldFail) {
   return new Promise((resolve, reject) => {
@@ -2573,8 +2573,8 @@ So Angular 22.2.3 started with <code>bootstrapApplication</code> and no provider
 **Conclusion:** The Angular like button is signals plus one async method: guard, snapshot, update, await, restore on failure. Verified under ahead-of-time and runtime compilation, it moves the count instantly, ignores a second click and rolls back a failed save with a message. The Angular-specific points to say out loud are the arrow-function input that keeps <code>this</code>, inputs arriving in <code>ngOnInit</code>, and why signal writes are what get a late rollback onto the screen.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, signal } from "@angular/core";
-import { LikeButtonComponent } from "./like-button.component";
-import { saveLike } from "./like-api";
+import { LikeButtonComponent } from "./components/like-button.component";
+import { saveLike } from "./api/like-api";
 
 @Component({
   selector: "app-root",
@@ -2647,7 +2647,7 @@ export class AppComponent {
   save = (liked: boolean) => saveLike(liked, this.fail());
 }
 `,
-          "/src/app/like-api.ts": `// A simulated server: no network. Resolves after
+          "/src/app/api/like-api.ts": `// A simulated server: no network. Resolves after
 // 600 ms, or rejects when shouldFail is true.
 export function saveLike(
   liked: boolean,
@@ -2661,7 +2661,7 @@ export function saveLike(
   });
 }
 `,
-          "/src/app/like-button.component.ts": `import { Component, Input, OnInit, computed, signal } from "@angular/core";
+          "/src/app/components/like-button.component.ts": `import { Component, Input, OnInit, computed, signal } from "@angular/core";
 
 @Component({
   selector: "app-like-button",
@@ -3076,7 +3076,7 @@ Space and Enter toggled with no key handler, Tab skipped the disabled switch, an
 **Conclusion:** A good toggle switch is a stateless, controlled button with <code>role="switch"</code>, <code>aria-checked</code> and a real label; the parent owns the value and the rules. The verified runs show the panel turning the digest off and disabling it in one click, labels and keys working in a real browser, and the reason for the handler guard: a script-dispatched click reaches a disabled button's listeners. Say "controlled, native button, label by id, guard the disabled case" and the interviewer hears someone who builds components other people can safely reuse.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Switch from "./src/Switch";
+import Switch from "./src/components/Switch";
 
 const onOff = (v) => (v ? "on" : "off");
 
@@ -3117,7 +3117,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Switch.js": `import { useId } from "react";
+          "/src/components/Switch.js": `import { useId } from "react";
 
 // A controlled switch: it owns no state. The parent
 // passes checked and decides what onChange does.
@@ -3855,7 +3855,7 @@ Hence <code>toggle()</code> checks <code>this.disabled</code>. The shipped versi
 **Conclusion:** The Angular toggle switch is a stateless component with a <code>checked</code> input and a <code>checkedChange</code> output, rendered as a native button with <code>role="switch"</code> and a real label. The parent owns the values and rules. Verified in jsdom under both compilers and in Chromium, it handles labels, Space, Enter and Tab, and the run exposed why the handler needs its own disabled guard. Mention <code>model()</code> and <code>ControlValueAccessor</code> as the next steps and the answer is complete.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, signal } from "@angular/core";
-import { ToggleSwitchComponent } from "./toggle-switch.component";
+import { ToggleSwitchComponent } from "./components/toggle-switch.component";
 
 @Component({
   selector: "app-root",
@@ -3932,7 +3932,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/toggle-switch.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+          "/src/app/components/toggle-switch.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 let nextId = 0;
 
@@ -4438,7 +4438,7 @@ The real <code>matchMedia</code> change event, the reload persistence and the he
 ---
 **Conclusion:** A dark mode toggle is a small state-modelling exercise: a saved choice, a live OS preference, and a theme derived from both. React reads the OS through <code>useSyncExternalStore</code>, applies the theme with one effect, and persists only explicit choices with another. The runs show it booting safely without <code>matchMedia</code>, following the OS live, letting a saved choice win after a reload, and, in Chromium, a head script setting the theme before the body is parsed. Name those pieces and the "no flash" fix and you have covered everything an interviewer looks for.`,
         files: {
-          "/App.js": `import { useTheme } from "./src/useTheme";
+          "/App.js": `import { useTheme } from "./src/hooks/useTheme";
 
 export default function App() {
   const { theme, choice, setChoice } = useTheme();
@@ -4479,7 +4479,7 @@ export default function App() {
   );
 }
 `,
-          "/src/useTheme.js": `import { useEffect, useState, useSyncExternalStore } from "react";
+          "/src/hooks/useTheme.js": `import { useEffect, useState, useSyncExternalStore } from "react";
 
 const KEY = "theme";
 const QUERY = "(prefers-color-scheme: dark)";
@@ -4635,7 +4635,7 @@ A hotel room light that follows the daylight is lovely until you want to nap at 
 
 ## 2. Requirements and Plan
 
-The logic lives in a composable, <code>useTheme()</code> in <code>src/useTheme.js</code>; <code>App.vue</code> renders the toggle and status.
+The logic lives in a composable, <code>useTheme()</code> in <code>src/composables/useTheme.js</code>; <code>App.vue</code> renders the toggle and status.
 
 | Value | Vue tool | Source |
 | :--- | :--- | :--- |
@@ -4902,7 +4902,7 @@ In Chromium 141 with the real <code>matchMedia</code> (playwright-core, <code>em
         files: {
           "/src/App.vue": `<script setup>
 import { computed } from "vue";
-import { useTheme } from "./useTheme.js";
+import { useTheme } from "./composables/useTheme.js";
 
 const { theme, choice } = useTheme();
 const dark = computed(() => theme.value === "dark");
@@ -5033,7 +5033,7 @@ h1 {
 }
 </style>
 `,
-          "/src/useTheme.js": `import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
+          "/src/composables/useTheme.js": `import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
 
 const KEY = "theme";
 const QUERY = "(prefers-color-scheme: dark)";
@@ -5352,7 +5352,7 @@ With <code>"light"</code> seeded before boot (a reload): <code>boot html[data-th
 **Conclusion:** In Angular the dark mode toggle is a root service: signals for the choice and the OS value, a computed theme, two focused effects for the DOM and storage, and <code>DestroyRef</code> for cleanup. The runs show it booting safely without <code>matchMedia</code>, following the OS live, honouring a saved choice after reload, and in Chromium a head script setting the theme before the body exists. Mention the encapsulation detail and the <code>DOCUMENT</code> token and the answer reads as genuinely Angular, not a translation.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, inject } from "@angular/core";
-import { ThemeService } from "./theme.service";
+import { ThemeService } from "./services/theme.service";
 
 @Component({
   selector: "app-root",
@@ -5488,7 +5488,7 @@ export class AppComponent {
   protected dark = computed(() => this.theme.theme() === "dark");
 }
 `,
-          "/src/app/theme.service.ts": `import {
+          "/src/app/services/theme.service.ts": `import {
   DestroyRef,
   Injectable,
   computed,
@@ -5874,7 +5874,7 @@ Mounted in jsdom inside <code>&lt;StrictMode&gt;</code> by <code>scripts/verify-
 ---
 **Conclusion:** The temperature converter is a lesson in state design disguised as arithmetic: store which box was edited and what was typed, derive the other box, and keep conversion, parsing and formatting in pure helpers. The verified run shows "37." surviving while the other box reads 98.6, float noise rounded away, half-typed input tolerated and real junk flagged on the right box. Explain why two synced states are a trap and you have given the answer the question is really asking for.`,
         files: {
-          "/App.js": `import TemperatureConverter from "./src/TemperatureConverter";
+          "/App.js": `import TemperatureConverter from "./src/components/TemperatureConverter";
 
 export default function App() {
   return (
@@ -5888,8 +5888,8 @@ export default function App() {
   );
 }
 `,
-          "/src/TemperatureConverter.js": `import { useState } from "react";
-import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "./convert";
+          "/src/components/TemperatureConverter.js": `import { useState } from "react";
+import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "../utils/convert";
 
 export default function TemperatureConverter() {
   // One source of truth: which box the user
@@ -5956,7 +5956,7 @@ export default function TemperatureConverter() {
   );
 }
 `,
-          "/src/convert.js": `export const cToF = (c) => (c * 9) / 5 + 32;
+          "/src/utils/convert.js": `export const cToF = (c) => (c * 9) / 5 + 32;
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
@@ -6300,7 +6300,7 @@ h1 {
 `,
           "/src/components/TemperatureConverter.vue": `<script setup>
 import { computed, ref } from "vue";
-import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "../convert.js";
+import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "../utils/convert.js";
 
 // One source of truth: which box the user
 // last typed in, and exactly what they typed.
@@ -6416,7 +6416,7 @@ const message = computed(() => {
 }
 </style>
 `,
-          "/src/convert.js": `export const cToF = (c) => (c * 9) / 5 + 32;
+          "/src/utils/convert.js": `export const cToF = (c) => (c * 9) / 5 + 32;
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
@@ -6680,7 +6680,7 @@ Bootstrapped with <code>bootstrapApplication(AppComponent)</code> and no provide
 **Conclusion:** In Angular the converter is one source signal and a few computeds, wired to plain inputs with property and event bindings. Verified under both compilers, it keeps "37." while typing, rounds float noise and flags only the box with bad text. Contrast it with the two-effects or two-form-controls versions and the interviewer sees you understand why derivation beats synchronisation.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { TemperatureConverterComponent } from "./temperature-converter.component";
+import { TemperatureConverterComponent } from "./components/temperature-converter.component";
 
 @Component({
   selector: "app-root",
@@ -6721,7 +6721,7 @@ import { TemperatureConverterComponent } from "./temperature-converter.component
 })
 export class AppComponent {}
 `,
-          "/src/app/convert.ts": `export const cToF = (c: number) => (c * 9) / 5 + 32;
+          "/src/app/utils/convert.ts": `export const cToF = (c: number) => (c * 9) / 5 + 32;
 export const fToC = (f: number) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
@@ -6748,8 +6748,8 @@ export function format(n: number): string {
   return String(Object.is(r, -0) ? 0 : r);
 }
 `,
-          "/src/app/temperature-converter.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "./convert";
+          "/src/app/components/temperature-converter.component.ts": `import { Component, computed, signal } from "@angular/core";
+import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "../utils/convert";
 
 type Scale = "c" | "f";
 
@@ -7212,7 +7212,7 @@ Compare with the first draft quoted in step 2: the 0% loan now costs exactly $30
 ---
 **Conclusion:** The mortgage calculator rewards getting the boring things right: the monthly rate, the 0% special case, and money in whole cents with a final payment that settles the rounding. In React the only state is three strings; validation, maths and formatting are derived on each render. The verified run shows the textbook $1,896.20 payment, a 0% loan costing exactly its principal, and clear messages for bad input. Mention the first draft's $0.60 of interest on a 0% loan and how you caught it, and the interviewer hears someone who checks their numbers.`,
         files: {
-          "/App.js": `import MortgageCalculator from "./src/MortgageCalculator";
+          "/App.js": `import MortgageCalculator from "./src/components/MortgageCalculator";
 
 export default function App() {
   return (
@@ -7226,8 +7226,8 @@ export default function App() {
   );
 }
 `,
-          "/src/MortgageCalculator.js": `import { useState } from "react";
-import { amountError, calcMortgage, money, rateError } from "./mortgage";
+          "/src/components/MortgageCalculator.js": `import { useState } from "react";
+import { amountError, calcMortgage, money, rateError } from "../utils/mortgage";
 
 const TERMS = [15, 20, 30];
 
@@ -7320,7 +7320,7 @@ export default function MortgageCalculator() {
   );
 }
 `,
-          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+          "/src/utils/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
 // / ((1 + r)^n - 1), with r the monthly rate.
 // Money is tracked in whole cents, like a lender,
 // and the last payment absorbs the rounding.
@@ -7751,7 +7751,7 @@ h1 {
 `,
           "/src/components/MortgageCalculator.vue": `<script setup>
 import { computed, ref } from "vue";
-import { amountError, calcMortgage, money, rateError } from "../mortgage.js";
+import { amountError, calcMortgage, money, rateError } from "../utils/mortgage.js";
 
 const TERMS = [15, 20, 30];
 
@@ -7902,7 +7902,7 @@ dd {
 }
 </style>
 `,
-          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+          "/src/utils/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
 // / ((1 + r)^n - 1), with r the monthly rate.
 // Money is tracked in whole cents, like a lender,
 // and the last payment absorbs the rounding.
@@ -8235,7 +8235,7 @@ The select was driven through <code>ngValue</code> options and still produced nu
 **Conclusion:** The Angular mortgage calculator is three signals fed by <code>ngModel</code>, computed validation and results, and a pure, cent-accurate calculation. Verified under strict ahead-of-time and runtime compilation, it gives the textbook $1,896.20 payment, exact totals for a 0% loan and clear messages for bad input. The forms details (<code>name</code>, <code>ngValue</code>, <code>FormsModule</code>) plus the rounding story make it a complete answer.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { MortgageCalculatorComponent } from "./mortgage-calculator.component";
+import { MortgageCalculatorComponent } from "./components/mortgage-calculator.component";
 
 @Component({
   selector: "app-root",
@@ -8261,9 +8261,9 @@ import { MortgageCalculatorComponent } from "./mortgage-calculator.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/mortgage-calculator.component.ts": `import { Component, computed, signal } from "@angular/core";
+          "/src/app/components/mortgage-calculator.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { amountError, calcMortgage, money, rateError } from "./mortgage";
+import { amountError, calcMortgage, money, rateError } from "../utils/mortgage";
 
 @Component({
   selector: "app-mortgage-calculator",
@@ -8431,7 +8431,7 @@ export class MortgageCalculatorComponent {
   }
 }
 `,
-          "/src/app/mortgage.ts": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+          "/src/app/utils/mortgage.ts": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
 // / ((1 + r)^n - 1), with r the monthly rate.
 // Money is tracked in whole cents, like a lender,
 // and the last payment absorbs the rounding.

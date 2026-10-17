@@ -466,7 +466,7 @@ What this proves: the tree starts with folders first and A to Z (\`public\` befo
 **Conclusion:** A file explorer is one recursive component plus a disciplined state model. Keep the files, the open folders, the selection and the draft as separate pieces of state, derive everything else, update the tree immutably by id, and move a single tab stop with the arrow keys. With that base, the follow-ups (a [toolbar with breadcrumbs, search and a context menu](/interview-question/build-a-file-explorer-toolbar-breadcrumbs-search-context-menu), or drag-and-drop) are additions rather than rewrites.`,
         files: {
           "/App.js": `import { useEffect, useMemo, useRef, useState } from "react";
-import TreeNode, { NewItemRow } from "./src/TreeNode";
+import TreeNode, { NewItemRow } from "./src/components/TreeNode";
 import {
   initialTree,
   makeId,
@@ -479,7 +479,7 @@ import {
   countDescendants,
   visibleRows,
   validateName,
-} from "./src/treeUtils";
+} from "./src/utils/treeUtils";
 
 export default function App() {
   const [tree, setTree] = useState(initialTree);
@@ -678,8 +678,8 @@ export default function App() {
   );
 }
 `,
-          "/src/TreeNode.js": `import { useEffect, useRef, useState } from "react";
-import { sortNodes } from "./treeUtils";
+          "/src/components/TreeNode.js": `import { useEffect, useRef, useState } from "react";
+import { sortNodes } from "../utils/treeUtils";
 
 // One inline text box, used both for "new file / folder" and for "rename".
 export function NameInput({ initial, label, error, onCommit, onCancel }) {
@@ -795,7 +795,7 @@ export default function TreeNode({ node, depth, api }) {
   );
 }
 `,
-          "/src/treeUtils.js": `// Pure helpers for a NESTED tree: [{ id,
+          "/src/utils/treeUtils.js": `// Pure helpers for a NESTED tree: [{ id,
 // name, type: 'folder' | 'file', children? }]
 // Every update returns a new array and copies
 // only the folders on the path to the change.
@@ -1327,7 +1327,7 @@ import {
   countDescendants,
   visibleRows,
   validateName,
-} from "./treeData.js";
+} from "./utils/treeData.js";
 
 // deep reactive: push / splice / assign just work
 const tree = reactive(createTree());
@@ -1665,7 +1665,7 @@ onMounted(() => {
           "/src/components/TreeNode.vue": `<script setup>
 import { computed, inject } from "vue";
 import NameInput from "./NameInput.vue";
-import { sortNodes } from "../treeData.js";
+import { sortNodes } from "../utils/treeData.js";
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -1748,7 +1748,7 @@ const indent = computed(() => ({
   </li>
 </template>
 `,
-          "/src/treeData.js": `// Data and lookups for a NESTED tree: [{ id,
+          "/src/utils/treeData.js": `// Data and lookups for a NESTED tree: [{ id,
 // name, type: 'folder' | 'file', children? }]
 // Vue tracks nested arrays and objects, so App.vue mutates this tree in place.
 
@@ -2138,10 +2138,10 @@ The output matches React and Vue exactly: arrows move focus and open or close fo
 **Conclusion:** The Angular explorer is one attribute-selector component that renders itself, a component-scoped signal store with copy-on-write tree helpers, getters for input-derived values, and \`afterNextRender\` for focus. Remember the \`forwardRef\` self-import for the playground compiler, and the same structure carries straight into the [drag-and-drop version](/interview-question/build-a-file-explorer-with-nested-drag-and-drop).`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, inject } from "@angular/core";
-import { ExplorerStore } from "./explorer.store";
-import { NameInputComponent } from "./name-input.component";
-import { TreeNodeComponent } from "./tree-node.component";
-import { sortNodes } from "./tree-utils";
+import { ExplorerStore } from "./services/explorer.store";
+import { NameInputComponent } from "./components/name-input.component";
+import { TreeNodeComponent } from "./components/tree-node.component";
+import { sortNodes } from "./utils/tree-utils";
 
 @Component({
   selector: "app-root",
@@ -2227,7 +2227,7 @@ export class AppComponent {
   });
 }
 `,
-          "/src/app/explorer.store.ts": `import {
+          "/src/app/services/explorer.store.ts": `import {
   ElementRef,
   Injectable,
   Injector,
@@ -2248,7 +2248,7 @@ import {
   countDescendants,
   visibleRows,
   validateName,
-} from "./tree-utils";
+} from "../utils/tree-utils";
 
 export type Editing =
   | { kind: "new"; parentId: string | null; type: "file" | "folder" }
@@ -2415,7 +2415,7 @@ export class ExplorerStore {
   }
 }
 `,
-          "/src/app/name-input.component.ts": `import {
+          "/src/app/components/name-input.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -2468,10 +2468,10 @@ export class NameInputComponent implements OnInit, AfterViewInit {
   }
 }
 `,
-          "/src/app/tree-node.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
-import { ExplorerStore } from "./explorer.store";
+          "/src/app/components/tree-node.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { ExplorerStore } from "../services/explorer.store";
 import { NameInputComponent } from "./name-input.component";
-import { FsNode, sortNodes } from "./tree-utils";
+import { FsNode, sortNodes } from "../utils/tree-utils";
 
 // An attribute selector makes the <li> itself
 // the component host, so the DOM stays
@@ -2575,7 +2575,7 @@ export class TreeNodeComponent {
   }
 }
 `,
-          "/src/app/tree-utils.ts": `// Pure, typed helpers for a NESTED tree. Signals compare by reference, so every
+          "/src/app/utils/tree-utils.ts": `// Pure, typed helpers for a NESTED tree. Signals compare by reference, so every
 // update returns a new array and copies only
 // the folders on the path to the change.
 
@@ -3140,8 +3140,8 @@ Read it as: crumbs follow the selection (\`Project / src / [components]\`); "sea
 **Conclusion:** The toolbar is three derived views over one tree: a path from a parent map, a pruned copy with its own forced-open set, and a portaled menu that is clamped, dismissible and fully keyboard-operable. Keep the user's state untouched by the views, act on nodes by id, and you can extend it to [drag-and-drop](/interview-question/build-a-file-explorer-with-nested-drag-and-drop) without changing any of it.`,
         files: {
           "/App.js": `import { useEffect, useMemo, useRef, useState } from "react";
-import TreeItem from "./src/TreeItem";
-import ContextMenu, { placeMenu } from "./src/ContextMenu";
+import TreeItem from "./src/components/TreeItem";
+import ContextMenu, { placeMenu } from "./src/components/ContextMenu";
 import {
   initialTree,
   makeId,
@@ -3154,7 +3154,7 @@ import {
   removeNode,
   insertNode,
   uniqueName,
-} from "./src/tree";
+} from "./src/utils/tree";
 
 export default function App() {
   const [tree, setTree] = useState(initialTree);
@@ -3426,7 +3426,7 @@ export default function App() {
   );
 }
 `,
-          "/src/ContextMenu.js": `import { useEffect, useRef } from "react";
+          "/src/components/ContextMenu.js": `import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
 export const MENU_W = 180;
@@ -3511,7 +3511,7 @@ export default function ContextMenu({ left, top, label, items, onClose }) {
   );
 }
 `,
-          "/src/tree.js": `// Nested tree data plus the derived lookups the toolbar needs.
+          "/src/utils/tree.js": `// Nested tree data plus the derived lookups the toolbar needs.
 let nextId = 1;
 export const makeId = () => "n" + nextId++;
 
@@ -3670,8 +3670,8 @@ export function uniqueName(siblings, type) {
   }
 }
 `,
-          "/src/TreeItem.js": `import { useEffect, useRef, useState } from "react";
-import { sortNodes } from "./tree";
+          "/src/components/TreeItem.js": `import { useEffect, useRef, useState } from "react";
+import { sortNodes } from "../utils/tree";
 
 // Wrap the first case-insensitive match in <mark>, leave the rest as text.
 export function Highlight({ text, query }) {
@@ -4165,7 +4165,7 @@ import {
   filterTree,
   countMatches,
   uniqueName,
-} from "./tree.js";
+} from "./utils/tree.js";
 
 const MENU_W = 180,
   ITEM_H = 32,
@@ -4674,7 +4674,7 @@ function choose(item) {
 `,
           "/src/components/TreeItem.vue": `<script setup>
 import { computed, inject, nextTick, ref, watch } from "vue";
-import { sortNodes } from "../tree.js";
+import { sortNodes } from "../utils/tree.js";
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -4755,7 +4755,7 @@ watch(
   </li>
 </template>
 `,
-          "/src/tree.js": `// Nested tree data plus the derived lookups the toolbar needs. App.vue mutates
+          "/src/utils/tree.js": `// Nested tree data plus the derived lookups the toolbar needs. App.vue mutates
 // the reactive tree in place, so there are no copy-on-write helpers here.
 let nextId = 1;
 export const makeId = () => "n" + nextId++;
@@ -5094,10 +5094,10 @@ It matches React and Vue line for line, including the menu being a child of \`bo
 **Conclusion:** The Angular toolbar is a set of \`computed\` signals (index, crumbs, pruned view, summary) over one tree, a breadcrumbs component with an \`@Output\`, and a self-moving menu component driven by \`@HostListener\`. Know that the CDK does the menu for you in production, and remember the self-import for recursive components in the playground.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
-import { ExplorerState } from "./explorer-state";
-import { TreeItemComponent } from "./tree-item.component";
-import { BreadcrumbsComponent } from "./breadcrumbs.component";
-import { ContextMenuComponent } from "./context-menu.component";
+import { ExplorerState } from "./services/explorer-state";
+import { TreeItemComponent } from "./components/tree-item.component";
+import { BreadcrumbsComponent } from "./components/breadcrumbs.component";
+import { ContextMenuComponent } from "./components/context-menu.component";
 
 @Component({
   selector: "app-root",
@@ -5165,8 +5165,8 @@ export class AppComponent {
   s = inject(ExplorerState);
 }
 `,
-          "/src/app/breadcrumbs.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { FsNode } from "./tree";
+          "/src/app/components/breadcrumbs.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FsNode } from "../utils/tree";
 
 @Component({
   selector: "app-breadcrumbs",
@@ -5200,7 +5200,7 @@ export class BreadcrumbsComponent {
   @Output() navigate = new EventEmitter<string | null>();
 }
 `,
-          "/src/app/context-menu.component.ts": `import {
+          "/src/app/components/context-menu.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -5211,7 +5211,7 @@ export class BreadcrumbsComponent {
   Output,
   inject,
 } from "@angular/core";
-import { MenuItem } from "./explorer-state";
+import { MenuItem } from "../services/explorer-state";
 
 // Angular has no built-in portal outside the CDK (@angular/cdk/overlay), so the
 // component moves its own host element to
@@ -5288,7 +5288,7 @@ export class ContextMenuComponent implements AfterViewInit, OnDestroy {
   }
 }
 `,
-          "/src/app/explorer-state.ts": `import {
+          "/src/app/services/explorer-state.ts": `import {
   ElementRef,
   Injectable,
   Injector,
@@ -5310,7 +5310,7 @@ import {
   removeNode,
   insertNode,
   uniqueName,
-} from "./tree";
+} from "../utils/tree";
 
 export interface MenuItem {
   label: string;
@@ -5546,7 +5546,7 @@ export class ExplorerState {
   }
 }
 `,
-          "/src/app/tree-item.component.ts": `import {
+          "/src/app/components/tree-item.component.ts": `import {
   Component,
   ElementRef,
   Input,
@@ -5556,8 +5556,8 @@ export class ExplorerState {
   inject,
   signal,
 } from "@angular/core";
-import { ExplorerState } from "./explorer-state";
-import { FsNode, sortNodes } from "./tree";
+import { ExplorerState } from "../services/explorer-state";
+import { FsNode, sortNodes } from "../utils/tree";
 
 // Recursive: it lists itself in imports.
 // Without that, the playground JIT reported
@@ -5675,7 +5675,7 @@ export class TreeItemComponent {
   }
 }
 `,
-          "/src/app/tree.ts": `// Nested tree data plus the derived lookups
+          "/src/app/utils/tree.ts": `// Nested tree data plus the derived lookups
 // the toolbar needs. Signals compare by
 // reference, so updates are copy-on-write:
 // only folders on the changed path are copied.
@@ -6274,7 +6274,7 @@ Read it as: \`Button.jsx\` dropped mid-row on \`hooks\` goes inside and opens \`
 **Conclusion:** Nested drag-and-drop is a data problem first: normalize the tree so a move is three small edits, and guard it by walking up the parent chain so a folder can never land inside itself. The UI is then the \`dragover\` contract (measure, decide, \`preventDefault\` only when valid), a ref for the dragged id, cleanup on \`dragend\`, and a keyboard path through the same move function. For the related list-only version see the [Kanban board with drag and drop](/interview-question/build-a-kanban-board-with-drag-and-drop) and the [drag-and-drop reordering utility](/interview-question/implement-a-drag-and-drop-list-reordering-utility-without-a-library).`,
         files: {
           "/App.js": `import { useRef, useState } from "react";
-import TreeRow from "./src/TreeRow";
+import TreeRow from "./src/components/TreeRow";
 import {
   ROOT,
   initialNodes,
@@ -6283,7 +6283,7 @@ import {
   moveNode,
   describeMove,
   visibleIds,
-} from "./src/normalized";
+} from "./src/utils/normalized";
 
 export default function App() {
   const [nodes, setNodes] = useState(initialNodes);
@@ -6438,7 +6438,7 @@ export default function App() {
   );
 }
 `,
-          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat
+          "/src/utils/normalized.js": `// The tree is stored NORMALIZED: a flat
 // map of id -> node, where each node knows
 // its parentId and the ordered ids of its
 // children. Moving a subtree is then two
@@ -6588,7 +6588,7 @@ export function visibleIds(nodes, expanded, id = ROOT, out = []) {
   return out;
 }
 `,
-          "/src/TreeRow.js": `// Recursive row. The normalized map is looked up by id at every level, so a
+          "/src/components/TreeRow.js": `// Recursive row. The normalized map is looked up by id at every level, so a
 // row only needs its id and depth; children come from node.childIds.
 export default function TreeRow({ id, depth, api }) {
   const node = api.nodes[id];
@@ -6991,7 +6991,7 @@ import {
   moveNode,
   describeMove,
   visibleIds,
-} from "./normalized.js";
+} from "./utils/normalized.js";
 
 const nodes = reactive(createNodes());
 const state = reactive({
@@ -7256,7 +7256,7 @@ const rowClass = computed(() => ({
   </li>
 </template>
 `,
-          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat
+          "/src/utils/normalized.js": `// The tree is stored NORMALIZED: a flat
 // map of id -> node, where each node knows
 // its parentId and the ordered ids of its
 // children. Moving a subtree is then two
@@ -7610,9 +7610,9 @@ Identical to React and Vue: inside, before and after drops, a folder moving with
 **Conclusion:** Angular nested drag-and-drop is a normalized map in a signal, a parent-chain walk that forbids cycles, \`(dragover)\` that cancels only valid drops, and a service that owns drag state, keyboard moves and status. Copy only the nodes you touch so the signal changes, and keep the self-import for recursion.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
-import { DndTree } from "./dnd-tree";
-import { TreeRowComponent } from "./tree-row.component";
-import { ROOT } from "./normalized";
+import { DndTree } from "./services/dnd-tree";
+import { TreeRowComponent } from "./components/tree-row.component";
+import { ROOT } from "./utils/normalized";
 
 @Component({
   selector: "app-root",
@@ -7664,7 +7664,7 @@ export class AppComponent {
   root = ROOT;
 }
 `,
-          "/src/app/dnd-tree.ts": `import { ElementRef, Injectable, inject, signal } from "@angular/core";
+          "/src/app/services/dnd-tree.ts": `import { ElementRef, Injectable, inject, signal } from "@angular/core";
 import {
   NodeMap,
   Position,
@@ -7675,7 +7675,7 @@ import {
   moveNode,
   describeMove,
   visibleIds,
-} from "./normalized";
+} from "../utils/normalized";
 
 export interface DropTarget {
   id: string;
@@ -7800,7 +7800,7 @@ export class DndTree {
   }
 }
 `,
-          "/src/app/normalized.ts": `// The tree is stored NORMALIZED: a flat
+          "/src/app/utils/normalized.ts": `// The tree is stored NORMALIZED: a flat
 // map of id -> node, where each node knows
 // its parentId and the ordered ids of its
 // children. Moving a subtree is then two
@@ -7986,8 +7986,8 @@ export function visibleIds(
   return out;
 }
 `,
-          "/src/app/tree-row.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
-import { DndTree } from "./dnd-tree";
+          "/src/app/components/tree-row.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { DndTree } from "../services/dnd-tree";
 
 @Component({
   selector: "li[app-tree-row]",
@@ -8419,14 +8419,14 @@ What it shows: on load only Lemon is stored, yet Citrus, Fruit and All read \`in
 **Conclusion:** Store only the checked leaves, derive every parent in one post-order pass, write only leaves on toggle, and set the \`indeterminate\` property from a ref after each commit. That model makes "down" and "up" propagation the same code path as rendering, so the tree is always consistent. The same pattern underlies the nested comments counts in [Build a Nested Comments widget](/interview-question/build-a-nested-comments-widget).`,
         files: {
           "/App.js": `import { useMemo, useState } from "react";
-import CheckNode from "./src/CheckNode";
+import CheckNode from "./src/components/CheckNode";
 import {
   groceries,
   initialChecked,
   computeStates,
   toggle,
   selectedLabels,
-} from "./src/checkTree";
+} from "./src/utils/checkTree";
 
 export default function App() {
   // The single source of truth: a Set of checked LEAF ids.
@@ -8454,7 +8454,7 @@ export default function App() {
   );
 }
 `,
-          "/src/CheckNode.js": `import { useEffect, useRef } from "react";
+          "/src/components/CheckNode.js": `import { useEffect, useRef } from "react";
 
 export default function CheckNode({ node, states, onToggle }) {
   const state = states.get(node.id);
@@ -8493,7 +8493,7 @@ export default function CheckNode({ node, states, onToggle }) {
   );
 }
 `,
-          "/src/checkTree.js": `// Only LEAVES are stored as checked. Every parent state is derived from them,
+          "/src/utils/checkTree.js": `// Only LEAVES are stored as checked. Every parent state is derived from them,
 // so a parent can never disagree with its children.
 
 export const groceries = {
@@ -8858,7 +8858,7 @@ import {
   computeStates,
   toggle,
   selectedLabels,
-} from "./checkTree.js";
+} from "./utils/checkTree.js";
 
 // The single source of truth: a reactive Set of checked LEAF ids.
 const checked = reactive(new Set(initialChecked));
@@ -8938,7 +8938,7 @@ input[type="checkbox"] {
 }
 </style>
 `,
-          "/src/checkTree.js": `// Only LEAVES are stored as checked. Every parent state is derived from them,
+          "/src/utils/checkTree.js": `// Only LEAVES are stored as checked. Every parent state is derived from them,
 // so a parent can never disagree with its children.
 
 export const groceries = {
@@ -9284,7 +9284,7 @@ Angular writes a property only when the bound value changes, so the DOM keeps th
 **Conclusion:** Angular tri-state checkboxes are a signal holding a \`Set\` of leaf ids, a \`computed\` post-order derivation, a \`toggle\` that returns a new Set, and \`[indeterminate]\` as a property binding. Make every click change state, because Angular only writes bindings whose value changed.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, signal } from "@angular/core";
-import { CheckNodeComponent } from "./check-node.component";
+import { CheckNodeComponent } from "./components/check-node.component";
 import {
   CheckItem,
   groceries,
@@ -9292,7 +9292,7 @@ import {
   computeStates,
   toggle,
   selectedLabels,
-} from "./check-tree";
+} from "./utils/check-tree";
 
 @Component({
   selector: "app-root",
@@ -9386,14 +9386,14 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/check-node.component.ts": `import {
+          "/src/app/components/check-node.component.ts": `import {
   Component,
   EventEmitter,
   Input,
   Output,
   forwardRef,
 } from "@angular/core";
-import { CheckItem, StateMap } from "./check-tree";
+import { CheckItem, StateMap } from "../utils/check-tree";
 
 @Component({
   selector: "li[app-check-node]",
@@ -9433,7 +9433,7 @@ export class CheckNodeComponent {
   @Output() toggle = new EventEmitter<CheckItem>();
 }
 `,
-          "/src/app/check-tree.ts": `// Only LEAVES are stored as checked. Every parent state is derived from them,
+          "/src/app/utils/check-tree.ts": `// Only LEAVES are stored as checked. Every parent state is derived from them,
 // so a parent can never disagree with its children.
 
 export interface CheckItem {
@@ -9835,15 +9835,15 @@ It shows: the reply box opens focused with a label naming the parent and a disab
 **Conclusion:** Nested comments are one recursive component over a \`{ replies: [] }\` tree, immutable helpers by id for reply and delete, and per-comment UI state for collapse and reply. Use id keys, count subtrees for the totals, and keep the controls real buttons. Voting, sorting and depth limits build on exactly this structure.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Comment from "./src/Comment";
-import ReplyBox from "./src/ReplyBox";
+import Comment from "./src/components/Comment";
+import ReplyBox from "./src/components/ReplyBox";
 import {
   initialComments,
   makeId,
   addReply,
   removeComment,
   countAll,
-} from "./src/comments";
+} from "./src/utils/comments";
 
 export default function App() {
   const [comments, setComments] = useState(initialComments);
@@ -9896,9 +9896,9 @@ export default function App() {
   );
 }
 `,
-          "/src/Comment.js": `import { useState } from "react";
+          "/src/components/Comment.js": `import { useState } from "react";
 import ReplyBox from "./ReplyBox";
-import { countAll } from "./comments";
+import { countAll } from "../utils/comments";
 
 // Recursive: a comment renders its replies with this same component.
 // "collapsed" and "replying" are UI state, so they live here, not in the data.
@@ -9970,7 +9970,7 @@ export default function Comment({ comment, depth, onReply, onDelete }) {
   );
 }
 `,
-          "/src/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
+          "/src/utils/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
 // The helpers return new arrays and copy only
 // the comments on the path to the change.
 
@@ -10043,7 +10043,7 @@ export function removeComment(list, id) {
 export const countAll = (list) =>
   list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 `,
-          "/src/ReplyBox.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/ReplyBox.js": `import { useEffect, useRef, useState } from "react";
 
 // Controlled textarea. Ctrl+Enter (or Cmd+Enter) posts, Escape cancels.
 export default function ReplyBox({
@@ -10398,7 +10398,7 @@ Identical to React and Angular: focused, labelled reply box with Post disabled f
 import { computed, provide, reactive, ref } from "vue";
 import Comment from "./components/Comment.vue";
 import ReplyBox from "./components/ReplyBox.vue";
-import { createComments, makeId, findSiblings, countAll } from "./comments.js";
+import { createComments, makeId, findSiblings, countAll } from "./utils/comments.js";
 
 const comments = reactive(createComments());
 const status = ref("");
@@ -10544,7 +10544,7 @@ button:disabled {
 }
 </style>
 `,
-          "/src/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
+          "/src/utils/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
 // App.vue keeps it in reactive(), so replies are pushed and spliced in place.
 
 let nextId = 100;
@@ -10607,7 +10607,7 @@ export const countAll = (list) =>
           "/src/components/Comment.vue": `<script setup>
 import { computed, inject, ref } from "vue";
 import ReplyBox from "./ReplyBox.vue";
-import { countAll } from "../comments.js";
+import { countAll } from "../utils/comments.js";
 
 const props = defineProps({
   comment: { type: Object, required: true },
@@ -10927,9 +10927,9 @@ Identical to React and Vue: labelled, focused box with Post disabled for blank t
 **Conclusion:** In Angular, nested comments are a recursive \`li[app-comment]\` that imports itself, a component-scoped signal store with immutable helpers, local signals for collapse and reply, and a reply box with key event bindings. Name outputs so they never collide with DOM events.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
-import { CommentStore } from "./comment-store";
-import { CommentComponent } from "./comment.component";
-import { ReplyBoxComponent } from "./reply-box.component";
+import { CommentStore } from "./services/comment-store";
+import { CommentComponent } from "./components/comment.component";
+import { ReplyBoxComponent } from "./components/reply-box.component";
 
 @Component({
   selector: "app-root",
@@ -10980,7 +10980,7 @@ export class AppComponent {
   store = inject(CommentStore);
 }
 `,
-          "/src/app/comment-store.ts": `import { Injectable, computed, signal } from "@angular/core";
+          "/src/app/services/comment-store.ts": `import { Injectable, computed, signal } from "@angular/core";
 import {
   CommentNode,
   initialComments,
@@ -10988,7 +10988,7 @@ import {
   addReply,
   removeComment,
   countAll,
-} from "./comments";
+} from "../utils/comments";
 
 // Provided by AppComponent; every recursive
 // CommentComponent injects the same one.
@@ -11021,10 +11021,10 @@ export class CommentStore {
   }
 }
 `,
-          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject, signal } from "@angular/core";
-import { CommentStore } from "./comment-store";
+          "/src/app/components/comment.component.ts": `import { Component, Input, forwardRef, inject, signal } from "@angular/core";
+import { CommentStore } from "../services/comment-store";
 import { ReplyBoxComponent } from "./reply-box.component";
-import { CommentNode, countAll } from "./comments";
+import { CommentNode, countAll } from "../utils/comments";
 
 @Component({
   selector: "li[app-comment]",
@@ -11093,7 +11093,7 @@ export class CommentComponent {
   }
 }
 `,
-          "/src/app/comments.ts": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
+          "/src/app/utils/comments.ts": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
 // Signals compare by reference, so the helpers return new
 // arrays and copy only the comments on the path to the change.
 
@@ -11180,7 +11180,7 @@ export const countAll = (list: CommentNode[]): number =>
     0,
   );
 `,
-          "/src/app/reply-box.component.ts": `import {
+          "/src/app/components/reply-box.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -11594,13 +11594,13 @@ Read it as: Best ranks by score at every level, and New by time; \`c8\` is hidde
 **Conclusion:** The hard parts of a voting thread are not visual: keep server data and the user's vote apart, update optimistically, roll back to a confirmed value, and let only the newest request win. Rank on stable data, lift collapse into a \`Set\` of ids so it survives every view, cap the depth with a focus-managed "continue" view, and the widget behaves like the real thing. The single-button version of the voting idea is the [Like button](/interview-question/build-a-like-button).`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import Comment from "./src/Comment";
+import Comment from "./src/components/Comment";
 import {
   initialComments,
   sortLevel,
   findComment,
   sendVote,
-} from "./src/thread";
+} from "./src/utils/thread";
 
 export default function App() {
   const [comments] = useState(initialComments);
@@ -11717,7 +11717,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Comment.js": `import { MAX_DEPTH, countAll, sortLevel } from "./thread";
+          "/src/components/Comment.js": `import { MAX_DEPTH, countAll, sortLevel } from "../utils/thread";
 
 // Recursive comment. All state (votes, collapsed ids, sort) is owned by App and
 // passed down in \`ctx\`, so it survives
@@ -11812,7 +11812,7 @@ export default function Comment({ comment, depth, ctx }) {
   );
 }
 `,
-          "/src/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
+          "/src/utils/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
 // depth 0..3 render inline, deeper replies get "Continue this thread"
@@ -12284,7 +12284,7 @@ The behaviour lines match React and Angular exactly: instant votes with \`aria-p
           "/src/App.vue": `<script setup>
 import { computed, nextTick, provide, reactive, ref } from "vue";
 import Comment from "./components/Comment.vue";
-import { initialComments, sortLevel, findComment, sendVote } from "./thread.js";
+import { initialComments, sortLevel, findComment, sendVote } from "./utils/thread.js";
 
 const comments = initialComments; // read-only here: only votes change
 const sort = ref("best");
@@ -12507,7 +12507,7 @@ button {
 `,
           "/src/components/Comment.vue": `<script setup>
 import { computed, inject } from "vue";
-import { MAX_DEPTH, countAll, sortLevel } from "../thread.js";
+import { MAX_DEPTH, countAll, sortLevel } from "../utils/thread.js";
 
 const props = defineProps({
   comment: { type: Object, required: true },
@@ -12579,7 +12579,7 @@ const tooDeep = computed(
   </li>
 </template>
 `,
-          "/src/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
+          "/src/utils/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
 // depth 0..3 render inline, deeper replies get "Continue this thread"
@@ -12927,8 +12927,8 @@ Behaviour matches React and Vue line for line, including the \`c4\` race where t
 **Conclusion:** In Angular, a voting thread is a signal map of the user's votes beside read-only scores, an optimistic flow with a confirmed rollback target and a sequence guard, signals written from promise callbacks for zoneless rendering, stable per-level sorting, a lifted \`Set\` signal for collapse, and \`afterNextRender\` focus for the continue-thread view.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
-import { Discussion } from "./discussion";
-import { CommentComponent } from "./comment.component";
+import { Discussion } from "./services/discussion";
+import { CommentComponent } from "./components/comment.component";
 
 @Component({
   selector: "app-root",
@@ -13009,9 +13009,9 @@ export class AppComponent {
   d = inject(Discussion);
 }
 `,
-          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
-import { Discussion } from "./discussion";
-import { MAX_DEPTH, Post, countAll, sortLevel } from "./thread";
+          "/src/app/components/comment.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { Discussion } from "../services/discussion";
+import { MAX_DEPTH, Post, countAll, sortLevel } from "../utils/thread";
 
 @Component({
   selector: "li[app-comment]",
@@ -13095,7 +13095,7 @@ export class CommentComponent {
   }
 }
 `,
-          "/src/app/discussion.ts": `import {
+          "/src/app/services/discussion.ts": `import {
   ElementRef,
   Injectable,
   Injector,
@@ -13112,7 +13112,7 @@ import {
   sortLevel,
   findComment,
   sendVote,
-} from "./thread";
+} from "../utils/thread";
 
 @Injectable()
 export class Discussion {
@@ -13181,7 +13181,7 @@ export class Discussion {
   }
 }
 `,
-          "/src/app/thread.ts": `// Data, sorting and a SIMULATED vote API (no network in the playground).
+          "/src/app/utils/thread.ts": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
 export interface Post {

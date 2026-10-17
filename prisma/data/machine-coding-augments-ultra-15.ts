@@ -87,7 +87,7 @@ For this build we assume: two humans, a fixed 3 x 3 board, a highlighted winning
 
 **Requirements:** a 3 x 3 grid, X first then alternating, filled cells and finished games refuse moves, win and draw detection, the winning cells highlighted, a status line, and Restart.
 
-**Component tree:** <code>App</code> owns the state and the status line; <code>Board</code> draws nine buttons and reports clicks. The rules live in <code>src/game.js</code>, a file with no React in it at all.
+**Component tree:** <code>App</code> owns the state and the status line; <code>Board</code> draws nine buttons and reports clicks. The rules live in <code>src/utils/game.js</code>, a file with no React in it at all.
 
 📌 **Interview term: Derived state** — a value you can compute from other state, so you do not store it. Here the current player, the winner, the draw and "game over" are all derived from the board. Storing them separately invites bugs where they disagree.
 
@@ -405,8 +405,8 @@ One honest trade-off: disabling a cell after it is played removes it from the ta
 **Conclusion:** Tic-Tac-Toe is a state-modelling exercise wearing a game costume. Keep one array of nine cells as the single source of truth, derive the turn, the winner and the draw from it with small pure functions, update it immutably, and render real buttons with meaningful labels. Do that and the code stays short, the rules are testable without a browser, and every extension the interviewer asks for next (history, bigger boards, an AI) slots in without a rewrite.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Board from "./src/Board";
-import { emptyBoard, getWinner, getStatus, isDraw, playMove } from "./src/game";
+import Board from "./src/components/Board";
+import { emptyBoard, getWinner, getStatus, isDraw, playMove } from "./src/utils/game";
 
 export default function App() {
   // The only state: nine cells. Everything else is derived on each render.
@@ -440,7 +440,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Board.js": `export default function Board({ board, winLine, gameOver, onPlay }) {
+          "/src/components/Board.js": `export default function Board({ board, winLine, gameOver, onPlay }) {
   return (
     <div className="board" role="group" aria-label="Tic-tac-toe board">
       {board.map((value, i) => {
@@ -471,7 +471,7 @@ export default function App() {
   );
 }
 `,
-          "/src/game.js": `// Pure game logic: no React here, so it can be tested on its own.
+          "/src/utils/game.js": `// Pure game logic: no React here, so it can be tested on its own.
 export const LINES = [
   [0, 1, 2],
   [3, 4, 5],
@@ -603,7 +603,7 @@ Build the Vue version the same way. Keep one reactive array of nine cells, and l
 
 ## 2. The Plan: State, Computed, Components
 
-The rules live in <code>src/game.js</code>, a plain JavaScript module with no Vue in it: a table of the 8 winning <code>LINES</code>, <code>getWinner(board)</code> returning <code>{ player, line }</code>, <code>nextPlayer(board)</code> (X when an even number of cells is filled), <code>isDraw</code>, <code>getStatus</code>, and <code>playMove(board, i)</code>, which returns a new array or the same one for an illegal move.
+The rules live in <code>src/utils/game.js</code>, a plain JavaScript module with no Vue in it: a table of the 8 winning <code>LINES</code>, <code>getWinner(board)</code> returning <code>{ player, line }</code>, <code>nextPlayer(board)</code> (X when an even number of cells is filled), <code>isDraw</code>, <code>getStatus</code>, and <code>playMove(board, i)</code>, which returns a new array or the same one for an illegal move.
 
 | Value | Vue tool | Why |
 | :--- | :--- | :--- |
@@ -629,7 +629,7 @@ import {
   getStatus,
   isDraw,
   playMove,
-} from "./game.js";
+} from "./utils/game.js";
 
 // The only state: nine cells. Everything else is a computed.
 const board = ref(emptyBoard());
@@ -850,7 +850,7 @@ The output matches the React and Angular builds of this question line for line: 
           "/src/App.vue": `<script setup>
 import { ref, computed } from "vue";
 import GameBoard from "./components/GameBoard.vue";
-import { emptyBoard, getWinner, getStatus, isDraw, playMove } from "./game.js";
+import { emptyBoard, getWinner, getStatus, isDraw, playMove } from "./utils/game.js";
 
 // The only state: nine cells. Everything else is a computed.
 const board = ref(emptyBoard());
@@ -992,7 +992,7 @@ const label = (value, i) =>
 }
 </style>
 `,
-          "/src/game.js": `// Pure game logic: no React here, so it can be tested on its own.
+          "/src/utils/game.js": `// Pure game logic: no React here, so it can be tested on its own.
 export const LINES = [
   [0, 1, 2],
   [3, 4, 5],
@@ -1116,7 +1116,7 @@ The playground boots the app without Zone.js, so keep state in signals: a plain 
 
 \`\`\`ts
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Cell } from "./game";
+import { Cell } from "../utils/game";
 
 @Component({
   selector: "app-board",
@@ -1288,8 +1288,8 @@ The JIT run printed the same lines with the <code>[angular:playground]</code> pr
 **Conclusion:** The Angular Tic-Tac-Toe is one signal of nine cells, a handful of computed signals, a framework-free rule file and a child component wired with <code>@Input</code> and <code>@Output</code>. Replace the board instead of mutating it, derive everything else, and the game is correct in both AOT and runtime-compiled builds, easy to test and ready for the next feature.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { BoardComponent } from "./board.component";
-import { emptyBoard, getStatus, getWinner, isDraw, playMove } from "./game";
+import { BoardComponent } from "./components/board.component";
+import { emptyBoard, getStatus, getWinner, isDraw, playMove } from "./utils/game";
 
 @Component({
   selector: "app-root",
@@ -1343,8 +1343,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/board.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Cell } from "./game";
+          "/src/app/components/board.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Cell } from "../utils/game";
 
 @Component({
   selector: "app-board",
@@ -1398,7 +1398,7 @@ export class BoardComponent {
   }
 }
 `,
-          "/src/app/game.ts": `// Pure game logic: no Angular here, so it can be tested on its own.
+          "/src/app/utils/game.ts": `// Pure game logic: no Angular here, so it can be tested on its own.
 export type Player = "X" | "O";
 export type Cell = Player | null;
 export interface Win {
@@ -1513,7 +1513,7 @@ Assumptions here: freestyle (M or more wins), N from 3 to 8, any config change r
 
 ## 3. Requirements and the Plan
 
-**Component tree:** <code>App</code> owns the state and the size controls; <code>Board</code> renders the N x N buttons and owns only which cell holds keyboard focus; <code>History</code> renders the move list. All rules are in <code>src/game.js</code>, which has no React import.
+**Component tree:** <code>App</code> owns the state and the size controls; <code>Board</code> renders the N x N buttons and owns only which cell holds keyboard focus; <code>History</code> renders the move list. All rules are in <code>src/utils/game.js</code>, which has no React import.
 
 | Value | Kind | Where |
 | :--- | :--- | :--- |
@@ -1689,7 +1689,7 @@ Tabbing through 64 cells is miserable. The board uses a roving tabindex instead:
 
 \`\`\`jsx
 import { useState } from "react";
-import { coords, moveFocus } from "./game";
+import { coords, moveFocus } from "../utils/game";
 
 export default function Board({
   n,
@@ -1909,9 +1909,9 @@ Read it top to bottom: a 5 x 5 diagonal win on cells 0, 6, 12, 18; jumping to mo
 **Conclusion:** Tic-Tac-Toe II is about not doing work you do not need. A new win can only run through the last move, so a four-direction, two-sided walk capped at M cells replaces the line table and stays O(M) on any board. Store moves plus a step pointer, derive the board by replaying, truncate the future on a new move, and give the grid a roving tabindex so it is usable from the keyboard. Those three ideas, not the drawing of Xs and Os, are what the interviewer is grading.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Board from "./src/Board";
-import History from "./src/History";
-import { replay, statusText } from "./src/game";
+import Board from "./src/components/Board";
+import History from "./src/components/History";
+import { replay, statusText } from "./src/utils/game";
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
@@ -1996,8 +1996,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Board.js": `import { useState } from "react";
-import { coords, moveFocus } from "./game";
+          "/src/components/Board.js": `import { useState } from "react";
+import { coords, moveFocus } from "../utils/game";
 
 export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
   // Roving tabindex: one cell is in the tab order, arrows move it.
@@ -2047,7 +2047,7 @@ export default function Board({ n, m, board, winLine, gameOver, onPlay }) {
   );
 }
 `,
-          "/src/History.js": `import { coords, playerAt } from "./game";
+          "/src/components/History.js": `import { coords, playerAt } from "../utils/game";
 
 export default function History({ moves, step, n, onJump }) {
   return (
@@ -2078,7 +2078,7 @@ export default function History({ moves, step, n, onJump }) {
   );
 }
 `,
-          "/src/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
+          "/src/utils/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 
 // Right, down, down-right, down-left. Each
@@ -2266,7 +2266,7 @@ Those two habits are the whole design: a last-move win check, and history stored
 
 ## 2. The Plan
 
-The rules live in <code>src/game.js</code> (no Vue): <code>checkWinFrom(board, n, m, index)</code>, <code>replay(n, m, moves, step)</code>, <code>statusText</code>, <code>moveFocus</code> for arrow keys, and <code>coords</code> for labels.
+The rules live in <code>src/utils/game.js</code> (no Vue): <code>checkWinFrom(board, n, m, index)</code>, <code>replay(n, m, moves, step)</code>, <code>statusText</code>, <code>moveFocus</code> for arrow keys, and <code>coords</code> for labels.
 
 | Value | Vue tool |
 | :--- | :--- |
@@ -2339,7 +2339,7 @@ The board is a flat array where cell (row, col) is <code>row * n + col</code>. F
 import { ref, computed, watch } from "vue";
 import GameBoard from "./components/GameBoard.vue";
 import MoveHistory from "./components/MoveHistory.vue";
-import { replay, statusText } from "./game.js";
+import { replay, statusText } from "./utils/game.js";
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
@@ -2594,7 +2594,7 @@ These lines match the React and Angular builds exactly. jsdom does not implement
 import { ref, computed, watch } from "vue";
 import GameBoard from "./components/GameBoard.vue";
 import MoveHistory from "./components/MoveHistory.vue";
-import { replay, statusText } from "./game.js";
+import { replay, statusText } from "./utils/game.js";
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
@@ -2704,7 +2704,7 @@ body {
 `,
           "/src/components/GameBoard.vue": `<script setup>
 import { ref, computed } from "vue";
-import { coords, moveFocus } from "../game.js";
+import { coords, moveFocus } from "../utils/game.js";
 
 const props = defineProps({
   n: { type: Number, required: true },
@@ -2797,7 +2797,7 @@ function onClick(i) {
 </style>
 `,
           "/src/components/MoveHistory.vue": `<script setup>
-import { coords, playerAt } from "../game.js";
+import { coords, playerAt } from "../utils/game.js";
 
 defineProps({
   moves: { type: Array, required: true },
@@ -2851,7 +2851,7 @@ const emit = defineEmits(["jump"]);
 }
 </style>
 `,
-          "/src/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
+          "/src/utils/game.js": `// Pure game logic for an N x N board where M in a row wins. No framework code.
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 
 // Right, down, down-right, down-left. Each
@@ -3277,9 +3277,9 @@ The JIT run printed identical lines, and both match the React and Vue builds. Th
 **Conclusion:** Angular Tic-Tac-Toe II is four signals, one computed replay, a pure O(M) check from the last move, and a board component that manages its own roving tabindex and resets it in <code>ngOnChanges</code>. Replace arrays instead of mutating them, remember that <code>computed</code> only sees signals, and the game stays correct in both AOT and runtime builds.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { BoardComponent } from "./board.component";
-import { HistoryComponent } from "./history.component";
-import { replay, statusText } from "./game";
+import { BoardComponent } from "./components/board.component";
+import { HistoryComponent } from "./components/history.component";
+import { replay, statusText } from "./utils/game";
 
 const SIZES = [3, 4, 5, 6, 7, 8];
 
@@ -3389,7 +3389,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/board.component.ts": `import {
+          "/src/app/components/board.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -3398,7 +3398,7 @@ export class AppComponent {
   SimpleChanges,
   signal,
 } from "@angular/core";
-import { Cell, coords, moveFocus } from "./game";
+import { Cell, coords, moveFocus } from "../utils/game";
 
 @Component({
   selector: "app-board",
@@ -3479,7 +3479,7 @@ export class BoardComponent implements OnChanges {
   }
 }
 `,
-          "/src/app/game.ts": `// Pure game logic for an N x N board where M in a row wins. No framework code.
+          "/src/app/utils/game.ts": `// Pure game logic for an N x N board where M in a row wins. No framework code.
 // The board is a flat array: cell (row, col) lives at index row * n + col.
 export type Player = "X" | "O";
 export type Cell = Player | null;
@@ -3581,8 +3581,8 @@ export function moveFocus(index: number, key: string, n: number): number {
 export const coords = (index: number, n: number): string =>
   "row " + (Math.floor(index / n) + 1) + ", column " + ((index % n) + 1);
 `,
-          "/src/app/history.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { coords, playerAt } from "./game";
+          "/src/app/components/history.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { coords, playerAt } from "../utils/game";
 
 @Component({
   selector: "app-history",
@@ -3692,7 +3692,7 @@ Assumptions here: fixed 7 x 6, four to win, two humans, no animation, accessible
 
 ## 3. Requirements and the Plan
 
-**Component tree:** <code>App</code> owns one <code>game</code> object and renders seven <code>Column</code> components. Each <code>Column</code> is a single button containing six slot circles. The rules live in <code>src/connect4.js</code>, which has no React in it.
+**Component tree:** <code>App</code> owns one <code>game</code> object and renders seven <code>Column</code> components. Each <code>Column</code> is a single button containing six slot circles. The rules live in <code>src/utils/connect4.js</code>, which has no React in it.
 
 | Value | Kind | Where |
 | :--- | :--- | :--- |
@@ -3909,7 +3909,7 @@ export default function App() {
 \`\`\`
 
 \`\`\`jsx
-import { ROWS, COLS } from "./connect4";
+import { ROWS, COLS } from "../utils/connect4";
 
 export default function Column({
   col,
@@ -4097,7 +4097,7 @@ The first line shows a disc landing on the bottom row and the live-region text. 
 **Conclusion:** Connect Four rewards a clean separation between what the player chooses (a column) and what changes (one slot at the bottom of it). Put gravity, placement, the four-direction last-move win check and turn switching into one pure <code>drop</code> function that returns a new game object, and the React side shrinks to rendering seven labelled column buttons. That separation is what makes animation, AI, online play and undo straightforward follow-ups instead of rewrites.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Column from "./src/Column";
+import Column from "./src/components/Column";
 import {
   COLS,
   announce,
@@ -4107,7 +4107,7 @@ import {
   landingRow,
   newGame,
   statusText,
-} from "./src/connect4";
+} from "./src/utils/connect4";
 
 export default function App() {
   const [game, setGame] = useState(newGame);
@@ -4155,7 +4155,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Column.js": `import { ROWS, COLS } from "./connect4";
+          "/src/components/Column.js": `import { ROWS, COLS } from "../utils/connect4";
 
 export default function Column({
   col,
@@ -4197,7 +4197,7 @@ export default function Column({
   );
 }
 `,
-          "/src/connect4.js": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
+          "/src/utils/connect4.js": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
 // Flat board: cell (row, col) is at row * COLS + col, row 0 is the TOP row.
 export const ROWS = 6;
 export const COLS = 7;
@@ -4402,7 +4402,7 @@ Connect Four is Tic-Tac-Toe with gravity. Like pressing a button on a vending ma
 
 ## 2. The Plan
 
-All rules live in <code>src/connect4.js</code>, which has no Vue in it: <code>newGame()</code>, <code>landingRow(board, col)</code> (gravity), <code>winFrom(board, row, col)</code> (four directions from the new disc), <code>drop(game, col)</code> (the whole move), plus <code>isDraw</code>, <code>isOver</code>, <code>statusText</code>, <code>announce</code> and <code>columnLabel</code>.
+All rules live in <code>src/utils/connect4.js</code>, which has no Vue in it: <code>newGame()</code>, <code>landingRow(board, col)</code> (gravity), <code>winFrom(board, row, col)</code> (four directions from the new disc), <code>drop(game, col)</code> (the whole move), plus <code>isDraw</code>, <code>isOver</code>, <code>statusText</code>, <code>announce</code> and <code>columnLabel</code>.
 
 | Value | Vue tool |
 | :--- | :--- |
@@ -4475,7 +4475,7 @@ import {
   landingRow,
   newGame,
   statusText,
-} from "./connect4.js";
+} from "./utils/connect4.js";
 
 // One ref holds the whole game; drop() always returns a new object.
 const game = ref(newGame());
@@ -4538,7 +4538,7 @@ The turn only switches when the move did not win, and a draw is 42 moves with no
 
 \`\`\`vue
 <script setup>
-import { ROWS, COLS } from "../connect4.js";
+import { ROWS, COLS } from "../utils/connect4.js";
 
 const props = defineProps({
   col: { type: Number, required: true },
@@ -4710,7 +4710,7 @@ import {
   landingRow,
   newGame,
   statusText,
-} from "./connect4.js";
+} from "./utils/connect4.js";
 
 // One ref holds the whole game; drop() always returns a new object.
 const game = ref(newGame());
@@ -4818,7 +4818,7 @@ body {
 </style>
 `,
           "/src/components/BoardColumn.vue": `<script setup>
-import { ROWS, COLS } from "../connect4.js";
+import { ROWS, COLS } from "../utils/connect4.js";
 
 const props = defineProps({
   col: { type: Number, required: true },
@@ -4893,7 +4893,7 @@ function onClick() {
 }
 </style>
 `,
-          "/src/connect4.js": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
+          "/src/utils/connect4.js": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
 // Flat board: cell (row, col) is at row * COLS + col, row 0 is the TOP row.
 export const ROWS = 6;
 export const COLS = 7;
@@ -5160,7 +5160,7 @@ template: \`
 
 \`\`\`ts
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { COLS, Disc, ROWS } from "./connect4";
+import { COLS, Disc, ROWS } from "../utils/connect4";
 
 @Component({
   selector: "app-column",
@@ -5326,7 +5326,7 @@ The JIT run printed the same lines, and both match the React and Vue builds. Lay
 **Conclusion:** Angular Connect Four is one signal, a pure typed <code>drop</code> function and a column component wired with <code>@Input</code>/<code>@Output</code>. Return new objects, check only the lines through the new disc, keep full columns focusable with <code>aria-disabled</code>, and the game behaves identically in AOT and runtime-compiled builds.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { ColumnComponent } from "./column.component";
+import { ColumnComponent } from "./components/column.component";
 import {
   COLS,
   announce,
@@ -5336,7 +5336,7 @@ import {
   landingRow,
   newGame,
   statusText,
-} from "./connect4";
+} from "./utils/connect4";
 
 @Component({
   selector: "app-root",
@@ -5414,8 +5414,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/column.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { COLS, Disc, ROWS } from "./connect4";
+          "/src/app/components/column.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { COLS, Disc, ROWS } from "../utils/connect4";
 
 @Component({
   selector: "app-column",
@@ -5504,7 +5504,7 @@ export class ColumnComponent {
   }
 }
 `,
-          "/src/app/connect4.ts": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
+          "/src/app/utils/connect4.ts": `// Pure Connect Four logic. No framework code, so it can be tested on its own.
 // Flat board: cell (row, col) is at row * COLS + col, row 0 is the TOP row.
 export type Player = "Red" | "Yellow";
 export type Disc = Player | null;
@@ -5679,7 +5679,7 @@ The question looks easy because the rendering is trivial. What the interviewer i
 
 ## 3. Requirements and the Plan
 
-**Component tree:** <code>App</code> owns the state and the timer; <code>Light</code> renders one cell (a button, or an empty slot for 0 in the config). The rules are tiny pure functions in <code>src/lights.js</code>.
+**Component tree:** <code>App</code> owns the state and the timer; <code>Light</code> renders one cell (a button, or an empty slot for 0 in the config). The rules are tiny pure functions in <code>src/data/lights.js</code>.
 
 | Value | Kind | Notes |
 | :--- | :--- | :--- |
@@ -5969,7 +5969,7 @@ The off order is the exact reverse of the click order, and each light went off a
 **Conclusion:** Grid Lights is a stack and a metronome. Store the activation order, derive which lights are on, lock input during the reverse sequence, and drive that sequence with one timeout per step inside an effect that cleans up after itself. The result turns lights off in exactly the reverse order at a steady 300 ms, survives StrictMode and unmounts, and is easy to change when the interviewer asks for cancel-on-click or a speeding-up sequence.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import Light from "./src/Light";
+import Light from "./src/components/Light";
 import {
   CONFIG,
   OFF_DELAY_MS,
@@ -5977,7 +5977,7 @@ import {
   countLights,
   deactivateLast,
   slotsFrom,
-} from "./src/lights";
+} from "./src/data/lights";
 
 const SLOTS = slotsFrom(CONFIG);
 const TOTAL = countLights(CONFIG);
@@ -6034,7 +6034,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Light.js": `export default function Light({ slot, on, locked, onActivate }) {
+          "/src/components/Light.js": `export default function Light({ slot, on, locked, onActivate }) {
   if (!slot.isLight) return <span className="hole" aria-hidden="true" />;
   return (
     <button
@@ -6049,7 +6049,7 @@ export default function App() {
   );
 }
 `,
-          "/src/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
+          "/src/data/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
 // 1 = a light, 0 = an empty slot. The default
 // is a 3 x 3 ring with a hole in the middle.
 export const CONFIG = [
@@ -6144,7 +6144,7 @@ Grid Lights is a stack of plates with a metronome. Each click puts a plate (a li
 
 ## 2. The Plan
 
-<code>src/lights.js</code> holds the config (<code>1</code> = light, <code>0</code> = empty slot) and four tiny pure helpers: <code>slotsFrom</code>, <code>countLights</code>, <code>activate(order, i)</code> and <code>deactivateLast(order)</code>.
+<code>src/data/lights.js</code> holds the config (<code>1</code> = light, <code>0</code> = empty slot) and four tiny pure helpers: <code>slotsFrom</code>, <code>countLights</code>, <code>activate(order, i)</code> and <code>deactivateLast(order)</code>.
 
 | Value | Vue tool | Notes |
 | :--- | :--- | :--- |
@@ -6200,7 +6200,7 @@ import {
   countLights,
   deactivateLast,
   slotsFrom,
-} from "./lights.js";
+} from "./data/lights.js";
 
 const slots = slotsFrom(CONFIG);
 const total = countLights(CONFIG);
@@ -6420,7 +6420,7 @@ import {
   countLights,
   deactivateLast,
   slotsFrom,
-} from "./lights.js";
+} from "./data/lights.js";
 
 const slots = slotsFrom(CONFIG);
 const total = countLights(CONFIG);
@@ -6555,7 +6555,7 @@ const emit = defineEmits(["activate"]);
 }
 </style>
 `,
-          "/src/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
+          "/src/data/lights.js": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
 // 1 = a light, 0 = an empty slot. The default
 // is a 3 x 3 ring with a hole in the middle.
 export const CONFIG = [
@@ -6821,7 +6821,7 @@ The JIT run printed identical lines; both match the React and Vue builds. The fi
 **Conclusion:** Angular Grid Lights is two signals, a pure helper file, and a 300 ms interval that pops the last activated index until none remain, cleaned up through <code>DestroyRef</code>. Keep state in signals so the zoneless app re-renders on each tick, lock input during the sequence, and the lights go off in exact reverse order.`,
         files: {
           "/src/app/app.component.ts": `import { Component, DestroyRef, inject, signal } from "@angular/core";
-import { LightComponent } from "./light.component";
+import { LightComponent } from "./components/light.component";
 import {
   CONFIG,
   OFF_DELAY_MS,
@@ -6829,7 +6829,7 @@ import {
   countLights,
   deactivateLast,
   slotsFrom,
-} from "./lights";
+} from "./data/lights";
 
 @Component({
   selector: "app-root",
@@ -6923,8 +6923,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/light.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Slot } from "./lights";
+          "/src/app/components/light.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Slot } from "../data/lights";
 
 @Component({
   selector: "app-light",
@@ -6987,7 +6987,7 @@ export class LightComponent {
   @Output() activate = new EventEmitter<number>();
 }
 `,
-          "/src/app/lights.ts": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
+          "/src/app/data/lights.ts": `// Pure Grid Lights logic. No framework code, so it can be tested on its own.
 // 1 = a light, 0 = an empty slot. The default
 // is a 3 x 3 ring with a hole in the middle.
 export const CONFIG: number[][] = [
@@ -7086,7 +7086,7 @@ Why do interviewers rate this "hard"? Because the naive version (a <code>setTime
 
 ## 3. Requirements and the Plan
 
-**Component tree:** <code>App</code> owns the game state and the clock; <code>Hole</code> renders one hole as a button. All rules are in <code>src/mole.js</code>, which contains no timers and never calls <code>Math.random</code>.
+**Component tree:** <code>App</code> owns the game state and the clock; <code>Hole</code> renders one hole as a button. All rules are in <code>src/utils/mole.js</code>, which contains no timers and never calls <code>Math.random</code>.
 
 📌 **Interview term: Finite state machine** — a model where the system is always in exactly one named state and only specific events move it to another. Here: <code>idle</code>, <code>playing</code>, <code>over</code>. Inside <code>playing</code> there are two sub-states, waiting in the gap between moles and a mole being up.
 
@@ -7485,7 +7485,7 @@ The holes 5, 3, 7, 5, 1, 5, 2, 5 match the node run exactly, which is the point 
 **Conclusion:** Whack-a-Mole is a lesson in owning time. Model the game as a small state machine, write <code>tick</code> and <code>whack</code> as functions of state, elapsed time and an injected random source, and drive them from one interval that exists only while the game is playing. In React, read the latest state from a ref and keep random draws out of updaters. The payoff is a game with no leaked timers, no double scores, and a test that replays the exact same moles every time.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import Hole from "./src/Hole";
+import Hole from "./src/components/Hole";
 import {
   HOLES,
   TICK_MS,
@@ -7494,7 +7494,7 @@ import {
   statusText,
   tick,
   whack,
-} from "./src/mole";
+} from "./src/utils/mole";
 
 // The random source the game uses. Read at call
 // time, so a test can replace Math.random.
@@ -7565,7 +7565,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Hole.js": `export default function Hole({ index, up, disabled, onWhack }) {
+          "/src/components/Hole.js": `export default function Hole({ index, up, disabled, onWhack }) {
   return (
     <button
       type="button"
@@ -7580,7 +7580,7 @@ export default function App() {
   );
 }
 `,
-          "/src/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
+          "/src/utils/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
 // No timers and no Math.random in here: the caller
 // passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
@@ -7759,7 +7759,7 @@ A fairground Whack-a-Mole machine is a clock plus a rulebook: every so often pop
 
 ## 2. The Plan
 
-<code>src/mole.js</code> is the rulebook, with no timers and no <code>Math.random</code>: <code>initialState</code>, <code>start</code>, <code>tick(state, dt, random)</code>, <code>whack(state, hole)</code>, <code>pickHole</code>, <code>upTime</code> and <code>statusText</code>.
+<code>src/utils/mole.js</code> is the rulebook, with no timers and no <code>Math.random</code>: <code>initialState</code>, <code>start</code>, <code>tick(state, dt, random)</code>, <code>whack(state, hole)</code>, <code>pickHole</code>, <code>upTime</code> and <code>statusText</code>.
 
 📌 **Interview term: Finite state machine** — the game is always <code>idle</code>, <code>playing</code> or <code>over</code>; inside <code>playing</code>, either waiting out a 400 ms gap or showing one mole. <code>tick</code> and <code>whack</code> are the only ways to move between states.
 
@@ -7843,7 +7843,7 @@ import {
   statusText,
   tick,
   whack,
-} from "./mole.js";
+} from "./utils/mole.js";
 
 // The random source the game uses. Read at call
 // time, so a test can replace Math.random.
@@ -8057,7 +8057,7 @@ import {
   statusText,
   tick,
   whack,
-} from "./mole.js";
+} from "./utils/mole.js";
 
 // The random source the game uses. Read at call
 // time, so a test can replace Math.random.
@@ -8234,7 +8234,7 @@ const emit = defineEmits(["whack"]);
 }
 </style>
 `,
-          "/src/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
+          "/src/utils/mole.js": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
 // No timers and no Math.random in here: the caller
 // passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
@@ -8588,7 +8588,7 @@ The JIT run printed identical lines; the holes match the node run and the React 
 **Conclusion:** Angular Whack-a-Mole is a typed, pure, tick-driven state machine, one signal holding the game, and an effect that owns the only interval and cleans it up. Inject the randomness and the game becomes replayable and testable, with no leaked timers in either the AOT or the runtime-compiled build.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { HoleComponent } from "./hole.component";
+import { HoleComponent } from "./components/hole.component";
 import {
   GameState,
   HOLES,
@@ -8598,7 +8598,7 @@ import {
   statusText,
   tick,
   whack,
-} from "./mole";
+} from "./utils/mole";
 
 // The random source the game uses. Read at call
 // time, so a test can replace Math.random.
@@ -8684,7 +8684,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/hole.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+          "/src/app/components/hole.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 @Component({
   selector: "app-hole",
@@ -8753,7 +8753,7 @@ export class HoleComponent {
   @Output() whack = new EventEmitter<number>();
 }
 `,
-          "/src/app/mole.ts": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
+          "/src/app/utils/mole.ts": `// Pure Whack-a-Mole logic: a state machine advanced by fixed ticks.
 // No timers and no Math.random in here: the caller
 // passes the elapsed time and a random source,
 // so a test can replay a whole game deterministically.
@@ -8916,7 +8916,7 @@ Every text editor, drawing app and form builder has this feature, and interviewe
 
 ## 3. Requirements and the Plan
 
-**Component tree:** <code>App</code> owns one <code>history</code> state object and the shortcut listener; <code>HistoryTable</code> renders the past. The logic lives in <code>src/history.js</code>, which has no React import.
+**Component tree:** <code>App</code> owns one <code>history</code> state object and the shortcut listener; <code>HistoryTable</code> renders the past. The logic lives in <code>src/utils/history.js</code>, which has no React import.
 
 | Value | Kind | Notes |
 | :--- | :--- | :--- |
@@ -9264,7 +9264,7 @@ Read the "-1 (new)" line: after undo, undo, redo the future held the <code>x2</c
 **Conclusion:** An undoable counter is the past / present / future pattern in its smallest form. Keep all three in one state object, write <code>perform</code>, <code>undo</code> and <code>redo</code> as pure functions that store old and new values and clear the future on every new action, and the component becomes a thin layer of buttons, a table and a keyboard listener that cleans up after itself. The same three functions scale to any editor once the "value" becomes a document.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import HistoryTable from "./src/HistoryTable";
+import HistoryTable from "./src/components/HistoryTable";
 import {
   OPERATIONS,
   canRedo,
@@ -9274,7 +9274,7 @@ import {
   redo,
   shortcutFor,
   undo,
-} from "./src/history";
+} from "./src/utils/history";
 
 export default function App() {
   // One state object holds all three stacks, so they can never get out of step.
@@ -9342,7 +9342,7 @@ export default function App() {
   );
 }
 `,
-          "/src/HistoryTable.js": `export default function HistoryTable({ past }) {
+          "/src/components/HistoryTable.js": `export default function HistoryTable({ past }) {
   if (past.length === 0)
     return (
       <p className="empty" data-testid="history-empty">
@@ -9373,7 +9373,7 @@ export default function App() {
   );
 }
 `,
-          "/src/history.js": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
+          "/src/utils/history.js": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
 // past    = entries already applied, oldest first
 // present = the current value
 // future  = entries that were undone, next-to-redo first
@@ -9505,7 +9505,7 @@ Imagine a hallway of rooms. Behind you are the rooms you have walked through (th
 
 ## 2. The Plan
 
-<code>src/history.js</code> holds the whole model with no Vue in it: <code>OPERATIONS</code>, <code>initialHistory()</code>, <code>perform(h, op)</code>, <code>undo(h)</code>, <code>redo(h)</code>, <code>canUndo</code>, <code>canRedo</code>, <code>shortcutFor(e)</code> and a <code>HISTORY_LIMIT</code> of 50.
+<code>src/utils/history.js</code> holds the whole model with no Vue in it: <code>OPERATIONS</code>, <code>initialHistory()</code>, <code>perform(h, op)</code>, <code>undo(h)</code>, <code>redo(h)</code>, <code>canUndo</code>, <code>canRedo</code>, <code>shortcutFor(e)</code> and a <code>HISTORY_LIMIT</code> of 50.
 
 | Value | Vue tool |
 | :--- | :--- |
@@ -9597,7 +9597,7 @@ import {
   redo,
   shortcutFor,
   undo,
-} from "./history.js";
+} from "./utils/history.js";
 
 // One object holds all three stacks. Every
 // change replaces it, so shallowRef is enough.
@@ -9795,7 +9795,7 @@ import {
   redo,
   shortcutFor,
   undo,
-} from "./history.js";
+} from "./utils/history.js";
 
 // One object holds all three stacks. Every
 // change replaces it, so shallowRef is enough.
@@ -9957,7 +9957,7 @@ const rows = computed(() =>
 }
 </style>
 `,
-          "/src/history.js": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
+          "/src/utils/history.js": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
 // past    = entries already applied, oldest first
 // present = the current value
 // future  = entries that were undone, next-to-redo first
@@ -10262,7 +10262,7 @@ The JIT run printed identical lines, matching the React and Vue builds. After un
 **Conclusion:** The Angular undoable counter is one signal holding past, present and future, pure typed transitions that store old values and clear the future on every new action, computed flags for the buttons and a <code>@HostListener</code> for shortcuts. The design is identical in AOT and runtime builds and scales from a counter to any editor state.`,
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, computed, signal } from "@angular/core";
-import { HistoryTableComponent } from "./history-table.component";
+import { HistoryTableComponent } from "./components/history-table.component";
 import {
   History,
   OPERATIONS,
@@ -10274,7 +10274,7 @@ import {
   redo,
   shortcutFor,
   undo,
-} from "./history";
+} from "./utils/history";
 
 @Component({
   selector: "app-root",
@@ -10363,8 +10363,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/history-table.component.ts": `import { Component, Input } from "@angular/core";
-import { Entry } from "./history";
+          "/src/app/components/history-table.component.ts": `import { Component, Input } from "@angular/core";
+import { Entry } from "../utils/history";
 
 @Component({
   selector: "app-history-table",
@@ -10426,7 +10426,7 @@ export class HistoryTableComponent {
   }
 }
 `,
-          "/src/app/history.ts": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
+          "/src/app/utils/history.ts": `// Pure undo/redo logic. No framework code, so it can be tested on its own.
 // past    = entries already applied, oldest first
 // present = the current value
 // future  = entries that were undone, next-to-redo first

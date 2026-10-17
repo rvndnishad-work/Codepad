@@ -488,7 +488,7 @@ Two driver details are honest limits of jsdom: jsdom does not focus a button whe
 **Conclusion:** A date picker is three small systems wired together: calendar math that ignores time zones (ISO strings and \`Date.UTC\`), a 42-cell grid whose visible month is derived from the focused day, and a focus contract (roving tabindex, an after-commit effect, a dialog trap and focus return). The verified run shows the payoff: the same grid in New York, Auckland and UTC, focus that follows every key, and clamping that keeps the user inside the allowed range. Say those three systems out loud in the interview and build them in that order.`,
         files: {
           "/App.js": `import { useState } from "react";
-import DatePicker from "./src/DatePicker";
+import DatePicker from "./src/components/DatePicker";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -534,7 +534,7 @@ export default function App() {
   );
 }
 `,
-          "/src/DatePicker.js": `import { useEffect, useId, useRef, useState } from "react";
+          "/src/components/DatePicker.js": `import { useEffect, useId, useRef, useState } from "react";
 import {
   MONTHS,
   WEEKDAYS,
@@ -547,7 +547,7 @@ import {
   toISO,
   todayISO,
   weekday,
-} from "./dates";
+} from "../utils/dates";
 
 const WEEK_START = 0; // 0 = Sunday first, 1 = Monday first
 
@@ -765,7 +765,7 @@ export default function DatePicker({
   );
 }
 `,
-          "/src/dates.js": `// Calendar-date helpers. A date is an ISO
+          "/src/utils/dates.js": `// Calendar-date helpers. A date is an ISO
 // string "YYYY-MM-DD" (no time, no zone).
 // All arithmetic goes through Date.UTC, which has no daylight-saving jumps,
 // so the grid is the same in every time zone.
@@ -1263,7 +1263,7 @@ import {
   toISO,
   todayISO,
   weekday,
-} from "../dates.js";
+} from "../utils/dates.js";
 
 const WEEK_START = 0; // 0 = Sunday first, 1 = Monday first
 const props = defineProps({
@@ -1472,7 +1472,7 @@ const cellClass = (iso) => ({
   </div>
 </template>
 `,
-          "/src/dates.js": `// Calendar-date helpers. A date is an ISO
+          "/src/utils/dates.js": `// Calendar-date helpers. A date is an ISO
 // string "YYYY-MM-DD" (no time, no zone).
 // All arithmetic goes through Date.UTC, which has no daylight-saving jumps,
 // so the grid is the same in every time zone.
@@ -1802,7 +1802,7 @@ mousedown outside -> closed
 **Conclusion:** The Angular picker keeps state in signals, derives the grid with \`computed\`, renders it with \`@for\` tracked by position, and uses \`afterNextRender\` for the one imperative step: moving focus after the DOM changes. The verified run shows both compilation modes behaving identically, the same grid in several time zones, and a parent signal updated through \`[(value)]\`.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { DatePickerComponent } from "./date-picker.component";
+import { DatePickerComponent } from "./components/date-picker.component";
 
 @Component({
   selector: "app-root",
@@ -1944,7 +1944,7 @@ export class AppComponent {
   date = signal<string | null>("2024-02-10");
 }
 `,
-          "/src/app/date-picker.component.ts": `import {
+          "/src/app/components/date-picker.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -1970,7 +1970,7 @@ import {
   toISO,
   todayISO,
   weekday,
-} from "./dates";
+} from "../utils/dates";
 
 const WEEK_START = 0; // 0 = Sunday first, 1 = Monday first
 let nextId = 0;
@@ -2171,7 +2171,7 @@ export class DatePickerComponent {
   }
 }
 `,
-          "/src/app/dates.ts": `// Calendar-date helpers. A date is an ISO
+          "/src/app/utils/dates.ts": `// Calendar-date helpers. A date is an ISO
 // string "YYYY-MM-DD" (no time, no zone).
 // All arithmetic goes through Date.UTC, which has no daylight-saving jumps,
 // so the grid is the same in every time zone.
@@ -2633,7 +2633,7 @@ Highlights: the hover preview stopped at 11 March (the cap), "click Mar 3" resta
 **Conclusion:** A range picker adds a state machine and a preview to the single-date picker. Keep the selection as \`{ start, end }\`, push every rule into a pure \`pick\`, derive each cell's look from state, cap the preview at the next booked night, and count nights in UTC. The verified run shows the cap, the restart, a cross-month stay, and six correct nights across the US daylight saving weekend.`,
         files: {
           "/App.js": `import { useState } from "react";
-import RangePicker from "./src/RangePicker";
+import RangePicker from "./src/components/RangePicker";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -2682,7 +2682,7 @@ export default function App() {
   );
 }
 `,
-          "/src/dates.js": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
+          "/src/utils/dates.js": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
 // work as keys, and carry no time zone. Arithmetic goes through Date.UTC,
 // which has no daylight-saving gaps.
 export const MONTHS = [
@@ -2762,7 +2762,7 @@ export function pick({ start, end }, iso, ctx) {
   return { start, end: iso };
 }
 `,
-          "/src/RangePicker.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/RangePicker.js": `import { useEffect, useRef, useState } from "react";
 import {
   DAYS,
   MONTHS,
@@ -2776,7 +2776,7 @@ import {
   shortLabel,
   toISO,
   weekday,
-} from "./dates";
+} from "../utils/dates";
 
 export default function RangePicker({
   min,
@@ -3421,7 +3421,7 @@ import {
   shortLabel,
   toISO,
   weekday,
-} from "../dates.js";
+} from "../utils/dates.js";
 
 const props = defineProps({
   min: String,
@@ -3618,7 +3618,7 @@ const canNext = computed(
   </div>
 </template>
 `,
-          "/src/dates.js": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
+          "/src/utils/dates.js": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
 // work as keys, and carry no time zone. Arithmetic goes through Date.UTC,
 // which has no daylight-saving gaps.
 export const MONTHS = [
@@ -3947,7 +3947,7 @@ The \`onChange:\` text is rendered by \`AppComponent\` from its \`stay\` signal,
 **Conclusion:** The Angular range picker is a typed state machine (\`pick\`), a handful of \`computed\` signals for the cap, preview and grids, and carefully placed listeners: keydown on the host, mouse events where they actually fire. Strict compilation caught a possibly-undefined comparison, the playground run caught a non-bubbling \`mouseleave\`, and the verified output shows the cap, a cross-month stay and six correct nights across the DST weekend in both compilation modes.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { RangePickerComponent } from "./range-picker.component";
+import { RangePickerComponent } from "./components/range-picker.component";
 
 @Component({
   selector: "app-root",
@@ -4001,7 +4001,7 @@ export class AppComponent {
   stay = signal<[string, string] | null>(null);
 }
 `,
-          "/src/app/dates.ts": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
+          "/src/app/utils/dates.ts": `// Calendar dates are ISO strings "YYYY-MM-DD": they compare with < and >,
 // work as keys, and carry no time zone. Arithmetic goes through Date.UTC,
 // which has no daylight-saving gaps.
 export const MONTHS = [
@@ -4096,7 +4096,7 @@ export function pick(
   return { start, end: iso };
 }
 `,
-          "/src/app/range-picker.component.ts": `import {
+          "/src/app/components/range-picker.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -4124,7 +4124,7 @@ import {
   shortLabel,
   toISO,
   weekday,
-} from "./dates";
+} from "../utils/dates";
 
 @Component({
   selector: "app-range-picker",
@@ -4744,7 +4744,7 @@ details -> Select an event to see details.
 ---
 **Conclusion:** A day view is a layout algorithm with a thin UI on top. Sort, sweep into clusters by the running maximum end, assign the first free column, share the cluster's column count, and expand into free columns; render the result as percentages. The verified run proves it on a day built to break naive layouts: zero collisions for the packed layout versus three for the naive one, a two-column expansion, and a layout that stays correct as events are added and deleted.`,
         files: {
-          "/App.js": `import DayView from "./src/DayView";
+          "/App.js": `import DayView from "./src/components/DayView";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -4781,7 +4781,7 @@ export default function App() {
   );
 }
 `,
-          "/src/DayView.js": `import { useMemo, useRef, useState } from "react";
+          "/src/components/DayView.js": `import { useMemo, useRef, useState } from "react";
 import {
   DAY_END,
   DAY_START,
@@ -4790,7 +4790,7 @@ import {
   layoutDay,
   pct,
   toMin,
-} from "./layout";
+} from "../utils/layout";
 
 const PX_PER_MIN = 1; // 60px per hour
 const HOURS = Array.from(
@@ -4942,7 +4942,7 @@ export default function DayView() {
   );
 }
 `,
-          "/src/layout.js": `// Column packing for one day of events. Times are minutes since midnight.
+          "/src/utils/layout.js": `// Column packing for one day of events. Times are minutes since midnight.
 // 1. Sort by start (longer first on ties).
 // 2. Sweep: a cluster is a run of events connected by overlaps. When the next
 //    event starts at or after the cluster's latest end, the cluster is closed.
@@ -5425,7 +5425,7 @@ import {
   layoutDay,
   pct,
   toMin,
-} from "../layout.js";
+} from "../utils/layout.js";
 
 const PX_PER_MIN = 1; // 60px per hour
 const HOURS = Array.from(
@@ -5527,7 +5527,7 @@ function remove(id) {
   </div>
 </template>
 `,
-          "/src/layout.js": `// Column packing for one day of events. Times are minutes since midnight.
+          "/src/utils/layout.js": `// Column packing for one day of events. Times are minutes since midnight.
 // 1. Sort by start (longer first on ties).
 // 2. Sweep: a cluster is a run of events connected by overlaps. When the next
 //    event starts at or after the cluster's latest end, the cluster is closed.
@@ -5866,7 +5866,7 @@ Zero collisions in every state, against three for the naive layout. Visual styli
 **Conclusion:** The Angular day view is a signal of events, a \`computed\` layout from a pure function, and style bindings that turn columns into percentages. The algorithm handled chains, touching events, equal starts and a two-column expansion with zero collisions in both compilation modes, as the verified run shows.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { DayViewComponent } from "./day-view.component";
+import { DayViewComponent } from "./components/day-view.component";
 
 @Component({
   selector: "app-root",
@@ -6021,7 +6021,7 @@ import { DayViewComponent } from "./day-view.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/day-view.component.ts": `import { Component, computed, signal } from "@angular/core";
+          "/src/app/components/day-view.component.ts": `import { Component, computed, signal } from "@angular/core";
 import {
   CalEvent,
   DAY_END,
@@ -6032,7 +6032,7 @@ import {
   layoutDay,
   pct,
   toMin,
-} from "./layout";
+} from "../utils/layout";
 
 const PX_PER_MIN = 1; // 60px per hour
 
@@ -6176,7 +6176,7 @@ export class DayViewComponent {
   }
 }
 `,
-          "/src/app/layout.ts": `// Column packing for one day of events. Times are minutes since midnight.
+          "/src/app/utils/layout.ts": `// Column packing for one day of events. Times are minutes since midnight.
 // 1. Sort by start (longer first on ties).
 // 2. Sweep: a cluster is a run of events connected by overlaps. When the next
 //    event starts at or after the cluster's latest end, the cluster is closed.
@@ -6670,7 +6670,7 @@ Breaking the cycle (\`C7 =5\`) recalculated \`C7 → C6\` because C6 is a depend
 ---
 **Conclusion:** A mini spreadsheet is a parser, a graph and a sort with a grid on top. Parse each formula once into an AST, record what it reads, and on every edit recalculate only the dirty set in topological order; whatever the sort cannot reach is a cycle. Keep that engine outside React and bump a version to re-render. The verified run shows correct precedence and errors, a five-cell recalculation when one input changes, and a circular reference caught and healed without a stack overflow.`,
         files: {
-          "/App.js": `import Spreadsheet from "./src/Spreadsheet";
+          "/App.js": `import Spreadsheet from "./src/components/Spreadsheet";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -6699,7 +6699,7 @@ export default function App() {
   );
 }
 `,
-          "/src/engine.js": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
+          "/src/utils/engine.js": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
 // a dependency graph, and recalculation in topological order. No eval().
 export const COLS = ["A", "B", "C", "D", "E"];
 export const ROWS = 8;
@@ -7035,7 +7035,7 @@ export const SAMPLE = {
   C4: "=MAX(B1:B3)-MIN(B1:B3)",
 };
 `,
-          "/src/Spreadsheet.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/Spreadsheet.js": `import { useEffect, useRef, useState } from "react";
 import {
   COLS,
   ROWS,
@@ -7044,7 +7044,7 @@ import {
   display,
   isErr,
   splitRef,
-} from "./engine";
+} from "../utils/engine";
 
 const ROW_IDS = Array.from({ length: ROWS }, (_, i) => i + 1);
 
@@ -7606,7 +7606,7 @@ import {
   display,
   isErr,
   splitRef,
-} from "../engine.js";
+} from "../utils/engine.js";
 
 const ROW_IDS = Array.from({ length: ROWS }, (_, i) => i + 1);
 
@@ -7786,7 +7786,7 @@ const editingHere = (id) =>
   </div>
 </template>
 `,
-          "/src/engine.js": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
+          "/src/utils/engine.js": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
 // a dependency graph, and recalculation in topological order. No eval().
 export const COLS = ["A", "B", "C", "D", "E"];
 export const ROWS = 8;
@@ -8400,7 +8400,7 @@ Editing B2 recalculated exactly five cells in dependency order, the C6/C7 cycle 
 **Conclusion:** The Angular spreadsheet is a strictly typed, framework-free engine (safe parser, dependency maps, Kahn recalculation with built-in cycle detection) behind a \`version\` signal and a few \`computed\` views, with signals for the editing state and \`afterNextRender\` for focus. Both compilation modes produced the same verified output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { SpreadsheetComponent } from "./spreadsheet.component";
+import { SpreadsheetComponent } from "./components/spreadsheet.component";
 
 @Component({
   selector: "app-root",
@@ -8517,7 +8517,7 @@ import { SpreadsheetComponent } from "./spreadsheet.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/engine.ts": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
+          "/src/app/utils/engine.ts": `// A tiny spreadsheet engine: tokenizer -> recursive-descent parser -> AST,
 // a dependency graph, and recalculation in topological order. No eval().
 export type CellError = { error: string };
 export type Value = number | string | CellError;
@@ -8867,7 +8867,7 @@ export const SAMPLE: Record<string, string> = {
   C4: "=MAX(B1:B3)-MIN(B1:B3)",
 };
 `,
-          "/src/app/spreadsheet.component.ts": `import {
+          "/src/app/components/spreadsheet.component.ts": `import {
   Component,
   ElementRef,
   Injector,
@@ -8886,7 +8886,7 @@ import {
   display,
   isErr,
   splitRef,
-} from "./engine";
+} from "../utils/engine";
 
 @Component({
   selector: "app-spreadsheet",
@@ -9580,7 +9580,7 @@ For a read-only formatting pipeline, compare [Build a Markdown Previewer](/inter
 **Conclusion:** A basic rich text editor without \`execCommand\` is a loop: parse the DOM into a small model, convert the selection to model positions, apply a pure command, render canonical HTML, and restore the selection. React's job is small and mostly restraint: leave the editable element uncontrolled, keep toolbar clicks from stealing the selection, and track \`selectionchange\` for the pressed states. The verified runs show the same output in jsdom and in real Chromium typing, and a hostile insert sanitised down to \`<p>Hi <strong>there</strong></p>\`.`,
         files: {
           "/App.js": `import { useState } from "react";
-import RichTextEditor from "./src/RichTextEditor";
+import RichTextEditor from "./src/components/RichTextEditor";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -9610,7 +9610,7 @@ export default function App() {
   );
 }
 `,
-          "/src/editor.js": `// A tiny document model for a contenteditable editor, used instead of the
+          "/src/utils/editor.js": `// A tiny document model for a contenteditable editor, used instead of the
 // deprecated document.execCommand. The DOM owns typing; formatting commands
 // read the DOM into a model, change the model, and write normalised HTML back.
 //   block = { type: "p" | "ul" | "ol", runs: [{ text, b, i, u }] }
@@ -9917,7 +9917,7 @@ export const INITIAL = [
   { type: "p", runs: [{ text: "Faster spreadsheet recalculation" }] },
 ];
 `,
-          "/src/RichTextEditor.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/RichTextEditor.js": `import { useEffect, useRef, useState } from "react";
 import {
   INITIAL,
   activeState,
@@ -9926,7 +9926,7 @@ import {
   readSelection,
   render,
   runCommand,
-} from "./editor";
+} from "../utils/editor";
 
 const TOOLS = [
   { cmd: "b", label: "Bold", text: "B", key: "b" },
@@ -10390,7 +10390,7 @@ import {
   readSelection,
   render,
   runCommand,
-} from "../editor.js";
+} from "../utils/editor.js";
 
 const emit = defineEmits(["change"]); // sanitised HTML after every edit
 const TOOLS = [
@@ -10481,7 +10481,7 @@ const pressed = (cmd) =>
   </div>
 </template>
 `,
-          "/src/editor.js": `// A tiny document model for a contenteditable editor, used instead of the
+          "/src/utils/editor.js": `// A tiny document model for a contenteditable editor, used instead of the
 // deprecated document.execCommand. The DOM owns typing; formatting commands
 // read the DOM into a model, change the model, and write normalised HTML back.
 //   block = { type: "p" | "ul" | "ol", runs: [{ text, b, i, u }] }
@@ -11044,7 +11044,7 @@ The script waited 50 ms before reading the output paragraph: zoneless Angular re
 **Conclusion:** The Angular editor keeps the browser in charge of typing and handles formatting itself. It parses the DOM into a typed model, saves the selection as model positions, runs a pure command, renders canonical HTML, and restores the selection. The component adds \`@ViewChild\` timing, \`preventDefault\` on toolbar \`mousedown\` and on paste, and a signal for pressed states. Both compilation modes and real Chromium produced the same results.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { RichTextEditorComponent } from "./rich-text-editor.component";
+import { RichTextEditorComponent } from "./components/rich-text-editor.component";
 
 @Component({
   selector: "app-root",
@@ -11139,7 +11139,7 @@ export class AppComponent {
   html = signal("");
 }
 `,
-          "/src/app/editor.ts": `// A tiny document model for a contenteditable editor, used instead of the
+          "/src/app/utils/editor.ts": `// A tiny document model for a contenteditable editor, used instead of the
 // deprecated document.execCommand. The DOM owns typing; formatting commands
 // read the DOM into a model, change the model, and write normalised HTML back.
 //   block = { type: "p" | "ul" | "ol", runs: [{ text, b, i, u }] }
@@ -11474,7 +11474,7 @@ export const INITIAL: Block[] = [
   { type: "p", runs: [{ text: "Faster spreadsheet recalculation" }] },
 ];
 `,
-          "/src/app/rich-text-editor.component.ts": `import {
+          "/src/app/components/rich-text-editor.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -11493,7 +11493,7 @@ import {
   readSelection,
   render,
   runCommand,
-} from "./editor";
+} from "../utils/editor";
 
 const TOOLS = [
   { cmd: "b", label: "Bold", text: "B", key: "b" },
@@ -12052,7 +12052,7 @@ Related builds: [a data-fetching hook with retry](/interview-question/build-a-da
 ---
 **Conclusion:** A chunked uploader is a plan of byte ranges, a pump that keeps a fixed number of requests in flight, retries with backoff, pause by aborting, resume by re-sending what is missing, and a checksum to prove the file arrived intact. React holds only snapshots and drag state, while the controller and the simulated server stay plain JavaScript. The verified run shows deterministic retries, a pause that really holds, offline failure followed by recovery, and an empty file. Chromium confirmed that real drag events and the file chooser deliver files the same way.`,
         files: {
-          "/App.js": `import FileUploader from "./src/FileUploader";
+          "/App.js": `import FileUploader from "./src/components/FileUploader";
 
 const css = \`
   body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
@@ -12082,13 +12082,13 @@ export default function App() {
   );
 }
 `,
-          "/src/FileUploader.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/FileUploader.js": `import { useEffect, useRef, useState } from "react";
 import {
   CHUNK_SIZES,
   createFakeServer,
   createUpload,
   fmtBytes,
-} from "./uploader";
+} from "../utils/uploader";
 
 export default function FileUploader() {
   const server = useRef(null);
@@ -12263,7 +12263,7 @@ export default function FileUploader() {
   );
 }
 `,
-          "/src/uploader.js": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
+          "/src/utils/uploader.js": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
 export const CHUNK_SIZES = [
   { label: "1 KB", value: 1024 },
   { label: "4 KB", value: 4096 },
@@ -12838,7 +12838,7 @@ import {
   createFakeServer,
   createUpload,
   fmtBytes,
-} from "../uploader.js";
+} from "../utils/uploader.js";
 
 // simulated endpoint, created once per component
 const server = createFakeServer({ latency: 120 });
@@ -12966,7 +12966,7 @@ const pct = (u) =>
   </div>
 </template>
 `,
-          "/src/uploader.js": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
+          "/src/utils/uploader.js": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
 export const CHUNK_SIZES = [
   { label: "1 KB", value: 1024 },
   { label: "4 KB", value: 4096 },
@@ -13470,7 +13470,7 @@ Styling, screen reader output and a real network were not checked. The server is
 **Conclusion:** The Angular uploader keeps all upload logic in typed, framework-free code: lazy chunks, a two-request pump, backoff, pause by abort, and a checksum. The component writes snapshots into a signal, so updates from timers render in a zoneless app, and it uses a template reference variable for the Browse button. Strict AOT compilation caught a shadowed \`@ViewChild\`, and jsdom and real Chromium confirmed the behaviour.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { FileUploaderComponent } from "./file-uploader.component";
+import { FileUploaderComponent } from "./components/file-uploader.component";
 
 @Component({
   selector: "app-root",
@@ -13595,7 +13595,7 @@ import { FileUploaderComponent } from "./file-uploader.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/file-uploader.component.ts": `import { Component, OnDestroy, signal } from "@angular/core";
+          "/src/app/components/file-uploader.component.ts": `import { Component, OnDestroy, signal } from "@angular/core";
 import {
   CHUNK_SIZES,
   Controller,
@@ -13603,7 +13603,7 @@ import {
   createFakeServer,
   createUpload,
   fmtBytes,
-} from "./uploader";
+} from "../utils/uploader";
 
 @Component({
   selector: "app-file-uploader",
@@ -13749,7 +13749,7 @@ export class FileUploaderComponent implements OnDestroy {
   }
 }
 `,
-          "/src/app/uploader.ts": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
+          "/src/app/utils/uploader.ts": `// Framework-free chunked upload logic plus a SIMULATED server (no network).
 export type Snapshot = {
   id: string;
   name: string;

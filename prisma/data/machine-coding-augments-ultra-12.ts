@@ -386,7 +386,7 @@ One hundred scroll events produced only 37 batches of DOM changes, because most 
 ---
 **Conclusion:** A virtualized list is a small amount of arithmetic wrapped around a convincing illusion: a spacer with the full height, a viewport that scrolls over it, and a dozen or so absolutely positioned rows that are swapped as the window moves. Verified on React 19.3.1, the solution keeps 13 to 17 rows mounted across 10,000, clamps at both ends, and in Chromium turned 100 scroll events into only 37 DOM updates. In an interview, write the range function first, explain what is state and what is derived, and finish with overscan, keys, ARIA and the limits of the technique.`,
         files: {
-          "/App.js": `import VirtualList from "./src/VirtualList";
+          "/App.js": `import VirtualList from "./src/components/VirtualList";
 
 const TEAMS = ["Design", "Platform", "Growth", "Support", "Data"];
 
@@ -406,7 +406,7 @@ export default function App() {
   );
 }
 `,
-          "/src/VirtualList.js": `import { useState } from "react";
+          "/src/components/VirtualList.js": `import { useState } from "react";
 
 // Pure windowing maths: which rows does the viewport need right now?
 export function getRange(
@@ -1194,7 +1194,7 @@ angular 22.2.3: scrollTop changed 40 times and rows() was read after each; rows 
 **Conclusion:** The Angular virtualized list is a scroll signal, a chain of number-valued computeds, and an <code>@for</code> with a stable <code>track</code> inside a tall spacer. Verified on Angular 22.2.3 in both AOT and JIT builds, it keeps 13 to 17 of 10,000 rows mounted and clamps at both ends, and a separate check showed computed equality absorbing 40 scroll updates into one real change. Lead with the maths, explain why signals make it cheap, and close with ARIA and the CDK as the production choice.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { Contact, VirtualListComponent } from "./virtual-list.component";
+import { Contact, VirtualListComponent } from "./components/virtual-list.component";
 
 const TEAMS = ["Design", "Platform", "Growth", "Support", "Data"];
 
@@ -1243,7 +1243,7 @@ export class AppComponent {
   }));
 }
 `,
-          "/src/app/virtual-list.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
+          "/src/app/components/virtual-list.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
 
 export interface Contact {
   id: number;
@@ -1831,7 +1831,7 @@ The labels between the blocks were added here; the lines are as printed. All thr
 **Conclusion:** Rebuilding react-window's fixed-size list is an exercise in API design on top of simple maths: a row contract that keeps positioning in the list, stable styles and a memoised <code>itemData</code> so rows stay cheap, an imperative <code>scrollToItem</code> with sensible alignment, and keyboard navigation that never moves focus into rows that can disappear. Verified on React 19.3.1, the hand-rolled list landed on exactly the same rows and offsets as react-window 1.8.11 and 2.3.4 in Chromium. Know that version 2 renamed the API, and you can answer both the build and the "which library and why" follow-ups.`,
         files: {
           "/App.js": `import { memo, useCallback, useMemo, useRef, useState } from "react";
-import { FixedSizeList } from "./src/FixedSizeList";
+import { FixedSizeList } from "./src/components/FixedSizeList";
 
 const COUNT = 100000;
 const FIRST = [
@@ -1973,7 +1973,7 @@ export default function App() {
   );
 }
 `,
-          "/src/FixedSizeList.js": `import { useEffect, useImperativeHandle, useRef, useState } from "react";
+          "/src/components/FixedSizeList.js": `import { useEffect, useImperativeHandle, useRef, useState } from "react";
 
 // Where should the viewport scroll so that \`index\` is placed per \`align\`?
 // Same rules as react-window: "auto" scrolls only as far as needed.
@@ -3119,7 +3119,7 @@ import { FormsModule } from "@angular/forms";
 import {
   FixedSizeListComponent,
   ItemsRendered,
-} from "./fixed-size-list.component";
+} from "./components/fixed-size-list.component";
 
 const COUNT = 100000;
 const FIRST = [
@@ -3338,7 +3338,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/fixed-size-list.component.ts": `import {
+          "/src/app/components/fixed-size-list.component.ts": `import {
   Component,
   ContentChild,
   ElementRef,
@@ -3877,8 +3877,8 @@ The two labels were added here and a few status lines trimmed; the rest is as pr
 **Conclusion:** A variable-height virtual feed replaces the single division of a fixed list with three pieces: a height cache keyed by id with an estimate for the unknown, a prefix sum searched by binary search, and a ResizeObserver per mounted row. The piece that separates a good answer is scroll anchoring: correcting <code>scrollTop</code> before paint whenever rows above the reader change. Verified on React 19.3.1 and in Chromium 141, the anchored feed held the reader exactly in place (zero drift over twelve upward wheel steps), while the control without it jumped 615px and drifted up to 322px per step.`,
         files: {
           "/App.js": `import { useCallback, useEffect, useState } from "react";
-import { fetchFeed } from "./src/api";
-import VirtualFeed from "./src/VirtualFeed";
+import { fetchFeed } from "./src/api/api";
+import VirtualFeed from "./src/components/VirtualFeed";
 
 export default function App() {
   const [posts, setPosts] = useState(null);
@@ -3922,7 +3922,7 @@ export default function App() {
   );
 }
 `,
-          "/src/VirtualFeed.js": `import {
+          "/src/components/VirtualFeed.js": `import {
   memo,
   useCallback,
   useLayoutEffect,
@@ -4117,7 +4117,7 @@ export default function VirtualFeed({
   );
 }
 `,
-          "/src/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
+          "/src/api/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
 const WORDS = (
   "virtual lists keep the page fast by mounting only the rows you can see while " +
@@ -4502,7 +4502,7 @@ vue-virtual-scroller 3.0.5 ships <code>DynamicScroller</code> for this case; its
         files: {
           "/src/App.vue": `<script setup>
 import { onMounted, onUnmounted, ref, shallowRef } from "vue";
-import { fetchFeed } from "./api.js";
+import { fetchFeed } from "./api/api.js";
 import VirtualFeed from "./components/VirtualFeed.vue";
 
 // shallowRef: 10,000 posts are replaced as a whole, never mutated in place.
@@ -4560,7 +4560,7 @@ body {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
+          "/src/api/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
 const WORDS = (
   "virtual lists keep the page fast by mounting only the rows you can see while " +
@@ -5146,7 +5146,7 @@ import { ScrollingModule as ExperimentalScrollingModule } from "@angular/cdk-exp
 ---
 **Conclusion:** In Angular the variable-height feed is a computed prefix sum over a plain size cache, a measuring directive per mounted article, and one <code>afterNextRender</code> per burst that corrects <code>scrollTop</code> for height changes above the reader. Verified on Angular 22.2.3 in AOT and JIT builds, it matched the React and Vue output line for line in jsdom, and in Chromium 141 the content moved by exactly the wheel delta while scrolling into unmeasured posts.`,
         files: {
-          "/src/app/api.ts": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
+          "/src/app/api/api.ts": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
 const WORDS = (
   "virtual lists keep the page fast by mounting only the rows you can see while " +
@@ -5186,8 +5186,8 @@ export function fetchFeed(count = 10000): Promise<Post[]> {
 }
 `,
           "/src/app/app.component.ts": `import { Component, OnDestroy, OnInit, signal } from "@angular/core";
-import { Post, fetchFeed } from "./api";
-import { VirtualFeedComponent } from "./virtual-feed.component";
+import { Post, fetchFeed } from "./api/api";
+import { VirtualFeedComponent } from "./components/virtual-feed.component";
 
 @Component({
   selector: "app-root",
@@ -5239,7 +5239,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/measure.directive.ts": `import {
+          "/src/app/directives/measure.directive.ts": `import {
   Directive,
   ElementRef,
   EventEmitter,
@@ -5288,7 +5288,7 @@ export class MeasureDirective implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/virtual-feed.component.ts": `import {
+          "/src/app/components/virtual-feed.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -5301,8 +5301,8 @@ export class MeasureDirective implements OnInit, OnDestroy {
   inject,
   signal,
 } from "@angular/core";
-import { Post } from "./api";
-import { MeasureDirective, Measurement } from "./measure.directive";
+import { Post } from "../api/api";
+import { MeasureDirective, Measurement } from "../directives/measure.directive";
 
 const PREVIEW = 160; // characters shown before "Show more"
 
@@ -5858,8 +5858,8 @@ A string sort of 20,000 rows plus a render fits in a couple of frames; at this s
 **Conclusion:** A virtualized data table is a derived pipeline (filter, then sort a copy with a tie-break, then window) feeding a sticky-header table whose body only mounts the rows on screen. Verified on React 19.3.1, it kept 14 rows mounted for 20,000, 4,108 or 24 results, cycled sorts correctly, reset scroll on every new result set and exposed full-size ARIA; in Chromium a 20,000-row sort took about 26 ms to the next frame. Explain the order of operations and what is derived versus stored, and the features follow naturally.`,
         files: {
           "/App.js": `import { useMemo } from "react";
-import DataTable from "./src/DataTable";
-import { makeEmployees } from "./src/data";
+import DataTable from "./src/components/DataTable";
+import { makeEmployees } from "./src/data/data";
 
 export default function App() {
   const rows = useMemo(() => makeEmployees(20000), []);
@@ -5871,7 +5871,7 @@ export default function App() {
   );
 }
 `,
-          "/src/DataTable.js": `import { useLayoutEffect, useMemo, useRef, useState } from "react";
+          "/src/components/DataTable.js": `import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   COLUMNS,
   ROLES,
@@ -5879,7 +5879,7 @@ import {
   filterRows,
   nextSort,
   sortRows,
-} from "./data";
+} from "../data/data";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -6048,7 +6048,7 @@ export default function DataTable({ rows }) {
   );
 }
 `,
-          "/src/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
+          "/src/data/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
 const FIRST = [
   "Ada",
   "Grace",
@@ -6523,7 +6523,7 @@ These lines are identical to the React and Angular runs: 14 rows mounted for 20,
           "/src/App.vue": `<script setup>
 import { markRaw } from "vue";
 import DataTable from "./components/DataTable.vue";
-import { makeEmployees } from "./data.js";
+import { makeEmployees } from "./data/data.js";
 
 // 20,000 read-only rows: markRaw skips a reactive proxy per row.
 const rows = markRaw(makeEmployees(20000));
@@ -6661,7 +6661,7 @@ import {
   filterRows,
   nextSort,
   sortRows,
-} from "../data.js";
+} from "../data/data.js";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -6792,7 +6792,7 @@ function arrow(key) {
   </section>
 </template>
 `,
-          "/src/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
+          "/src/data/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
 const FIRST = [
   "Ada",
   "Grace",
@@ -7168,8 +7168,8 @@ Identical to the React and Vue runs. The React tab adds Chromium timings (about 
 **Conclusion:** The Angular virtualized table is a computed pipeline (filter, sorted copy, window) driven by a handful of signals, rendered with <code>@for</code> and <code>track</code> under a sticky header, with scroll reset in the same handlers that change the result set. Verified on Angular 22.2.3 in AOT and JIT builds, it matched React and Vue output exactly: 14 rows mounted at every result size, correct tri-state sorting, scroll reset and full-size ARIA.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { DataTableComponent } from "./data-table.component";
-import { Employee, makeEmployees } from "./data";
+import { DataTableComponent } from "./components/data-table.component";
+import { Employee, makeEmployees } from "./data/data";
 
 @Component({
   selector: "app-root",
@@ -7206,7 +7206,7 @@ export class AppComponent {
   readonly rows: Employee[] = makeEmployees(20000);
 }
 `,
-          "/src/app/data-table.component.ts": `import {
+          "/src/app/components/data-table.component.ts": `import {
   Component,
   ElementRef,
   Input,
@@ -7224,7 +7224,7 @@ import {
   filterRows,
   nextSort,
   sortRows,
-} from "./data";
+} from "../data/data";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -7418,7 +7418,7 @@ export class DataTableComponent {
   }
 }
 `,
-          "/src/app/data.ts": `// 20,000 fake employees, deterministic (seeded), generated in memory.
+          "/src/app/data/data.ts": `// 20,000 fake employees, deterministic (seeded), generated in memory.
 const FIRST = [
   "Ada",
   "Grace",
@@ -7886,7 +7886,7 @@ Page 1 (1,488px) did not fill 1,600px plus the threshold, so page 2 was requeste
 ---
 **Conclusion:** Infinite scroll with a scroll listener is a small state machine (idle, loading, error, end) driven by one distance check, protected by a synchronous in-flight guard, and finished with an auto-fill check for screens the first page does not fill. Verified on React 19.3.1 under StrictMode, it made exactly six requests for 95 items including one failure and one retry, ignored duplicate scroll events, and loaded a second page by itself on a tall viewport. Explain the guard and the short-page case and you have covered what interviewers probe; then mention IntersectionObserver as the next step.`,
         files: {
-          "/App.js": `import InfiniteList from "./src/InfiniteList";
+          "/App.js": `import InfiniteList from "./src/components/InfiniteList";
 
 export default function App() {
   return (
@@ -7897,14 +7897,14 @@ export default function App() {
   );
 }
 `,
-          "/src/InfiniteList.js": `import {
+          "/src/components/InfiniteList.js": `import {
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
-import { fetchPage } from "./api";
+import { fetchPage } from "../api/api";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
 
@@ -8006,7 +8006,7 @@ export default function InfiniteList() {
   );
 }
 `,
-          "/src/api.js": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
+          "/src/api/api.js": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
 // request. Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 95;
 const PAGE_SIZE = 20;
@@ -8434,7 +8434,7 @@ body {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
+          "/src/api/api.js": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
 // request. Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 95;
 const PAGE_SIZE = 20;
@@ -8472,7 +8472,7 @@ import {
   shallowRef,
   useTemplateRef,
 } from "vue";
-import { fetchPage } from "../api.js";
+import { fetchPage } from "../api/api.js";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
 
@@ -8828,7 +8828,7 @@ For the IntersectionObserver and skeleton version of this component, see [Build 
 ---
 **Conclusion:** In Angular, scroll-listener infinite scroll is a handful of signals, a private guard flag and one distance check that runs on scroll and again in <code>afterNextRender</code>. On Angular 22.2.3, AOT and JIT, it made six requests for 95 items including a failure and a retry, ignored duplicate scroll events and filled a tall viewport by itself. Explain the guard, the render timing of the auto-fill check and the end state, and you have covered what interviewers probe.`,
         files: {
-          "/src/app/api.ts": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
+          "/src/app/api/api.ts": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
 // request. Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 95;
 const PAGE_SIZE = 20;
@@ -8868,7 +8868,7 @@ export function fetchPage(page: number): Promise<Page> {
 }
 `,
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { InfiniteListComponent } from "./infinite-list.component";
+import { InfiniteListComponent } from "./components/infinite-list.component";
 
 @Component({
   selector: "app-root",
@@ -8903,7 +8903,7 @@ import { InfiniteListComponent } from "./infinite-list.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/infinite-list.component.ts": `import {
+          "/src/app/components/infinite-list.component.ts": `import {
   Component,
   ElementRef,
   Injector,
@@ -8914,7 +8914,7 @@ export class AppComponent {}
   inject,
   signal,
 } from "@angular/core";
-import { Article, fetchPage } from "./api";
+import { Article, fetchPage } from "../api/api";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
 
@@ -9410,7 +9410,7 @@ For the same observer used on images rather than a list, see [lazy-loading image
 ---
 **Conclusion:** IntersectionObserver infinite scroll replaces per-scroll distance maths with one observed sentinel: render it only when a load is allowed, give it the scroll container as root and a <code>rootMargin</code> for early loading, guard the request with a ref, and disconnect each observer with its sentinel. The initial <code>observe()</code> callback handles short pages, and skeletons that share the card box keep the layout still. On React 19.3.1 it made six requests for 50 posts including a retry, both in jsdom with a stub and in Chromium with the real observer, where skeleton and card both measured 96px.`,
         files: {
-          "/App.js": `import Feed from "./src/Feed";
+          "/App.js": `import Feed from "./src/components/Feed";
 
 export default function App() {
   return (
@@ -9421,8 +9421,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Feed.js": `import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFeedPage } from "./api";
+          "/src/components/Feed.js": `import { useCallback, useEffect, useRef, useState } from "react";
+import { fetchFeedPage } from "../api/api";
 
 function SkeletonCard() {
   // Same box as a real card, so nothing jumps when the post arrives.
@@ -9547,7 +9547,7 @@ export default function Feed() {
   );
 }
 `,
-          "/src/api.js": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
+          "/src/api/api.js": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
 // Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 50;
 const PAGE_SIZE = 10;
@@ -10098,7 +10098,7 @@ body {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
+          "/src/api/api.js": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
 // Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 50;
 const PAGE_SIZE = 10;
@@ -10138,7 +10138,7 @@ import {
   useTemplateRef,
   watch,
 } from "vue";
-import { fetchFeedPage } from "../api.js";
+import { fetchFeedPage } from "../api/api.js";
 import SkeletonCard from "./SkeletonCard.vue";
 
 const posts = shallowRef([]); // replaced on every page, never mutated
@@ -10516,7 +10516,7 @@ In Chromium 141, a Playwright script scrolled the real feed with the mouse wheel
 ---
 **Conclusion:** In Angular, IntersectionObserver infinite scroll is a sentinel inside an <code>@if</code>, a <code>@ViewChild</code> setter that gives each sentinel its own observer, a private guard flag and an attribute-selector skeleton that shares the card box. On Angular 22.2.3, AOT and JIT, it matched React and Vue line for line in jsdom, and in Chromium it made six requests for 50 posts with a retry, kept skeletons and cards at 96px, and filled a tall feed with no scrolling.`,
         files: {
-          "/src/app/api.ts": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
+          "/src/app/api/api.ts": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
 // Page 3 fails on its first request so the Retry path can be seen.
 const TOTAL = 50;
 const PAGE_SIZE = 10;
@@ -10557,7 +10557,7 @@ export function fetchFeedPage(page: number): Promise<FeedPage> {
 }
 `,
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { FeedComponent } from "./feed.component";
+import { FeedComponent } from "./components/feed.component";
 
 @Component({
   selector: "app-root",
@@ -10592,7 +10592,7 @@ import { FeedComponent } from "./feed.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/feed.component.ts": `import {
+          "/src/app/components/feed.component.ts": `import {
   Component,
   ElementRef,
   OnDestroy,
@@ -10601,7 +10601,7 @@ export class AppComponent {}
   computed,
   signal,
 } from "@angular/core";
-import { FeedPost, fetchFeedPage } from "./api";
+import { FeedPost, fetchFeedPage } from "../api/api";
 import { SkeletonCardComponent } from "./skeleton-card.component";
 
 @Component({
@@ -10740,7 +10740,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/skeleton-card.component.ts": `import { Component } from "@angular/core";
+          "/src/app/components/skeleton-card.component.ts": `import { Component } from "@angular/core";
 
 // Same box as a real card, so nothing jumps when the post arrives.
 // The host element is the <li>, so the list markup stays valid.

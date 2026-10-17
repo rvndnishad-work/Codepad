@@ -93,7 +93,7 @@ For this build we assume: digits only, length 6, auto-submit, clear and refocus 
 
 ## 3. Requirements and Plan
 
-The solution has three files: <code>/App.js</code> (the page and the verify flow), <code>/src/OtpInput.js</code> (the reusable widget) and <code>/src/fakeApi.js</code> (a simulated server, because the playground has no network).
+The solution has three files: <code>/App.js</code> (the page and the verify flow), <code>/src/components/OtpInput.js</code> (the reusable widget) and <code>/src/api/fakeApi.js</code> (a simulated server, because the playground has no network).
 
 <svg class="iq-diagram" width="100%" viewBox="0 0 680 300" role="img" aria-label="Component tree: App owns the status and an attempt counter, renders OtpInput with a key, and calls the fake verify API. OtpInput owns the six digit values and an array of input refs.">
   <defs>
@@ -291,7 +291,7 @@ While the fake request runs, the parent passes <code>disabled</code>, so nobody 
 
 📌 **Interview term: Key reset** — changing a component <code>key</code> to make React discard its state and mount a new instance. It is the idiomatic way to "start over" a self-contained widget.
 
-The fake server lives in <code>/src/fakeApi.js</code>: <code>verifyCode(code)</code> returns a Promise that resolves after 400 ms with <code>code === "246810"</code>. It is simulated; in a real app this would be a <code>fetch</code> to your auth endpoint.
+The fake server lives in <code>/src/api/fakeApi.js</code>: <code>verifyCode(code)</code> returns a Promise that resolves after 400 ms with <code>code === "246810"</code>. It is simulated; in a real app this would be a <code>fetch</code> to your auth endpoint.
 
 ## 5. Verified: What the Solution Printed
 
@@ -436,8 +436,8 @@ If the interviewer pushes on accessibility, mention the alternative design: a si
 **Conclusion:** A good OTP input is a small exercise in separating data from DOM: one array of digits in state, one array of refs for focus, and every change flowing through a single <code>commit</code> that also reports completion. The keyboard rules (replace, ignore letters, Backspace on empty goes back, arrows), the paste and autofill path, disabling during the simulated request and a <code>key</code> reset after a wrong code were all driven in a real React 19.3.1 render and printed the results above. Lead with the state model, build typing, then Backspace, then paste, and close with accessibility; that order shows an interviewer you know where the hard parts are.`,
         files: {
           "/App.js": `import { useState } from "react";
-import OtpInput from "./src/OtpInput";
-import { DEMO_CODE, verifyCode } from "./src/fakeApi";
+import OtpInput from "./src/components/OtpInput";
+import { DEMO_CODE, verifyCode } from "./src/api/fakeApi";
 
 const IDLE = {
   kind: "idle",
@@ -495,7 +495,7 @@ export default function App() {
   );
 }
 `,
-          "/src/OtpInput.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/OtpInput.js": `import { useEffect, useRef, useState } from "react";
 
 const onlyDigits = (s) => s.replace(/[^0-9]/g, "");
 
@@ -598,7 +598,7 @@ export default function OtpInput({ length = 6, disabled = false, onComplete }) {
   );
 }
 `,
-          "/src/fakeApi.js": `// Simulated server: no network in the playground. Resolves after 400 ms.
+          "/src/api/fakeApi.js": `// Simulated server: no network in the playground. Resolves after 400 ms.
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code) {
@@ -954,7 +954,7 @@ The letter was rejected, the replacement rule picked the new digit in both caret
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import OtpInput from "./components/OtpInput.vue";
-import { DEMO_CODE, verifyCode } from "./fakeApi.js";
+import { DEMO_CODE, verifyCode } from "./api/fakeApi.js";
 
 const IDLE = {
   kind: "idle",
@@ -1199,7 +1199,7 @@ function onPaste(i, e) {
 }
 </style>
 `,
-          "/src/fakeApi.js": `// Simulated server: no network in the playground. Resolves after 400 ms.
+          "/src/api/fakeApi.js": `// Simulated server: no network in the playground. Resolves after 400 ms.
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code) {
@@ -1497,8 +1497,8 @@ Letters were rejected, the new digit won in both caret positions, Backspace on a
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
 import { Component, ViewChild, signal, inject } from "@angular/core";
-import { OtpInputComponent } from "./otp-input.component";
-import { DEMO_CODE, verifyCode } from "./fake-api";
+import { OtpInputComponent } from "./components/otp-input.component";
+import { DEMO_CODE, verifyCode } from "./api/fake-api";
 
 type Status = { kind: "idle" | "busy" | "ok" | "error"; text: string };
 const IDLE: Status = {
@@ -1580,7 +1580,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/fake-api.ts": `// Simulated server: no network in the playground. Resolves after 400 ms.
+          "/src/app/api/fake-api.ts": `// Simulated server: no network in the playground. Resolves after 400 ms.
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code: string): Promise<boolean> {
@@ -1589,7 +1589,7 @@ export function verifyCode(code: string): Promise<boolean> {
   );
 }
 `,
-          "/src/app/otp-input.component.ts": `import {
+          "/src/app/components/otp-input.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -1831,7 +1831,7 @@ For this build: whole-star input, fractional display, a second click clears, the
 
 ## 3. Requirements and Plan
 
-Files: <code>/App.js</code> (a product card using both modes) and <code>/src/StarRating.js</code> (the component). The state model is the part to say out loud first:
+Files: <code>/App.js</code> (a product card using both modes) and <code>/src/components/StarRating.js</code> (the component). The state model is the part to say out loud first:
 
 | Piece | Owner | Kind | Why |
 | :--- | :--- | :--- | :--- |
@@ -2127,7 +2127,7 @@ What it shows: hover lit three stars without changing <code>checked</code> or th
 **Conclusion:** A star rating is two states with two owners: the parent owns the committed value, the component owns a throwaway hover preview, and the screen shows <code>hover &#124;&#124; value</code>. A clipped overlay draws any fraction, a radio group with a roving tabindex makes it a real control for keyboard and screen-reader users, and a read-only <code>role="img"</code> covers averages. The run on React 19.3.1 showed hover, leave, click, clear, arrows, Home and End doing exactly that, with fractional fills of 100, 100, 100, 60 and 0 percent.`,
         files: {
           "/App.js": `import { useState } from "react";
-import StarRating from "./src/StarRating";
+import StarRating from "./src/components/StarRating";
 
 export default function App() {
   // the parent owns the value: a controlled component
@@ -2153,7 +2153,7 @@ export default function App() {
   );
 }
 `,
-          "/src/StarRating.js": `import { useRef, useState } from "react";
+          "/src/components/StarRating.js": `import { useRef, useState } from "react";
 
 const LABELS = ["Terrible", "Bad", "OK", "Good", "Great"];
 
@@ -3041,7 +3041,7 @@ Preview without saving, restore on leave, keyboard moves that keep focus and tab
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
 import { Component, signal, inject } from "@angular/core";
-import { StarRatingComponent } from "./star-rating.component";
+import { StarRatingComponent } from "./components/star-rating.component";
 
 @Component({
   selector: "app-root",
@@ -3123,7 +3123,7 @@ export class AppComponent {
   readonly rating = signal(0); // [(value)]="rating" two-way binds the signal
 }
 `,
-          "/src/app/star-rating.component.ts": `import {
+          "/src/app/components/star-rating.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -3365,7 +3365,7 @@ For this build: case-insensitive, free text, Enter and comma, at most 5 tags of 
 
 ## 3. Requirements and Plan
 
-Files: <code>/App.js</code> (a post editor that owns the list), <code>/src/TagInput.js</code> (the component) and <code>/src/tags.js</code> (pure validation).
+Files: <code>/App.js</code> (a post editor that owns the list), <code>/src/components/TagInput.js</code> (the component) and <code>/src/utils/tags.js</code> (pure validation).
 
 | Piece | Owner | Kind |
 | :--- | :--- | :--- |
@@ -3658,7 +3658,7 @@ Notice: "  Vue " was trimmed and rejected as a duplicate of "vue" and kept in th
 **Conclusion:** A tag input is a list editor disguised as a text box. Keep the list in the parent, the half-typed text and the armed flag in the component, and every rule in a pure <code>addParts</code> function. Handle commas in the input event so paste and mobile keyboards work, guard Enter during IME composition, return focus after removal, and announce every outcome. The React 19.3.1 run above showed trimming, case-insensitive duplicates, multi-tag paste, limits, two-step Backspace and focus return all behaving as described.`,
         files: {
           "/App.js": `import { useState } from "react";
-import TagInput from "./src/TagInput";
+import TagInput from "./src/components/TagInput";
 
 export default function App() {
   const [tags, setTags] = useState(["react"]); // the parent owns the list
@@ -3676,8 +3676,8 @@ export default function App() {
   );
 }
 `,
-          "/src/TagInput.js": `import { useRef, useState } from "react";
-import { addParts } from "./tags";
+          "/src/components/TagInput.js": `import { useRef, useState } from "react";
+import { addParts } from "../utils/tags";
 
 export default function TagInput({
   value,
@@ -3798,7 +3798,7 @@ export default function TagInput({
   );
 }
 `,
-          "/src/tags.js": `// Pure helper: try to add each part; returns the new list and what to announce.
+          "/src/utils/tags.js": `// Pure helper: try to add each part; returns the new list and what to announce.
 export function addParts(tags, parts, { max, maxLength }) {
   const next = [...tags];
   const added = [];
@@ -3954,7 +3954,7 @@ Enter or comma adds; paste "a, b, c" adds several; trim and collapse spaces; rej
 | The tag list | <code>defineModel({ type: Array })</code> | Parent writes <code>v-model="tags"</code> |
 | Draft text, armed flag, message | <code>ref</code> | Local to the widget |
 | The text box element | <code>useTemplateRef("input")</code> | Focus after removal and on container click |
-| Validation | <code>addParts()</code> in <code>/src/tags.js</code> | A pure function, shared with the React and Angular versions |
+| Validation | <code>addParts()</code> in <code>/src/utils/tags.js</code> | A pure function, shared with the React and Angular versions |
 
 📌 **Interview term: useTemplateRef** — a Vue 3.5 function that returns a ref to the element whose <code>ref</code> attribute matches the given name. It replaces declaring a same-named <code>ref(null)</code>. See [useTemplateRef](/interview-question/what-is-usetemplateref-vue-3-5-and-how-does-it-improve-on-ref).
 
@@ -4228,7 +4228,7 @@ h1 {
 `,
           "/src/components/TagInput.vue": `<script setup>
 import { ref, useTemplateRef } from "vue";
-import { addParts } from "../tags.js";
+import { addParts } from "../utils/tags.js";
 
 const props = defineProps({
   max: { type: Number, default: 5 },
@@ -4426,7 +4426,7 @@ function onKeydown(e) {
 }
 </style>
 `,
-          "/src/tags.js": `// Pure helper: try to add each part; returns the new list and what to announce.
+          "/src/utils/tags.js": `// Pure helper: try to add each part; returns the new list and what to announce.
 export function addParts(tags, parts, { max, maxLength }) {
   const next = [...tags];
   const added = [];
@@ -4766,7 +4766,7 @@ Same behaviour as the React and Vue versions: trimming, the case-insensitive dup
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
 import { Component, signal, inject } from "@angular/core";
-import { TagInputComponent } from "./tag-input.component";
+import { TagInputComponent } from "./components/tag-input.component";
 
 @Component({
   selector: "app-root",
@@ -4828,7 +4828,7 @@ export class AppComponent {
   json = () => JSON.stringify(this.tags());
 }
 `,
-          "/src/app/tag-input.component.ts": `import {
+          "/src/app/components/tag-input.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -4837,7 +4837,7 @@ export class AppComponent {
   ViewChild,
   signal,
 } from "@angular/core";
-import { addParts } from "./tags";
+import { addParts } from "../utils/tags";
 
 @Component({
   selector: "app-tag-input",
@@ -4983,7 +4983,7 @@ export class TagInputComponent {
   }
 }
 `,
-          "/src/app/tags.ts": `// Pure helper: try to add each part; returns the new list and what to announce.
+          "/src/app/utils/tags.ts": `// Pure helper: try to add each part; returns the new list and what to announce.
 export function addParts(
   tags: string[],
   parts: string[],
@@ -5075,7 +5075,7 @@ For this build: HSL sliders plus hex, no alpha, emit on every change, a fixed pa
 
 ## 3. Requirements and Plan
 
-Files: <code>/src/color.js</code> (pure conversion functions), <code>/src/ColorPicker.js</code> (the component) and <code>/App.js</code> (a settings card that receives the hex).
+Files: <code>/src/utils/color.js</code> (pure conversion functions), <code>/src/components/ColorPicker.js</code> (the component) and <code>/App.js</code> (a settings card that receives the hex).
 
 <svg class="iq-diagram" width="100%" viewBox="0 0 700 300" role="img" aria-label="State flow: sliders, swatches and a valid hex draft all write the single HSL state. RGB, hex and the readable text colour are derived from HSL. The hex draft is separate state that is reset from the derived hex.">
   <defs>
@@ -5417,7 +5417,7 @@ Key observations: <code>#ff</code> was flagged (<code>aria-invalid</code>, hint 
 **Conclusion:** A colour picker is a lesson in single source of truth: one HSL state with full precision, and hex, RGB and readable text derived from it. The measured round trip over all 16,777,216 colours (0 mismatches with floats, 89.4 percent with rounded HSL) is the reason for that design. A draft state lets the hex field hold half-typed values, the copy button treats the Clipboard API as the async, fallible call it is, and native sliders with proper ARIA keep it accessible. The React 19.3.1 run showed every one of those behaviours.`,
         files: {
           "/App.js": `import { useState } from "react";
-import ColorPicker from "./src/ColorPicker";
+import ColorPicker from "./src/components/ColorPicker";
 
 export default function App() {
   const [color, setColor] = useState("#1E90FF");
@@ -5434,8 +5434,8 @@ export default function App() {
   );
 }
 `,
-          "/src/ColorPicker.js": `import { useEffect, useRef, useState } from "react";
-import { hexToRgb, hslToRgb, readableText, rgbToHex, rgbToHsl } from "./color";
+          "/src/components/ColorPicker.js": `import { useEffect, useRef, useState } from "react";
+import { hexToRgb, hslToRgb, readableText, rgbToHex, rgbToHsl } from "../utils/color";
 
 const SWATCHES = [
   { name: "Tomato", hex: "#FF6347" },
@@ -5570,7 +5570,7 @@ export default function ColorPicker({ initial = "#1E90FF", onChange }) {
   );
 }
 `,
-          "/src/color.js": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
+          "/src/utils/color.js": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
 
 export function hslToRgb(h, s, l) {
   s /= 100;
@@ -5766,7 +5766,7 @@ H, S and L sliders, a hex field accepting <code>#RGB</code>/<code>#RRGGBB</code>
 | <code>rgb</code>, <code>hex</code>, text colour, draft validity | <code>computed</code> | Derived and cached |
 | Hex field text | <code>ref</code> (<code>draft</code>) | May hold an unfinished value like <code>#1e9</code> |
 | Copy message | <code>ref</code> + a timer cleared in <code>onUnmounted</code> | Short-lived feedback |
-| Colour maths | <code>/src/color.js</code> | Pure functions, shared with React and Angular |
+| Colour maths | <code>/src/utils/color.js</code> | Pure functions, shared with React and Angular |
 
 📌 **Interview term: computed** — a cached value derived from reactive state that recalculates only when its inputs change. See [computed vs watch](/interview-question/what-is-the-difference-between-computed-and-watch).
 
@@ -6043,7 +6043,7 @@ h1 {
 }
 </style>
 `,
-          "/src/color.js": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
+          "/src/utils/color.js": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
 
 export function hslToRgb(h, s, l) {
   s /= 100;
@@ -6115,7 +6115,7 @@ import {
   readableText,
   rgbToHex,
   rgbToHsl,
-} from "../color.js";
+} from "../utils/color.js";
 
 const SWATCHES = [
   { name: "Tomato", hex: "#FF6347" },
@@ -6600,7 +6600,7 @@ Invalid drafts were flagged without changing the colour, <code>#fc0</code> appli
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
 import { Component, signal, inject } from "@angular/core";
-import { ColorPickerComponent } from "./color-picker.component";
+import { ColorPickerComponent } from "./components/color-picker.component";
 
 @Component({
   selector: "app-root",
@@ -6640,7 +6640,7 @@ export class AppComponent {
   readonly color = signal("#1E90FF");
 }
 `,
-          "/src/app/color-picker.component.ts": `import {
+          "/src/app/components/color-picker.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -6657,7 +6657,7 @@ import {
   readableText,
   rgbToHex,
   rgbToHsl,
-} from "./color";
+} from "../utils/color";
 
 const SWATCHES = [
   { name: "Tomato", hex: "#FF6347" },
@@ -6830,7 +6830,7 @@ export class ColorPickerComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/color.ts": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
+          "/src/app/utils/color.ts": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
 
 export function hslToRgb(h: number, s: number, l: number): number[] {
   s /= 100;
@@ -6989,7 +6989,7 @@ All four layers share the same box. The inputs are transparent and ignore the po
 | Matching products | Parent | Derived with <code>filter</code> during render |
 | Fill position, which thumb is on top | <code>DualRangeSlider</code> | Derived from <code>value</code> |
 | Text being typed in a number box | <code>PriceBox</code> | <code>useState</code> draft, <code>null</code> when not editing |
-| Snap, clamp, percent maths | <code>/src/range.js</code> | Pure functions |
+| Snap, clamp, percent maths | <code>/src/utils/range.js</code> | Pure functions |
 
 ## 4. Build It Step by Step
 
@@ -7162,7 +7162,7 @@ return (
       <DualRangeSlider value={range} onChange={setRange} min={0} max={1000} step={10} minGap={50} />
 ~~~
 
-The product list is a constant in <code>/src/products.js</code> (no network); filtering 24 items on every input event is trivial. With thousands of items or a server request, you would debounce or update on the range <code>change</code> event, which fires when the user releases the thumb.
+The product list is a constant in <code>/src/data/products.js</code> (no network); filtering 24 items on every input event is trivial. With thousands of items or a server request, you would debounce or update on the range <code>change</code> event, which fires when the user releases the thumb.
 
 ## 5. Verified
 
@@ -7319,8 +7319,8 @@ Without the rule the high input is on top (it comes later in the DOM), the high 
 **Conclusion:** A dual range slider built from two stacked native range inputs gets keyboard, touch and screen-reader support for free; the work is in the rules between the handles. Pure <code>moveLow</code> and <code>moveHigh</code> helpers enforce the gap for every input path, the fill is pure percentages, a draft keeps the number boxes from jerking the handles, and a z-index rule keeps stacked thumbs separable. jsdom verified the values and clamping on React 19.3.1, and a real Chromium run with a real mouse verified the dragging, the crossing guard and the stacking fix, which jsdom alone could never prove.`,
         files: {
           "/App.js": `import { useState } from "react";
-import DualRangeSlider from "./src/DualRangeSlider";
-import { PRODUCTS } from "./src/products";
+import DualRangeSlider from "./src/components/DualRangeSlider";
+import { PRODUCTS } from "./src/data/products";
 
 export default function App() {
   // [min, max] owned by the parent
@@ -7350,8 +7350,8 @@ export default function App() {
   );
 }
 `,
-          "/src/DualRangeSlider.js": `import PriceBox from "./PriceBox";
-import { moveHigh, moveLow, percent } from "./range";
+          "/src/components/DualRangeSlider.js": `import PriceBox from "./PriceBox";
+import { moveHigh, moveLow, percent } from "../utils/range";
 
 export default function DualRangeSlider({
   value,
@@ -7428,7 +7428,7 @@ export default function DualRangeSlider({
   );
 }
 `,
-          "/src/PriceBox.js": `import { useState } from "react";
+          "/src/components/PriceBox.js": `import { useState } from "react";
 
 // A number box that only commits on Enter or blur, so typing "1" on the way
 // to "150" does not shove the other handle around.
@@ -7461,13 +7461,13 @@ export default function PriceBox({ label, value, onCommit, testId }) {
   );
 }
 `,
-          "/src/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
+          "/src/data/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS = [
   35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
   575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
-          "/src/range.js": `// Pure helpers shared by both handles and both number boxes.
+          "/src/utils/range.js": `// Pure helpers shared by both handles and both number boxes.
 export const snap = (v, { min, max, step }) =>
   Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
 
@@ -7632,7 +7632,7 @@ Track 0 to 1000, step 10, minimum gap 50; two handles that never cross; a highli
 | <code>lo</code>, <code>hi</code>, fill, which thumb on top | <code>computed</code> | Derived |
 | Typed text | <code>ref(null)</code> draft in <code>PriceBox.vue</code> | Typing must not move the handles per keystroke |
 | Matching products | <code>computed</code> in <code>App.vue</code> | Derived from the range |
-| Snap and clamp | <code>/src/range.js</code> | Pure, shared with React and Angular |
+| Snap and clamp | <code>/src/utils/range.js</code> | Pure, shared with React and Angular |
 
 The slider is two native range inputs stacked over one track div. The inputs have <code>pointer-events: none</code> and the thumb pseudo-elements turn it back on, so either thumb can be grabbed.
 
@@ -7856,7 +7856,7 @@ Both thumbs dragged, crossing was blocked mid-drag, the thumbs at the right end 
           "/src/App.vue": `<script setup>
 import { computed, ref } from "vue";
 import DualRangeSlider from "./components/DualRangeSlider.vue";
-import { PRODUCTS } from "./products.js";
+import { PRODUCTS } from "./data/products.js";
 
 const range = ref([100, 700]); // [min, max] owned by the parent
 const matches = computed(() =>
@@ -7925,7 +7925,7 @@ h1 {
           "/src/components/DualRangeSlider.vue": `<script setup>
 import { computed } from "vue";
 import PriceBox from "./PriceBox.vue";
-import { moveHigh, moveLow, percent } from "../range.js";
+import { moveHigh, moveLow, percent } from "../utils/range.js";
 
 const props = defineProps({
   min: { type: Number, default: 0 },
@@ -8145,13 +8145,13 @@ function commit() {
 }
 </style>
 `,
-          "/src/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
+          "/src/data/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS = [
   35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
   575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
-          "/src/range.js": `// Pure helpers shared by both handles and both number boxes.
+          "/src/utils/range.js": `// Pure helpers shared by both handles and both number boxes.
 export const snap = (v, { min, max, step }) =>
   Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
 
@@ -8424,9 +8424,9 @@ Dragging, the crossing guard, separating the stacked thumbs, the inert empty tra
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
 import { Component, computed, signal, inject } from "@angular/core";
-import { DualRangeSliderComponent } from "./dual-range-slider.component";
-import { PRODUCTS } from "./products";
-import { Range } from "./range";
+import { DualRangeSliderComponent } from "./components/dual-range-slider.component";
+import { PRODUCTS } from "./data/products";
+import { Range } from "./utils/range";
 
 @Component({
   selector: "app-root",
@@ -8501,7 +8501,7 @@ export class AppComponent {
   );
 }
 `,
-          "/src/app/dual-range-slider.component.ts": `import {
+          "/src/app/components/dual-range-slider.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -8510,7 +8510,7 @@ export class AppComponent {
   signal,
 } from "@angular/core";
 import { PriceBoxComponent } from "./price-box.component";
-import { Range, RangeOpts, moveHigh, moveLow, percent } from "./range";
+import { Range, RangeOpts, moveHigh, moveLow, percent } from "../utils/range";
 
 @Component({
   selector: "app-dual-range-slider",
@@ -8688,7 +8688,7 @@ export class DualRangeSliderComponent {
   }
 }
 `,
-          "/src/app/price-box.component.ts": `import { Component, EventEmitter, Input, Output, signal } from "@angular/core";
+          "/src/app/components/price-box.component.ts": `import { Component, EventEmitter, Input, Output, signal } from "@angular/core";
 
 // A number box that only commits on Enter or blur, so typing "1" on the way
 // to "150" does not shove the other handle around.
@@ -8761,13 +8761,13 @@ export class PriceBoxComponent {
   }
 }
 `,
-          "/src/app/products.ts": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
+          "/src/app/data/products.ts": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS: { id: number; name: string; price: number }[] = [
   35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
   575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
-          "/src/app/range.ts": `// Pure helpers shared by both handles and both number boxes.
+          "/src/app/utils/range.ts": `// Pure helpers shared by both handles and both number boxes.
 export interface RangeOpts {
   min: number;
   max: number;
@@ -8855,7 +8855,7 @@ For this build: precedence, no parentheses, a leading minus allowed, operator co
 
 ## 3. Requirements and Plan
 
-Files: <code>/src/calc.js</code> holds **all** logic as pure functions; <code>/App.js</code> is only buttons, a display and a key listener. That split is the main design point: the logic can be tested in Node without React (and the Vue and Angular versions reuse the same file).
+Files: <code>/src/utils/calc.js</code> holds **all** logic as pure functions; <code>/App.js</code> is only buttons, a display and a key listener. That split is the main design point: the logic can be tested in Node without React (and the Vue and Angular versions reuse the same file).
 
 <svg class="iq-diagram" width="100%" viewBox="0 0 700 270" role="img" aria-label="Pipeline: a key press goes into the press reducer, which updates the state. On equals, the expression string goes to tokenize, then the parser, then formatResult, and the formatted result becomes the new expression.">
   <defs>
@@ -9258,7 +9258,7 @@ Precedence (24), clean decimals (0.3 and 1.21), operator replacement, continuing
 **Conclusion:** A good calculator is three pure pieces and a thin UI: a key-press reducer that encodes the input rules, a tokenizer plus recursive-descent parser that gives precedence without <code>eval</code>, and a formatter that rounds away floating-point noise and reports errors. Node runs proved the maths (24, 0.3, 1.21, divide by zero, overflow), the jsdom run on React 19.3.1 proved the wiring with buttons and keys, and Chromium proved why Enter needs <code>preventDefault</code>.`,
         files: {
           "/App.js": `import { useEffect, useReducer } from "react";
-import { press, initialState, keyFromKeyboard, pretty } from "./src/calc";
+import { press, initialState, keyFromKeyboard, pretty } from "./src/utils/calc";
 
 const KEYS = [
   { key: "AC", label: "AC", name: "All clear", kind: "fn" },
@@ -9331,7 +9331,7 @@ export default function App() {
   );
 }
 `,
-          "/src/calc.js": `// Pure calculator logic: no React, no DOM, no eval.
+          "/src/utils/calc.js": `// Pure calculator logic: no React, no DOM, no eval.
 export const OPS = ["+", "-", "*", "/"];
 const PRETTY = { "*": "×", "/": "÷", "-": "−", "+": "+" };
 
@@ -9583,7 +9583,7 @@ Digits, <code>.</code>, <code>+ − × ÷</code>, <code>=</code>, AC and ⌫; pr
 | <code>{ expr, justEvaluated, error }</code> | One <code>ref</code> holding an immutable object | Replaced on every key by the pure <code>press()</code> |
 | Display text | <code>computed</code> | Error, prettified expression or "0" |
 | Keyboard | <code>window</code> listener in <code>onMounted</code>, removed in <code>onUnmounted</code> | No leaked listeners |
-| Logic | <code>/src/calc.js</code> | Pure functions, byte-identical to the React version |
+| Logic | <code>/src/utils/calc.js</code> | Pure functions, byte-identical to the React version |
 
 ## 3. Build It Step by Step
 
@@ -9804,7 +9804,7 @@ Precedence, clean decimals, operator replacement, chaining from a result, a sing
         files: {
           "/src/App.vue": `<script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { press, initialState, keyFromKeyboard, pretty } from "./calc.js";
+import { press, initialState, keyFromKeyboard, pretty } from "./utils/calc.js";
 
 const KEYS = [
   { key: "AC", label: "AC", name: "All clear", kind: "fn" },
@@ -9953,7 +9953,7 @@ body {
 }
 </style>
 `,
-          "/src/calc.js": `// Pure calculator logic: no React, no DOM, no eval.
+          "/src/utils/calc.js": `// Pure calculator logic: no React, no DOM, no eval.
 export const OPS = ["+", "-", "*", "/"];
 const PRETTY = { "*": "×", "/": "÷", "-": "−", "+": "+" };
 
@@ -10355,7 +10355,7 @@ import {
   keyFromKeyboard,
   press,
   pretty,
-} from "./calc";
+} from "./utils/calc";
 
 interface Key {
   key: string;
@@ -10460,7 +10460,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/calc.ts": `// Pure calculator logic: no React, no DOM, no eval.
+          "/src/app/utils/calc.ts": `// Pure calculator logic: no React, no DOM, no eval.
 export type Token = number | string;
 export interface CalcState {
   expr: string;

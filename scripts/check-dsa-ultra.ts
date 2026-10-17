@@ -207,7 +207,7 @@ function checkLanguage(title: string, file: string, lang: DsaLanguage, b: DsaUlt
   if (opens !== closes) fail(t, file, "div-imbalance", `${opens} <div> vs ${closes} </div> (fenced code excluded)`);
 
   // The whole answer is for one language: no fences in the other three.
-  for (const m of md.matchAll(/^(?:~~~|```)\s*([\w+-]*)/gm)) {
+  for (const m of md.matchAll(/^(?:~~~|```)[ \t]*([\w+-]*)/gm)) {
     const tag = m[1].toLowerCase();
     if (FENCE_LANG[lang].test(tag) || NEUTRAL_FENCE.test(tag)) continue;
     const other = DSA_LANGUAGES.find((l) => FENCE_LANG[l].test(tag));

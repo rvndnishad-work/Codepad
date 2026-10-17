@@ -119,7 +119,8 @@ if (sectionFlag === -1 || !SECTION) {
 }
 const NO_DB = process.argv.includes("--no-db");
 const fileFlag = process.argv.indexOf("--file");
-const onlyFile = fileFlag === -1 ? undefined : process.argv[fileFlag + 1];
+// Accept "prisma/data/x.ts" as well as "x.ts".
+const onlyFile = fileFlag === -1 ? undefined : process.argv[fileFlag + 1]?.split("/").pop();
 
 type Problem = { title: string; file: string; rule: string; detail: string };
 const internalLinks: { title: string; file: string; slug: string }[] = [];

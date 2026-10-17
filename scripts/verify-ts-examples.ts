@@ -32,7 +32,7 @@ const arg = (name: string) => {
   const i = process.argv.indexOf(name);
   return i === -1 ? undefined : process.argv[i + 1];
 };
-const onlyFile = arg("--file");
+const onlyFile = arg("--file")?.split("/").pop(); // "prisma/data/x.ts" or "x.ts"
 const onlyTitle = arg("--title");
 const JOBS = Number(arg("--jobs") ?? 4);
 const TS_DIR = process.env.TS_DIR;

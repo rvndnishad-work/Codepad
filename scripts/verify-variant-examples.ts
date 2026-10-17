@@ -39,7 +39,7 @@ if (PREFIX !== "system-design" && PREFIX !== "ai") {
   console.log("Usage: npx tsx scripts/verify-variant-examples.ts --section <system-design|ai> [--file <name>] [--title <substring>]");
   process.exit(1);
 }
-const onlyFile = arg("--file");
+const onlyFile = arg("--file")?.split("/").pop(); // "prisma/data/x.ts" or "x.ts"
 const onlyTitle = arg("--title");
 const JOBS = Number(arg("--jobs") ?? 4);
 const CACHE = join(tmpdir(), "variant-verify-cache");

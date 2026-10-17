@@ -42,7 +42,7 @@ const arg = (name: string) => {
   const i = process.argv.indexOf(name);
   return i === -1 ? undefined : process.argv[i + 1];
 };
-const onlyFile = arg("--file");
+const onlyFile = arg("--file")?.split("/").pop(); // "prisma/data/x.ts" or "x.ts"
 const onlyTitle = arg("--title");
 const SQLJS_DIR = process.env.SQLJS_DIR;
 const PSQL_URL = process.env.PSQL_URL;

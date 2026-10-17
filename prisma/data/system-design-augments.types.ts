@@ -34,3 +34,27 @@ export type SystemDesignAugment = {
   answer?: string;
   examples?: SDExample[];
 };
+
+/**
+ * "Ultra" entries: prisma/data/system-design-augments-ultra-NN.ts, applied by
+ * prisma/augment-system-design.ts after the legacy files (ultra wins for a
+ * title). Every program is run by scripts/verify-variant-examples.ts; the
+ * variants of one example must print exactly the same output, and "node"
+ * comes first (CLAUDE.md §5). "Run Playground" opens each variant in /play.
+ */
+export type SDUltraProgram = { tech: "node" | "python" | "go" | "java"; code: string; label?: string };
+
+export type SDUltraExample =
+  | { label: string; variants: SDUltraProgram[] }
+  | { label: string; tech: SDUltraProgram["tech"]; code: string };
+
+export type SystemDesignUltraAugment = {
+  title: string;
+  difficulty?: "easy" | "medium" | "hard";
+  /** Plain sentence, max 155 chars. */
+  seoDescription: string;
+  /** Question Body (CLAUDE.md §6), plain markdown, no HTML. */
+  description: string;
+  answer: string;
+  examples: SDUltraExample[];
+};

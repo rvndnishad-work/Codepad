@@ -28,3 +28,28 @@ export type AiAugment = {
   answer?: string;
   examples?: AiExample[];
 };
+
+/**
+ * "Ultra" entries: prisma/data/ai-augments-ultra-NN.ts, applied by
+ * prisma/augment-ai.ts after the legacy files (ultra wins for a title).
+ * Unlike the legacy rule above, ultra examples are complete programs that run
+ * offline (an in-process stub stands in for the model API) and are run by
+ * scripts/verify-variant-examples.ts, so they keep "Run Playground".
+ * Variants of one example print exactly the same output; "node" comes first.
+ */
+export type AiUltraProgram = { tech: "node" | "python"; code: string; label?: string };
+
+export type AiUltraExample =
+  | { label: string; variants: AiUltraProgram[] }
+  | { label: string; tech: AiUltraProgram["tech"]; code: string };
+
+export type AiUltraAugment = {
+  title: string;
+  difficulty?: "easy" | "medium" | "hard";
+  /** Plain sentence, max 155 chars. */
+  seoDescription: string;
+  /** Question Body (CLAUDE.md §6), plain markdown, no HTML. */
+  description: string;
+  answer: string;
+  examples: AiUltraExample[];
+};

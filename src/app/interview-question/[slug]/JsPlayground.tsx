@@ -153,7 +153,8 @@ self.onmessage = function (e) {
     error: function () { send('error', arguments); },
   };
   try {
-    var jsCode = ts.transpile(e.data);
+    // ES2022, not the ES5 default: ES5 output silently drops Set/Map spread and for...of over Maps.
+    var jsCode = ts.transpile(e.data, { target: ts.ScriptTarget.ES2022 });
     var fn = new Function('console', jsCode);
     var result = fn(sandbox);
     if (result !== undefined) send('log', ['=> ' + fmt(result)]);

@@ -10,9 +10,10 @@
  * conclusion, a Verified section) and the section's code conventions.
  *
  * Code is not run here; each section has its own verifier
- * (python: scripts/verify-python-examples.ts).
+ * (python: verify-python-examples.ts, typescript: verify-ts-examples.ts,
+ * sql: verify-sql-examples.ts, system-design and ai: verify-variant-examples.ts).
  *
- *   npx tsx scripts/check-ultra.ts --section python [--no-db] [--file <name>]
+ *   npx tsx scripts/check-ultra.ts --section <python|typescript|sql|system-design|ai> [--no-db] [--file <name>]
  */
 import { PrismaClient } from "@prisma/client";
 import { readdirSync } from "fs";
@@ -38,6 +39,10 @@ type Section = {
   fences: RegExp;
   /** Extra per-example rules; return an error message or null. */
   example?: (ex: Example) => string | null;
+  /** Examples may be { variants: [{ tech, code }] } instead of one { code }. */
+  variants?: boolean;
+  /** Extra Question Body rule; return an error message or null. */
+  description?: (d: string) => string | null;
 };
 
 const SECTIONS: Record<string, Section> = {
@@ -50,6 +55,57 @@ const SECTIONS: Record<string, Section> = {
       if (/^\s*(import|from)\s+(numpy|pandas|polars|pydantic|requests|attrs|pytest)\b/m.test(code) && ex.runnable !== false)
         return "imports a third-party package but is marked runnable (the page runs Pyodide with the standard library only)";
       if (/^\s*input\(/m.test(code)) return "calls input(); the page runner has no stdin";
+      return null;
+    },
+  },
+  typescript: {
+    prefix: "typescript",
+    technology: "typescript",
+    fences: /^(ts|typescript|tsx|js|javascript|jsx|json|jsonc|diff)$/,
+    example: (ex) => {
+      const code = ex.code ?? "";
+      if (ex.runnable === false) return null;
+      if (/^\s*(import|export)\b/m.test(code)) return "uses import/export; the page runs the code as a plain function body, where both are syntax errors";
+      if (/\brequire\(|\bprocess\.|\bBuffer\./.test(code)) return "uses require/process/Buffer; the page runs in a browser worker";
+      if (/^await\b|^\s*(const|let|var)\s+\w+\s*=\s*await\b/m.test(code) && !/async/.test(code)) return "uses top-level await; wrap it in an async function";
+      return null;
+    },
+  },
+  sql: {
+    prefix: "sql",
+    technology: "sql",
+    fences: /^(sql|json|diff)$/,
+    example: (ex) => {
+      const d = (ex as { dialect?: string }).dialect;
+      if (d && d !== "postgres") return `dialect "${d}" is not verified; use runnable SQLite or dialect "postgres"`;
+      if (ex.runnable === false && !d) return "runnable:false without dialect \"postgres\" is never run; keep it runnable or mark it postgres";
+      return null;
+    },
+    description: (d) => (/```sql/.test(d) ? null : "Question Body has no ```sql schema block; the page seeds its database from it"),
+  },
+  "system-design": {
+    prefix: "system-design",
+    technology: "system-design",
+    fences: /^(js|javascript|ts|typescript|python|py|go|java|json|yaml|yml|sql|http|ini|toml|diff|nginx|proto|graphql)$/,
+    variants: true,
+    example: (ex) => {
+      const v = (ex.variants ?? []) as { tech?: string }[];
+      if (!v.length && !ex.code) return "has neither code nor variants";
+      if (v.length && v[0].tech !== "node") return "node must be the first variant (CLAUDE.md §5)";
+      for (const x of v.length ? v : [ex]) if (!["node", "python", "go", "java"].includes(x.tech ?? "")) return `tech "${x.tech}" (use node, python, go or java)`;
+      return null;
+    },
+  },
+  ai: {
+    prefix: "ai",
+    technology: "ai-engineering",
+    fences: /^(js|javascript|ts|typescript|python|py|json|jsonc|yaml|yml|text|diff|toml|sql)$/,
+    variants: true,
+    example: (ex) => {
+      const v = (ex.variants ?? []) as { tech?: string }[];
+      if (!v.length && !ex.code) return "has neither code nor variants";
+      if (v.length && v[0].tech !== "node") return "node must be the first variant (CLAUDE.md §5)";
+      for (const x of v.length ? v : [ex]) if (!["node", "python"].includes(x.tech ?? "")) return `tech "${x.tech}" (use node or python)`;
       return null;
     },
   },
@@ -250,12 +306,14 @@ function checkAnswer(a: UltraAugment, file: string) {
       fail(t, file, "description-html", `Question Body contains HTML (renders without rehype-raw): ${/<[a-z][^>]*>/i.exec(prose)?.[0]}`);
     if (!/What a strong answer should cover/i.test(a.description))
       fail(t, file, "description-rubric", "Question Body is missing 'What a strong answer should cover'");
+    const de = SECTION.description?.(a.description);
+    if (de) fail(t, file, "description-rule", de);
   }
 
   if (!a.examples?.length) fail(t, file, "no-example", "no example");
   for (const ex of a.examples ?? []) {
     if (!ex.label) soft(t, file, "example-no-label", "example without a label");
-    if (!ex.code?.trim()) fail(t, file, "example-empty", `"${ex.label}" has no code`);
+    if (!ex.code?.trim() && !(SECTION.variants && ex.variants?.length)) fail(t, file, "example-empty", `"${ex.label}" has no code`);
     const e = SECTION.example?.(ex);
     if (e) fail(t, file, "example-rule", `"${ex.label}" ${e}`);
   }

@@ -38,6 +38,7 @@
     "augment:dsa": "npx tsx prisma/augment-dsa.ts",
     "augment:mc": "npx tsx prisma/augment-machine-coding.ts",
     "augment:sql": "npx tsx prisma/augment-sql.ts",
+    "augment:ts": "npx tsx prisma/augment-typescript.ts",
     "generate:mc": "npx tsx prisma/generate-mc-answers.ts",
     "seed:mc-generated": "npx tsx prisma/seed-mc-generated.ts",
     "postinstall": "prisma generate && node scripts/copy-monaco.mjs && node scripts/copy-excalidraw.mjs",

@@ -1,0 +1,36 @@
+[
+  {
+    "technology": "ai-engineering",
+    "round": "AI Engineering",
+    "difficulty": "medium",
+    "tags": [
+      "transformer",
+      "attention",
+      "fundamentals"
+    ],
+    "title": "How does the transformer architecture and attention work?",
+    "description": "Self-attention, queries, keys and values, multi-head attention, positional information, and why attention cost grows with context length."
+  },
+  {
+    "technology": "ai-engineering",
+    "round": "AI Engineering",
+    "difficulty": "medium",
+    "tags": [
+      "training",
+      "alignment"
+    ],
+    "title": "What are RLHF and DPO, and how do they turn a base model into an assistant?",
+    "description": "Supervised fine-tuning, reward models and RLHF, Direct Preference Optimization, and what each step changes in model behaviour."
+  },
+  {
+    "technology": "ai-engineering",
+    "round": "AI Engineering",
+    "difficulty": "medium",
+    "tags": [
+      "reasoning",
+      "models"
+    ],
+    "title": "What are reasoning models and when should you use them?",
+    "description": "Models that spend extra tokens thinking before answering: what they are good at, their cost and latency, and how to prompt them."
+  }
+]

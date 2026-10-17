@@ -44,3 +44,34 @@ export type PythonAugment = {
   answer?: string;
   examples?: PyExample[];
 };
+
+/**
+ * Python ULTRA augments (prisma/data/python-augments-ultra-NN.ts): the full
+ * CLAUDE.md treatment — Question Body (§6), tutorial answer with 📌 terms,
+ * diagrams, a Verified section quoting real output, the amber "How to Answer
+ * in an Interview" card (§7), glossary and conclusion.
+ *
+ * Examples run in the page on Pyodide 0.25.1 (CPython 3.11). An example that
+ * cannot run there (threads, processes, sockets, 3.12+ syntax) sets
+ * `runnable: false` and `python` to the version it was verified on; it is then
+ * shown as static code with an "Open in playground" hand-off.
+ *
+ * scripts/check-ultra.ts checks the structure and
+ * scripts/verify-python-examples.ts runs every example.
+ */
+export type PythonUltraExample = {
+  label: string;
+  code: string;
+  runnable?: boolean;
+  /** Interpreter the example was verified with when runnable is false, e.g. "3.12". */
+  python?: "3.11" | "3.12" | "3.13";
+};
+
+export type PythonUltraAugment = {
+  title: string;
+  difficulty?: "easy" | "medium" | "hard";
+  seoDescription: string;
+  description: string;
+  answer: string;
+  examples: PythonUltraExample[];
+};

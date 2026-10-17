@@ -13,9 +13,10 @@ export const iconBtn =
   "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-subtle transition-colors hover:bg-panel hover:text-fg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
 export const runBtn =
   "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-[13px] font-semibold text-accent-ink transition-[filter,transform] hover:brightness-95 active:translate-y-px disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none";
-/** Dark on purpose: the highlight theme is github-dark. */
+/** Follows the theme: a light panel in light mode, the dark one in dark mode
+ *  (token colours for both live in question.css under `.qa-code`). */
 export const codeArea =
-  "iq-hl qa-code-scroll m-0 overflow-x-auto bg-[#0b0d12] px-4 py-4 font-mono text-[13.5px] leading-[1.7] text-muted sm:px-5";
+  "iq-hl qa-code qa-code-scroll m-0 overflow-x-auto bg-[#f6f8fa] px-4 py-4 font-mono text-[13.5px] leading-[1.7] text-[#1f2328] dark:bg-[#0b0d12] dark:text-[#c9d1d9] sm:px-5";
 
 /** Brand colour for a language or framework dot. */
 export const LANG_COLOR: Record<string, string> = {

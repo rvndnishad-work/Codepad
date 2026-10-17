@@ -142,18 +142,18 @@ const FILTERS = {
   completed: (todo) => todo.done,
 };
 
-  const [todos, setTodos] = useState([
-    { id: 1, text: "Buy milk", done: false },
-    { id: 2, text: "Write tests", done: true },
-  ]);
-  const [draft, setDraft] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [error, setError] = useState("");
-  const nextId = useRef(3);
+const [todos, setTodos] = useState([
+  { id: 1, text: "Buy milk", done: false },
+  { id: 2, text: "Write tests", done: true },
+]);
+const [draft, setDraft] = useState("");
+const [filter, setFilter] = useState("all");
+const [error, setError] = useState("");
+const nextId = useRef(3);
 
-  // Derived values: computed during render, never stored in state.
-  const visible = todos.filter(FILTERS[filter]);
-  const remaining = todos.filter((t) => !t.done).length;
+// Derived values: computed during render, never stored in state.
+const visible = todos.filter(FILTERS[filter]);
+const remaining = todos.filter((t) => !t.done).length;
 ~~~
 
 The <code>FILTERS</code> object maps each filter name to a test function, so the filter buttons and the list both read from one place. <code>visible</code> and <code>remaining</code> are plain <code>const</code>s, recalculated on every render. For a list of tens or hundreds of items that is far cheaper than any bug caused by storing them.
@@ -163,21 +163,23 @@ The <code>FILTERS</code> object maps each filter name to a test function, so the
 ### Step 2: a controlled input inside a real form
 
 ~~~jsx
-      <form data-testid="add-form" onSubmit={handleSubmit} className="row">
-        <input
-          data-testid="new-todo"
-          aria-label="New task"
-          placeholder="What needs doing?"
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setError("");
-          }}
-          aria-invalid={error ? "true" : "false"}
-          aria-describedby="todo-error"
-        />
-        <button data-testid="add" type="submit">Add</button>
-      </form>
+<form data-testid="add-form" onSubmit={handleSubmit} className="row">
+  <input
+    data-testid="new-todo"
+    aria-label="New task"
+    placeholder="What needs doing?"
+    value={draft}
+    onChange={(e) => {
+      setDraft(e.target.value);
+      setError("");
+    }}
+    aria-invalid={error ? "true" : "false"}
+    aria-describedby="todo-error"
+  />
+  <button data-testid="add" type="submit">
+    Add
+  </button>
+</form>
 ~~~
 
 📌 **Interview term: Controlled input** — an input whose displayed value comes from React state (<code>value={draft}</code>) and whose every change goes through a handler (<code>onChange</code>). React, not the DOM, is the owner of the text. See [controlled vs uncontrolled components](/interview-question/what-is-the-difference-between-controlled-and-uncontrolled-components).
@@ -187,26 +189,28 @@ Wrapping it in a <code>&lt;form&gt;</code> is the cheapest keyboard support you 
 ### Step 3: validate, then add immutably
 
 ~~~jsx
-  function validate(text, ignoreId) {
-    if (!text) return "Type a task first.";
-    const key = text.toLowerCase();
-    if (todos.some((t) => t.id !== ignoreId && t.text.toLowerCase() === key))
-      return "“" + text + "” is already on the list.";
-    return "";
-  }
+function validate(text, ignoreId) {
+  if (!text) return "Type a task first.";
+  const key = text.toLowerCase();
+  if (
+    todos.some((t) => t.id !== ignoreId && t.text.toLowerCase() === key)
+  )
+    return "“" + text + "” is already on the list.";
+  return "";
+}
 ~~~
 
 ~~~jsx
-  function handleSubmit(event) {
-    event.preventDefault();
-    const text = draft.trim();
-    const problem = validate(text);
-    setError(problem);
-    if (problem) return;
-    const todo = { id: nextId.current++, text, done: false };
-    setTodos((prev) => [...prev, todo]);
-    setDraft("");
-  }
+function handleSubmit(event) {
+  event.preventDefault();
+  const text = draft.trim();
+  const problem = validate(text);
+  setError(problem);
+  if (problem) return;
+  const todo = { id: nextId.current++, text, done: false };
+  setTodos((prev) => [...prev, todo]);
+  setDraft("");
+}
 ~~~
 
 📌 **Interview term: Immutable update** — instead of changing the existing array (<code>todos.push(...)</code>), you build a new one (<code>[...prev, todo]</code>). React compares the old and new references to decide whether anything changed; mutate in place and the reference stays the same, so the screen may not update. More in [why React state updates must be immutable](/interview-question/why-must-react-state-updates-be-immutable).
@@ -218,14 +222,16 @@ Notice the id is taken **outside** the updater. In development, <code>StrictMode
 ### Step 4: toggle and delete are map and filter
 
 ~~~jsx
-  function toggle(id) {
-    setError("");
-    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  }
-  function remove(id) {
-    setError("");
-    setTodos((prev) => prev.filter((t) => t.id !== id));
-  }
+function toggle(id) {
+  setError("");
+  setTodos((prev) =>
+    prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+  );
+}
+function remove(id) {
+  setError("");
+  setTodos((prev) => prev.filter((t) => t.id !== id));
+}
 ~~~
 
 <code>map</code> returns a new array where one object is replaced by a copy with <code>done</code> flipped; <code>filter</code> returns a new array without the deleted one. Neither touches the old array or the old objects.
@@ -233,22 +239,26 @@ Notice the id is taken **outside** the updater. In development, <code>StrictMode
 ### Step 5: render the list with stable keys
 
 ~~~jsx
-      {visible.length === 0 ? (
-        <p data-testid="empty" className="empty">No {filter === "all" ? "" : filter + " "}tasks.</p>
-      ) : (
-        <ul className="list">
-          {visible.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={() => toggle(todo.id)}
-              onDelete={() => remove(todo.id)}
-              onRename={(text) => rename(todo.id, text)}
-              onCancel={() => setError("")}
-            />
-          ))}
-        </ul>
-      )}
+{
+  visible.length === 0 ? (
+    <p data-testid="empty" className="empty">
+      No {filter === "all" ? "" : filter + " "}tasks.
+    </p>
+  ) : (
+    <ul className="list">
+      {visible.map((todo) => (
+        <TodoItem
+          key={todo.id}
+          todo={todo}
+          onToggle={() => toggle(todo.id)}
+          onDelete={() => remove(todo.id)}
+          onRename={(text) => rename(todo.id, text)}
+          onCancel={() => setError("")}
+        />
+      ))}
+    </ul>
+  );
+}
 ~~~
 
 📌 **Interview term: Key** — the <code>key</code> prop tells React which item is which between renders. With <code>key={todo.id}</code>, deleting the first row removes exactly that row. With <code>key={index}</code>, every row below shifts its index, and React reuses the wrong component, so per-row state (like "this row is in edit mode") jumps to a neighbour. Read [the purpose of the key prop](/interview-question/what-is-the-purpose-of-the-key-prop-when-rendering-lists-in-react).
@@ -256,26 +266,26 @@ Notice the id is taken **outside** the updater. In development, <code>StrictMode
 ### Step 6: inline edit lives in the row
 
 ~~~jsx
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(todo.text);
-  const inputRef = useRef(null);
+const [editing, setEditing] = useState(false);
+const [value, setValue] = useState(todo.text);
+const inputRef = useRef(null);
 
-  // Move focus into the edit box when edit mode opens.
-  useEffect(() => {
-    if (editing) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [editing]);
-
-  function save() {
-    if (onRename(value)) setEditing(false);
+// Move focus into the edit box when edit mode opens.
+useEffect(() => {
+  if (editing) {
+    inputRef.current.focus();
+    inputRef.current.select();
   }
+}, [editing]);
 
-  function handleKeyDown(event) {
-    if (event.key === "Enter") save();
-    if (event.key === "Escape") cancel();
-  }
+function save() {
+  if (onRename(value)) setEditing(false);
+}
+
+function handleKeyDown(event) {
+  if (event.key === "Enter") save();
+  if (event.key === "Escape") cancel();
+}
 ~~~
 
 The row owns <code>editing</code> and the half-typed <code>value</code> because nothing else needs them. When the user saves, the row asks <code>App</code> through <code>onRename</code>, which validates against the whole list and returns <code>true</code> only when it accepted the text. A rejected edit keeps the row open so the user can fix it.
@@ -469,7 +479,9 @@ export default function App() {
 
   function toggle(id) {
     setError("");
-    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+    );
   }
 
   function remove(id) {
@@ -477,7 +489,8 @@ export default function App() {
     setTodos((prev) => prev.filter((t) => t.id !== id));
   }
 
-  // Returns true when the new text was accepted, so the row can leave edit mode.
+  // Returns true when the new text was
+  // accepted, so the row can leave edit mode.
   function rename(id, raw) {
     const text = raw.trim();
     const problem = validate(text, id);
@@ -504,9 +517,18 @@ export default function App() {
           aria-invalid={error ? "true" : "false"}
           aria-describedby="todo-error"
         />
-        <button data-testid="add" type="submit">Add</button>
+        <button data-testid="add" type="submit">
+          Add
+        </button>
       </form>
-      <p id="todo-error" data-testid="error" className="error" aria-live="polite">{error}</p>
+      <p
+        id="todo-error"
+        data-testid="error"
+        className="error"
+        aria-live="polite"
+      >
+        {error}
+      </p>
 
       <div className="filters" role="group" aria-label="Filter tasks">
         {Object.keys(FILTERS).map((name) => (
@@ -523,7 +545,9 @@ export default function App() {
       </div>
 
       {visible.length === 0 ? (
-        <p data-testid="empty" className="empty">No {filter === "all" ? "" : filter + " "}tasks.</p>
+        <p data-testid="empty" className="empty">
+          No {filter === "all" ? "" : filter + " "}tasks.
+        </p>
       ) : (
         <ul className="list">
           {visible.map((todo) => (
@@ -546,27 +570,98 @@ export default function App() {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.todo { max-width: 460px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.todo h1 { font-size: 1.3rem; margin: 0 0 14px; }
-.row, .item { display: flex; gap: 8px; align-items: center; }
-.todo input:not([type=checkbox]) { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px;
-  border: 1px solid #374151; background: #0f172a; color: inherit; }
-.todo button { padding: 7px 12px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: inherit; cursor: pointer; }
-.todo button[type=submit], .todo button[aria-pressed=true] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; }
-.error { min-height: 1.2em; margin: 6px 0; color: #fca5a5; font-size: 0.9rem; }
-.filters { display: flex; gap: 6px; margin-bottom: 10px; }
-.list { list-style: none; padding: 0; margin: 0; }
-.item { padding: 8px 0; border-bottom: 1px solid #1f2937; }
-.item label { flex: 1; display: flex; gap: 8px; align-items: center; min-width: 0; }
-.item.done .todo-text { text-decoration: line-through; color: #6b7280; }
-.empty, .count { color: #9ca3af; font-size: 0.9rem; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.todo {
+  max-width: 460px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.todo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+}
+.row,
+.item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.todo input:not([type="checkbox"]) {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.todo button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: inherit;
+  cursor: pointer;
+}
+.todo button[type="submit"],
+.todo button[aria-pressed="true"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+}
+.error {
+  min-height: 1.2em;
+  margin: 6px 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+.filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.item {
+  padding: 8px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.item label {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.item.done .todo-text {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+.empty,
+.count {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
 `,
           "/src/TodoItem.js": `import { useEffect, useRef, useState } from "react";
 
-export default function TodoItem({ todo, onToggle, onDelete, onRename, onCancel }) {
+export default function TodoItem({
+  todo,
+  onToggle,
+  onDelete,
+  onRename,
+  onCancel,
+}) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(todo.text);
   const inputRef = useRef(null);
@@ -609,8 +704,12 @@ export default function TodoItem({ todo, onToggle, onDelete, onRename, onCancel 
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <button type="button" data-action="save" onClick={save}>Save</button>
-        <button type="button" data-action="cancel" onClick={cancel}>Cancel</button>
+        <button type="button" data-action="save" onClick={save}>
+          Save
+        </button>
+        <button type="button" data-action="cancel" onClick={cancel}>
+          Cancel
+        </button>
       </li>
     );
   }
@@ -619,10 +718,26 @@ export default function TodoItem({ todo, onToggle, onDelete, onRename, onCancel 
     <li data-testid="todo" className={todo.done ? "item done" : "item"}>
       <label>
         <input type="checkbox" checked={todo.done} onChange={onToggle} />
-        <span className="todo-text" onDoubleClick={startEdit}>{todo.text}</span>
+        <span className="todo-text" onDoubleClick={startEdit}>
+          {todo.text}
+        </span>
       </label>
-      <button type="button" data-action="edit" aria-label={"Edit " + todo.text} onClick={startEdit}>Edit</button>
-      <button type="button" data-action="delete" aria-label={"Delete " + todo.text} onClick={onDelete}>✕</button>
+      <button
+        type="button"
+        data-action="edit"
+        aria-label={"Edit " + todo.text}
+        onClick={startEdit}
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        data-action="delete"
+        aria-label={"Delete " + todo.text}
+        onClick={onDelete}
+      >
+        ✕
+      </button>
     </li>
   );
 }
@@ -700,25 +815,29 @@ const editingId = ref(null);
 let nextId = 3;
 
 // Derived state: cached, recomputed only when todos or filter change.
-const visible = computed(() => todos.value.filter(FILTERS[filter.value]));
-const remaining = computed(() => todos.value.filter((t) => !t.done).length);
+const visible = computed(() =>
+  todos.value.filter(FILTERS[filter.value]),
+);
+const remaining = computed(
+  () => todos.value.filter((t) => !t.done).length,
+);
 ~~~
 
 ### Step 2: v-model inside a real form
 
 ~~~vue
-    <form data-testid="add-form" class="row" @submit.prevent="add">
-      <input
-        v-model="draft"
-        data-testid="new-todo"
-        aria-label="New task"
-        placeholder="What needs doing?"
-        :aria-invalid="error ? 'true' : 'false'"
-        aria-describedby="todo-error"
-        @input="error = ''"
-      />
-      <button data-testid="add" type="submit">Add</button>
-    </form>
+<form data-testid="add-form" class="row" @submit.prevent="add">
+  <input
+    v-model="draft"
+    data-testid="new-todo"
+    aria-label="New task"
+    placeholder="What needs doing?"
+    :aria-invalid="error ? 'true' : 'false'"
+    aria-describedby="todo-error"
+    @input="error = ''"
+  />
+  <button data-testid="add" type="submit">Add</button>
+</form>
 ~~~
 
 📌 **Interview term: v-model** — two-way binding: on a text input it binds <code>:value</code> and listens to <code>input</code>, so the ref and the field always match. Read [how v-model works on form inputs](/interview-question/how-does-v-model-work-on-form-inputs).
@@ -731,7 +850,11 @@ const remaining = computed(() => todos.value.filter((t) => !t.done).length);
 function validate(text, ignoreId) {
   if (!text) return "Type a task first.";
   const key = text.toLowerCase();
-  if (todos.value.some((t) => t.id !== ignoreId && t.text.toLowerCase() === key))
+  if (
+    todos.value.some(
+      (t) => t.id !== ignoreId && t.text.toLowerCase() === key,
+    )
+  )
     return "“" + text + "” is already on the list.";
   return "";
 }
@@ -767,7 +890,11 @@ Vue tracks deep changes inside a <code>ref</code> array, so <code>push</code> an
         @cancel="cancelEdit"
       />
     </ul>
-    <p v-else data-testid="empty" class="empty">No {{ filter === "all" ? "" : filter + " " }}tasks.</p>
+    <p
+      v-else
+      data-testid="empty"
+      class="empty"
+    >No {{ filter === "all" ? "" : filter + " " }}tasks.</p>
 ~~~
 
 📌 **Interview term: :key in v-for** — the identity Vue uses to match old and new rows. Use <code>todo.id</code>; with the index, deleting a row would shift every later row and its local edit state onto the wrong task. See [why :key matters in v-for](/interview-question/why-is-the-key-attribute-important-in-v-for).
@@ -782,7 +909,8 @@ Because an emit cannot return a value, <code>App</code> owns <code>editingId</co
 const value = ref(props.todo.text);
 const editInput = useTemplateRef("editInput");
 
-// When the parent opens edit mode: copy the current text in, then focus the box.
+// When the parent opens edit mode: copy
+// the current text in, then focus the box.
 watch(
   () => props.editing,
   async (on) => {
@@ -791,7 +919,7 @@ watch(
     await nextTick();
     editInput.value.focus();
     editInput.value.select();
-  }
+  },
 );
 ~~~
 
@@ -937,7 +1065,12 @@ Every line matches the React and Angular runs: trimmed input, blank and duplicat
       />
       <button data-testid="add" type="submit">Add</button>
     </form>
-    <p id="todo-error" data-testid="error" class="error" aria-live="polite">{{ error }}</p>
+    <p
+      id="todo-error"
+      data-testid="error"
+      class="error"
+      aria-live="polite"
+    >{{ error }}</p>
 
     <div class="filters" role="group" aria-label="Filter tasks">
       <button
@@ -965,9 +1098,16 @@ Every line matches the React and Angular runs: trimmed input, blank and duplicat
         @cancel="cancelEdit"
       />
     </ul>
-    <p v-else data-testid="empty" class="empty">No {{ filter === "all" ? "" : filter + " " }}tasks.</p>
+    <p
+      v-else
+      data-testid="empty"
+      class="empty"
+    >No {{ filter === "all" ? "" : filter + " " }}tasks.</p>
 
-    <p data-testid="count" class="count">{{ remaining }} {{ remaining === 1 ? "item" : "items" }} left</p>
+    <p
+      data-testid="count"
+      class="count"
+    >{{ remaining }} {{ remaining === 1 ? "item" : "items" }} left</p>
   </main>
 </template>
 
@@ -999,7 +1139,9 @@ const remaining = computed(() => todos.value.filter((t) => !t.done).length);
 function validate(text, ignoreId) {
   if (!text) return "Type a task first.";
   const key = text.toLowerCase();
-  if (todos.value.some((t) => t.id !== ignoreId && t.text.toLowerCase() === key))
+  if (
+    todos.value.some((t) => t.id !== ignoreId && t.text.toLowerCase() === key)
+  )
     return "“" + text + "” is already on the list.";
   return "";
 }
@@ -1043,23 +1185,88 @@ function cancelEdit() {
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.todo { max-width: 460px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.todo h1 { font-size: 1.3rem; margin: 0 0 14px; }
-.row, .item { display: flex; gap: 8px; align-items: center; }
-.todo input:not([type=checkbox]) { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px;
-  border: 1px solid #374151; background: #0f172a; color: inherit; }
-.todo button { padding: 7px 12px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: inherit; cursor: pointer; }
-.todo button[type=submit], .todo button[aria-pressed=true] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; }
-.error { min-height: 1.2em; margin: 6px 0; color: #fca5a5; font-size: 0.9rem; }
-.filters { display: flex; gap: 6px; margin-bottom: 10px; }
-.list { list-style: none; padding: 0; margin: 0; }
-.item { padding: 8px 0; border-bottom: 1px solid #1f2937; }
-.item label { flex: 1; display: flex; gap: 8px; align-items: center; min-width: 0; }
-.item.done .todo-text { text-decoration: line-through; color: #6b7280; }
-.empty, .count { color: #9ca3af; font-size: 0.9rem; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.todo {
+  max-width: 460px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.todo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+}
+.row,
+.item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.todo input:not([type="checkbox"]) {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.todo button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: inherit;
+  cursor: pointer;
+}
+.todo button[type="submit"],
+.todo button[aria-pressed="true"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+}
+.error {
+  min-height: 1.2em;
+  margin: 6px 0;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+.filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.item {
+  padding: 8px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.item label {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.item.done .todo-text {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+.empty,
+.count {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
 </style>
 `,
           "/src/components/TodoItem.vue": `<template>
@@ -1072,16 +1279,37 @@ body { margin: 0; background: #0b1020; }
       @keydown.enter="emit('save', value)"
       @keydown.esc="emit('cancel')"
     />
-    <button type="button" data-action="save" @click="emit('save', value)">Save</button>
-    <button type="button" data-action="cancel" @click="emit('cancel')">Cancel</button>
+    <button
+      type="button"
+      data-action="save"
+      @click="emit('save', value)"
+    >Save</button>
+    <button
+      type="button"
+      data-action="cancel"
+      @click="emit('cancel')"
+    >Cancel</button>
   </li>
   <li v-else data-testid="todo" :class="['item', { done: todo.done }]">
     <label>
       <input type="checkbox" :checked="todo.done" @change="emit('toggle')" />
-      <span class="todo-text" @dblclick="emit('start-edit')">{{ todo.text }}</span>
+      <span
+        class="todo-text"
+        @dblclick="emit('start-edit')"
+      >{{ todo.text }}</span>
     </label>
-    <button type="button" data-action="edit" :aria-label="'Edit ' + todo.text" @click="emit('start-edit')">Edit</button>
-    <button type="button" data-action="delete" :aria-label="'Delete ' + todo.text" @click="emit('remove')">✕</button>
+    <button
+      type="button"
+      data-action="edit"
+      :aria-label="'Edit ' + todo.text"
+      @click="emit('start-edit')"
+    >Edit</button>
+    <button
+      type="button"
+      data-action="delete"
+      :aria-label="'Delete ' + todo.text"
+      @click="emit('remove')"
+    >✕</button>
   </li>
 </template>
 
@@ -1097,7 +1325,8 @@ const emit = defineEmits(["toggle", "remove", "start-edit", "save", "cancel"]);
 const value = ref(props.todo.text);
 const editInput = useTemplateRef("editInput");
 
-// When the parent opens edit mode: copy the current text in, then focus the box.
+// When the parent opens edit mode: copy
+// the current text in, then focus the box.
 watch(
   () => props.editing,
   async (on) => {
@@ -1106,7 +1335,7 @@ watch(
     await nextTick();
     editInput.value.focus();
     editInput.value.select();
-  }
+  },
 );
 </script>
 `,
@@ -1147,37 +1376,41 @@ Add with Enter or a button, toggle, inline edit (Enter saves, Escape cancels), d
 ### Step 1: state and derived values
 
 ~~~ts
-  readonly todos = signal<Todo[]>([
-    { id: 1, text: "Buy milk", done: false },
-    { id: 2, text: "Write tests", done: true },
-  ]);
-  readonly draft = signal("");
-  readonly filter = signal<Filter>("all");
-  readonly error = signal("");
-  readonly editingId = signal<number | null>(null);
-  private nextId = 3;
+readonly todos = signal<Todo[]>([
+  { id: 1, text: "Buy milk", done: false },
+  { id: 2, text: "Write tests", done: true },
+]);
+readonly draft = signal("");
+readonly filter = signal<Filter>("all");
+readonly error = signal("");
+readonly editingId = signal<number | null>(null);
+private nextId = 3;
 
-  // Derived state: recomputed only when todos or filter change.
-  readonly visible = computed(() => this.todos().filter(FILTERS[this.filter()]));
-  readonly remaining = computed(() => this.todos().filter((t) => !t.done).length);
+// Derived state: recomputed only when todos or filter change.
+readonly visible = computed(() =>
+  this.todos().filter(FILTERS[this.filter()]),
+);
+readonly remaining = computed(
+  () => this.todos().filter((t) => !t.done).length,
+);
 ~~~
 
 ### Step 2: the add form
 
 ~~~html
-      <form data-testid="add-form" class="row" (ngSubmit)="add()">
-        <input
-          name="draft"
-          data-testid="new-todo"
-          aria-label="New task"
-          placeholder="What needs doing?"
-          [ngModel]="draft()"
-          (ngModelChange)="draft.set($event); error.set('')"
-          [attr.aria-invalid]="error() ? 'true' : 'false'"
-          aria-describedby="todo-error"
-        />
-        <button data-testid="add" type="submit">Add</button>
-      </form>
+<form data-testid="add-form" class="row" (ngSubmit)="add()">
+  <input
+    name="draft"
+    data-testid="new-todo"
+    aria-label="New task"
+    placeholder="What needs doing?"
+    [ngModel]="draft()"
+    (ngModelChange)="draft.set($event); error.set('')"
+    [attr.aria-invalid]="error() ? 'true' : 'false'"
+    aria-describedby="todo-error"
+  />
+  <button data-testid="add" type="submit">Add</button>
+</form>
 ~~~
 
 📌 **Interview term: ngModel** — the <code>FormsModule</code> directive that binds an input value. Here it is split into <code>[ngModel]</code> (signal to input) and <code>(ngModelChange)</code> (input to signal), so typing also clears the error.
@@ -1187,17 +1420,22 @@ Add with Enter or a button, toggle, inline edit (Enter saves, Escape cancels), d
 ### Step 3: immutable updates through update()
 
 ~~~ts
-  add() {
-    const text = this.draft().trim();
-    this.error.set(this.validate(text));
-    if (this.error()) return;
-    this.todos.update((list) => [...list, { id: this.nextId++, text, done: false }]);
-    this.draft.set("");
-  }
-  toggle(id: number) {
-    this.error.set("");
-    this.todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
-  }
+add() {
+  const text = this.draft().trim();
+  this.error.set(this.validate(text));
+  if (this.error()) return;
+  this.todos.update((list) => [
+    ...list,
+    { id: this.nextId++, text, done: false },
+  ]);
+  this.draft.set("");
+}
+toggle(id: number) {
+  this.error.set("");
+  this.todos.update((list) =>
+    list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+  );
+}
 ~~~
 
 Signals compare by reference by default, so <code>update</code> returns a new array (<code>map</code>, <code>filter</code>, spread). Pushing into the old array and calling <code>set</code> with the same reference would not notify anyone.
@@ -1221,7 +1459,10 @@ Signals compare by reference by default, so <code>update</code> returns a new ar
           }
         </ul>
       } @else {
-        <p data-testid="empty" class="empty">No {{ filter() === "all" ? "" : filter() + " " }}tasks.</p>
+        <p
+          data-testid="empty"
+          class="empty"
+        >No {{ filter() === "all" ? "" : filter() + " " }}tasks.</p>
       }
 ~~~
 
@@ -1232,23 +1473,23 @@ The row component uses an **attribute selector**, <code>li[app-todo-item]</code>
 ### Step 5: the row: inputs, outputs and focus
 
 ~~~ts
-  @Input({ required: true }) todo!: Todo;
-  @Input() set editing(on: boolean) {
-    // Copy the current text in each time edit mode opens.
-    if (on && !this.isEditing) this.value.set(this.todo.text);
-    this.isEditing = on;
-  }
-  get editing(): boolean {
-    return this.isEditing;
-  }
-  @Output() toggle = new EventEmitter<void>();
-  @Output() remove = new EventEmitter<void>();
-  @Output() startEdit = new EventEmitter<void>();
-  @Output() save = new EventEmitter<string>();
-  @Output() cancel = new EventEmitter<void>();
+@Input({ required: true }) todo!: Todo;
+@Input() set editing(on: boolean) {
+  // Copy the current text in each time edit mode opens.
+  if (on && !this.isEditing) this.value.set(this.todo.text);
+  this.isEditing = on;
+}
+get editing(): boolean {
+  return this.isEditing;
+}
+@Output() toggle = new EventEmitter<void>();
+@Output() remove = new EventEmitter<void>();
+@Output() startEdit = new EventEmitter<void>();
+@Output() save = new EventEmitter<string>();
+@Output() cancel = new EventEmitter<void>();
 
-  readonly value = signal("");
-  private isEditing = false;
+readonly value = signal("");
+private isEditing = false;
 ~~~
 
 📌 **Interview term: @Input / @Output** — decorators for data in and events out. The row emits <code>save</code> with the text and the parent decides; it never edits the list. The playground compiles at runtime (JIT), where the newer signal <code>input()</code> and <code>output()</code> functions do not register, so the decorators are used. See [output() vs @Output](/interview-question/output-vs-output-eventemitter-the-new-signal-outputs).
@@ -1256,11 +1497,13 @@ The row component uses an **attribute selector**, <code>li[app-todo-item]</code>
 The <code>editing</code> input is a setter so the row copies the current text in at the moment edit mode opens. Focus uses a <code>@ViewChild</code> setter: Angular calls it when the <code>#editInput</code> element appears inside the <code>@if</code>, which is exactly when it can be focused:
 
 ~~~ts
-  @ViewChild("editInput") set editInput(ref: ElementRef<HTMLInputElement> | undefined) {
-    if (!ref) return;
-    ref.nativeElement.focus();
-    ref.nativeElement.select();
-  }
+@ViewChild("editInput") set editInput(
+  ref: ElementRef<HTMLInputElement> | undefined,
+) {
+  if (!ref) return;
+  ref.nativeElement.focus();
+  ref.nativeElement.select();
+}
 ~~~
 
 Enter and Escape on the edit box use Angular key event filters, <code>(keydown.enter)</code> and <code>(keydown.escape)</code>.
@@ -1419,11 +1662,21 @@ const FILTERS: Record<Filter, (todo: Todo) => boolean> = {
         />
         <button data-testid="add" type="submit">Add</button>
       </form>
-      <p id="todo-error" data-testid="error" class="error" aria-live="polite">{{ error() }}</p>
+      <p
+        id="todo-error"
+        data-testid="error"
+        class="error"
+        aria-live="polite"
+      >{{ error() }}</p>
 
       <div class="filters" role="group" aria-label="Filter tasks">
         @for (name of filterNames; track name) {
-          <button type="button" [attr.data-filter]="name" [attr.aria-pressed]="filter() === name" (click)="filter.set(name)">
+          <button
+            type="button"
+            [attr.data-filter]="name"
+            [attr.aria-pressed]="filter() === name"
+            (click)="filter.set(name)"
+          >
             {{ name[0].toUpperCase() + name.slice(1) }}
           </button>
         }
@@ -1445,13 +1698,20 @@ const FILTERS: Record<Filter, (todo: Todo) => boolean> = {
           }
         </ul>
       } @else {
-        <p data-testid="empty" class="empty">No {{ filter() === "all" ? "" : filter() + " " }}tasks.</p>
+        <p
+          data-testid="empty"
+          class="empty"
+        >No {{ filter() === "all" ? "" : filter() + " " }}tasks.</p>
       }
 
-      <p data-testid="count" class="count">{{ remaining() }} {{ remaining() === 1 ? "item" : "items" }} left</p>
+      <p
+        data-testid="count"
+        class="count"
+      >{{ remaining() }} {{ remaining() === 1 ? "item" : "items" }} left</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .todo { max-width: 460px; margin: 24px auto; padding: 20px; border-radius: 12px;
       background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
@@ -1466,7 +1726,8 @@ const FILTERS: Record<Filter, (todo: Todo) => boolean> = {
     .filters { display: flex; gap: 6px; margin-bottom: 10px; }
     .list { list-style: none; padding: 0; margin: 0; }
     .empty, .count { color: #9ca3af; font-size: 0.9rem; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly filterNames = Object.keys(FILTERS) as Filter[];
@@ -1481,13 +1742,21 @@ export class AppComponent {
   private nextId = 3;
 
   // Derived state: recomputed only when todos or filter change.
-  readonly visible = computed(() => this.todos().filter(FILTERS[this.filter()]));
-  readonly remaining = computed(() => this.todos().filter((t) => !t.done).length);
+  readonly visible = computed(() =>
+    this.todos().filter(FILTERS[this.filter()]),
+  );
+  readonly remaining = computed(
+    () => this.todos().filter((t) => !t.done).length,
+  );
 
   private validate(text: string, ignoreId?: number): string {
     if (!text) return "Type a task first.";
     const key = text.toLowerCase();
-    if (this.todos().some((t) => t.id !== ignoreId && t.text.toLowerCase() === key))
+    if (
+      this.todos().some(
+        (t) => t.id !== ignoreId && t.text.toLowerCase() === key,
+      )
+    )
       return "“" + text + "” is already on the list.";
     return "";
   }
@@ -1496,13 +1765,18 @@ export class AppComponent {
     const text = this.draft().trim();
     this.error.set(this.validate(text));
     if (this.error()) return;
-    this.todos.update((list) => [...list, { id: this.nextId++, text, done: false }]);
+    this.todos.update((list) => [
+      ...list,
+      { id: this.nextId++, text, done: false },
+    ]);
     this.draft.set("");
   }
 
   toggle(id: number) {
     this.error.set("");
-    this.todos.update((list) => list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+    this.todos.update((list) =>
+      list.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+    );
   }
 
   remove(id: number) {
@@ -1519,7 +1793,9 @@ export class AppComponent {
     const text = raw.trim();
     this.error.set(this.validate(text, id));
     if (this.error()) return;
-    this.todos.update((list) => list.map((t) => (t.id === id ? { ...t, text } : t)));
+    this.todos.update((list) =>
+      list.map((t) => (t.id === id ? { ...t, text } : t)),
+    );
     this.editingId.set(null);
   }
 
@@ -1529,7 +1805,15 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/todo-item.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, signal } from "@angular/core";
+          "/src/app/todo-item.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  signal,
+} from "@angular/core";
 
 export interface Todo {
   id: number;
@@ -1553,18 +1837,40 @@ export interface Todo {
         (keydown.enter)="save.emit(value())"
         (keydown.escape)="cancel.emit()"
       />
-      <button type="button" data-action="save" (click)="save.emit(value())">Save</button>
-      <button type="button" data-action="cancel" (click)="cancel.emit()">Cancel</button>
+      <button
+        type="button"
+        data-action="save"
+        (click)="save.emit(value())"
+      >Save</button>
+      <button
+        type="button"
+        data-action="cancel"
+        (click)="cancel.emit()"
+      >Cancel</button>
     } @else {
       <label>
         <input type="checkbox" [checked]="todo.done" (change)="toggle.emit()" />
-        <span class="todo-text" (dblclick)="startEdit.emit()">{{ todo.text }}</span>
+        <span
+          class="todo-text"
+          (dblclick)="startEdit.emit()"
+        >{{ todo.text }}</span>
       </label>
-      <button type="button" data-action="edit" [attr.aria-label]="'Edit ' + todo.text" (click)="startEdit.emit()">Edit</button>
-      <button type="button" data-action="delete" [attr.aria-label]="'Delete ' + todo.text" (click)="remove.emit()">✕</button>
+      <button
+        type="button"
+        data-action="edit"
+        [attr.aria-label]="'Edit ' + todo.text"
+        (click)="startEdit.emit()"
+      >Edit</button>
+      <button
+        type="button"
+        data-action="delete"
+        [attr.aria-label]="'Delete ' + todo.text"
+        (click)="remove.emit()"
+      >✕</button>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #1f2937; }
     label { flex: 1; display: flex; gap: 8px; align-items: center; min-width: 0; }
     :host(.done) .todo-text { text-decoration: line-through; color: #6b7280; }
@@ -1572,7 +1878,8 @@ export interface Todo {
       border: 1px solid #374151; background: #0f172a; color: inherit; }
     button { padding: 7px 12px; border-radius: 8px; border: 1px solid #374151;
       background: #1f2937; color: inherit; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class TodoItemComponent {
   @Input({ required: true }) todo!: Todo;
@@ -1593,15 +1900,22 @@ export class TodoItemComponent {
   readonly value = signal("");
   private isEditing = false;
 
-  // Runs when the edit box enters the DOM: focus it so the user can type straight away.
-  @ViewChild("editInput") set editInput(ref: ElementRef<HTMLInputElement> | undefined) {
+  // Runs when the edit box enters the DOM: focus
+  // it so the user can type straight away.
+  @ViewChild("editInput") set editInput(
+    ref: ElementRef<HTMLInputElement> | undefined,
+  ) {
     if (!ref) return;
     ref.nativeElement.focus();
     ref.nativeElement.select();
   }
 
   hostClass(): string {
-    return this.editing ? "item editing" : this.todo.done ? "item done" : "item";
+    return this.editing
+      ? "item editing"
+      : this.todo.done
+        ? "item done"
+        : "item";
   }
 }
 `,
@@ -1713,10 +2027,16 @@ export async function listTodos({ page, pageSize, filter, q }) {
   const needle = q.trim().toLowerCase();
   const rows = [...db]
     .reverse() // newest first
-    .filter((t) => filter === "all" || (filter === "completed" ? t.done : !t.done))
+    .filter(
+      (t) =>
+        filter === "all" || (filter === "completed" ? t.done : !t.done),
+    )
     .filter((t) => !needle || t.text.toLowerCase().includes(needle));
   const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize).map((t) => ({ ...t })), total: rows.length };
+  return {
+    items: rows.slice(start, start + pageSize).map((t) => ({ ...t })),
+    total: rows.length,
+  };
 }
 ~~~
 
@@ -1737,21 +2057,25 @@ function readUrl() {
 ~~~
 
 ~~~jsx
-  // Fetch the current page. The ignore flag drops responses that arrive after a newer request.
-  useEffect(() => {
-    let ignore = false;
-    setLoading(true);
-    listTodos({ page, pageSize: PAGE_SIZE, filter, q: query }).then((res) => {
+// Fetch the current page. The ignore flag drops
+// responses that arrive after a newer request.
+useEffect(() => {
+  let ignore = false;
+  setLoading(true);
+  listTodos({ page, pageSize: PAGE_SIZE, filter, q: query }).then(
+    (res) => {
       if (ignore) return;
       const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
-      if (page > last) return setPage(last); // the page emptied out: step back
+      // the page emptied out: step back
+      if (page > last) return setPage(last);
       setData(res);
       setLoading(false);
-    });
-    return () => {
-      ignore = true;
-    };
-  }, [page, filter, query, reloads]);
+    },
+  );
+  return () => {
+    ignore = true;
+  };
+}, [page, filter, query, reloads]);
 ~~~
 
 📌 **Interview term: Stale response** — a response to an older request that arrives after you have already asked for something newer. If you apply it, page 2 can overwrite page 3. The cleanup function sets <code>ignore</code> on the previous run, so its late answer is dropped. This is the pattern in [handling race conditions inside effects](/interview-question/how-do-you-safely-handle-async-work-and-race-conditions-inside-effects), and it also makes the StrictMode double effect run harmless: the first mount request is ignored.
@@ -1761,15 +2085,16 @@ Old rows stay on screen while the next page loads; the list just gets <code>aria
 ### Step 3: debounce the search
 
 ~~~jsx
-  // Debounce the search box: send the query 300 ms after the last keystroke.
-  useEffect(() => {
-    if (search === query) return;
-    const timer = setTimeout(() => {
-      setQuery(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search, query]);
+// Debounce the search box: send the
+// query 300 ms after the last keystroke.
+useEffect(() => {
+  if (search === query) return;
+  const timer = setTimeout(() => {
+    setQuery(search);
+    setPage(1);
+  }, 300);
+  return () => clearTimeout(timer);
+}, [search, query]);
 ~~~
 
 📌 **Interview term: Debounce** — wait until the user stops typing for a moment before acting. Each keystroke schedules a timer and the effect cleanup cancels the previous one, so only the last keystroke survives. See [debounce vs throttle](/interview-question/javascript-debounce-throttle).
@@ -1777,20 +2102,29 @@ Old rows stay on screen while the next page loads; the list just gets <code>aria
 ### Step 4: optimistic toggle with an inverse patch
 
 ~~~jsx
-  async function toggleTodo(todo) {
-    const fail = takeFailure();
-    const done = !todo.done;
-    setToast("");
-    patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)));
-    try {
-      await updateTodo(todo.id, { done }, { fail });
-      refresh();
-    } catch {
-      // Roll back only this field on this row, so other in-flight changes survive.
-      patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done: !done, pending: false } : t)));
-      setToast("Could not update “" + todo.text + "”. Change undone.");
-    }
+async function toggleTodo(todo) {
+  const fail = takeFailure();
+  const done = !todo.done;
+  setToast("");
+  patchItems((items) =>
+    items.map((t) =>
+      t.id === todo.id ? { ...t, done, pending: true } : t,
+    ),
+  );
+  try {
+    await updateTodo(todo.id, { done }, { fail });
+    refresh();
+  } catch {
+    // Roll back only this field on this row,
+    // so other in-flight changes survive.
+    patchItems((items) =>
+      items.map((t) =>
+        t.id === todo.id ? { ...t, done: !done, pending: false } : t,
+      ),
+    );
+    setToast("Could not update “" + todo.text + "”. Change undone.");
   }
+}
 ~~~
 
 📌 **Interview term: Optimistic update** — apply the expected result to the UI before the server confirms it, then confirm or undo. See [how useOptimistic enables optimistic UI](/interview-question/how-does-useoptimistic-enable-optimistic-ui-in-react-19).
@@ -1802,25 +2136,34 @@ Old rows stay on screen while the next page loads; the list just gets <code>aria
 ### Step 5: optimistic add needs a temporary id
 
 ~~~jsx
-  async function addTodo(event) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (!text) return;
-    const fail = takeFailure();
-    const tempId = "temp-" + ++tempIds.current;
-    setToast("");
-    setDraft("");
-    // Optimistic: show the row now, marked as saving.
-    setData((d) => ({ items: [{ id: tempId, text, done: false, pending: true }, ...d.items], total: d.total + 1 }));
-    try {
-      await createTodo(text, { fail });
-      refresh(); // reconcile with the server: real id, real order
-    } catch {
-      setData((d) => ({ items: d.items.filter((t) => t.id !== tempId), total: d.total - 1 }));
-      setDraft((current) => current || text); // give the text back
-      setToast("Could not add “" + text + "”. Nothing was saved.");
-    }
+async function addTodo(event) {
+  event.preventDefault();
+  const text = draft.trim();
+  if (!text) return;
+  const fail = takeFailure();
+  const tempId = "temp-" + ++tempIds.current;
+  setToast("");
+  setDraft("");
+  // Optimistic: show the row now, marked as saving.
+  setData((d) => ({
+    items: [
+      { id: tempId, text, done: false, pending: true },
+      ...d.items,
+    ],
+    total: d.total + 1,
+  }));
+  try {
+    await createTodo(text, { fail });
+    refresh(); // reconcile with the server: real id, real order
+  } catch {
+    setData((d) => ({
+      items: d.items.filter((t) => t.id !== tempId),
+      total: d.total - 1,
+    }));
+    setDraft((current) => current || text); // give the text back
+    setToast("Could not add “" + text + "”. Nothing was saved.");
   }
+}
 ~~~
 
 The server has not assigned an id yet, so the row gets <code>"temp-1"</code> as its React key. On failure that id is how the row is found and removed, and the typed text is put back in the box so the user does not lose it. On success the refetch replaces the temporary row with the real one.
@@ -1828,43 +2171,52 @@ The server has not assigned an id yet, so the row gets <code>"temp-1"</code> as 
 ### Step 6: optimistic delete remembers its position
 
 ~~~jsx
-  async function removeTodo(todo) {
-    const fail = takeFailure();
-    const index = data.items.findIndex((t) => t.id === todo.id);
-    setToast("");
-    setData((d) => ({ items: d.items.filter((t) => t.id !== todo.id), total: d.total - 1 }));
-    try {
-      await deleteTodo(todo.id, { fail });
-      refresh();
-    } catch {
-      setData((d) => {
-        const items = [...d.items];
-        items.splice(Math.min(index, items.length), 0, todo);
-        return { items, total: d.total + 1 };
-      });
-      setToast("Could not delete “" + todo.text + "”. It is back.");
-    }
+async function removeTodo(todo) {
+  const fail = takeFailure();
+  const index = data.items.findIndex((t) => t.id === todo.id);
+  setToast("");
+  setData((d) => ({
+    items: d.items.filter((t) => t.id !== todo.id),
+    total: d.total - 1,
+  }));
+  try {
+    await deleteTodo(todo.id, { fail });
+    refresh();
+  } catch {
+    setData((d) => {
+      const items = [...d.items];
+      items.splice(Math.min(index, items.length), 0, todo);
+      return { items, total: d.total + 1 };
+    });
+    setToast("Could not delete “" + todo.text + "”. It is back.");
   }
+}
 ~~~
 
 ### Step 7: URL sync and the pager
 
 ~~~jsx
-  // Keep the address bar in sync, without adding history entries.
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (page > 1) params.set("page", String(page));
-    if (filter !== "all") params.set("filter", filter);
-    if (query) params.set("q", query);
-    const qs = params.toString();
-    window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
-  }, [page, filter, query]);
+// Keep the address bar in sync, without adding history entries.
+useEffect(() => {
+  const params = new URLSearchParams();
+  if (page > 1) params.set("page", String(page));
+  if (filter !== "all") params.set("filter", filter);
+  if (query) params.set("q", query);
+  const qs = params.toString();
+  window.history.replaceState(
+    null,
+    "",
+    qs ? "?" + qs : window.location.pathname,
+  );
+}, [page, filter, query]);
 ~~~
 
 ~~~jsx
 export function pageWindow(current, total) {
   const wanted = [1, current - 1, current, current + 1, total];
-  const pages = [...new Set(wanted)].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const pages = [...new Set(wanted)]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
   const out = [];
   pages.forEach((n, i) => {
     const prev = pages[i - 1];
@@ -1972,7 +2324,10 @@ const [optimisticDone, setOptimisticDone] = useOptimistic(done);
 function toggle(ok) {
   startTransition(async () => {
     setOptimisticDone(!done);
-    try { await save(ok); startTransition(() => setDone(!done)); } catch {}
+    try {
+      await save(ok);
+      startTransition(() => setDone(!done));
+    } catch {}
   });
 }
 ~~~
@@ -2112,7 +2467,8 @@ export default function App() {
   const [page, setPage] = useState(initial.page);
   const [filter, setFilter] = useState(initial.filter);
   const [search, setSearch] = useState(initial.q); // what is typed
-  const [query, setQuery] = useState(initial.q); // what was sent, after the debounce
+  // what was sent, after the debounce
+  const [query, setQuery] = useState(initial.q);
   const [data, setData] = useState({ items: [], total: 0 });
   const [loading, setLoading] = useState(true);
   const [reloads, setReloads] = useState(0);
@@ -2133,7 +2489,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [search, query]);
 
-  // Fetch the current page. The ignore flag drops responses that arrive after a newer request.
+  // Fetch the current page. The ignore flag drops
+  // responses that arrive after a newer request.
   useEffect(() => {
     let ignore = false;
     setLoading(true);
@@ -2156,7 +2513,11 @@ export default function App() {
     if (filter !== "all") params.set("filter", filter);
     if (query) params.set("q", query);
     const qs = params.toString();
-    window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+    window.history.replaceState(
+      null,
+      "",
+      qs ? "?" + qs : window.location.pathname,
+    );
   }, [page, filter, query]);
 
   const refresh = () => setReloads((n) => n + 1);
@@ -2176,12 +2537,18 @@ export default function App() {
     setToast("");
     setDraft("");
     // Optimistic: show the row now, marked as saving.
-    setData((d) => ({ items: [{ id: tempId, text, done: false, pending: true }, ...d.items], total: d.total + 1 }));
+    setData((d) => ({
+      items: [{ id: tempId, text, done: false, pending: true }, ...d.items],
+      total: d.total + 1,
+    }));
     try {
       await createTodo(text, { fail });
       refresh(); // reconcile with the server: real id, real order
     } catch {
-      setData((d) => ({ items: d.items.filter((t) => t.id !== tempId), total: d.total - 1 }));
+      setData((d) => ({
+        items: d.items.filter((t) => t.id !== tempId),
+        total: d.total - 1,
+      }));
       setDraft((current) => current || text); // give the text back
       setToast("Could not add “" + text + "”. Nothing was saved.");
     }
@@ -2191,13 +2558,20 @@ export default function App() {
     const fail = takeFailure();
     const done = !todo.done;
     setToast("");
-    patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)));
+    patchItems((items) =>
+      items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)),
+    );
     try {
       await updateTodo(todo.id, { done }, { fail });
       refresh();
     } catch {
-      // Roll back only this field on this row, so other in-flight changes survive.
-      patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done: !done, pending: false } : t)));
+      // Roll back only this field on this row,
+      // so other in-flight changes survive.
+      patchItems((items) =>
+        items.map((t) =>
+          t.id === todo.id ? { ...t, done: !done, pending: false } : t,
+        ),
+      );
       setToast("Could not update “" + todo.text + "”. Change undone.");
     }
   }
@@ -2206,7 +2580,10 @@ export default function App() {
     const fail = takeFailure();
     const index = data.items.findIndex((t) => t.id === todo.id);
     setToast("");
-    setData((d) => ({ items: d.items.filter((t) => t.id !== todo.id), total: d.total - 1 }));
+    setData((d) => ({
+      items: d.items.filter((t) => t.id !== todo.id),
+      total: d.total - 1,
+    }));
     try {
       await deleteTodo(todo.id, { fail });
       refresh();
@@ -2230,15 +2607,36 @@ export default function App() {
       <h1>Todos</h1>
 
       <form className="row" onSubmit={addTodo}>
-        <input data-testid="new-todo" aria-label="New task" placeholder="Add a task" value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <button data-testid="add" type="submit">Add</button>
+        <input
+          data-testid="new-todo"
+          aria-label="New task"
+          placeholder="Add a task"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <button data-testid="add" type="submit">
+          Add
+        </button>
       </form>
 
       <div className="row">
-        <input data-testid="search" type="search" aria-label="Search tasks" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input
+          data-testid="search"
+          type="search"
+          aria-label="Search tasks"
+          placeholder="Search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <div className="filters" role="group" aria-label="Filter">
           {FILTERS.map((name) => (
-            <button key={name} type="button" data-filter={name} aria-pressed={filter === name} onClick={() => changeFilter(name)}>
+            <button
+              key={name}
+              type="button"
+              data-filter={name}
+              aria-pressed={filter === name}
+              onClick={() => changeFilter(name)}
+            >
               {name}
             </button>
           ))}
@@ -2246,82 +2644,217 @@ export default function App() {
       </div>
 
       <label className="fail">
-        <input type="checkbox" data-testid="fail-next" checked={failNext} onChange={(e) => setFailNext(e.target.checked)} />
+        <input
+          type="checkbox"
+          data-testid="fail-next"
+          checked={failNext}
+          onChange={(e) => setFailNext(e.target.checked)}
+        />
         Make the next save fail
       </label>
 
       {toast && (
         <p role="alert" data-testid="toast" className="toast">
-          {toast} <button type="button" aria-label="Dismiss" onClick={() => setToast("")}>✕</button>
+          {toast}{" "}
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setToast("")}
+          >
+            ✕
+          </button>
         </p>
       )}
 
       <p data-testid="summary" className="muted" aria-live="polite">
-        {data.total} {data.total === 1 ? "task" : "tasks"} · page {page} of {totalPages}
+        {data.total} {data.total === 1 ? "task" : "tasks"} · page {page} of{" "}
+        {totalPages}
         {loading ? " · loading…" : ""}
       </p>
 
       <ul className="list" aria-busy={loading}>
         {data.items.map((todo) => (
-          <li key={todo.id} data-testid="todo" className={todo.pending ? "pending" : ""}>
+          <li
+            key={todo.id}
+            data-testid="todo"
+            className={todo.pending ? "pending" : ""}
+          >
             <label>
-              <input type="checkbox" checked={todo.done} disabled={todo.pending} onChange={() => toggleTodo(todo)} />
-              <span className={todo.done ? "text done" : "text"}>{todo.text}</span>
+              <input
+                type="checkbox"
+                checked={todo.done}
+                disabled={todo.pending}
+                onChange={() => toggleTodo(todo)}
+              />
+              <span className={todo.done ? "text done" : "text"}>
+                {todo.text}
+              </span>
             </label>
             {todo.pending && <span className="saving">Saving…</span>}
-            <button type="button" data-action="delete" aria-label={"Delete " + todo.text} disabled={todo.pending} onClick={() => removeTodo(todo)}>
+            <button
+              type="button"
+              data-action="delete"
+              aria-label={"Delete " + todo.text}
+              disabled={todo.pending}
+              onClick={() => removeTodo(todo)}
+            >
               ✕
             </button>
           </li>
         ))}
       </ul>
-      {!loading && data.items.length === 0 && <p data-testid="empty" className="muted">No tasks match.</p>}
+      {!loading && data.items.length === 0 && (
+        <p data-testid="empty" className="muted">
+          No tasks match.
+        </p>
+      )}
 
       <Pager page={page} totalPages={totalPages} onChange={setPage} />
     </main>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.app { max-width: 520px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.app h1 { font-size: 1.3rem; margin: 0 0 14px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-.app input:not([type=checkbox]) { flex: 1; min-width: 140px; padding: 8px 10px; border-radius: 8px;
-  border: 1px solid #374151; background: #0f172a; color: inherit; }
-.app button { padding: 6px 11px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: inherit; cursor: pointer; text-transform: capitalize; }
-.app button:disabled { opacity: 0.45; cursor: default; }
-.app button[type=submit], .app button[aria-pressed=true], .app button[aria-current=page] {
-  background: #0ea5e9; border-color: #0ea5e9; color: #04111d; }
-.filters { display: flex; gap: 6px; }
-.fail { display: flex; gap: 6px; align-items: center; font-size: 0.85rem; color: #fbbf24; }
-.toast { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px;
-  border-radius: 8px; background: #3f1d1d; color: #fecaca; }
-.muted { color: #9ca3af; font-size: 0.9rem; }
-.list { list-style: none; padding: 0; margin: 0; min-height: 200px; }
-.list li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #1f2937; }
-.list label { flex: 1; display: flex; gap: 8px; align-items: center; }
-.list li.pending { opacity: 0.6; }
-.text.done { text-decoration: line-through; color: #6b7280; }
-.saving { font-size: 0.8rem; color: #93c5fd; }
-.pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
-.gap { padding: 0 4px; color: #6b7280; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.app {
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.app h1 {
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.app input:not([type="checkbox"]) {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.app button {
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: inherit;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.app button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.app button[type="submit"],
+.app button[aria-pressed="true"],
+.app button[aria-current="page"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+}
+.filters {
+  display: flex;
+  gap: 6px;
+}
+.fail {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #fbbf24;
+}
+.toast {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #3f1d1d;
+  color: #fecaca;
+}
+.muted {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-height: 200px;
+}
+.list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.list label {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.list li.pending {
+  opacity: 0.6;
+}
+.text.done {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+.saving {
+  font-size: 0.8rem;
+  color: #93c5fd;
+}
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+}
+.gap {
+  padding: 0 4px;
+  color: #6b7280;
+}
 `,
-          "/src/api.js": `// A SIMULATED server: no network. Every call is a Promise that settles after a setTimeout,
-// and any write can be told to fail so the UI has to roll its optimistic change back.
+          "/src/api.js": `// A SIMULATED server: no network. Every call is
+// a Promise that settles after a setTimeout,
+// and any write can be told to fail so the
+// UI has to roll its optimistic change back.
 const LIST_DELAY = 120;
 const SAVE_DELAY = 250;
 const FAILURE_RATE = 0; // try 0.1 for a random 10% failure rate
 
-let db = Array.from({ length: 42 }, (_, i) => ({ id: i + 1, text: "Task " + (i + 1), done: (i + 1) % 3 === 0 }));
+let db = Array.from({ length: 42 }, (_, i) => ({
+  id: i + 1,
+  text: "Task " + (i + 1),
+  done: (i + 1) % 3 === 0,
+}));
 let nextId = 43;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function write(fail, label, apply) {
   await wait(SAVE_DELAY);
-  if (fail || Math.random() < FAILURE_RATE) throw new Error(label + " failed (simulated 500)");
+  if (fail || Math.random() < FAILURE_RATE)
+    throw new Error(label + " failed (simulated 500)");
   return apply();
 }
 
@@ -2330,10 +2863,15 @@ export async function listTodos({ page, pageSize, filter, q }) {
   const needle = q.trim().toLowerCase();
   const rows = [...db]
     .reverse() // newest first
-    .filter((t) => filter === "all" || (filter === "completed" ? t.done : !t.done))
+    .filter(
+      (t) => filter === "all" || (filter === "completed" ? t.done : !t.done),
+    )
     .filter((t) => !needle || t.text.toLowerCase().includes(needle));
   const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize).map((t) => ({ ...t })), total: rows.length };
+  return {
+    items: rows.slice(start, start + pageSize).map((t) => ({ ...t })),
+    total: rows.length,
+  };
 }
 
 export const createTodo = (text, { fail = false } = {}) =>
@@ -2358,7 +2896,9 @@ export const deleteTodo = (id, { fail = false } = {}) =>
 // A gap of exactly one page shows that page instead of an ellipsis.
 export function pageWindow(current, total) {
   const wanted = [1, current - 1, current, current + 1, total];
-  const pages = [...new Set(wanted)].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const pages = [...new Set(wanted)]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
   const out = [];
   pages.forEach((n, i) => {
     const prev = pages[i - 1];
@@ -2372,12 +2912,19 @@ export function pageWindow(current, total) {
 export default function Pager({ page, totalPages, onChange }) {
   return (
     <nav className="pager" aria-label="Pages">
-      <button type="button" data-testid="prev" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+      <button
+        type="button"
+        data-testid="prev"
+        disabled={page <= 1}
+        onClick={() => onChange(page - 1)}
+      >
         Prev
       </button>
       {pageWindow(page, totalPages).map((item) =>
         typeof item === "string" ? (
-          <span key={item} className="gap" aria-hidden="true">…</span>
+          <span key={item} className="gap" aria-hidden="true">
+            …
+          </span>
         ) : (
           <button
             key={item}
@@ -2388,9 +2935,14 @@ export default function Pager({ page, totalPages, onChange }) {
           >
             {item}
           </button>
-        )
+        ),
       )}
-      <button type="button" data-testid="next" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+      <button
+        type="button"
+        data-testid="next"
+        disabled={page >= totalPages}
+        onClick={() => onChange(page + 1)}
+      >
         Next
       </button>
     </nav>
@@ -2428,22 +2980,29 @@ Five todos per page from a server, a pager with ellipses, All / Active / Complet
 ### Step 1: fetch with stale-response protection
 
 ~~~js
-// Fetch the current page; a newer run marks the older one stale so its response is dropped.
+// Fetch the current page; a newer run marks the
+// older one stale so its response is dropped.
 watch(
   [page, filter, query, reloads],
   () => {
     let ignore = false;
     onWatcherCleanup(() => (ignore = true));
     loading.value = true;
-    listTodos({ page: page.value, pageSize: PAGE_SIZE, filter: filter.value, q: query.value }).then((res) => {
+    listTodos({
+      page: page.value,
+      pageSize: PAGE_SIZE,
+      filter: filter.value,
+      q: query.value,
+    }).then((res) => {
       if (ignore) return;
       const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
-      if (page.value > last) return (page.value = last); // the page emptied out: step back
+      // the page emptied out: step back
+      if (page.value > last) return (page.value = last);
       data.value = res;
       loading.value = false;
     });
   },
-  { immediate: true }
+  { immediate: true },
 );
 ~~~
 
@@ -2452,7 +3011,8 @@ watch(
 ### Step 2: debounce the search with the same cleanup
 
 ~~~js
-// Debounce the search box: send the query 300 ms after the last keystroke.
+// Debounce the search box: send the
+// query 300 ms after the last keystroke.
 watch(search, (value) => {
   const timer = setTimeout(() => {
     query.value = value;
@@ -2476,10 +3036,12 @@ async function toggleTodo(todo) {
     await updateTodo(todo.id, { done }, { fail });
     refresh();
   } catch {
-    // Roll back only this field on this row, so other in-flight changes survive.
+    // Roll back only this field on this row,
+    // so other in-flight changes survive.
     const row = findItem(todo.id);
     if (row) Object.assign(row, { done: !done, pending: false });
-    toast.value = "Could not update “" + todo.text + "”. Change undone.";
+    toast.value =
+      "Could not update “" + todo.text + "”. Change undone.";
   }
 }
 ~~~
@@ -2499,7 +3061,12 @@ async function addTodo() {
   toast.value = "";
   draft.value = "";
   // Optimistic: show the row now, marked as saving.
-  data.value.items.unshift({ id: tempId, text, done: false, pending: true });
+  data.value.items.unshift({
+    id: tempId,
+    text,
+    done: false,
+    pending: true,
+  });
   data.value.total++;
   try {
     await createTodo(text, { fail });
@@ -2527,25 +3094,31 @@ watch(
     if (filter.value !== "all") next.set("filter", filter.value);
     if (query.value) next.set("q", query.value);
     const qs = next.toString();
-    window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+    window.history.replaceState(
+      null,
+      "",
+      qs ? "?" + qs : window.location.pathname,
+    );
   },
-  { immediate: true }
+  { immediate: true },
 );
 ~~~
 
 ~~~vue
-    <template v-for="item in items" :key="item">
-      <span v-if="typeof item === 'string'" class="gap" aria-hidden="true">…</span>
-      <button
-        v-else
-        type="button"
-        :data-page="item"
-        :aria-current="item === page ? 'page' : undefined"
-        @click="emit('change', item)"
-      >
-        {{ item }}
-      </button>
-    </template>
+<template v-for="item in items" :key="item">
+  <span v-if="typeof item === 'string'" class="gap" aria-hidden="true"
+    >…</span
+  >
+  <button
+    v-else
+    type="button"
+    :data-page="item"
+    :aria-current="item === page ? 'page' : undefined"
+    @click="emit('change', item)"
+  >
+    {{ item }}
+  </button>
+</template>
 ~~~
 
 A <code>&lt;template v-for&gt;</code> renders either an ellipsis or a page button per item without an extra wrapper element. The current page gets <code>aria-current="page"</code>, and passing <code>undefined</code> removes the attribute from the others. The [Pagination component](/interview-question/build-a-pagination-component) question covers a fixed-width window in depth.
@@ -2695,20 +3268,27 @@ Toggle shows "saving" at once and sticks after success. The forced failure ticks
 ---
 **Conclusion:** In Vue this app is a handful of refs, one fetch watcher with <code>onWatcherCleanup</code> to drop stale responses, a debounced search, deep-reactive optimistic patches with per-row rollbacks, temporary ids for creates, a reload counter for reconciliation and a URL watcher. The verified run on Vue 3.5.44 matches the React and Angular versions line for line. Lead with the state split, then fetching, then the optimistic paths and their failures.`,
         files: {
-          "/src/api.js": `// A SIMULATED server: no network. Every call is a Promise that settles after a setTimeout,
-// and any write can be told to fail so the UI has to roll its optimistic change back.
+          "/src/api.js": `// A SIMULATED server: no network. Every call is
+// a Promise that settles after a setTimeout,
+// and any write can be told to fail so the
+// UI has to roll its optimistic change back.
 const LIST_DELAY = 120;
 const SAVE_DELAY = 250;
 const FAILURE_RATE = 0; // try 0.1 for a random 10% failure rate
 
-let db = Array.from({ length: 42 }, (_, i) => ({ id: i + 1, text: "Task " + (i + 1), done: (i + 1) % 3 === 0 }));
+let db = Array.from({ length: 42 }, (_, i) => ({
+  id: i + 1,
+  text: "Task " + (i + 1),
+  done: (i + 1) % 3 === 0,
+}));
 let nextId = 43;
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function write(fail, label, apply) {
   await wait(SAVE_DELAY);
-  if (fail || Math.random() < FAILURE_RATE) throw new Error(label + " failed (simulated 500)");
+  if (fail || Math.random() < FAILURE_RATE)
+    throw new Error(label + " failed (simulated 500)");
   return apply();
 }
 
@@ -2717,10 +3297,15 @@ export async function listTodos({ page, pageSize, filter, q }) {
   const needle = q.trim().toLowerCase();
   const rows = [...db]
     .reverse() // newest first
-    .filter((t) => filter === "all" || (filter === "completed" ? t.done : !t.done))
+    .filter(
+      (t) => filter === "all" || (filter === "completed" ? t.done : !t.done),
+    )
     .filter((t) => !needle || t.text.toLowerCase().includes(needle));
   const start = (page - 1) * pageSize;
-  return { items: rows.slice(start, start + pageSize).map((t) => ({ ...t })), total: rows.length };
+  return {
+    items: rows.slice(start, start + pageSize).map((t) => ({ ...t })),
+    total: rows.length,
+  };
 }
 
 export const createTodo = (text, { fail = false } = {}) =>
@@ -2746,14 +3331,32 @@ export const deleteTodo = (id, { fail = false } = {}) =>
     <h1>Todos</h1>
 
     <form class="row" @submit.prevent="addTodo">
-      <input v-model="draft" data-testid="new-todo" aria-label="New task" placeholder="Add a task" />
+      <input
+        v-model="draft"
+        data-testid="new-todo"
+        aria-label="New task"
+        placeholder="Add a task"
+      />
       <button data-testid="add" type="submit">Add</button>
     </form>
 
     <div class="row">
-      <input v-model="search" data-testid="search" type="search" aria-label="Search tasks" placeholder="Search" />
+      <input
+        v-model="search"
+        data-testid="search"
+        type="search"
+        aria-label="Search tasks"
+        placeholder="Search"
+      />
       <div class="filters" role="group" aria-label="Filter">
-        <button v-for="name in FILTERS" :key="name" type="button" :data-filter="name" :aria-pressed="filter === name" @click="changeFilter(name)">
+        <button
+          v-for="name in FILTERS"
+          :key="name"
+          type="button"
+          :data-filter="name"
+          :aria-pressed="filter === name"
+          @click="changeFilter(name)"
+        >
           {{ name }}
         </button>
       </div>
@@ -2773,16 +3376,36 @@ export const deleteTodo = (id, { fail = false } = {}) =>
     </p>
 
     <ul class="list" :aria-busy="loading">
-      <li v-for="todo in data.items" :key="todo.id" data-testid="todo" :class="{ pending: todo.pending }">
+      <li
+        v-for="todo in data.items"
+        :key="todo.id"
+        data-testid="todo"
+        :class="{ pending: todo.pending }"
+      >
         <label>
-          <input type="checkbox" :checked="todo.done" :disabled="todo.pending" @change="toggleTodo(todo)" />
+          <input
+            type="checkbox"
+            :checked="todo.done"
+            :disabled="todo.pending"
+            @change="toggleTodo(todo)"
+          />
           <span :class="['text', { done: todo.done }]">{{ todo.text }}</span>
         </label>
         <span v-if="todo.pending" class="saving">Saving…</span>
-        <button type="button" data-action="delete" :aria-label="'Delete ' + todo.text" :disabled="todo.pending" @click="removeTodo(todo)">✕</button>
+        <button
+          type="button"
+          data-action="delete"
+          :aria-label="'Delete ' + todo.text"
+          :disabled="todo.pending"
+          @click="removeTodo(todo)"
+        >✕</button>
       </li>
     </ul>
-    <p v-if="!loading && data.items.length === 0" data-testid="empty" class="muted">No tasks match.</p>
+    <p
+      v-if="!loading && data.items.length === 0"
+      data-testid="empty"
+      class="muted"
+    >No tasks match.</p>
 
     <Pager :page="page" :total-pages="totalPages" @change="page = $event" />
   </main>
@@ -2798,7 +3421,9 @@ const FILTERS = ["all", "active", "completed"];
 
 const params = new URLSearchParams(window.location.search);
 const page = ref(Math.max(1, Number.parseInt(params.get("page"), 10) || 1));
-const filter = ref(FILTERS.includes(params.get("filter")) ? params.get("filter") : "all");
+const filter = ref(
+  FILTERS.includes(params.get("filter")) ? params.get("filter") : "all",
+);
 const search = ref(params.get("q") ?? ""); // what is typed
 const query = ref(search.value); // what was sent, after the debounce
 const data = ref({ items: [], total: 0 });
@@ -2809,7 +3434,9 @@ const failNext = ref(false);
 const toast = ref("");
 let tempIds = 0;
 
-const totalPages = computed(() => Math.max(1, Math.ceil(data.value.total / PAGE_SIZE)));
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(data.value.total / PAGE_SIZE)),
+);
 
 // Debounce the search box: send the query 300 ms after the last keystroke.
 watch(search, (value) => {
@@ -2820,22 +3447,29 @@ watch(search, (value) => {
   onWatcherCleanup(() => clearTimeout(timer));
 });
 
-// Fetch the current page; a newer run marks the older one stale so its response is dropped.
+// Fetch the current page; a newer run marks the
+// older one stale so its response is dropped.
 watch(
   [page, filter, query, reloads],
   () => {
     let ignore = false;
     onWatcherCleanup(() => (ignore = true));
     loading.value = true;
-    listTodos({ page: page.value, pageSize: PAGE_SIZE, filter: filter.value, q: query.value }).then((res) => {
+    listTodos({
+      page: page.value,
+      pageSize: PAGE_SIZE,
+      filter: filter.value,
+      q: query.value,
+    }).then((res) => {
       if (ignore) return;
       const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
-      if (page.value > last) return (page.value = last); // the page emptied out: step back
+      // the page emptied out: step back
+      if (page.value > last) return (page.value = last);
       data.value = res;
       loading.value = false;
     });
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // Keep the address bar in sync, without adding history entries.
@@ -2847,9 +3481,13 @@ watch(
     if (filter.value !== "all") next.set("filter", filter.value);
     if (query.value) next.set("q", query.value);
     const qs = next.toString();
-    window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+    window.history.replaceState(
+      null,
+      "",
+      qs ? "?" + qs : window.location.pathname,
+    );
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 const refresh = () => reloads.value++;
@@ -2891,7 +3529,8 @@ async function toggleTodo(todo) {
     await updateTodo(todo.id, { done }, { fail });
     refresh();
   } catch {
-    // Roll back only this field on this row, so other in-flight changes survive.
+    // Roll back only this field on this row,
+    // so other in-flight changes survive.
     const row = findItem(todo.id);
     if (row) Object.assign(row, { done: !done, pending: false });
     toast.value = "Could not update “" + todo.text + "”. Change undone.";
@@ -2909,7 +3548,11 @@ async function removeTodo(todo) {
     await deleteTodo(todo.id, { fail });
     refresh();
   } catch {
-    data.value.items.splice(Math.min(index, data.value.items.length), 0, snapshot);
+    data.value.items.splice(
+      Math.min(index, data.value.items.length),
+      0,
+      snapshot,
+    );
     data.value.total++;
     toast.value = "Could not delete “" + todo.text + "”. It is back.";
   }
@@ -2922,38 +3565,134 @@ function changeFilter(name) {
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.app { max-width: 520px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.app h1 { font-size: 1.3rem; margin: 0 0 14px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
-.app input:not([type=checkbox]) { flex: 1; min-width: 140px; padding: 8px 10px; border-radius: 8px;
-  border: 1px solid #374151; background: #0f172a; color: inherit; }
-.app button { padding: 6px 11px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: inherit; cursor: pointer; text-transform: capitalize; }
-.app button:disabled { opacity: 0.45; cursor: default; }
-.app button[type=submit], .app button[aria-pressed=true], .app button[aria-current=page] {
-  background: #0ea5e9; border-color: #0ea5e9; color: #04111d; }
-.filters { display: flex; gap: 6px; }
-.fail { display: flex; gap: 6px; align-items: center; font-size: 0.85rem; color: #fbbf24; }
-.toast { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px;
-  border-radius: 8px; background: #3f1d1d; color: #fecaca; }
-.muted { color: #9ca3af; font-size: 0.9rem; }
-.list { list-style: none; padding: 0; margin: 0; min-height: 200px; }
-.list li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid #1f2937; }
-.list label { flex: 1; display: flex; gap: 8px; align-items: center; }
-.list li.pending { opacity: 0.6; }
-.text.done { text-decoration: line-through; color: #6b7280; }
-.saving { font-size: 0.8rem; color: #93c5fd; }
-.pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
-.gap { padding: 0 4px; color: #6b7280; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.app {
+  max-width: 520px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.app h1 {
+  font-size: 1.3rem;
+  margin: 0 0 14px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.app input:not([type="checkbox"]) {
+  flex: 1;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.app button {
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: inherit;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.app button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.app button[type="submit"],
+.app button[aria-pressed="true"],
+.app button[aria-current="page"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+}
+.filters {
+  display: flex;
+  gap: 6px;
+}
+.fail {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #fbbf24;
+}
+.toast {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #3f1d1d;
+  color: #fecaca;
+}
+.muted {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-height: 200px;
+}
+.list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #1f2937;
+}
+.list label {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.list li.pending {
+  opacity: 0.6;
+}
+.text.done {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+.saving {
+  font-size: 0.8rem;
+  color: #93c5fd;
+}
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+}
+.gap {
+  padding: 0 4px;
+  color: #6b7280;
+}
 </style>
 `,
           "/src/pageWindow.js": `// First page, last page, and the current page with one neighbour each side.
 // A gap of exactly one page shows that page instead of an ellipsis.
 export function pageWindow(current, total) {
   const wanted = [1, current - 1, current, current + 1, total];
-  const pages = [...new Set(wanted)].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const pages = [...new Set(wanted)]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
   const out = [];
   pages.forEach((n, i) => {
     const prev = pages[i - 1];
@@ -2966,9 +3705,18 @@ export function pageWindow(current, total) {
 `,
           "/src/components/Pager.vue": `<template>
   <nav class="pager" aria-label="Pages">
-    <button type="button" data-testid="prev" :disabled="page <= 1" @click="emit('change', page - 1)">Prev</button>
+    <button
+      type="button"
+      data-testid="prev"
+      :disabled="page <= 1"
+      @click="emit('change', page - 1)"
+    >Prev</button>
     <template v-for="item in items" :key="item">
-      <span v-if="typeof item === 'string'" class="gap" aria-hidden="true">…</span>
+      <span
+        v-if="typeof item === 'string'"
+        class="gap"
+        aria-hidden="true"
+      >…</span>
       <button
         v-else
         type="button"
@@ -2979,7 +3727,12 @@ export function pageWindow(current, total) {
         {{ item }}
       </button>
     </template>
-    <button type="button" data-testid="next" :disabled="page >= totalPages" @click="emit('change', page + 1)">Next</button>
+    <button
+      type="button"
+      data-testid="next"
+      :disabled="page >= totalPages"
+      @click="emit('change', page + 1)"
+    >Next</button>
   </nav>
 </template>
 
@@ -3025,21 +3778,28 @@ Five todos per page, a pager with ellipses, All / Active / Completed filters, a 
 ### Step 1: fetch in an effect with cleanup
 
 ~~~ts
-    // Fetch the current page; a newer run marks the older one stale so its response is dropped.
-    effect((onCleanup) => {
-      const opts = { page: this.page(), pageSize: PAGE_SIZE, filter: this.filter(), q: this.query() };
-      this.reloads();
-      let ignore = false;
-      onCleanup(() => (ignore = true));
-      this.loading.set(true);
-      this.api.list(opts).then((res) => {
-        if (ignore) return;
-        const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
-        if (opts.page > last) return this.page.set(last); // the page emptied out: step back
-        this.data.set(res);
-        this.loading.set(false);
-      });
-    });
+// Fetch the current page; a newer run marks the
+// older one stale so its response is dropped.
+effect((onCleanup) => {
+  const opts = {
+    page: this.page(),
+    pageSize: PAGE_SIZE,
+    filter: this.filter(),
+    q: this.query(),
+  };
+  this.reloads();
+  let ignore = false;
+  onCleanup(() => (ignore = true));
+  this.loading.set(true);
+  this.api.list(opts).then((res) => {
+    if (ignore) return;
+    const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
+    // the page emptied out: step back
+    if (opts.page > last) return this.page.set(last);
+    this.data.set(res);
+    this.loading.set(false);
+  });
+});
 ~~~
 
 The effect reads <code>page</code>, <code>filter</code>, <code>query</code> and <code>reloads</code>, so changing any of them runs it again. <code>onCleanup</code> runs before the next run and sets <code>ignore</code> on the old one, so a late response to an older request is dropped.
@@ -3049,16 +3809,17 @@ The effect reads <code>page</code>, <code>filter</code>, <code>query</code> and 
 ### Step 2: debounce the search
 
 ~~~ts
-    // Debounce the search box: send the query 300 ms after the last keystroke.
-    effect((onCleanup) => {
-      const value = this.search();
-      if (value === untracked(this.query)) return;
-      const timer = setTimeout(() => {
-        this.query.set(value);
-        this.page.set(1);
-      }, 300);
-      onCleanup(() => clearTimeout(timer));
-    });
+// Debounce the search box: send the
+// query 300 ms after the last keystroke.
+effect((onCleanup) => {
+  const value = this.search();
+  if (value === untracked(this.query)) return;
+  const timer = setTimeout(() => {
+    this.query.set(value);
+    this.page.set(1);
+  }, 300);
+  onCleanup(() => clearTimeout(timer));
+});
 ~~~
 
 📌 **Interview term: untracked** — reads a signal without making the effect depend on it. The debounce compares against <code>query</code> but must only re-run when <code>search</code> changes.
@@ -3066,20 +3827,31 @@ The effect reads <code>page</code>, <code>filter</code>, <code>query</code> and 
 ### Step 3: optimistic toggle with an inverse patch
 
 ~~~ts
-  async toggleTodo(todo: Todo) {
-    const fail = this.takeFailure();
-    const done = !todo.done;
-    this.toast.set("");
-    this.patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)));
-    try {
-      await this.api.update(todo.id, { done }, fail);
-      this.refresh();
-    } catch {
-      // Roll back only this field on this row, so other in-flight changes survive.
-      this.patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done: !done, pending: false } : t)));
-      this.toast.set("Could not update “" + todo.text + "”. Change undone.");
-    }
+async toggleTodo(todo: Todo) {
+  const fail = this.takeFailure();
+  const done = !todo.done;
+  this.toast.set("");
+  this.patchItems((items) =>
+    items.map((t) =>
+      t.id === todo.id ? { ...t, done, pending: true } : t,
+    ),
+  );
+  try {
+    await this.api.update(todo.id, { done }, fail);
+    this.refresh();
+  } catch {
+    // Roll back only this field on this row,
+    // so other in-flight changes survive.
+    this.patchItems((items) =>
+      items.map((t) =>
+        t.id === todo.id ? { ...t, done: !done, pending: false } : t,
+      ),
+    );
+    this.toast.set(
+      "Could not update “" + todo.text + "”. Change undone.",
+    );
   }
+}
 ~~~
 
 📌 **Interview term: Optimistic update** — change the UI before the server confirms. With signals the change is a new array through <code>update</code>; the row is marked <code>pending</code> so its controls are disabled and "Saving…" appears.
@@ -3089,25 +3861,34 @@ The effect reads <code>page</code>, <code>filter</code>, <code>query</code> and 
 ### Step 4: optimistic add with a temporary id
 
 ~~~ts
-  async addTodo(event: Event) {
-    event.preventDefault();
-    const text = this.draft().trim();
-    if (!text) return;
-    const fail = this.takeFailure();
-    const tempId = "temp-" + ++this.tempIds;
-    this.toast.set("");
-    this.draft.set("");
-    // Optimistic: show the row now, marked as saving.
-    this.data.update((d) => ({ items: [{ id: tempId, text, done: false, pending: true }, ...d.items], total: d.total + 1 }));
-    try {
-      await this.api.create(text, fail);
-      this.refresh(); // reconcile with the server: real id, real order
-    } catch {
-      this.data.update((d) => ({ items: d.items.filter((t) => t.id !== tempId), total: d.total - 1 }));
-      if (!this.draft()) this.draft.set(text); // give the text back
-      this.toast.set("Could not add “" + text + "”. Nothing was saved.");
-    }
+async addTodo(event: Event) {
+  event.preventDefault();
+  const text = this.draft().trim();
+  if (!text) return;
+  const fail = this.takeFailure();
+  const tempId = "temp-" + ++this.tempIds;
+  this.toast.set("");
+  this.draft.set("");
+  // Optimistic: show the row now, marked as saving.
+  this.data.update((d) => ({
+    items: [
+      { id: tempId, text, done: false, pending: true },
+      ...d.items,
+    ],
+    total: d.total + 1,
+  }));
+  try {
+    await this.api.create(text, fail);
+    this.refresh(); // reconcile with the server: real id, real order
+  } catch {
+    this.data.update((d) => ({
+      items: d.items.filter((t) => t.id !== tempId),
+      total: d.total - 1,
+    }));
+    if (!this.draft()) this.draft.set(text); // give the text back
+    this.toast.set("Could not add “" + text + "”. Nothing was saved.");
   }
+}
 ~~~
 
 The temporary id is the <code>track</code> identity until the server answers, and it is how a failed create is found again. Delete follows the same shape and remembers its index so a failure can splice the row back in place. Every success calls <code>refresh()</code>, which bumps <code>reloads</code> and re-runs the fetch effect: reconciliation.
@@ -3115,21 +3896,30 @@ The temporary id is the <code>track</code> identity until the server answers, an
 ### Step 5: URL sync and the pager
 
 ~~~ts
-    // Keep the address bar in sync, without adding history entries.
-    effect(() => {
-      const next = new URLSearchParams();
-      if (this.page() > 1) next.set("page", String(this.page()));
-      if (this.filter() !== "all") next.set("filter", this.filter());
-      if (this.query()) next.set("q", this.query());
-      const qs = next.toString();
-      window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
-    });
+// Keep the address bar in sync, without adding history entries.
+effect(() => {
+  const next = new URLSearchParams();
+  if (this.page() > 1) next.set("page", String(this.page()));
+  if (this.filter() !== "all") next.set("filter", this.filter());
+  if (this.query()) next.set("q", this.query());
+  const qs = next.toString();
+  window.history.replaceState(
+    null,
+    "",
+    qs ? "?" + qs : window.location.pathname,
+  );
+});
 ~~~
 
 ~~~ts
-export function pageWindow(current: number, total: number): (number | string)[] {
+export function pageWindow(
+  current: number,
+  total: number,
+): (number | string)[] {
   const wanted = [1, current - 1, current, current + 1, total];
-  const pages = [...new Set(wanted)].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const pages = [...new Set(wanted)]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
   const out: (number | string)[] = [];
   pages.forEach((n, i) => {
     const prev = pages[i - 1];
@@ -3289,7 +4079,14 @@ The toggle is instant and sticks after success; the forced failure ticks and the
 ---
 **Conclusion:** In Angular the app is a set of signals, one fetch <code>effect</code> with <code>onCleanup</code> to drop stale answers, a debounced search that uses <code>untracked</code>, optimistic <code>update</code> calls with per-row rollbacks, temporary ids, a reload counter for reconciliation and a URL effect, plus a small pager component. The verified AOT and JIT runs on Angular 22.2.3 match the React and Vue versions. Explain the state split, then fetching, then each optimistic path and its failure.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from "@angular/core";
 import { Filter, Page, Todo, TodoApi } from "./todo-api";
 import { PagerComponent } from "./pager.component";
 
@@ -3305,21 +4102,47 @@ const FILTERS: Filter[] = ["all", "active", "completed"];
       <h1>Todos</h1>
 
       <form class="row" (submit)="addTodo($event)">
-        <input #draftBox data-testid="new-todo" aria-label="New task" placeholder="Add a task" [value]="draft()" (input)="draft.set(draftBox.value)" />
+        <input
+          #draftBox
+          data-testid="new-todo"
+          aria-label="New task"
+          placeholder="Add a task"
+          [value]="draft()"
+          (input)="draft.set(draftBox.value)"
+        />
         <button data-testid="add" type="submit">Add</button>
       </form>
 
       <div class="row">
-        <input #searchBox data-testid="search" type="search" aria-label="Search tasks" placeholder="Search" [value]="search()" (input)="search.set(searchBox.value)" />
+        <input
+          #searchBox
+          data-testid="search"
+          type="search"
+          aria-label="Search tasks"
+          placeholder="Search"
+          [value]="search()"
+          (input)="search.set(searchBox.value)"
+        />
         <div class="filters" role="group" aria-label="Filter">
           @for (name of filters; track name) {
-            <button type="button" [attr.data-filter]="name" [attr.aria-pressed]="filter() === name" (click)="changeFilter(name)">{{ name }}</button>
+            <button
+              type="button"
+              [attr.data-filter]="name"
+              [attr.aria-pressed]="filter() === name"
+              (click)="changeFilter(name)"
+            >{{ name }}</button>
           }
         </div>
       </div>
 
       <label class="fail">
-        <input #failBox type="checkbox" data-testid="fail-next" [checked]="failNext()" (change)="failNext.set(failBox.checked)" />
+        <input
+          #failBox
+          type="checkbox"
+          data-testid="fail-next"
+          [checked]="failNext()"
+          (change)="failNext.set(failBox.checked)"
+        />
         Make the next save fail
       </label>
 
@@ -3337,13 +4160,24 @@ const FILTERS: Filter[] = ["all", "active", "completed"];
         @for (todo of data().items; track todo.id) {
           <li data-testid="todo" [class.pending]="todo.pending">
             <label>
-              <input type="checkbox" [checked]="todo.done" [disabled]="!!todo.pending" (change)="toggleTodo(todo)" />
+              <input
+                type="checkbox"
+                [checked]="todo.done"
+                [disabled]="!!todo.pending"
+                (change)="toggleTodo(todo)"
+              />
               <span class="text" [class.done]="todo.done">{{ todo.text }}</span>
             </label>
             @if (todo.pending) {
               <span class="saving">Saving…</span>
             }
-            <button type="button" data-action="delete" [attr.aria-label]="'Delete ' + todo.text" [disabled]="!!todo.pending" (click)="removeTodo(todo)">✕</button>
+            <button
+              type="button"
+              data-action="delete"
+              [attr.aria-label]="'Delete ' + todo.text"
+              [disabled]="!!todo.pending"
+              (click)="removeTodo(todo)"
+            >✕</button>
           </li>
         }
       </ul>
@@ -3351,10 +4185,15 @@ const FILTERS: Filter[] = ["all", "active", "completed"];
         <p data-testid="empty" class="muted">No tasks match.</p>
       }
 
-      <app-pager [page]="page()" [totalPages]="totalPages()" (change)="page.set($event)" />
+      <app-pager
+        [page]="page()"
+        [totalPages]="totalPages()"
+        (change)="page.set($event)"
+      />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .app { max-width: 520px; margin: 24px auto; padding: 20px; border-radius: 12px;
       background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
@@ -3380,15 +4219,20 @@ const FILTERS: Filter[] = ["all", "active", "completed"];
     .saving { font-size: 0.8rem; color: #93c5fd; }
     .pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
     .gap { padding: 0 4px; color: #6b7280; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   private readonly api = inject(TodoApi);
   private readonly params = new URLSearchParams(window.location.search);
   readonly filters = FILTERS;
 
-  readonly page = signal(Math.max(1, Number.parseInt(this.params.get("page") ?? "", 10) || 1));
-  readonly filter = signal<Filter>(FILTERS.find((f) => f === this.params.get("filter")) ?? "all");
+  readonly page = signal(
+    Math.max(1, Number.parseInt(this.params.get("page") ?? "", 10) || 1),
+  );
+  readonly filter = signal<Filter>(
+    FILTERS.find((f) => f === this.params.get("filter")) ?? "all",
+  );
   readonly search = signal(this.params.get("q") ?? ""); // what is typed
   readonly query = signal(this.search()); // what was sent, after the debounce
   readonly data = signal<Page>({ items: [], total: 0 });
@@ -3397,7 +4241,9 @@ export class AppComponent {
   readonly draft = signal("");
   readonly failNext = signal(false);
   readonly toast = signal("");
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.data().total / PAGE_SIZE)));
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.data().total / PAGE_SIZE)),
+  );
   private tempIds = 0;
 
   constructor() {
@@ -3412,9 +4258,15 @@ export class AppComponent {
       onCleanup(() => clearTimeout(timer));
     });
 
-    // Fetch the current page; a newer run marks the older one stale so its response is dropped.
+    // Fetch the current page; a newer run marks the
+    // older one stale so its response is dropped.
     effect((onCleanup) => {
-      const opts = { page: this.page(), pageSize: PAGE_SIZE, filter: this.filter(), q: this.query() };
+      const opts = {
+        page: this.page(),
+        pageSize: PAGE_SIZE,
+        filter: this.filter(),
+        q: this.query(),
+      };
       this.reloads();
       let ignore = false;
       onCleanup(() => (ignore = true));
@@ -3422,7 +4274,8 @@ export class AppComponent {
       this.api.list(opts).then((res) => {
         if (ignore) return;
         const last = Math.max(1, Math.ceil(res.total / PAGE_SIZE));
-        if (opts.page > last) return this.page.set(last); // the page emptied out: step back
+        // the page emptied out: step back
+        if (opts.page > last) return this.page.set(last);
         this.data.set(res);
         this.loading.set(false);
       });
@@ -3435,7 +4288,11 @@ export class AppComponent {
       if (this.filter() !== "all") next.set("filter", this.filter());
       if (this.query()) next.set("q", this.query());
       const qs = next.toString();
-      window.history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+      window.history.replaceState(
+        null,
+        "",
+        qs ? "?" + qs : window.location.pathname,
+      );
     });
   }
 
@@ -3460,12 +4317,18 @@ export class AppComponent {
     this.toast.set("");
     this.draft.set("");
     // Optimistic: show the row now, marked as saving.
-    this.data.update((d) => ({ items: [{ id: tempId, text, done: false, pending: true }, ...d.items], total: d.total + 1 }));
+    this.data.update((d) => ({
+      items: [{ id: tempId, text, done: false, pending: true }, ...d.items],
+      total: d.total + 1,
+    }));
     try {
       await this.api.create(text, fail);
       this.refresh(); // reconcile with the server: real id, real order
     } catch {
-      this.data.update((d) => ({ items: d.items.filter((t) => t.id !== tempId), total: d.total - 1 }));
+      this.data.update((d) => ({
+        items: d.items.filter((t) => t.id !== tempId),
+        total: d.total - 1,
+      }));
       if (!this.draft()) this.draft.set(text); // give the text back
       this.toast.set("Could not add “" + text + "”. Nothing was saved.");
     }
@@ -3475,13 +4338,20 @@ export class AppComponent {
     const fail = this.takeFailure();
     const done = !todo.done;
     this.toast.set("");
-    this.patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)));
+    this.patchItems((items) =>
+      items.map((t) => (t.id === todo.id ? { ...t, done, pending: true } : t)),
+    );
     try {
       await this.api.update(todo.id, { done }, fail);
       this.refresh();
     } catch {
-      // Roll back only this field on this row, so other in-flight changes survive.
-      this.patchItems((items) => items.map((t) => (t.id === todo.id ? { ...t, done: !done, pending: false } : t)));
+      // Roll back only this field on this row,
+      // so other in-flight changes survive.
+      this.patchItems((items) =>
+        items.map((t) =>
+          t.id === todo.id ? { ...t, done: !done, pending: false } : t,
+        ),
+      );
       this.toast.set("Could not update “" + todo.text + "”. Change undone.");
     }
   }
@@ -3490,7 +4360,10 @@ export class AppComponent {
     const fail = this.takeFailure();
     const index = this.data().items.findIndex((t) => t.id === todo.id);
     this.toast.set("");
-    this.data.update((d) => ({ items: d.items.filter((t) => t.id !== todo.id), total: d.total - 1 }));
+    this.data.update((d) => ({
+      items: d.items.filter((t) => t.id !== todo.id),
+      total: d.total - 1,
+    }));
     try {
       await this.api.remove(todo.id, fail);
       this.refresh();
@@ -3514,9 +4387,14 @@ export class AppComponent {
 
 // First page, last page, and the current page with one neighbour each side.
 // A gap of exactly one page shows that page instead of an ellipsis.
-export function pageWindow(current: number, total: number): (number | string)[] {
+export function pageWindow(
+  current: number,
+  total: number,
+): (number | string)[] {
   const wanted = [1, current - 1, current, current + 1, total];
-  const pages = [...new Set(wanted)].filter((n) => n >= 1 && n <= total).sort((a, b) => a - b);
+  const pages = [...new Set(wanted)]
+    .filter((n) => n >= 1 && n <= total)
+    .sort((a, b) => a - b);
   const out: (number | string)[] = [];
   pages.forEach((n, i) => {
     const prev = pages[i - 1];
@@ -3532,26 +4410,43 @@ export function pageWindow(current: number, total: number): (number | string)[] 
   standalone: true,
   template: \`
     <nav class="pager" aria-label="Pages">
-      <button type="button" data-testid="prev" [disabled]="page <= 1" (click)="change.emit(page - 1)">Prev</button>
+      <button
+        type="button"
+        data-testid="prev"
+        [disabled]="page <= 1"
+        (click)="change.emit(page - 1)"
+      >Prev</button>
       @for (item of items(); track item) {
         @if (isGap(item)) {
           <span class="gap" aria-hidden="true">…</span>
         } @else {
-          <button type="button" [attr.data-page]="item" [attr.aria-current]="item === page ? 'page' : null" (click)="change.emit(+item)">
+          <button
+            type="button"
+            [attr.data-page]="item"
+            [attr.aria-current]="item === page ? 'page' : null"
+            (click)="change.emit(+item)"
+          >
             {{ item }}
           </button>
         }
       }
-      <button type="button" data-testid="next" [disabled]="page >= totalPages" (click)="change.emit(page + 1)">Next</button>
+      <button
+        type="button"
+        data-testid="next"
+        [disabled]="page >= totalPages"
+        (click)="change.emit(page + 1)"
+      >Next</button>
     </nav>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
     .gap { padding: 0 4px; color: #6b7280; }
     button { padding: 6px 11px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
     button:disabled { opacity: 0.45; cursor: default; }
     button[aria-current=page] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; }
-  \`],
+  \`,
+  ],
 })
 export class PagerComponent {
   @Input({ required: true }) page = 1;
@@ -3583,30 +4478,54 @@ export interface Page {
 const LIST_DELAY = 120;
 const SAVE_DELAY = 250;
 const FAILURE_RATE = 0; // try 0.1 for a random 10% failure rate
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-// A SIMULATED server: no network. Every call is a Promise that settles after a setTimeout,
-// and any write can be told to fail so the UI has to roll its optimistic change back.
+// A SIMULATED server: no network. Every call is
+// a Promise that settles after a setTimeout,
+// and any write can be told to fail so the
+// UI has to roll its optimistic change back.
 @Injectable({ providedIn: "root" })
 export class TodoApi {
-  private db: Todo[] = Array.from({ length: 42 }, (_, i) => ({ id: i + 1, text: "Task " + (i + 1), done: (i + 1) % 3 === 0 }));
+  private db: Todo[] = Array.from({ length: 42 }, (_, i) => ({
+    id: i + 1,
+    text: "Task " + (i + 1),
+    done: (i + 1) % 3 === 0,
+  }));
   private nextId = 43;
 
-  private async write<T>(fail: boolean, label: string, apply: () => T): Promise<T> {
+  private async write<T>(
+    fail: boolean,
+    label: string,
+    apply: () => T,
+  ): Promise<T> {
     await wait(SAVE_DELAY);
-    if (fail || Math.random() < FAILURE_RATE) throw new Error(label + " failed (simulated 500)");
+    if (fail || Math.random() < FAILURE_RATE)
+      throw new Error(label + " failed (simulated 500)");
     return apply();
   }
 
-  async list(opts: { page: number; pageSize: number; filter: Filter; q: string }): Promise<Page> {
+  async list(opts: {
+    page: number;
+    pageSize: number;
+    filter: Filter;
+    q: string;
+  }): Promise<Page> {
     await wait(LIST_DELAY);
     const needle = opts.q.trim().toLowerCase();
     const rows = [...this.db]
       .reverse() // newest first
-      .filter((t) => opts.filter === "all" || (opts.filter === "completed" ? t.done : !t.done))
+      .filter(
+        (t) =>
+          opts.filter === "all" ||
+          (opts.filter === "completed" ? t.done : !t.done),
+      )
       .filter((t) => !needle || t.text.toLowerCase().includes(needle));
     const start = (opts.page - 1) * opts.pageSize;
-    return { items: rows.slice(start, start + opts.pageSize).map((t) => ({ ...t })), total: rows.length };
+    return {
+      items: rows.slice(start, start + opts.pageSize).map((t) => ({ ...t })),
+      total: rows.length,
+    };
   }
 
   create(text: string, fail = false): Promise<Todo> {
@@ -3756,19 +4675,28 @@ Every snapshot has exactly seven slots. Near the start the gap is on the right o
 
 ~~~js
 export function pageItems(current, total, siblings = 1) {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
   const right = Math.min(current + siblings, total);
-  // Only hide pages behind a gap when it would hide two or more of them.
+  // Only hide pages behind a gap when
+  // it would hide two or more of them.
   const leftGap = left > 3;
   const rightGap = right < total - 2;
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
-  return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  return [
+    1,
+    GAP + "-left",
+    ...range(left, right),
+    GAP + "-right",
+    total,
+  ];
 }
 ~~~
 
@@ -3794,7 +4722,12 @@ On page 4 its left "…" stands for page 2 alone, while the mirror page 7 shows 
 ### Step 3: render it
 
 ~~~jsx
-export default function Pagination({ page, totalPages, onPageChange, siblings = 1 }) {
+export default function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+  siblings = 1,
+}) {
   if (totalPages <= 1) return null;
   const go = (p) => {
     if (p >= 1 && p <= totalPages && p !== page) onPageChange(p);
@@ -3802,14 +4735,22 @@ export default function Pagination({ page, totalPages, onPageChange, siblings = 
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      <button type="button" data-testid="prev" aria-label="Previous page" disabled={page === 1} onClick={() => go(page - 1)}>
+      <button
+        type="button"
+        data-testid="prev"
+        aria-label="Previous page"
+        disabled={page === 1}
+        onClick={() => go(page - 1)}
+      >
         ‹ Prev
       </button>
       <ul>
         {pageItems(page, totalPages, siblings).map((item) => (
           <li key={item}>
             {typeof item === "string" ? (
-              <span className="gap" aria-hidden="true">…</span>
+              <span className="gap" aria-hidden="true">
+                …
+              </span>
             ) : (
               <button
                 type="button"
@@ -3824,7 +4765,13 @@ export default function Pagination({ page, totalPages, onPageChange, siblings = 
           </li>
         ))}
       </ul>
-      <button type="button" data-testid="next" aria-label="Next page" disabled={page === totalPages} onClick={() => go(page + 1)}>
+      <button
+        type="button"
+        data-testid="next"
+        aria-label="Next page"
+        disabled={page === totalPages}
+        onClick={() => go(page + 1)}
+      >
         Next ›
       </button>
     </nav>
@@ -3839,19 +4786,19 @@ The <code>go</code> guard ignores out-of-range pages and the current page, so a 
 ### Step 4: the parent owns the page
 
 ~~~jsx
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+const [page, setPage] = useState(1);
+const [pageSize, setPageSize] = useState(10);
 
-  const totalPages = Math.ceil(ITEMS.length / pageSize);
-  const start = (page - 1) * pageSize;
-  const visible = ITEMS.slice(start, start + pageSize);
+const totalPages = Math.ceil(ITEMS.length / pageSize);
+const start = (page - 1) * pageSize;
+const visible = ITEMS.slice(start, start + pageSize);
 
-  // Keep the first visible row on screen when the page size changes.
-  function changeSize(event) {
-    const size = Number(event.target.value);
-    setPageSize(size);
-    setPage(Math.floor(start / size) + 1);
-  }
+// Keep the first visible row on screen when the page size changes.
+function changeSize(event) {
+  const size = Number(event.target.value);
+  setPageSize(size);
+  setPage(Math.floor(start / size) + 1);
+}
 ~~~
 
 Changing the page size keeps the first visible result on screen: from page 4 at 10 per page (results 31 to 40), switching to 25 per page lands on page 2 (results 26 to 50) rather than resetting to page 1. That is a detail interviewers notice.
@@ -4049,7 +4996,9 @@ export default function App() {
           Per page{" "}
           <select data-testid="size" value={pageSize} onChange={changeSize}>
             {SIZES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
         </label>
@@ -4058,40 +5007,117 @@ export default function App() {
         {visible.slice(0, 3).map((r) => (
           <li key={r}>{r}</li>
         ))}
-        {visible.length > 3 && <li className="more">… {visible.length - 3} more on this page</li>}
+        {visible.length > 3 && (
+          <li className="more">… {visible.length - 3} more on this page</li>
+        )}
       </ol>
       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </main>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.demo { max-width: 560px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.demo h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; color: #9ca3af; }
-.toolbar p { margin: 0; }
-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.results { padding-left: 28px; color: #d1d5db; }
-.results .more { list-style: none; margin-left: -28px; color: #6b7280; }
-.pagination { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.pagination ul { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
-.pagination button { min-width: 36px; height: 36px; padding: 0 8px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: #e5e7eb; cursor: pointer; font-variant-numeric: tabular-nums; }
-.pagination button:disabled { opacity: 0.4; cursor: default; }
-.pagination button[aria-current=page] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; font-weight: 600; }
-.pagination button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
-.gap { display: inline-block; min-width: 36px; text-align: center; color: #6b7280; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.demo {
+  max-width: 560px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.demo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+}
+.toolbar p {
+  margin: 0;
+}
+select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.results {
+  padding-left: 28px;
+  color: #d1d5db;
+}
+.results .more {
+  list-style: none;
+  margin-left: -28px;
+  color: #6b7280;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pagination ul {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pagination button {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pagination button[aria-current="page"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+  font-weight: 600;
+}
+.pagination button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+.gap {
+  display: inline-block;
+  min-width: 36px;
+  text-align: center;
+  color: #6b7280;
+}
 `,
           "/src/pageItems.js": `export const GAP = "gap";
 
-const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const range = (from, to) =>
+  Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-// Returns the buttons to draw: page numbers plus "gap-left" / "gap-right" markers.
-// With siblings = 1 the result always has 7 items once there are more than 7 pages,
+// Returns the buttons to draw: page numbers
+// plus "gap-left" / "gap-right" markers.
+// With siblings = 1 the result always has 7
+// items once there are more than 7 pages,
 // so the control never changes width while you page through.
 export function pageItems(current, total, siblings = 1) {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
@@ -4102,13 +5128,19 @@ export function pageItems(current, total, siblings = 1) {
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
   return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
 }
 `,
           "/src/Pagination.js": `import { pageItems } from "./pageItems";
 
-export default function Pagination({ page, totalPages, onPageChange, siblings = 1 }) {
+export default function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+  siblings = 1,
+}) {
   if (totalPages <= 1) return null;
   const go = (p) => {
     if (p >= 1 && p <= totalPages && p !== page) onPageChange(p);
@@ -4116,14 +5148,22 @@ export default function Pagination({ page, totalPages, onPageChange, siblings = 
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      <button type="button" data-testid="prev" aria-label="Previous page" disabled={page === 1} onClick={() => go(page - 1)}>
+      <button
+        type="button"
+        data-testid="prev"
+        aria-label="Previous page"
+        disabled={page === 1}
+        onClick={() => go(page - 1)}
+      >
         ‹ Prev
       </button>
       <ul>
         {pageItems(page, totalPages, siblings).map((item) => (
           <li key={item}>
             {typeof item === "string" ? (
-              <span className="gap" aria-hidden="true">…</span>
+              <span className="gap" aria-hidden="true">
+                …
+              </span>
             ) : (
               <button
                 type="button"
@@ -4138,7 +5178,13 @@ export default function Pagination({ page, totalPages, onPageChange, siblings = 
           </li>
         ))}
       </ul>
-      <button type="button" data-testid="next" aria-label="Next page" disabled={page === totalPages} onClick={() => go(page + 1)}>
+      <button
+        type="button"
+        data-testid="next"
+        aria-label="Next page"
+        disabled={page === totalPages}
+        onClick={() => go(page + 1)}
+      >
         Next ›
       </button>
     </nav>
@@ -4176,19 +5222,28 @@ A controlled pager: the parent owns the page and binds it with <code>v-model:pag
 
 ~~~js
 export function pageItems(current, total, siblings = 1) {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
   const right = Math.min(current + siblings, total);
-  // Only hide pages behind a gap when it would hide two or more of them.
+  // Only hide pages behind a gap when
+  // it would hide two or more of them.
   const leftGap = left > 3;
   const rightGap = right < total - 2;
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
-  return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  return [
+    1,
+    GAP + "-left",
+    ...range(left, right),
+    GAP + "-right",
+    total,
+  ];
 }
 ~~~
 
@@ -4199,21 +5254,23 @@ The conditions <code>left &gt; 3</code> and <code>right &lt; total - 2</code> me
 ### Step 2: the component
 
 ~~~vue
-    <ul>
-      <li v-for="item in items" :key="item">
-        <span v-if="typeof item === 'string'" class="gap" aria-hidden="true">…</span>
-        <button
-          v-else
-          type="button"
-          :data-page="item"
-          :aria-label="'Page ' + item"
-          :aria-current="item === page ? 'page' : undefined"
-          @click="go(item)"
-        >
-          {{ item }}
-        </button>
-      </li>
-    </ul>
+<ul>
+  <li v-for="item in items" :key="item">
+    <span v-if="typeof item === 'string'" class="gap" aria-hidden="true"
+      >…</span
+    >
+    <button
+      v-else
+      type="button"
+      :data-page="item"
+      :aria-label="'Page ' + item"
+      :aria-current="item === page ? 'page' : undefined"
+      @click="go(item)"
+    >
+      {{ item }}
+    </button>
+  </li>
+</ul>
 ~~~
 
 ~~~js
@@ -4234,9 +5291,13 @@ The gap items are the strings <code>"gap-left"</code> and <code>"gap-right"</cod
 const page = ref(1);
 const pageSize = ref(10);
 
-const totalPages = computed(() => Math.ceil(ITEMS.length / pageSize.value));
+const totalPages = computed(() =>
+  Math.ceil(ITEMS.length / pageSize.value),
+);
 const start = computed(() => (page.value - 1) * pageSize.value);
-const visible = computed(() => ITEMS.slice(start.value, start.value + pageSize.value));
+const visible = computed(() =>
+  ITEMS.slice(start.value, start.value + pageSize.value),
+);
 
 // Keep the first visible row on screen when the page size changes.
 function changeSize(event) {
@@ -4383,7 +5444,10 @@ Seven slots on every page, page 4 mirrors page 17, Prev and Next are inert at th
   <main class="demo">
     <h1>Search results</h1>
     <div class="toolbar">
-      <p data-testid="range" aria-live="polite">Showing {{ start + 1 }}–{{ start + visible.length }} of {{ ITEMS.length }}</p>
+      <p
+        data-testid="range"
+        aria-live="polite"
+      >Showing {{ start + 1 }}–{{ start + visible.length }} of {{ ITEMS.length }}</p>
       <label>
         Per page
         <select data-testid="size" :value="pageSize" @change="changeSize">
@@ -4393,7 +5457,10 @@ Seven slots on every page, page 4 mirrors page 17, Prev and Next are inert at th
     </div>
     <ol class="results" :start="start + 1">
       <li v-for="r in visible.slice(0, 3)" :key="r">{{ r }}</li>
-      <li v-if="visible.length > 3" class="more">… {{ visible.length - 3 }} more on this page</li>
+      <li
+        v-if="visible.length > 3"
+        class="more"
+      >… {{ visible.length - 3 }} more on this page</li>
     </ol>
     <Pagination v-model:page="page" :total-pages="totalPages" />
   </main>
@@ -4411,7 +5478,9 @@ const pageSize = ref(10);
 
 const totalPages = computed(() => Math.ceil(ITEMS.length / pageSize.value));
 const start = computed(() => (page.value - 1) * pageSize.value);
-const visible = computed(() => ITEMS.slice(start.value, start.value + pageSize.value));
+const visible = computed(() =>
+  ITEMS.slice(start.value, start.value + pageSize.value),
+);
 
 // Keep the first visible row on screen when the page size changes.
 function changeSize(event) {
@@ -4423,34 +5492,109 @@ function changeSize(event) {
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.demo { max-width: 560px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.demo h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; color: #9ca3af; }
-.toolbar p { margin: 0; }
-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.results { padding-left: 28px; color: #d1d5db; }
-.results .more { list-style: none; margin-left: -28px; color: #6b7280; }
-.pagination { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.pagination ul { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
-.pagination button { min-width: 36px; height: 36px; padding: 0 8px; border-radius: 8px; border: 1px solid #374151;
-  background: #1f2937; color: #e5e7eb; cursor: pointer; font-variant-numeric: tabular-nums; }
-.pagination button:disabled { opacity: 0.4; cursor: default; }
-.pagination button[aria-current=page] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; font-weight: 600; }
-.pagination button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
-.gap { display: inline-block; min-width: 36px; text-align: center; color: #6b7280; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.demo {
+  max-width: 560px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.demo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+}
+.toolbar p {
+  margin: 0;
+}
+select {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.results {
+  padding-left: 28px;
+  color: #d1d5db;
+}
+.results .more {
+  list-style: none;
+  margin-left: -28px;
+  color: #6b7280;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.pagination ul {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pagination button {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pagination button[aria-current="page"] {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #04111d;
+  font-weight: 600;
+}
+.pagination button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+.gap {
+  display: inline-block;
+  min-width: 36px;
+  text-align: center;
+  color: #6b7280;
+}
 </style>
 `,
           "/src/pageItems.js": `export const GAP = "gap";
 
-const range = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const range = (from, to) =>
+  Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-// Returns the buttons to draw: page numbers plus "gap-left" / "gap-right" markers.
-// With siblings = 1 the result always has 7 items once there are more than 7 pages,
+// Returns the buttons to draw: page numbers
+// plus "gap-left" / "gap-right" markers.
+// With siblings = 1 the result always has 7
+// items once there are more than 7 pages,
 // so the control never changes width while you page through.
 export function pageItems(current, total, siblings = 1) {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
@@ -4461,16 +5605,27 @@ export function pageItems(current, total, siblings = 1) {
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
   return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
 }
 `,
           "/src/components/Pagination.vue": `<template>
   <nav v-if="totalPages > 1" class="pagination" aria-label="Pagination">
-    <button type="button" data-testid="prev" aria-label="Previous page" :disabled="page === 1" @click="go(page - 1)">‹ Prev</button>
+    <button
+      type="button"
+      data-testid="prev"
+      aria-label="Previous page"
+      :disabled="page === 1"
+      @click="go(page - 1)"
+    >‹ Prev</button>
     <ul>
       <li v-for="item in items" :key="item">
-        <span v-if="typeof item === 'string'" class="gap" aria-hidden="true">…</span>
+        <span
+          v-if="typeof item === 'string'"
+          class="gap"
+          aria-hidden="true"
+        >…</span>
         <button
           v-else
           type="button"
@@ -4483,7 +5638,13 @@ export function pageItems(current, total, siblings = 1) {
         </button>
       </li>
     </ul>
-    <button type="button" data-testid="next" aria-label="Next page" :disabled="page === totalPages" @click="go(page + 1)">Next ›</button>
+    <button
+      type="button"
+      data-testid="next"
+      aria-label="Next page"
+      :disabled="page === totalPages"
+      @click="go(page + 1)"
+    >Next ›</button>
   </nav>
 </template>
 
@@ -4491,14 +5652,17 @@ export function pageItems(current, total, siblings = 1) {
 import { computed } from "vue";
 import { pageItems } from "../pageItems.js";
 
-// v-model:page on the parent. defineModel declares the prop and its update event in one line.
+// v-model:page on the parent. defineModel declares
+// the prop and its update event in one line.
 const page = defineModel("page", { type: Number, required: true });
 const props = defineProps({
   totalPages: { type: Number, required: true },
   siblings: { type: Number, default: 1 },
 });
 
-const items = computed(() => pageItems(page.value, props.totalPages, props.siblings));
+const items = computed(() =>
+  pageItems(page.value, props.totalPages, props.siblings),
+);
 
 function go(p) {
   if (p >= 1 && p <= props.totalPages && p !== page.value) page.value = p;
@@ -4535,20 +5699,33 @@ A controlled pager used as <code>&lt;app-pagination [(page)]="page" [totalPages]
 ### Step 1: the pure window function
 
 ~~~ts
-export function pageItems(current: number, total: number, siblings = 1): PageItem[] {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+export function pageItems(
+  current: number,
+  total: number,
+  siblings = 1,
+): PageItem[] {
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
   const right = Math.min(current + siblings, total);
-  // Only hide pages behind a gap when it would hide two or more of them.
+  // Only hide pages behind a gap when
+  // it would hide two or more of them.
   const leftGap = left > 3;
   const rightGap = right < total - 2;
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
-  return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  return [
+    1,
+    GAP + "-left",
+    ...range(left, right),
+    GAP + "-right",
+    total,
+  ];
 }
 ~~~
 
@@ -4579,21 +5756,22 @@ export function pageItems(current: number, total: number, siblings = 1): PageIte
 ~~~
 
 ~~~ts
-  @Input({ required: true }) page = 1;
-  @Input({ required: true }) totalPages = 1;
-  @Input() siblings = 1;
-  // Named pageChange so the parent can write [(page)]="..." two-way binding.
-  @Output() pageChange = new EventEmitter<number>();
+@Input({ required: true }) page = 1;
+@Input({ required: true }) totalPages = 1;
+@Input() siblings = 1;
+// Named pageChange so the parent can
+// write [(page)]="..." two-way binding.
+@Output() pageChange = new EventEmitter<number>();
 
-  items(): PageItem[] {
-    return pageItems(this.page, this.totalPages, this.siblings);
-  }
-  isGap(item: PageItem): boolean {
-    return typeof item === "string";
-  }
-  go(p: number) {
-    if (p >= 1 && p <= this.totalPages && p !== this.page) this.pageChange.emit(p);
-  }
+items(): PageItem[] {
+  return pageItems(this.page, this.totalPages, this.siblings);
+}
+isGap(item: PageItem): boolean {
+  return typeof item === "string";
+}
+go(p: number) {
+  if (p >= 1 && p <= this.totalPages && p !== this.page)
+    this.pageChange.emit(p);
 }
 ~~~
 
@@ -4606,19 +5784,23 @@ The JIT playground does not register the signal <code>input()</code> and <code>o
 ### Step 3: the parent
 
 ~~~ts
-  readonly page = signal(1);
-  readonly pageSize = signal(10);
+readonly page = signal(1);
+readonly pageSize = signal(10);
 
-  readonly totalPages = computed(() => Math.ceil(ITEMS.length / this.pageSize()));
-  readonly start = computed(() => (this.page() - 1) * this.pageSize());
-  readonly visible = computed(() => ITEMS.slice(this.start(), this.start() + this.pageSize()));
+readonly totalPages = computed(() =>
+  Math.ceil(ITEMS.length / this.pageSize()),
+);
+readonly start = computed(() => (this.page() - 1) * this.pageSize());
+readonly visible = computed(() =>
+  ITEMS.slice(this.start(), this.start() + this.pageSize()),
+);
 
-  // Keep the first visible row on screen when the page size changes.
-  changeSize(size: number) {
-    const first = this.start();
-    this.pageSize.set(size);
-    this.page.set(Math.floor(first / size) + 1);
-  }
+// Keep the first visible row on screen when the page size changes.
+changeSize(size: number) {
+  const first = this.start();
+  this.pageSize.set(size);
+  this.page.set(Math.floor(first / size) + 1);
+}
 ~~~
 
 Changing the page size keeps the first visible result on screen rather than resetting to page 1.
@@ -4768,7 +5950,10 @@ const ITEMS = Array.from({ length: 194 }, (_, i) => "Result " + (i + 1));
     <main class="demo">
       <h1>Search results</h1>
       <div class="toolbar">
-        <p data-testid="range" aria-live="polite">Showing {{ start() + 1 }}–{{ start() + visible().length }} of {{ total }}</p>
+        <p
+          data-testid="range"
+          aria-live="polite"
+        >Showing {{ start() + 1 }}–{{ start() + visible().length }} of {{ total }}</p>
         <label>
           Per page
           <select #size data-testid="size" (change)="changeSize(+size.value)">
@@ -4789,7 +5974,8 @@ const ITEMS = Array.from({ length: 194 }, (_, i) => "Result " + (i + 1));
       <app-pagination [(page)]="page" [totalPages]="totalPages()" />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .demo { max-width: 560px; margin: 24px auto; padding: 20px; border-radius: 12px;
       background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
@@ -4799,7 +5985,8 @@ const ITEMS = Array.from({ length: 194 }, (_, i) => "Result " + (i + 1));
     select { padding: 4px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
     .results { padding-left: 28px; color: #d1d5db; }
     .results .more { list-style: none; margin-left: -28px; color: #6b7280; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly sizes = [10, 25, 50];
@@ -4807,9 +5994,13 @@ export class AppComponent {
   readonly page = signal(1);
   readonly pageSize = signal(10);
 
-  readonly totalPages = computed(() => Math.ceil(ITEMS.length / this.pageSize()));
+  readonly totalPages = computed(() =>
+    Math.ceil(ITEMS.length / this.pageSize()),
+  );
   readonly start = computed(() => (this.page() - 1) * this.pageSize());
-  readonly visible = computed(() => ITEMS.slice(this.start(), this.start() + this.pageSize()));
+  readonly visible = computed(() =>
+    ITEMS.slice(this.start(), this.start() + this.pageSize()),
+  );
 
   // Keep the first visible row on screen when the page size changes.
   changeSize(size: number) {
@@ -4822,13 +6013,21 @@ export class AppComponent {
           "/src/app/page-items.ts": `export const GAP = "gap";
 export type PageItem = number | string;
 
-const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i);
+const range = (from: number, to: number) =>
+  Array.from({ length: to - from + 1 }, (_, i) => from + i);
 
-// Returns the buttons to draw: page numbers plus "gap-left" / "gap-right" markers.
-// With siblings = 1 the result always has 7 items once there are more than 7 pages,
+// Returns the buttons to draw: page numbers
+// plus "gap-left" / "gap-right" markers.
+// With siblings = 1 the result always has 7
+// items once there are more than 7 pages,
 // so the control never changes width while you page through.
-export function pageItems(current: number, total: number, siblings = 1): PageItem[] {
-  const slots = siblings * 2 + 5; // first + last + current + 2 siblings + 2 gaps
+export function pageItems(
+  current: number,
+  total: number,
+  siblings = 1,
+): PageItem[] {
+  // first + last + current + 2 siblings + 2 gaps
+  const slots = siblings * 2 + 5;
   if (total <= slots) return range(1, total);
 
   const left = Math.max(current - siblings, 1);
@@ -4839,7 +6038,8 @@ export function pageItems(current: number, total: number, siblings = 1): PageIte
   const edgeCount = slots - 2; // pages shown on the side without a gap
 
   if (!leftGap) return [...range(1, edgeCount), GAP + "-right", total];
-  if (!rightGap) return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
+  if (!rightGap)
+    return [1, GAP + "-left", ...range(total - edgeCount + 1, total)];
   return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
 }
 `,
@@ -4852,7 +6052,13 @@ import { PageItem, pageItems } from "./page-items";
   template: \`
     @if (totalPages > 1) {
       <nav class="pagination" aria-label="Pagination">
-        <button type="button" data-testid="prev" aria-label="Previous page" [disabled]="page === 1" (click)="go(page - 1)">‹ Prev</button>
+        <button
+          type="button"
+          data-testid="prev"
+          aria-label="Previous page"
+          [disabled]="page === 1"
+          (click)="go(page - 1)"
+        >‹ Prev</button>
         <ul>
           @for (item of items(); track item) {
             <li>
@@ -4872,11 +6078,18 @@ import { PageItem, pageItems } from "./page-items";
             </li>
           }
         </ul>
-        <button type="button" data-testid="next" aria-label="Next page" [disabled]="page === totalPages" (click)="go(page + 1)">Next ›</button>
+        <button
+          type="button"
+          data-testid="next"
+          aria-label="Next page"
+          [disabled]="page === totalPages"
+          (click)="go(page + 1)"
+        >Next ›</button>
       </nav>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     .pagination { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     ul { display: flex; gap: 4px; list-style: none; padding: 0; margin: 0; }
     button { min-width: 36px; height: 36px; padding: 0 8px; border-radius: 8px; border: 1px solid #374151;
@@ -4885,7 +6098,8 @@ import { PageItem, pageItems } from "./page-items";
     button[aria-current=page] { background: #0ea5e9; border-color: #0ea5e9; color: #04111d; font-weight: 600; }
     button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
     .gap { display: inline-block; min-width: 36px; text-align: center; color: #6b7280; }
-  \`],
+  \`,
+  ],
 })
 export class PaginationComponent {
   @Input({ required: true }) page = 1;
@@ -4901,7 +6115,8 @@ export class PaginationComponent {
     return typeof item === "string";
   }
   go(p: number) {
-    if (p >= 1 && p <= this.totalPages && p !== this.page) this.pageChange.emit(p);
+    if (p >= 1 && p <= this.totalPages && p !== this.page)
+      this.pageChange.emit(p);
   }
 }
 `,
@@ -5010,7 +6225,10 @@ Each stage only re-runs when its own input changes: typing in the search re-filt
 ### Step 1: comparators by type
 
 ~~~js
-const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const collator = new Intl.Collator("en", {
+  sensitivity: "base",
+  numeric: true,
+});
 
 const compareByType = {
   string: (a, b) => collator.compare(a, b),
@@ -5045,9 +6263,11 @@ export function sortRows(rows, column, direction) {
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
@@ -5065,7 +6285,9 @@ export function filterRows(rows, { query, role }) {
   return rows.filter(
     (row) =>
       (role === "all" || row.role === role) &&
-      (!needle || row.name.toLowerCase().includes(needle) || row.role.toLowerCase().includes(needle))
+      (!needle ||
+        row.name.toLowerCase().includes(needle) ||
+        row.role.toLowerCase().includes(needle)),
   );
 }
 export function nextSort(sort, key) {
@@ -5080,15 +6302,27 @@ All of this lives in a plain module with no React import. That is deliberate: th
 ### Step 4: the memoised pipeline in the component
 
 ~~~jsx
-  // The pipeline: filter, then sort, then cut out one page. Each step is memoised on its own inputs.
-  const filtered = useMemo(() => filterRows(rows, { query, role }), [rows, query, role]);
-  const sorted = useMemo(
-    () => sortRows(filtered, columns.find((c) => c.key === sort.key), sort.direction),
-    [filtered, columns, sort]
-  );
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const current = Math.min(page, totalPages);
-  const pageRows = sorted.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+// The pipeline: filter, then sort, then cut out one
+// page. Each step is memoised on its own inputs.
+const filtered = useMemo(
+  () => filterRows(rows, { query, role }),
+  [rows, query, role],
+);
+const sorted = useMemo(
+  () =>
+    sortRows(
+      filtered,
+      columns.find((c) => c.key === sort.key),
+      sort.direction,
+    ),
+  [filtered, columns, sort],
+);
+const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+const current = Math.min(page, totalPages);
+const pageRows = sorted.slice(
+  (current - 1) * PAGE_SIZE,
+  current * PAGE_SIZE,
+);
 ~~~
 
 📌 **Interview term: useMemo** — caches a computed value until one of its dependencies changes. Here it keeps the filter and sort from re-running when only the page changes. For twelve rows it is not needed for speed; it is there because the same code must stay fast at a few thousand rows. See [useMemo vs useCallback](/interview-question/what-is-the-difference-between-usememo-and-usecallback).
@@ -5098,17 +6332,28 @@ All of this lives in a plain module with no React import. That is deliberate: th
 ### Step 5: accessible headers
 
 ~~~jsx
-              {columns.map((col) => {
-                const direction = sort.key === col.key ? sort.direction : "none";
-                return (
-                  <th key={col.key} scope="col" aria-sort={ARIA_SORT[direction]} className={col.type}>
-                    <button type="button" data-sort={col.key} onClick={() => changeSort(col.key)}>
-                      {col.label}
-                      <span aria-hidden="true">{ARROW[direction]}</span>
-                    </button>
-                  </th>
-                );
-              })}
+{
+  columns.map((col) => {
+    const direction = sort.key === col.key ? sort.direction : "none";
+    return (
+      <th
+        key={col.key}
+        scope="col"
+        aria-sort={ARIA_SORT[direction]}
+        className={col.type}
+      >
+        <button
+          type="button"
+          data-sort={col.key}
+          onClick={() => changeSort(col.key)}
+        >
+          {col.label}
+          <span aria-hidden="true">{ARROW[direction]}</span>
+        </button>
+      </th>
+    );
+  });
+}
 ~~~
 
 📌 **Interview term: aria-sort** — an attribute on the column header that tells screen readers the column is sorted <code>ascending</code> or <code>descending</code>. It is omitted on unsorted columns (React drops the attribute when the value is <code>undefined</code>). The sort control is a real <code>&lt;button&gt;</code> inside the <code>&lt;th scope="col"&gt;</code>, so Tab and Enter work; the arrow is <code>aria-hidden</code> because <code>aria-sort</code> already says it.
@@ -5282,26 +6527,110 @@ export default function App() {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.demo { max-width: 760px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.demo h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.controls input { flex: 1; min-width: 160px; }
-.controls input, .controls select { padding: 8px 10px; border-radius: 8px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.scroller { overflow-x: auto; border: 1px solid #1f2937; border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-caption { text-align: left; padding: 8px 10px; color: #9ca3af; caption-side: top; }
-th, td { padding: 8px 10px; border-bottom: 1px solid #1f2937; white-space: nowrap; text-align: left; }
-th.number, td.number { text-align: right; font-variant-numeric: tabular-nums; }
-th button { all: unset; cursor: pointer; font-weight: 600; color: #cbd5e1; }
-th button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
-th[aria-sort] button { color: #38bdf8; }
-tbody tr:hover { background: #172033; }
-.empty { text-align: center; color: #9ca3af; padding: 24px; }
-.pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 10px; color: #9ca3af; }
-.pager button { padding: 6px 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
-.pager button:disabled { opacity: 0.4; cursor: default; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.demo {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.demo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.controls input {
+  flex: 1;
+  min-width: 160px;
+}
+.controls input,
+.controls select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.scroller {
+  overflow-x: auto;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+caption {
+  text-align: left;
+  padding: 8px 10px;
+  color: #9ca3af;
+  caption-side: top;
+}
+th,
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #1f2937;
+  white-space: nowrap;
+  text-align: left;
+}
+th.number,
+td.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+th button {
+  all: unset;
+  cursor: pointer;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+th button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+th[aria-sort] button {
+  color: #38bdf8;
+}
+tbody tr:hover {
+  background: #172033;
+}
+.empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 24px;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  color: #9ca3af;
+}
+.pager button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+.pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 `,
           "/src/data.js": `export const COLUMNS = [
   { key: "name", label: "Name", type: "string" },
@@ -5313,18 +6642,114 @@ tbody tr:hover { background: #172033; }
 ];
 
 export const PEOPLE = [
-  { id: 1, name: "Maya Patel", role: "Engineer", age: 31, salary: 128000, joined: "2019-04-02", active: true },
-  { id: 2, name: "Liam O'Brien", role: "Designer", age: 27, salary: 94000, joined: "2021-09-13", active: true },
-  { id: 3, name: "Sofia Rossi", role: "Engineer", age: 27, salary: 117500, joined: "2020-01-20", active: false },
-  { id: 4, name: "Noah Kim", role: "Manager", age: 42, salary: 151000, joined: "2015-06-30", active: true },
-  { id: 5, name: "émile Durand", role: "Engineer", age: 35, salary: null, joined: "2023-02-01", active: true },
-  { id: 6, name: "Ava Johnson", role: "Designer", age: 31, salary: 101000, joined: "2018-11-05", active: false },
-  { id: 7, name: "Ethan Brown", role: "Support", age: 24, salary: 61000, joined: "2024-03-18", active: true },
-  { id: 8, name: "Zoe Chen", role: "Engineer", age: 31, salary: 139000, joined: "2017-08-21", active: true },
-  { id: 9, name: "Lucas Silva", role: "Support", age: 29, salary: 64500, joined: "2022-05-09", active: false },
-  { id: 10, name: "Isla Murphy", role: "Manager", age: 38, salary: 143000, joined: "2016-10-12", active: true },
-  { id: 11, name: "Omar Haddad", role: "Engineer", age: 27, salary: 112000, joined: "2021-01-04", active: true },
-  { id: 12, name: "Mia Novak", role: "Designer", age: 33, salary: 99000, joined: "2019-12-16", active: true },
+  {
+    id: 1,
+    name: "Maya Patel",
+    role: "Engineer",
+    age: 31,
+    salary: 128000,
+    joined: "2019-04-02",
+    active: true,
+  },
+  {
+    id: 2,
+    name: "Liam O'Brien",
+    role: "Designer",
+    age: 27,
+    salary: 94000,
+    joined: "2021-09-13",
+    active: true,
+  },
+  {
+    id: 3,
+    name: "Sofia Rossi",
+    role: "Engineer",
+    age: 27,
+    salary: 117500,
+    joined: "2020-01-20",
+    active: false,
+  },
+  {
+    id: 4,
+    name: "Noah Kim",
+    role: "Manager",
+    age: 42,
+    salary: 151000,
+    joined: "2015-06-30",
+    active: true,
+  },
+  {
+    id: 5,
+    name: "émile Durand",
+    role: "Engineer",
+    age: 35,
+    salary: null,
+    joined: "2023-02-01",
+    active: true,
+  },
+  {
+    id: 6,
+    name: "Ava Johnson",
+    role: "Designer",
+    age: 31,
+    salary: 101000,
+    joined: "2018-11-05",
+    active: false,
+  },
+  {
+    id: 7,
+    name: "Ethan Brown",
+    role: "Support",
+    age: 24,
+    salary: 61000,
+    joined: "2024-03-18",
+    active: true,
+  },
+  {
+    id: 8,
+    name: "Zoe Chen",
+    role: "Engineer",
+    age: 31,
+    salary: 139000,
+    joined: "2017-08-21",
+    active: true,
+  },
+  {
+    id: 9,
+    name: "Lucas Silva",
+    role: "Support",
+    age: 29,
+    salary: 64500,
+    joined: "2022-05-09",
+    active: false,
+  },
+  {
+    id: 10,
+    name: "Isla Murphy",
+    role: "Manager",
+    age: 38,
+    salary: 143000,
+    joined: "2016-10-12",
+    active: true,
+  },
+  {
+    id: 11,
+    name: "Omar Haddad",
+    role: "Engineer",
+    age: 27,
+    salary: 112000,
+    joined: "2021-01-04",
+    active: true,
+  },
+  {
+    id: 12,
+    name: "Mia Novak",
+    role: "Designer",
+    age: 33,
+    salary: 99000,
+    joined: "2019-12-16",
+    active: true,
+  },
 ];
 `,
           "/src/DataTable.js": `import { useMemo, useState } from "react";
@@ -5340,13 +6765,25 @@ export default function DataTable({ columns, rows }) {
   const [sort, setSort] = useState({ key: null, direction: "none" });
   const [page, setPage] = useState(1);
 
-  const roles = useMemo(() => [...new Set(rows.map((r) => r.role))].sort(), [rows]);
+  const roles = useMemo(
+    () => [...new Set(rows.map((r) => r.role))].sort(),
+    [rows],
+  );
 
-  // The pipeline: filter, then sort, then cut out one page. Each step is memoised on its own inputs.
-  const filtered = useMemo(() => filterRows(rows, { query, role }), [rows, query, role]);
+  // The pipeline: filter, then sort, then cut out one
+  // page. Each step is memoised on its own inputs.
+  const filtered = useMemo(
+    () => filterRows(rows, { query, role }),
+    [rows, query, role],
+  );
   const sorted = useMemo(
-    () => sortRows(filtered, columns.find((c) => c.key === sort.key), sort.direction),
-    [filtered, columns, sort]
+    () =>
+      sortRows(
+        filtered,
+        columns.find((c) => c.key === sort.key),
+        sort.direction,
+      ),
+    [filtered, columns, sort],
   );
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const current = Math.min(page, totalPages);
@@ -5368,11 +6805,25 @@ export default function DataTable({ columns, rows }) {
   return (
     <div className="table-wrap">
       <div className="controls">
-        <input data-testid="search" type="search" aria-label="Search by name or role" placeholder="Search name or role" value={query} onChange={updateFilter(setQuery)} />
-        <select data-testid="role" aria-label="Filter by role" value={role} onChange={updateFilter(setRole)}>
+        <input
+          data-testid="search"
+          type="search"
+          aria-label="Search by name or role"
+          placeholder="Search name or role"
+          value={query}
+          onChange={updateFilter(setQuery)}
+        />
+        <select
+          data-testid="role"
+          aria-label="Filter by role"
+          value={role}
+          onChange={updateFilter(setRole)}
+        >
           <option value="all">All roles</option>
           {roles.map((r) => (
-            <option key={r} value={r}>{r}</option>
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
       </div>
@@ -5381,15 +6832,26 @@ export default function DataTable({ columns, rows }) {
         <table>
           <caption data-testid="caption">
             {sorted.length} of {rows.length} people
-            {sort.direction !== "none" && ", sorted by " + sort.key + " " + ARIA_SORT[sort.direction]}
+            {sort.direction !== "none" &&
+              ", sorted by " + sort.key + " " + ARIA_SORT[sort.direction]}
           </caption>
           <thead>
             <tr>
               {columns.map((col) => {
-                const direction = sort.key === col.key ? sort.direction : "none";
+                const direction =
+                  sort.key === col.key ? sort.direction : "none";
                 return (
-                  <th key={col.key} scope="col" aria-sort={ARIA_SORT[direction]} className={col.type}>
-                    <button type="button" data-sort={col.key} onClick={() => changeSort(col.key)}>
+                  <th
+                    key={col.key}
+                    scope="col"
+                    aria-sort={ARIA_SORT[direction]}
+                    className={col.type}
+                  >
+                    <button
+                      type="button"
+                      data-sort={col.key}
+                      onClick={() => changeSort(col.key)}
+                    >
                       {col.label}
                       <span aria-hidden="true">{ARROW[direction]}</span>
                     </button>
@@ -5402,13 +6864,21 @@ export default function DataTable({ columns, rows }) {
             {pageRows.map((row) => (
               <tr key={row.id}>
                 {columns.map((col) => (
-                  <td key={col.key} className={col.type}>{formatCell(col, row[col.key])}</td>
+                  <td key={col.key} className={col.type}>
+                    {formatCell(col, row[col.key])}
+                  </td>
                 ))}
               </tr>
             ))}
             {pageRows.length === 0 && (
               <tr>
-                <td colSpan={columns.length} data-testid="empty" className="empty">No people match these filters.</td>
+                <td
+                  colSpan={columns.length}
+                  data-testid="empty"
+                  className="empty"
+                >
+                  No people match these filters.
+                </td>
               </tr>
             )}
           </tbody>
@@ -5416,16 +6886,36 @@ export default function DataTable({ columns, rows }) {
       </div>
 
       <div className="pager">
-        <button type="button" data-testid="prev" disabled={current === 1} onClick={() => setPage(current - 1)}>Prev</button>
-        <span data-testid="page">Page {current} of {totalPages}</span>
-        <button type="button" data-testid="next" disabled={current === totalPages} onClick={() => setPage(current + 1)}>Next</button>
+        <button
+          type="button"
+          data-testid="prev"
+          disabled={current === 1}
+          onClick={() => setPage(current - 1)}
+        >
+          Prev
+        </button>
+        <span data-testid="page">
+          Page {current} of {totalPages}
+        </span>
+        <button
+          type="button"
+          data-testid="next"
+          disabled={current === totalPages}
+          onClick={() => setPage(current + 1)}
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 }
 `,
-          "/src/table.js": `// Framework-free table logic: one comparator per column type, then filter -> sort -> paginate.
-const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+          "/src/table.js": `// Framework-free table logic: one comparator per
+// column type, then filter -> sort -> paginate.
+const collator = new Intl.Collator("en", {
+  sensitivity: "base",
+  numeric: true,
+});
 
 const compareByType = {
   string: (a, b) => collator.compare(a, b),
@@ -5445,9 +6935,11 @@ export function sortRows(rows, column, direction) {
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
@@ -5457,7 +6949,9 @@ export function filterRows(rows, { query, role }) {
   return rows.filter(
     (row) =>
       (role === "all" || row.role === role) &&
-      (!needle || row.name.toLowerCase().includes(needle) || row.role.toLowerCase().includes(needle))
+      (!needle ||
+        row.name.toLowerCase().includes(needle) ||
+        row.role.toLowerCase().includes(needle)),
   );
 }
 
@@ -5534,7 +7028,10 @@ Clicking Next only invalidates <code>current</code> and <code>pageRows</code>; t
 ### Step 1: type-aware, stable, non-mutating sort
 
 ~~~js
-const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const collator = new Intl.Collator("en", {
+  sensitivity: "base",
+  numeric: true,
+});
 
 const compareByType = {
   string: (a, b) => collator.compare(a, b),
@@ -5553,9 +7050,11 @@ export function sortRows(rows, column, direction) {
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
@@ -5568,16 +7067,31 @@ export function sortRows(rows, column, direction) {
 ### Step 2: the computed pipeline
 
 ~~~js
-// The pipeline: filter, then sort, then cut out one page. Each computed caches its own step.
-const filtered = computed(() => filterRows(props.rows, { query: query.value, role: role.value }));
-const sorted = computed(() =>
-  sortRows(filtered.value, props.columns.find((c) => c.key === sort.value.key), sort.value.direction)
+// The pipeline: filter, then sort, then cut out
+// one page. Each computed caches its own step.
+const filtered = computed(() =>
+  filterRows(props.rows, { query: query.value, role: role.value }),
 );
-const totalPages = computed(() => Math.max(1, Math.ceil(sorted.value.length / PAGE_SIZE)));
+const sorted = computed(() =>
+  sortRows(
+    filtered.value,
+    props.columns.find((c) => c.key === sort.value.key),
+    sort.value.direction,
+  ),
+);
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(sorted.value.length / PAGE_SIZE)),
+);
 const current = computed(() => Math.min(page.value, totalPages.value));
-const pageRows = computed(() => sorted.value.slice((current.value - 1) * PAGE_SIZE, current.value * PAGE_SIZE));
+const pageRows = computed(() =>
+  sorted.value.slice(
+    (current.value - 1) * PAGE_SIZE,
+    current.value * PAGE_SIZE,
+  ),
+);
 
-// Changing what is in the table, or its order, sends you back to page 1.
+// Changing what is in the table, or
+// its order, sends you back to page 1.
 watch([query, role, sort], () => (page.value = 1));
 ~~~
 
@@ -5586,11 +7100,22 @@ watch([query, role, sort], () => (page.value = 1));
 ### Step 3: headers that sort and announce it
 
 ~~~vue
-            <th v-for="col in columns" :key="col.key" scope="col" :aria-sort="ARIA_SORT[directionOf(col)]" :class="col.type">
-              <button type="button" :data-sort="col.key" @click="changeSort(col.key)">
-                {{ col.label }}<span aria-hidden="true">{{ ARROW[directionOf(col)] }}</span>
-              </button>
-            </th>
+<th
+  v-for="col in columns"
+  :key="col.key"
+  scope="col"
+  :aria-sort="ARIA_SORT[directionOf(col)]"
+  :class="col.type"
+>
+  <button
+    type="button"
+    :data-sort="col.key"
+    @click="changeSort(col.key)"
+  >
+    {{ col.label
+    }}<span aria-hidden="true">{{ ARROW[directionOf(col)] }}</span>
+  </button>
+</th>
 ~~~
 
 📌 **Interview term: aria-sort** — tells screen readers how a column is sorted. Binding <code>undefined</code> (unsorted columns) makes Vue omit the attribute. The control is a real button inside <code>&lt;th scope="col"&gt;</code>, so keyboard users can sort, and the arrow is <code>aria-hidden</code>.
@@ -5745,26 +7270,110 @@ import { COLUMNS, PEOPLE } from "./data.js";
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.demo { max-width: 760px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.demo h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.controls input { flex: 1; min-width: 160px; }
-.controls input, .controls select { padding: 8px 10px; border-radius: 8px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.scroller { overflow-x: auto; border: 1px solid #1f2937; border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
-caption { text-align: left; padding: 8px 10px; color: #9ca3af; caption-side: top; }
-th, td { padding: 8px 10px; border-bottom: 1px solid #1f2937; white-space: nowrap; text-align: left; }
-th.number, td.number { text-align: right; font-variant-numeric: tabular-nums; }
-th button { all: unset; cursor: pointer; font-weight: 600; color: #cbd5e1; }
-th button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 2px; }
-th[aria-sort] button { color: #38bdf8; }
-tbody tr:hover { background: #172033; }
-.empty { text-align: center; color: #9ca3af; padding: 24px; }
-.pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 10px; color: #9ca3af; }
-.pager button { padding: 6px 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
-.pager button:disabled { opacity: 0.4; cursor: default; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.demo {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.demo h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.controls input {
+  flex: 1;
+  min-width: 160px;
+}
+.controls input,
+.controls select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.scroller {
+  overflow-x: auto;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+caption {
+  text-align: left;
+  padding: 8px 10px;
+  color: #9ca3af;
+  caption-side: top;
+}
+th,
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #1f2937;
+  white-space: nowrap;
+  text-align: left;
+}
+th.number,
+td.number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+th button {
+  all: unset;
+  cursor: pointer;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+th button:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+th[aria-sort] button {
+  color: #38bdf8;
+}
+tbody tr:hover {
+  background: #172033;
+}
+.empty {
+  text-align: center;
+  color: #9ca3af;
+  padding: 24px;
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+  color: #9ca3af;
+}
+.pager button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+.pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 </style>
 `,
           "/src/data.js": `export const COLUMNS = [
@@ -5777,22 +7386,122 @@ tbody tr:hover { background: #172033; }
 ];
 
 export const PEOPLE = [
-  { id: 1, name: "Maya Patel", role: "Engineer", age: 31, salary: 128000, joined: "2019-04-02", active: true },
-  { id: 2, name: "Liam O'Brien", role: "Designer", age: 27, salary: 94000, joined: "2021-09-13", active: true },
-  { id: 3, name: "Sofia Rossi", role: "Engineer", age: 27, salary: 117500, joined: "2020-01-20", active: false },
-  { id: 4, name: "Noah Kim", role: "Manager", age: 42, salary: 151000, joined: "2015-06-30", active: true },
-  { id: 5, name: "émile Durand", role: "Engineer", age: 35, salary: null, joined: "2023-02-01", active: true },
-  { id: 6, name: "Ava Johnson", role: "Designer", age: 31, salary: 101000, joined: "2018-11-05", active: false },
-  { id: 7, name: "Ethan Brown", role: "Support", age: 24, salary: 61000, joined: "2024-03-18", active: true },
-  { id: 8, name: "Zoe Chen", role: "Engineer", age: 31, salary: 139000, joined: "2017-08-21", active: true },
-  { id: 9, name: "Lucas Silva", role: "Support", age: 29, salary: 64500, joined: "2022-05-09", active: false },
-  { id: 10, name: "Isla Murphy", role: "Manager", age: 38, salary: 143000, joined: "2016-10-12", active: true },
-  { id: 11, name: "Omar Haddad", role: "Engineer", age: 27, salary: 112000, joined: "2021-01-04", active: true },
-  { id: 12, name: "Mia Novak", role: "Designer", age: 33, salary: 99000, joined: "2019-12-16", active: true },
+  {
+    id: 1,
+    name: "Maya Patel",
+    role: "Engineer",
+    age: 31,
+    salary: 128000,
+    joined: "2019-04-02",
+    active: true,
+  },
+  {
+    id: 2,
+    name: "Liam O'Brien",
+    role: "Designer",
+    age: 27,
+    salary: 94000,
+    joined: "2021-09-13",
+    active: true,
+  },
+  {
+    id: 3,
+    name: "Sofia Rossi",
+    role: "Engineer",
+    age: 27,
+    salary: 117500,
+    joined: "2020-01-20",
+    active: false,
+  },
+  {
+    id: 4,
+    name: "Noah Kim",
+    role: "Manager",
+    age: 42,
+    salary: 151000,
+    joined: "2015-06-30",
+    active: true,
+  },
+  {
+    id: 5,
+    name: "émile Durand",
+    role: "Engineer",
+    age: 35,
+    salary: null,
+    joined: "2023-02-01",
+    active: true,
+  },
+  {
+    id: 6,
+    name: "Ava Johnson",
+    role: "Designer",
+    age: 31,
+    salary: 101000,
+    joined: "2018-11-05",
+    active: false,
+  },
+  {
+    id: 7,
+    name: "Ethan Brown",
+    role: "Support",
+    age: 24,
+    salary: 61000,
+    joined: "2024-03-18",
+    active: true,
+  },
+  {
+    id: 8,
+    name: "Zoe Chen",
+    role: "Engineer",
+    age: 31,
+    salary: 139000,
+    joined: "2017-08-21",
+    active: true,
+  },
+  {
+    id: 9,
+    name: "Lucas Silva",
+    role: "Support",
+    age: 29,
+    salary: 64500,
+    joined: "2022-05-09",
+    active: false,
+  },
+  {
+    id: 10,
+    name: "Isla Murphy",
+    role: "Manager",
+    age: 38,
+    salary: 143000,
+    joined: "2016-10-12",
+    active: true,
+  },
+  {
+    id: 11,
+    name: "Omar Haddad",
+    role: "Engineer",
+    age: 27,
+    salary: 112000,
+    joined: "2021-01-04",
+    active: true,
+  },
+  {
+    id: 12,
+    name: "Mia Novak",
+    role: "Designer",
+    age: 33,
+    salary: 99000,
+    joined: "2019-12-16",
+    active: true,
+  },
 ];
 `,
-          "/src/table.js": `// Framework-free table logic: one comparator per column type, then filter -> sort -> paginate.
-const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+          "/src/table.js": `// Framework-free table logic: one comparator per
+// column type, then filter -> sort -> paginate.
+const collator = new Intl.Collator("en", {
+  sensitivity: "base",
+  numeric: true,
+});
 
 const compareByType = {
   string: (a, b) => collator.compare(a, b),
@@ -5812,9 +7521,11 @@ export function sortRows(rows, column, direction) {
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
@@ -5824,7 +7535,9 @@ export function filterRows(rows, { query, role }) {
   return rows.filter(
     (row) =>
       (role === "all" || row.role === role) &&
-      (!needle || row.name.toLowerCase().includes(needle) || row.role.toLowerCase().includes(needle))
+      (!needle ||
+        row.name.toLowerCase().includes(needle) ||
+        row.role.toLowerCase().includes(needle)),
   );
 }
 
@@ -5845,7 +7558,13 @@ export function formatCell(column, value) {
           "/src/components/DataTable.vue": `<template>
   <div class="table-wrap">
     <div class="controls">
-      <input v-model="query" data-testid="search" type="search" aria-label="Search by name or role" placeholder="Search name or role" />
+      <input
+        v-model="query"
+        data-testid="search"
+        type="search"
+        aria-label="Search by name or role"
+        placeholder="Search name or role"
+      />
       <select v-model="role" data-testid="role" aria-label="Filter by role">
         <option value="all">All roles</option>
         <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
@@ -5859,8 +7578,18 @@ export function formatCell(column, value) {
         </caption>
         <thead>
           <tr>
-            <th v-for="col in columns" :key="col.key" scope="col" :aria-sort="ARIA_SORT[directionOf(col)]" :class="col.type">
-              <button type="button" :data-sort="col.key" @click="changeSort(col.key)">
+            <th
+              v-for="col in columns"
+              :key="col.key"
+              scope="col"
+              :aria-sort="ARIA_SORT[directionOf(col)]"
+              :class="col.type"
+            >
+              <button
+                type="button"
+                :data-sort="col.key"
+                @click="changeSort(col.key)"
+              >
                 {{ col.label }}<span aria-hidden="true">{{ ARROW[directionOf(col)] }}</span>
               </button>
             </th>
@@ -5868,19 +7597,37 @@ export function formatCell(column, value) {
         </thead>
         <tbody>
           <tr v-for="row in pageRows" :key="row.id">
-            <td v-for="col in columns" :key="col.key" :class="col.type">{{ formatCell(col, row[col.key]) }}</td>
+            <td
+              v-for="col in columns"
+              :key="col.key"
+              :class="col.type"
+            >{{ formatCell(col, row[col.key]) }}</td>
           </tr>
           <tr v-if="pageRows.length === 0">
-            <td :colspan="columns.length" data-testid="empty" class="empty">No people match these filters.</td>
+            <td
+              :colspan="columns.length"
+              data-testid="empty"
+              class="empty"
+            >No people match these filters.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <div class="pager">
-      <button type="button" data-testid="prev" :disabled="current === 1" @click="page = current - 1">Prev</button>
+      <button
+        type="button"
+        data-testid="prev"
+        :disabled="current === 1"
+        @click="page = current - 1"
+      >Prev</button>
       <span data-testid="page">Page {{ current }} of {{ totalPages }}</span>
-      <button type="button" data-testid="next" :disabled="current === totalPages" @click="page = current + 1">Next</button>
+      <button
+        type="button"
+        data-testid="next"
+        :disabled="current === totalPages"
+        @click="page = current + 1"
+      >Next</button>
     </div>
   </div>
 </template>
@@ -5903,21 +7650,38 @@ const role = ref("all");
 const sort = ref({ key: null, direction: "none" });
 const page = ref(1);
 
-const roles = computed(() => [...new Set(props.rows.map((r) => r.role))].sort());
-
-// The pipeline: filter, then sort, then cut out one page. Each computed caches its own step.
-const filtered = computed(() => filterRows(props.rows, { query: query.value, role: role.value }));
-const sorted = computed(() =>
-  sortRows(filtered.value, props.columns.find((c) => c.key === sort.value.key), sort.value.direction)
+const roles = computed(() =>
+  [...new Set(props.rows.map((r) => r.role))].sort(),
 );
-const totalPages = computed(() => Math.max(1, Math.ceil(sorted.value.length / PAGE_SIZE)));
+
+// The pipeline: filter, then sort, then cut out
+// one page. Each computed caches its own step.
+const filtered = computed(() =>
+  filterRows(props.rows, { query: query.value, role: role.value }),
+);
+const sorted = computed(() =>
+  sortRows(
+    filtered.value,
+    props.columns.find((c) => c.key === sort.value.key),
+    sort.value.direction,
+  ),
+);
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(sorted.value.length / PAGE_SIZE)),
+);
 const current = computed(() => Math.min(page.value, totalPages.value));
-const pageRows = computed(() => sorted.value.slice((current.value - 1) * PAGE_SIZE, current.value * PAGE_SIZE));
+const pageRows = computed(() =>
+  sorted.value.slice(
+    (current.value - 1) * PAGE_SIZE,
+    current.value * PAGE_SIZE,
+  ),
+);
 
 // Changing what is in the table, or its order, sends you back to page 1.
 watch([query, role, sort], () => (page.value = 1));
 
-const directionOf = (col) => (sort.value.key === col.key ? sort.value.direction : "none");
+const directionOf = (col) =>
+  sort.value.key === col.key ? sort.value.direction : "none";
 const changeSort = (key) => (sort.value = nextSort(sort.value, key));
 </script>
 `,
@@ -5980,7 +7744,11 @@ Next only invalidates <code>current</code> and <code>pageRows</code>; a new sear
 ### Step 1: comparators and a stable copy-sort
 
 ~~~ts
-export function sortRows(rows: Person[], column: Column | undefined, direction: Direction): Person[] {
+export function sortRows(
+  rows: Person[],
+  column: Column | undefined,
+  direction: Direction,
+): Person[] {
   if (!column || direction === "none") return rows;
   const compare = compareByType[column.type];
   const sign = direction === "asc" ? 1 : -1;
@@ -5991,9 +7759,11 @@ export function sortRows(rows: Person[], column: Column | undefined, direction: 
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
@@ -6006,21 +7776,40 @@ export function sortRows(rows: Person[], column: Column | undefined, direction: 
 ### Step 2: inputs into signals, then computed
 
 ~~~ts
-  @Input({ required: true }) set rows(value: Person[]) {
-    this.rowsSig.set(value);
-  }
-  readonly rowsSig = signal<Person[]>([]);
+@Input({ required: true }) set rows(value: Person[]) {
+  this.rowsSig.set(value);
+}
+readonly rowsSig = signal<Person[]>([]);
 ~~~
 
 ~~~ts
-  // The pipeline: filter, then sort, then cut out one page. Each computed caches its own step.
-  readonly filtered = computed(() => filterRows(this.rowsSig(), { query: this.query(), role: this.role() }));
-  readonly sorted = computed(() =>
-    sortRows(this.filtered(), this.columns.find((c) => c.key === this.sort().key), this.sort().direction)
-  );
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.sorted().length / PAGE_SIZE)));
-  readonly current = computed(() => Math.min(this.page(), this.totalPages()));
-  readonly pageRows = computed(() => this.sorted().slice((this.current() - 1) * PAGE_SIZE, this.current() * PAGE_SIZE));
+// The pipeline: filter, then sort, then cut out
+// one page. Each computed caches its own step.
+readonly filtered = computed(() =>
+  filterRows(this.rowsSig(), {
+    query: this.query(),
+    role: this.role(),
+  }),
+);
+readonly sorted = computed(() =>
+  sortRows(
+    this.filtered(),
+    this.columns.find((c) => c.key === this.sort().key),
+    this.sort().direction,
+  ),
+);
+readonly totalPages = computed(() =>
+  Math.max(1, Math.ceil(this.sorted().length / PAGE_SIZE)),
+);
+readonly current = computed(() =>
+  Math.min(this.page(), this.totalPages()),
+);
+readonly pageRows = computed(() =>
+  this.sorted().slice(
+    (this.current() - 1) * PAGE_SIZE,
+    this.current() * PAGE_SIZE,
+  ),
+);
 ~~~
 
 📌 **Interview term: Input setter** — a decorated setter runs every time the parent passes a new value. Writing it into a signal turns a classic <code>@Input</code> into something a <code>computed</code> can track. In a CLI app you would write <code>rows = input.required&lt;Person[]&gt;()</code>; the playground runtime JIT does not register signal inputs, so the setter is the bridge. See [signal inputs vs @Input](/interview-question/signal-inputs-input-vs-input-what-changes-in-angular-17-1).
@@ -6190,12 +7979,26 @@ import { COLUMNS, PEOPLE } from "./data";
       <app-data-table [columns]="columns" [rows]="people" />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; }
-    .demo { max-width: 760px; margin: 24px auto; padding: 20px; border-radius: 12px;
-      background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-    .demo h1 { font-size: 1.3rem; margin: 0 0 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+      }
+      .demo {
+        max-width: 760px;
+        margin: 24px auto;
+        padding: 20px;
+        border-radius: 12px;
+        background: #111827;
+        color: #e5e7eb;
+        font-family: system-ui, sans-serif;
+      }
+      .demo h1 {
+        font-size: 1.3rem;
+        margin: 0 0 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly columns = COLUMNS;
@@ -6204,10 +8007,21 @@ export class AppComponent {
 `,
           "/src/app/data-table.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
 import { Column, Person } from "./data";
-import { Direction, SortState, filterRows, formatCell, nextSort, sortRows } from "./table";
+import {
+  Direction,
+  SortState,
+  filterRows,
+  formatCell,
+  nextSort,
+  sortRows,
+} from "./table";
 
 const PAGE_SIZE = 5;
-const ARIA_SORT: Record<Direction, string | null> = { none: null, asc: "ascending", desc: "descending" };
+const ARIA_SORT: Record<Direction, string | null> = {
+  none: null,
+  asc: "ascending",
+  desc: "descending",
+};
 const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" };
 
 @Component({
@@ -6217,7 +8031,12 @@ const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" }
     <div class="controls">
       <input #search data-testid="search" type="search" aria-label="Search by name or role" placeholder="Search name or role"
         [value]="query()" (input)="setQuery(search.value)" />
-      <select #roleBox data-testid="role" aria-label="Filter by role" (change)="setRole(roleBox.value)">
+      <select
+        #roleBox
+        data-testid="role"
+        aria-label="Filter by role"
+        (change)="setRole(roleBox.value)"
+      >
         <option value="all">All roles</option>
         @for (r of roles(); track r) {
           <option [value]="r" [selected]="r === role()">{{ r }}</option>
@@ -6233,8 +8052,16 @@ const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" }
         <thead>
           <tr>
             @for (col of columns; track col.key) {
-              <th scope="col" [attr.aria-sort]="ariaSort[directionOf(col)]" [class]="col.type">
-                <button type="button" [attr.data-sort]="col.key" (click)="changeSort(col)">
+              <th
+                scope="col"
+                [attr.aria-sort]="ariaSort[directionOf(col)]"
+                [class]="col.type"
+              >
+                <button
+                  type="button"
+                  [attr.data-sort]="col.key"
+                  (click)="changeSort(col)"
+                >
                   {{ col.label }}<span aria-hidden="true">{{ arrow[directionOf(col)] }}</span>
                 </button>
               </th>
@@ -6250,7 +8077,11 @@ const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" }
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="columns.length" data-testid="empty" class="empty">No people match these filters.</td>
+              <td
+                [attr.colspan]="columns.length"
+                data-testid="empty"
+                class="empty"
+              >No people match these filters.</td>
             </tr>
           }
         </tbody>
@@ -6258,12 +8089,23 @@ const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" }
     </div>
 
     <div class="pager">
-      <button type="button" data-testid="prev" [disabled]="current() === 1" (click)="page.set(current() - 1)">Prev</button>
+      <button
+        type="button"
+        data-testid="prev"
+        [disabled]="current() === 1"
+        (click)="page.set(current() - 1)"
+      >Prev</button>
       <span data-testid="page">Page {{ current() }} of {{ totalPages() }}</span>
-      <button type="button" data-testid="next" [disabled]="current() === totalPages()" (click)="page.set(current() + 1)">Next</button>
+      <button
+        type="button"
+        data-testid="next"
+        [disabled]="current() === totalPages()"
+        (click)="page.set(current() + 1)"
+      >Next</button>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .controls input { flex: 1; min-width: 160px; }
@@ -6281,11 +8123,13 @@ const ARROW: Record<Direction, string> = { none: "", asc: " ▲", desc: " ▼" }
     .pager { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 10px; color: #9ca3af; }
     .pager button { padding: 6px 12px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
     .pager button:disabled { opacity: 0.4; cursor: default; }
-  \`],
+  \`,
+  ],
 })
 export class DataTableComponent {
   @Input({ required: true }) columns: Column[] = [];
-  // Mirror the rows input into a signal so the computed pipeline can depend on it.
+  // Mirror the rows input into a signal so
+  // the computed pipeline can depend on it.
   @Input({ required: true }) set rows(value: Person[]) {
     this.rowsSig.set(value);
   }
@@ -6300,16 +8144,32 @@ export class DataTableComponent {
   readonly sort = signal<SortState>({ key: null, direction: "none" });
   readonly page = signal(1);
 
-  readonly roles = computed(() => [...new Set(this.rowsSig().map((r) => r.role))].sort());
-
-  // The pipeline: filter, then sort, then cut out one page. Each computed caches its own step.
-  readonly filtered = computed(() => filterRows(this.rowsSig(), { query: this.query(), role: this.role() }));
-  readonly sorted = computed(() =>
-    sortRows(this.filtered(), this.columns.find((c) => c.key === this.sort().key), this.sort().direction)
+  readonly roles = computed(() =>
+    [...new Set(this.rowsSig().map((r) => r.role))].sort(),
   );
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.sorted().length / PAGE_SIZE)));
+
+  // The pipeline: filter, then sort, then cut out
+  // one page. Each computed caches its own step.
+  readonly filtered = computed(() =>
+    filterRows(this.rowsSig(), { query: this.query(), role: this.role() }),
+  );
+  readonly sorted = computed(() =>
+    sortRows(
+      this.filtered(),
+      this.columns.find((c) => c.key === this.sort().key),
+      this.sort().direction,
+    ),
+  );
+  readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.sorted().length / PAGE_SIZE)),
+  );
   readonly current = computed(() => Math.min(this.page(), this.totalPages()));
-  readonly pageRows = computed(() => this.sorted().slice((this.current() - 1) * PAGE_SIZE, this.current() * PAGE_SIZE));
+  readonly pageRows = computed(() =>
+    this.sorted().slice(
+      (this.current() - 1) * PAGE_SIZE,
+      this.current() * PAGE_SIZE,
+    ),
+  );
 
   directionOf(col: Column): Direction {
     return this.sort().key === col.key ? this.sort().direction : "none";
@@ -6356,21 +8216,118 @@ export const COLUMNS: Column[] = [
 ];
 
 export const PEOPLE: Person[] = [
-  { id: 1, name: "Maya Patel", role: "Engineer", age: 31, salary: 128000, joined: "2019-04-02", active: true },
-  { id: 2, name: "Liam O'Brien", role: "Designer", age: 27, salary: 94000, joined: "2021-09-13", active: true },
-  { id: 3, name: "Sofia Rossi", role: "Engineer", age: 27, salary: 117500, joined: "2020-01-20", active: false },
-  { id: 4, name: "Noah Kim", role: "Manager", age: 42, salary: 151000, joined: "2015-06-30", active: true },
-  { id: 5, name: "émile Durand", role: "Engineer", age: 35, salary: null, joined: "2023-02-01", active: true },
-  { id: 6, name: "Ava Johnson", role: "Designer", age: 31, salary: 101000, joined: "2018-11-05", active: false },
-  { id: 7, name: "Ethan Brown", role: "Support", age: 24, salary: 61000, joined: "2024-03-18", active: true },
-  { id: 8, name: "Zoe Chen", role: "Engineer", age: 31, salary: 139000, joined: "2017-08-21", active: true },
-  { id: 9, name: "Lucas Silva", role: "Support", age: 29, salary: 64500, joined: "2022-05-09", active: false },
-  { id: 10, name: "Isla Murphy", role: "Manager", age: 38, salary: 143000, joined: "2016-10-12", active: true },
-  { id: 11, name: "Omar Haddad", role: "Engineer", age: 27, salary: 112000, joined: "2021-01-04", active: true },
-  { id: 12, name: "Mia Novak", role: "Designer", age: 33, salary: 99000, joined: "2019-12-16", active: true },
+  {
+    id: 1,
+    name: "Maya Patel",
+    role: "Engineer",
+    age: 31,
+    salary: 128000,
+    joined: "2019-04-02",
+    active: true,
+  },
+  {
+    id: 2,
+    name: "Liam O'Brien",
+    role: "Designer",
+    age: 27,
+    salary: 94000,
+    joined: "2021-09-13",
+    active: true,
+  },
+  {
+    id: 3,
+    name: "Sofia Rossi",
+    role: "Engineer",
+    age: 27,
+    salary: 117500,
+    joined: "2020-01-20",
+    active: false,
+  },
+  {
+    id: 4,
+    name: "Noah Kim",
+    role: "Manager",
+    age: 42,
+    salary: 151000,
+    joined: "2015-06-30",
+    active: true,
+  },
+  {
+    id: 5,
+    name: "émile Durand",
+    role: "Engineer",
+    age: 35,
+    salary: null,
+    joined: "2023-02-01",
+    active: true,
+  },
+  {
+    id: 6,
+    name: "Ava Johnson",
+    role: "Designer",
+    age: 31,
+    salary: 101000,
+    joined: "2018-11-05",
+    active: false,
+  },
+  {
+    id: 7,
+    name: "Ethan Brown",
+    role: "Support",
+    age: 24,
+    salary: 61000,
+    joined: "2024-03-18",
+    active: true,
+  },
+  {
+    id: 8,
+    name: "Zoe Chen",
+    role: "Engineer",
+    age: 31,
+    salary: 139000,
+    joined: "2017-08-21",
+    active: true,
+  },
+  {
+    id: 9,
+    name: "Lucas Silva",
+    role: "Support",
+    age: 29,
+    salary: 64500,
+    joined: "2022-05-09",
+    active: false,
+  },
+  {
+    id: 10,
+    name: "Isla Murphy",
+    role: "Manager",
+    age: 38,
+    salary: 143000,
+    joined: "2016-10-12",
+    active: true,
+  },
+  {
+    id: 11,
+    name: "Omar Haddad",
+    role: "Engineer",
+    age: 27,
+    salary: 112000,
+    joined: "2021-01-04",
+    active: true,
+  },
+  {
+    id: 12,
+    name: "Mia Novak",
+    role: "Designer",
+    age: 33,
+    salary: 99000,
+    joined: "2019-12-16",
+    active: true,
+  },
 ];
 `,
-          "/src/app/table.ts": `// Framework-free table logic: one comparator per column type, then filter -> sort -> paginate.
+          "/src/app/table.ts": `// Framework-free table logic: one comparator per
+// column type, then filter -> sort -> paginate.
 import { Column, ColumnType, Person } from "./data";
 
 export type Direction = "none" | "asc" | "desc";
@@ -6380,16 +8337,24 @@ export interface SortState {
 }
 type Cell = Person[keyof Person];
 
-const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
+const collator = new Intl.Collator("en", {
+  sensitivity: "base",
+  numeric: true,
+});
 
 const compareByType: Record<ColumnType, (a: any, b: any) => number> = {
   string: (a: string, b: string) => collator.compare(a, b),
   number: (a: number, b: number) => a - b,
   date: (a: string, b: string) => Date.parse(a) - Date.parse(b),
-  boolean: (a: boolean, b: boolean) => Number(b) - Number(a), // true first when ascending
+  // true first when ascending
+  boolean: (a: boolean, b: boolean) => Number(b) - Number(a),
 };
 
-export function sortRows(rows: Person[], column: Column | undefined, direction: Direction): Person[] {
+export function sortRows(
+  rows: Person[],
+  column: Column | undefined,
+  direction: Direction,
+): Person[] {
   if (!column || direction === "none") return rows;
   const compare = compareByType[column.type];
   const sign = direction === "asc" ? 1 : -1;
@@ -6400,26 +8365,37 @@ export function sortRows(rows: Person[], column: Column | undefined, direction: 
       const b = y.row[column.key];
       if (a == null || b == null) {
         if (a == null && b == null) return x.index - y.index;
-        return a == null ? 1 : -1; // empty cells always go last, in both directions
+        // empty cells always go last, in both directions
+        return a == null ? 1 : -1;
       }
-      return sign * compare(a, b) || x.index - y.index; // ties keep their original order
+      // ties keep their original order
+      return sign * compare(a, b) || x.index - y.index;
     })
     .map((entry) => entry.row);
 }
 
-export function filterRows(rows: Person[], opts: { query: string; role: string }): Person[] {
+export function filterRows(
+  rows: Person[],
+  opts: { query: string; role: string },
+): Person[] {
   const needle = opts.query.trim().toLowerCase();
   return rows.filter(
     (row) =>
       (opts.role === "all" || row.role === opts.role) &&
-      (!needle || row.name.toLowerCase().includes(needle) || row.role.toLowerCase().includes(needle))
+      (!needle ||
+        row.name.toLowerCase().includes(needle) ||
+        row.role.toLowerCase().includes(needle)),
   );
 }
 
 // none -> asc -> desc -> none, and a click on a new column starts at asc.
 export function nextSort(sort: SortState, key: Column["key"]): SortState {
   if (sort.key !== key) return { key, direction: "asc" };
-  const order: Record<Direction, Direction> = { none: "asc", asc: "desc", desc: "none" };
+  const order: Record<Direction, Direction> = {
+    none: "asc",
+    asc: "desc",
+    desc: "none",
+  };
   return { key, direction: order[sort.direction] };
 }
 
@@ -6547,8 +8523,12 @@ function predicates(f) {
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) &&
+        (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
@@ -6561,7 +8541,9 @@ function predicates(f) {
 
 ~~~js
 function matcher(f, skip) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p) => checks.every((check) => check(p));
 }
 export function applyFilters(products, f) {
@@ -6583,8 +8565,18 @@ export function facetCounts(products, f, categories, ratings) {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 ~~~
@@ -6597,8 +8589,10 @@ export function facetCounts(products, f, categories, ratings) {
 export function priceError(f) {
   const min = toNumber(f.min);
   const max = toNumber(f.max);
-  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0))) return "Prices must be positive numbers.";
-  if (min !== null && max !== null && min > max) return "Min price is above max price.";
+  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0)))
+    return "Prices must be positive numbers.";
+  if (min !== null && max !== null && min > max)
+    return "Min price is above max price.";
   return "";
 }
 ~~~
@@ -6608,19 +8602,31 @@ An invalid range is reported next to the inputs (with <code>aria-invalid</code>)
 ### Step 4: the component is thin
 
 ~~~jsx
-  const [filters, setFilters] = useState(() => fromQuery(window.location.search, CATEGORIES));
+const [filters, setFilters] = useState(() =>
+  fromQuery(window.location.search, CATEGORIES),
+);
 
-  // Everything below is derived from filters; nothing else is state.
-  const results = useMemo(() => applyFilters(PRODUCTS, filters), [filters]);
-  const counts = useMemo(() => facetCounts(PRODUCTS, filters, CATEGORIES, RATINGS), [filters]);
-  const chips = activeChips(filters);
-  const error = priceError(filters);
+// Everything below is derived from filters; nothing else is state.
+const results = useMemo(
+  () => applyFilters(PRODUCTS, filters),
+  [filters],
+);
+const counts = useMemo(
+  () => facetCounts(PRODUCTS, filters, CATEGORIES, RATINGS),
+  [filters],
+);
+const chips = activeChips(filters);
+const error = priceError(filters);
 
-  useEffect(() => {
-    window.history.replaceState(null, "", toQuery(filters) || window.location.pathname);
-  }, [filters]);
+useEffect(() => {
+  window.history.replaceState(
+    null,
+    "",
+    toQuery(filters) || window.location.pathname,
+  );
+}, [filters]);
 
-  const clearAll = () => setFilters({ ...EMPTY, sort: filters.sort });
+const clearAll = () => setFilters({ ...EMPTY, sort: filters.sort });
 ~~~
 
 📌 **Interview term: Lazy initial state** — passing a function to <code>useState</code> so the URL is parsed once on mount, not on every render.
@@ -6630,12 +8636,16 @@ An invalid range is reported next to the inputs (with <code>aria-invalid</code>)
 The filter panel never mutates anything. It receives <code>filters</code> and calls <code>onChange</code> with a new object:
 
 ~~~jsx
-  const set = (patch) => onChange({ ...filters, ...patch });
+const set = (patch) => onChange({ ...filters, ...patch });
 
-  function toggleCategory(category) {
-    const has = filters.categories.includes(category);
-    set({ categories: has ? filters.categories.filter((c) => c !== category) : [...filters.categories, category] });
-  }
+function toggleCategory(category) {
+  const has = filters.categories.includes(category);
+  set({
+    categories: has
+      ? filters.categories.filter((c) => c !== category)
+      : [...filters.categories, category],
+  });
+}
 ~~~
 
 That is [immutable state](/interview-question/why-must-react-state-updates-be-immutable) in practice: every change produces a new <code>filters</code> object, so <code>useMemo</code> and the URL effect see a new reference and re-run.
@@ -6852,20 +8862,39 @@ The hostile link loses the unknown category, the impossible rating, the unknown 
           "/App.js": `import { useEffect, useMemo, useState } from "react";
 import FilterPanel, { RATINGS } from "./src/FilterPanel";
 import { CATEGORIES, PRODUCTS } from "./src/products";
-import { EMPTY, SORTS, activeChips, applyFilters, facetCounts, fromQuery, priceError, removeChip, toQuery } from "./src/filtering";
+import {
+  EMPTY,
+  SORTS,
+  activeChips,
+  applyFilters,
+  facetCounts,
+  fromQuery,
+  priceError,
+  removeChip,
+  toQuery,
+} from "./src/filtering";
 
 export default function App() {
   // One object holds every filter, read from the URL once on load.
-  const [filters, setFilters] = useState(() => fromQuery(window.location.search, CATEGORIES));
+  const [filters, setFilters] = useState(() =>
+    fromQuery(window.location.search, CATEGORIES),
+  );
 
   // Everything below is derived from filters; nothing else is state.
   const results = useMemo(() => applyFilters(PRODUCTS, filters), [filters]);
-  const counts = useMemo(() => facetCounts(PRODUCTS, filters, CATEGORIES, RATINGS), [filters]);
+  const counts = useMemo(
+    () => facetCounts(PRODUCTS, filters, CATEGORIES, RATINGS),
+    [filters],
+  );
   const chips = activeChips(filters);
   const error = priceError(filters);
 
   useEffect(() => {
-    window.history.replaceState(null, "", toQuery(filters) || window.location.pathname);
+    window.history.replaceState(
+      null,
+      "",
+      toQuery(filters) || window.location.pathname,
+    );
   }, [filters]);
 
   const clearAll = () => setFilters({ ...EMPTY, sort: filters.sort });
@@ -6874,7 +8903,12 @@ export default function App() {
     <main className="shop">
       <h1>Shop</h1>
       <div className="layout">
-        <FilterPanel filters={filters} counts={counts} error={error} onChange={setFilters} />
+        <FilterPanel
+          filters={filters}
+          counts={counts}
+          error={error}
+          onChange={setFilters}
+        />
 
         <section aria-labelledby="results-heading">
           <div className="topbar">
@@ -6883,9 +8917,17 @@ export default function App() {
             </h2>
             <label>
               Sort by{" "}
-              <select data-testid="sort" value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value })}>
+              <select
+                data-testid="sort"
+                value={filters.sort}
+                onChange={(e) =>
+                  setFilters({ ...filters, sort: e.target.value })
+                }
+              >
                 {Object.entries(SORTS).map(([key, s]) => (
-                  <option key={key} value={key}>{s.label}</option>
+                  <option key={key} value={key}>
+                    {s.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -6895,13 +8937,25 @@ export default function App() {
             <ul className="chips" aria-label="Active filters">
               {chips.map((chip) => (
                 <li key={chip.id}>
-                  <button type="button" data-chip={chip.id} aria-label={"Remove filter " + chip.label} onClick={() => setFilters(removeChip(filters, chip.id))}>
+                  <button
+                    type="button"
+                    data-chip={chip.id}
+                    aria-label={"Remove filter " + chip.label}
+                    onClick={() => setFilters(removeChip(filters, chip.id))}
+                  >
                     {chip.label} ✕
                   </button>
                 </li>
               ))}
               <li>
-                <button type="button" data-testid="clear" className="link" onClick={clearAll}>Clear all</button>
+                <button
+                  type="button"
+                  data-testid="clear"
+                  className="link"
+                  onClick={clearAll}
+                >
+                  Clear all
+                </button>
               </li>
             </ul>
           )}
@@ -6909,7 +8963,9 @@ export default function App() {
           {results.length === 0 ? (
             <div data-testid="empty" className="empty">
               <p>No products match these filters.</p>
-              <button type="button" onClick={clearAll}>Clear all filters</button>
+              <button type="button" onClick={clearAll}>
+                Clear all filters
+              </button>
             </div>
           ) : (
             <ul className="grid">
@@ -6918,7 +8974,10 @@ export default function App() {
                   <h3>{p.name}</h3>
                   <p className="meta">{p.category}</p>
                   <p className="price">\${p.price.toLocaleString("en-US")}</p>
-                  <p className="meta">★ {p.rating.toFixed(1)} · {p.reviews.toLocaleString("en-US")} reviews</p>
+                  <p className="meta">
+                    ★ {p.rating.toFixed(1)} ·{" "}
+                    {p.reviews.toLocaleString("en-US")} reviews
+                  </p>
                   {!p.inStock && <p className="badge">Out of stock</p>}
                 </li>
               ))}
@@ -6930,54 +8989,202 @@ export default function App() {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.shop { max-width: 960px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.shop h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
-@media (max-width: 640px) { .layout { grid-template-columns: 1fr; } }
-.panel fieldset { border: 1px solid #1f2937; border-radius: 10px; margin: 0 0 12px; padding: 10px 12px; }
-.panel legend { font-weight: 600; padding: 0 4px; }
-.panel label { display: flex; gap: 6px; align-items: center; padding: 3px 0; }
-.panel label.zero { color: #6b7280; }
-.count { color: #9ca3af; font-size: 0.85rem; }
-.price { display: flex; gap: 6px; align-items: center; }
-.price input { width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.error { min-height: 1em; margin: 6px 0 0; color: #fca5a5; font-size: 0.85rem; }
-.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
-.topbar h2 { font-size: 1.05rem; margin: 0; }
-select { padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 12px 0; }
-.chips button { padding: 4px 10px; border-radius: 999px; border: 1px solid #0ea5e9; background: #082f49; color: #bae6fd; cursor: pointer; }
-.chips button.link { border-color: transparent; background: none; color: #93c5fd; text-decoration: underline; }
-.grid { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
-.card { border: 1px solid #1f2937; border-radius: 10px; padding: 12px; background: #0f172a; }
-.card h3 { font-size: 0.98rem; margin: 0 0 4px; }
-.card p { margin: 2px 0; }
-.card .price { font-weight: 700; color: #7dd3fc; }
-.meta { color: #9ca3af; font-size: 0.85rem; }
-.badge { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; background: #3f1d1d; color: #fecaca; font-size: 0.8rem; }
-.empty { text-align: center; padding: 40px 0; color: #9ca3af; }
-.empty button { padding: 8px 14px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.shop {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.shop h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+.panel fieldset {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+}
+.panel legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+.panel label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 0;
+}
+.panel label.zero {
+  color: #6b7280;
+}
+.count {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.price {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.price input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.error {
+  min-height: 1em;
+  margin: 6px 0 0;
+  color: #fca5a5;
+  font-size: 0.85rem;
+}
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.topbar h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.chips button {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #0ea5e9;
+  background: #082f49;
+  color: #bae6fd;
+  cursor: pointer;
+}
+.chips button.link {
+  border-color: transparent;
+  background: none;
+  color: #93c5fd;
+  text-decoration: underline;
+}
+.grid {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+.card {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+  background: #0f172a;
+}
+.card h3 {
+  font-size: 0.98rem;
+  margin: 0 0 4px;
+}
+.card p {
+  margin: 2px 0;
+}
+.card .price {
+  font-weight: 700;
+  color: #7dd3fc;
+}
+.meta {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #3f1d1d;
+  color: #fecaca;
+  font-size: 0.8rem;
+}
+.empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #9ca3af;
+}
+.empty button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+}
 `,
-          "/src/filtering.js": `// Framework-free filter logic: one predicate per facet, composed with AND across facets
+          "/src/filtering.js": `// Framework-free filter logic: one predicate
+// per facet, composed with AND across facets
 // and OR inside the category facet.
 export const SORTS = {
   popular: { label: "Most popular", compare: (a, b) => b.reviews - a.reviews },
-  "price-asc": { label: "Price: low to high", compare: (a, b) => a.price - b.price },
-  "price-desc": { label: "Price: high to low", compare: (a, b) => b.price - a.price },
+  "price-asc": {
+    label: "Price: low to high",
+    compare: (a, b) => a.price - b.price,
+  },
+  "price-desc": {
+    label: "Price: high to low",
+    compare: (a, b) => b.price - a.price,
+  },
   rating: { label: "Top rated", compare: (a, b) => b.rating - a.rating },
 };
 
-export const EMPTY = { categories: [], min: "", max: "", rating: 0, inStock: false, sort: "popular" };
+export const EMPTY = {
+  categories: [],
+  min: "",
+  max: "",
+  rating: 0,
+  inStock: false,
+  sort: "popular",
+};
 
 const toNumber = (text) => (text === "" ? null : Number(text));
 
 export function priceError(f) {
   const min = toNumber(f.min);
   const max = toNumber(f.max);
-  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0))) return "Prices must be positive numbers.";
-  if (min !== null && max !== null && min > max) return "Min price is above max price.";
+  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0)))
+    return "Prices must be positive numbers.";
+  if (min !== null && max !== null && min > max)
+    return "Min price is above max price.";
   return "";
 }
 
@@ -6986,16 +9193,22 @@ function predicates(f) {
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) && (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
 }
 
-// Every facet except \`skip\` must match. Skipping one facet is what makes facet counts useful.
+// Every facet except \`skip\` must match. Skipping
+// one facet is what makes facet counts useful.
 function matcher(f, skip) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p) => checks.every((check) => check(p));
 }
 
@@ -7008,26 +9221,42 @@ export function applyFilters(products, f) {
     .map((entry) => entry.p);
 }
 
-// How many results each option would give if you picked it, with every OTHER facet applied.
+// How many results each option would give if you
+// picked it, with every OTHER facet applied.
 export function facetCounts(products, f, categories, ratings) {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 
 export function activeChips(f) {
   const chips = f.categories.map((c) => ({ id: "cat:" + c, label: c }));
-  if (f.min !== "" || f.max !== "") chips.push({ id: "price", label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any") });
+  if (f.min !== "" || f.max !== "")
+    chips.push({
+      id: "price",
+      label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any"),
+    });
   if (f.rating) chips.push({ id: "rating", label: f.rating + "★ & up" });
   if (f.inStock) chips.push({ id: "stock", label: "In stock" });
   return chips;
 }
 
 export function removeChip(f, id) {
-  if (id.startsWith("cat:")) return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
+  if (id.startsWith("cat:"))
+    return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
   if (id === "price") return { ...f, min: "", max: "" };
   if (id === "rating") return { ...f, rating: 0 };
   if (id === "stock") return { ...f, inStock: false };
@@ -7050,7 +9279,9 @@ export function fromQuery(search, categories) {
   const q = new URLSearchParams(search);
   const rating = Number(q.get("rating"));
   return {
-    categories: (q.get("cat") ?? "").split(",").filter((c) => categories.includes(c)),
+    categories: (q.get("cat") ?? "")
+      .split(",")
+      .filter((c) => categories.includes(c)),
     min: q.get("min") ?? "",
     max: q.get("max") ?? "",
     rating: [3, 4].includes(rating) ? rating : 0,
@@ -7068,7 +9299,11 @@ export default function FilterPanel({ filters, counts, error, onChange }) {
 
   function toggleCategory(category) {
     const has = filters.categories.includes(category);
-    set({ categories: has ? filters.categories.filter((c) => c !== category) : [...filters.categories, category] });
+    set({
+      categories: has
+        ? filters.categories.filter((c) => c !== category)
+        : [...filters.categories, category],
+    });
   }
 
   return (
@@ -7077,7 +9312,12 @@ export default function FilterPanel({ filters, counts, error, onChange }) {
         <legend>Category</legend>
         {CATEGORIES.map((c) => (
           <label key={c} className={counts.category[c] === 0 ? "zero" : ""}>
-            <input type="checkbox" data-cat={c} checked={filters.categories.includes(c)} onChange={() => toggleCategory(c)} />
+            <input
+              type="checkbox"
+              data-cat={c}
+              checked={filters.categories.includes(c)}
+              onChange={() => toggleCategory(c)}
+            />
             {c} <span className="count">({counts.category[c]})</span>
           </label>
         ))}
@@ -7086,27 +9326,66 @@ export default function FilterPanel({ filters, counts, error, onChange }) {
       <fieldset>
         <legend>Price</legend>
         <div className="price">
-          <input data-testid="min" type="number" min="0" inputMode="numeric" aria-label="Minimum price" placeholder="Min"
-            value={filters.min} onChange={(e) => set({ min: e.target.value })} aria-invalid={error ? "true" : "false"} aria-describedby="price-error" />
+          <input
+            data-testid="min"
+            type="number"
+            min="0"
+            inputMode="numeric"
+            aria-label="Minimum price"
+            placeholder="Min"
+            value={filters.min}
+            onChange={(e) => set({ min: e.target.value })}
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby="price-error"
+          />
           <span aria-hidden="true">–</span>
-          <input data-testid="max" type="number" min="0" inputMode="numeric" aria-label="Maximum price" placeholder="Max"
-            value={filters.max} onChange={(e) => set({ max: e.target.value })} aria-invalid={error ? "true" : "false"} aria-describedby="price-error" />
+          <input
+            data-testid="max"
+            type="number"
+            min="0"
+            inputMode="numeric"
+            aria-label="Maximum price"
+            placeholder="Max"
+            value={filters.max}
+            onChange={(e) => set({ max: e.target.value })}
+            aria-invalid={error ? "true" : "false"}
+            aria-describedby="price-error"
+          />
         </div>
-        <p id="price-error" data-testid="price-error" className="error" aria-live="polite">{error}</p>
+        <p
+          id="price-error"
+          data-testid="price-error"
+          className="error"
+          aria-live="polite"
+        >
+          {error}
+        </p>
       </fieldset>
 
       <fieldset>
         <legend>Rating</legend>
         {RATINGS.map((r) => (
           <label key={r}>
-            <input type="radio" name="rating" data-rating={r} checked={filters.rating === r} onChange={() => set({ rating: r })} />
-            {r ? r + "★ & up" : "Any"} <span className="count">({counts.rating[r]})</span>
+            <input
+              type="radio"
+              name="rating"
+              data-rating={r}
+              checked={filters.rating === r}
+              onChange={() => set({ rating: r })}
+            />
+            {r ? r + "★ & up" : "Any"}{" "}
+            <span className="count">({counts.rating[r]})</span>
           </label>
         ))}
       </fieldset>
 
       <label className="stock">
-        <input type="checkbox" data-testid="stock" checked={filters.inStock} onChange={(e) => set({ inStock: e.target.checked })} />
+        <input
+          type="checkbox"
+          data-testid="stock"
+          checked={filters.inStock}
+          onChange={(e) => set({ inStock: e.target.checked })}
+        />
         In stock only
       </label>
     </aside>
@@ -7118,24 +9397,168 @@ export { RATINGS };
           "/src/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
 
 export const PRODUCTS = [
-  { id: 1, name: "Studio Headphones", category: "Audio", price: 199, rating: 4.7, reviews: 3120, inStock: true },
-  { id: 2, name: "Wireless Earbuds", category: "Audio", price: 129, rating: 4.4, reviews: 5840, inStock: true },
-  { id: 3, name: "Bookshelf Speakers", category: "Audio", price: 349, rating: 4.8, reviews: 960, inStock: false },
-  { id: 4, name: "Portable Speaker", category: "Audio", price: 79, rating: 4.1, reviews: 2210, inStock: true },
-  { id: 5, name: "Vinyl Turntable", category: "Audio", price: 289, rating: 3.9, reviews: 410, inStock: true },
-  { id: 6, name: "Fitness Band", category: "Wearables", price: 59, rating: 3.8, reviews: 4100, inStock: true },
-  { id: 7, name: "Smartwatch Pro", category: "Wearables", price: 399, rating: 4.6, reviews: 2750, inStock: true },
-  { id: 8, name: "Smart Ring", category: "Wearables", price: 299, rating: 4.2, reviews: 640, inStock: false },
-  { id: 9, name: "Kids Watch", category: "Wearables", price: 89, rating: 3.5, reviews: 380, inStock: true },
-  { id: 10, name: "Mirrorless Camera", category: "Cameras", price: 1299, rating: 4.9, reviews: 870, inStock: true },
-  { id: 11, name: "Action Camera", category: "Cameras", price: 249, rating: 4.3, reviews: 1920, inStock: true },
-  { id: 12, name: "Instant Camera", category: "Cameras", price: 99, rating: 4.0, reviews: 2640, inStock: true },
-  { id: 13, name: "Security Camera", category: "Cameras", price: 149, rating: 3.7, reviews: 1150, inStock: false },
-  { id: 14, name: "USB-C Charger", category: "Accessories", price: 35, rating: 4.5, reviews: 7200, inStock: true },
-  { id: 15, name: "Camera Bag", category: "Accessories", price: 69, rating: 4.2, reviews: 530, inStock: true },
-  { id: 16, name: "Tripod", category: "Accessories", price: 45, rating: 4.4, reviews: 1480, inStock: true },
-  { id: 17, name: "Watch Strap", category: "Accessories", price: 25, rating: 3.6, reviews: 890, inStock: true },
-  { id: 18, name: "Power Bank", category: "Accessories", price: 55, rating: 4.6, reviews: 3900, inStock: false },
+  {
+    id: 1,
+    name: "Studio Headphones",
+    category: "Audio",
+    price: 199,
+    rating: 4.7,
+    reviews: 3120,
+    inStock: true,
+  },
+  {
+    id: 2,
+    name: "Wireless Earbuds",
+    category: "Audio",
+    price: 129,
+    rating: 4.4,
+    reviews: 5840,
+    inStock: true,
+  },
+  {
+    id: 3,
+    name: "Bookshelf Speakers",
+    category: "Audio",
+    price: 349,
+    rating: 4.8,
+    reviews: 960,
+    inStock: false,
+  },
+  {
+    id: 4,
+    name: "Portable Speaker",
+    category: "Audio",
+    price: 79,
+    rating: 4.1,
+    reviews: 2210,
+    inStock: true,
+  },
+  {
+    id: 5,
+    name: "Vinyl Turntable",
+    category: "Audio",
+    price: 289,
+    rating: 3.9,
+    reviews: 410,
+    inStock: true,
+  },
+  {
+    id: 6,
+    name: "Fitness Band",
+    category: "Wearables",
+    price: 59,
+    rating: 3.8,
+    reviews: 4100,
+    inStock: true,
+  },
+  {
+    id: 7,
+    name: "Smartwatch Pro",
+    category: "Wearables",
+    price: 399,
+    rating: 4.6,
+    reviews: 2750,
+    inStock: true,
+  },
+  {
+    id: 8,
+    name: "Smart Ring",
+    category: "Wearables",
+    price: 299,
+    rating: 4.2,
+    reviews: 640,
+    inStock: false,
+  },
+  {
+    id: 9,
+    name: "Kids Watch",
+    category: "Wearables",
+    price: 89,
+    rating: 3.5,
+    reviews: 380,
+    inStock: true,
+  },
+  {
+    id: 10,
+    name: "Mirrorless Camera",
+    category: "Cameras",
+    price: 1299,
+    rating: 4.9,
+    reviews: 870,
+    inStock: true,
+  },
+  {
+    id: 11,
+    name: "Action Camera",
+    category: "Cameras",
+    price: 249,
+    rating: 4.3,
+    reviews: 1920,
+    inStock: true,
+  },
+  {
+    id: 12,
+    name: "Instant Camera",
+    category: "Cameras",
+    price: 99,
+    rating: 4.0,
+    reviews: 2640,
+    inStock: true,
+  },
+  {
+    id: 13,
+    name: "Security Camera",
+    category: "Cameras",
+    price: 149,
+    rating: 3.7,
+    reviews: 1150,
+    inStock: false,
+  },
+  {
+    id: 14,
+    name: "USB-C Charger",
+    category: "Accessories",
+    price: 35,
+    rating: 4.5,
+    reviews: 7200,
+    inStock: true,
+  },
+  {
+    id: 15,
+    name: "Camera Bag",
+    category: "Accessories",
+    price: 69,
+    rating: 4.2,
+    reviews: 530,
+    inStock: true,
+  },
+  {
+    id: 16,
+    name: "Tripod",
+    category: "Accessories",
+    price: 45,
+    rating: 4.4,
+    reviews: 1480,
+    inStock: true,
+  },
+  {
+    id: 17,
+    name: "Watch Strap",
+    category: "Accessories",
+    price: 25,
+    rating: 3.6,
+    reviews: 890,
+    inStock: true,
+  },
+  {
+    id: 18,
+    name: "Power Bank",
+    category: "Accessories",
+    price: 55,
+    rating: 4.6,
+    reviews: 3900,
+    inStock: false,
+  },
 ];
 `,
         },
@@ -7207,14 +9630,20 @@ function predicates(f) {
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) &&
+        (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
 }
 function matcher(f, skip) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p) => checks.every((check) => check(p));
 }
 ~~~
@@ -7228,8 +9657,18 @@ export function facetCounts(products, f, categories, ratings) {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 ~~~
@@ -7243,13 +9682,22 @@ const filters = ref(fromQuery(window.location.search, CATEGORIES));
 
 // Everything below is derived from filters.
 const results = computed(() => applyFilters(PRODUCTS, filters.value));
-const counts = computed(() => facetCounts(PRODUCTS, filters.value, CATEGORIES, [4, 3, 0]));
+const counts = computed(() =>
+  facetCounts(PRODUCTS, filters.value, CATEGORIES, [4, 3, 0]),
+);
 const chips = computed(() => activeChips(filters.value));
 const error = computed(() => priceError(filters.value));
 
-watch(filters, (f) => window.history.replaceState(null, "", toQuery(f) || window.location.pathname));
+watch(filters, (f) =>
+  window.history.replaceState(
+    null,
+    "",
+    toQuery(f) || window.location.pathname,
+  ),
+);
 
-const clearAll = () => (filters.value = { ...EMPTY, sort: filters.value.sort });
+const clearAll = () =>
+  (filters.value = { ...EMPTY, sort: filters.value.sort });
 ~~~
 
 📌 **Interview term: computed** — a cached derived value. Each one reads <code>filters.value</code>, so a new filter object invalidates all of them at once. See [computed vs watch](/interview-question/what-is-the-difference-between-computed-and-watch).
@@ -7263,7 +9711,11 @@ const set = (patch) => emit("change", { ...props.filters, ...patch });
 
 function toggleCategory(category) {
   const list = props.filters.categories;
-  set({ categories: list.includes(category) ? list.filter((c) => c !== category) : [...list, category] });
+  set({
+    categories: list.includes(category)
+      ? list.filter((c) => c !== category)
+      : [...list, category],
+  });
 }
 ~~~
 
@@ -7425,7 +9877,12 @@ Ticking Cameras keeps every category count meaningful (5 + 4 = 9). Stock and rat
   <main class="shop">
     <h1>Shop</h1>
     <div class="layout">
-      <FilterPanel :filters="filters" :counts="counts" :error="error" @change="filters = $event" />
+      <FilterPanel
+        :filters="filters"
+        :counts="counts"
+        :error="error"
+        @change="filters = $event"
+      />
 
       <section aria-labelledby="results-heading">
         <div class="topbar">
@@ -7434,15 +9891,28 @@ Ticking Cameras keeps every category count meaningful (5 + 4 = 9). Stock and rat
           </h2>
           <label>
             Sort by
-            <select data-testid="sort" :value="filters.sort" @change="filters = { ...filters, sort: $event.target.value }">
-              <option v-for="(s, key) in SORTS" :key="key" :value="key">{{ s.label }}</option>
+            <select
+              data-testid="sort"
+              :value="filters.sort"
+              @change="filters = { ...filters, sort: $event.target.value }"
+            >
+              <option
+                v-for="(s, key) in SORTS"
+                :key="key"
+                :value="key"
+              >{{ s.label }}</option>
             </select>
           </label>
         </div>
 
         <ul v-if="chips.length" class="chips" aria-label="Active filters">
           <li v-for="chip in chips" :key="chip.id">
-            <button type="button" :data-chip="chip.id" :aria-label="'Remove filter ' + chip.label" @click="filters = removeChip(filters, chip.id)">
+            <button
+              type="button"
+              :data-chip="chip.id"
+              :aria-label="'Remove filter ' + chip.label"
+              @click="filters = removeChip(filters, chip.id)"
+            >
               {{ chip.label }} ✕
             </button>
           </li>
@@ -7454,7 +9924,12 @@ Ticking Cameras keeps every category count meaningful (5 + 4 = 9). Stock and rat
           <button type="button" @click="clearAll">Clear all filters</button>
         </div>
         <ul v-else class="grid">
-          <li v-for="p in results" :key="p.id" data-testid="product" class="card">
+          <li
+            v-for="p in results"
+            :key="p.id"
+            data-testid="product"
+            class="card"
+          >
             <h3>{{ p.name }}</h3>
             <p class="meta">{{ p.category }}</p>
             <p class="price">\${{ p.price.toLocaleString("en-US") }}</p>
@@ -7471,72 +9946,235 @@ Ticking Cameras keeps every category count meaningful (5 + 4 = 9). Stock and rat
 import { computed, ref, watch } from "vue";
 import FilterPanel from "./components/FilterPanel.vue";
 import { CATEGORIES, PRODUCTS } from "./products.js";
-import { EMPTY, SORTS, activeChips, applyFilters, facetCounts, fromQuery, priceError, removeChip, toQuery } from "./filtering.js";
+import {
+  EMPTY,
+  SORTS,
+  activeChips,
+  applyFilters,
+  facetCounts,
+  fromQuery,
+  priceError,
+  removeChip,
+  toQuery,
+} from "./filtering.js";
 
-// One object holds every filter, read from the URL once on load. It is always replaced, never mutated.
+// One object holds every filter, read from the URL
+// once on load. It is always replaced, never mutated.
 const filters = ref(fromQuery(window.location.search, CATEGORIES));
 
 // Everything below is derived from filters.
 const results = computed(() => applyFilters(PRODUCTS, filters.value));
-const counts = computed(() => facetCounts(PRODUCTS, filters.value, CATEGORIES, [4, 3, 0]));
+const counts = computed(() =>
+  facetCounts(PRODUCTS, filters.value, CATEGORIES, [4, 3, 0]),
+);
 const chips = computed(() => activeChips(filters.value));
 const error = computed(() => priceError(filters.value));
 
-watch(filters, (f) => window.history.replaceState(null, "", toQuery(f) || window.location.pathname));
+watch(filters, (f) =>
+  window.history.replaceState(null, "", toQuery(f) || window.location.pathname),
+);
 
 const clearAll = () => (filters.value = { ...EMPTY, sort: filters.value.sort });
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.shop { max-width: 960px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.shop h1 { font-size: 1.3rem; margin: 0 0 12px; }
-.layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
-@media (max-width: 640px) { .layout { grid-template-columns: 1fr; } }
-.panel fieldset { border: 1px solid #1f2937; border-radius: 10px; margin: 0 0 12px; padding: 10px 12px; }
-.panel legend { font-weight: 600; padding: 0 4px; }
-.panel label { display: flex; gap: 6px; align-items: center; padding: 3px 0; }
-.panel label.zero { color: #6b7280; }
-.count { color: #9ca3af; font-size: 0.85rem; }
-.price { display: flex; gap: 6px; align-items: center; }
-.price input { width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.error { min-height: 1em; margin: 6px 0 0; color: #fca5a5; font-size: 0.85rem; }
-.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
-.topbar h2 { font-size: 1.05rem; margin: 0; }
-select { padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 12px 0; }
-.chips button { padding: 4px 10px; border-radius: 999px; border: 1px solid #0ea5e9; background: #082f49; color: #bae6fd; cursor: pointer; }
-.chips button.link { border-color: transparent; background: none; color: #93c5fd; text-decoration: underline; }
-.grid { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
-.card { border: 1px solid #1f2937; border-radius: 10px; padding: 12px; background: #0f172a; }
-.card h3 { font-size: 0.98rem; margin: 0 0 4px; }
-.card p { margin: 2px 0; }
-.card .price { font-weight: 700; color: #7dd3fc; }
-.meta { color: #9ca3af; font-size: 0.85rem; }
-.badge { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; background: #3f1d1d; color: #fecaca; font-size: 0.8rem; }
-.empty { text-align: center; padding: 40px 0; color: #9ca3af; }
-.empty button { padding: 8px 14px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.shop {
+  max-width: 960px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.shop h1 {
+  font-size: 1.3rem;
+  margin: 0 0 12px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+.panel fieldset {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+}
+.panel legend {
+  font-weight: 600;
+  padding: 0 4px;
+}
+.panel label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 0;
+}
+.panel label.zero {
+  color: #6b7280;
+}
+.count {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.price {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.price input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.error {
+  min-height: 1em;
+  margin: 6px 0 0;
+  color: #fca5a5;
+  font-size: 0.85rem;
+}
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.topbar h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #374151;
+  background: #0f172a;
+  color: inherit;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.chips button {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #0ea5e9;
+  background: #082f49;
+  color: #bae6fd;
+  cursor: pointer;
+}
+.chips button.link {
+  border-color: transparent;
+  background: none;
+  color: #93c5fd;
+  text-decoration: underline;
+}
+.grid {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+}
+.card {
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+  background: #0f172a;
+}
+.card h3 {
+  font-size: 0.98rem;
+  margin: 0 0 4px;
+}
+.card p {
+  margin: 2px 0;
+}
+.card .price {
+  font-weight: 700;
+  color: #7dd3fc;
+}
+.meta {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #3f1d1d;
+  color: #fecaca;
+  font-size: 0.8rem;
+}
+.empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #9ca3af;
+}
+.empty button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #e5e7eb;
+  cursor: pointer;
+}
 </style>
 `,
-          "/src/filtering.js": `// Framework-free filter logic: one predicate per facet, composed with AND across facets
+          "/src/filtering.js": `// Framework-free filter logic: one predicate
+// per facet, composed with AND across facets
 // and OR inside the category facet.
 export const SORTS = {
   popular: { label: "Most popular", compare: (a, b) => b.reviews - a.reviews },
-  "price-asc": { label: "Price: low to high", compare: (a, b) => a.price - b.price },
-  "price-desc": { label: "Price: high to low", compare: (a, b) => b.price - a.price },
+  "price-asc": {
+    label: "Price: low to high",
+    compare: (a, b) => a.price - b.price,
+  },
+  "price-desc": {
+    label: "Price: high to low",
+    compare: (a, b) => b.price - a.price,
+  },
   rating: { label: "Top rated", compare: (a, b) => b.rating - a.rating },
 };
 
-export const EMPTY = { categories: [], min: "", max: "", rating: 0, inStock: false, sort: "popular" };
+export const EMPTY = {
+  categories: [],
+  min: "",
+  max: "",
+  rating: 0,
+  inStock: false,
+  sort: "popular",
+};
 
 const toNumber = (text) => (text === "" ? null : Number(text));
 
 export function priceError(f) {
   const min = toNumber(f.min);
   const max = toNumber(f.max);
-  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0))) return "Prices must be positive numbers.";
-  if (min !== null && max !== null && min > max) return "Min price is above max price.";
+  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0)))
+    return "Prices must be positive numbers.";
+  if (min !== null && max !== null && min > max)
+    return "Min price is above max price.";
   return "";
 }
 
@@ -7545,16 +10183,22 @@ function predicates(f) {
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) && (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
 }
 
-// Every facet except \`skip\` must match. Skipping one facet is what makes facet counts useful.
+// Every facet except \`skip\` must match. Skipping
+// one facet is what makes facet counts useful.
 function matcher(f, skip) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p) => checks.every((check) => check(p));
 }
 
@@ -7567,26 +10211,42 @@ export function applyFilters(products, f) {
     .map((entry) => entry.p);
 }
 
-// How many results each option would give if you picked it, with every OTHER facet applied.
+// How many results each option would give if you
+// picked it, with every OTHER facet applied.
 export function facetCounts(products, f, categories, ratings) {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 
 export function activeChips(f) {
   const chips = f.categories.map((c) => ({ id: "cat:" + c, label: c }));
-  if (f.min !== "" || f.max !== "") chips.push({ id: "price", label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any") });
+  if (f.min !== "" || f.max !== "")
+    chips.push({
+      id: "price",
+      label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any"),
+    });
   if (f.rating) chips.push({ id: "rating", label: f.rating + "★ & up" });
   if (f.inStock) chips.push({ id: "stock", label: "In stock" });
   return chips;
 }
 
 export function removeChip(f, id) {
-  if (id.startsWith("cat:")) return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
+  if (id.startsWith("cat:"))
+    return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
   if (id === "price") return { ...f, min: "", max: "" };
   if (id === "rating") return { ...f, rating: 0 };
   if (id === "stock") return { ...f, inStock: false };
@@ -7609,7 +10269,9 @@ export function fromQuery(search, categories) {
   const q = new URLSearchParams(search);
   const rating = Number(q.get("rating"));
   return {
-    categories: (q.get("cat") ?? "").split(",").filter((c) => categories.includes(c)),
+    categories: (q.get("cat") ?? "")
+      .split(",")
+      .filter((c) => categories.includes(c)),
     min: q.get("min") ?? "",
     max: q.get("max") ?? "",
     rating: [3, 4].includes(rating) ? rating : 0,
@@ -7621,32 +10283,185 @@ export function fromQuery(search, categories) {
           "/src/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
 
 export const PRODUCTS = [
-  { id: 1, name: "Studio Headphones", category: "Audio", price: 199, rating: 4.7, reviews: 3120, inStock: true },
-  { id: 2, name: "Wireless Earbuds", category: "Audio", price: 129, rating: 4.4, reviews: 5840, inStock: true },
-  { id: 3, name: "Bookshelf Speakers", category: "Audio", price: 349, rating: 4.8, reviews: 960, inStock: false },
-  { id: 4, name: "Portable Speaker", category: "Audio", price: 79, rating: 4.1, reviews: 2210, inStock: true },
-  { id: 5, name: "Vinyl Turntable", category: "Audio", price: 289, rating: 3.9, reviews: 410, inStock: true },
-  { id: 6, name: "Fitness Band", category: "Wearables", price: 59, rating: 3.8, reviews: 4100, inStock: true },
-  { id: 7, name: "Smartwatch Pro", category: "Wearables", price: 399, rating: 4.6, reviews: 2750, inStock: true },
-  { id: 8, name: "Smart Ring", category: "Wearables", price: 299, rating: 4.2, reviews: 640, inStock: false },
-  { id: 9, name: "Kids Watch", category: "Wearables", price: 89, rating: 3.5, reviews: 380, inStock: true },
-  { id: 10, name: "Mirrorless Camera", category: "Cameras", price: 1299, rating: 4.9, reviews: 870, inStock: true },
-  { id: 11, name: "Action Camera", category: "Cameras", price: 249, rating: 4.3, reviews: 1920, inStock: true },
-  { id: 12, name: "Instant Camera", category: "Cameras", price: 99, rating: 4.0, reviews: 2640, inStock: true },
-  { id: 13, name: "Security Camera", category: "Cameras", price: 149, rating: 3.7, reviews: 1150, inStock: false },
-  { id: 14, name: "USB-C Charger", category: "Accessories", price: 35, rating: 4.5, reviews: 7200, inStock: true },
-  { id: 15, name: "Camera Bag", category: "Accessories", price: 69, rating: 4.2, reviews: 530, inStock: true },
-  { id: 16, name: "Tripod", category: "Accessories", price: 45, rating: 4.4, reviews: 1480, inStock: true },
-  { id: 17, name: "Watch Strap", category: "Accessories", price: 25, rating: 3.6, reviews: 890, inStock: true },
-  { id: 18, name: "Power Bank", category: "Accessories", price: 55, rating: 4.6, reviews: 3900, inStock: false },
+  {
+    id: 1,
+    name: "Studio Headphones",
+    category: "Audio",
+    price: 199,
+    rating: 4.7,
+    reviews: 3120,
+    inStock: true,
+  },
+  {
+    id: 2,
+    name: "Wireless Earbuds",
+    category: "Audio",
+    price: 129,
+    rating: 4.4,
+    reviews: 5840,
+    inStock: true,
+  },
+  {
+    id: 3,
+    name: "Bookshelf Speakers",
+    category: "Audio",
+    price: 349,
+    rating: 4.8,
+    reviews: 960,
+    inStock: false,
+  },
+  {
+    id: 4,
+    name: "Portable Speaker",
+    category: "Audio",
+    price: 79,
+    rating: 4.1,
+    reviews: 2210,
+    inStock: true,
+  },
+  {
+    id: 5,
+    name: "Vinyl Turntable",
+    category: "Audio",
+    price: 289,
+    rating: 3.9,
+    reviews: 410,
+    inStock: true,
+  },
+  {
+    id: 6,
+    name: "Fitness Band",
+    category: "Wearables",
+    price: 59,
+    rating: 3.8,
+    reviews: 4100,
+    inStock: true,
+  },
+  {
+    id: 7,
+    name: "Smartwatch Pro",
+    category: "Wearables",
+    price: 399,
+    rating: 4.6,
+    reviews: 2750,
+    inStock: true,
+  },
+  {
+    id: 8,
+    name: "Smart Ring",
+    category: "Wearables",
+    price: 299,
+    rating: 4.2,
+    reviews: 640,
+    inStock: false,
+  },
+  {
+    id: 9,
+    name: "Kids Watch",
+    category: "Wearables",
+    price: 89,
+    rating: 3.5,
+    reviews: 380,
+    inStock: true,
+  },
+  {
+    id: 10,
+    name: "Mirrorless Camera",
+    category: "Cameras",
+    price: 1299,
+    rating: 4.9,
+    reviews: 870,
+    inStock: true,
+  },
+  {
+    id: 11,
+    name: "Action Camera",
+    category: "Cameras",
+    price: 249,
+    rating: 4.3,
+    reviews: 1920,
+    inStock: true,
+  },
+  {
+    id: 12,
+    name: "Instant Camera",
+    category: "Cameras",
+    price: 99,
+    rating: 4.0,
+    reviews: 2640,
+    inStock: true,
+  },
+  {
+    id: 13,
+    name: "Security Camera",
+    category: "Cameras",
+    price: 149,
+    rating: 3.7,
+    reviews: 1150,
+    inStock: false,
+  },
+  {
+    id: 14,
+    name: "USB-C Charger",
+    category: "Accessories",
+    price: 35,
+    rating: 4.5,
+    reviews: 7200,
+    inStock: true,
+  },
+  {
+    id: 15,
+    name: "Camera Bag",
+    category: "Accessories",
+    price: 69,
+    rating: 4.2,
+    reviews: 530,
+    inStock: true,
+  },
+  {
+    id: 16,
+    name: "Tripod",
+    category: "Accessories",
+    price: 45,
+    rating: 4.4,
+    reviews: 1480,
+    inStock: true,
+  },
+  {
+    id: 17,
+    name: "Watch Strap",
+    category: "Accessories",
+    price: 25,
+    rating: 3.6,
+    reviews: 890,
+    inStock: true,
+  },
+  {
+    id: 18,
+    name: "Power Bank",
+    category: "Accessories",
+    price: 55,
+    rating: 4.6,
+    reviews: 3900,
+    inStock: false,
+  },
 ];
 `,
           "/src/components/FilterPanel.vue": `<template>
   <aside class="panel" aria-label="Filters">
     <fieldset>
       <legend>Category</legend>
-      <label v-for="c in CATEGORIES" :key="c" :class="{ zero: counts.category[c] === 0 }">
-        <input type="checkbox" :data-cat="c" :checked="filters.categories.includes(c)" @change="toggleCategory(c)" />
+      <label
+        v-for="c in CATEGORIES"
+        :key="c"
+        :class="{ zero: counts.category[c] === 0 }"
+      >
+        <input
+          type="checkbox"
+          :data-cat="c"
+          :checked="filters.categories.includes(c)"
+          @change="toggleCategory(c)"
+        />
         {{ c }} <span class="count">({{ counts.category[c] }})</span>
       </label>
     </fieldset>
@@ -7654,25 +10469,64 @@ export const PRODUCTS = [
     <fieldset>
       <legend>Price</legend>
       <div class="price">
-        <input data-testid="min" type="number" min="0" inputmode="numeric" aria-label="Minimum price" placeholder="Min"
-          :value="filters.min" :aria-invalid="error ? 'true' : 'false'" aria-describedby="price-error" @input="set({ min: $event.target.value })" />
+        <input
+          data-testid="min"
+          type="number"
+          min="0"
+          inputmode="numeric"
+          aria-label="Minimum price"
+          placeholder="Min"
+          :value="filters.min"
+          :aria-invalid="error ? 'true' : 'false'"
+          aria-describedby="price-error"
+          @input="set({ min: $event.target.value })"
+        />
         <span aria-hidden="true">–</span>
-        <input data-testid="max" type="number" min="0" inputmode="numeric" aria-label="Maximum price" placeholder="Max"
-          :value="filters.max" :aria-invalid="error ? 'true' : 'false'" aria-describedby="price-error" @input="set({ max: $event.target.value })" />
+        <input
+          data-testid="max"
+          type="number"
+          min="0"
+          inputmode="numeric"
+          aria-label="Maximum price"
+          placeholder="Max"
+          :value="filters.max"
+          :aria-invalid="error ? 'true' : 'false'"
+          aria-describedby="price-error"
+          @input="set({ max: $event.target.value })"
+        />
       </div>
-      <p id="price-error" data-testid="price-error" class="error" aria-live="polite">{{ error }}</p>
+      <p
+        id="price-error"
+        data-testid="price-error"
+        class="error"
+        aria-live="polite"
+      >
+        {{ error }}
+      </p>
     </fieldset>
 
     <fieldset>
       <legend>Rating</legend>
       <label v-for="r in RATINGS" :key="r">
-        <input type="radio" name="rating" :data-rating="r" :checked="filters.rating === r" @change="set({ rating: r })" />
-        {{ r ? r + "★ & up" : "Any" }} <span class="count">({{ counts.rating[r] }})</span>
+        <input
+          type="radio"
+          name="rating"
+          :data-rating="r"
+          :checked="filters.rating === r"
+          @change="set({ rating: r })"
+        />
+        {{ r ? r + "★ & up" : "Any" }}
+        <span class="count">({{ counts.rating[r] }})</span>
       </label>
     </fieldset>
 
     <label class="stock">
-      <input type="checkbox" data-testid="stock" :checked="filters.inStock" @change="set({ inStock: $event.target.checked })" />
+      <input
+        type="checkbox"
+        data-testid="stock"
+        :checked="filters.inStock"
+        @change="set({ inStock: $event.target.checked })"
+      />
       In stock only
     </label>
   </aside>
@@ -7689,12 +10543,17 @@ const props = defineProps({
 });
 const emit = defineEmits(["change"]);
 
-// The panel never edits the filters object; it emits a new one and the parent replaces its state.
+// The panel never edits the filters object; it emits
+// a new one and the parent replaces its state.
 const set = (patch) => emit("change", { ...props.filters, ...patch });
 
 function toggleCategory(category) {
   const list = props.filters.categories;
-  set({ categories: list.includes(category) ? list.filter((c) => c !== category) : [...list, category] });
+  set({
+    categories: list.includes(category)
+      ? list.filter((c) => c !== category)
+      : [...list, category],
+  });
 }
 </script>
 `,
@@ -7762,19 +10621,27 @@ Results need all four predicates; each facet's counts skip that facet's own pred
 ### Step 1: typed predicates and a skippable matcher
 
 ~~~ts
-function predicates(f: Filters): Record<Facet, (p: Product) => boolean> {
+function predicates(
+  f: Filters,
+): Record<Facet, (p: Product) => boolean> {
   const min = toNumber(f.min);
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) &&
+        (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
 }
 function matcher(f: Filters, skip?: Facet) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p: Product) => checks.every((check) => check(p));
 }
 ~~~
@@ -7784,12 +10651,27 @@ function matcher(f: Filters, skip?: Facet) {
 ### Step 2: disjunctive counts
 
 ~~~ts
-export function facetCounts(products: Product[], f: Filters, categories: string[], ratings: number[]): Counts {
+export function facetCounts(
+  products: Product[],
+  f: Filters,
+  categories: string[],
+  ratings: number[],
+): Counts {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 ~~~
@@ -7799,18 +10681,33 @@ export function facetCounts(products: Product[], f: Filters, categories: string[
 ### Step 3: one signal, many computeds, one effect
 
 ~~~ts
-  readonly filters = signal<Filters>(fromQuery(window.location.search, CATEGORIES));
-  readonly sortOptions = (Object.keys(SORTS) as SortKey[]).map((key) => ({ key, label: SORTS[key].label }));
+readonly filters = signal<Filters>(
+  fromQuery(window.location.search, CATEGORIES),
+);
+readonly sortOptions = (Object.keys(SORTS) as SortKey[]).map((key) => ({
+  key,
+  label: SORTS[key].label,
+}));
 
-  // Everything below is derived from filters.
-  readonly results = computed(() => applyFilters(PRODUCTS, this.filters()));
-  readonly counts = computed(() => facetCounts(PRODUCTS, this.filters(), CATEGORIES, [4, 3, 0]));
-  readonly chips = computed(() => activeChips(this.filters()));
-  readonly error = computed(() => priceError(this.filters()));
+// Everything below is derived from filters.
+readonly results = computed(() =>
+  applyFilters(PRODUCTS, this.filters()),
+);
+readonly counts = computed(() =>
+  facetCounts(PRODUCTS, this.filters(), CATEGORIES, [4, 3, 0]),
+);
+readonly chips = computed(() => activeChips(this.filters()));
+readonly error = computed(() => priceError(this.filters()));
 
-  constructor() {
-    effect(() => window.history.replaceState(null, "", toQuery(this.filters()) || window.location.pathname));
-  }
+constructor() {
+  effect(() =>
+    window.history.replaceState(
+      null,
+      "",
+      toQuery(this.filters()) || window.location.pathname,
+    ),
+  );
+}
 ~~~
 
 📌 **Interview term: computed** — a cached, read-only signal. Because every change replaces the object (through <code>update</code> or the panel's <code>[(filters)]</code> binding), all four computeds and the URL <code>effect</code> see the new value. Writing the URL is a legitimate use of <code>effect</code>: it syncs state to something outside Angular. See [when not to use effect()](/interview-question/what-is-the-effect-function-in-angular-signals-and-when-should-you-not-use-it).
@@ -7818,10 +10715,11 @@ export function facetCounts(products: Product[], f: Filters, categories: string[
 ### Step 4: two-way binding to a panel that never mutates
 
 ~~~ts
-  // The panel never edits the filters object; it emits a new one and the parent replaces its state.
-  set(patch: Partial<Filters>) {
-    this.filtersChange.emit({ ...this.filters, ...patch });
-  }
+// The panel never edits the filters object; it emits
+// a new one and the parent replaces its state.
+set(patch: Partial<Filters>) {
+  this.filtersChange.emit({ ...this.filters, ...patch });
+}
 ~~~
 
 📌 **Interview term: Two-way binding with a signal** — <code>[(filters)]="filters"</code> passes <code>filters()</code> to the <code>filters</code> input and calls <code>filters.set($event)</code> on <code>filtersChange</code>. Angular accepts a writable signal on the parent side of the banana-in-a-box syntax, so no glue code is needed. The panel uses template reference variables (<code>#min</code>, <code>#stock</code>) to read input values, and keeps prices as raw strings so an empty box means "no limit".
@@ -7981,7 +10879,19 @@ Counts stay meaningful as categories are ticked; stock and rating reshape the ot
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
 import { FilterPanelComponent } from "./filter-panel.component";
 import { CATEGORIES, PRODUCTS } from "./products";
-import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts, fromQuery, priceError, removeChip, toQuery } from "./filtering";
+import {
+  EMPTY,
+  Filters,
+  SORTS,
+  SortKey,
+  activeChips,
+  applyFilters,
+  facetCounts,
+  fromQuery,
+  priceError,
+  removeChip,
+  toQuery,
+} from "./filtering";
 
 @Component({
   selector: "app-root",
@@ -7991,7 +10901,11 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
     <main class="shop">
       <h1>Shop</h1>
       <div class="layout">
-        <app-filter-panel [(filters)]="filters" [counts]="counts()" [error]="error()" />
+        <app-filter-panel
+          [(filters)]="filters"
+          [counts]="counts()"
+          [error]="error()"
+        />
 
         <section aria-labelledby="results-heading">
           <div class="topbar">
@@ -8002,7 +10916,10 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
               Sort by
               <select #sort data-testid="sort" (change)="setSort(sort.value)">
                 @for (s of sortOptions; track s.key) {
-                  <option [value]="s.key" [selected]="s.key === filters().sort">{{ s.label }}</option>
+                  <option
+                    [value]="s.key"
+                    [selected]="s.key === filters().sort"
+                  >{{ s.label }}</option>
                 }
               </select>
             </label>
@@ -8012,7 +10929,12 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
             <ul class="chips" aria-label="Active filters">
               @for (chip of chips(); track chip.id) {
                 <li>
-                  <button type="button" [attr.data-chip]="chip.id" [attr.aria-label]="'Remove filter ' + chip.label" (click)="remove(chip.id)">
+                  <button
+                    type="button"
+                    [attr.data-chip]="chip.id"
+                    [attr.aria-label]="'Remove filter ' + chip.label"
+                    (click)="remove(chip.id)"
+                  >
                     {{ chip.label }} ✕
                   </button>
                 </li>
@@ -8024,7 +10946,10 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
           @if (results().length === 0) {
             <div data-testid="empty" class="empty">
               <p>No products match these filters.</p>
-              <button type="button" (click)="clearAll()">Clear all filters</button>
+              <button
+                type="button"
+                (click)="clearAll()"
+              >Clear all filters</button>
             </div>
           } @else {
             <ul class="grid">
@@ -8045,7 +10970,8 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
       </div>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .shop { max-width: 960px; margin: 24px auto; padding: 20px; border-radius: 12px;
       background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
@@ -8067,21 +10993,36 @@ import { EMPTY, Filters, SORTS, SortKey, activeChips, applyFilters, facetCounts,
     .badge { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; background: #3f1d1d; color: #fecaca; font-size: 0.8rem; }
     .empty { text-align: center; padding: 40px 0; color: #9ca3af; }
     .empty button { padding: 8px 14px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: #e5e7eb; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
-  // One object holds every filter, read from the URL once on load. It is always replaced, never mutated.
-  readonly filters = signal<Filters>(fromQuery(window.location.search, CATEGORIES));
-  readonly sortOptions = (Object.keys(SORTS) as SortKey[]).map((key) => ({ key, label: SORTS[key].label }));
+  // One object holds every filter, read from the URL
+  // once on load. It is always replaced, never mutated.
+  readonly filters = signal<Filters>(
+    fromQuery(window.location.search, CATEGORIES),
+  );
+  readonly sortOptions = (Object.keys(SORTS) as SortKey[]).map((key) => ({
+    key,
+    label: SORTS[key].label,
+  }));
 
   // Everything below is derived from filters.
   readonly results = computed(() => applyFilters(PRODUCTS, this.filters()));
-  readonly counts = computed(() => facetCounts(PRODUCTS, this.filters(), CATEGORIES, [4, 3, 0]));
+  readonly counts = computed(() =>
+    facetCounts(PRODUCTS, this.filters(), CATEGORIES, [4, 3, 0]),
+  );
   readonly chips = computed(() => activeChips(this.filters()));
   readonly error = computed(() => priceError(this.filters()));
 
   constructor() {
-    effect(() => window.history.replaceState(null, "", toQuery(this.filters()) || window.location.pathname));
+    effect(() =>
+      window.history.replaceState(
+        null,
+        "",
+        toQuery(this.filters()) || window.location.pathname,
+      ),
+    );
   }
 
   setSort(value: string) {
@@ -8108,7 +11049,12 @@ import { Counts, Filters } from "./filtering";
       <legend>Category</legend>
       @for (c of categories; track c) {
         <label [class.zero]="counts.category[c] === 0">
-          <input type="checkbox" [attr.data-cat]="c" [checked]="filters.categories.includes(c)" (change)="toggleCategory(c)" />
+          <input
+            type="checkbox"
+            [attr.data-cat]="c"
+            [checked]="filters.categories.includes(c)"
+            (change)="toggleCategory(c)"
+          />
           {{ c }} <span class="count">({{ counts.category[c] }})</span>
         </label>
       }
@@ -8123,25 +11069,43 @@ import { Counts, Filters } from "./filtering";
         <input #max data-testid="max" type="number" min="0" inputmode="numeric" aria-label="Maximum price" placeholder="Max"
           [value]="filters.max" [attr.aria-invalid]="error ? 'true' : 'false'" aria-describedby="price-error" (input)="set({ max: max.value })" />
       </div>
-      <p id="price-error" data-testid="price-error" class="error" aria-live="polite">{{ error }}</p>
+      <p
+        id="price-error"
+        data-testid="price-error"
+        class="error"
+        aria-live="polite"
+      >{{ error }}</p>
     </fieldset>
 
     <fieldset>
       <legend>Rating</legend>
       @for (r of ratings; track r) {
         <label>
-          <input type="radio" name="rating" [attr.data-rating]="r" [checked]="filters.rating === r" (change)="set({ rating: r })" />
+          <input
+            type="radio"
+            name="rating"
+            [attr.data-rating]="r"
+            [checked]="filters.rating === r"
+            (change)="set({ rating: r })"
+          />
           {{ r ? r + "★ & up" : "Any" }} <span class="count">({{ counts.rating[r] }})</span>
         </label>
       }
     </fieldset>
 
     <label class="stock">
-      <input #stock type="checkbox" data-testid="stock" [checked]="filters.inStock" (change)="set({ inStock: stock.checked })" />
+      <input
+        #stock
+        type="checkbox"
+        data-testid="stock"
+        [checked]="filters.inStock"
+        (change)="set({ inStock: stock.checked })"
+      />
       In stock only
     </label>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     fieldset { border: 1px solid #1f2937; border-radius: 10px; margin: 0 0 12px; padding: 10px 12px; }
     legend { font-weight: 600; padding: 0 4px; }
@@ -8151,7 +11115,8 @@ import { Counts, Filters } from "./filtering";
     .price { display: flex; gap: 6px; align-items: center; }
     .price input { width: 100%; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid #374151; background: #0f172a; color: inherit; }
     .error { min-height: 1em; margin: 6px 0 0; color: #fca5a5; font-size: 0.85rem; }
-  \`],
+  \`,
+  ],
 })
 export class FilterPanelComponent {
   @Input({ required: true }) filters!: Filters;
@@ -8162,18 +11127,24 @@ export class FilterPanelComponent {
   readonly categories = CATEGORIES;
   readonly ratings = [4, 3, 0];
 
-  // The panel never edits the filters object; it emits a new one and the parent replaces its state.
+  // The panel never edits the filters object; it emits
+  // a new one and the parent replaces its state.
   set(patch: Partial<Filters>) {
     this.filtersChange.emit({ ...this.filters, ...patch });
   }
 
   toggleCategory(category: string) {
     const list = this.filters.categories;
-    this.set({ categories: list.includes(category) ? list.filter((c) => c !== category) : [...list, category] });
+    this.set({
+      categories: list.includes(category)
+        ? list.filter((c) => c !== category)
+        : [...list, category],
+    });
   }
 }
 `,
-          "/src/app/filtering.ts": `// Framework-free filter logic: one predicate per facet, composed with AND across facets
+          "/src/app/filtering.ts": `// Framework-free filter logic: one predicate
+// per facet, composed with AND across facets
 // and OR inside the category facet.
 import { Product } from "./products";
 
@@ -8195,22 +11166,41 @@ export interface Chip {
   label: string;
 }
 type Facet = "category" | "price" | "rating" | "stock";
-export const SORTS: Record<SortKey, { label: string; compare: (a: Product, b: Product) => number }> = {
+export const SORTS: Record<
+  SortKey,
+  { label: string; compare: (a: Product, b: Product) => number }
+> = {
   popular: { label: "Most popular", compare: (a, b) => b.reviews - a.reviews },
-  "price-asc": { label: "Price: low to high", compare: (a, b) => a.price - b.price },
-  "price-desc": { label: "Price: high to low", compare: (a, b) => b.price - a.price },
+  "price-asc": {
+    label: "Price: low to high",
+    compare: (a, b) => a.price - b.price,
+  },
+  "price-desc": {
+    label: "Price: high to low",
+    compare: (a, b) => b.price - a.price,
+  },
   rating: { label: "Top rated", compare: (a, b) => b.rating - a.rating },
 };
 
-export const EMPTY: Filters = { categories: [], min: "", max: "", rating: 0, inStock: false, sort: "popular" };
+export const EMPTY: Filters = {
+  categories: [],
+  min: "",
+  max: "",
+  rating: 0,
+  inStock: false,
+  sort: "popular",
+};
 
-const toNumber = (text: string): number | null => (text === "" ? null : Number(text));
+const toNumber = (text: string): number | null =>
+  text === "" ? null : Number(text);
 
 export function priceError(f: Filters): string {
   const min = toNumber(f.min);
   const max = toNumber(f.max);
-  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0))) return "Prices must be positive numbers.";
-  if (min !== null && max !== null && min > max) return "Min price is above max price.";
+  if ((min !== null && !(min >= 0)) || (max !== null && !(max >= 0)))
+    return "Prices must be positive numbers.";
+  if (min !== null && max !== null && min > max)
+    return "Min price is above max price.";
   return "";
 }
 
@@ -8219,16 +11209,22 @@ function predicates(f: Filters): Record<Facet, (p: Product) => boolean> {
   const max = toNumber(f.max);
   const priceOk = !priceError(f);
   return {
-    category: (p) => f.categories.length === 0 || f.categories.includes(p.category),
-    price: (p) => !priceOk || ((min === null || p.price >= min) && (max === null || p.price <= max)),
+    category: (p) =>
+      f.categories.length === 0 || f.categories.includes(p.category),
+    price: (p) =>
+      !priceOk ||
+      ((min === null || p.price >= min) && (max === null || p.price <= max)),
     rating: (p) => p.rating >= f.rating,
     stock: (p) => !f.inStock || p.inStock,
   };
 }
 
-// Every facet except \`skip\` must match. Skipping one facet is what makes facet counts useful.
+// Every facet except \`skip\` must match. Skipping
+// one facet is what makes facet counts useful.
 function matcher(f: Filters, skip?: Facet) {
-  const checks = Object.entries(predicates(f)).filter(([name]) => name !== skip).map(([, fn]) => fn);
+  const checks = Object.entries(predicates(f))
+    .filter(([name]) => name !== skip)
+    .map(([, fn]) => fn);
   return (p: Product) => checks.every((check) => check(p));
 }
 
@@ -8241,26 +11237,47 @@ export function applyFilters(products: Product[], f: Filters): Product[] {
     .map((entry) => entry.p);
 }
 
-// How many results each option would give if you picked it, with every OTHER facet applied.
-export function facetCounts(products: Product[], f: Filters, categories: string[], ratings: number[]): Counts {
+// How many results each option would give if you
+// picked it, with every OTHER facet applied.
+export function facetCounts(
+  products: Product[],
+  f: Filters,
+  categories: string[],
+  ratings: number[],
+): Counts {
   const otherThanCategory = products.filter(matcher(f, "category"));
   const otherThanRating = products.filter(matcher(f, "rating"));
   return {
-    category: Object.fromEntries(categories.map((c) => [c, otherThanCategory.filter((p) => p.category === c).length])),
-    rating: Object.fromEntries(ratings.map((r) => [r, otherThanRating.filter((p) => p.rating >= r).length])),
+    category: Object.fromEntries(
+      categories.map((c) => [
+        c,
+        otherThanCategory.filter((p) => p.category === c).length,
+      ]),
+    ),
+    rating: Object.fromEntries(
+      ratings.map((r) => [
+        r,
+        otherThanRating.filter((p) => p.rating >= r).length,
+      ]),
+    ),
   };
 }
 
 export function activeChips(f: Filters): Chip[] {
   const chips: Chip[] = f.categories.map((c) => ({ id: "cat:" + c, label: c }));
-  if (f.min !== "" || f.max !== "") chips.push({ id: "price", label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any") });
+  if (f.min !== "" || f.max !== "")
+    chips.push({
+      id: "price",
+      label: "$" + (f.min || "0") + " to " + (f.max ? "$" + f.max : "any"),
+    });
   if (f.rating) chips.push({ id: "rating", label: f.rating + "★ & up" });
   if (f.inStock) chips.push({ id: "stock", label: "In stock" });
   return chips;
 }
 
 export function removeChip(f: Filters, id: string): Filters {
-  if (id.startsWith("cat:")) return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
+  if (id.startsWith("cat:"))
+    return { ...f, categories: f.categories.filter((c) => "cat:" + c !== id) };
   if (id === "price") return { ...f, min: "", max: "" };
   if (id === "rating") return { ...f, rating: 0 };
   if (id === "stock") return { ...f, inStock: false };
@@ -8283,12 +11300,16 @@ export function fromQuery(search: string, categories: string[]): Filters {
   const q = new URLSearchParams(search);
   const rating = Number(q.get("rating"));
   return {
-    categories: (q.get("cat") ?? "").split(",").filter((c) => categories.includes(c)),
+    categories: (q.get("cat") ?? "")
+      .split(",")
+      .filter((c) => categories.includes(c)),
     min: q.get("min") ?? "",
     max: q.get("max") ?? "",
     rating: [3, 4].includes(rating) ? rating : 0,
     inStock: q.get("stock") === "1",
-    sort: (Object.keys(SORTS) as SortKey[]).find((k) => k === q.get("sort")) ?? "popular",
+    sort:
+      (Object.keys(SORTS) as SortKey[]).find((k) => k === q.get("sort")) ??
+      "popular",
   };
 }
 `,
@@ -8305,24 +11326,168 @@ export function fromQuery(search: string, categories: string[]): Filters {
 export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
 
 export const PRODUCTS: Product[] = [
-  { id: 1, name: "Studio Headphones", category: "Audio", price: 199, rating: 4.7, reviews: 3120, inStock: true },
-  { id: 2, name: "Wireless Earbuds", category: "Audio", price: 129, rating: 4.4, reviews: 5840, inStock: true },
-  { id: 3, name: "Bookshelf Speakers", category: "Audio", price: 349, rating: 4.8, reviews: 960, inStock: false },
-  { id: 4, name: "Portable Speaker", category: "Audio", price: 79, rating: 4.1, reviews: 2210, inStock: true },
-  { id: 5, name: "Vinyl Turntable", category: "Audio", price: 289, rating: 3.9, reviews: 410, inStock: true },
-  { id: 6, name: "Fitness Band", category: "Wearables", price: 59, rating: 3.8, reviews: 4100, inStock: true },
-  { id: 7, name: "Smartwatch Pro", category: "Wearables", price: 399, rating: 4.6, reviews: 2750, inStock: true },
-  { id: 8, name: "Smart Ring", category: "Wearables", price: 299, rating: 4.2, reviews: 640, inStock: false },
-  { id: 9, name: "Kids Watch", category: "Wearables", price: 89, rating: 3.5, reviews: 380, inStock: true },
-  { id: 10, name: "Mirrorless Camera", category: "Cameras", price: 1299, rating: 4.9, reviews: 870, inStock: true },
-  { id: 11, name: "Action Camera", category: "Cameras", price: 249, rating: 4.3, reviews: 1920, inStock: true },
-  { id: 12, name: "Instant Camera", category: "Cameras", price: 99, rating: 4.0, reviews: 2640, inStock: true },
-  { id: 13, name: "Security Camera", category: "Cameras", price: 149, rating: 3.7, reviews: 1150, inStock: false },
-  { id: 14, name: "USB-C Charger", category: "Accessories", price: 35, rating: 4.5, reviews: 7200, inStock: true },
-  { id: 15, name: "Camera Bag", category: "Accessories", price: 69, rating: 4.2, reviews: 530, inStock: true },
-  { id: 16, name: "Tripod", category: "Accessories", price: 45, rating: 4.4, reviews: 1480, inStock: true },
-  { id: 17, name: "Watch Strap", category: "Accessories", price: 25, rating: 3.6, reviews: 890, inStock: true },
-  { id: 18, name: "Power Bank", category: "Accessories", price: 55, rating: 4.6, reviews: 3900, inStock: false },
+  {
+    id: 1,
+    name: "Studio Headphones",
+    category: "Audio",
+    price: 199,
+    rating: 4.7,
+    reviews: 3120,
+    inStock: true,
+  },
+  {
+    id: 2,
+    name: "Wireless Earbuds",
+    category: "Audio",
+    price: 129,
+    rating: 4.4,
+    reviews: 5840,
+    inStock: true,
+  },
+  {
+    id: 3,
+    name: "Bookshelf Speakers",
+    category: "Audio",
+    price: 349,
+    rating: 4.8,
+    reviews: 960,
+    inStock: false,
+  },
+  {
+    id: 4,
+    name: "Portable Speaker",
+    category: "Audio",
+    price: 79,
+    rating: 4.1,
+    reviews: 2210,
+    inStock: true,
+  },
+  {
+    id: 5,
+    name: "Vinyl Turntable",
+    category: "Audio",
+    price: 289,
+    rating: 3.9,
+    reviews: 410,
+    inStock: true,
+  },
+  {
+    id: 6,
+    name: "Fitness Band",
+    category: "Wearables",
+    price: 59,
+    rating: 3.8,
+    reviews: 4100,
+    inStock: true,
+  },
+  {
+    id: 7,
+    name: "Smartwatch Pro",
+    category: "Wearables",
+    price: 399,
+    rating: 4.6,
+    reviews: 2750,
+    inStock: true,
+  },
+  {
+    id: 8,
+    name: "Smart Ring",
+    category: "Wearables",
+    price: 299,
+    rating: 4.2,
+    reviews: 640,
+    inStock: false,
+  },
+  {
+    id: 9,
+    name: "Kids Watch",
+    category: "Wearables",
+    price: 89,
+    rating: 3.5,
+    reviews: 380,
+    inStock: true,
+  },
+  {
+    id: 10,
+    name: "Mirrorless Camera",
+    category: "Cameras",
+    price: 1299,
+    rating: 4.9,
+    reviews: 870,
+    inStock: true,
+  },
+  {
+    id: 11,
+    name: "Action Camera",
+    category: "Cameras",
+    price: 249,
+    rating: 4.3,
+    reviews: 1920,
+    inStock: true,
+  },
+  {
+    id: 12,
+    name: "Instant Camera",
+    category: "Cameras",
+    price: 99,
+    rating: 4.0,
+    reviews: 2640,
+    inStock: true,
+  },
+  {
+    id: 13,
+    name: "Security Camera",
+    category: "Cameras",
+    price: 149,
+    rating: 3.7,
+    reviews: 1150,
+    inStock: false,
+  },
+  {
+    id: 14,
+    name: "USB-C Charger",
+    category: "Accessories",
+    price: 35,
+    rating: 4.5,
+    reviews: 7200,
+    inStock: true,
+  },
+  {
+    id: 15,
+    name: "Camera Bag",
+    category: "Accessories",
+    price: 69,
+    rating: 4.2,
+    reviews: 530,
+    inStock: true,
+  },
+  {
+    id: 16,
+    name: "Tripod",
+    category: "Accessories",
+    price: 45,
+    rating: 4.4,
+    reviews: 1480,
+    inStock: true,
+  },
+  {
+    id: 17,
+    name: "Watch Strap",
+    category: "Accessories",
+    price: 25,
+    rating: 3.6,
+    reviews: 890,
+    inStock: true,
+  },
+  {
+    id: 18,
+    name: "Power Bank",
+    category: "Accessories",
+    price: 55,
+    rating: 4.6,
+    reviews: 3900,
+    inStock: false,
+  },
 ];
 `,
         },
@@ -8440,22 +11605,27 @@ The 20 fake jobs have the same shape as real HN job items. Each item waits 40 to
 ### Step 2: load one page in parallel
 
 ~~~jsx
-  async function loadPage(allIds, from) {
-    if (inFlight.current) return; // a second click while loading does nothing
-    inFlight.current = true;
-    setStatus("loading");
-    const fail = failNext;
-    setFailNext(false);
-    try {
-      const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
-      setJobs((prev) => [...prev, ...next]);
-      setStatus("idle");
-    } catch {
-      setStatus("error");
-    } finally {
-      inFlight.current = false;
-    }
+async function loadPage(allIds, from) {
+  // a second click while loading does nothing
+  if (inFlight.current) return;
+  inFlight.current = true;
+  setStatus("loading");
+  const fail = failNext;
+  setFailNext(false);
+  try {
+    const next = await Promise.all(
+      allIds
+        .slice(from, from + PAGE_SIZE)
+        .map((id) => fetchJob(id, { fail })),
+    );
+    setJobs((prev) => [...prev, ...next]);
+    setStatus("idle");
+  } catch {
+    setStatus("error");
+  } finally {
+    inFlight.current = false;
   }
+}
 ~~~
 
 📌 **Interview term: Promise.all** — takes an array of promises and resolves with an array of results **in the same order as the input**, no matter which finished first; it rejects as soon as any one rejects. A Node 22 run of the simulated API shows the difference between arrival order and result order:
@@ -8473,23 +11643,24 @@ So appending <code>next</code> keeps the cards in id order with no sorting. See 
 ### Step 3: fetch the ids once, safely under StrictMode
 
 ~~~jsx
-  function loadIds() {
-    let ignore = false;
-    setStatus("loading");
-    fetchJobIds()
-      .then((all) => {
-        if (ignore) return;
-        setIds(all);
-        loadPage(all, 0);
-      })
-      .catch(() => !ignore && setStatus("error"));
-    return () => {
-      ignore = true;
-    };
-  }
+function loadIds() {
+  let ignore = false;
+  setStatus("loading");
+  fetchJobIds()
+    .then((all) => {
+      if (ignore) return;
+      setIds(all);
+      loadPage(all, 0);
+    })
+    .catch(() => !ignore && setStatus("error"));
+  return () => {
+    ignore = true;
+  };
+}
 
-  // StrictMode mounts twice in development; the cleanup makes the first run ignore its answer.
-  useEffect(loadIds, []);
+// StrictMode mounts twice in development; the
+// cleanup makes the first run ignore its answer.
+useEffect(loadIds, []);
 ~~~
 
 📌 **Interview term: Effect cleanup** — the function an effect returns, which React calls before re-running or unmounting. In development, <code>StrictMode</code> mounts, unmounts and mounts again, so the effect runs twice. The cleanup sets <code>ignore</code> for the first run, so only the second run's answer is used and the first page is not loaded twice. See [the cleanup function in useEffect](/interview-question/what-is-the-purpose-of-the-cleanup-function-in-useeffect) and [race conditions inside effects](/interview-question/how-do-you-safely-handle-async-work-and-race-conditions-inside-effects). The cost is a second ids request in development only; production mounts once.
@@ -8497,11 +11668,16 @@ So appending <code>next</code> keeps the cards in id order with no sorting. See 
 ### Step 4: render states, not just data
 
 ~~~jsx
-      {status === "error" && (
-        <p role="alert" data-testid="error" className="error">
-          Could not load jobs. <button type="button" data-testid="retry" onClick={retry}>Retry</button>
-        </p>
-      )}
+{
+  status === "error" && (
+    <p role="alert" data-testid="error" className="error">
+      Could not load jobs.{" "}
+      <button type="button" data-testid="retry" onClick={retry}>
+        Retry
+      </button>
+    </p>
+  );
+}
 ~~~
 
 The button is rendered only while there is more to load, says "Loading…" and is disabled while a page is in flight, and is replaced by an alert with Retry when a load fails. <code>retry</code> repeats exactly what failed: the ids request if there are no ids yet, otherwise the next page from <code>jobs.length</code>.
@@ -8509,20 +11685,29 @@ The button is rendered only while there is more to load, says "Loading…" and i
 ### Step 5: the card
 
 ~~~jsx
-const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" });
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 
 export default function JobCard({ job }) {
   return (
     <li data-testid="job" className="job">
       <h2>
         {job.url ? (
-          <a href={job.url} target="_blank" rel="noopener noreferrer">{job.title}</a>
+          <a href={job.url} target="_blank" rel="noopener noreferrer">
+            {job.title}
+          </a>
         ) : (
           job.title
         )}
       </h2>
       <p className="meta">
-        By {job.by} · <time dateTime={new Date(job.time * 1000).toISOString()}>{dateFormat.format(job.time * 1000)}</time>
+        By {job.by} ·{" "}
+        <time dateTime={new Date(job.time * 1000).toISOString()}>
+          {dateFormat.format(job.time * 1000)}
+        </time>
       </p>
     </li>
   );
@@ -8681,7 +11866,8 @@ const PAGE_SIZE = 6;
 export default function App() {
   const [ids, setIds] = useState(null); // every job id, from the first request
   const [jobs, setJobs] = useState([]); // details loaded so far, in id order
-  const [status, setStatus] = useState("loading"); // "loading" | "idle" | "error"
+  // "loading" | "idle" | "error"
+  const [status, setStatus] = useState("loading");
   const [failNext, setFailNext] = useState(false);
   const inFlight = useRef(false);
 
@@ -8693,7 +11879,11 @@ export default function App() {
     const fail = failNext;
     setFailNext(false);
     try {
-      const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
+      const next = await Promise.all(
+        allIds
+          .slice(from, from + PAGE_SIZE)
+          .map((id) => fetchJob(id, { fail })),
+      );
       setJobs((prev) => [...prev, ...next]);
       setStatus("idle");
     } catch {
@@ -8718,7 +11908,8 @@ export default function App() {
     };
   }
 
-  // StrictMode mounts twice in development; the cleanup makes the first run ignore its answer.
+  // StrictMode mounts twice in development; the
+  // cleanup makes the first run ignore its answer.
   useEffect(loadIds, []);
 
   const hasMore = ids !== null && jobs.length < ids.length;
@@ -8727,9 +11918,15 @@ export default function App() {
   return (
     <main className="board">
       <h1>Hacker News Jobs</h1>
-      <p className="note">Data comes from an in-file simulation of the Hacker News API.</p>
+      <p className="note">
+        Data comes from an in-file simulation of the Hacker News API.
+      </p>
 
-      {ids === null && status === "loading" && <p data-testid="status" role="status">Loading jobs…</p>}
+      {ids === null && status === "loading" && (
+        <p data-testid="status" role="status">
+          Loading jobs…
+        </p>
+      )}
 
       <ul className="jobs" aria-busy={status === "loading"}>
         {jobs.map((job) => (
@@ -8745,47 +11942,153 @@ export default function App() {
 
       {status === "error" && (
         <p role="alert" data-testid="error" className="error">
-          Could not load jobs. <button type="button" data-testid="retry" onClick={retry}>Retry</button>
+          Could not load jobs.{" "}
+          <button type="button" data-testid="retry" onClick={retry}>
+            Retry
+          </button>
         </p>
       )}
 
       {hasMore && status !== "error" && (
-        <button type="button" data-testid="more" className="more" disabled={status === "loading"} onClick={() => loadPage(ids, jobs.length)}>
+        <button
+          type="button"
+          data-testid="more"
+          className="more"
+          disabled={status === "loading"}
+          onClick={() => loadPage(ids, jobs.length)}
+        >
           {status === "loading" ? "Loading…" : "Load more jobs"}
         </button>
       )}
 
       <label className="note sim">
-        <input type="checkbox" data-testid="fail-next" checked={failNext} onChange={(e) => setFailNext(e.target.checked)} />
+        <input
+          type="checkbox"
+          data-testid="fail-next"
+          checked={failNext}
+          onChange={(e) => setFailNext(e.target.checked)}
+        />
         Simulate a network error on the next load
       </label>
     </main>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1020; }
-.board { max-width: 640px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.board h1 { font-size: 1.3rem; margin: 0 0 4px; color: #fb923c; }
-.note { color: #9ca3af; font-size: 0.85rem; }
-.jobs { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
-.job { padding: 12px 14px; border: 1px solid #1f2937; border-radius: 10px; background: #0f172a; }
-.job h2 { font-size: 1rem; margin: 0 0 6px; line-height: 1.35; }
-.job a { color: #e5e7eb; text-decoration: none; }
-.job a:hover, .job a:focus-visible { text-decoration: underline; color: #fdba74; }
-.meta { margin: 0; color: #9ca3af; font-size: 0.85rem; }
-.more { padding: 9px 16px; border-radius: 8px; border: 0; background: #f97316; color: #1c0d02; font-weight: 600; cursor: pointer; }
-.more:disabled { opacity: 0.6; cursor: progress; }
-.error { color: #fecaca; background: #3f1d1d; padding: 8px 12px; border-radius: 8px; }
-.error button { margin-left: 8px; padding: 4px 10px; border-radius: 6px; border: 1px solid #fca5a5; background: transparent; color: inherit; cursor: pointer; }
-.sim { display: flex; gap: 6px; align-items: center; margin-top: 16px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1020;
+}
+.board {
+  max-width: 640px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.board h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+  color: #fb923c;
+}
+.note {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.jobs {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 10px;
+}
+.job {
+  padding: 12px 14px;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  background: #0f172a;
+}
+.job h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+.job a {
+  color: #e5e7eb;
+  text-decoration: none;
+}
+.job a:hover,
+.job a:focus-visible {
+  text-decoration: underline;
+  color: #fdba74;
+}
+.meta {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.more {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #f97316;
+  color: #1c0d02;
+  font-weight: 600;
+  cursor: pointer;
+}
+.more:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.error {
+  color: #fecaca;
+  background: #3f1d1d;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.error button {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.sim {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 16px;
+}
 `,
           "/src/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
-//   https://hacker-news.firebaseio.com/v0/jobstories.json  -> array of job ids, newest first
+// https://hacker-news.firebaseio.com/v0/jobstories.json
+// -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
-// with setTimeout delays, so the UI deals with real asynchrony and out-of-order responses.
-const COMPANIES = ["Northwind", "Lumen", "Quanta", "Paperplane", "Fjord", "Brightpath", "Kelp", "Orbit", "Tandem", "Mosaic"];
-const ROLES = ["Senior Frontend Engineer", "Founding Engineer", "Product Designer", "Staff Backend Engineer", "Data Engineer", "Engineering Manager"];
+// with setTimeout delays, so the UI deals with
+// real asynchrony and out-of-order responses.
+const COMPANIES = [
+  "Northwind",
+  "Lumen",
+  "Quanta",
+  "Paperplane",
+  "Fjord",
+  "Brightpath",
+  "Kelp",
+  "Orbit",
+  "Tandem",
+  "Mosaic",
+];
+const ROLES = [
+  "Senior Frontend Engineer",
+  "Founding Engineer",
+  "Product Designer",
+  "Staff Backend Engineer",
+  "Data Engineer",
+  "Engineering Manager",
+];
 const BATCHES = ["W21", "S22", "W23", "S24"];
 const NOON_UTC_2025_06_20 = 1750420800;
 
@@ -8797,10 +12100,18 @@ const JOBS = Array.from({ length: 20 }, (_, i) => {
     id,
     type: "job",
     by: company.toLowerCase() + "_hiring",
-    time: NOON_UTC_2025_06_20 - i * 86400, // unix seconds, one per day, newest first
-    title: company + " (YC " + BATCHES[i % 4] + ") is hiring " + (/^[AEIOU]/.test(role) ? "an " : "a ") + role,
+    // unix seconds, one per day, newest first
+    time: NOON_UTC_2025_06_20 - i * 86400,
+    title:
+      company +
+      " (YC " +
+      BATCHES[i % 4] +
+      ") is hiring " +
+      (/^[AEIOU]/.test(role) ? "an " : "a ") +
+      role,
   };
-  if (i % 4 !== 3) job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
+  if (i % 4 !== 3)
+    job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
   return job;
 });
 
@@ -8812,27 +12123,37 @@ export async function fetchJobIds() {
 }
 
 export async function fetchJob(id, { fail = false } = {}) {
-  await wait(40 + (id % 4) * 30); // different delays: later ids can answer first
+  // different delays: later ids can answer first
+  await wait(40 + (id % 4) * 30);
   if (fail) throw new Error("Network error (simulated)");
   const job = JOBS.find((j) => j.id === id);
   if (!job) throw new Error("No item " + id);
   return { ...job };
 }
 `,
-          "/src/JobCard.js": `const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" });
+          "/src/JobCard.js": `const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 
 export default function JobCard({ job }) {
   return (
     <li data-testid="job" className="job">
       <h2>
         {job.url ? (
-          <a href={job.url} target="_blank" rel="noopener noreferrer">{job.title}</a>
+          <a href={job.url} target="_blank" rel="noopener noreferrer">
+            {job.title}
+          </a>
         ) : (
           job.title
         )}
       </h2>
       <p className="meta">
-        By {job.by} · <time dateTime={new Date(job.time * 1000).toISOString()}>{dateFormat.format(job.time * 1000)}</time>
+        By {job.by} ·{" "}
+        <time dateTime={new Date(job.time * 1000).toISOString()}>
+          {dateFormat.format(job.time * 1000)}
+        </time>
       </p>
     </li>
   );
@@ -8899,7 +12220,11 @@ async function loadPage(allIds, from) {
   const fail = failNext.value;
   failNext.value = false;
   try {
-    const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
+    const next = await Promise.all(
+      allIds
+        .slice(from, from + PAGE_SIZE)
+        .map((id) => fetchJob(id, { fail })),
+    );
     if (!alive) return;
     jobs.value = [...jobs.value, ...next];
     status.value = "idle";
@@ -8932,7 +12257,8 @@ async function loadIds() {
   }
 }
 
-const retry = () => (ids.value ? loadPage(ids.value, jobs.value.length) : loadIds());
+const retry = () =>
+  ids.value ? loadPage(ids.value, jobs.value.length) : loadIds();
 
 onMounted(loadIds);
 onUnmounted(() => (alive = false));
@@ -8943,7 +12269,12 @@ onUnmounted(() => (alive = false));
 ### Step 3: render the states
 
 ~~~vue
-    <p v-if="status === 'error'" role="alert" data-testid="error" class="error">
+    <p
+      v-if="status === 'error'"
+      role="alert"
+      data-testid="error"
+      class="error"
+    >
       Could not load jobs. <button type="button" data-testid="retry" @click="retry">Retry</button>
     </p>
 
@@ -9084,13 +12415,22 @@ Six cards after the first load; linked and plain titles; a second click on the d
     <h1>Hacker News Jobs</h1>
     <p class="note">Data comes from an in-file simulation of the Hacker News API.</p>
 
-    <p v-if="ids === null && status === 'loading'" data-testid="status" role="status">Loading jobs…</p>
+    <p
+      v-if="ids === null && status === 'loading'"
+      data-testid="status"
+      role="status"
+    >Loading jobs…</p>
 
     <ul class="jobs" :aria-busy="status === 'loading'">
       <JobCard v-for="job in jobs" :key="job.id" :job="job" />
     </ul>
 
-    <p v-if="ids !== null" data-testid="progress" class="note" aria-live="polite">Showing {{ jobs.length }} of {{ ids.length }} jobs</p>
+    <p
+      v-if="ids !== null"
+      data-testid="progress"
+      class="note"
+      aria-live="polite"
+    >Showing {{ jobs.length }} of {{ ids.length }} jobs</p>
 
     <p v-if="status === 'error'" role="alert" data-testid="error" class="error">
       Could not load jobs. <button type="button" data-testid="retry" @click="retry">Retry</button>
@@ -9122,13 +12462,16 @@ import JobCard from "./components/JobCard.vue";
 const PAGE_SIZE = 6;
 
 const ids = shallowRef(null); // every job id, from the first request
-const jobs = shallowRef([]); // details loaded so far, in id order; replaced, never mutated
+// details loaded so far, in id order; replaced, never mutated
+const jobs = shallowRef([]);
 const status = ref("loading"); // "loading" | "idle" | "error"
 const failNext = ref(false);
 let inFlight = false;
 let alive = true;
 
-const hasMore = computed(() => ids.value !== null && jobs.value.length < ids.value.length);
+const hasMore = computed(
+  () => ids.value !== null && jobs.value.length < ids.value.length,
+);
 
 // Fetch the details for the next PAGE_SIZE ids, all at once.
 async function loadPage(allIds, from) {
@@ -9138,7 +12481,9 @@ async function loadPage(allIds, from) {
   const fail = failNext.value;
   failNext.value = false;
   try {
-    const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
+    const next = await Promise.all(
+      allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })),
+    );
     if (!alive) return;
     jobs.value = [...jobs.value, ...next];
     status.value = "idle";
@@ -9161,37 +12506,130 @@ async function loadIds() {
   }
 }
 
-const retry = () => (ids.value ? loadPage(ids.value, jobs.value.length) : loadIds());
+const retry = () =>
+  ids.value ? loadPage(ids.value, jobs.value.length) : loadIds();
 
 onMounted(loadIds);
 onUnmounted(() => (alive = false));
 </script>
 
 <style>
-body { margin: 0; background: #0b1020; }
-.board { max-width: 640px; margin: 24px auto; padding: 20px; border-radius: 12px;
-  background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
-.board h1 { font-size: 1.3rem; margin: 0 0 4px; color: #fb923c; }
-.note { color: #9ca3af; font-size: 0.85rem; }
-.jobs { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
-.job { padding: 12px 14px; border: 1px solid #1f2937; border-radius: 10px; background: #0f172a; }
-.job h2 { font-size: 1rem; margin: 0 0 6px; line-height: 1.35; }
-.job a { color: #e5e7eb; text-decoration: none; }
-.job a:hover, .job a:focus-visible { text-decoration: underline; color: #fdba74; }
-.meta { margin: 0; color: #9ca3af; font-size: 0.85rem; }
-.more { padding: 9px 16px; border-radius: 8px; border: 0; background: #f97316; color: #1c0d02; font-weight: 600; cursor: pointer; }
-.more:disabled { opacity: 0.6; cursor: progress; }
-.error { color: #fecaca; background: #3f1d1d; padding: 8px 12px; border-radius: 8px; }
-.error button { margin-left: 8px; padding: 4px 10px; border-radius: 6px; border: 1px solid #fca5a5; background: transparent; color: inherit; cursor: pointer; }
-.sim { display: flex; gap: 6px; align-items: center; margin-top: 16px; }
+body {
+  margin: 0;
+  background: #0b1020;
+}
+.board {
+  max-width: 640px;
+  margin: 24px auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #111827;
+  color: #e5e7eb;
+  font-family: system-ui, sans-serif;
+}
+.board h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+  color: #fb923c;
+}
+.note {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.jobs {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 10px;
+}
+.job {
+  padding: 12px 14px;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  background: #0f172a;
+}
+.job h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+  line-height: 1.35;
+}
+.job a {
+  color: #e5e7eb;
+  text-decoration: none;
+}
+.job a:hover,
+.job a:focus-visible {
+  text-decoration: underline;
+  color: #fdba74;
+}
+.meta {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+.more {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #f97316;
+  color: #1c0d02;
+  font-weight: 600;
+  cursor: pointer;
+}
+.more:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.error {
+  color: #fecaca;
+  background: #3f1d1d;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.error button {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #fca5a5;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.sim {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 16px;
+}
 </style>
 `,
           "/src/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
-//   https://hacker-news.firebaseio.com/v0/jobstories.json  -> array of job ids, newest first
+// https://hacker-news.firebaseio.com/v0/jobstories.json
+// -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
-// with setTimeout delays, so the UI deals with real asynchrony and out-of-order responses.
-const COMPANIES = ["Northwind", "Lumen", "Quanta", "Paperplane", "Fjord", "Brightpath", "Kelp", "Orbit", "Tandem", "Mosaic"];
-const ROLES = ["Senior Frontend Engineer", "Founding Engineer", "Product Designer", "Staff Backend Engineer", "Data Engineer", "Engineering Manager"];
+// with setTimeout delays, so the UI deals with
+// real asynchrony and out-of-order responses.
+const COMPANIES = [
+  "Northwind",
+  "Lumen",
+  "Quanta",
+  "Paperplane",
+  "Fjord",
+  "Brightpath",
+  "Kelp",
+  "Orbit",
+  "Tandem",
+  "Mosaic",
+];
+const ROLES = [
+  "Senior Frontend Engineer",
+  "Founding Engineer",
+  "Product Designer",
+  "Staff Backend Engineer",
+  "Data Engineer",
+  "Engineering Manager",
+];
 const BATCHES = ["W21", "S22", "W23", "S24"];
 const NOON_UTC_2025_06_20 = 1750420800;
 
@@ -9203,10 +12641,18 @@ const JOBS = Array.from({ length: 20 }, (_, i) => {
     id,
     type: "job",
     by: company.toLowerCase() + "_hiring",
-    time: NOON_UTC_2025_06_20 - i * 86400, // unix seconds, one per day, newest first
-    title: company + " (YC " + BATCHES[i % 4] + ") is hiring " + (/^[AEIOU]/.test(role) ? "an " : "a ") + role,
+    // unix seconds, one per day, newest first
+    time: NOON_UTC_2025_06_20 - i * 86400,
+    title:
+      company +
+      " (YC " +
+      BATCHES[i % 4] +
+      ") is hiring " +
+      (/^[AEIOU]/.test(role) ? "an " : "a ") +
+      role,
   };
-  if (i % 4 !== 3) job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
+  if (i % 4 !== 3)
+    job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
   return job;
 });
 
@@ -9218,7 +12664,8 @@ export async function fetchJobIds() {
 }
 
 export async function fetchJob(id, { fail = false } = {}) {
-  await wait(40 + (id % 4) * 30); // different delays: later ids can answer first
+  // different delays: later ids can answer first
+  await wait(40 + (id % 4) * 30);
   if (fail) throw new Error("Network error (simulated)");
   const job = JOBS.find((j) => j.id === id);
   if (!job) throw new Error("No item " + id);
@@ -9228,18 +12675,31 @@ export async function fetchJob(id, { fail = false } = {}) {
           "/src/components/JobCard.vue": `<template>
   <li data-testid="job" class="job">
     <h2>
-      <a v-if="job.url" :href="job.url" target="_blank" rel="noopener noreferrer">{{ job.title }}</a>
+      <a
+        v-if="job.url"
+        :href="job.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        >{{ job.title }}</a
+      >
       <template v-else>{{ job.title }}</template>
     </h2>
     <p class="meta">
-      By {{ job.by }} · <time :datetime="new Date(job.time * 1000).toISOString()">{{ dateFormat.format(job.time * 1000) }}</time>
+      By {{ job.by }} ·
+      <time :datetime="new Date(job.time * 1000).toISOString()">{{
+        dateFormat.format(job.time * 1000)
+      }}</time>
     </p>
   </li>
 </template>
 
 <script setup>
 defineProps({ job: { type: Object, required: true } });
-const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" });
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 </script>
 `,
         },
@@ -9294,23 +12754,28 @@ Ids once; six details per page in parallel; a Load more button that reads "Loadi
 ### Step 1: one page in parallel
 
 ~~~ts
-  private async loadPage(allIds: number[], from: number) {
-    if (this.inFlight) return; // a second click while loading does nothing
-    this.inFlight = true;
-    this.status.set("loading");
-    const fail = this.failNext();
-    this.failNext.set(false);
-    try {
-      const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
-      if (!this.alive) return;
-      this.jobs.update((prev) => [...prev, ...next]);
-      this.status.set("idle");
-    } catch {
-      if (this.alive) this.status.set("error");
-    } finally {
-      this.inFlight = false;
-    }
+private async loadPage(allIds: number[], from: number) {
+  // a second click while loading does nothing
+  if (this.inFlight) return;
+  this.inFlight = true;
+  this.status.set("loading");
+  const fail = this.failNext();
+  this.failNext.set(false);
+  try {
+    const next = await Promise.all(
+      allIds
+        .slice(from, from + PAGE_SIZE)
+        .map((id) => fetchJob(id, { fail })),
+    );
+    if (!this.alive) return;
+    this.jobs.update((prev) => [...prev, ...next]);
+    this.status.set("idle");
+  } catch {
+    if (this.alive) this.status.set("error");
+  } finally {
+    this.inFlight = false;
   }
+}
 ~~~
 
 📌 **Interview term: Promise.all** — results come back in input order whatever order the requests settle in, and one rejection rejects the whole page. The simulated items answer with different delays, yet the appended cards stay in id order. See [Observables vs Promises](/interview-question/what-is-the-difference-between-observables-and-promises) for how the same flow looks with RxJS.
@@ -9320,10 +12785,10 @@ Ids once; six details per page in parallel; a Load more button that reads "Loadi
 ### Step 2: start in the constructor, stop on destroy
 
 ~~~ts
-  constructor() {
-    inject(DestroyRef).onDestroy(() => (this.alive = false));
-    this.loadIds();
-  }
+constructor() {
+  inject(DestroyRef).onDestroy(() => (this.alive = false));
+  this.loadIds();
+}
 ~~~
 
 📌 **Interview term: DestroyRef** — an injectable handle to the component lifecycle; <code>onDestroy</code> registers teardown without implementing <code>OnDestroy</code>. Here it clears <code>alive</code>, so a request that finishes after the component is gone does not write signals. With <code>HttpClient</code> you would instead unsubscribe, for example with <code>takeUntilDestroyed()</code>.
@@ -9487,7 +12952,11 @@ type Status = "loading" | "idle" | "error";
       </ul>
 
       @if (ids(); as all) {
-        <p data-testid="progress" class="note" aria-live="polite">Showing {{ jobs().length }} of {{ all.length }} jobs</p>
+        <p
+          data-testid="progress"
+          class="note"
+          aria-live="polite"
+        >Showing {{ jobs().length }} of {{ all.length }} jobs</p>
       }
 
       @if (status() === "error") {
@@ -9497,18 +12966,31 @@ type Status = "loading" | "idle" | "error";
       }
 
       @if (hasMore() && status() !== "error") {
-        <button type="button" data-testid="more" class="more" [disabled]="status() === 'loading'" (click)="loadMore()">
+        <button
+          type="button"
+          data-testid="more"
+          class="more"
+          [disabled]="status() === 'loading'"
+          (click)="loadMore()"
+        >
           {{ status() === "loading" ? "Loading…" : "Load more jobs" }}
         </button>
       }
 
       <label class="note sim">
-        <input #fail type="checkbox" data-testid="fail-next" [checked]="failNext()" (change)="failNext.set(fail.checked)" />
+        <input
+          #fail
+          type="checkbox"
+          data-testid="fail-next"
+          [checked]="failNext()"
+          (change)="failNext.set(fail.checked)"
+        />
         Simulate a network error on the next load
       </label>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .board { max-width: 640px; margin: 24px auto; padding: 20px; border-radius: 12px;
       background: #111827; color: #e5e7eb; font-family: system-ui, sans-serif; }
@@ -9520,10 +13002,12 @@ type Status = "loading" | "idle" | "error";
     .error { color: #fecaca; background: #3f1d1d; padding: 8px 12px; border-radius: 8px; }
     .error button { margin-left: 8px; padding: 4px 10px; border-radius: 6px; border: 1px solid #fca5a5; background: transparent; color: inherit; cursor: pointer; }
     .sim { display: flex; gap: 6px; align-items: center; margin-top: 16px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
-  readonly ids = signal<number[] | null>(null); // every job id, from the first request
+  // every job id, from the first request
+  readonly ids = signal<number[] | null>(null);
   readonly jobs = signal<Job[]>([]); // details loaded so far, in id order
   readonly status = signal<Status>("loading");
   readonly failNext = signal(false);
@@ -9547,7 +13031,11 @@ export class AppComponent {
     const fail = this.failNext();
     this.failNext.set(false);
     try {
-      const next = await Promise.all(allIds.slice(from, from + PAGE_SIZE).map((id) => fetchJob(id, { fail })));
+      const next = await Promise.all(
+        allIds
+          .slice(from, from + PAGE_SIZE)
+          .map((id) => fetchJob(id, { fail })),
+      );
       if (!this.alive) return;
       this.jobs.update((prev) => [...prev, ...next]);
       this.status.set("idle");
@@ -9582,9 +13070,11 @@ export class AppComponent {
 }
 `,
           "/src/app/hn-api.ts": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
-//   https://hacker-news.firebaseio.com/v0/jobstories.json  -> array of job ids, newest first
+// https://hacker-news.firebaseio.com/v0/jobstories.json
+// -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
-// with setTimeout delays, so the UI deals with real asynchrony and out-of-order responses.
+// with setTimeout delays, so the UI deals with
+// real asynchrony and out-of-order responses.
 export interface Job {
   id: number;
   type: "job";
@@ -9594,8 +13084,26 @@ export interface Job {
   url?: string;
 }
 
-const COMPANIES = ["Northwind", "Lumen", "Quanta", "Paperplane", "Fjord", "Brightpath", "Kelp", "Orbit", "Tandem", "Mosaic"];
-const ROLES = ["Senior Frontend Engineer", "Founding Engineer", "Product Designer", "Staff Backend Engineer", "Data Engineer", "Engineering Manager"];
+const COMPANIES = [
+  "Northwind",
+  "Lumen",
+  "Quanta",
+  "Paperplane",
+  "Fjord",
+  "Brightpath",
+  "Kelp",
+  "Orbit",
+  "Tandem",
+  "Mosaic",
+];
+const ROLES = [
+  "Senior Frontend Engineer",
+  "Founding Engineer",
+  "Product Designer",
+  "Staff Backend Engineer",
+  "Data Engineer",
+  "Engineering Manager",
+];
 const BATCHES = ["W21", "S22", "W23", "S24"];
 const NOON_UTC_2025_06_20 = 1750420800;
 
@@ -9607,22 +13115,35 @@ const JOBS: Job[] = Array.from({ length: 20 }, (_, i) => {
     id,
     type: "job",
     by: company.toLowerCase() + "_hiring",
-    time: NOON_UTC_2025_06_20 - i * 86400, // unix seconds, one per day, newest first
-    title: company + " (YC " + BATCHES[i % 4] + ") is hiring " + (/^[AEIOU]/.test(role) ? "an " : "a ") + role,
+    // unix seconds, one per day, newest first
+    time: NOON_UTC_2025_06_20 - i * 86400,
+    title:
+      company +
+      " (YC " +
+      BATCHES[i % 4] +
+      ") is hiring " +
+      (/^[AEIOU]/.test(role) ? "an " : "a ") +
+      role,
   };
-  if (i % 4 !== 3) job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
+  if (i % 4 !== 3)
+    job.url = "https://jobs.example.com/" + company.toLowerCase() + "/" + id;
   return job;
 });
 
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export async function fetchJobIds(): Promise<number[]> {
   await wait(150);
   return JOBS.map((job) => job.id);
 }
 
-export async function fetchJob(id: number, { fail = false } = {}): Promise<Job> {
-  await wait(40 + (id % 4) * 30); // different delays: later ids can answer first
+export async function fetchJob(
+  id: number,
+  { fail = false } = {},
+): Promise<Job> {
+  // different delays: later ids can answer first
+  await wait(40 + (id % 4) * 30);
   if (fail) throw new Error("Network error (simulated)");
   const job = JOBS.find((j) => j.id === id);
   if (!job) throw new Error("No item " + id);
@@ -9632,7 +13153,11 @@ export async function fetchJob(id: number, { fail = false } = {}): Promise<Job> 
           "/src/app/job-card.component.ts": `import { Component, Input } from "@angular/core";
 import { Job } from "./hn-api";
 
-const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" });
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+});
 
 @Component({
   // Attribute selector so the <li> stays a direct child of the <ul>.
@@ -9642,7 +13167,9 @@ const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "s
   template: \`
     <h2>
       @if (job.url) {
-        <a [href]="job.url" target="_blank" rel="noopener noreferrer">{{ job.title }}</a>
+        <a [href]="job.url" target="_blank" rel="noopener noreferrer">{{
+          job.title
+        }}</a>
       } @else {
         {{ job.title }}
       }
@@ -9651,13 +13178,36 @@ const dateFormat = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "s
       By {{ job.by }} · <time [attr.datetime]="iso()">{{ date() }}</time>
     </p>
   \`,
-  styles: [\`
-    :host { display: block; padding: 12px 14px; border: 1px solid #1f2937; border-radius: 10px; background: #0f172a; }
-    h2 { font-size: 1rem; margin: 0 0 6px; line-height: 1.35; }
-    a { color: #e5e7eb; text-decoration: none; }
-    a:hover, a:focus-visible { text-decoration: underline; color: #fdba74; }
-    .meta { margin: 0; color: #9ca3af; font-size: 0.85rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        padding: 12px 14px;
+        border: 1px solid #1f2937;
+        border-radius: 10px;
+        background: #0f172a;
+      }
+      h2 {
+        font-size: 1rem;
+        margin: 0 0 6px;
+        line-height: 1.35;
+      }
+      a {
+        color: #e5e7eb;
+        text-decoration: none;
+      }
+      a:hover,
+      a:focus-visible {
+        text-decoration: underline;
+        color: #fdba74;
+      }
+      .meta {
+        margin: 0;
+        color: #9ca3af;
+        font-size: 0.85rem;
+      }
+    \`,
+  ],
 })
 export class JobCardComponent {
   @Input({ required: true }) job!: Job;

@@ -142,12 +142,18 @@ The fake API resolves after a delay and rejects when its \`AbortSignal\` fires. 
 
 \`\`\`js
 const latency = query.length < 3 ? 700 : 200;
-const timer = setTimeout(() => { /* resolve or reject */ }, latency);
+const timer = setTimeout(() => {
+  /* resolve or reject */
+}, latency);
 if (signal) {
-  signal.addEventListener("abort", () => {
-    clearTimeout(timer);
-    reject(abortError());
-  }, { once: true });
+  signal.addEventListener(
+    "abort",
+    () => {
+      clearTimeout(timer);
+      reject(abortError());
+    },
+    { once: true },
+  );
 }
 \`\`\`
 
@@ -160,7 +166,8 @@ export function useDebouncedValue(value, delay) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer); // a new keystroke cancels the old timer
+    // a new keystroke cancels the old timer
+    return () => clearTimeout(timer);
   }, [value, delay]);
   return debounced;
 }
@@ -186,7 +193,8 @@ useEffect(() => {
   searchBooks(debouncedTerm, { signal: controller.signal })
     .then((items) => setResult({ status: "success", items, error: "" }))
     .catch((err) => {
-      if (err.name === "AbortError") return; // replaced by a newer search
+      // replaced by a newer search
+      if (err.name === "AbortError") return;
       setResult({ status: "error", items: [], error: err.message });
     });
   return () => controller.abort();
@@ -210,9 +218,13 @@ let statusText;
 if (!term) statusText = "Type to search the catalog";
 else if (typing) statusText = "Waiting for you to stop typing...";
 else if (result.status === "loading") statusText = "Searching...";
-else if (result.status === "error") statusText = "Error: " + result.error;
-else if (result.items.length === 0) statusText = "No books match " + JSON.stringify(term);
-else statusText = result.items.length + " results for " + JSON.stringify(term);
+else if (result.status === "error")
+  statusText = "Error: " + result.error;
+else if (result.items.length === 0)
+  statusText = "No books match " + JSON.stringify(term);
+else
+  statusText =
+    result.items.length + " results for " + JSON.stringify(term);
 \`\`\`
 
 The text lives in a \`<p role="status">\`, a polite live region, so a screen reader announces "4 results" without stealing focus. Previous results stay on screen with \`aria-busy="true"\` and reduced opacity while the next request runs, which avoids a flash of empty content.
@@ -227,7 +239,7 @@ The × button empties the query and puts focus back in the input, so a keyboard 
 
 The solution files were mounted with \`createRoot(...).render(<StrictMode><App /></StrictMode>)\` in jsdom. A driver typed with real \`input\` events and let real time pass. One lesson from building the driver: inside React's test helper \`act()\`, renders and effects are flushed when the \`act\` scope ends, so the driver advances time in 20 ms steps; one long wait would have hidden the debounce firing.
 
-\`\`\`
+\`\`\`text
 start            : Type to search the catalog
 typed j, ja, jav : Waiting for you to stop typing... | requests: 0
 +300 ms          : Searching... | log: #1 "jav" sent
@@ -366,7 +378,8 @@ export default function App() {
 `,
           "/src/api.js": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
-// longer ones are fast (200 ms), so an older request can finish after a newer one.
+// longer ones are fast (200 ms), so an older
+// request can finish after a newer one.
 const BOOKS = [
   "Eloquent JavaScript",
   "JavaScript: The Good Parts",
@@ -394,13 +407,19 @@ export function searchBooks(query, { signal } = {}) {
     const timer = setTimeout(() => {
       const q = query.toLowerCase();
       if (q === "error") return reject(new Error("Server error (simulated)"));
-      resolve(BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8));
+      resolve(
+        BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8),
+      );
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(abortError());
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(abortError());
+        },
+        { once: true },
+      );
     }
   });
 }
@@ -413,7 +432,11 @@ const DELAY = 300;
 
 export default function SearchBar() {
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState({ status: "idle", items: [], error: "" });
+  const [result, setResult] = useState({
+    status: "idle",
+    items: [],
+    error: "",
+  });
   const [log, setLog] = useState([]);
   const requestId = useRef(0);
   const inputRef = useRef(null);
@@ -438,7 +461,15 @@ export default function SearchBar() {
     searchBooks(debouncedTerm, { signal: controller.signal })
       .then((items) => {
         setResult({ status: "success", items, error: "" });
-        addLog("#" + id + " " + JSON.stringify(debouncedTerm) + " done: " + items.length + " results");
+        addLog(
+          "#" +
+            id +
+            " " +
+            JSON.stringify(debouncedTerm) +
+            " done: " +
+            items.length +
+            " results",
+        );
       })
       .catch((err) => {
         if (err.name === "AbortError") {
@@ -458,15 +489,19 @@ export default function SearchBar() {
   else if (typing) statusText = "Waiting for you to stop typing...";
   else if (result.status === "loading") statusText = "Searching...";
   else if (result.status === "error") statusText = "Error: " + result.error;
-  else if (result.items.length === 0) statusText = "No books match " + JSON.stringify(term);
-  else statusText = result.items.length + " results for " + JSON.stringify(term);
+  else if (result.items.length === 0)
+    statusText = "No books match " + JSON.stringify(term);
+  else
+    statusText = result.items.length + " results for " + JSON.stringify(term);
 
   const busy = typing || result.status === "loading";
   const showList = term && result.status !== "error" && result.items.length > 0;
 
   return (
     <div className="search">
-      <label htmlFor="book-search" className="label">Search books</label>
+      <label htmlFor="book-search" className="label">
+        Search books
+      </label>
       <div className="field">
         <input
           id="book-search"
@@ -484,24 +519,37 @@ export default function SearchBar() {
             className="clear"
             data-testid="clear"
             aria-label="Clear search"
-            onClick={() => { setQuery(""); inputRef.current.focus(); }}
+            onClick={() => {
+              setQuery("");
+              inputRef.current.focus();
+            }}
           >
             ×
           </button>
         )}
       </div>
 
-      <p className="status" role="status" data-testid="status">{statusText}</p>
+      <p className="status" role="status" data-testid="status">
+        {statusText}
+      </p>
 
       {showList && (
-        <ul className={busy ? "results stale" : "results"} aria-busy={busy} data-testid="results">
-          {result.items.map((title) => <li key={title}>{title}</li>)}
+        <ul
+          className={busy ? "results stale" : "results"}
+          aria-busy={busy}
+          data-testid="results"
+        >
+          {result.items.map((title) => (
+            <li key={title}>{title}</li>
+          ))}
         </ul>
       )}
 
       <h2 className="log-title">Request log</h2>
       <ol className="log" data-testid="log">
-        {log.map((line, i) => <li key={i}>{line}</li>)}
+        {log.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
       </ol>
     </div>
   );
@@ -519,24 +567,114 @@ export function useDebouncedValue(value, delay) {
   return debounced;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.field { position: relative; }
-.field input { width: 100%; padding: 10px 40px 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.field input:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: #a9b1c6; font-size: 1.2rem; cursor: pointer; }
-.clear:hover { background: #2a2f3f; color: #fff; }
-.status { min-height: 1.4em; font-size: 0.9rem; color: #a9b1c6; margin: 10px 0; }
-.results { list-style: none; margin: 0; padding: 0; border: 1px solid #2a2f3f; border-radius: 8px; overflow: hidden; transition: opacity 0.15s; }
-.results li { padding: 10px 12px; border-top: 1px solid #2a2f3f; }
-.results li:first-child { border-top: 0; }
-.results.stale { opacity: 0.55; }
-.log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 24px 0 6px; }
-.log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.field {
+  position: relative;
+}
+.field input {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.field input:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #a9b1c6;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.clear:hover {
+  background: #2a2f3f;
+  color: #fff;
+}
+.status {
+  min-height: 1.4em;
+  font-size: 0.9rem;
+  color: #a9b1c6;
+  margin: 10px 0;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #2a2f3f;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: opacity 0.15s;
+}
+.results li {
+  padding: 10px 12px;
+  border-top: 1px solid #2a2f3f;
+}
+.results li:first-child {
+  border-top: 0;
+}
+.results.stale {
+  opacity: 0.55;
+}
+.log-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+  margin: 24px 0 6px;
+}
+.log {
+  margin: 0;
+  padding-left: 20px;
+  font:
+    0.8rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #b8c0d6;
+}
 `,
         },
       },
@@ -574,9 +712,12 @@ export function useDebounced(source, delay) {
   let timer;
   watch(source, (value) => {
     clearTimeout(timer); // a new keystroke cancels the old timer
-    timer = setTimeout(() => { debounced.value = value; }, delay);
+    timer = setTimeout(() => {
+      debounced.value = value;
+    }, delay);
   });
-  onScopeDispose(() => clearTimeout(timer)); // component unmounted: no late update
+  // component unmounted: no late update
+  onScopeDispose(() => clearTimeout(timer));
   return debounced;
 }
 \`\`\`
@@ -587,16 +728,28 @@ export function useDebounced(source, delay) {
 
 \`\`\`js
 watch(debouncedTerm, (value, _old, onCleanup) => {
-  if (!value) { status.value = "idle"; items.value = []; return; }
+  if (!value) {
+    status.value = "idle";
+    items.value = [];
+    return;
+  }
   const controller = new AbortController();
-  // Runs before the next search starts, and when the component unmounts.
+  // Runs before the next search starts,
+  // and when the component unmounts.
   onCleanup(() => controller.abort());
-  status.value = "loading"; // previous items stay on screen while this runs
+  // previous items stay on screen while this runs
+  status.value = "loading";
   searchBooks(value, { signal: controller.signal })
-    .then((found) => { items.value = found; status.value = "success"; })
+    .then((found) => {
+      items.value = found;
+      status.value = "success";
+    })
     .catch((err) => {
-      if (err.name === "AbortError") return; // replaced by a newer search
-      items.value = []; error.value = err.message; status.value = "error";
+      // replaced by a newer search
+      if (err.name === "AbortError") return;
+      items.value = [];
+      error.value = err.message;
+      status.value = "error";
     });
 });
 \`\`\`
@@ -617,8 +770,11 @@ const statusText = computed(() => {
   if (typing.value) return "Waiting for you to stop typing...";
   if (status.value === "loading") return "Searching...";
   if (status.value === "error") return "Error: " + error.value;
-  if (items.value.length === 0) return "No books match " + JSON.stringify(term.value);
-  return items.value.length + " results for " + JSON.stringify(term.value);
+  if (items.value.length === 0)
+    return "No books match " + JSON.stringify(term.value);
+  return (
+    items.value.length + " results for " + JSON.stringify(term.value)
+  );
 });
 \`\`\`
 
@@ -628,7 +784,7 @@ const statusText = computed(() => {
 
 The driver typed with real \`input\` events and let real time pass in 20 ms steps:
 
-\`\`\`
+\`\`\`text
 start            : Type to search the catalog
 typed j, ja, jav : Waiting for you to stop typing... | requests: 0
 +300 ms          : Searching... | log: #1 "jav" sent
@@ -751,16 +907,38 @@ import SearchBar from "./components/SearchBar.vue";
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/api.js": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
-// longer ones are fast (200 ms), so an older request can finish after a newer one.
+// longer ones are fast (200 ms), so an older
+// request can finish after a newer one.
 const BOOKS = [
   "Eloquent JavaScript",
   "JavaScript: The Good Parts",
@@ -788,13 +966,19 @@ export function searchBooks(query, { signal } = {}) {
     const timer = setTimeout(() => {
       const q = query.toLowerCase();
       if (q === "error") return reject(new Error("Server error (simulated)"));
-      resolve(BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8));
+      resolve(
+        BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8),
+      );
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(abortError());
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(abortError());
+        },
+        { once: true },
+      );
     }
   });
 }
@@ -860,12 +1044,15 @@ const statusText = computed(() => {
   if (typing.value) return "Waiting for you to stop typing...";
   if (status.value === "loading") return "Searching...";
   if (status.value === "error") return "Error: " + error.value;
-  if (items.value.length === 0) return "No books match " + JSON.stringify(term.value);
+  if (items.value.length === 0)
+    return "No books match " + JSON.stringify(term.value);
   return items.value.length + " results for " + JSON.stringify(term.value);
 });
 
 const busy = computed(() => typing.value || status.value === "loading");
-const showList = computed(() => term.value && status.value !== "error" && items.value.length > 0);
+const showList = computed(
+  () => term.value && status.value !== "error" && items.value.length > 0,
+);
 
 function clear() {
   query.value = "";
@@ -898,7 +1085,12 @@ function clear() {
 
     <p class="status" role="status" data-testid="status">{{ statusText }}</p>
 
-    <ul v-if="showList" :class="['results', { stale: busy }]" :aria-busy="busy" data-testid="results">
+    <ul
+      v-if="showList"
+      :class="['results', { stale: busy }]"
+      :aria-busy="busy"
+      data-testid="results"
+    >
       <li v-for="title in items" :key="title">{{ title }}</li>
     </ul>
 
@@ -910,32 +1102,105 @@ function clear() {
 </template>
 
 <style scoped>
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.field { position: relative; }
-.field input { width: 100%; padding: 10px 40px 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.field input:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: #a9b1c6; font-size: 1.2rem; cursor: pointer; }
-.clear:hover { background: #2a2f3f; color: #fff; }
-.status { min-height: 1.4em; font-size: 0.9rem; color: #a9b1c6; margin: 10px 0; }
-.results { list-style: none; margin: 0; padding: 0; border: 1px solid #2a2f3f; border-radius: 8px; overflow: hidden; transition: opacity 0.15s; }
-.results li { padding: 10px 12px; border-top: 1px solid #2a2f3f; }
-.results li:first-child { border-top: 0; }
-.results.stale { opacity: 0.55; }
-.log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 24px 0 6px; }
-.log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.field {
+  position: relative;
+}
+.field input {
+  width: 100%;
+  padding: 10px 40px 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.field input:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #a9b1c6;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.clear:hover {
+  background: #2a2f3f;
+  color: #fff;
+}
+.status {
+  min-height: 1.4em;
+  font-size: 0.9rem;
+  color: #a9b1c6;
+  margin: 10px 0;
+}
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #2a2f3f;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: opacity 0.15s;
+}
+.results li {
+  padding: 10px 12px;
+  border-top: 1px solid #2a2f3f;
+}
+.results li:first-child {
+  border-top: 0;
+}
+.results.stale {
+  opacity: 0.55;
+}
+.log-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+  margin: 24px 0 6px;
+}
+.log {
+  margin: 0;
+  padding-left: 20px;
+  font:
+    0.8rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #b8c0d6;
+}
 </style>
 `,
           "/src/composables/useDebounced.js": `import { ref, watch, onScopeDispose } from "vue";
 
-// A ref that follows \`source\`, but only after it has stopped changing for \`delay\` ms.
+// A ref that follows \`source\`, but only after
+// it has stopped changing for \`delay\` ms.
 export function useDebounced(source, delay) {
   const debounced = ref(source.value);
   let timer;
   watch(source, (value) => {
     clearTimeout(timer); // a new keystroke cancels the old timer
-    timer = setTimeout(() => { debounced.value = value; }, delay);
+    timer = setTimeout(() => {
+      debounced.value = value;
+    }, delay);
   });
-  onScopeDispose(() => clearTimeout(timer)); // component unmounted: no late update
+  // component unmounted: no late update
+  onScopeDispose(() => clearTimeout(timer));
   return debounced;
 }
 `,
@@ -955,7 +1220,7 @@ Spell a book title to a librarian one letter at a time and a good one waits for 
 
 Angular has a ready-made vocabulary for "wait, then switch to the latest": RxJS. The component keeps its **view state in signals** (so the template re-renders whenever they change) and uses **one RxJS pipeline** for the timing:
 
-\`\`\`
+\`\`\`text
 keystrokes  ->  Subject<string>  ->  debounceTime(300)  ->  distinctUntilChanged()  ->  switchMap(term => search$(term))
 \`\`\`
 
@@ -978,14 +1243,24 @@ keystrokes  ->  Subject<string>  ->  debounceTime(300)  ->  distinctUntilChanged
 private search$(term: string): Observable<null> {
   return new Observable<null>((subscriber) => {
     const controller = new AbortController();
-    this.status.set("loading"); // previous items stay on screen while this runs
+    // previous items stay on screen while this runs
+    this.status.set("loading");
     searchBooks(term, { signal: controller.signal })
-      .then((found) => { this.items.set(found); this.status.set("success"); subscriber.complete(); })
+      .then((found) => {
+        this.items.set(found);
+        this.status.set("success");
+        subscriber.complete();
+      })
       .catch((err: Error) => {
-        if (err.name === "AbortError") return; // a newer search replaced this one
-        this.items.set([]); this.error.set(err.message); this.status.set("error"); subscriber.complete();
+        // a newer search replaced this one
+        if (err.name === "AbortError") return;
+        this.items.set([]);
+        this.error.set(err.message);
+        this.status.set("error");
+        subscriber.complete();
       });
-    return () => controller.abort(); // teardown: no-op if the request already settled
+    // teardown: no-op if the request already settled
+    return () => controller.abort();
   });
 }
 \`\`\`
@@ -1005,7 +1280,11 @@ const subscription = this.terms
     distinctUntilChanged(),
     switchMap((term) => {
       this.debouncedTerm.set(term);
-      if (!term) { this.status.set("idle"); this.items.set([]); return of(null); }
+      if (!term) {
+        this.status.set("idle");
+        this.items.set([]);
+        return of(null);
+      }
       return this.search$(term);
     }),
   )
@@ -1020,11 +1299,21 @@ inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
 ### Step 3: template wiring
 
 \`\`\`html
-<input #box id="book-search" type="search" [value]="query()" (input)="onInput(box.value)" />
+<input
+  #box
+  id="book-search"
+  type="search"
+  [value]="query()"
+  (input)="onInput(box.value)"
+/>
 @if (query()) { <button type="button" aria-label="Clear search" (click)="clear()">×</button> }
 <p role="status">{{ statusText() }}</p>
 @if (showList()) {
-  <ul class="results" [class.stale]="busy()" [attr.aria-busy]="busy()"> ... </ul>
+  <ul
+    class="results"
+    [class.stale]="busy()"
+    [attr.aria-busy]="busy()"
+  > ... </ul>
 }
 \`\`\`
 
@@ -1034,7 +1323,7 @@ inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
 
 Both builds (AOT \`angular:app\` and JIT \`angular:playground\`) printed identical lines:
 
-\`\`\`
+\`\`\`text
 start            : Type to search the catalog
 typed j, ja, jav : Waiting for you to stop typing... | requests: 0
 +300 ms          : Searching... | log: #1 "jav" sent
@@ -1158,17 +1447,39 @@ import { SearchBarComponent } from "./search-bar.component";
       <app-search-bar />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/api.ts": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
-// longer ones are fast (200 ms), so an older request can finish after a newer one.
+// longer ones are fast (200 ms), so an older
+// request can finish after a newer one.
 const BOOKS: string[] = [
   "Eloquent JavaScript",
   "JavaScript: The Good Parts",
@@ -1188,7 +1499,10 @@ const BOOKS: string[] = [
   "Pride and Prejudice",
 ];
 
-export function searchBooks(query: string, { signal }: { signal?: AbortSignal } = {}): Promise<string[]> {
+export function searchBooks(
+  query: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<string[]> {
   return new Promise<string[]>((resolve, reject) => {
     const abortError = () => new DOMException("Request aborted", "AbortError");
     if (signal && signal.aborted) return reject(abortError());
@@ -1196,19 +1510,40 @@ export function searchBooks(query: string, { signal }: { signal?: AbortSignal } 
     const timer = setTimeout(() => {
       const q = query.toLowerCase();
       if (q === "error") return reject(new Error("Server error (simulated)"));
-      resolve(BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8));
+      resolve(
+        BOOKS.filter((title) => title.toLowerCase().includes(q)).slice(0, 8),
+      );
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(abortError());
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(abortError());
+        },
+        { once: true },
+      );
     }
   });
 }
 `,
-          "/src/app/search-bar.component.ts": `import { Component, DestroyRef, ElementRef, ViewChild, computed, inject, signal } from "@angular/core";
-import { Observable, Subject, debounceTime, distinctUntilChanged, of, switchMap } from "rxjs";
+          "/src/app/search-bar.component.ts": `import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import {
+  Observable,
+  Subject,
+  debounceTime,
+  distinctUntilChanged,
+  of,
+  switchMap,
+} from "rxjs";
 import { searchBooks } from "./api";
 
 const DELAY = 300;
@@ -1232,14 +1567,29 @@ type Status = "idle" | "loading" | "success" | "error";
           (input)="onInput(box.value)"
         />
         @if (query()) {
-          <button type="button" class="clear" data-testid="clear" aria-label="Clear search" (click)="clear()">×</button>
+          <button
+            type="button"
+            class="clear"
+            data-testid="clear"
+            aria-label="Clear search"
+            (click)="clear()"
+          >×</button>
         }
       </div>
 
-      <p class="status" role="status" data-testid="status">{{ statusText() }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ statusText() }}</p>
 
       @if (showList()) {
-        <ul class="results" [class.stale]="busy()" [attr.aria-busy]="busy()" data-testid="results">
+        <ul
+          class="results"
+          [class.stale]="busy()"
+          [attr.aria-busy]="busy()"
+          data-testid="results"
+        >
           @for (title of items(); track title) {
             <li>{{ title }}</li>
           }
@@ -1254,7 +1604,8 @@ type Status = "idle" | "loading" | "success" | "error";
       </ol>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
     .field { position: relative; }
     .field input { width: 100%; box-sizing: border-box; padding: 10px 40px 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
@@ -1268,7 +1619,8 @@ type Status = "idle" | "loading" | "success" | "error";
     .results.stale { opacity: 0.55; }
     .log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 24px 0 6px; }
     .log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
-  \`],
+  \`,
+  ],
 })
 export class SearchBarComponent {
   @ViewChild("box") box?: ElementRef<HTMLInputElement>;
@@ -1283,14 +1635,17 @@ export class SearchBarComponent {
   readonly term = computed(() => this.query().trim());
   readonly typing = computed(() => this.term() !== this.debouncedTerm());
   readonly busy = computed(() => this.typing() || this.status() === "loading");
-  readonly showList = computed(() => !!this.term() && this.status() !== "error" && this.items().length > 0);
+  readonly showList = computed(
+    () => !!this.term() && this.status() !== "error" && this.items().length > 0,
+  );
   readonly statusText = computed(() => {
     const term = this.term();
     if (!term) return "Type to search the catalog";
     if (this.typing()) return "Waiting for you to stop typing...";
     if (this.status() === "loading") return "Searching...";
     if (this.status() === "error") return "Error: " + this.error();
-    if (this.items().length === 0) return "No books match " + JSON.stringify(term);
+    if (this.items().length === 0)
+      return "No books match " + JSON.stringify(term);
     return this.items().length + " results for " + JSON.stringify(term);
   });
 
@@ -1337,7 +1692,8 @@ export class SearchBarComponent {
       const controller = new AbortController();
       const id = ++this.requestId;
       const label = "#" + id + " " + JSON.stringify(term);
-      this.status.set("loading"); // previous items stay on screen while this runs
+      // previous items stay on screen while this runs
+      this.status.set("loading");
       this.error.set("");
       this.addLog(label + " sent");
 
@@ -1360,7 +1716,8 @@ export class SearchBarComponent {
           subscriber.complete();
         });
 
-      return () => controller.abort(); // teardown: no-op if the request already settled
+      // teardown: no-op if the request already settled
+      return () => controller.abort();
     });
   }
 }
@@ -1429,7 +1786,9 @@ A search bar with history is those sticky notes. The interesting part is not the
 export function addToHistory(list, term) {
   const clean = term.trim();
   if (!clean) return list;
-  const rest = list.filter((t) => t.toLowerCase() !== clean.toLowerCase());
+  const rest = list.filter(
+    (t) => t.toLowerCase() !== clean.toLowerCase(),
+  );
   return [clean, ...rest].slice(0, MAX_ITEMS); // newest first, capped
 }
 \`\`\`
@@ -1479,14 +1838,19 @@ Every change goes through one \`commit()\` that writes state and storage togethe
 export function parseHistory(raw) {
   try {
     const value = JSON.parse(raw == null ? "[]" : raw);
-    return Array.isArray(value) ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS) : [];
+    return Array.isArray(value)
+      ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS)
+      : [];
   } catch {
     return [];
   }
 }
 export function loadHistory() {
-  try { return parseHistory(window.localStorage.getItem(STORAGE_KEY)); }
-  catch { return []; } // storage blocked (privacy mode, sandboxed iframe)
+  try {
+    return parseHistory(window.localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return [];
+  } // storage blocked (privacy mode, sandboxed iframe)
 }
 \`\`\`
 
@@ -1497,7 +1861,8 @@ Never trust storage: an older version of your app, a browser extension or a curi
 ### Step 2: lazy initial state and one commit path
 
 \`\`\`js
-const [history, setHistory] = useState(loadHistory); // lazy: read storage once
+// lazy: read storage once
+const [history, setHistory] = useState(loadHistory);
 
 function commit(next) {
   setHistory(next);
@@ -1533,11 +1898,21 @@ The dropdown rows are ordinary \`<button>\`s. Down arrow from the input moves **
 
 \`\`\`js
 function onItemKeyDown(e, i, term) {
-  if (e.key === "ArrowDown") { e.preventDefault(); focusItem(Math.min(i + 1, visible.length - 1)); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); focusItem(i - 1); }
-  else if (e.key === "Delete") { e.preventDefault(); remove(term, i); }
-  else if (e.key === "Escape") { setOpen(false); inputRef.current.focus(); }
-  // Enter and Space are not handled here: a button turns them into a click.
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    focusItem(Math.min(i + 1, visible.length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    focusItem(i - 1);
+  } else if (e.key === "Delete") {
+    e.preventDefault();
+    remove(term, i);
+  } else if (e.key === "Escape") {
+    setOpen(false);
+    inputRef.current.focus();
+  }
+  // Enter and Space are not handled here:
+  // a button turns them into a click.
 }
 \`\`\`
 
@@ -1551,7 +1926,8 @@ Why buttons and real focus instead of the combobox pattern? Each row has two act
 function remove(term, index) {
   // flushSync renders now, so the DOM already shows the shorter list...
   flushSync(() => commit(removeFromHistory(history, term)));
-  // ...and keyboard users stay in it: focus the row that slid into this slot.
+  // ...and keyboard users stay in it: focus
+  // the row that slid into this slot.
   const list = rows();
   (list[Math.min(index, list.length - 1)] || inputRef.current).focus();
 }
@@ -1566,14 +1942,17 @@ If you remove the focused button and do nothing, focus falls to \`<body>\` and a
 \`\`\`js
 useEffect(() => {
   if (!open) return;
-  const onPointerDown = (e) => { if (!rootRef.current.contains(e.target)) setOpen(false); };
+  const onPointerDown = (e) => {
+    if (!rootRef.current.contains(e.target)) setOpen(false);
+  };
   document.addEventListener("mousedown", onPointerDown);
   return () => document.removeEventListener("mousedown", onPointerDown);
 }, [open]);
 
 useEffect(() => {
   const onStorage = (e) => {
-    if (e.key === STORAGE_KEY || e.key === null) setHistory(parseHistory(e.newValue));
+    if (e.key === STORAGE_KEY || e.key === null)
+      setHistory(parseHistory(e.newValue));
   };
   window.addEventListener("storage", onStorage);
   return () => window.removeEventListener("storage", onStorage);
@@ -1588,7 +1967,7 @@ The outside-press listener is attached only while open. An \`onBlur\` on the roo
 
 Mounted under \`StrictMode\` in jsdom. The driver clicked, typed, pressed keys, dispatched a \`StorageEvent\` by hand to imitate another tab, and called \`focus()\` on an element outside the widget to imitate Tab. One limit: jsdom does not turn Enter on a focused button into a click the way a browser does, so the driver calls \`click()\` on the focused row for that step.
 
-\`\`\`
+\`\`\`text
 focus only      : open: false
 click input     : open: true | No recent searches yet
 corrupt storage : items: [] | still open: true
@@ -1738,7 +2117,9 @@ export const MAX_ITEMS = 5;
 export function parseHistory(raw) {
   try {
     const value = JSON.parse(raw == null ? "[]" : raw);
-    return Array.isArray(value) ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS) : [];
+    return Array.isArray(value)
+      ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS)
+      : [];
   } catch {
     return [];
   }
@@ -1791,19 +2172,28 @@ export function searchArticles(term) {
           "/src/HistorySearch.js": `import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
-  STORAGE_KEY, addToHistory, loadHistory, parseHistory, removeFromHistory, saveHistory, searchArticles,
+  STORAGE_KEY,
+  addToHistory,
+  loadHistory,
+  parseHistory,
+  removeFromHistory,
+  saveHistory,
+  searchArticles,
 } from "./history";
 
 export default function HistorySearch() {
   const [query, setQuery] = useState("");
-  const [history, setHistory] = useState(loadHistory); // lazy: read storage once
+  // lazy: read storage once
+  const [history, setHistory] = useState(loadHistory);
   const [open, setOpen] = useState(false);
   const [submitted, setSubmitted] = useState("");
   const rootRef = useRef(null);
   const inputRef = useRef(null);
 
   const q = query.trim().toLowerCase();
-  const visible = q ? history.filter((t) => t.toLowerCase().includes(q)) : history;
+  const visible = q
+    ? history.filter((t) => t.toLowerCase().includes(q))
+    : history;
   const results = submitted ? searchArticles(submitted) : [];
 
   // Every change goes through here: state and storage stay in step.
@@ -1849,10 +2239,19 @@ export default function HistorySearch() {
   }
 
   function onItemKeyDown(e, i, term) {
-    if (e.key === "ArrowDown") { e.preventDefault(); focusItem(Math.min(i + 1, visible.length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); focusItem(i - 1); }
-    else if (e.key === "Delete") { e.preventDefault(); remove(term, i); }
-    else if (e.key === "Escape") { setOpen(false); inputRef.current.focus(); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      focusItem(Math.min(i + 1, visible.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      focusItem(i - 1);
+    } else if (e.key === "Delete") {
+      e.preventDefault();
+      remove(term, i);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      inputRef.current.focus();
+    }
     // Enter and Space are not handled here: a button turns them into a click.
   }
 
@@ -1869,7 +2268,8 @@ export default function HistorySearch() {
   // Another tab changed the list: follow it.
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key === STORAGE_KEY || e.key === null) setHistory(parseHistory(e.newValue));
+      if (e.key === STORAGE_KEY || e.key === null)
+        setHistory(parseHistory(e.newValue));
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -1882,8 +2282,16 @@ export default function HistorySearch() {
 
   return (
     <div className="history-search" ref={rootRef} onBlur={onBlur}>
-      <form role="search" onSubmit={(e) => { e.preventDefault(); runSearch(query); }}>
-        <label htmlFor="article-search" className="label">Search articles</label>
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          runSearch(query);
+        }}
+      >
+        <label htmlFor="article-search" className="label">
+          Search articles
+        </label>
         <div className="row">
           <input
             id="article-search"
@@ -1893,13 +2301,20 @@ export default function HistorySearch() {
             autoComplete="off"
             aria-describedby="history-hint"
             value={query}
-            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
             onClick={() => setOpen(true)}
             onKeyDown={onInputKeyDown}
           />
-          <button type="submit" data-testid="submit">Search</button>
+          <button type="submit" data-testid="submit">
+            Search
+          </button>
         </div>
-        <span id="history-hint" className="sr-only">Press Down arrow to browse recent searches.</span>
+        <span id="history-hint" className="sr-only">
+          Press Down arrow to browse recent searches.
+        </span>
       </form>
 
       {open && (
@@ -1907,14 +2322,24 @@ export default function HistorySearch() {
           <div className="dropdown-head">
             <span id="history-label">Recent searches</span>
             {history.length > 0 && (
-              <button type="button" className="link" data-testid="clear-history" onClick={() => { commit([]); inputRef.current.focus(); }}>
+              <button
+                type="button"
+                className="link"
+                data-testid="clear-history"
+                onClick={() => {
+                  commit([]);
+                  inputRef.current.focus();
+                }}
+              >
                 Clear all
               </button>
             )}
           </div>
           {visible.length === 0 ? (
             <p className="empty" data-testid="history-empty">
-              {history.length ? "No recent searches match" : "No recent searches yet"}
+              {history.length
+                ? "No recent searches match"
+                : "No recent searches yet"}
             </p>
           ) : (
             <ul aria-labelledby="history-label" data-testid="history">
@@ -1948,38 +2373,167 @@ export default function HistorySearch() {
 
       {submitted && (
         <section className="results" aria-live="polite" data-testid="results">
-          <p>{results.length} results for {JSON.stringify(submitted)}</p>
-          <ul>{results.map((r) => <li key={r}>{r}</li>)}</ul>
+          <p>
+            {results.length} results for {JSON.stringify(submitted)}
+          </p>
+          <ul>
+            {results.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
         </section>
       )}
     </div>
   );
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.history-search { position: relative; }
-.row { display: flex; gap: 8px; }
-.row input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.row input:focus, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.row button { padding: 0 16px; border: 0; border-radius: 8px; background: #3d5afe; color: #fff; font-weight: 600; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); padding: 6px; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.history-search {
+  position: relative;
+}
+.row {
+  display: flex;
+  gap: 8px;
+}
+.row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.row input:focus,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.row button {
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #3d5afe;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+}
 
-.dropdown-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; }
-.link { background: none; border: 0; color: #7aa2ff; cursor: pointer; font-size: 0.8rem; }
-.dropdown ul { list-style: none; margin: 0; padding: 0; }
-.dropdown li { display: flex; align-items: center; border-radius: 6px; }
-.dropdown li:hover, .dropdown li:focus-within { background: #262b3a; }
-.item { flex: 1; text-align: left; padding: 8px; background: none; border: 0; color: inherit; font-size: 0.95rem; cursor: pointer; border-radius: 6px; }
-.remove { width: 32px; height: 32px; background: none; border: 0; color: #7d859b; font-size: 1.1rem; cursor: pointer; border-radius: 6px; }
-.remove:hover { color: #ff8a80; }
-.empty { margin: 6px 8px; color: #7d859b; font-size: 0.9rem; }
-.results ul { padding-left: 20px; }
+.dropdown-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dropdown li {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.dropdown li:hover,
+.dropdown li:focus-within {
+  background: #262b3a;
+}
+.item {
+  flex: 1;
+  text-align: left;
+  padding: 8px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.remove {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 0;
+  color: #7d859b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.remove:hover {
+  color: #ff8a80;
+}
+.empty {
+  margin: 6px 8px;
+  color: #7d859b;
+  font-size: 0.9rem;
+}
+.results ul {
+  padding-left: 20px;
+}
 `,
         },
       },
@@ -2009,7 +2563,9 @@ A pharmacist keeps sticky notes of the last five things customers asked about. A
 export function addToHistory(list, term) {
   const clean = term.trim();
   if (!clean) return list;
-  const rest = list.filter((t) => t.toLowerCase() !== clean.toLowerCase());
+  const rest = list.filter(
+    (t) => t.toLowerCase() !== clean.toLowerCase(),
+  );
   return [clean, ...rest].slice(0, MAX_ITEMS); // newest first, capped
 }
 \`\`\`
@@ -2046,10 +2602,19 @@ A \`watch(history, saveHistory)\` would also work, but it would echo lists recei
 
 \`\`\`js
 function onItemKeydown(e, i, term) {
-  if (e.key === "ArrowDown") { e.preventDefault(); focusItem(Math.min(i + 1, visible.value.length - 1)); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); focusItem(i - 1); }
-  else if (e.key === "Delete") { e.preventDefault(); remove(term, i); }
-  else if (e.key === "Escape") { open.value = false; inputEl.value.focus(); }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    focusItem(Math.min(i + 1, visible.value.length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    focusItem(i - 1);
+  } else if (e.key === "Delete") {
+    e.preventDefault();
+    remove(term, i);
+  } else if (e.key === "Escape") {
+    open.value = false;
+    inputEl.value.focus();
+  }
 }
 \`\`\`
 
@@ -2076,11 +2641,13 @@ Vue batches DOM updates; right after \`commit()\` the old row is still in the DO
 
 \`\`\`js
 watch(open, (isOpen) => {
-  if (isOpen) document.addEventListener("mousedown", onDocumentPointerDown);
+  if (isOpen)
+    document.addEventListener("mousedown", onDocumentPointerDown);
   else document.removeEventListener("mousedown", onDocumentPointerDown);
 });
 function onStorage(e) {
-  if (e.key === STORAGE_KEY || e.key === null) history.value = parseHistory(e.newValue);
+  if (e.key === STORAGE_KEY || e.key === null)
+    history.value = parseHistory(e.newValue);
 }
 onMounted(() => window.addEventListener("storage", onStorage));
 onBeforeUnmount(() => {
@@ -2097,7 +2664,7 @@ onBeforeUnmount(() => {
 
 The driver dispatched a \`StorageEvent\` by hand to imitate another tab, called \`focus()\` on an outside button to imitate Tab, and called \`click()\` on the focused row for the Enter step (jsdom does not turn Enter on a button into a click the way a browser does).
 
-\`\`\`
+\`\`\`text
 focus only      : open: false
 click input     : open: true | No recent searches yet
 corrupt storage : items: [] | still open: true
@@ -2228,17 +2795,51 @@ import HistorySearch from "./components/HistorySearch.vue";
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/components/HistorySearch.vue": `<script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
-  STORAGE_KEY, addToHistory, loadHistory, parseHistory, removeFromHistory, saveHistory, searchArticles,
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
+import {
+  STORAGE_KEY,
+  addToHistory,
+  loadHistory,
+  parseHistory,
+  removeFromHistory,
+  saveHistory,
+  searchArticles,
 } from "../history.js";
 
 const query = ref("");
@@ -2250,9 +2851,13 @@ const inputEl = ref(null);
 
 const visible = computed(() => {
   const q = query.value.trim().toLowerCase();
-  return q ? history.value.filter((t) => t.toLowerCase().includes(q)) : history.value;
+  return q
+    ? history.value.filter((t) => t.toLowerCase().includes(q))
+    : history.value;
 });
-const results = computed(() => (submitted.value ? searchArticles(submitted.value) : []));
+const results = computed(() =>
+  submitted.value ? searchArticles(submitted.value) : [],
+);
 
 // Every change goes through here: state and storage stay in step.
 function commit(next) {
@@ -2300,10 +2905,19 @@ function onInputKeydown(e) {
 }
 
 function onItemKeydown(e, i, term) {
-  if (e.key === "ArrowDown") { e.preventDefault(); focusItem(Math.min(i + 1, visible.value.length - 1)); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); focusItem(i - 1); }
-  else if (e.key === "Delete") { e.preventDefault(); remove(term, i); }
-  else if (e.key === "Escape") { open.value = false; inputEl.value.focus(); }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    focusItem(Math.min(i + 1, visible.value.length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    focusItem(i - 1);
+  } else if (e.key === "Delete") {
+    e.preventDefault();
+    remove(term, i);
+  } else if (e.key === "Escape") {
+    open.value = false;
+    inputEl.value.focus();
+  }
   // Enter and Space are not handled here: a button turns them into a click.
 }
 
@@ -2328,7 +2942,8 @@ watch(open, (isOpen) => {
 
 // Another tab changed the list: follow it.
 function onStorage(e) {
-  if (e.key === STORAGE_KEY || e.key === null) history.value = parseHistory(e.newValue);
+  if (e.key === STORAGE_KEY || e.key === null)
+    history.value = parseHistory(e.newValue);
 }
 onMounted(() => window.addEventListener("storage", onStorage));
 onBeforeUnmount(() => {
@@ -2356,13 +2971,22 @@ onBeforeUnmount(() => {
         />
         <button type="submit" data-testid="submit">Search</button>
       </div>
-      <span id="history-hint" class="sr-only">Press Down arrow to browse recent searches.</span>
+      <span
+        id="history-hint"
+        class="sr-only"
+      >Press Down arrow to browse recent searches.</span>
     </form>
 
     <div v-if="open" class="dropdown" data-testid="dropdown">
       <div class="dropdown-head">
         <span id="history-label">Recent searches</span>
-        <button v-if="history.length" type="button" class="link" data-testid="clear-history" @click="clearAll">Clear all</button>
+        <button
+          v-if="history.length"
+          type="button"
+          class="link"
+          data-testid="clear-history"
+          @click="clearAll"
+        >Clear all</button>
       </div>
       <p v-if="visible.length === 0" class="empty" data-testid="history-empty">
         {{ history.length ? "No recent searches match" : "No recent searches yet" }}
@@ -2388,7 +3012,12 @@ onBeforeUnmount(() => {
       </ul>
     </div>
 
-    <section v-if="submitted" class="results" aria-live="polite" data-testid="results">
+    <section
+      v-if="submitted"
+      class="results"
+      aria-live="polite"
+      data-testid="results"
+    >
       <p>{{ results.length }} results for {{ JSON.stringify(submitted) }}</p>
       <ul>
         <li v-for="r in results" :key="r">{{ r }}</li>
@@ -2398,25 +3027,130 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.history-search { position: relative; }
-.row { display: flex; gap: 8px; }
-.row input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.row input:focus, button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.row button { padding: 0 16px; border: 0; border-radius: 8px; background: #3d5afe; color: #fff; font-weight: 600; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.dropdown { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); padding: 6px; }
-.dropdown-head { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; }
-.link { background: none; border: 0; color: #7aa2ff; cursor: pointer; font-size: 0.8rem; }
-.dropdown ul { list-style: none; margin: 0; padding: 0; }
-.dropdown li { display: flex; align-items: center; border-radius: 6px; }
-.dropdown li:hover, .dropdown li:focus-within { background: #262b3a; }
-.item { flex: 1; text-align: left; padding: 8px; background: none; border: 0; color: inherit; font-size: 0.95rem; cursor: pointer; border-radius: 6px; }
-.remove { width: 32px; height: 32px; background: none; border: 0; color: #7d859b; font-size: 1.1rem; cursor: pointer; border-radius: 6px; }
-.remove:hover { color: #ff8a80; }
-.empty { margin: 6px 8px; color: #7d859b; font-size: 0.9rem; }
-.results { margin-top: 20px; color: #c9cfdd; }
-.results ul { padding-left: 20px; }
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.history-search {
+  position: relative;
+}
+.row {
+  display: flex;
+  gap: 8px;
+}
+.row input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.row input:focus,
+button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.row button {
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #3d5afe;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 6px;
+}
+.dropdown-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.dropdown ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dropdown li {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+.dropdown li:hover,
+.dropdown li:focus-within {
+  background: #262b3a;
+}
+.item {
+  flex: 1;
+  text-align: left;
+  padding: 8px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.remove {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 0;
+  color: #7d859b;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.remove:hover {
+  color: #ff8a80;
+}
+.empty {
+  margin: 6px 8px;
+  color: #7d859b;
+  font-size: 0.9rem;
+}
+.results {
+  margin-top: 20px;
+  color: #c9cfdd;
+}
+.results ul {
+  padding-left: 20px;
+}
 </style>
 `,
           "/src/history.js": `// Pure helpers for the recent-searches list. No framework code in here.
@@ -2428,7 +3162,9 @@ export const MAX_ITEMS = 5;
 export function parseHistory(raw) {
   try {
     const value = JSON.parse(raw == null ? "[]" : raw);
-    return Array.isArray(value) ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS) : [];
+    return Array.isArray(value)
+      ? value.filter((t) => typeof t === "string").slice(0, MAX_ITEMS)
+      : [];
   } catch {
     return [];
   }
@@ -2505,7 +3241,9 @@ A pharmacist's sticky notes hold the last five things customers asked about: a r
 export function addToHistory(list: string[], term: string): string[] {
   const clean = term.trim();
   if (!clean) return list;
-  const rest = list.filter((t) => t.toLowerCase() !== clean.toLowerCase());
+  const rest = list.filter(
+    (t) => t.toLowerCase() !== clean.toLowerCase(),
+  );
   return [clean, ...rest].slice(0, MAX_ITEMS); // newest first, capped
 }
 \`\`\`
@@ -2534,17 +3272,23 @@ Every user change (search, remove, clear) goes through \`commit\`. A list receiv
 \`\`\`ts
 @HostListener("focusout", ["$event"])
 onFocusout(e: FocusEvent) {
-  if (!this.host.nativeElement.contains(e.relatedTarget as Node | null)) this.open.set(false);
+  if (!this.host.nativeElement.contains(e.relatedTarget as Node | null))
+    this.open.set(false);
 }
 
 @HostListener("document:mousedown", ["$event"])
 onDocumentPointerDown(e: MouseEvent) {
-  if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+  if (
+    this.open() &&
+    !this.host.nativeElement.contains(e.target as Node)
+  )
+    this.open.set(false);
 }
 
 @HostListener("window:storage", ["$event"])
 onStorage(e: StorageEvent) {
-  if (e.key === STORAGE_KEY || e.key === null) this.history.set(parseHistory(e.newValue));
+  if (e.key === STORAGE_KEY || e.key === null)
+    this.history.set(parseHistory(e.newValue));
 }
 \`\`\`
 
@@ -2558,10 +3302,19 @@ Rows are \`<button class="item">\` elements in an \`@for\`; the arrow keys move 
 
 \`\`\`ts
 onItemKeydown(e: KeyboardEvent, i: number, term: string) {
-  if (e.key === "ArrowDown") { e.preventDefault(); this.focusItem(Math.min(i + 1, this.visible().length - 1)); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); this.focusItem(i - 1); }
-  else if (e.key === "Delete") { e.preventDefault(); this.remove(term, i); }
-  else if (e.key === "Escape") { this.open.set(false); this.box.nativeElement.focus(); }
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    this.focusItem(Math.min(i + 1, this.visible().length - 1));
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    this.focusItem(i - 1);
+  } else if (e.key === "Delete") {
+    e.preventDefault();
+    this.remove(term, i);
+  } else if (e.key === "Escape") {
+    this.open.set(false);
+    this.box.nativeElement.focus();
+  }
 }
 \`\`\`
 
@@ -2572,10 +3325,15 @@ onItemKeydown(e: KeyboardEvent, i: number, term: string) {
 \`\`\`ts
 remove(term: string, index: number) {
   this.commit(removeFromHistory(this.history(), term));
-  afterNextRender(() => {
-    const list = this.rows();
-    (list[Math.min(index, list.length - 1)] ?? this.box.nativeElement).focus();
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      const list = this.rows();
+      (
+        list[Math.min(index, list.length - 1)] ?? this.box.nativeElement
+      ).focus();
+    },
+    { injector: this.injector },
+  );
 }
 \`\`\`
 
@@ -2587,7 +3345,7 @@ Right after \`commit\` the old button is still in the DOM; \`afterNextRender\` r
 
 The AOT (\`angular:app\`) and JIT (\`angular:playground\`) builds printed the same lines. The driver dispatched a \`StorageEvent\` to imitate another tab, focused an outside button to imitate Tab, and clicked the focused row for the Enter step, since jsdom does not turn Enter on a button into a click:
 
-\`\`\`
+\`\`\`text
 focus only      : open: false
 click input     : open: true | No recent searches yet
 corrupt storage : items: [] | still open: true
@@ -2719,19 +3477,54 @@ import { HistorySearchComponent } from "./history-search.component";
       <app-history-search />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/history-search.component.ts": `import {
-  Component, ElementRef, HostListener, Injector, ViewChild, afterNextRender, computed, inject, signal,
+  Component,
+  ElementRef,
+  HostListener,
+  Injector,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
 } from "@angular/core";
 import {
-  STORAGE_KEY, addToHistory, loadHistory, parseHistory, removeFromHistory, saveHistory, searchArticles,
+  STORAGE_KEY,
+  addToHistory,
+  loadHistory,
+  parseHistory,
+  removeFromHistory,
+  saveHistory,
+  searchArticles,
 } from "./history";
 
 @Component({
@@ -2755,7 +3548,10 @@ import {
         />
         <button type="submit" data-testid="submit">Search</button>
       </div>
-      <span id="history-hint" class="sr-only">Press Down arrow to browse recent searches.</span>
+      <span
+        id="history-hint"
+        class="sr-only"
+      >Press Down arrow to browse recent searches.</span>
     </form>
 
     @if (open()) {
@@ -2763,7 +3559,12 @@ import {
         <div class="dropdown-head">
           <span id="history-label">Recent searches</span>
           @if (history().length) {
-            <button type="button" class="link" data-testid="clear-history" (click)="clearAll()">Clear all</button>
+            <button
+              type="button"
+              class="link"
+              data-testid="clear-history"
+              (click)="clearAll()"
+            >Clear all</button>
           }
         </div>
         @if (visible().length === 0) {
@@ -2797,7 +3598,8 @@ import {
       </section>
     }
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: relative; }
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
     .row { display: flex; gap: 8px; }
@@ -2817,7 +3619,8 @@ import {
     .empty { margin: 6px 8px; color: #7d859b; font-size: 0.9rem; }
     .results { margin-top: 20px; color: #c9cfdd; }
     .results ul { padding-left: 20px; }
-  \`],
+  \`,
+  ],
 })
 export class HistorySearchComponent {
   @ViewChild("box") box!: ElementRef<HTMLInputElement>;
@@ -2832,9 +3635,13 @@ export class HistorySearchComponent {
 
   readonly visible = computed(() => {
     const q = this.query().trim().toLowerCase();
-    return q ? this.history().filter((t) => t.toLowerCase().includes(q)) : this.history();
+    return q
+      ? this.history().filter((t) => t.toLowerCase().includes(q))
+      : this.history();
   });
-  readonly results = computed(() => (this.submitted() ? searchArticles(this.submitted()) : []));
+  readonly results = computed(() =>
+    this.submitted() ? searchArticles(this.submitted()) : [],
+  );
 
   quoted(value: string) {
     return JSON.stringify(value);
@@ -2858,7 +3665,9 @@ export class HistorySearchComponent {
 
   // The history buttons currently on screen, in order.
   private rows(): HTMLButtonElement[] {
-    return Array.from(this.host.nativeElement.querySelectorAll<HTMLButtonElement>(".item"));
+    return Array.from(
+      this.host.nativeElement.querySelectorAll<HTMLButtonElement>(".item"),
+    );
   }
 
   private focusItem(i: number) {
@@ -2868,11 +3677,17 @@ export class HistorySearchComponent {
 
   remove(term: string, index: number) {
     this.commit(removeFromHistory(this.history(), term));
-    // Wait for the DOM to show the shorter list, then keep keyboard users in it.
-    afterNextRender(() => {
-      const list = this.rows();
-      (list[Math.min(index, list.length - 1)] ?? this.box.nativeElement).focus();
-    }, { injector: this.injector });
+    // Wait for the DOM to show the shorter
+    // list, then keep keyboard users in it.
+    afterNextRender(
+      () => {
+        const list = this.rows();
+        (
+          list[Math.min(index, list.length - 1)] ?? this.box.nativeElement
+        ).focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   clearAll() {
@@ -2891,29 +3706,41 @@ export class HistorySearchComponent {
   }
 
   onItemKeydown(e: KeyboardEvent, i: number, term: string) {
-    if (e.key === "ArrowDown") { e.preventDefault(); this.focusItem(Math.min(i + 1, this.visible().length - 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); this.focusItem(i - 1); }
-    else if (e.key === "Delete") { e.preventDefault(); this.remove(term, i); }
-    else if (e.key === "Escape") { this.open.set(false); this.box.nativeElement.focus(); }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.focusItem(Math.min(i + 1, this.visible().length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.focusItem(i - 1);
+    } else if (e.key === "Delete") {
+      e.preventDefault();
+      this.remove(term, i);
+    } else if (e.key === "Escape") {
+      this.open.set(false);
+      this.box.nativeElement.focus();
+    }
     // Enter and Space are not handled here: a button turns them into a click.
   }
 
   // Focus left the widget (Tab, or a click on something focusable outside).
   @HostListener("focusout", ["$event"])
   onFocusout(e: FocusEvent) {
-    if (!this.host.nativeElement.contains(e.relatedTarget as Node | null)) this.open.set(false);
+    if (!this.host.nativeElement.contains(e.relatedTarget as Node | null))
+      this.open.set(false);
   }
 
   // Close on a pointer press outside the widget.
   @HostListener("document:mousedown", ["$event"])
   onDocumentPointerDown(e: MouseEvent) {
-    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.nativeElement.contains(e.target as Node))
+      this.open.set(false);
   }
 
   // Another tab changed the list: follow it.
   @HostListener("window:storage", ["$event"])
   onStorage(e: StorageEvent) {
-    if (e.key === STORAGE_KEY || e.key === null) this.history.set(parseHistory(e.newValue));
+    if (e.key === STORAGE_KEY || e.key === null)
+      this.history.set(parseHistory(e.newValue));
   }
 }
 `,
@@ -2926,7 +3753,11 @@ export const MAX_ITEMS = 5;
 export function parseHistory(raw: string | null): string[] {
   try {
     const value = JSON.parse(raw == null ? "[]" : raw);
-    return Array.isArray(value) ? value.filter((t: unknown): t is string => typeof t === "string").slice(0, MAX_ITEMS) : [];
+    return Array.isArray(value)
+      ? value
+          .filter((t: unknown): t is string => typeof t === "string")
+          .slice(0, MAX_ITEMS)
+      : [];
   } catch {
     return [];
   }
@@ -3085,22 +3916,32 @@ The cache is checked first. On a miss, the response is always stored (it is stil
 
 \`\`\`js
 useEffect(() => {
-  // Look up only when open and the debounced value has caught up with the box.
+  // Look up only when open and the debounced
+  // value has caught up with the box.
   if (!open || debounced !== term) return;
   const id = ++latest.current; // anything still in flight is now stale
-  if (!debounced) { setSuggestions([]); setStatus("idle"); return; }
+  if (!debounced) {
+    setSuggestions([]);
+    setStatus("idle");
+    return;
+  }
   const cached = cache.current.get(debounced);
   if (cached) {
-    setSuggestions(cached); setActive(-1); setStatus("done");
+    setSuggestions(cached);
+    setActive(-1);
+    setStatus("done");
     setStats((s) => ({ ...s, hits: s.hits + 1 }));
     return;
   }
   setStatus("loading");
   setStats((s) => ({ ...s, requests: s.requests + 1 }));
   fetchCountries(debounced).then((list) => {
-    cache.current.set(debounced, list); // cache even if stale: the answer is still right
+    // cache even if stale: the answer is still right
+    cache.current.set(debounced, list);
     if (id !== latest.current) return;
-    setSuggestions(list); setActive(-1); setStatus("done");
+    setSuggestions(list);
+    setActive(-1);
+    setStatus("done");
   });
 }, [debounced, term, open]);
 \`\`\`
@@ -3124,9 +3965,13 @@ function onKeyDown(e) {
     e.preventDefault();
     if (n) setActive((i) => (i <= 0 ? n - 1 : i - 1));
   } else if (e.key === "Enter") {
-    if (open && active >= 0) { e.preventDefault(); select(suggestions[active]); }
+    if (open && active >= 0) {
+      e.preventDefault();
+      select(suggestions[active]);
+    }
   } else if (e.key === "Escape") {
-    setOpen(false); setActive(-1);
+    setOpen(false);
+    setActive(-1);
   }
 }
 \`\`\`
@@ -3156,7 +4001,8 @@ Pressing the mouse on an element normally moves focus to it, which blurs the inp
 function select(country) {
   setQuery(country);
   setSelected(country);
-  setSuggestions([]); // do not flash this list the next time the box opens
+  // do not flash this list the next time the box opens
+  setSuggestions([]);
   setOpen(false);
   setActive(-1);
 }
@@ -3174,7 +4020,7 @@ The input has \`role="combobox"\`, \`aria-autocomplete="list"\`, \`aria-expanded
 
 Mounted under \`StrictMode\` in jsdom. The driver typed with \`input\` events, advanced real time in 20 ms steps, pressed keys on the input and dispatched \`mousemove\`, \`mousedown\` and \`click\` on an option:
 
-\`\`\`
+\`\`\`text
 typed ca, 250 ms : hint: Loading... | Requests sent: 1 | Cache hits: 0
 ca               : Cambodia, Cameroon, Canada, Jamaica, Nicaragua, South Africa | Requests sent: 1 | Cache hits: 0
 can              : Canada | Requests sent: 2 | Cache hits: 0
@@ -3308,11 +4154,39 @@ export default function App() {
 `,
           "/src/api.js": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
-  "Afghanistan", "Argentina", "Australia", "Austria", "Brazil", "Cambodia", "Cameroon",
-  "Canada", "Chile", "China", "Colombia", "Denmark", "Egypt", "France", "Georgia",
-  "Germany", "Ghana", "Greece", "India", "Jamaica", "Japan", "Kenya", "Mexico",
-  "Morocco", "Nepal", "Nicaragua", "Norway", "Portugal", "South Africa", "Spain",
-  "Sweden", "United States", "Vietnam",
+  "Afghanistan",
+  "Argentina",
+  "Australia",
+  "Austria",
+  "Brazil",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Chile",
+  "China",
+  "Colombia",
+  "Denmark",
+  "Egypt",
+  "France",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "India",
+  "Jamaica",
+  "Japan",
+  "Kenya",
+  "Mexico",
+  "Morocco",
+  "Nepal",
+  "Nicaragua",
+  "Norway",
+  "Portugal",
+  "South Africa",
+  "Spain",
+  "Sweden",
+  "United States",
+  "Vietnam",
 ];
 
 export function fetchCountries(query) {
@@ -3320,8 +4194,11 @@ export function fetchCountries(query) {
   return new Promise((resolve) => {
     setTimeout(() => {
       const starts = COUNTRIES.filter((c) => c.toLowerCase().startsWith(q));
-      const contains = COUNTRIES.filter((c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q));
-      resolve([...starts, ...contains].slice(0, 6)); // prefix matches rank first
+      const contains = COUNTRIES.filter(
+        (c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q),
+      );
+      // prefix matches rank first
+      resolve([...starts, ...contains].slice(0, 6));
     }, 150);
   });
 }
@@ -3338,15 +4215,18 @@ export default function Autocomplete() {
   const [active, setActive] = useState(-1);
   const [selected, setSelected] = useState("");
   const [stats, setStats] = useState({ requests: 0, hits: 0 });
-  const cache = useRef(new Map()); // query -> suggestions, lives as long as the component
-  const latest = useRef(0); // id of the newest lookup; older responses are ignored
+  // query -> suggestions, lives as long as the component
+  const cache = useRef(new Map());
+  // id of the newest lookup; older responses are ignored
+  const latest = useRef(0);
   const listId = useId();
 
   const term = query.trim().toLowerCase();
   const debounced = useDebouncedValue(term, 250);
 
   useEffect(() => {
-    // Look up only when open and the debounced value has caught up with the box.
+    // Look up only when open and the debounced
+    // value has caught up with the box.
     if (!open || debounced !== term) return;
     const id = ++latest.current; // anything still in flight is now stale
     if (!debounced) {
@@ -3365,7 +4245,8 @@ export default function Autocomplete() {
     setStatus("loading");
     setStats((s) => ({ ...s, requests: s.requests + 1 }));
     fetchCountries(debounced).then((list) => {
-      cache.current.set(debounced, list); // cache even if stale: the answer is still right
+      // cache even if stale: the answer is still right
+      cache.current.set(debounced, list);
       if (id !== latest.current) return;
       setSuggestions(list);
       setActive(-1);
@@ -3407,7 +4288,9 @@ export default function Autocomplete() {
 
   return (
     <div className="ac">
-      <label htmlFor="country" className="label">Country</label>
+      <label htmlFor="country" className="label">
+        Country
+      </label>
       <input
         id="country"
         data-testid="ac-input"
@@ -3415,11 +4298,16 @@ export default function Autocomplete() {
         aria-autocomplete="list"
         aria-expanded={showList}
         aria-controls={listId}
-        aria-activedescendant={showList && active >= 0 ? optionId(active) : undefined}
+        aria-activedescendant={
+          showList && active >= 0 ? optionId(active) : undefined
+        }
         autoComplete="off"
         placeholder="Start typing, e.g. ca"
         value={query}
-        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
         onKeyDown={onKeyDown}
         onBlur={() => setOpen(false)}
       />
@@ -3427,7 +4315,12 @@ export default function Autocomplete() {
       {showPanel && (
         <div className="panel">
           {showList ? (
-            <ul id={listId} role="listbox" aria-label="Countries" data-testid="ac-list">
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label="Countries"
+              data-testid="ac-list"
+            >
               {suggestions.map((country, i) => (
                 <li
                   key={country}
@@ -3435,8 +4328,12 @@ export default function Autocomplete() {
                   role="option"
                   aria-selected={i === active}
                   className={i === active ? "option active" : "option"}
-                  onMouseMove={() => { if (i !== active) setActive(i); }}
-                  onMouseDown={(e) => e.preventDefault()} /* keep focus in the input */
+                  onMouseMove={() => {
+                    if (i !== active) setActive(i);
+                  }}
+                  onMouseDown={(e) =>
+                    e.preventDefault()
+                  } /* keep focus in the input */
                   onClick={() => select(country)}
                 >
                   {country}
@@ -3444,13 +4341,19 @@ export default function Autocomplete() {
               ))}
             </ul>
           ) : (
-            <p className="hint" data-testid="ac-hint">{status === "done" ? "No matches" : "Loading..."}</p>
+            <p className="hint" data-testid="ac-hint">
+              {status === "done" ? "No matches" : "Loading..."}
+            </p>
           )}
         </div>
       )}
 
-      <p className="meta" data-testid="selected">{selected ? "Selected: " + selected : "Nothing selected yet"}</p>
-      <p className="meta" data-testid="stats">Requests sent: {stats.requests} | Cache hits: {stats.hits}</p>
+      <p className="meta" data-testid="selected">
+        {selected ? "Selected: " + selected : "Nothing selected yet"}
+      </p>
+      <p className="meta" data-testid="stats">
+        Requests sent: {stats.requests} | Cache hits: {stats.hits}
+      </p>
     </div>
   );
 }
@@ -3467,22 +4370,95 @@ export function useDebouncedValue(value, delay) {
   return debounced;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.ac { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.ac input { width: 100%; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.ac input:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.panel { position: absolute; left: 0; right: 0; top: 70px; z-index: 10; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); padding: 4px; }
-.panel ul { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
-.option { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.option.active { background: #2f3b66; color: #fff; }
-.hint { margin: 8px 10px; color: #7d859b; }
-.meta { font-size: 0.85rem; color: #a9b1c6; margin: 12px 0 0; }
-.meta + .meta { margin-top: 4px; color: #7d859b; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.ac {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.ac input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.ac input:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 70px;
+  z-index: 10;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 4px;
+}
+.panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.option.active {
+  background: #2f3b66;
+  color: #fff;
+}
+.hint {
+  margin: 8px 10px;
+  color: #7d859b;
+}
+.meta {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin: 12px 0 0;
+}
+.meta + .meta {
+  margin-top: 4px;
+  color: #7d859b;
+}
 `,
         },
       },
@@ -3518,22 +4494,32 @@ A good barista hears "the usual fl..." and already reaches for your flat white; 
 
 \`\`\`js
 watch([debounced, term, open], ([dq, t, isOpen]) => {
-  // Look up only when open and the debounced value has caught up with the box.
+  // Look up only when open and the debounced
+  // value has caught up with the box.
   if (!isOpen || dq !== t) return;
   const id = ++latest; // anything still in flight is now stale
-  if (!dq) { suggestions.value = []; status.value = "idle"; return; }
+  if (!dq) {
+    suggestions.value = [];
+    status.value = "idle";
+    return;
+  }
   const cached = cache.get(dq);
   if (cached) {
-    suggestions.value = cached; active.value = -1; status.value = "done";
+    suggestions.value = cached;
+    active.value = -1;
+    status.value = "done";
     stats.value.hits++;
     return;
   }
   status.value = "loading";
   stats.value.requests++;
   fetchCountries(dq).then((list) => {
-    cache.set(dq, list); // cache even if stale: the answer is still right
+    // cache even if stale: the answer is still right
+    cache.set(dq, list);
     if (id !== latest) return;
-    suggestions.value = list; active.value = -1; status.value = "done";
+    suggestions.value = list;
+    active.value = -1;
+    status.value = "done";
   });
 });
 \`\`\`
@@ -3557,9 +4543,13 @@ function onKeydown(e) {
     e.preventDefault();
     if (n) active.value = active.value <= 0 ? n - 1 : active.value - 1;
   } else if (e.key === "Enter") {
-    if (open.value && active.value >= 0) { e.preventDefault(); select(suggestions.value[active.value]); }
+    if (open.value && active.value >= 0) {
+      e.preventDefault();
+      select(suggestions.value[active.value]);
+    }
   } else if (e.key === "Escape") {
-    open.value = false; active.value = -1;
+    open.value = false;
+    active.value = -1;
   }
 }
 \`\`\`
@@ -3571,11 +4561,16 @@ function onKeydown(e) {
 \`\`\`html
 <li
   v-for="(country, i) in suggestions"
-  :id="optionId(i)" :key="country" role="option" :aria-selected="i === active"
+  :id="optionId(i)"
+  :key="country"
+  role="option"
+  :aria-selected="i === active"
   @mousemove="active = i"
   @mousedown.prevent
   @click="select(country)"
->{{ country }}</li>
+>
+  {{ country }}
+</li>
 \`\`\`
 
 \`@mousedown.prevent\` is the whole trick: pressing on an option would otherwise move focus off the input, the input's \`@blur\` would close the list, and the click would land on nothing. \`@mousemove\` (not \`@mouseenter\`) keeps keyboard scrolling from stealing the highlight.
@@ -3588,7 +4583,7 @@ The input carries \`role="combobox"\`, \`aria-autocomplete="list"\`, \`:aria-exp
 
 ## 4. Verified: What the Driver Printed
 
-\`\`\`
+\`\`\`text
 typed ca, 250 ms : hint: Loading... | Requests sent: 1 | Cache hits: 0
 ca               : Cambodia, Cameroon, Canada, Jamaica, Nicaragua, South Africa | Requests sent: 1 | Cache hits: 0
 can              : Canada | Requests sent: 2 | Cache hits: 0
@@ -3711,20 +4706,69 @@ import Autocomplete from "./components/Autocomplete.vue";
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/api.js": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
-  "Afghanistan", "Argentina", "Australia", "Austria", "Brazil", "Cambodia", "Cameroon",
-  "Canada", "Chile", "China", "Colombia", "Denmark", "Egypt", "France", "Georgia",
-  "Germany", "Ghana", "Greece", "India", "Jamaica", "Japan", "Kenya", "Mexico",
-  "Morocco", "Nepal", "Nicaragua", "Norway", "Portugal", "South Africa", "Spain",
-  "Sweden", "United States", "Vietnam",
+  "Afghanistan",
+  "Argentina",
+  "Australia",
+  "Austria",
+  "Brazil",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Chile",
+  "China",
+  "Colombia",
+  "Denmark",
+  "Egypt",
+  "France",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "India",
+  "Jamaica",
+  "Japan",
+  "Kenya",
+  "Mexico",
+  "Morocco",
+  "Nepal",
+  "Nicaragua",
+  "Norway",
+  "Portugal",
+  "South Africa",
+  "Spain",
+  "Sweden",
+  "United States",
+  "Vietnam",
 ];
 
 export function fetchCountries(query) {
@@ -3732,8 +4776,11 @@ export function fetchCountries(query) {
   return new Promise((resolve) => {
     setTimeout(() => {
       const starts = COUNTRIES.filter((c) => c.toLowerCase().startsWith(q));
-      const contains = COUNTRIES.filter((c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q));
-      resolve([...starts, ...contains].slice(0, 6)); // prefix matches rank first
+      const contains = COUNTRIES.filter(
+        (c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q),
+      );
+      // prefix matches rank first
+      resolve([...starts, ...contains].slice(0, 6));
     }, 150);
   });
 }
@@ -3750,7 +4797,8 @@ const status = ref("idle"); // idle | loading | done
 const active = ref(-1);
 const selected = ref("");
 const stats = ref({ requests: 0, hits: 0 });
-const cache = new Map(); // query -> suggestions; plain Map, nothing reactive needed
+// query -> suggestions; plain Map, nothing reactive needed
+const cache = new Map();
 let latest = 0; // id of the newest lookup; older responses are ignored
 const listId = useId();
 
@@ -3786,7 +4834,9 @@ watch([debounced, term, open], ([dq, t, isOpen]) => {
 });
 
 const showPanel = computed(() => open.value && term.value !== "");
-const showList = computed(() => showPanel.value && suggestions.value.length > 0);
+const showList = computed(
+  () => showPanel.value && suggestions.value.length > 0,
+);
 const optionId = (i) => listId + "-opt-" + i;
 
 function select(country) {
@@ -3842,7 +4892,13 @@ function onKeydown(e) {
     />
 
     <div v-if="showPanel" class="panel">
-      <ul v-if="showList" :id="listId" role="listbox" aria-label="Countries" data-testid="ac-list">
+      <ul
+        v-if="showList"
+        :id="listId"
+        role="listbox"
+        aria-label="Countries"
+        data-testid="ac-list"
+      >
         <li
           v-for="(country, i) in suggestions"
           :id="optionId(i)"
@@ -3855,39 +4911,105 @@ function onKeydown(e) {
           @click="select(country)"
         >{{ country }}</li>
       </ul>
-      <p v-else class="hint" data-testid="ac-hint">{{ status === "done" ? "No matches" : "Loading..." }}</p>
+      <p
+        v-else
+        class="hint"
+        data-testid="ac-hint"
+      >{{ status === "done" ? "No matches" : "Loading..." }}</p>
     </div>
 
-    <p class="meta" data-testid="selected">{{ selected ? "Selected: " + selected : "Nothing selected yet" }}</p>
-    <p class="meta" data-testid="stats">Requests sent: {{ stats.requests }} | Cache hits: {{ stats.hits }}</p>
+    <p
+      class="meta"
+      data-testid="selected"
+    >{{ selected ? "Selected: " + selected : "Nothing selected yet" }}</p>
+    <p
+      class="meta"
+      data-testid="stats"
+    >Requests sent: {{ stats.requests }} | Cache hits: {{ stats.hits }}</p>
   </div>
 </template>
 
 <style scoped>
-.ac { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.ac input { width: 100%; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.ac input:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.panel { position: absolute; left: 0; right: 0; top: 70px; z-index: 10; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); padding: 4px; }
-.panel ul { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
-.option { padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.option.active { background: #2f3b66; color: #fff; }
-.hint { margin: 8px 10px; color: #7d859b; }
-.meta { font-size: 0.85rem; color: #a9b1c6; margin: 12px 0 0; }
-.meta + .meta { margin-top: 4px; color: #7d859b; }
+.ac {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.ac input {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.ac input:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 70px;
+  z-index: 10;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 4px;
+}
+.panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.option.active {
+  background: #2f3b66;
+  color: #fff;
+}
+.hint {
+  margin: 8px 10px;
+  color: #7d859b;
+}
+.meta {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin: 12px 0 0;
+}
+.meta + .meta {
+  margin-top: 4px;
+  color: #7d859b;
+}
 </style>
 `,
           "/src/composables/useDebounced.js": `import { ref, watch, onScopeDispose } from "vue";
 
-// A ref that follows \`source\`, but only after it has stopped changing for \`delay\` ms.
+// A ref that follows \`source\`, but only after
+// it has stopped changing for \`delay\` ms.
 export function useDebounced(source, delay) {
   const debounced = ref(source.value);
   let timer;
   watch(source, (value) => {
     clearTimeout(timer); // a new keystroke cancels the old timer
-    timer = setTimeout(() => { debounced.value = value; }, delay);
+    timer = setTimeout(() => {
+      debounced.value = value;
+    }, delay);
   });
-  onScopeDispose(() => clearTimeout(timer)); // component unmounted: no late update
+  // component unmounted: no late update
+  onScopeDispose(() => clearTimeout(timer));
   return debounced;
 }
 `,
@@ -3922,7 +5044,8 @@ export function debounced<T>(source: () => T, ms: number): Signal<T> {
   effect((onCleanup) => {
     const value = source();
     const timer = setTimeout(() => out.set(value), ms);
-    onCleanup(() => clearTimeout(timer)); // a new keystroke cancels the old timer
+    // a new keystroke cancels the old timer
+    onCleanup(() => clearTimeout(timer));
   });
   return out.asReadonly();
 }
@@ -3942,9 +5065,11 @@ constructor() {
     const dq = this.debouncedTerm();
     const t = this.term();
     const isOpen = this.open();
-    // Look up only when open and the debounced value has caught up with the box.
+    // Look up only when open and the debounced
+    // value has caught up with the box.
     if (!isOpen || dq !== t) return;
-    untracked(() => this.lookup(dq)); // signals read inside lookup are not dependencies
+    // signals read inside lookup are not dependencies
+    untracked(() => this.lookup(dq));
   });
 }
 \`\`\`
@@ -3952,19 +5077,28 @@ constructor() {
 \`\`\`ts
 private lookup(dq: string) {
   const id = ++this.latest; // anything still in flight is now stale
-  if (!dq) { this.suggestions.set([]); this.status.set("idle"); return; }
+  if (!dq) {
+    this.suggestions.set([]);
+    this.status.set("idle");
+    return;
+  }
   const cached = this.cache.get(dq);
   if (cached) {
-    this.suggestions.set(cached); this.active.set(-1); this.status.set("done");
+    this.suggestions.set(cached);
+    this.active.set(-1);
+    this.status.set("done");
     this.stats.update((s) => ({ ...s, hits: s.hits + 1 }));
     return;
   }
   this.status.set("loading");
   this.stats.update((s) => ({ ...s, requests: s.requests + 1 }));
   fetchCountries(dq).then((list) => {
-    this.cache.set(dq, list); // cache even if stale: the answer is still right
+    // cache even if stale: the answer is still right
+    this.cache.set(dq, list);
     if (id !== this.latest) return;
-    this.suggestions.set(list); this.active.set(-1); this.status.set("done");
+    this.suggestions.set(list);
+    this.active.set(-1);
+    this.status.set("done");
   });
 }
 \`\`\`
@@ -3988,9 +5122,13 @@ onKeydown(e: KeyboardEvent) {
     e.preventDefault();
     if (n) this.active.update((i) => (i <= 0 ? n - 1 : i - 1));
   } else if (e.key === "Enter") {
-    if (this.open() && this.active() >= 0) { e.preventDefault(); this.select(this.suggestions()[this.active()]); }
+    if (this.open() && this.active() >= 0) {
+      e.preventDefault();
+      this.select(this.suggestions()[this.active()]);
+    }
   } else if (e.key === "Escape") {
-    this.open.set(false); this.active.set(-1);
+    this.open.set(false);
+    this.active.set(-1);
   }
 }
 \`\`\`
@@ -4002,10 +5140,15 @@ Each option binds \`(mousemove)="active.set(i)"\`, \`(mousedown)="$event.prevent
 ### Step 3: ARIA bindings
 
 \`\`\`html
-<input role="combobox" aria-autocomplete="list"
+<input
+  role="combobox"
+  aria-autocomplete="list"
   [attr.aria-expanded]="showList()"
   [attr.aria-controls]="listId"
-  [attr.aria-activedescendant]="showList() && active() >= 0 ? optionId(active()) : null" />
+  [attr.aria-activedescendant]="
+    showList() && active() >= 0 ? optionId(active()) : null
+  "
+/>
 \`\`\`
 
 Binding \`null\` removes the attribute. \`[attr.aria-expanded]\` with a boolean renders \`"true"\` / \`"false"\`, which is what screen readers expect.
@@ -4016,7 +5159,7 @@ Binding \`null\` removes the attribute. \`[attr.aria-expanded]\` with a boolean 
 
 Both the AOT and JIT builds printed:
 
-\`\`\`
+\`\`\`text
 typed ca, 250 ms : hint: Loading... | Requests sent: 1 | Cache hits: 0
 ca               : Cambodia, Cameroon, Canada, Jamaica, Nicaragua, South Africa | Requests sent: 1 | Cache hits: 0
 can              : Canada | Requests sent: 2 | Cache hits: 0
@@ -4140,21 +5283,70 @@ import { AutocompleteComponent } from "./autocomplete.component";
       <app-autocomplete />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/api.ts": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
-  "Afghanistan", "Argentina", "Australia", "Austria", "Brazil", "Cambodia", "Cameroon",
-  "Canada", "Chile", "China", "Colombia", "Denmark", "Egypt", "France", "Georgia",
-  "Germany", "Ghana", "Greece", "India", "Jamaica", "Japan", "Kenya", "Mexico",
-  "Morocco", "Nepal", "Nicaragua", "Norway", "Portugal", "South Africa", "Spain",
-  "Sweden", "United States", "Vietnam",
+  "Afghanistan",
+  "Argentina",
+  "Australia",
+  "Austria",
+  "Brazil",
+  "Cambodia",
+  "Cameroon",
+  "Canada",
+  "Chile",
+  "China",
+  "Colombia",
+  "Denmark",
+  "Egypt",
+  "France",
+  "Georgia",
+  "Germany",
+  "Ghana",
+  "Greece",
+  "India",
+  "Jamaica",
+  "Japan",
+  "Kenya",
+  "Mexico",
+  "Morocco",
+  "Nepal",
+  "Nicaragua",
+  "Norway",
+  "Portugal",
+  "South Africa",
+  "Spain",
+  "Sweden",
+  "United States",
+  "Vietnam",
 ];
 
 export function fetchCountries(query: string): Promise<string[]> {
@@ -4162,8 +5354,11 @@ export function fetchCountries(query: string): Promise<string[]> {
   return new Promise<string[]>((resolve) => {
     setTimeout(() => {
       const starts = COUNTRIES.filter((c) => c.toLowerCase().startsWith(q));
-      const contains = COUNTRIES.filter((c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q));
-      resolve([...starts, ...contains].slice(0, 6)); // prefix matches rank first
+      const contains = COUNTRIES.filter(
+        (c) => !c.toLowerCase().startsWith(q) && c.toLowerCase().includes(q),
+      );
+      // prefix matches rank first
+      resolve([...starts, ...contains].slice(0, 6));
     }, 150);
   });
 }
@@ -4199,7 +5394,12 @@ let nextId = 0;
     @if (showPanel()) {
       <div class="panel">
         @if (showList()) {
-          <ul [id]="listId" role="listbox" aria-label="Countries" data-testid="ac-list">
+          <ul
+            [id]="listId"
+            role="listbox"
+            aria-label="Countries"
+            data-testid="ac-list"
+          >
             @for (country of suggestions(); track country; let i = $index) {
               <li
                 [id]="optionId(i)"
@@ -4214,15 +5414,25 @@ let nextId = 0;
             }
           </ul>
         } @else {
-          <p class="hint" data-testid="ac-hint">{{ status() === "done" ? "No matches" : "Loading..." }}</p>
+          <p
+            class="hint"
+            data-testid="ac-hint"
+          >{{ status() === "done" ? "No matches" : "Loading..." }}</p>
         }
       </div>
     }
 
-    <p class="meta" data-testid="selected">{{ selected() ? "Selected: " + selected() : "Nothing selected yet" }}</p>
-    <p class="meta" data-testid="stats">Requests sent: {{ stats().requests }} | Cache hits: {{ stats().hits }}</p>
+    <p
+      class="meta"
+      data-testid="selected"
+    >{{ selected() ? "Selected: " + selected() : "Nothing selected yet" }}</p>
+    <p
+      class="meta"
+      data-testid="stats"
+    >Requests sent: {{ stats().requests }} | Cache hits: {{ stats().hits }}</p>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: relative; }
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
     input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
@@ -4234,7 +5444,8 @@ let nextId = 0;
     .hint { margin: 8px 10px; color: #7d859b; }
     .meta { font-size: 0.85rem; color: #a9b1c6; margin: 12px 0 0; }
     .meta + .meta { margin-top: 4px; color: #7d859b; }
-  \`],
+  \`,
+  ],
 })
 export class AutocompleteComponent {
   readonly listId = "country-list-" + nextId++;
@@ -4250,7 +5461,9 @@ export class AutocompleteComponent {
   readonly term = computed(() => this.query().trim().toLowerCase());
   readonly debouncedTerm = debounced(this.term, 250);
   readonly showPanel = computed(() => this.open() && this.term() !== "");
-  readonly showList = computed(() => this.showPanel() && this.suggestions().length > 0);
+  readonly showList = computed(
+    () => this.showPanel() && this.suggestions().length > 0,
+  );
 
   private readonly cache = new Map<string, string[]>(); // query -> suggestions
   private latest = 0; // id of the newest lookup; older responses are ignored
@@ -4260,9 +5473,11 @@ export class AutocompleteComponent {
       const dq = this.debouncedTerm();
       const t = this.term();
       const isOpen = this.open();
-      // Look up only when open and the debounced value has caught up with the box.
+      // Look up only when open and the debounced
+      // value has caught up with the box.
       if (!isOpen || dq !== t) return;
-      untracked(() => this.lookup(dq)); // signals read inside lookup are not dependencies
+      // signals read inside lookup are not dependencies
+      untracked(() => this.lookup(dq));
     });
   }
 
@@ -4288,7 +5503,8 @@ export class AutocompleteComponent {
     this.status.set("loading");
     this.stats.update((s) => ({ ...s, requests: s.requests + 1 }));
     fetchCountries(dq).then((list) => {
-      this.cache.set(dq, list); // cache even if stale: the answer is still right
+      // cache even if stale: the answer is still right
+      this.cache.set(dq, list);
       if (id !== this.latest) return;
       this.suggestions.set(list);
       this.active.set(-1);
@@ -4299,7 +5515,8 @@ export class AutocompleteComponent {
   select(country: string) {
     this.query.set(country);
     this.selected.set(country);
-    this.suggestions.set([]); // do not flash this list the next time the box opens
+    // do not flash this list the next time the box opens
+    this.suggestions.set([]);
     this.open.set(false);
     this.active.set(-1);
   }
@@ -4327,14 +5544,16 @@ export class AutocompleteComponent {
 `,
           "/src/app/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
 
-// A signal that follows \`source\`, but only after it has stopped changing for \`ms\`.
+// A signal that follows \`source\`, but only
+// after it has stopped changing for \`ms\`.
 // Call it in an injection context (a field initializer or constructor).
 export function debounced<T>(source: () => T, ms: number): Signal<T> {
   const out = signal(source());
   effect((onCleanup) => {
     const value = source();
     const timer = setTimeout(() => out.set(value), ms);
-    onCleanup(() => clearTimeout(timer)); // a new keystroke cancels the old timer
+    // a new keystroke cancels the old timer
+    onCleanup(() => clearTimeout(timer));
   });
   return out.asReadonly();
 }
@@ -4439,7 +5658,8 @@ Requests start left to right as the user types, but the fake server answers shor
 ### Step 1: a server that answers in the wrong order
 
 \`\`\`js
-const latency = query.length === 1 ? 1500 : query.length === 2 ? 900 : 150;
+const latency =
+  query.length === 1 ? 1500 : query.length === 2 ? 900 : 150;
 \`\`\`
 
 Real APIs do this too: a one-letter query matches far more rows, caches are cold, and networks reorder. Making the latency depend on the query turns a rare production bug into a reproducible demo.
@@ -4448,19 +5668,31 @@ Real APIs do this too: a one-letter query matches far more rows, caches are cold
 
 \`\`\`js
 useEffect(() => {
-  if (!debounced) { setResults([]); setShownFor(""); return; }
+  if (!debounced) {
+    setResults([]);
+    setShownFor("");
+    return;
+  }
   const id = ++latest.current;
   const controller = guard ? new AbortController() : null;
-  searchPackages(debounced, controller ? { signal: controller.signal } : {})
+  searchPackages(
+    debounced,
+    controller ? { signal: controller.signal } : {},
+  )
     .then((list) => {
-      // Belt and braces: even if an API ignores abort(), drop old answers.
+      // Belt and braces: even if an API
+      // ignores abort(), drop old answers.
       if (guard && id !== latest.current) return;
       setResults(list);
       setShownFor(debounced);
       setActive(-1);
     })
-    .catch((err) => { /* AbortError: expected, not shown */ });
-  return () => { if (controller) controller.abort(); };
+    .catch((err) => {
+      /* AbortError: expected, not shown */
+    });
+  return () => {
+    if (controller) controller.abort();
+  };
 }, [debounced, guard]);
 \`\`\`
 
@@ -4499,7 +5731,11 @@ Why not lowercase both strings and slice by \`indexOf\`? Because lowercasing can
 \`\`\`jsx
 export default function Highlight({ text, query }) {
   return splitMatches(text, query).map((part, i) =>
-    part.match ? <mark key={i}>{part.text}</mark> : <span key={i}>{part.text}</span>
+    part.match ? (
+      <mark key={i}>{part.text}</mark>
+    ) : (
+      <span key={i}>{part.text}</span>
+    ),
   );
 }
 \`\`\`
@@ -4518,7 +5754,7 @@ The status line reads "Showing results for "rea"", and adds "(does not match the
 
 Mounted under \`StrictMode\` in jsdom. The driver typed with real \`input\` events, waited longer than the 300 ms debounce between "r", "re" and "rea" so each one was actually sent, and advanced time in 20 ms steps. Option text is printed with \`mark\` parts in [brackets]:
 
-\`\`\`
+\`\`\`text
 rea            : [Rea]ct, [Rea]ct Router, P[rea]ct, C[rea]te [Rea]ct App
 c++            : [C++]
 (              : Showing results for "(" | options: 1
@@ -4655,11 +5891,24 @@ export default function App() {
 }
 `,
           "/src/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
-// 1 letter = 1500 ms, 2 letters = 900 ms, longer = 150 ms. Typing "r", "re", "rea"
+// 1 letter = 1500 ms, 2 letters = 900 ms,
+// longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
 const PACKAGES = [
-  "React", "React Router", "Redux", "Remix", "Rust", "Ruby on Rails", "Rollup", "Ramda",
-  "Preact", "Create React App", "Express", "Ember", "C++", "C#",
+  "React",
+  "React Router",
+  "Redux",
+  "Remix",
+  "Rust",
+  "Ruby on Rails",
+  "Rollup",
+  "Ramda",
+  "Preact",
+  "Create React App",
+  "Express",
+  "Ember",
+  "C++",
+  "C#",
   "<img src=x onerror=alert(1)>",
 ];
 
@@ -4671,10 +5920,14 @@ export function searchPackages(query, { signal } = {}) {
       resolve(PACKAGES.filter((p) => p.toLowerCase().includes(q)).slice(0, 8));
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(new DOMException("Request aborted", "AbortError"));
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(new DOMException("Request aborted", "AbortError"));
+        },
+        { once: true },
+      );
     }
   });
 }
@@ -4685,7 +5938,11 @@ export function searchPackages(query, { signal } = {}) {
 // React text child, so a result containing markup is shown, never parsed.
 export default function Highlight({ text, query }) {
   return splitMatches(text, query).map((part, i) =>
-    part.match ? <mark key={i}>{part.text}</mark> : <span key={i}>{part.text}</span>
+    part.match ? (
+      <mark key={i}>{part.text}</mark>
+    ) : (
+      <span key={i}>{part.text}</span>
+    ),
   );
 }
 `,
@@ -4715,7 +5972,8 @@ export default function Typeahead() {
   const [query, setQuery] = useState("");
   const [guard, setGuard] = useState(true);
   const [results, setResults] = useState([]);
-  const [shownFor, setShownFor] = useState(""); // the query the visible results belong to
+  // the query the visible results belong to
+  const [shownFor, setShownFor] = useState("");
   const [active, setActive] = useState(-1);
   const [picked, setPicked] = useState("");
   const [events, setEvents] = useState([]);
@@ -4739,17 +5997,23 @@ export default function Typeahead() {
     searchPackages(debounced, controller ? { signal: controller.signal } : {})
       .then((list) => {
         // Belt and braces: even if an API ignores abort(), drop old answers.
-        if (guard && id !== latest.current) { note("ignored " + JSON.stringify(debounced)); return; }
+        if (guard && id !== latest.current) {
+          note("ignored " + JSON.stringify(debounced));
+          return;
+        }
         setResults(list);
         setShownFor(debounced);
         setActive(-1);
         note("applied " + JSON.stringify(debounced));
       })
       .catch((err) => {
-        if (err.name === "AbortError") note("aborted " + JSON.stringify(debounced));
+        if (err.name === "AbortError")
+          note("aborted " + JSON.stringify(debounced));
       });
 
-    return () => { if (controller) controller.abort(); };
+    return () => {
+      if (controller) controller.abort();
+    };
   }, [debounced, guard]);
 
   function pick(item) {
@@ -4761,10 +6025,19 @@ export default function Typeahead() {
 
   function onKeyDown(e) {
     const n = results.length;
-    if (e.key === "ArrowDown" && n) { e.preventDefault(); setActive((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp" && n) { e.preventDefault(); setActive((i) => (i <= 0 ? n - 1 : i - 1)); }
-    else if (e.key === "Enter" && active >= 0) { e.preventDefault(); pick(results[active]); }
-    else if (e.key === "Escape") { setResults([]); setActive(-1); }
+    if (e.key === "ArrowDown" && n) {
+      e.preventDefault();
+      setActive((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp" && n) {
+      e.preventDefault();
+      setActive((i) => (i <= 0 ? n - 1 : i - 1));
+    } else if (e.key === "Enter" && active >= 0) {
+      e.preventDefault();
+      pick(results[active]);
+    } else if (e.key === "Escape") {
+      setResults([]);
+      setActive(-1);
+    }
   }
 
   const open = term !== "" && results.length > 0;
@@ -4774,11 +6047,18 @@ export default function Typeahead() {
   return (
     <div className="ta">
       <label className="toggle">
-        <input type="checkbox" data-testid="guard" checked={guard} onChange={(e) => setGuard(e.target.checked)} />
+        <input
+          type="checkbox"
+          data-testid="guard"
+          checked={guard}
+          onChange={(e) => setGuard(e.target.checked)}
+        />
         Guard against stale responses (abort + request id)
       </label>
 
-      <label htmlFor="pkg" className="label">Package</label>
+      <label htmlFor="pkg" className="label">
+        Package
+      </label>
       <input
         id="pkg"
         data-testid="ta-input"
@@ -4786,7 +6066,9 @@ export default function Typeahead() {
         aria-autocomplete="list"
         aria-expanded={open}
         aria-controls={listId}
-        aria-activedescendant={open && active >= 0 ? optionId(active) : undefined}
+        aria-activedescendant={
+          open && active >= 0 ? optionId(active) : undefined
+        }
         autoComplete="off"
         placeholder="Type r, then re, then rea"
         value={query}
@@ -4794,12 +6076,25 @@ export default function Typeahead() {
         onKeyDown={onKeyDown}
       />
 
-      <p className={mismatch ? "showing warn" : "showing"} data-testid="showing">
-        {shownFor ? "Showing results for " + JSON.stringify(shownFor) + (mismatch ? " (does not match the box)" : "") : "No results yet"}
+      <p
+        className={mismatch ? "showing warn" : "showing"}
+        data-testid="showing"
+      >
+        {shownFor
+          ? "Showing results for " +
+            JSON.stringify(shownFor) +
+            (mismatch ? " (does not match the box)" : "")
+          : "No results yet"}
       </p>
 
       {open && (
-        <ul id={listId} role="listbox" aria-label="Packages" className="list" data-testid="ta-list">
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label="Packages"
+          className="list"
+          data-testid="ta-list"
+        >
           {results.map((item, i) => (
             <li
               key={item}
@@ -4807,7 +6102,9 @@ export default function Typeahead() {
               role="option"
               aria-selected={i === active}
               className={i === active ? "option active" : "option"}
-              onMouseMove={() => { if (i !== active) setActive(i); }}
+              onMouseMove={() => {
+                if (i !== active) setActive(i);
+              }}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(item)}
             >
@@ -4817,9 +6114,15 @@ export default function Typeahead() {
         </ul>
       )}
 
-      <p className="picked" data-testid="picked">{picked ? "Picked: " + picked : "Nothing picked yet"}</p>
+      <p className="picked" data-testid="picked">
+        {picked ? "Picked: " + picked : "Nothing picked yet"}
+      </p>
       <h2 className="log-title">Network events</h2>
-      <ol className="log" data-testid="events">{events.map((e, i) => <li key={i}>{e}</li>)}</ol>
+      <ol className="log" data-testid="events">
+        {events.map((e, i) => (
+          <li key={i}>{e}</li>
+        ))}
+      </ol>
     </div>
   );
 }
@@ -4836,24 +6139,112 @@ export function useDebouncedValue(value, delay) {
   return debounced;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.toggle { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: #c9cfdd; margin-bottom: 14px; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-#pkg { width: 100%; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-#pkg:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.showing { font-size: 0.85rem; color: #a9b1c6; margin: 8px 0; }
-.showing.warn { color: #ffb74d; }
-.list { list-style: none; margin: 0; padding: 4px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.option { padding: 8px 10px; border-radius: 6px; cursor: pointer; overflow-wrap: anywhere; }
-.option.active { background: #2f3b66; }
-mark { background: #f9a825; color: #111; border-radius: 2px; padding: 0 1px; }
-.picked { font-size: 0.85rem; color: #a9b1c6; margin-top: 12px; }
-.log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 20px 0 6px; }
-.log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #c9cfdd;
+  margin-bottom: 14px;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+#pkg {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+#pkg:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.showing {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin: 8px 0;
+}
+.showing.warn {
+  color: #ffb74d;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.option.active {
+  background: #2f3b66;
+}
+mark {
+  background: #f9a825;
+  color: #111;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.picked {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-top: 12px;
+}
+.log-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+  margin: 20px 0 6px;
+}
+.log {
+  margin: 0;
+  padding-left: 20px;
+  font:
+    0.8rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #b8c0d6;
+}
 `,
         },
       },
@@ -4885,19 +6276,28 @@ Ask three friends "capital of Aus...", "of Austr...", "of Australia?" and the la
 
 \`\`\`js
 watch([debounced, guard], ([dq, guarded], _old, onCleanup) => {
-  if (!dq) { results.value = []; shownFor.value = ""; return; }
+  if (!dq) {
+    results.value = [];
+    shownFor.value = "";
+    return;
+  }
   const id = ++latest;
   const controller = guarded ? new AbortController() : null;
-  onCleanup(() => { if (controller) controller.abort(); });
+  onCleanup(() => {
+    if (controller) controller.abort();
+  });
   searchPackages(dq, controller ? { signal: controller.signal } : {})
     .then((list) => {
-      // Belt and braces: even if an API ignores abort(), drop old answers.
+      // Belt and braces: even if an API
+      // ignores abort(), drop old answers.
       if (guarded && id !== latest) return;
       results.value = list;
       shownFor.value = dq;
       active.value = -1;
     })
-    .catch(() => { /* AbortError is expected */ });
+    .catch(() => {
+      /* AbortError is expected */
+    });
 });
 \`\`\`
 
@@ -4930,7 +6330,12 @@ With one capture group, \`split\` keeps the matches at odd indexes, with their o
 ### Step 3: a highlight component with no \`v-html\`
 
 \`\`\`html
-<template><template v-for="(part, i) in parts" :key="i"><mark v-if="part.match">{{ part.text }}</mark><span v-else>{{ part.text }}</span></template></template>
+<template>
+  <template v-for="(part, i) in parts" :key="i"
+    ><mark v-if="part.match">{{ part.text }}</mark
+    ><span v-else>{{ part.text }}</span></template
+  >
+</template>
 \`\`\`
 
 Mustache interpolation always writes text, so a suggestion containing \`<img src=x onerror=alert(1)>\` is displayed, not parsed. The tempting \`v-html="text.replace(re, '<mark>$1</mark>')"\` would create the image and run its handler; see [what v-html is and its risk](/interview-question/what-is-v-html-and-what-is-the-risk-of-using-it). The template is written on one line on purpose: whitespace between \`mark\` and \`span\` would show up as spaces inside the word.
@@ -4943,7 +6348,7 @@ Mustache interpolation always writes text, so a suggestion containing \`<img src
 
 Option text is printed with \`mark\` parts in [brackets]:
 
-\`\`\`
+\`\`\`text
 rea            : [Rea]ct, [Rea]ct Router, P[rea]ct, C[rea]te [Rea]ct App
 c++            : [C++]
 (              : Showing results for "(" | options: 1
@@ -5066,20 +6471,59 @@ import Typeahead from "./components/Typeahead.vue";
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-mark { background: #f9a825; color: #111; border-radius: 2px; padding: 0 1px; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+mark {
+  background: #f9a825;
+  color: #111;
+  border-radius: 2px;
+  padding: 0 1px;
+}
 </style>
 `,
           "/src/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
-// 1 letter = 1500 ms, 2 letters = 900 ms, longer = 150 ms. Typing "r", "re", "rea"
+// 1 letter = 1500 ms, 2 letters = 900 ms,
+// longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
 const PACKAGES = [
-  "React", "React Router", "Redux", "Remix", "Rust", "Ruby on Rails", "Rollup", "Ramda",
-  "Preact", "Create React App", "Express", "Ember", "C++", "C#",
+  "React",
+  "React Router",
+  "Redux",
+  "Remix",
+  "Rust",
+  "Ruby on Rails",
+  "Rollup",
+  "Ramda",
+  "Preact",
+  "Create React App",
+  "Express",
+  "Ember",
+  "C++",
+  "C#",
   "<img src=x onerror=alert(1)>",
 ];
 
@@ -5091,10 +6535,14 @@ export function searchPackages(query, { signal } = {}) {
       resolve(PACKAGES.filter((p) => p.toLowerCase().includes(q)).slice(0, 8));
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(new DOMException("Request aborted", "AbortError"));
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(new DOMException("Request aborted", "AbortError"));
+        },
+        { once: true },
+      );
     }
   });
 }
@@ -5103,12 +6551,20 @@ export function searchPackages(query, { signal } = {}) {
 import { computed } from "vue";
 import { splitMatches } from "../matchParts.js";
 
-const props = defineProps({ text: { type: String, required: true }, query: { type: String, default: "" } });
+const props = defineProps({
+  text: { type: String, required: true },
+  query: { type: String, default: "" },
+});
 const parts = computed(() => splitMatches(props.text, props.query));
 </script>
 
 <!-- Mustache output is text, never HTML: no v-html anywhere. -->
-<template><template v-for="(part, i) in parts" :key="i"><mark v-if="part.match">{{ part.text }}</mark><span v-else>{{ part.text }}</span></template></template>
+<template>
+  <template v-for="(part, i) in parts" :key="i"
+    ><mark v-if="part.match">{{ part.text }}</mark
+    ><span v-else>{{ part.text }}</span></template
+  >
+</template>
 `,
           "/src/components/Typeahead.vue": `<script setup>
 import { computed, ref, useId, watch } from "vue";
@@ -5128,7 +6584,9 @@ const listId = useId();
 
 const term = computed(() => query.value.trim());
 const debounced = useDebounced(term, 300);
-const note = (line) => { events.value = [...events.value.slice(-7), line]; };
+const note = (line) => {
+  events.value = [...events.value.slice(-7), line];
+};
 
 watch([debounced, guard], ([dq, guarded], _old, onCleanup) => {
   if (!dq) {
@@ -5138,13 +6596,18 @@ watch([debounced, guard], ([dq, guarded], _old, onCleanup) => {
   }
   const id = ++latest;
   const controller = guarded ? new AbortController() : null;
-  onCleanup(() => { if (controller) controller.abort(); });
+  onCleanup(() => {
+    if (controller) controller.abort();
+  });
   note("sent " + JSON.stringify(dq));
 
   searchPackages(dq, controller ? { signal: controller.signal } : {})
     .then((list) => {
       // Belt and braces: even if an API ignores abort(), drop old answers.
-      if (guarded && id !== latest) { note("ignored " + JSON.stringify(dq)); return; }
+      if (guarded && id !== latest) {
+        note("ignored " + JSON.stringify(dq));
+        return;
+      }
       results.value = list;
       shownFor.value = dq;
       active.value = -1;
@@ -5156,7 +6619,9 @@ watch([debounced, guard], ([dq, guarded], _old, onCleanup) => {
 });
 
 const open = computed(() => term.value !== "" && results.value.length > 0);
-const mismatch = computed(() => shownFor.value !== "" && shownFor.value !== term.value);
+const mismatch = computed(
+  () => shownFor.value !== "" && shownFor.value !== term.value,
+);
 const optionId = (i) => listId + "-" + i;
 
 function pick(item) {
@@ -5168,10 +6633,19 @@ function pick(item) {
 
 function onKeydown(e) {
   const n = results.value.length;
-  if (e.key === "ArrowDown" && n) { e.preventDefault(); active.value = (active.value + 1) % n; }
-  else if (e.key === "ArrowUp" && n) { e.preventDefault(); active.value = active.value <= 0 ? n - 1 : active.value - 1; }
-  else if (e.key === "Enter" && active.value >= 0) { e.preventDefault(); pick(results.value[active.value]); }
-  else if (e.key === "Escape") { results.value = []; active.value = -1; }
+  if (e.key === "ArrowDown" && n) {
+    e.preventDefault();
+    active.value = (active.value + 1) % n;
+  } else if (e.key === "ArrowUp" && n) {
+    e.preventDefault();
+    active.value = active.value <= 0 ? n - 1 : active.value - 1;
+  } else if (e.key === "Enter" && active.value >= 0) {
+    e.preventDefault();
+    pick(results.value[active.value]);
+  } else if (e.key === "Escape") {
+    results.value = [];
+    active.value = -1;
+  }
 }
 </script>
 
@@ -5191,17 +6665,32 @@ function onKeydown(e) {
       aria-autocomplete="list"
       :aria-expanded="open"
       :aria-controls="listId"
-      :aria-activedescendant="open && active >= 0 ? optionId(active) : undefined"
+      :aria-activedescendant="
+        open && active >= 0 ? optionId(active) : undefined
+      "
       autocomplete="off"
       placeholder="Type r, then re, then rea"
       @keydown="onKeydown"
     />
 
     <p :class="['showing', { warn: mismatch }]" data-testid="showing">
-      {{ shownFor ? "Showing results for " + JSON.stringify(shownFor) + (mismatch ? " (does not match the box)" : "") : "No results yet" }}
+      {{
+        shownFor
+          ? "Showing results for " +
+            JSON.stringify(shownFor) +
+            (mismatch ? " (does not match the box)" : "")
+          : "No results yet"
+      }}
     </p>
 
-    <ul v-if="open" :id="listId" role="listbox" aria-label="Packages" class="list" data-testid="ta-list">
+    <ul
+      v-if="open"
+      :id="listId"
+      role="listbox"
+      aria-label="Packages"
+      class="list"
+      data-testid="ta-list"
+    >
       <li
         v-for="(item, i) in results"
         :id="optionId(i)"
@@ -5212,10 +6701,14 @@ function onKeydown(e) {
         @mousemove="active = i"
         @mousedown.prevent
         @click="pick(item)"
-      ><HighlightText :text="item" :query="term" /></li>
+      >
+        <HighlightText :text="item" :query="term" />
+      </li>
     </ul>
 
-    <p class="picked" data-testid="picked">{{ picked ? "Picked: " + picked : "Nothing picked yet" }}</p>
+    <p class="picked" data-testid="picked">
+      {{ picked ? "Picked: " + picked : "Nothing picked yet" }}
+    </p>
     <h2 class="log-title">Network events</h2>
     <ol class="log" data-testid="events">
       <li v-for="(e, i) in events" :key="i">{{ e }}</li>
@@ -5224,31 +6717,97 @@ function onKeydown(e) {
 </template>
 
 <style scoped>
-.toggle { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: #c9cfdd; margin-bottom: 14px; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-#pkg { width: 100%; padding: 10px 12px; font-size: 1rem; color: inherit; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-#pkg:focus { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.showing { font-size: 0.85rem; color: #a9b1c6; margin: 8px 0; }
-.showing.warn { color: #ffb74d; }
-.list { list-style: none; margin: 0; padding: 4px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.option { padding: 8px 10px; border-radius: 6px; cursor: pointer; overflow-wrap: anywhere; }
-.option.active { background: #2f3b66; }
-.picked { font-size: 0.85rem; color: #a9b1c6; margin-top: 12px; }
-.log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 20px 0 6px; }
-.log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
+.toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #c9cfdd;
+  margin-bottom: 14px;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+#pkg {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+#pkg:focus {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.showing {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin: 8px 0;
+}
+.showing.warn {
+  color: #ffb74d;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.option.active {
+  background: #2f3b66;
+}
+.picked {
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-top: 12px;
+}
+.log-title {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #7d859b;
+  margin: 20px 0 6px;
+}
+.log {
+  margin: 0;
+  padding-left: 20px;
+  font:
+    0.8rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #b8c0d6;
+}
 </style>
 `,
           "/src/composables/useDebounced.js": `import { ref, watch, onScopeDispose } from "vue";
 
-// A ref that follows \`source\`, but only after it has stopped changing for \`delay\` ms.
+// A ref that follows \`source\`, but only after
+// it has stopped changing for \`delay\` ms.
 export function useDebounced(source, delay) {
   const debounced = ref(source.value);
   let timer;
   watch(source, (value) => {
     clearTimeout(timer); // a new keystroke cancels the old timer
-    timer = setTimeout(() => { debounced.value = value; }, delay);
+    timer = setTimeout(() => {
+      debounced.value = value;
+    }, delay);
   });
-  onScopeDispose(() => clearTimeout(timer)); // component unmounted: no late update
+  // component unmounted: no late update
+  onScopeDispose(() => clearTimeout(timer));
   return debounced;
 }
 `,
@@ -5302,19 +6861,26 @@ effect((onCleanup) => {
   const dq = this.debouncedTerm();
   const guarded = this.guard();
   untracked(() => {
-    if (!dq) { this.results.set([]); this.shownFor.set(""); return; }
+    if (!dq) {
+      this.results.set([]);
+      this.shownFor.set("");
+      return;
+    }
     const id = ++this.latest;
     const controller = guarded ? new AbortController() : null;
     onCleanup(() => controller?.abort());
     searchPackages(dq, controller ? { signal: controller.signal } : {})
       .then((list) => {
-        // Belt and braces: even if an API ignores abort(), drop old answers.
+        // Belt and braces: even if an API
+        // ignores abort(), drop old answers.
         if (guarded && id !== this.latest) return;
         this.results.set(list);
         this.shownFor.set(dq);
         this.active.set(-1);
       })
-      .catch(() => { /* AbortError is expected */ });
+      .catch(() => {
+        /* AbortError is expected */
+      });
   });
 });
 \`\`\`
@@ -5355,12 +6921,20 @@ One capture group makes \`split\` keep the matches at odd indexes, original casi
 @Component({
   selector: "app-highlight",
   standalone: true,
-  template: \`@for (part of parts; track $index) {@if (part.match) {<mark>{{ part.text }}</mark>} @else {<span>{{ part.text }}</span>}}\`,
+  template: \`@for (part of parts; track $index) {
+    @if (part.match) {
+      <mark>{{ part.text }}</mark>
+    } @else {
+      <span>{{ part.text }}</span>
+    }
+  }\`,
 })
 export class HighlightComponent {
   @Input({ required: true }) text = "";
   @Input() query = "";
-  get parts() { return splitMatches(this.text, this.query); }
+  get parts() {
+    return splitMatches(this.text, this.query);
+  }
 }
 \`\`\`
 
@@ -5376,7 +6950,7 @@ The component uses decorator \`@Input\`s rather than signal \`input()\` because 
 
 Both builds printed the same lines; option text is shown with \`mark\` parts in [brackets]. The driver walks the text nodes, since in Angular the \`mark\` sits inside the \`app-highlight\` element:
 
-\`\`\`
+\`\`\`text
 rea            : [Rea]ct, [Rea]ct Router, P[rea]ct, C[rea]te [Rea]ct App
 c++            : [C++]
 (              : Showing results for "(" | options: 1
@@ -5499,24 +7073,61 @@ import { TypeaheadComponent } from "./typeahead.component";
       <app-typeahead />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/api.ts": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
-// 1 letter = 1500 ms, 2 letters = 900 ms, longer = 150 ms. Typing "r", "re", "rea"
+// 1 letter = 1500 ms, 2 letters = 900 ms,
+// longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
 const PACKAGES: string[] = [
-  "React", "React Router", "Redux", "Remix", "Rust", "Ruby on Rails", "Rollup", "Ramda",
-  "Preact", "Create React App", "Express", "Ember", "C++", "C#",
+  "React",
+  "React Router",
+  "Redux",
+  "Remix",
+  "Rust",
+  "Ruby on Rails",
+  "Rollup",
+  "Ramda",
+  "Preact",
+  "Create React App",
+  "Express",
+  "Ember",
+  "C++",
+  "C#",
   "<img src=x onerror=alert(1)>",
 ];
 
-export function searchPackages(query: string, { signal }: { signal?: AbortSignal } = {}): Promise<string[]> {
+export function searchPackages(
+  query: string,
+  { signal }: { signal?: AbortSignal } = {},
+): Promise<string[]> {
   return new Promise<string[]>((resolve, reject) => {
     const latency = query.length === 1 ? 1500 : query.length === 2 ? 900 : 150;
     const timer = setTimeout(() => {
@@ -5524,24 +7135,30 @@ export function searchPackages(query: string, { signal }: { signal?: AbortSignal
       resolve(PACKAGES.filter((p) => p.toLowerCase().includes(q)).slice(0, 8));
     }, latency);
     if (signal) {
-      signal.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(new DOMException("Request aborted", "AbortError"));
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+          reject(new DOMException("Request aborted", "AbortError"));
+        },
+        { once: true },
+      );
     }
   });
 }
 `,
           "/src/app/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
 
-// A signal that follows \`source\`, but only after it has stopped changing for \`ms\`.
+// A signal that follows \`source\`, but only
+// after it has stopped changing for \`ms\`.
 // Call it in an injection context (a field initializer or constructor).
 export function debounced<T>(source: () => T, ms: number): Signal<T> {
   const out = signal(source());
   effect((onCleanup) => {
     const value = source();
     const timer = setTimeout(() => out.set(value), ms);
-    onCleanup(() => clearTimeout(timer)); // a new keystroke cancels the old timer
+    // a new keystroke cancels the old timer
+    onCleanup(() => clearTimeout(timer));
   });
   return out.asReadonly();
 }
@@ -5549,13 +7166,29 @@ export function debounced<T>(source: () => T, ms: number): Signal<T> {
           "/src/app/highlight.component.ts": `import { Component, Input } from "@angular/core";
 import { splitMatches } from "./match-parts";
 
-// Interpolation writes text nodes, so markup inside a result is shown, never parsed.
+// Interpolation writes text nodes, so markup
+// inside a result is shown, never parsed.
 // No [innerHTML] anywhere.
 @Component({
   selector: "app-highlight",
   standalone: true,
-  template: \`@for (part of parts; track $index) {@if (part.match) {<mark>{{ part.text }}</mark>} @else {<span>{{ part.text }}</span>}}\`,
-  styles: [\`mark { background: #f9a825; color: #111; border-radius: 2px; padding: 0 1px; }\`],
+  template: \`@for (part of parts; track $index) {
+    @if (part.match) {
+      <mark>{{ part.text }}</mark>
+    } @else {
+      <span>{{ part.text }}</span>
+    }
+  }\`,
+  styles: [
+    \`
+      mark {
+        background: #f9a825;
+        color: #111;
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+    \`,
+  ],
 })
 export class HighlightComponent {
   @Input({ required: true }) text = "";
@@ -5574,7 +7207,10 @@ export function escapeRegExp(text: string): string {
 
 // "Create React App" + "rea" -> [{C} {rea*} {te } {Rea*} {ct App}]
 // split() with ONE capture group puts the matches at the odd indexes.
-export interface Part { text: string; match: boolean; }
+export interface Part {
+  text: string;
+  match: boolean;
+}
 
 export function splitMatches(text: string, query: string): Part[] {
   const q = query.trim();
@@ -5598,7 +7234,13 @@ let nextId = 0;
   imports: [HighlightComponent],
   template: \`
     <label class="toggle">
-      <input #g type="checkbox" data-testid="guard" [checked]="guard()" (change)="guard.set(g.checked)" />
+      <input
+        #g
+        type="checkbox"
+        data-testid="guard"
+        [checked]="guard()"
+        (change)="guard.set(g.checked)"
+      />
       Guard against stale responses (abort + request id)
     </label>
 
@@ -5619,10 +7261,20 @@ let nextId = 0;
       (keydown)="onKeydown($event)"
     />
 
-    <p class="showing" [class.warn]="mismatch()" data-testid="showing">{{ showingText() }}</p>
+    <p
+      class="showing"
+      [class.warn]="mismatch()"
+      data-testid="showing"
+    >{{ showingText() }}</p>
 
     @if (open()) {
-      <ul [id]="listId" role="listbox" aria-label="Packages" class="list" data-testid="ta-list">
+      <ul
+        [id]="listId"
+        role="listbox"
+        aria-label="Packages"
+        class="list"
+        data-testid="ta-list"
+      >
         @for (item of results(); track item; let i = $index) {
           <li
             [id]="optionId(i)"
@@ -5638,7 +7290,10 @@ let nextId = 0;
       </ul>
     }
 
-    <p class="picked" data-testid="picked">{{ picked() ? "Picked: " + picked() : "Nothing picked yet" }}</p>
+    <p
+      class="picked"
+      data-testid="picked"
+    >{{ picked() ? "Picked: " + picked() : "Nothing picked yet" }}</p>
     <h2 class="log-title">Network events</h2>
     <ol class="log" data-testid="events">
       @for (e of events(); track $index) {
@@ -5646,7 +7301,8 @@ let nextId = 0;
       }
     </ol>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .toggle { display: flex; gap: 8px; align-items: center; font-size: 0.85rem; color: #c9cfdd; margin-bottom: 14px; }
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
@@ -5660,7 +7316,8 @@ let nextId = 0;
     .picked { font-size: 0.85rem; color: #a9b1c6; margin-top: 12px; }
     .log-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: #7d859b; margin: 20px 0 6px; }
     .log { margin: 0; padding-left: 20px; font: 0.8rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #b8c0d6; }
-  \`],
+  \`,
+  ],
 })
 export class TypeaheadComponent {
   readonly listId = "pkg-list-" + nextId++;
@@ -5676,17 +7333,24 @@ export class TypeaheadComponent {
 
   readonly term = computed(() => this.query().trim());
   readonly debouncedTerm = debounced(this.term, 300);
-  readonly open = computed(() => this.term() !== "" && this.results().length > 0);
-  readonly mismatch = computed(() => this.shownFor() !== "" && this.shownFor() !== this.term());
+  readonly open = computed(
+    () => this.term() !== "" && this.results().length > 0,
+  );
+  readonly mismatch = computed(
+    () => this.shownFor() !== "" && this.shownFor() !== this.term(),
+  );
   readonly showingText = computed(() =>
     this.shownFor()
-      ? "Showing results for " + JSON.stringify(this.shownFor()) + (this.mismatch() ? " (does not match the box)" : "")
+      ? "Showing results for " +
+        JSON.stringify(this.shownFor()) +
+        (this.mismatch() ? " (does not match the box)" : "")
       : "No results yet",
   );
 
   constructor() {
     // Re-runs when the debounced term or the guard changes. onCleanup runs
-    // before the next run and on destroy: that is where the old request is aborted.
+    // before the next run and on destroy: that
+    // is where the old request is aborted.
     effect((onCleanup) => {
       const dq = this.debouncedTerm();
       const guarded = this.guard();
@@ -5703,15 +7367,20 @@ export class TypeaheadComponent {
 
         searchPackages(dq, controller ? { signal: controller.signal } : {})
           .then((list) => {
-            // Belt and braces: even if an API ignores abort(), drop old answers.
-            if (guarded && id !== this.latest) { this.note("ignored " + JSON.stringify(dq)); return; }
+            // Belt and braces: even if an API
+            // ignores abort(), drop old answers.
+            if (guarded && id !== this.latest) {
+              this.note("ignored " + JSON.stringify(dq));
+              return;
+            }
             this.results.set(list);
             this.shownFor.set(dq);
             this.active.set(-1);
             this.note("applied " + JSON.stringify(dq));
           })
           .catch((err: Error) => {
-            if (err.name === "AbortError") this.note("aborted " + JSON.stringify(dq));
+            if (err.name === "AbortError")
+              this.note("aborted " + JSON.stringify(dq));
           });
       });
     });
@@ -5734,10 +7403,19 @@ export class TypeaheadComponent {
 
   onKeydown(e: KeyboardEvent) {
     const n = this.results().length;
-    if (e.key === "ArrowDown" && n) { e.preventDefault(); this.active.update((i) => (i + 1) % n); }
-    else if (e.key === "ArrowUp" && n) { e.preventDefault(); this.active.update((i) => (i <= 0 ? n - 1 : i - 1)); }
-    else if (e.key === "Enter" && this.active() >= 0) { e.preventDefault(); this.pick(this.results()[this.active()]); }
-    else if (e.key === "Escape") { this.results.set([]); this.active.set(-1); }
+    if (e.key === "ArrowDown" && n) {
+      e.preventDefault();
+      this.active.update((i) => (i + 1) % n);
+    } else if (e.key === "ArrowUp" && n) {
+      e.preventDefault();
+      this.active.update((i) => (i <= 0 ? n - 1 : i - 1));
+    } else if (e.key === "Enter" && this.active() >= 0) {
+      e.preventDefault();
+      this.pick(this.results()[this.active()]);
+    } else if (e.key === "Escape") {
+      this.results.set([]);
+      this.active.set(-1);
+    }
   }
 }
 `,
@@ -5847,8 +7525,10 @@ Opening keys and typing go right, committing and dismissing keys go left. While 
 ### Step 1: pure helpers
 
 \`\`\`js
-// Next enabled index after \`from\`, moving by \`dir\` (+1 or -1), wrapping around.
-// step(list, -1, 1) is the first enabled option, step(list, 0, -1) the last.
+// Next enabled index after \`from\`, moving
+// by \`dir\` (+1 or -1), wrapping around.
+// step(list, -1, 1) is the first enabled
+// option, step(list, 0, -1) the last.
 export function step(list, from, dir) {
   const n = list.length;
   for (let k = 1; k <= n; k++) {
@@ -5891,11 +7571,17 @@ function onKeyDown(e) {
     else if (!open) openList(-1);
     else setActive((i) => step(visible, i < 0 ? 0 : i, -1));
   } else if (e.key === "Enter") {
-    if (activeOption) { e.preventDefault(); commit(activeOption); }
+    if (activeOption) {
+      e.preventDefault();
+      commit(activeOption);
+    }
   } else if (e.key === "Escape") {
     e.preventDefault();
     if (open) revert();
-    else { setText(""); onChange(null); } // second Escape clears
+    else {
+      setText("");
+      onChange(null);
+    } // second Escape clears
   }
 }
 \`\`\`
@@ -5912,16 +7598,22 @@ function onInputChange(e) {
   setText(next);
   setFilter(next);
   setOpen(true);
-  setActive(step(filterOptions(options, next), -1, 1)); // first enabled match
+  // first enabled match
+  setActive(step(filterOptions(options, next), -1, 1));
 }
 
 // Tab or a click elsewhere. With automatic selection, the highlighted
 // suggestion becomes the value when focus leaves (APG).
 function onBlur() {
-  if (activeOption) { commit(activeOption); return; }
+  if (activeOption) {
+    commit(activeOption);
+    return;
+  }
   if (!open && text === (selected ? selected.label : "")) return;
-  if (text.trim() === "") { onChange(null); close(); }
-  else revert();
+  if (text.trim() === "") {
+    onChange(null);
+    close();
+  } else revert();
 }
 \`\`\`
 
@@ -5933,7 +7625,8 @@ When nothing matches ("zz"), blur restores the committed label instead of leavin
 
 \`\`\`jsx
 const base = useId();
-const optionId = (o) => base + "-opt-" + o.value; // stable while the list filters
+// stable while the list filters
+const optionId = (o) => base + "-opt-" + o.value;
 
 <li
   id={optionId(o)}
@@ -5958,7 +7651,7 @@ An effect calls \`scrollIntoView({ block: "nearest" })\` on the active option (g
 
 Mounted under \`StrictMode\`; after each step the driver printed the input value, \`aria-expanded\`, and the text and id suffix of the element \`aria-activedescendant\` points at. Blur was simulated by focusing a button outside the widget.
 
-\`\`\`
+\`\`\`text
 start          : input="Rust" expanded=false active=none | Form value: "rs"
 ArrowDown      : input="Rust" expanded=true active=Rust #rs | 12 options | 12 options available.
 ArrowDown      : input="Rust" expanded=true active=Go #go
@@ -6099,9 +7792,21 @@ export default function App() {
   return (
     <main className="page">
       <h1>Profile</h1>
-      <Combobox label="Favourite language" options={LANGUAGES} value={lang} onChange={setLang} />
-      <p className="value" data-testid="value">Form value: {lang === null ? "null" : JSON.stringify(lang)}</p>
-      <button type="button" className="secondary" data-testid="reset" onClick={() => setLang("ts")}>
+      <Combobox
+        label="Favourite language"
+        options={LANGUAGES}
+        value={lang}
+        onChange={setLang}
+      />
+      <p className="value" data-testid="value">
+        Form value: {lang === null ? "null" : JSON.stringify(lang)}
+      </p>
+      <button
+        type="button"
+        className="secondary"
+        data-testid="reset"
+        onClick={() => setLang("ts")}
+      >
         Set to TypeScript from outside
       </button>
     </main>
@@ -6132,7 +7837,8 @@ export default function Combobox({ label, options, value, onChange }) {
 
   const visible = filterOptions(options, filter);
   const listId = base + "-listbox";
-  const optionId = (o) => base + "-opt-" + o.value; // stable while the list filters
+  // stable while the list filters
+  const optionId = (o) => base + "-opt-" + o.value;
   const activeOption = open && active >= 0 ? visible[active] : null;
 
   // Keep the highlighted option visible inside a scrolling list.
@@ -6146,7 +7852,15 @@ export default function Combobox({ label, options, value, onChange }) {
     setFilter("");
     setOpen(true);
     const i = selected ? options.indexOf(selected) : -1;
-    setActive(i >= 0 ? i : dir === 1 ? step(options, -1, 1) : dir === -1 ? step(options, 0, -1) : -1);
+    setActive(
+      i >= 0
+        ? i
+        : dir === 1
+          ? step(options, -1, 1)
+          : dir === -1
+            ? step(options, 0, -1)
+            : -1,
+    );
   }
 
   function close() {
@@ -6186,29 +7900,46 @@ export default function Combobox({ label, options, value, onChange }) {
       else if (!open) openList(-1);
       else setActive((i) => step(visible, i < 0 ? 0 : i, -1));
     } else if (e.key === "Enter") {
-      if (activeOption) { e.preventDefault(); commit(activeOption); }
+      if (activeOption) {
+        e.preventDefault();
+        commit(activeOption);
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       if (open) revert();
-      else { setText(""); onChange(null); } // second Escape clears
+      else {
+        setText("");
+        onChange(null);
+      } // second Escape clears
     }
   }
 
   // Tab or a click elsewhere. With automatic selection, the highlighted
   // suggestion becomes the value when focus leaves (APG).
   function onBlur() {
-    if (activeOption) { commit(activeOption); return; }
+    if (activeOption) {
+      commit(activeOption);
+      return;
+    }
     if (!open && text === (selected ? selected.label : "")) return;
-    if (text.trim() === "") { onChange(null); close(); }
-    else revert();
+    if (text.trim() === "") {
+      onChange(null);
+      close();
+    } else revert();
   }
 
   const showList = open && visible.length > 0;
-  const status = !open ? "" : visible.length ? visible.length + " options available." : "No results.";
+  const status = !open
+    ? ""
+    : visible.length
+      ? visible.length + " options available."
+      : "No results.";
 
   return (
     <div className="combo">
-      <label htmlFor={base + "-input"} className="label">{label}</label>
+      <label htmlFor={base + "-input"} className="label">
+        {label}
+      </label>
       <div className="combo-field">
         <input
           id={base + "-input"}
@@ -6219,7 +7950,9 @@ export default function Combobox({ label, options, value, onChange }) {
           aria-autocomplete="list"
           aria-expanded={showList}
           aria-controls={listId}
-          aria-activedescendant={activeOption ? optionId(activeOption) : undefined}
+          aria-activedescendant={
+            activeOption ? optionId(activeOption) : undefined
+          }
           autoComplete="off"
           value={text}
           onChange={onInputChange}
@@ -6227,35 +7960,84 @@ export default function Combobox({ label, options, value, onChange }) {
           onBlur={onBlur}
         />
         {value !== null && (
-          <button type="button" className="icon" tabIndex={-1} aria-label="Clear selection" data-testid="combo-clear"
+          <button
+            type="button"
+            className="icon"
+            tabIndex={-1}
+            aria-label="Clear selection"
+            data-testid="combo-clear"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => { onChange(null); setText(""); close(); inputRef.current.focus(); }}>×</button>
+            onClick={() => {
+              onChange(null);
+              setText("");
+              close();
+              inputRef.current.focus();
+            }}
+          >
+            ×
+          </button>
         )}
-        <button type="button" className="icon" tabIndex={-1} aria-label={"Show " + label + " options"} data-testid="combo-toggle"
+        <button
+          type="button"
+          className="icon"
+          tabIndex={-1}
+          aria-label={"Show " + label + " options"}
+          data-testid="combo-toggle"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => { if (open) revert(); else openList(0); inputRef.current.focus(); }}>▾</button>
+          onClick={() => {
+            if (open) revert();
+            else openList(0);
+            inputRef.current.focus();
+          }}
+        >
+          ▾
+        </button>
       </div>
 
-      <ul id={listId} role="listbox" aria-label={label} className="combo-list" hidden={!showList} data-testid="combo-list">
-        {showList && visible.map((o, i) => (
-          <li
-            key={o.value}
-            id={optionId(o)}
-            role="option"
-            aria-selected={i === active}
-            aria-disabled={o.disabled ? true : undefined}
-            className={"combo-option" + (i === active ? " active" : "") + (o.disabled ? " disabled" : "")}
-            onMouseMove={() => { if (!o.disabled && i !== active) setActive(i); }}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => { if (!o.disabled) commit(o); }}
-          >
-            <span className="check" aria-hidden="true">{o.value === value ? "✓" : ""}</span>
-            {o.label}
-          </li>
-        ))}
+      <ul
+        id={listId}
+        role="listbox"
+        aria-label={label}
+        className="combo-list"
+        hidden={!showList}
+        data-testid="combo-list"
+      >
+        {showList &&
+          visible.map((o, i) => (
+            <li
+              key={o.value}
+              id={optionId(o)}
+              role="option"
+              aria-selected={i === active}
+              aria-disabled={o.disabled ? true : undefined}
+              className={
+                "combo-option" +
+                (i === active ? " active" : "") +
+                (o.disabled ? " disabled" : "")
+              }
+              onMouseMove={() => {
+                if (!o.disabled && i !== active) setActive(i);
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                if (!o.disabled) commit(o);
+              }}
+            >
+              <span className="check" aria-hidden="true">
+                {o.value === value ? "✓" : ""}
+              </span>
+              {o.label}
+            </li>
+          ))}
       </ul>
-      {open && visible.length === 0 && <div className="combo-empty" data-testid="combo-empty">No matches</div>}
-      <div role="status" className="sr-only" data-testid="combo-status">{status}</div>
+      {open && visible.length === 0 && (
+        <div className="combo-empty" data-testid="combo-empty">
+          No matches
+        </div>
+      )}
+      <div role="status" className="sr-only" data-testid="combo-status">
+        {status}
+      </div>
     </div>
   );
 }
@@ -6291,28 +8073,146 @@ export function filterOptions(options, text) {
   return q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.combo { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.combo-field { display: flex; align-items: center; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.combo-field:focus-within { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.combo-field input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; color: inherit; background: transparent; border: 0; outline: none; }
-.icon { width: 34px; height: 34px; border: 0; background: transparent; color: #a9b1c6; font-size: 1rem; cursor: pointer; border-radius: 6px; }
-.icon:hover { background: #2a2f3f; color: #fff; }
-.combo-list { position: absolute; left: 0; right: 0; top: 72px; z-index: 10; list-style: none; margin: 0; padding: 4px; max-height: 260px; overflow-y: auto; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
-.combo-list[hidden] { display: none; }
-.combo-option { display: flex; gap: 6px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.combo-option.active { background: #2f3b66; color: #fff; }
-.combo-option.disabled { color: #5d6478; cursor: not-allowed; }
-.check { width: 1em; color: #81c784; }
-.combo-empty { position: absolute; left: 0; right: 0; top: 72px; padding: 10px 12px; color: #7d859b; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.value { margin-top: 18px; font-size: 0.9rem; color: #c9cfdd; }
-.secondary { padding: 8px 12px; border: 1px solid #343a4f; border-radius: 8px; background: #1a1d27; color: #e6e8ee; cursor: pointer; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.combo {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.combo-field {
+  display: flex;
+  align-items: center;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.combo-field:focus-within {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.combo-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.icon {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #a9b1c6;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.icon:hover {
+  background: #2a2f3f;
+  color: #fff;
+}
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72px;
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.combo-list[hidden] {
+  display: none;
+}
+.combo-option {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.combo-option.active {
+  background: #2f3b66;
+  color: #fff;
+}
+.combo-option.disabled {
+  color: #5d6478;
+  cursor: not-allowed;
+}
+.check {
+  width: 1em;
+  color: #81c784;
+}
+.combo-empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72px;
+  padding: 10px 12px;
+  color: #7d859b;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.value {
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: #c9cfdd;
+}
+.secondary {
+  padding: 8px 12px;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  background: #1a1d27;
+  color: #e6e8ee;
+  cursor: pointer;
+}
 `,
         },
       },
@@ -6363,11 +8263,16 @@ export function step(list, from, dir) {
 ### Step 2: following the parent's value
 
 \`\`\`js
-const selected = computed(() => props.options.find((o) => o.value === props.modelValue) || null);
+const selected = computed(
+  () => props.options.find((o) => o.value === props.modelValue) || null,
+);
 const text = ref(selected.value ? selected.value.label : "");
-watch(() => props.modelValue, () => {
-  text.value = selected.value ? selected.value.label : "";
-});
+watch(
+  () => props.modelValue,
+  () => {
+    text.value = selected.value ? selected.value.label : "";
+  },
+);
 \`\`\`
 
 When the parent sets \`lang.value = "ts"\`, the watcher rewrites the input text to "TypeScript". Watching a getter (\`() => props.modelValue\`) is required: \`props\` is reactive, but passing \`props.modelValue\` directly would pass a plain string.
@@ -6379,18 +8284,30 @@ function onKeydown(e) {
   if (e.key === "ArrowDown") {
     e.preventDefault();
     if (!open.value) openList(e.altKey ? 0 : 1);
-    else if (!e.altKey) active.value = step(visible.value, active.value, 1);
+    else if (!e.altKey)
+      active.value = step(visible.value, active.value, 1);
   } else if (e.key === "ArrowUp") {
     e.preventDefault();
     if (e.altKey) revert();
     else if (!open.value) openList(-1);
-    else active.value = step(visible.value, active.value < 0 ? 0 : active.value, -1);
+    else
+      active.value = step(
+        visible.value,
+        active.value < 0 ? 0 : active.value,
+        -1,
+      );
   } else if (e.key === "Enter") {
-    if (activeOption.value) { e.preventDefault(); commit(activeOption.value); }
+    if (activeOption.value) {
+      e.preventDefault();
+      commit(activeOption.value);
+    }
   } else if (e.key === "Escape") {
     e.preventDefault();
     if (open.value) revert();
-    else { text.value = ""; emit("update:modelValue", null); } // second Escape clears
+    else {
+      text.value = "";
+      emit("update:modelValue", null);
+    } // second Escape clears
   }
 }
 \`\`\`
@@ -6407,13 +8324,23 @@ function onInput(e) {
   text.value = next;
   filter.value = next;
   open.value = true;
-  active.value = step(filterOptions(props.options, next), -1, 1); // first enabled match
+  // first enabled match
+  active.value = step(filterOptions(props.options, next), -1, 1);
 }
 function onBlur() {
-  if (activeOption.value) { commit(activeOption.value); return; }
-  if (!open.value && text.value === (selected.value ? selected.value.label : "")) return;
-  if (text.value.trim() === "") { emit("update:modelValue", null); close(); }
-  else revert();
+  if (activeOption.value) {
+    commit(activeOption.value);
+    return;
+  }
+  if (
+    !open.value &&
+    text.value === (selected.value ? selected.value.label : "")
+  )
+    return;
+  if (text.value.trim() === "") {
+    emit("update:modelValue", null);
+    close();
+  } else revert();
 }
 \`\`\`
 
@@ -6435,7 +8362,7 @@ The input uses \`:value\` + \`@input\` rather than \`v-model\`, because one keys
 
 ## 4. Verified: What the Driver Printed
 
-\`\`\`
+\`\`\`text
 start          : input="Rust" expanded=false active=none | Form value: "rs"
 ArrowDown      : input="Rust" expanded=true active=Rust #rs | 12 options | 12 options available.
 ArrowDown      : input="Rust" expanded=true active=Go #go
@@ -6567,19 +8494,59 @@ const lang = ref("rs");
   <main class="page">
     <h1>Profile</h1>
     <Combobox v-model="lang" label="Favourite language" :options="LANGUAGES" />
-    <p class="value" data-testid="value">Form value: {{ lang === null ? "null" : JSON.stringify(lang) }}</p>
-    <button type="button" class="secondary" data-testid="reset" @click="lang = 'ts'">Set to TypeScript from outside</button>
+    <p
+      class="value"
+      data-testid="value"
+    >Form value: {{ lang === null ? "null" : JSON.stringify(lang) }}</p>
+    <button
+      type="button"
+      class="secondary"
+      data-testid="reset"
+      @click="lang = 'ts'"
+    >Set to TypeScript from outside</button>
   </main>
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.value { margin-top: 18px; font-size: 0.9rem; color: #c9cfdd; }
-.secondary { padding: 8px 12px; border: 1px solid #343a4f; border-radius: 8px; background: #1a1d27; color: #e6e8ee; cursor: pointer; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.value {
+  margin-top: 18px;
+  font-size: 0.9rem;
+  color: #c9cfdd;
+}
+.secondary {
+  padding: 8px 12px;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  background: #1a1d27;
+  color: #e6e8ee;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/components/Combobox.vue": `<script setup>
@@ -6596,7 +8563,9 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:modelValue"]);
 
-const selected = computed(() => props.options.find((o) => o.value === props.modelValue) || null);
+const selected = computed(
+  () => props.options.find((o) => o.value === props.modelValue) || null,
+);
 const text = ref(selected.value ? selected.value.label : "");
 const filter = ref(""); // "" = show every option
 const open = ref(false);
@@ -6605,17 +8574,27 @@ const inputEl = ref(null);
 const base = useId();
 
 // The parent changed v-model: show its label.
-watch(() => props.modelValue, () => {
-  text.value = selected.value ? selected.value.label : "";
-});
+watch(
+  () => props.modelValue,
+  () => {
+    text.value = selected.value ? selected.value.label : "";
+  },
+);
 
 const visible = computed(() => filterOptions(props.options, filter.value));
 const listId = base + "-listbox";
-const optionId = (o) => base + "-opt-" + o.value; // stable while the list filters
-const activeOption = computed(() => (open.value && active.value >= 0 ? visible.value[active.value] : null));
+// stable while the list filters
+const optionId = (o) => base + "-opt-" + o.value;
+const activeOption = computed(() =>
+  open.value && active.value >= 0 ? visible.value[active.value] : null,
+);
 const showList = computed(() => open.value && visible.value.length > 0);
 const status = computed(() =>
-  !open.value ? "" : visible.value.length ? visible.value.length + " options available." : "No results."
+  !open.value
+    ? ""
+    : visible.value.length
+      ? visible.value.length + " options available."
+      : "No results.",
 );
 
 // Keep the highlighted option visible inside a scrolling list.
@@ -6630,7 +8609,14 @@ function openList(dir) {
   filter.value = "";
   open.value = true;
   const i = selected.value ? props.options.indexOf(selected.value) : -1;
-  active.value = i >= 0 ? i : dir === 1 ? step(props.options, -1, 1) : dir === -1 ? step(props.options, 0, -1) : -1;
+  active.value =
+    i >= 0
+      ? i
+      : dir === 1
+        ? step(props.options, -1, 1)
+        : dir === -1
+          ? step(props.options, 0, -1)
+          : -1;
 }
 
 function close() {
@@ -6656,7 +8642,8 @@ function onInput(e) {
   text.value = next;
   filter.value = next;
   open.value = true;
-  active.value = step(filterOptions(props.options, next), -1, 1); // first enabled match
+  // first enabled match
+  active.value = step(filterOptions(props.options, next), -1, 1);
 }
 
 function onKeydown(e) {
@@ -6668,23 +8655,43 @@ function onKeydown(e) {
     e.preventDefault();
     if (e.altKey) revert();
     else if (!open.value) openList(-1);
-    else active.value = step(visible.value, active.value < 0 ? 0 : active.value, -1);
+    else
+      active.value = step(
+        visible.value,
+        active.value < 0 ? 0 : active.value,
+        -1,
+      );
   } else if (e.key === "Enter") {
-    if (activeOption.value) { e.preventDefault(); commit(activeOption.value); }
+    if (activeOption.value) {
+      e.preventDefault();
+      commit(activeOption.value);
+    }
   } else if (e.key === "Escape") {
     e.preventDefault();
     if (open.value) revert();
-    else { text.value = ""; emit("update:modelValue", null); } // second Escape clears
+    else {
+      text.value = "";
+      emit("update:modelValue", null);
+    } // second Escape clears
   }
 }
 
 // Tab or a click elsewhere. With automatic selection, the highlighted
 // suggestion becomes the value when focus leaves (APG).
 function onBlur() {
-  if (activeOption.value) { commit(activeOption.value); return; }
-  if (!open.value && text.value === (selected.value ? selected.value.label : "")) return;
-  if (text.value.trim() === "") { emit("update:modelValue", null); close(); }
-  else revert();
+  if (activeOption.value) {
+    commit(activeOption.value);
+    return;
+  }
+  if (
+    !open.value &&
+    text.value === (selected.value ? selected.value.label : "")
+  )
+    return;
+  if (text.value.trim() === "") {
+    emit("update:modelValue", null);
+    close();
+  } else revert();
 }
 
 function clearSelection() {
@@ -6731,7 +8738,14 @@ function hover(o, i) {
         data-testid="combo-toggle" @mousedown.prevent @click="toggle">▾</button>
     </div>
 
-    <ul :id="listId" role="listbox" :aria-label="label" class="combo-list" :hidden="!showList" data-testid="combo-list">
+    <ul
+      :id="listId"
+      role="listbox"
+      :aria-label="label"
+      class="combo-list"
+      :hidden="!showList"
+      data-testid="combo-list"
+    >
       <template v-if="showList">
         <li
           v-for="(o, i) in visible"
@@ -6745,31 +8759,128 @@ function hover(o, i) {
           @mousedown.prevent
           @click="!o.disabled && commit(o)"
         >
-          <span class="check" aria-hidden="true">{{ o.value === modelValue ? "✓" : "" }}</span>{{ o.label }}
+          <span
+            class="check"
+            aria-hidden="true"
+          >{{ o.value === modelValue ? "✓" : "" }}</span>{{ o.label }}
         </li>
       </template>
     </ul>
-    <div v-if="open && visible.length === 0" class="combo-empty" data-testid="combo-empty">No matches</div>
-    <div role="status" class="sr-only" data-testid="combo-status">{{ status }}</div>
+    <div
+      v-if="open && visible.length === 0"
+      class="combo-empty"
+      data-testid="combo-empty"
+    >No matches</div>
+    <div
+      role="status"
+      class="sr-only"
+      data-testid="combo-status"
+    >{{ status }}</div>
   </div>
 </template>
 
 <style scoped>
-.combo { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.combo-field { display: flex; align-items: center; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.combo-field:focus-within { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.combo-field input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; color: inherit; background: transparent; border: 0; outline: none; }
-.icon { width: 34px; height: 34px; border: 0; background: transparent; color: #a9b1c6; font-size: 1rem; cursor: pointer; border-radius: 6px; }
-.icon:hover { background: #2a2f3f; color: #fff; }
-.combo-list { position: absolute; left: 0; right: 0; top: 72px; z-index: 10; list-style: none; margin: 0; padding: 4px; max-height: 260px; overflow-y: auto; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
-.combo-list[hidden] { display: none; }
-.combo-option { display: flex; gap: 6px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.combo-option.active { background: #2f3b66; color: #fff; }
-.combo-option.disabled { color: #5d6478; cursor: not-allowed; }
-.check { width: 1em; color: #81c784; }
-.combo-empty { position: absolute; left: 0; right: 0; top: 72px; padding: 10px 12px; color: #7d859b; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.combo {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.combo-field {
+  display: flex;
+  align-items: center;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.combo-field:focus-within {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.combo-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 1rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.icon {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: transparent;
+  color: #a9b1c6;
+  font-size: 1rem;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.icon:hover {
+  background: #2a2f3f;
+  color: #fff;
+}
+.combo-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72px;
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.combo-list[hidden] {
+  display: none;
+}
+.combo-option {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.combo-option.active {
+  background: #2f3b66;
+  color: #fff;
+}
+.combo-option.disabled {
+  color: #5d6478;
+  cursor: not-allowed;
+}
+.check {
+  width: 1em;
+  color: #81c784;
+}
+.combo-empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72px;
+  padding: 10px 12px;
+  color: #7d859b;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/options.js": `export const LANGUAGES = [
@@ -6837,13 +8948,15 @@ A \`<select>\` is a vending machine with fixed buttons and a text input is a bla
 \`\`\`ts
 @Input({ required: true }) set options(list: Option[]) {
   this.optionsSig.set(list);
-  // Inputs arrive in template order: if [(value)] came first, its label was
+  // Inputs arrive in template order: if
+  // [(value)] came first, its label was
   // looked up in an empty list. Re-sync unless the user is editing.
   if (!this.open()) this.text.set(this.selected()?.label ?? "");
 }
 @Input() set value(v: string | null) {
   this.valueSig.set(v);
-  this.text.set(this.selected()?.label ?? ""); // the parent changed it: show its label
+  // the parent changed it: show its label
+  this.text.set(this.selected()?.label ?? "");
 }
 @Output() valueChange = new EventEmitter<string | null>();
 \`\`\`
@@ -6866,11 +8979,17 @@ onKeydown(e: KeyboardEvent) {
     else this.active.update((i) => step(list, i < 0 ? 0 : i, -1));
   } else if (e.key === "Enter") {
     const o = this.activeOption();
-    if (o) { e.preventDefault(); this.commit(o); }
+    if (o) {
+      e.preventDefault();
+      this.commit(o);
+    }
   } else if (e.key === "Escape") {
     e.preventDefault();
     if (this.open()) this.revert();
-    else { this.text.set(""); this.emit(null); } // second Escape clears
+    else {
+      this.text.set("");
+      this.emit(null);
+    } // second Escape clears
   }
 }
 \`\`\`
@@ -6886,14 +9005,21 @@ onInput(next: string) {
   this.text.set(next);
   this.filter.set(next);
   this.open.set(true);
-  this.active.set(step(filterOptions(this.optionsSig(), next), -1, 1)); // first enabled match
+  // first enabled match
+  this.active.set(step(filterOptions(this.optionsSig(), next), -1, 1));
 }
 onBlur() {
   const o = this.activeOption();
-  if (o) { this.commit(o); return; }
-  if (!this.open() && this.text() === (this.selected()?.label ?? "")) return;
-  if (this.text().trim() === "") { this.emit(null); this.close(); }
-  else this.revert();
+  if (o) {
+    this.commit(o);
+    return;
+  }
+  if (!this.open() && this.text() === (this.selected()?.label ?? ""))
+    return;
+  if (this.text().trim() === "") {
+    this.emit(null);
+    this.close();
+  } else this.revert();
 }
 \`\`\`
 
@@ -6902,14 +9028,30 @@ onBlur() {
 ### Step 4: template bindings
 
 \`\`\`html
-<input #box role="combobox" aria-autocomplete="list"
-  [attr.aria-expanded]="showList()" [attr.aria-controls]="listId"
-  [attr.aria-activedescendant]="activeOption() ? optionId(activeOption()!) : null"
-  [value]="text()" (input)="onInput(box.value)" (keydown)="onKeydown($event)" (blur)="onBlur()" />
+<input
+  #box
+  role="combobox"
+  aria-autocomplete="list"
+  [attr.aria-expanded]="showList()"
+  [attr.aria-controls]="listId"
+  [attr.aria-activedescendant]="
+    activeOption() ? optionId(activeOption()!) : null
+  "
+  [value]="text()"
+  (input)="onInput(box.value)"
+  (keydown)="onKeydown($event)"
+  (blur)="onBlur()"
+/>
 ...
-<li [id]="optionId(o)" role="option" [attr.aria-selected]="i === active()"
+<li
+  [id]="optionId(o)"
+  role="option"
+  [attr.aria-selected]="i === active()"
   [attr.aria-disabled]="o.disabled ? true : null"
-  (mousemove)="hover(o, i)" (mousedown)="$event.preventDefault()" (click)="!o.disabled && commit(o)">
+  (mousemove)="hover(o, i)"
+  (mousedown)="$event.preventDefault()"
+  (click)="!o.disabled && commit(o)"
+></li>
 \`\`\`
 
 Option ids are the instance prefix plus the option value, stable while filtering. The \`!\` in \`activeOption()!\` is needed because strict templates do not narrow a signal call between the condition and the branch. An \`effect\` scrolls the active option into view.
@@ -6918,7 +9060,7 @@ Option ids are the instance prefix plus the option value, stable while filtering
 
 Both builds printed:
 
-\`\`\`
+\`\`\`text
 start          : input="Rust" expanded=false active=none | Form value: "rs"
 ArrowDown      : input="Rust" expanded=true active=Rust #rs | 12 options | 12 options available.
 ArrowDown      : input="Rust" expanded=true active=Go #go
@@ -7049,18 +9191,32 @@ import { LANGUAGES } from "./options";
   template: \`
     <main class="page">
       <h1>Profile</h1>
-      <app-combobox label="Favourite language" [options]="languages" [(value)]="lang" />
-      <p class="value" data-testid="value">Form value: {{ lang() === null ? "null" : quoted(lang()) }}</p>
-      <button type="button" class="secondary" data-testid="reset" (click)="lang.set('ts')">Set to TypeScript from outside</button>
+      <app-combobox
+        label="Favourite language"
+        [options]="languages"
+        [(value)]="lang"
+      />
+      <p
+        class="value"
+        data-testid="value"
+      >Form value: {{ lang() === null ? "null" : quoted(lang()) }}</p>
+      <button
+        type="button"
+        class="secondary"
+        data-testid="reset"
+        (click)="lang.set('ts')"
+      >Set to TypeScript from outside</button>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
     .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 16px; }
     .value { margin-top: 18px; font-size: 0.9rem; color: #c9cfdd; }
     .secondary { padding: 8px 12px; border: 1px solid #343a4f; border-radius: 8px; background: #1a1d27; color: #e6e8ee; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly languages = LANGUAGES;
@@ -7071,7 +9227,15 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/combobox.component.ts": `import { Component, EventEmitter, Input, Output, computed, effect, signal } from "@angular/core";
+          "/src/app/combobox.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  effect,
+  signal,
+} from "@angular/core";
 import { Option, filterOptions, step } from "./options";
 
 let nextId = 0;
@@ -7109,7 +9273,14 @@ let nextId = 0;
         (mousedown)="$event.preventDefault()" (click)="toggle(); box.focus()">▾</button>
     </div>
 
-    <ul [id]="listId" role="listbox" [attr.aria-label]="label" class="combo-list" [hidden]="!showList()" data-testid="combo-list">
+    <ul
+      [id]="listId"
+      role="listbox"
+      [attr.aria-label]="label"
+      class="combo-list"
+      [hidden]="!showList()"
+      data-testid="combo-list"
+    >
       @if (showList()) {
         @for (o of visible(); track o.value; let i = $index) {
           <li
@@ -7130,9 +9301,14 @@ let nextId = 0;
     @if (open() && visible().length === 0) {
       <div class="combo-empty" data-testid="combo-empty">No matches</div>
     }
-    <div role="status" class="sr-only" data-testid="combo-status">{{ status() }}</div>
+    <div
+      role="status"
+      class="sr-only"
+      data-testid="combo-status"
+    >{{ status() }}</div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: relative; }
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
     .combo-field { display: flex; align-items: center; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
@@ -7148,7 +9324,8 @@ let nextId = 0;
     .check { width: 1em; color: #81c784; }
     .combo-empty { position: absolute; left: 0; right: 0; top: 72px; padding: 10px 12px; color: #7d859b; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class ComboboxComponent {
   @Input({ required: true }) label = "";
@@ -7161,7 +9338,8 @@ export class ComboboxComponent {
   // [(value)] two-way binding = @Input value + @Output valueChange.
   @Input() set value(v: string | null) {
     this.valueSig.set(v);
-    this.text.set(this.selected()?.label ?? ""); // the parent changed it: show its label
+    // the parent changed it: show its label
+    this.text.set(this.selected()?.label ?? "");
   }
   @Output() valueChange = new EventEmitter<string | null>();
 
@@ -7175,12 +9353,24 @@ export class ComboboxComponent {
   readonly open = signal(false);
   readonly active = signal(-1);
 
-  readonly selected = computed(() => this.optionsSig().find((o) => o.value === this.valueSig()) ?? null);
-  readonly visible = computed(() => filterOptions(this.optionsSig(), this.filter()));
-  readonly activeOption = computed(() => (this.open() && this.active() >= 0 ? this.visible()[this.active()] ?? null : null));
+  readonly selected = computed(
+    () => this.optionsSig().find((o) => o.value === this.valueSig()) ?? null,
+  );
+  readonly visible = computed(() =>
+    filterOptions(this.optionsSig(), this.filter()),
+  );
+  readonly activeOption = computed(() =>
+    this.open() && this.active() >= 0
+      ? (this.visible()[this.active()] ?? null)
+      : null,
+  );
   readonly showList = computed(() => this.open() && this.visible().length > 0);
   readonly status = computed(() =>
-    !this.open() ? "" : this.visible().length ? this.visible().length + " options available." : "No results.",
+    !this.open()
+      ? ""
+      : this.visible().length
+        ? this.visible().length + " options available."
+        : "No results.",
   );
 
   constructor() {
@@ -7208,7 +9398,15 @@ export class ComboboxComponent {
     this.open.set(true);
     const sel = this.selected();
     const i = sel ? all.indexOf(sel) : -1;
-    this.active.set(i >= 0 ? i : dir === 1 ? step(all, -1, 1) : dir === -1 ? step(all, 0, -1) : -1);
+    this.active.set(
+      i >= 0
+        ? i
+        : dir === 1
+          ? step(all, -1, 1)
+          : dir === -1
+            ? step(all, 0, -1)
+            : -1,
+    );
   }
 
   private close() {
@@ -7233,7 +9431,8 @@ export class ComboboxComponent {
     this.text.set(next);
     this.filter.set(next);
     this.open.set(true);
-    this.active.set(step(filterOptions(this.optionsSig(), next), -1, 1)); // first enabled match
+    // first enabled match
+    this.active.set(step(filterOptions(this.optionsSig(), next), -1, 1));
   }
 
   onKeydown(e: KeyboardEvent) {
@@ -7249,11 +9448,17 @@ export class ComboboxComponent {
       else this.active.update((i) => step(list, i < 0 ? 0 : i, -1));
     } else if (e.key === "Enter") {
       const o = this.activeOption();
-      if (o) { e.preventDefault(); this.commit(o); }
+      if (o) {
+        e.preventDefault();
+        this.commit(o);
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       if (this.open()) this.revert();
-      else { this.text.set(""); this.emit(null); } // second Escape clears
+      else {
+        this.text.set("");
+        this.emit(null);
+      } // second Escape clears
     }
   }
 
@@ -7261,10 +9466,15 @@ export class ComboboxComponent {
   // suggestion becomes the value when focus leaves (APG).
   onBlur() {
     const o = this.activeOption();
-    if (o) { this.commit(o); return; }
+    if (o) {
+      this.commit(o);
+      return;
+    }
     if (!this.open() && this.text() === (this.selected()?.label ?? "")) return;
-    if (this.text().trim() === "") { this.emit(null); this.close(); }
-    else this.revert();
+    if (this.text().trim() === "") {
+      this.emit(null);
+      this.close();
+    } else this.revert();
   }
 
   clearSelection() {
@@ -7283,7 +9493,11 @@ export class ComboboxComponent {
   }
 }
 `,
-          "/src/app/options.ts": `export interface Option { value: string; label: string; disabled?: boolean; }
+          "/src/app/options.ts": `export interface Option {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
 
 export const LANGUAGES: Option[] = [
   { value: "ts", label: "TypeScript" },
@@ -7386,7 +9600,8 @@ A multi-select dropdown is that salad bar: the list **stays open** while you pic
 | root and input elements | refs | outside-press checks and focus |
 
 \`\`\`js
-// The value is always kept in the options order, whatever order things were clicked in.
+// The value is always kept in the options
+// order, whatever order things were clicked in.
 export function normalize(options, values) {
   const set = new Set(values);
   return options.filter((o) => set.has(o.value)).map((o) => o.value);
@@ -7426,7 +9641,11 @@ function set(nextValues, message) {
 }
 
 function toggle(o) {
-  if (selected.has(o.value)) set(value.filter((v) => v !== o.value), o.label + " removed.");
+  if (selected.has(o.value))
+    set(
+      value.filter((v) => v !== o.value),
+      o.label + " removed.",
+    );
   else set([...value, o.value], o.label + " selected.");
 }
 \`\`\`
@@ -7468,7 +9687,10 @@ Enter toggles and **does not close**: the main behavioural difference from a sin
 
 \`\`\`js
 function removeChip(v) {
-  set(value.filter((x) => x !== v), labelOf(v) + " removed.");
+  set(
+    value.filter((x) => x !== v),
+    labelOf(v) + " removed.",
+  );
   inputRef.current.focus(); // the chip button is about to disappear
 }
 \`\`\`
@@ -7505,7 +9727,7 @@ Each chip's × is a real, tabbable \`<button aria-label="Remove React">\`. When 
 
 Mounted under \`StrictMode\` in jsdom. The driver clicked the input, pressed keys on it, typed into it, clicked buttons and dispatched a \`mousedown\` on the page body. \`*\` marks options whose \`aria-selected\` is \`"true"\`; "said" is the live-region text.
 
-\`\`\`
+\`\`\`text
 start          : chips: [] | open: false | Value: []
 click          : open: true | options: 10 | multiselectable: true
 Down+Enter     : active: JavaScript | open: true | chips: ["JavaScript"] | said: JavaScript selected. 1 selected.
@@ -7636,8 +9858,15 @@ export default function App() {
   return (
     <main className="page">
       <h1>Your skills</h1>
-      <MultiSelect label="Skills" options={SKILLS} value={skills} onChange={setSkills} />
-      <p className="value" data-testid="value">Value: {JSON.stringify(skills)}</p>
+      <MultiSelect
+        label="Skills"
+        options={SKILLS}
+        value={skills}
+        onChange={setSkills}
+      />
+      <p className="value" data-testid="value">
+        Value: {JSON.stringify(skills)}
+      </p>
     </main>
   );
 }
@@ -7656,7 +9885,9 @@ export default function MultiSelect({ label, options, value, onChange }) {
 
   const selected = new Set(value); // derived: O(1) lookups while rendering
   const q = search.trim().toLowerCase();
-  const visible = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
+  const visible = q
+    ? options.filter((o) => o.label.toLowerCase().includes(q))
+    : options;
   const labelOf = (v) => options.find((o) => o.value === v).label;
   const optionId = (o) => base + "-opt-" + o.value;
   const listId = base + "-list";
@@ -7668,12 +9899,19 @@ export default function MultiSelect({ label, options, value, onChange }) {
   }
 
   function toggle(o) {
-    if (selected.has(o.value)) set(value.filter((v) => v !== o.value), o.label + " removed.");
+    if (selected.has(o.value))
+      set(
+        value.filter((v) => v !== o.value),
+        o.label + " removed.",
+      );
     else set([...value, o.value], o.label + " selected.");
   }
 
   function removeChip(v) {
-    set(value.filter((x) => x !== v), labelOf(v) + " removed.");
+    set(
+      value.filter((x) => x !== v),
+      labelOf(v) + " removed.",
+    );
     inputRef.current.focus(); // the chip button is about to disappear
   }
 
@@ -7703,7 +9941,9 @@ export default function MultiSelect({ label, options, value, onChange }) {
   // Close on a pointer press outside, only while open.
   useEffect(() => {
     if (!open) return;
-    const onDown = (e) => { if (!rootRef.current.contains(e.target)) setOpen(false); };
+    const onDown = (e) => {
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    };
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
@@ -7712,16 +9952,33 @@ export default function MultiSelect({ label, options, value, onChange }) {
     <div
       className="ms"
       ref={rootRef}
-      onBlur={(e) => { if (!rootRef.current.contains(e.relatedTarget)) setOpen(false); }}
+      onBlur={(e) => {
+        if (!rootRef.current.contains(e.relatedTarget)) setOpen(false);
+      }}
     >
-      <label htmlFor={base + "-input"} className="label">{label}</label>
+      <label htmlFor={base + "-input"} className="label">
+        {label}
+      </label>
       <div className="ms-control" onClick={() => inputRef.current.focus()}>
-        <ul className="chips" aria-label={"Selected " + label} data-testid="chips">
+        <ul
+          className="chips"
+          aria-label={"Selected " + label}
+          data-testid="chips"
+        >
           {value.map((v) => (
             <li key={v} className="chip">
               {labelOf(v)}
-              <button type="button" aria-label={"Remove " + labelOf(v)} data-testid="chip-remove"
-                onClick={(e) => { e.stopPropagation(); removeChip(v); }}>×</button>
+              <button
+                type="button"
+                aria-label={"Remove " + labelOf(v)}
+                data-testid="chip-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeChip(v);
+                }}
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>
@@ -7733,38 +9990,65 @@ export default function MultiSelect({ label, options, value, onChange }) {
           aria-expanded={open}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={open && active >= 0 && visible[active] ? optionId(visible[active]) : undefined}
+          aria-activedescendant={
+            open && active >= 0 && visible[active]
+              ? optionId(visible[active])
+              : undefined
+          }
           autoComplete="off"
           placeholder={value.length ? "" : "Pick skills..."}
           value={search}
-          onChange={(e) => { setSearch(e.target.value); setOpen(true); setActive(0); }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+            setActive(0);
+          }}
           onClick={() => setOpen(true)}
           onKeyDown={onKeyDown}
         />
       </div>
-      <p className="count" data-testid="count">{value.length} selected</p>
+      <p className="count" data-testid="count">
+        {value.length} selected
+      </p>
 
       {open && (
         <div className="ms-panel" data-testid="ms-panel">
           <div className="ms-actions">
-            <button type="button" data-testid="select-shown" disabled={visible.every((o) => selected.has(o.value))}
+            <button
+              type="button"
+              data-testid="select-shown"
+              disabled={visible.every((o) => selected.has(o.value))}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 const added = visible.filter((o) => !selected.has(o.value));
-                set([...value, ...added.map((o) => o.value)], "Added " + added.length + ".");
-              }}>
+                set(
+                  [...value, ...added.map((o) => o.value)],
+                  "Added " + added.length + ".",
+                );
+              }}
+            >
               Select all shown
             </button>
-            <button type="button" data-testid="clear-all" disabled={value.length === 0}
+            <button
+              type="button"
+              data-testid="clear-all"
+              disabled={value.length === 0}
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => set([], "Cleared.")}>
+              onClick={() => set([], "Cleared.")}
+            >
               Clear all
             </button>
           </div>
           {visible.length === 0 ? (
             <p className="empty">No skills match</p>
           ) : (
-            <ul id={listId} role="listbox" aria-multiselectable="true" aria-label={label} data-testid="ms-list">
+            <ul
+              id={listId}
+              role="listbox"
+              aria-multiselectable="true"
+              aria-label={label}
+              data-testid="ms-list"
+            >
               {visible.map((o, i) => (
                 <li
                   key={o.value}
@@ -7772,11 +10056,15 @@ export default function MultiSelect({ label, options, value, onChange }) {
                   role="option"
                   aria-selected={selected.has(o.value)}
                   className={"ms-option" + (i === active ? " active" : "")}
-                  onMouseMove={() => { if (i !== active) setActive(i); }}
+                  onMouseMove={() => {
+                    if (i !== active) setActive(i);
+                  }}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => toggle(o)}
                 >
-                  <span className="box" aria-hidden="true">{selected.has(o.value) ? "✓" : ""}</span>
+                  <span className="box" aria-hidden="true">
+                    {selected.has(o.value) ? "✓" : ""}
+                  </span>
                   {o.label}
                 </li>
               ))}
@@ -7784,7 +10072,9 @@ export default function MultiSelect({ label, options, value, onChange }) {
           )}
         </div>
       )}
-      <div role="status" className="sr-only" data-testid="ms-status">{announcement}</div>
+      <div role="status" className="sr-only" data-testid="ms-status">
+        {announcement}
+      </div>
     </div>
   );
 }
@@ -7802,38 +10092,184 @@ export default function MultiSelect({ label, options, value, onChange }) {
   { value: "a11y", label: "Accessibility" },
 ];
 
-// The value is always kept in the options order, whatever order things were clicked in.
+// The value is always kept in the options
+// order, whatever order things were clicked in.
 export function normalize(options, values) {
   const set = new Set(values);
   return options.filter((o) => set.has(o.value)).map((o) => o.value);
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.ms { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.ms-control { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; min-height: 44px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; cursor: text; }
-.ms-control:focus-within { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.chips { display: contents; list-style: none; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; background: #2f3b66; border-radius: 999px; font-size: 0.85rem; }
-.chip button { width: 22px; height: 22px; border: 0; border-radius: 50%; background: transparent; color: #c9d4ff; cursor: pointer; }
-.chip button:hover, .chip button:focus-visible { background: #4a5a95; color: #fff; }
-.ms-control input { flex: 1; min-width: 100px; padding: 4px; font-size: 1rem; color: inherit; background: transparent; border: 0; outline: none; }
-.count { font-size: 0.8rem; color: #7d859b; margin: 6px 0 0; }
-.ms-panel { position: absolute; left: 0; right: 0; z-index: 10; margin-top: 4px; padding: 4px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
-.ms-actions { display: flex; justify-content: space-between; padding: 4px 6px 6px; border-bottom: 1px solid #2a2f3f; }
-.ms-actions button { background: none; border: 0; color: #7aa2ff; cursor: pointer; font-size: 0.85rem; }
-.ms-actions button:disabled { color: #4b5267; cursor: default; }
-.ms-panel ul { list-style: none; margin: 4px 0 0; padding: 0; max-height: 240px; overflow-y: auto; }
-.ms-option { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.ms-option.active { background: #262b3a; }
-.box { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid #5d6478; border-radius: 4px; color: #81c784; font-size: 0.8rem; }
-.empty { margin: 8px 10px; color: #7d859b; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.ms {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.ms-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  min-height: 44px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  cursor: text;
+}
+.ms-control:focus-within {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.chips {
+  display: contents;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  background: #2f3b66;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.chip button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #c9d4ff;
+  cursor: pointer;
+}
+.chip button:hover,
+.chip button:focus-visible {
+  background: #4a5a95;
+  color: #fff;
+}
+.ms-control input {
+  flex: 1;
+  min-width: 100px;
+  padding: 4px;
+  font-size: 1rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.count {
+  font-size: 0.8rem;
+  color: #7d859b;
+  margin: 6px 0 0;
+}
+.ms-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 4px;
+  padding: 4px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.ms-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid #2a2f3f;
+}
+.ms-actions button {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.ms-actions button:disabled {
+  color: #4b5267;
+  cursor: default;
+}
+.ms-panel ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.ms-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ms-option.active {
+  background: #262b3a;
+}
+.box {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #5d6478;
+  border-radius: 4px;
+  color: #81c784;
+  font-size: 0.8rem;
+}
+.empty {
+  margin: 8px 10px;
+  color: #7d859b;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.value {
+  margin-top: 18px;
+  font:
+    0.85rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #c9cfdd;
+}
 `,
         },
       },
@@ -7882,7 +10318,11 @@ function set(nextValues, message) {
   announcement.value = message + " " + next.length + " selected.";
 }
 function toggle(o) {
-  if (selected.value.has(o.value)) set(props.modelValue.filter((v) => v !== o.value), o.label + " removed.");
+  if (selected.value.has(o.value))
+    set(
+      props.modelValue.filter((v) => v !== o.value),
+      o.label + " removed.",
+    );
   else set([...props.modelValue, o.value], o.label + " selected.");
 }
 \`\`\`
@@ -7896,13 +10336,27 @@ The component never mutates the prop array; it emits a new one. See [how v-model
 \`\`\`js
 function onKeydown(e) {
   const n = visible.value.length;
-  if (e.key === "ArrowDown") { e.preventDefault(); open.value = true; if (n) active.value = (active.value + 1) % n; }
-  else if (e.key === "ArrowUp") { e.preventDefault(); open.value = true; if (n) active.value = active.value <= 0 ? n - 1 : active.value - 1; }
-  else if (e.key === "Enter") {
-    if (activeOption.value) { e.preventDefault(); toggle(activeOption.value); } // stay open
-  }
-  else if (e.key === "Escape") { open.value = false; active.value = -1; }
-  else if (e.key === "Backspace" && search.value === "" && props.modelValue.length) {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    open.value = true;
+    if (n) active.value = (active.value + 1) % n;
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    open.value = true;
+    if (n) active.value = active.value <= 0 ? n - 1 : active.value - 1;
+  } else if (e.key === "Enter") {
+    if (activeOption.value) {
+      e.preventDefault();
+      toggle(activeOption.value);
+    } // stay open
+  } else if (e.key === "Escape") {
+    open.value = false;
+    active.value = -1;
+  } else if (
+    e.key === "Backspace" &&
+    search.value === "" &&
+    props.modelValue.length
+  ) {
     removeChip(props.modelValue[props.modelValue.length - 1]);
   }
 }
@@ -7913,7 +10367,11 @@ Enter toggles without closing. Typing (\`@input\`) opens the list and sets \`act
 ### Step 3: chips and focus
 
 \`\`\`html
-<li v-for="v in modelValue" :key="v" class="chip">{{ labelOf(v) }}<button
+<li
+  v-for="v in modelValue"
+  :key="v"
+  class="chip"
+>{{ labelOf(v) }}<button
     type="button" :aria-label="'Remove ' + labelOf(v)" @click.stop="removeChip(v)">×</button></li>
 \`\`\`
 
@@ -7924,7 +10382,12 @@ Enter toggles without closing. Typing (\`@input\`) opens the list and sets \`act
 ### Step 4: the listbox
 
 \`\`\`html
-<ul :id="listId" role="listbox" aria-multiselectable="true" :aria-label="label">
+<ul
+  :id="listId"
+  role="listbox"
+  aria-multiselectable="true"
+  :aria-label="label"
+>
   <li v-for="(o, i) in visible" :id="optionId(o)" :key="o.value" role="option"
       :aria-selected="selected.has(o.value)" :class="['ms-option', { active: i === active }]"
       @mousemove="active = i" @mousedown.prevent @click="toggle(o)">...</li>
@@ -7939,7 +10402,7 @@ Enter toggles without closing. Typing (\`@input\`) opens the list and sets \`act
 
 \`*\` marks options with \`aria-selected="true"\`; "said" is the live-region text.
 
-\`\`\`
+\`\`\`text
 start          : chips: [] | open: false | Value: []
 click          : open: true | options: 10 | multiselectable: true
 Down+Enter     : active: JavaScript | open: true | chips: ["JavaScript"] | said: JavaScript selected. 1 selected.
@@ -8069,12 +10532,41 @@ const skills = ref([]);
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.value {
+  margin-top: 18px;
+  font:
+    0.85rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #c9cfdd;
+}
 </style>
 `,
           "/src/components/MultiSelect.vue": `<script setup>
@@ -8096,13 +10588,20 @@ const root = ref(null);
 const inputEl = ref(null);
 const base = useId();
 
-const selected = computed(() => new Set(props.modelValue)); // O(1) lookups while rendering
+// O(1) lookups while rendering
+const selected = computed(() => new Set(props.modelValue));
 const visible = computed(() => {
   const q = search.value.trim().toLowerCase();
-  return q ? props.options.filter((o) => o.label.toLowerCase().includes(q)) : props.options;
+  return q
+    ? props.options.filter((o) => o.label.toLowerCase().includes(q))
+    : props.options;
 });
-const allShownSelected = computed(() => visible.value.every((o) => selected.value.has(o.value)));
-const activeOption = computed(() => (open.value && active.value >= 0 ? visible.value[active.value] : null));
+const allShownSelected = computed(() =>
+  visible.value.every((o) => selected.value.has(o.value)),
+);
+const activeOption = computed(() =>
+  open.value && active.value >= 0 ? visible.value[active.value] : null,
+);
 const labelOf = (v) => props.options.find((o) => o.value === v).label;
 const optionId = (o) => base + "-opt-" + o.value;
 const listId = base + "-list";
@@ -8114,18 +10613,28 @@ function set(nextValues, message) {
 }
 
 function toggle(o) {
-  if (selected.value.has(o.value)) set(props.modelValue.filter((v) => v !== o.value), o.label + " removed.");
+  if (selected.value.has(o.value))
+    set(
+      props.modelValue.filter((v) => v !== o.value),
+      o.label + " removed.",
+    );
   else set([...props.modelValue, o.value], o.label + " selected.");
 }
 
 function removeChip(v) {
-  set(props.modelValue.filter((x) => x !== v), labelOf(v) + " removed.");
+  set(
+    props.modelValue.filter((x) => x !== v),
+    labelOf(v) + " removed.",
+  );
   inputEl.value.focus(); // the chip button is about to disappear
 }
 
 function selectShown() {
   const added = visible.value.filter((o) => !selected.value.has(o.value));
-  set([...props.modelValue, ...added.map((o) => o.value)], "Added " + added.length + ".");
+  set(
+    [...props.modelValue, ...added.map((o) => o.value)],
+    "Added " + added.length + ".",
+  );
 }
 
 function onInput() {
@@ -8151,7 +10660,11 @@ function onKeydown(e) {
   } else if (e.key === "Escape") {
     open.value = false;
     active.value = -1;
-  } else if (e.key === "Backspace" && search.value === "" && props.modelValue.length) {
+  } else if (
+    e.key === "Backspace" &&
+    search.value === "" &&
+    props.modelValue.length
+  ) {
     removeChip(props.modelValue[props.modelValue.length - 1]);
   }
 }
@@ -8168,7 +10681,9 @@ watch(open, (isOpen) => {
   if (isOpen) document.addEventListener("mousedown", onDocumentDown);
   else document.removeEventListener("mousedown", onDocumentDown);
 });
-onBeforeUnmount(() => document.removeEventListener("mousedown", onDocumentDown));
+onBeforeUnmount(() =>
+  document.removeEventListener("mousedown", onDocumentDown),
+);
 </script>
 
 <template>
@@ -8176,7 +10691,11 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocumentDown))
     <label :for="base + '-input'" class="label">{{ label }}</label>
     <div class="ms-control" @click="inputEl.focus()">
       <ul class="chips" :aria-label="'Selected ' + label" data-testid="chips">
-        <li v-for="v in modelValue" :key="v" class="chip">{{ labelOf(v) }}<button
+        <li
+          v-for="v in modelValue"
+          :key="v"
+          class="chip"
+        >{{ labelOf(v) }}<button
             type="button" :aria-label="'Remove ' + labelOf(v)" data-testid="chip-remove"
             @click.stop="removeChip(v)">×</button></li>
       </ul>
@@ -8201,11 +10720,30 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocumentDown))
 
     <div v-if="open" class="ms-panel" data-testid="ms-panel">
       <div class="ms-actions">
-        <button type="button" data-testid="select-shown" :disabled="allShownSelected" @mousedown.prevent @click="selectShown">Select all shown</button>
-        <button type="button" data-testid="clear-all" :disabled="modelValue.length === 0" @mousedown.prevent @click="set([], 'Cleared.')">Clear all</button>
+        <button
+          type="button"
+          data-testid="select-shown"
+          :disabled="allShownSelected"
+          @mousedown.prevent
+          @click="selectShown"
+        >Select all shown</button>
+        <button
+          type="button"
+          data-testid="clear-all"
+          :disabled="modelValue.length === 0"
+          @mousedown.prevent
+          @click="set([], 'Cleared.')"
+        >Clear all</button>
       </div>
       <p v-if="visible.length === 0" class="empty">No skills match</p>
-      <ul v-else :id="listId" role="listbox" aria-multiselectable="true" :aria-label="label" data-testid="ms-list">
+      <ul
+        v-else
+        :id="listId"
+        role="listbox"
+        aria-multiselectable="true"
+        :aria-label="label"
+        data-testid="ms-list"
+      >
         <li
           v-for="(o, i) in visible"
           :id="optionId(o)"
@@ -8219,31 +10757,151 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocumentDown))
         ><span class="box" aria-hidden="true">{{ selected.has(o.value) ? "✓" : "" }}</span>{{ o.label }}</li>
       </ul>
     </div>
-    <div role="status" class="sr-only" data-testid="ms-status">{{ announcement }}</div>
+    <div
+      role="status"
+      class="sr-only"
+      data-testid="ms-status"
+    >{{ announcement }}</div>
   </div>
 </template>
 
 <style scoped>
-.ms { position: relative; }
-.label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
-.ms-control { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; min-height: 44px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; cursor: text; }
-.ms-control:focus-within { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.chips { display: contents; list-style: none; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; background: #2f3b66; border-radius: 999px; font-size: 0.85rem; }
-.chip button { width: 22px; height: 22px; border: 0; border-radius: 50%; background: transparent; color: #c9d4ff; cursor: pointer; }
-.chip button:hover, .chip button:focus-visible { background: #4a5a95; color: #fff; }
-.ms-control input { flex: 1; min-width: 100px; padding: 4px; font-size: 1rem; color: inherit; background: transparent; border: 0; outline: none; }
-.count { font-size: 0.8rem; color: #7d859b; margin: 6px 0 0; }
-.ms-panel { position: absolute; left: 0; right: 0; z-index: 10; margin-top: 4px; padding: 4px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4); }
-.ms-actions { display: flex; justify-content: space-between; padding: 4px 6px 6px; border-bottom: 1px solid #2a2f3f; }
-.ms-actions button { background: none; border: 0; color: #7aa2ff; cursor: pointer; font-size: 0.85rem; }
-.ms-actions button:disabled { color: #4b5267; cursor: default; }
-.ms-panel ul { list-style: none; margin: 4px 0 0; padding: 0; max-height: 240px; overflow-y: auto; }
-.ms-option { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
-.ms-option.active { background: #262b3a; }
-.box { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid #5d6478; border-radius: 4px; color: #81c784; font-size: 0.8rem; }
-.empty { margin: 8px 10px; color: #7d859b; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ms {
+  position: relative;
+}
+.label {
+  display: block;
+  font-size: 0.85rem;
+  color: #a9b1c6;
+  margin-bottom: 6px;
+}
+.ms-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  min-height: 44px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  cursor: text;
+}
+.ms-control:focus-within {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.chips {
+  display: contents;
+  list-style: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 10px;
+  background: #2f3b66;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.chip button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #c9d4ff;
+  cursor: pointer;
+}
+.chip button:hover,
+.chip button:focus-visible {
+  background: #4a5a95;
+  color: #fff;
+}
+.ms-control input {
+  flex: 1;
+  min-width: 100px;
+  padding: 4px;
+  font-size: 1rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.count {
+  font-size: 0.8rem;
+  color: #7d859b;
+  margin: 6px 0 0;
+}
+.ms-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 4px;
+  padding: 4px;
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.ms-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid #2a2f3f;
+}
+.ms-actions button {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.ms-actions button:disabled {
+  color: #4b5267;
+  cursor: default;
+}
+.ms-panel ul {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.ms-option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ms-option.active {
+  background: #262b3a;
+}
+.box {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #5d6478;
+  border-radius: 4px;
+  color: #81c784;
+  font-size: 0.8rem;
+}
+.empty {
+  margin: 8px 10px;
+  color: #7d859b;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/skills.js": `export const SKILLS = [
@@ -8259,7 +10917,8 @@ onBeforeUnmount(() => document.removeEventListener("mousedown", onDocumentDown))
   { value: "a11y", label: "Accessibility" },
 ];
 
-// The value is always kept in the options order, whatever order things were clicked in.
+// The value is always kept in the options
+// order, whatever order things were clicked in.
 export function normalize(options, values) {
   const set = new Set(values);
   return options.filter((o) => set.has(o.value)).map((o) => o.value);
@@ -8291,12 +10950,16 @@ At a salad bar you keep walking along the counter adding toppings, and the recei
 | Focus leaving | \`@HostListener("focusout")\` |
 
 \`\`\`ts
-export function normalize(options: Option[], values: string[]): string[] {
+export function normalize(
+  options: Option[],
+  values: string[],
+): string[] {
   const set = new Set(values);
   return options.filter((o) => set.has(o.value)).map((o) => o.value);
 }
 
-readonly selected = computed(() => new Set(this.valueSig())); // O(1) lookups while rendering
+// O(1) lookups while rendering
+readonly selected = computed(() => new Set(this.valueSig()));
 \`\`\`
 
 📌 **Interview term: Set** — a collection of unique values with an O(1) \`has\`. It answers "is this option chosen?" for every row of the \`@for\`. As a \`computed\`, it is rebuilt only when the value changes.
@@ -8308,8 +10971,12 @@ readonly selected = computed(() => new Set(this.valueSig())); // O(1) lookups wh
 ### Step 1: inputs into signals, one function for every change
 
 \`\`\`ts
-@Input({ required: true }) set options(list: Option[]) { this.optionsSig.set(list); }
-@Input() set value(v: string[]) { this.valueSig.set(v); }
+@Input({ required: true }) set options(list: Option[]) {
+  this.optionsSig.set(list);
+}
+@Input() set value(v: string[]) {
+  this.valueSig.set(v);
+}
 @Output() valueChange = new EventEmitter<string[]>();
 
 set(nextValues: string[], message: string) {
@@ -8320,7 +10987,11 @@ set(nextValues: string[], message: string) {
 }
 toggle(o: Option) {
   const value = this.valueSig();
-  if (this.selected().has(o.value)) this.set(value.filter((v) => v !== o.value), o.label + " removed.");
+  if (this.selected().has(o.value))
+    this.set(
+      value.filter((v) => v !== o.value),
+      o.label + " removed.",
+    );
   else this.set([...value, o.value], o.label + " selected.");
 }
 \`\`\`
@@ -8334,14 +11005,28 @@ Every change goes through \`set\`; the array is always replaced, so the \`comput
 \`\`\`ts
 onKeydown(e: KeyboardEvent) {
   const n = this.visible().length;
-  if (e.key === "ArrowDown") { e.preventDefault(); this.open.set(true); if (n) this.active.update((i) => (i + 1) % n); }
-  else if (e.key === "ArrowUp") { e.preventDefault(); this.open.set(true); if (n) this.active.update((i) => (i <= 0 ? n - 1 : i - 1)); }
-  else if (e.key === "Enter") {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    this.open.set(true);
+    if (n) this.active.update((i) => (i + 1) % n);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    this.open.set(true);
+    if (n) this.active.update((i) => (i <= 0 ? n - 1 : i - 1));
+  } else if (e.key === "Enter") {
     const o = this.activeOption();
-    if (o) { e.preventDefault(); this.toggle(o); } // stay open: several picks in a row
-  }
-  else if (e.key === "Escape") { this.open.set(false); this.active.set(-1); }
-  else if (e.key === "Backspace" && this.search() === "" && this.valueSig().length) {
+    if (o) {
+      e.preventDefault();
+      this.toggle(o);
+    } // stay open: several picks in a row
+  } else if (e.key === "Escape") {
+    this.open.set(false);
+    this.active.set(-1);
+  } else if (
+    e.key === "Backspace" &&
+    this.search() === "" &&
+    this.valueSig().length
+  ) {
     const value = this.valueSig();
     this.removeChip(value[value.length - 1]);
   }
@@ -8358,7 +11043,13 @@ Enter toggles without closing. Typing, through \`(input)\`, opens the list and h
     <li class="chip">{{ labelOf(v) }}<button type="button" [attr.aria-label]="'Remove ' + labelOf(v)"
         (click)="$event.stopPropagation(); removeChip(v)">×</button></li>
   }
-  <input #box role="combobox" ... [value]="search()" (input)="search.set(box.value); open.set(true); active.set(0)" />
+  <input
+    #box
+    role="combobox"
+    ...
+    [value]="search()"
+    (input)="search.set(box.value); open.set(true); active.set(0)"
+  />
 </div>
 \`\`\`
 
@@ -8371,7 +11062,12 @@ Enter toggles without closing. Typing, through \`(input)\`, opens the list and h
 ### Step 4: the listbox and closing
 
 \`\`\`html
-<ul [id]="listId" role="listbox" aria-multiselectable="true" [attr.aria-label]="label">
+<ul
+  [id]="listId"
+  role="listbox"
+  aria-multiselectable="true"
+  [attr.aria-label]="label"
+>
   @for (o of visible(); track o.value; let i = $index) {
     <li [id]="optionId(o)" role="option" [class.active]="i === active()"
         [attr.aria-selected]="selected().has(o.value)"
@@ -8383,11 +11079,16 @@ Enter toggles without closing. Typing, through \`(input)\`, opens the list and h
 \`\`\`ts
 @HostListener("focusout", ["$event"])
 onFocusout(e: FocusEvent) {
-  if (!this.host.nativeElement.contains(e.relatedTarget as Node | null)) this.open.set(false);
+  if (!this.host.nativeElement.contains(e.relatedTarget as Node | null))
+    this.open.set(false);
 }
 @HostListener("document:mousedown", ["$event"])
 onDocumentDown(e: MouseEvent) {
-  if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+  if (
+    this.open() &&
+    !this.host.nativeElement.contains(e.target as Node)
+  )
+    this.open.set(false);
 }
 \`\`\`
 
@@ -8399,7 +11100,7 @@ onDocumentDown(e: MouseEvent) {
 
 \`*\` marks options with \`aria-selected="true"\`, and "said" is the live-region text. Both builds printed:
 
-\`\`\`
+\`\`\`text
 start          : chips: [] | open: false | Value: []
 click          : open: true | options: 10 | multiselectable: true
 Down+Enter     : active: JavaScript | open: true | chips: ["JavaScript"] | said: JavaScript selected. 1 selected.
@@ -8527,12 +11228,41 @@ import { SKILLS } from "./skills";
       <p class="value" data-testid="value">Value: {{ json(chosen()) }}</p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-    .value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+      .value {
+        margin-top: 18px;
+        font:
+          0.85rem ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        color: #c9cfdd;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly skills = SKILLS;
@@ -8543,7 +11273,18 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/multi-select.component.ts": `import { Component, ElementRef, EventEmitter, HostListener, Input, Output, ViewChild, computed, inject, signal } from "@angular/core";
+          "/src/app/multi-select.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import { Option, normalize } from "./skills";
 
 let nextId = 0;
@@ -8554,7 +11295,11 @@ let nextId = 0;
   template: \`
     <label [for]="base + '-input'" class="label">{{ label }}</label>
     <div class="ms-control" (click)="box.focus()">
-      <ul class="chips" [attr.aria-label]="'Selected ' + label" data-testid="chips">
+      <ul
+        class="chips"
+        [attr.aria-label]="'Selected ' + label"
+        data-testid="chips"
+      >
         @for (v of valueSig(); track v) {
           <li class="chip">{{ labelOf(v) }}<button type="button" [attr.aria-label]="'Remove ' + labelOf(v)"
               data-testid="chip-remove" (click)="$event.stopPropagation(); removeChip(v)">×</button></li>
@@ -8590,7 +11335,13 @@ let nextId = 0;
         @if (visible().length === 0) {
           <p class="empty">No skills match</p>
         } @else {
-          <ul [id]="listId" role="listbox" aria-multiselectable="true" [attr.aria-label]="label" data-testid="ms-list">
+          <ul
+            [id]="listId"
+            role="listbox"
+            aria-multiselectable="true"
+            [attr.aria-label]="label"
+            data-testid="ms-list"
+          >
             @for (o of visible(); track o.value; let i = $index) {
               <li
                 [id]="optionId(o)"
@@ -8607,9 +11358,14 @@ let nextId = 0;
         }
       </div>
     }
-    <div role="status" class="sr-only" data-testid="ms-status">{{ announcement() }}</div>
+    <div
+      role="status"
+      class="sr-only"
+      data-testid="ms-status"
+    >{{ announcement() }}</div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: relative; }
     .label { display: block; font-size: 0.85rem; color: #a9b1c6; margin-bottom: 6px; }
     .ms-control { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; min-height: 44px; background: #1a1d27; border: 1px solid #343a4f; border-radius: 8px; cursor: text; }
@@ -8630,12 +11386,17 @@ let nextId = 0;
     .box { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid #5d6478; border-radius: 4px; color: #81c784; font-size: 0.8rem; }
     .empty { margin: 8px 10px; color: #7d859b; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class MultiSelectComponent {
   @Input({ required: true }) label = "";
-  @Input({ required: true }) set options(list: Option[]) { this.optionsSig.set(list); }
-  @Input() set value(v: string[]) { this.valueSig.set(v); }
+  @Input({ required: true }) set options(list: Option[]) {
+    this.optionsSig.set(list);
+  }
+  @Input() set value(v: string[]) {
+    this.valueSig.set(v);
+  }
   @Output() valueChange = new EventEmitter<string[]>();
   @ViewChild("box", { static: true }) box!: ElementRef<HTMLInputElement>;
 
@@ -8650,13 +11411,22 @@ export class MultiSelectComponent {
   readonly active = signal(-1);
   readonly announcement = signal("");
 
-  readonly selected = computed(() => new Set(this.valueSig())); // O(1) lookups while rendering
+  // O(1) lookups while rendering
+  readonly selected = computed(() => new Set(this.valueSig()));
   readonly visible = computed(() => {
     const q = this.search().trim().toLowerCase();
-    return q ? this.optionsSig().filter((o) => o.label.toLowerCase().includes(q)) : this.optionsSig();
+    return q
+      ? this.optionsSig().filter((o) => o.label.toLowerCase().includes(q))
+      : this.optionsSig();
   });
-  readonly allShownSelected = computed(() => this.visible().every((o) => this.selected().has(o.value)));
-  readonly activeOption = computed(() => (this.open() && this.active() >= 0 ? this.visible()[this.active()] ?? null : null));
+  readonly allShownSelected = computed(() =>
+    this.visible().every((o) => this.selected().has(o.value)),
+  );
+  readonly activeOption = computed(() =>
+    this.open() && this.active() >= 0
+      ? (this.visible()[this.active()] ?? null)
+      : null,
+  );
 
   labelOf(v: string) {
     return this.optionsSig().find((o) => o.value === v)?.label ?? v;
@@ -8675,18 +11445,28 @@ export class MultiSelectComponent {
 
   toggle(o: Option) {
     const value = this.valueSig();
-    if (this.selected().has(o.value)) this.set(value.filter((v) => v !== o.value), o.label + " removed.");
+    if (this.selected().has(o.value))
+      this.set(
+        value.filter((v) => v !== o.value),
+        o.label + " removed.",
+      );
     else this.set([...value, o.value], o.label + " selected.");
   }
 
   removeChip(v: string) {
-    this.set(this.valueSig().filter((x) => x !== v), this.labelOf(v) + " removed.");
+    this.set(
+      this.valueSig().filter((x) => x !== v),
+      this.labelOf(v) + " removed.",
+    );
     this.box.nativeElement.focus(); // the chip button is about to disappear
   }
 
   selectShown() {
     const added = this.visible().filter((o) => !this.selected().has(o.value));
-    this.set([...this.valueSig(), ...added.map((o) => o.value)], "Added " + added.length + ".");
+    this.set(
+      [...this.valueSig(), ...added.map((o) => o.value)],
+      "Added " + added.length + ".",
+    );
   }
 
   onKeydown(e: KeyboardEvent) {
@@ -8708,7 +11488,11 @@ export class MultiSelectComponent {
     } else if (e.key === "Escape") {
       this.open.set(false);
       this.active.set(-1);
-    } else if (e.key === "Backspace" && this.search() === "" && this.valueSig().length) {
+    } else if (
+      e.key === "Backspace" &&
+      this.search() === "" &&
+      this.valueSig().length
+    ) {
       const value = this.valueSig();
       this.removeChip(value[value.length - 1]);
     }
@@ -8716,16 +11500,21 @@ export class MultiSelectComponent {
 
   @HostListener("focusout", ["$event"])
   onFocusout(e: FocusEvent) {
-    if (!this.host.nativeElement.contains(e.relatedTarget as Node | null)) this.open.set(false);
+    if (!this.host.nativeElement.contains(e.relatedTarget as Node | null))
+      this.open.set(false);
   }
 
   @HostListener("document:mousedown", ["$event"])
   onDocumentDown(e: MouseEvent) {
-    if (this.open() && !this.host.nativeElement.contains(e.target as Node)) this.open.set(false);
+    if (this.open() && !this.host.nativeElement.contains(e.target as Node))
+      this.open.set(false);
   }
 }
 `,
-          "/src/app/skills.ts": `export interface Option { value: string; label: string; }
+          "/src/app/skills.ts": `export interface Option {
+  value: string;
+  label: string;
+}
 
 export const SKILLS: Option[] = [
   { value: "js", label: "JavaScript" },
@@ -8740,7 +11529,8 @@ export const SKILLS: Option[] = [
   { value: "a11y", label: "Accessibility" },
 ];
 
-// The value is always kept in the options order, whatever order things were clicked in.
+// The value is always kept in the options
+// order, whatever order things were clicked in.
 export function normalize(options: Option[], values: string[]): string[] {
   const set = new Set(values);
   return options.filter((o) => set.has(o.value)).map((o) => o.value);
@@ -8882,7 +11672,8 @@ const [checked, setChecked] = useState(() => new Set());
 function toggle(id) {
   setChecked((prev) => {
     const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     return next;
   });
 }
@@ -8891,7 +11682,10 @@ function toggleAll(shown) {
   const allOn = shown.every((i) => checked.has(i.id));
   setChecked((prev) => {
     const next = new Set(prev);
-    for (const i of shown) { if (allOn) next.delete(i.id); else next.add(i.id); }
+    for (const i of shown) {
+      if (allOn) next.delete(i.id);
+      else next.add(i.id);
+    }
     return next;
   });
 }
@@ -8908,9 +11702,13 @@ Each update copies the \`Set\`. Calling \`prev.add(id)\` and returning \`prev\` 
 \`\`\`js
 function move(moving, toRight) {
   const ids = new Set(moving.map((i) => i.id));
-  const nextChosen = toRight ? new Set([...value, ...ids]) : new Set(value.filter((id) => !ids.has(id)));
-  onChange(items.filter((i) => nextChosen.has(i.id)).map((i) => i.id)); // master order
-  setChecked((prev) => new Set([...prev].filter((id) => !ids.has(id)))); // moved = unchecked
+  const nextChosen = toRight
+    ? new Set([...value, ...ids])
+    : new Set(value.filter((id) => !ids.has(id)));
+  // master order
+  onChange(items.filter((i) => nextChosen.has(i.id)).map((i) => i.id));
+  // moved = unchecked
+  setChecked((prev) => new Set([...prev].filter((id) => !ids.has(id))));
 }
 \`\`\`
 
@@ -8929,7 +11727,8 @@ export default function TransferPanel({ title, side, total, items, checked, filt
   const all = items.length > 0 && checkedCount === items.length;
   const some = checkedCount > 0 && !all;
 
-  // \`indeterminate\` is a DOM property with no HTML attribute: set it by hand.
+  // \`indeterminate\` is a DOM property with
+  // no HTML attribute: set it by hand.
   useEffect(() => {
     allRef.current.indeterminate = some;
   }, [some]);
@@ -8952,10 +11751,38 @@ So the property has to be set through a ref after render. That is what \`useEffe
 ### Step 5: disabled states and labels
 
 \`\`\`js
-<button type="button" aria-label="Move all shown to Chosen" disabled={leftShown.length === 0} onClick={() => move(leftShown, true)}>»</button>
-<button type="button" aria-label="Move checked to Chosen" disabled={leftChecked.length === 0} onClick={() => move(leftChecked, true)}>›</button>
-<button type="button" aria-label="Move checked to Available" disabled={rightChecked.length === 0} onClick={() => move(rightChecked, false)}>‹</button>
-<button type="button" aria-label="Move all shown to Available" disabled={rightShown.length === 0} onClick={() => move(rightShown, false)}>«</button>
+<button
+  type="button"
+  aria-label="Move all shown to Chosen"
+  disabled={leftShown.length === 0}
+  onClick={() => move(leftShown, true)}
+>
+  »
+</button>
+<button
+  type="button"
+  aria-label="Move checked to Chosen"
+  disabled={leftChecked.length === 0}
+  onClick={() => move(leftChecked, true)}
+>
+  ›
+</button>
+<button
+  type="button"
+  aria-label="Move checked to Available"
+  disabled={rightChecked.length === 0}
+  onClick={() => move(rightChecked, false)}
+>
+  ‹
+</button>
+<button
+  type="button"
+  aria-label="Move all shown to Available"
+  disabled={rightShown.length === 0}
+  onClick={() => move(rightShown, false)}
+>
+  «
+</button>
 \`\`\`
 
 Every \`disabled\` comes from the same derived arrays that the click uses, so a button is enabled exactly when its click would move something. The arrow glyphs mean nothing to a screen reader, so each button has an \`aria-label\`, and the four sit in a \`role="group"\` labelled "Move columns". Each panel is a \`<section aria-labelledby>\` pointing at its title, and its tally ("2/8 checked, 8 total") gives the same information the header checkbox shows visually.
@@ -8964,7 +11791,7 @@ Every \`disabled\` comes from the same derived arrays that the click uses, so a 
 
 Lines list item labels in DOM order; "Value" is the parent's paragraph.
 
-\`\`\`
+\`\`\`text
 start        : left ["Name","Email","Role","Team","Location","Start date","Manager","Status"] | right []
 buttons      : to-right-all:on to-right:off to-left:off to-left-all:off
 check Team, Email: to-right-all:on to-right:on to-left:off to-left-all:off | left header: indeterminate, 2/8 checked, 8 total
@@ -9105,7 +11932,9 @@ export default function App() {
     <main className="page">
       <h1>Report columns</h1>
       <TransferList items={COLUMNS} value={chosen} onChange={setChosen} />
-      <p className="value" data-testid="value">Value: {JSON.stringify(chosen)}</p>
+      <p className="value" data-testid="value">
+        Value: {JSON.stringify(chosen)}
+      </p>
     </main>
   );
 }
@@ -9149,7 +11978,8 @@ export default function TransferList({ items, value, onChange }) {
   function toggle(id) {
     setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -9158,32 +11988,89 @@ export default function TransferList({ items, value, onChange }) {
     const allOn = shown.every((i) => checked.has(i.id));
     setChecked((prev) => {
       const next = new Set(prev);
-      for (const i of shown) { if (allOn) next.delete(i.id); else next.add(i.id); }
+      for (const i of shown) {
+        if (allOn) next.delete(i.id);
+        else next.add(i.id);
+      }
       return next;
     });
   }
 
   function move(moving, toRight) {
     const ids = new Set(moving.map((i) => i.id));
-    const nextChosen = toRight ? new Set([...value, ...ids]) : new Set(value.filter((id) => !ids.has(id)));
-    onChange(items.filter((i) => nextChosen.has(i.id)).map((i) => i.id)); // master order
-    setChecked((prev) => new Set([...prev].filter((id) => !ids.has(id)))); // moved = unchecked
+    const nextChosen = toRight
+      ? new Set([...value, ...ids])
+      : new Set(value.filter((id) => !ids.has(id)));
+    // master order
+    onChange(items.filter((i) => nextChosen.has(i.id)).map((i) => i.id));
+    // moved = unchecked
+    setChecked((prev) => new Set([...prev].filter((id) => !ids.has(id))));
   }
 
   return (
     <div className="transfer">
-      <TransferPanel title="Available" side="left" total={left.length} items={leftShown} checked={checked}
-        filter={leftFilter} onFilter={setLeftFilter} onToggle={toggle} onToggleAll={() => toggleAll(leftShown)} />
+      <TransferPanel
+        title="Available"
+        side="left"
+        total={left.length}
+        items={leftShown}
+        checked={checked}
+        filter={leftFilter}
+        onFilter={setLeftFilter}
+        onToggle={toggle}
+        onToggleAll={() => toggleAll(leftShown)}
+      />
 
       <div className="moves" role="group" aria-label="Move columns">
-        <button type="button" data-testid="to-right-all" aria-label="Move all shown to Chosen" disabled={leftShown.length === 0} onClick={() => move(leftShown, true)}>»</button>
-        <button type="button" data-testid="to-right" aria-label="Move checked to Chosen" disabled={leftChecked.length === 0} onClick={() => move(leftChecked, true)}>›</button>
-        <button type="button" data-testid="to-left" aria-label="Move checked to Available" disabled={rightChecked.length === 0} onClick={() => move(rightChecked, false)}>‹</button>
-        <button type="button" data-testid="to-left-all" aria-label="Move all shown to Available" disabled={rightShown.length === 0} onClick={() => move(rightShown, false)}>«</button>
+        <button
+          type="button"
+          data-testid="to-right-all"
+          aria-label="Move all shown to Chosen"
+          disabled={leftShown.length === 0}
+          onClick={() => move(leftShown, true)}
+        >
+          »
+        </button>
+        <button
+          type="button"
+          data-testid="to-right"
+          aria-label="Move checked to Chosen"
+          disabled={leftChecked.length === 0}
+          onClick={() => move(leftChecked, true)}
+        >
+          ›
+        </button>
+        <button
+          type="button"
+          data-testid="to-left"
+          aria-label="Move checked to Available"
+          disabled={rightChecked.length === 0}
+          onClick={() => move(rightChecked, false)}
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          data-testid="to-left-all"
+          aria-label="Move all shown to Available"
+          disabled={rightShown.length === 0}
+          onClick={() => move(rightShown, false)}
+        >
+          «
+        </button>
       </div>
 
-      <TransferPanel title="Chosen" side="right" total={right.length} items={rightShown} checked={checked}
-        filter={rightFilter} onFilter={setRightFilter} onToggle={toggle} onToggleAll={() => toggleAll(rightShown)} />
+      <TransferPanel
+        title="Chosen"
+        side="right"
+        total={right.length}
+        items={rightShown}
+        checked={checked}
+        filter={rightFilter}
+        onFilter={setRightFilter}
+        onToggle={toggle}
+        onToggleAll={() => toggleAll(rightShown)}
+      />
     </div>
   );
 }
@@ -9191,7 +12078,17 @@ export default function TransferList({ items, value, onChange }) {
           "/src/TransferPanel.js": `import { useEffect, useRef } from "react";
 
 // Presentational: renders one side. All state lives in TransferList.
-export default function TransferPanel({ title, side, total, items, checked, filter, onFilter, onToggle, onToggleAll }) {
+export default function TransferPanel({
+  title,
+  side,
+  total,
+  items,
+  checked,
+  filter,
+  onFilter,
+  onToggle,
+  onToggleAll,
+}) {
   const allRef = useRef(null);
   const checkedCount = items.filter((i) => checked.has(i.id)).length;
   const all = items.length > 0 && checkedCount === items.length;
@@ -9203,22 +12100,47 @@ export default function TransferPanel({ title, side, total, items, checked, filt
   }, [some]);
 
   return (
-    <section className="panel" aria-labelledby={side + "-title"} data-testid={side}>
+    <section
+      className="panel"
+      aria-labelledby={side + "-title"}
+      data-testid={side}
+    >
       <header className="panel-head">
         <label className="all">
-          <input ref={allRef} type="checkbox" data-testid={side + "-all"} checked={all}
-            disabled={items.length === 0} onChange={onToggleAll} aria-label={"Check all shown in " + title} />
+          <input
+            ref={allRef}
+            type="checkbox"
+            data-testid={side + "-all"}
+            checked={all}
+            disabled={items.length === 0}
+            onChange={onToggleAll}
+            aria-label={"Check all shown in " + title}
+          />
           <span id={side + "-title"}>{title}</span>
         </label>
-        <span className="tally" data-testid={side + "-tally"}>{checkedCount}/{items.length} checked, {total} total</span>
+        <span className="tally" data-testid={side + "-tally"}>
+          {checkedCount}/{items.length} checked, {total} total
+        </span>
       </header>
-      <input className="filter" type="search" placeholder="Filter" data-testid={side + "-filter"}
-        aria-label={"Filter " + title} value={filter} onChange={(e) => onFilter(e.target.value)} />
+      <input
+        className="filter"
+        type="search"
+        placeholder="Filter"
+        data-testid={side + "-filter"}
+        aria-label={"Filter " + title}
+        value={filter}
+        onChange={(e) => onFilter(e.target.value)}
+      />
       <ul className="items">
         {items.map((item) => (
           <li key={item.id}>
             <label>
-              <input type="checkbox" data-testid={side + "-item"} checked={checked.has(item.id)} onChange={() => onToggle(item.id)} />
+              <input
+                type="checkbox"
+                data-testid={side + "-item"}
+                checked={checked.has(item.id)}
+                onChange={() => onToggle(item.id)}
+              />
               {item.label}
             </label>
           </li>
@@ -9229,29 +12151,138 @@ export default function TransferPanel({ title, side, total, items, checked, filt
   );
 }
 `,
-          "/styles.css": `:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.transfer { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
-.panel { background: #1a1d27; border: 1px solid #343a4f; border-radius: 10px; padding: 10px; min-width: 0; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-.all { display: flex; gap: 8px; align-items: center; font-weight: 600; }
-.tally { font-size: 0.75rem; color: #7d859b; }
-.filter { width: 100%; padding: 6px 8px; margin-bottom: 6px; color: inherit; background: #11131a; border: 1px solid #343a4f; border-radius: 6px; }
-.items { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
-.items label { display: flex; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
-.items label:hover { background: #262b3a; }
-.none { padding: 6px 4px; color: #5d6478; font-size: 0.9rem; }
-.moves { display: flex; flex-direction: column; gap: 8px; padding-top: 70px; }
-.moves button { width: 44px; height: 36px; font-size: 1.2rem; border: 1px solid #343a4f; border-radius: 8px; background: #22263a; color: #e6e8ee; cursor: pointer; }
-.moves button:disabled { opacity: 0.35; cursor: not-allowed; }
-.moves button:focus-visible, .panel input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; overflow-wrap: anywhere; }
+          "/styles.css": `:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.transfer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.panel {
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.all {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+.tally {
+  font-size: 0.75rem;
+  color: #7d859b;
+}
+.filter {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  color: inherit;
+  background: #11131a;
+  border: 1px solid #343a4f;
+  border-radius: 6px;
+}
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.items label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.items label:hover {
+  background: #262b3a;
+}
+.none {
+  padding: 6px 4px;
+  color: #5d6478;
+  font-size: 0.9rem;
+}
+.moves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 70px;
+}
+.moves button {
+  width: 44px;
+  height: 36px;
+  font-size: 1.2rem;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  background: #22263a;
+  color: #e6e8ee;
+  cursor: pointer;
+}
+.moves button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.moves button:focus-visible,
+.panel input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.value {
+  margin-top: 18px;
+  font:
+    0.85rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #c9cfdd;
+  overflow-wrap: anywhere;
+}
 @media (max-width: 560px) {
-  .transfer { grid-template-columns: 1fr; }
-  .moves { flex-direction: row; justify-content: center; padding-top: 0; }
+  .transfer {
+    grid-template-columns: 1fr;
+  }
+  .moves {
+    flex-direction: row;
+    justify-content: center;
+    padding-top: 0;
+  }
 }
 `,
         },
@@ -9280,12 +12311,24 @@ Packing for a trip, you keep two piles on the bed: "staying home" and "in the su
 
 \`\`\`js
 const chosen = computed(() => new Set(props.modelValue));
-const left = computed(() => props.items.filter((i) => !chosen.value.has(i.id)));
-const right = computed(() => props.items.filter((i) => chosen.value.has(i.id)));
-const leftShown = computed(() => left.value.filter((i) => matches(i, leftFilter.value)));
-const rightShown = computed(() => right.value.filter((i) => matches(i, rightFilter.value)));
-const leftChecked = computed(() => leftShown.value.filter((i) => checked.value.has(i.id)));
-const rightChecked = computed(() => rightShown.value.filter((i) => checked.value.has(i.id)));
+const left = computed(() =>
+  props.items.filter((i) => !chosen.value.has(i.id)),
+);
+const right = computed(() =>
+  props.items.filter((i) => chosen.value.has(i.id)),
+);
+const leftShown = computed(() =>
+  left.value.filter((i) => matches(i, leftFilter.value)),
+);
+const rightShown = computed(() =>
+  right.value.filter((i) => matches(i, rightFilter.value)),
+);
+const leftChecked = computed(() =>
+  leftShown.value.filter((i) => checked.value.has(i.id)),
+);
+const rightChecked = computed(() =>
+  rightShown.value.filter((i) => checked.value.has(i.id)),
+);
 \`\`\`
 
 📌 **Interview term: Single source of truth** — each fact is stored once. Both panels are \`items.filter(...)\`, so they are always in master order and can never disagree.
@@ -9324,7 +12367,10 @@ function move(moving, toRight) {
   const nextChosen = toRight
     ? new Set([...props.modelValue, ...ids])
     : new Set(props.modelValue.filter((id) => !ids.has(id)));
-  emit("update:modelValue", props.items.filter((i) => nextChosen.has(i.id)).map((i) => i.id)); // master order
+  emit(
+    "update:modelValue",
+    props.items.filter((i) => nextChosen.has(i.id)).map((i) => i.id),
+  ); // master order
   for (const id of ids) checked.value.delete(id); // moved = unchecked
 }
 \`\`\`
@@ -9334,20 +12380,39 @@ The component never mutates \`modelValue\`; it emits a new array in master order
 ### Step 3: a presentational panel with \`v-model:filter\`
 
 \`\`\`html
-<TransferPanel v-model:filter="leftFilter" title="Available" side="left" :total="left.length"
-  :items="leftShown" :checked="checked" @toggle="toggle" @toggle-all="toggleAll(leftShown)" />
+<TransferPanel
+  v-model:filter="leftFilter"
+  title="Available"
+  side="left"
+  :total="left.length"
+  :items="leftShown"
+  :checked="checked"
+  @toggle="toggle"
+  @toggle-all="toggleAll(leftShown)"
+/>
 \`\`\`
 
 Inside the panel:
 
 \`\`\`js
-const props = defineProps({ title: String, side: String, total: Number, items: Array, checked: Set, filter: String });
+const props = defineProps({
+  title: String,
+  side: String,
+  total: Number,
+  items: Array,
+  checked: Set,
+  filter: String,
+});
 const emit = defineEmits(["update:filter", "toggle", "toggle-all"]);
 \`\`\`
 
 \`\`\`html
-<input type="search" :value="filter" :aria-label="'Filter ' + title"
-  @input="emit('update:filter', $event.target.value)" />
+<input
+  type="search"
+  :value="filter"
+  :aria-label="'Filter ' + title"
+  @input="emit('update:filter', $event.target.value)"
+/>
 \`\`\`
 
 \`v-model:filter\` is the named form of component \`v-model\`: it passes a \`filter\` prop and listens for \`update:filter\`. The panel owns no state, so both filter strings live in \`TransferList\`, next to the buttons that depend on them.
@@ -9357,14 +12422,25 @@ const emit = defineEmits(["update:filter", "toggle", "toggle-all"]);
 ### Step 4: the indeterminate header checkbox
 
 \`\`\`js
-const checkedCount = computed(() => props.items.filter((i) => props.checked.has(i.id)).length);
-const all = computed(() => props.items.length > 0 && checkedCount.value === props.items.length);
+const checkedCount = computed(
+  () => props.items.filter((i) => props.checked.has(i.id)).length,
+);
+const all = computed(
+  () =>
+    props.items.length > 0 && checkedCount.value === props.items.length,
+);
 const some = computed(() => checkedCount.value > 0 && !all.value);
 \`\`\`
 
 \`\`\`html
-<input type="checkbox" :checked="all" :indeterminate="some" :disabled="items.length === 0"
-  :aria-label="'Check all shown in ' + title" @change="emit('toggle-all')" />
+<input
+  type="checkbox"
+  :checked="all"
+  :indeterminate="some"
+  :disabled="items.length === 0"
+  :aria-label="'Check all shown in ' + title"
+  @change="emit('toggle-all')"
+/>
 \`\`\`
 
 \`indeterminate\` is a DOM property with no HTML attribute; an \`indeterminate\` attribute in markup leaves the property \`false\` (checked in jsdom). Vue's runtime sets a binding as a DOM property when the element has a property of that name, so \`:indeterminate="some"\` works with no ref; the driver read \`indeterminate === true\` from the node. React needs a ref and an effect for the same thing.
@@ -9374,14 +12450,19 @@ const some = computed(() => checkedCount.value > 0 && !all.value);
 ### Step 5: disabled states and labels
 
 \`\`\`html
-<button type="button" aria-label="Move checked to Chosen" :disabled="leftChecked.length === 0" @click="move(leftChecked, true)">›</button>
+<button
+  type="button"
+  aria-label="Move checked to Chosen"
+  :disabled="leftChecked.length === 0"
+  @click="move(leftChecked, true)"
+>›</button>
 \`\`\`
 
 Every \`:disabled\` reads the same \`computed\` the click uses, so a button is enabled exactly when its click would move something. Each arrow button has an \`aria-label\`, the four sit in a labelled \`role="group"\`, and each panel is a \`<section>\` labelled by its title.
 
 ## 4. Verified: What the Driver Printed
 
-\`\`\`
+\`\`\`text
 start        : left ["Name","Email","Role","Team","Location","Start date","Manager","Status"] | right []
 buttons      : to-right-all:on to-right:off to-left:off to-left-all:off
 check Team, Email: to-right-all:on to-right:on to-left:off to-left-all:off | left header: indeterminate, 2/8 checked, 8 total
@@ -9508,12 +12589,42 @@ const chosen = ref([]);
 </template>
 
 <style>
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-body { margin: 0; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.page { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; overflow-wrap: anywhere; }
+:root {
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #0f1117;
+  color: #e6e8ee;
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    sans-serif;
+}
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.value {
+  margin-top: 18px;
+  font:
+    0.85rem ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  color: #c9cfdd;
+  overflow-wrap: anywhere;
+}
 </style>
 `,
           "/src/columns.js": `// The master list. Its order is the order both sides always show.
@@ -9553,10 +12664,18 @@ const rightFilter = ref("");
 const chosen = computed(() => new Set(props.modelValue));
 const left = computed(() => props.items.filter((i) => !chosen.value.has(i.id)));
 const right = computed(() => props.items.filter((i) => chosen.value.has(i.id)));
-const leftShown = computed(() => left.value.filter((i) => matches(i, leftFilter.value)));
-const rightShown = computed(() => right.value.filter((i) => matches(i, rightFilter.value)));
-const leftChecked = computed(() => leftShown.value.filter((i) => checked.value.has(i.id)));
-const rightChecked = computed(() => rightShown.value.filter((i) => checked.value.has(i.id)));
+const leftShown = computed(() =>
+  left.value.filter((i) => matches(i, leftFilter.value)),
+);
+const rightShown = computed(() =>
+  right.value.filter((i) => matches(i, rightFilter.value)),
+);
+const leftChecked = computed(() =>
+  leftShown.value.filter((i) => checked.value.has(i.id)),
+);
+const rightChecked = computed(() =>
+  rightShown.value.filter((i) => checked.value.has(i.id)),
+);
 
 function toggle(id) {
   if (checked.value.has(id)) checked.value.delete(id);
@@ -9576,7 +12695,10 @@ function move(moving, toRight) {
   const nextChosen = toRight
     ? new Set([...props.modelValue, ...ids])
     : new Set(props.modelValue.filter((id) => !ids.has(id)));
-  emit("update:modelValue", props.items.filter((i) => nextChosen.has(i.id)).map((i) => i.id)); // master order
+  emit(
+    "update:modelValue",
+    props.items.filter((i) => nextChosen.has(i.id)).map((i) => i.id),
+  ); // master order
   for (const id of ids) checked.value.delete(id); // moved = unchecked
 }
 </script>
@@ -9587,10 +12709,34 @@ function move(moving, toRight) {
       :checked="checked" @toggle="toggle" @toggle-all="toggleAll(leftShown)" />
 
     <div class="moves" role="group" aria-label="Move columns">
-      <button type="button" data-testid="to-right-all" aria-label="Move all shown to Chosen" :disabled="leftShown.length === 0" @click="move(leftShown, true)">»</button>
-      <button type="button" data-testid="to-right" aria-label="Move checked to Chosen" :disabled="leftChecked.length === 0" @click="move(leftChecked, true)">›</button>
-      <button type="button" data-testid="to-left" aria-label="Move checked to Available" :disabled="rightChecked.length === 0" @click="move(rightChecked, false)">‹</button>
-      <button type="button" data-testid="to-left-all" aria-label="Move all shown to Available" :disabled="rightShown.length === 0" @click="move(rightShown, false)">«</button>
+      <button
+        type="button"
+        data-testid="to-right-all"
+        aria-label="Move all shown to Chosen"
+        :disabled="leftShown.length === 0"
+        @click="move(leftShown, true)"
+      >»</button>
+      <button
+        type="button"
+        data-testid="to-right"
+        aria-label="Move checked to Chosen"
+        :disabled="leftChecked.length === 0"
+        @click="move(leftChecked, true)"
+      >›</button>
+      <button
+        type="button"
+        data-testid="to-left"
+        aria-label="Move checked to Available"
+        :disabled="rightChecked.length === 0"
+        @click="move(rightChecked, false)"
+      >‹</button>
+      <button
+        type="button"
+        data-testid="to-left-all"
+        aria-label="Move all shown to Available"
+        :disabled="rightShown.length === 0"
+        @click="move(rightShown, false)"
+      >«</button>
     </div>
 
     <TransferPanel v-model:filter="rightFilter" title="Chosen" side="right" :total="right.length" :items="rightShown"
@@ -9599,14 +12745,45 @@ function move(moving, toRight) {
 </template>
 
 <style scoped>
-.transfer { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
-.moves { display: flex; flex-direction: column; gap: 8px; padding-top: 70px; }
-.moves button { width: 44px; height: 36px; font-size: 1.2rem; border: 1px solid #343a4f; border-radius: 8px; background: #22263a; color: #e6e8ee; cursor: pointer; }
-.moves button:disabled { opacity: 0.35; cursor: not-allowed; }
-.moves button:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
+.transfer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.moves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 70px;
+}
+.moves button {
+  width: 44px;
+  height: 36px;
+  font-size: 1.2rem;
+  border: 1px solid #343a4f;
+  border-radius: 8px;
+  background: #22263a;
+  color: #e6e8ee;
+  cursor: pointer;
+}
+.moves button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.moves button:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
 @media (max-width: 560px) {
-  .transfer { grid-template-columns: 1fr; }
-  .moves { flex-direction: row; justify-content: center; padding-top: 0; }
+  .transfer {
+    grid-template-columns: 1fr;
+  }
+  .moves {
+    flex-direction: row;
+    justify-content: center;
+    padding-top: 0;
+  }
 }
 </style>
 `,
@@ -9624,8 +12801,12 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:filter", "toggle", "toggle-all"]);
 
-const checkedCount = computed(() => props.items.filter((i) => props.checked.has(i.id)).length);
-const all = computed(() => props.items.length > 0 && checkedCount.value === props.items.length);
+const checkedCount = computed(
+  () => props.items.filter((i) => props.checked.has(i.id)).length,
+);
+const all = computed(
+  () => props.items.length > 0 && checkedCount.value === props.items.length,
+);
 const some = computed(() => checkedCount.value > 0 && !all.value);
 </script>
 
@@ -9634,18 +12815,39 @@ const some = computed(() => checkedCount.value > 0 && !all.value);
     <header class="panel-head">
       <label class="all">
         <!-- :indeterminate binds the DOM property; there is no HTML attribute for it -->
-        <input type="checkbox" :data-testid="side + '-all'" :checked="all" :indeterminate="some"
-          :disabled="items.length === 0" :aria-label="'Check all shown in ' + title" @change="emit('toggle-all')" />
+        <input
+          type="checkbox"
+          :data-testid="side + '-all'"
+          :checked="all"
+          :indeterminate="some"
+          :disabled="items.length === 0"
+          :aria-label="'Check all shown in ' + title"
+          @change="emit('toggle-all')"
+        />
         <span :id="side + '-title'">{{ title }}</span>
       </label>
-      <span class="tally" :data-testid="side + '-tally'">{{ checkedCount }}/{{ items.length }} checked, {{ total }} total</span>
+      <span class="tally" :data-testid="side + '-tally'"
+        >{{ checkedCount }}/{{ items.length }} checked, {{ total }} total</span
+      >
     </header>
-    <input class="filter" type="search" placeholder="Filter" :data-testid="side + '-filter'" :aria-label="'Filter ' + title"
-      :value="filter" @input="emit('update:filter', $event.target.value)" />
+    <input
+      class="filter"
+      type="search"
+      placeholder="Filter"
+      :data-testid="side + '-filter'"
+      :aria-label="'Filter ' + title"
+      :value="filter"
+      @input="emit('update:filter', $event.target.value)"
+    />
     <ul class="items">
       <li v-for="item in items" :key="item.id">
         <label>
-          <input type="checkbox" :data-testid="side + '-item'" :checked="checked.has(item.id)" @change="emit('toggle', item.id)" />
+          <input
+            type="checkbox"
+            :data-testid="side + '-item'"
+            :checked="checked.has(item.id)"
+            @change="emit('toggle', item.id)"
+          />
           {{ item.label }}
         </label>
       </li>
@@ -9655,16 +12857,66 @@ const some = computed(() => checkedCount.value > 0 && !all.value);
 </template>
 
 <style scoped>
-.panel { background: #1a1d27; border: 1px solid #343a4f; border-radius: 10px; padding: 10px; min-width: 0; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-.all { display: flex; gap: 8px; align-items: center; font-weight: 600; }
-.tally { font-size: 0.75rem; color: #7d859b; }
-.filter { width: 100%; padding: 6px 8px; margin-bottom: 6px; color: inherit; background: #11131a; border: 1px solid #343a4f; border-radius: 6px; }
-.items { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
-.items label { display: flex; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
-.items label:hover { background: #262b3a; }
-.none { padding: 6px 4px; color: #5d6478; font-size: 0.9rem; }
-.panel input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
+.panel {
+  background: #1a1d27;
+  border: 1px solid #343a4f;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.all {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+.tally {
+  font-size: 0.75rem;
+  color: #7d859b;
+}
+.filter {
+  width: 100%;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  color: inherit;
+  background: #11131a;
+  border: 1px solid #343a4f;
+  border-radius: 6px;
+}
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.items label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.items label:hover {
+  background: #262b3a;
+}
+.none {
+  padding: 6px 4px;
+  color: #5d6478;
+  font-size: 0.9rem;
+}
+.panel input:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
 </style>
 `,
         },
@@ -9694,12 +12946,24 @@ Packing for a trip, you keep two piles on the bed, "staying home" and "in the su
 
 \`\`\`ts
 readonly chosen = computed(() => new Set(this.valueSig()));
-readonly left = computed(() => this.itemsSig().filter((i) => !this.chosen().has(i.id)));
-readonly right = computed(() => this.itemsSig().filter((i) => this.chosen().has(i.id)));
-readonly leftShown = computed(() => this.left().filter((i) => matches(i, this.leftFilter())));
-readonly rightShown = computed(() => this.right().filter((i) => matches(i, this.rightFilter())));
-readonly leftChecked = computed(() => this.leftShown().filter((i) => this.checked().has(i.id)));
-readonly rightChecked = computed(() => this.rightShown().filter((i) => this.checked().has(i.id)));
+readonly left = computed(() =>
+  this.itemsSig().filter((i) => !this.chosen().has(i.id)),
+);
+readonly right = computed(() =>
+  this.itemsSig().filter((i) => this.chosen().has(i.id)),
+);
+readonly leftShown = computed(() =>
+  this.left().filter((i) => matches(i, this.leftFilter())),
+);
+readonly rightShown = computed(() =>
+  this.right().filter((i) => matches(i, this.rightFilter())),
+);
+readonly leftChecked = computed(() =>
+  this.leftShown().filter((i) => this.checked().has(i.id)),
+);
+readonly rightChecked = computed(() =>
+  this.rightShown().filter((i) => this.checked().has(i.id)),
+);
 \`\`\`
 
 📌 **Interview term: Single source of truth** — each fact is stored once. Both panels are \`items.filter(...)\`, so they are always in master order and can never disagree.
@@ -9711,12 +12975,14 @@ readonly rightChecked = computed(() => this.rightShown().filter((i) => this.chec
 ### Step 1: a Set in a signal, replaced not mutated
 
 \`\`\`ts
-readonly checked = signal<ReadonlySet<string>>(new Set()); // replaced, never mutated
+// replaced, never mutated
+readonly checked = signal<ReadonlySet<string>>(new Set());
 
 toggle(id: string) {
   this.checked.update((prev) => {
     const next = new Set(prev);
-    if (next.has(id)) next.delete(id); else next.add(id);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     return next;
   });
 }
@@ -9732,11 +12998,17 @@ A signal notifies only when it is \`set\` or \`update\`d to a value that is not 
 move(moving: Item[], toRight: boolean) {
   const ids = new Set(moving.map((i) => i.id));
   const value = this.valueSig();
-  const nextChosen = toRight ? new Set([...value, ...ids]) : new Set(value.filter((id) => !ids.has(id)));
-  const next = this.itemsSig().filter((i) => nextChosen.has(i.id)).map((i) => i.id); // master order
+  const nextChosen = toRight
+    ? new Set([...value, ...ids])
+    : new Set(value.filter((id) => !ids.has(id)));
+  const next = this.itemsSig()
+    .filter((i) => nextChosen.has(i.id))
+    .map((i) => i.id); // master order
   this.valueSig.set(next);
   this.valueChange.emit(next);
-  this.checked.update((prev) => new Set([...prev].filter((id) => !ids.has(id)))); // moved = unchecked
+  this.checked.update(
+    (prev) => new Set([...prev].filter((id) => !ids.has(id))),
+  ); // moved = unchecked
 }
 \`\`\`
 
@@ -9747,8 +13019,16 @@ The buttons call \`move(leftShown(), true)\`, \`move(leftChecked(), true)\`, \`m
 ### Step 3: a presentational panel with \`[(filter)]\`
 
 \`\`\`html
-<app-transfer-panel title="Available" side="left" [total]="left().length" [items]="leftShown()"
-  [checked]="checked()" [(filter)]="leftFilter" (toggle)="toggle($event)" (toggleAll)="toggleAll(leftShown())" />
+<app-transfer-panel
+  title="Available"
+  side="left"
+  [total]="left().length"
+  [items]="leftShown()"
+  [checked]="checked()"
+  [(filter)]="leftFilter"
+  (toggle)="toggle($event)"
+  (toggleAll)="toggleAll(leftShown())"
+/>
 \`\`\`
 
 \`\`\`ts
@@ -9756,7 +13036,8 @@ export class TransferPanelComponent {
   @Input({ required: true }) items: Item[] = [];
   @Input({ required: true }) checked: ReadonlySet<string> = new Set();
   @Input({ required: true }) filter = "";
-  @Output() filterChange = new EventEmitter<string>(); // pairs with [(filter)]
+  // pairs with [(filter)]
+  @Output() filterChange = new EventEmitter<string>();
   @Output() toggle = new EventEmitter<string>();
   @Output() toggleAll = new EventEmitter<void>();
   ...
@@ -9770,14 +13051,28 @@ The \`filter\` input and the \`filterChange\` output follow the \`x\` / \`xChang
 ### Step 4: the indeterminate header checkbox
 
 \`\`\`ts
-get checkedCount() { return this.items.filter((i) => this.checked.has(i.id)).length; }
-get all() { return this.items.length > 0 && this.checkedCount === this.items.length; }
-get some() { return this.checkedCount > 0 && !this.all; }
+get checkedCount() {
+  return this.items.filter((i) => this.checked.has(i.id)).length;
+}
+get all() {
+  return (
+    this.items.length > 0 && this.checkedCount === this.items.length
+  );
+}
+get some() {
+  return this.checkedCount > 0 && !this.all;
+}
 \`\`\`
 
 \`\`\`html
-<input type="checkbox" [checked]="all" [indeterminate]="some" [disabled]="items.length === 0"
-  [attr.aria-label]="'Check all shown in ' + title" (change)="toggleAll.emit()" />
+<input
+  type="checkbox"
+  [checked]="all"
+  [indeterminate]="some"
+  [disabled]="items.length === 0"
+  [attr.aria-label]="'Check all shown in ' + title"
+  (change)="toggleAll.emit()"
+/>
 \`\`\`
 
 \`indeterminate\` is a DOM property with no HTML attribute; an \`indeterminate\` attribute in markup leaves the property \`false\` (checked in jsdom). Angular's \`[prop]\` syntax binds DOM properties, so \`[indeterminate]="some"\` sets it directly with no \`@ViewChild\`, and the driver read \`indeterminate === true\` from the node in both builds. \`[attr.indeterminate]\` would only write an attribute and show nothing. With large lists, compute the counts in the parent with \`computed\` and pass them in instead of using getters.
@@ -9790,7 +13085,7 @@ get some() { return this.checkedCount > 0 && !this.all; }
 
 Both builds printed:
 
-\`\`\`
+\`\`\`text
 start        : left ["Name","Email","Role","Team","Location","Start date","Manager","Status"] | right []
 buttons      : to-right-all:on to-right:off to-left:off to-left-all:off
 check Team, Email: to-right-all:on to-right:on to-left:off to-left-all:off | left header: indeterminate, 2/8 checked, 8 total
@@ -9916,12 +13211,42 @@ import { COLUMNS } from "./columns";
       <p class="value" data-testid="value">Value: {{ json(chosen()) }}</p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1117; color: #e6e8ee; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color-scheme: dark; }
-    .page { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 16px; }
-    .value { margin-top: 18px; font: 0.85rem ui-monospace, SFMono-Regular, Menlo, monospace; color: #c9cfdd; overflow-wrap: anywhere; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1117;
+        color: #e6e8ee;
+        font-family:
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+        color-scheme: dark;
+      }
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+      .value {
+        margin-top: 18px;
+        font:
+          0.85rem ui-monospace,
+          SFMono-Regular,
+          Menlo,
+          monospace;
+        color: #c9cfdd;
+        overflow-wrap: anywhere;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly columns = COLUMNS;
@@ -9933,7 +13258,10 @@ export class AppComponent {
 }
 `,
           "/src/app/columns.ts": `// The master list. Its order is the order both sides always show.
-export interface Item { id: string; label: string; }
+export interface Item {
+  id: string;
+  label: string;
+}
 
 export const COLUMNS: Item[] = [
   { id: "name", label: "Name" },
@@ -9951,7 +13279,14 @@ export function matches(item: Item, filter: string): boolean {
   return !q || item.label.toLowerCase().includes(q);
 }
 `,
-          "/src/app/transfer-list.component.ts": `import { Component, EventEmitter, Input, Output, computed, signal } from "@angular/core";
+          "/src/app/transfer-list.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 import { TransferPanelComponent } from "./transfer-panel.component";
 import { Item, matches } from "./columns";
 
@@ -9967,17 +13302,42 @@ import { Item, matches } from "./columns";
         [(filter)]="leftFilter" (toggle)="toggle($event)" (toggleAll)="toggleAll(leftShown())" />
 
       <div class="moves" role="group" aria-label="Move columns">
-        <button type="button" data-testid="to-right-all" aria-label="Move all shown to Chosen" [disabled]="leftShown().length === 0" (click)="move(leftShown(), true)">»</button>
-        <button type="button" data-testid="to-right" aria-label="Move checked to Chosen" [disabled]="leftChecked().length === 0" (click)="move(leftChecked(), true)">›</button>
-        <button type="button" data-testid="to-left" aria-label="Move checked to Available" [disabled]="rightChecked().length === 0" (click)="move(rightChecked(), false)">‹</button>
-        <button type="button" data-testid="to-left-all" aria-label="Move all shown to Available" [disabled]="rightShown().length === 0" (click)="move(rightShown(), false)">«</button>
+        <button
+          type="button"
+          data-testid="to-right-all"
+          aria-label="Move all shown to Chosen"
+          [disabled]="leftShown().length === 0"
+          (click)="move(leftShown(), true)"
+        >»</button>
+        <button
+          type="button"
+          data-testid="to-right"
+          aria-label="Move checked to Chosen"
+          [disabled]="leftChecked().length === 0"
+          (click)="move(leftChecked(), true)"
+        >›</button>
+        <button
+          type="button"
+          data-testid="to-left"
+          aria-label="Move checked to Available"
+          [disabled]="rightChecked().length === 0"
+          (click)="move(rightChecked(), false)"
+        >‹</button>
+        <button
+          type="button"
+          data-testid="to-left-all"
+          aria-label="Move all shown to Available"
+          [disabled]="rightShown().length === 0"
+          (click)="move(rightShown(), false)"
+        >«</button>
       </div>
 
       <app-transfer-panel title="Chosen" side="right" [total]="right().length" [items]="rightShown()" [checked]="checked()"
         [(filter)]="rightFilter" (toggle)="toggle($event)" (toggleAll)="toggleAll(rightShown())" />
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .transfer { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
     .moves { display: flex; flex-direction: column; gap: 8px; padding-top: 70px; }
     .moves button { width: 44px; height: 36px; font-size: 1.2rem; border: 1px solid #343a4f; border-radius: 8px; background: #22263a; color: #e6e8ee; cursor: pointer; }
@@ -9987,31 +13347,50 @@ import { Item, matches } from "./columns";
       .transfer { grid-template-columns: 1fr; }
       .moves { flex-direction: row; justify-content: center; padding-top: 0; }
     }
-  \`],
+  \`,
+  ],
 })
 export class TransferListComponent {
-  @Input({ required: true }) set items(list: Item[]) { this.itemsSig.set(list); }
-  @Input() set value(ids: string[]) { this.valueSig.set(ids); }
+  @Input({ required: true }) set items(list: Item[]) {
+    this.itemsSig.set(list);
+  }
+  @Input() set value(ids: string[]) {
+    this.valueSig.set(ids);
+  }
   @Output() valueChange = new EventEmitter<string[]>();
 
   readonly itemsSig = signal<Item[]>([]);
   readonly valueSig = signal<string[]>([]);
-  readonly checked = signal<ReadonlySet<string>>(new Set()); // replaced, never mutated
+  // replaced, never mutated
+  readonly checked = signal<ReadonlySet<string>>(new Set());
   readonly leftFilter = signal("");
   readonly rightFilter = signal("");
 
   readonly chosen = computed(() => new Set(this.valueSig()));
-  readonly left = computed(() => this.itemsSig().filter((i) => !this.chosen().has(i.id)));
-  readonly right = computed(() => this.itemsSig().filter((i) => this.chosen().has(i.id)));
-  readonly leftShown = computed(() => this.left().filter((i) => matches(i, this.leftFilter())));
-  readonly rightShown = computed(() => this.right().filter((i) => matches(i, this.rightFilter())));
-  readonly leftChecked = computed(() => this.leftShown().filter((i) => this.checked().has(i.id)));
-  readonly rightChecked = computed(() => this.rightShown().filter((i) => this.checked().has(i.id)));
+  readonly left = computed(() =>
+    this.itemsSig().filter((i) => !this.chosen().has(i.id)),
+  );
+  readonly right = computed(() =>
+    this.itemsSig().filter((i) => this.chosen().has(i.id)),
+  );
+  readonly leftShown = computed(() =>
+    this.left().filter((i) => matches(i, this.leftFilter())),
+  );
+  readonly rightShown = computed(() =>
+    this.right().filter((i) => matches(i, this.rightFilter())),
+  );
+  readonly leftChecked = computed(() =>
+    this.leftShown().filter((i) => this.checked().has(i.id)),
+  );
+  readonly rightChecked = computed(() =>
+    this.rightShown().filter((i) => this.checked().has(i.id)),
+  );
 
   toggle(id: string) {
     this.checked.update((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -10020,7 +13399,10 @@ export class TransferListComponent {
     const allOn = shown.every((i) => this.checked().has(i.id));
     this.checked.update((prev) => {
       const next = new Set(prev);
-      for (const i of shown) { if (allOn) next.delete(i.id); else next.add(i.id); }
+      for (const i of shown) {
+        if (allOn) next.delete(i.id);
+        else next.add(i.id);
+      }
       return next;
     });
   }
@@ -10028,11 +13410,17 @@ export class TransferListComponent {
   move(moving: Item[], toRight: boolean) {
     const ids = new Set(moving.map((i) => i.id));
     const value = this.valueSig();
-    const nextChosen = toRight ? new Set([...value, ...ids]) : new Set(value.filter((id) => !ids.has(id)));
-    const next = this.itemsSig().filter((i) => nextChosen.has(i.id)).map((i) => i.id); // master order
+    const nextChosen = toRight
+      ? new Set([...value, ...ids])
+      : new Set(value.filter((id) => !ids.has(id)));
+    const next = this.itemsSig()
+      .filter((i) => nextChosen.has(i.id))
+      .map((i) => i.id); // master order
     this.valueSig.set(next);
     this.valueChange.emit(next);
-    this.checked.update((prev) => new Set([...prev].filter((id) => !ids.has(id)))); // moved = unchecked
+    this.checked.update(
+      (prev) => new Set([...prev].filter((id) => !ids.has(id))),
+    ); // moved = unchecked
   }
 }
 `,
@@ -10044,23 +13432,50 @@ import { Item } from "./columns";
   selector: "app-transfer-panel",
   standalone: true,
   template: \`
-    <section class="panel" [attr.aria-labelledby]="side + '-title'" [attr.data-testid]="side">
+    <section
+      class="panel"
+      [attr.aria-labelledby]="side + '-title'"
+      [attr.data-testid]="side"
+    >
       <header class="panel-head">
         <label class="all">
           <!-- [indeterminate] binds the DOM property; there is no HTML attribute for it -->
-          <input type="checkbox" [attr.data-testid]="side + '-all'" [checked]="all" [indeterminate]="some"
-            [disabled]="items.length === 0" [attr.aria-label]="'Check all shown in ' + title" (change)="toggleAll.emit()" />
+          <input
+            type="checkbox"
+            [attr.data-testid]="side + '-all'"
+            [checked]="all"
+            [indeterminate]="some"
+            [disabled]="items.length === 0"
+            [attr.aria-label]="'Check all shown in ' + title"
+            (change)="toggleAll.emit()"
+          />
           <span [id]="side + '-title'">{{ title }}</span>
         </label>
-        <span class="tally" [attr.data-testid]="side + '-tally'">{{ checkedCount }}/{{ items.length }} checked, {{ total }} total</span>
+        <span class="tally" [attr.data-testid]="side + '-tally'"
+          >{{ checkedCount }}/{{ items.length }} checked,
+          {{ total }} total</span
+        >
       </header>
-      <input #f class="filter" type="search" placeholder="Filter" [attr.data-testid]="side + '-filter'"
-        [attr.aria-label]="'Filter ' + title" [value]="filter" (input)="filterChange.emit(f.value)" />
+      <input
+        #f
+        class="filter"
+        type="search"
+        placeholder="Filter"
+        [attr.data-testid]="side + '-filter'"
+        [attr.aria-label]="'Filter ' + title"
+        [value]="filter"
+        (input)="filterChange.emit(f.value)"
+      />
       <ul class="items">
         @for (item of items; track item.id) {
           <li>
             <label>
-              <input type="checkbox" [attr.data-testid]="side + '-item'" [checked]="checked.has(item.id)" (change)="toggle.emit(item.id)" />
+              <input
+                type="checkbox"
+                [attr.data-testid]="side + '-item'"
+                [checked]="checked.has(item.id)"
+                (change)="toggle.emit(item.id)"
+              />
               {{ item.label }}
             </label>
           </li>
@@ -10070,18 +13485,71 @@ import { Item } from "./columns";
       </ul>
     </section>
   \`,
-  styles: [\`
-    .panel { background: #1a1d27; border: 1px solid #343a4f; border-radius: 10px; padding: 10px; min-width: 0; }
-    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .all { display: flex; gap: 8px; align-items: center; font-weight: 600; }
-    .tally { font-size: 0.75rem; color: #7d859b; }
-    .filter { width: 100%; box-sizing: border-box; padding: 6px 8px; margin-bottom: 6px; color: inherit; background: #11131a; border: 1px solid #343a4f; border-radius: 6px; }
-    .items { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; }
-    .items label { display: flex; gap: 8px; align-items: center; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
-    .items label:hover { background: #262b3a; }
-    .none { padding: 6px 4px; color: #5d6478; font-size: 0.9rem; }
-    .panel input:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-  \`],
+  styles: [
+    \`
+      .panel {
+        background: #1a1d27;
+        border: 1px solid #343a4f;
+        border-radius: 10px;
+        padding: 10px;
+        min-width: 0;
+      }
+      .panel-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .all {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 600;
+      }
+      .tally {
+        font-size: 0.75rem;
+        color: #7d859b;
+      }
+      .filter {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        margin-bottom: 6px;
+        color: inherit;
+        background: #11131a;
+        border: 1px solid #343a4f;
+        border-radius: 6px;
+      }
+      .items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .items label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .items label:hover {
+        background: #262b3a;
+      }
+      .none {
+        padding: 6px 4px;
+        color: #5d6478;
+        font-size: 0.9rem;
+      }
+      .panel input:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 1px;
+      }
+    \`,
+  ],
 })
 export class TransferPanelComponent {
   @Input({ required: true }) title = "";

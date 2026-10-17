@@ -142,10 +142,16 @@ React state must be replaced, never mutated (see [why React state updates must b
 export function updateNode(nodes, id, fn) {
   let changed = false;
   const next = nodes.map((n) => {
-    if (n.id === id) { changed = true; return fn(n); }
+    if (n.id === id) {
+      changed = true;
+      return fn(n);
+    }
     if (n.children) {
       const kids = updateNode(n.children, id, fn);
-      if (kids !== n.children) { changed = true; return { ...n, children: kids }; }
+      if (kids !== n.children) {
+        changed = true;
+        return { ...n, children: kids };
+      }
     }
     return n;
   });
@@ -162,14 +168,27 @@ The same pattern gives \`removeNode\` (filter out the id, which drops its whole 
 📌 **Interview term: Recursive component** — a component that renders itself for its children. It needs a base case: here, a file or a closed folder renders no children, so the recursion stops.
 
 ~~~jsx
-{open && (
-  <ul role="group">
-    {sortNodes(node.children).map((child) => (
-      <TreeNode key={child.id} node={child} depth={depth + 1} api={api} />
-    ))}
-    {creatingHere && <NewItemRow depth={depth + 1} type={api.editing.type} api={api} />}
-  </ul>
-)}
+{
+  open && (
+    <ul role="group">
+      {sortNodes(node.children).map((child) => (
+        <TreeNode
+          key={child.id}
+          node={child}
+          depth={depth + 1}
+          api={api}
+        />
+      ))}
+      {creatingHere && (
+        <NewItemRow
+          depth={depth + 1}
+          type={api.editing.type}
+          api={api}
+        />
+      )}
+    </ul>
+  );
+}
 ~~~
 
 Each child gets \`key={child.id}\`, never the array index: sorting or inserting changes indexes, and index keys would let React reuse the wrong row (see [the key prop](/interview-question/what-is-the-purpose-of-the-key-prop-when-rendering-lists-in-react)). \`depth\` drives both \`aria-level\` and the indentation.
@@ -181,17 +200,29 @@ The shared values travel down as one \`api\` object. For a tree that is a few le
 ~~~js
 export function sortNodes(nodes) {
   return [...nodes].sort((a, b) =>
-    a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 }
 ~~~
 
 Rendering and the keyboard both go through \`sortNodes\`, so the row under ArrowDown is always the row the user sees next. \`visibleRows\` walks the same sorted order but only into open folders:
 
 ~~~js
-export function visibleRows(nodes, expanded, depth = 1, parentId = null, out = []) {
+export function visibleRows(
+  nodes,
+  expanded,
+  depth = 1,
+  parentId = null,
+  out = [],
+) {
   for (const n of sortNodes(nodes)) {
     out.push({ id: n.id, parentId, depth, node: n });
-    if (n.children && expanded.has(n.id)) visibleRows(n.children, expanded, depth + 1, n.id, out);
+    if (n.children && expanded.has(n.id))
+      visibleRows(n.children, expanded, depth + 1, n.id, out);
   }
   return out;
 }
@@ -205,7 +236,8 @@ export function visibleRows(nodes, expanded, depth = 1, parentId = null, out = [
 function setOpen(id, open) {
   setExpanded((prev) => {
     const next = new Set(prev);
-    if (open) next.add(id); else next.delete(id);
+    if (open) next.add(id);
+    else next.delete(id);
     return next;
   });
 }
@@ -220,22 +252,36 @@ A row click selects it and toggles a folder. Selection stores the id; the node i
 ~~~jsx
 function commit(raw) {
   const name = raw.trim();
-  if (!name) { cancel(); return; }
-  const parentId = editing.kind === 'new' ? editing.parentId : findParentId(tree, editing.id);
-  const problem = validateName(tree, parentId, name, editing.kind === 'rename' ? editing.id : null);
-  if (problem) { setError(problem); return; }
-  if (editing.kind === 'new') {
+  if (!name) {
+    cancel();
+    return;
+  }
+  const parentId =
+    editing.kind === "new"
+      ? editing.parentId
+      : findParentId(tree, editing.id);
+  const problem = validateName(
+    tree,
+    parentId,
+    name,
+    editing.kind === "rename" ? editing.id : null,
+  );
+  if (problem) {
+    setError(problem);
+    return;
+  }
+  if (editing.kind === "new") {
     const node = { id: makeId(), name, type: editing.type };
-    if (editing.type === 'folder') node.children = [];
+    if (editing.type === "folder") node.children = [];
     setTree((t) => insertNode(t, parentId, node));
     setSelectedId(node.id);
-    setStatus('Created ' + name);
+    setStatus("Created " + name);
   } else {
     setTree((t) => updateNode(t, editing.id, (n) => ({ ...n, name })));
-    setStatus('Renamed to ' + name);
+    setStatus("Renamed to " + name);
   }
   setEditing(null);
-  setError('');
+  setError("");
   focusPending.current = true;
 }
 ~~~
@@ -250,19 +296,23 @@ function commit(raw) {
 function onKeyDown(e, id) {
   const i = rows.findIndex((r) => r.id === id);
   const { node, parentId } = rows[i];
-  const isFolder = node.type === 'folder';
+  const isFolder = node.type === "folder";
   const open = expanded.has(id);
-  if (e.key === 'ArrowDown') { if (rows[i + 1]) select(rows[i + 1].id); }
-  else if (e.key === 'ArrowUp') { if (rows[i - 1]) select(rows[i - 1].id); }
-  else if (e.key === 'ArrowRight') {
+  if (e.key === "ArrowDown") {
+    if (rows[i + 1]) select(rows[i + 1].id);
+  } else if (e.key === "ArrowUp") {
+    if (rows[i - 1]) select(rows[i - 1].id);
+  } else if (e.key === "ArrowRight") {
     if (isFolder && !open) setOpen(id, true);
     else if (isFolder && node.children.length) select(rows[i + 1].id);
-  } else if (e.key === 'ArrowLeft') {
+  } else if (e.key === "ArrowLeft") {
     if (isFolder && open) setOpen(id, false);
     else if (parentId) select(parentId);
-  } else if (e.key === 'Enter') { setSelectedId(id); if (isFolder) setOpen(id, !open); }
-  else if (e.key === 'F2') startRename(node);
-  else if (e.key === 'Delete') remove(node);
+  } else if (e.key === "Enter") {
+    setSelectedId(id);
+    if (isFolder) setOpen(id, !open);
+  } else if (e.key === "F2") startRename(node);
+  else if (e.key === "Delete") remove(node);
   else return;
   e.preventDefault();
 }
@@ -415,27 +465,40 @@ What this proves: the tree starts with folders first and A to Z (\`public\` befo
 
 **Conclusion:** A file explorer is one recursive component plus a disciplined state model. Keep the files, the open folders, the selection and the draft as separate pieces of state, derive everything else, update the tree immutably by id, and move a single tab stop with the arrow keys. With that base, the follow-ups (a [toolbar with breadcrumbs, search and a context menu](/interview-question/build-a-file-explorer-toolbar-breadcrumbs-search-context-menu), or drag-and-drop) are additions rather than rewrites.`,
         files: {
-          "/App.js": `import { useEffect, useMemo, useRef, useState } from 'react';
-import TreeNode, { NewItemRow } from './src/TreeNode';
+          "/App.js": `import { useEffect, useMemo, useRef, useState } from "react";
+import TreeNode, { NewItemRow } from "./src/TreeNode";
 import {
-  initialTree, makeId, sortNodes, findNode, findParentId, updateNode, removeNode,
-  insertNode, countDescendants, visibleRows, validateName,
-} from './src/treeUtils';
+  initialTree,
+  makeId,
+  sortNodes,
+  findNode,
+  findParentId,
+  updateNode,
+  removeNode,
+  insertNode,
+  countDescendants,
+  visibleRows,
+  validateName,
+} from "./src/treeUtils";
 
 export default function App() {
   const [tree, setTree] = useState(initialTree);
   const [expanded, setExpanded] = useState(() => new Set());
   const [selectedId, setSelectedId] = useState(null);
-  const [editing, setEditing] = useState(null); // { kind: 'new', parentId, type } | { kind: 'rename', id }
-  const [error, setError] = useState('');
-  const [status, setStatus] = useState('');
+  // { kind: 'new', parentId, type } | { kind: 'rename', id }
+  const [editing, setEditing] = useState(null);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
   const treeRef = useRef(null);
   const focusPending = useRef(false);
 
-  // Derived, never stored: the visible rows (for the keyboard) and the selected node.
+  // Derived, never stored: the visible rows
+  // (for the keyboard) and the selected node.
   const rows = useMemo(() => visibleRows(tree, expanded), [tree, expanded]);
   const selected = selectedId ? findNode(tree, selectedId) : null;
-  const tabStopId = rows.some((r) => r.id === selectedId) ? selectedId : rows[0]?.id;
+  const tabStopId = rows.some((r) => r.id === selectedId)
+    ? selectedId
+    : rows[0]?.id;
 
   // After a keyboard move, put DOM focus on the newly selected row.
   useEffect(() => {
@@ -447,52 +510,74 @@ export default function App() {
   function setOpen(id, open) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (open) next.add(id); else next.delete(id);
+      if (open) next.add(id);
+      else next.delete(id);
       return next;
     });
   }
 
-  function select(id) { setSelectedId(id); focusPending.current = true; }
+  function select(id) {
+    setSelectedId(id);
+    focusPending.current = true;
+  }
 
   function startNew(type) {
     let parentId = null;
-    if (selected) parentId = selected.type === 'folder' ? selected.id : findParentId(tree, selected.id);
+    if (selected)
+      parentId =
+        selected.type === "folder"
+          ? selected.id
+          : findParentId(tree, selected.id);
     if (parentId) setOpen(parentId, true);
-    setEditing({ kind: 'new', parentId, type });
-    setError('');
+    setEditing({ kind: "new", parentId, type });
+    setError("");
   }
 
   function startRename(node) {
     if (!node) return;
     setSelectedId(node.id);
-    setEditing({ kind: 'rename', id: node.id });
-    setError('');
+    setEditing({ kind: "rename", id: node.id });
+    setError("");
   }
 
   function cancel() {
     setEditing(null);
-    setError('');
+    setError("");
     focusPending.current = true;
   }
 
   function commit(raw) {
     const name = raw.trim();
-    if (!name) { cancel(); return; }
-    const parentId = editing.kind === 'new' ? editing.parentId : findParentId(tree, editing.id);
-    const problem = validateName(tree, parentId, name, editing.kind === 'rename' ? editing.id : null);
-    if (problem) { setError(problem); return; }
-    if (editing.kind === 'new') {
+    if (!name) {
+      cancel();
+      return;
+    }
+    const parentId =
+      editing.kind === "new"
+        ? editing.parentId
+        : findParentId(tree, editing.id);
+    const problem = validateName(
+      tree,
+      parentId,
+      name,
+      editing.kind === "rename" ? editing.id : null,
+    );
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    if (editing.kind === "new") {
       const node = { id: makeId(), name, type: editing.type };
-      if (editing.type === 'folder') node.children = [];
+      if (editing.type === "folder") node.children = [];
       setTree((t) => insertNode(t, parentId, node));
       setSelectedId(node.id);
-      setStatus('Created ' + name);
+      setStatus("Created " + name);
     } else {
       setTree((t) => updateNode(t, editing.id, (n) => ({ ...n, name })));
-      setStatus('Renamed to ' + name);
+      setStatus("Renamed to " + name);
     }
     setEditing(null);
-    setError('');
+    setError("");
     focusPending.current = true;
   }
 
@@ -503,66 +588,107 @@ export default function App() {
     setTree((t) => removeNode(t, node.id));
     setSelectedId(parentId);
     focusPending.current = true;
-    setStatus('Deleted ' + node.name + (inside ? ' and ' + inside + ' item' + (inside === 1 ? '' : 's') + ' inside' : ''));
+    setStatus(
+      "Deleted " +
+        node.name +
+        (inside
+          ? " and " + inside + " item" + (inside === 1 ? "" : "s") + " inside"
+          : ""),
+    );
   }
 
   function onRowClick(node) {
     setSelectedId(node.id);
-    if (node.type === 'folder') setOpen(node.id, !expanded.has(node.id));
+    if (node.type === "folder") setOpen(node.id, !expanded.has(node.id));
   }
 
   function onKeyDown(e, id) {
     const i = rows.findIndex((r) => r.id === id);
     const { node, parentId } = rows[i];
-    const isFolder = node.type === 'folder';
+    const isFolder = node.type === "folder";
     const open = expanded.has(id);
-    if (e.key === 'ArrowDown') { if (rows[i + 1]) select(rows[i + 1].id); }
-    else if (e.key === 'ArrowUp') { if (rows[i - 1]) select(rows[i - 1].id); }
-    else if (e.key === 'ArrowRight') {
+    if (e.key === "ArrowDown") {
+      if (rows[i + 1]) select(rows[i + 1].id);
+    } else if (e.key === "ArrowUp") {
+      if (rows[i - 1]) select(rows[i - 1].id);
+    } else if (e.key === "ArrowRight") {
       if (isFolder && !open) setOpen(id, true);
       else if (isFolder && node.children.length) select(rows[i + 1].id);
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === "ArrowLeft") {
       if (isFolder && open) setOpen(id, false);
       else if (parentId) select(parentId);
-    } else if (e.key === 'Enter') { setSelectedId(id); if (isFolder) setOpen(id, !open); }
-    else if (e.key === 'F2') startRename(node);
-    else if (e.key === 'Delete') remove(node);
+    } else if (e.key === "Enter") {
+      setSelectedId(id);
+      if (isFolder) setOpen(id, !open);
+    } else if (e.key === "F2") startRename(node);
+    else if (e.key === "Delete") remove(node);
     else return;
     e.preventDefault();
   }
 
-  const api = { expanded, selectedId, tabStopId, editing, error, onRowClick, onKeyDown, commit, cancel };
+  const api = {
+    expanded,
+    selectedId,
+    tabStopId,
+    editing,
+    error,
+    onRowClick,
+    onKeyDown,
+    commit,
+    cancel,
+  };
 
   return (
     <div className="app">
       <h1>Files</h1>
       <div className="toolbar" role="toolbar" aria-label="File actions">
-        <button data-testid="new-file" onClick={() => startNew('file')}>+ File</button>
-        <button data-testid="new-folder" onClick={() => startNew('folder')}>+ Folder</button>
-        <button data-testid="rename" disabled={!selected} onClick={() => startRename(selected)}>Rename</button>
-        <button data-testid="delete" disabled={!selected} onClick={() => remove(selected)}>Delete</button>
+        <button data-testid="new-file" onClick={() => startNew("file")}>
+          + File
+        </button>
+        <button data-testid="new-folder" onClick={() => startNew("folder")}>
+          + Folder
+        </button>
+        <button
+          data-testid="rename"
+          disabled={!selected}
+          onClick={() => startRename(selected)}
+        >
+          Rename
+        </button>
+        <button
+          data-testid="delete"
+          disabled={!selected}
+          onClick={() => remove(selected)}
+        >
+          Delete
+        </button>
       </div>
       <ul role="tree" aria-label="Project files" className="tree" ref={treeRef}>
         {sortNodes(tree).map((node) => (
           <TreeNode key={node.id} node={node} depth={1} api={api} />
         ))}
-        {editing?.kind === 'new' && editing.parentId === null && (
+        {editing?.kind === "new" && editing.parentId === null && (
           <NewItemRow depth={1} type={editing.type} api={api} />
         )}
       </ul>
-      <p className="status" role="status" data-testid="status">{status}</p>
+      <p className="status" role="status" data-testid="status">
+        {status}
+      </p>
     </div>
   );
 }
 `,
-          "/src/TreeNode.js": `import { useEffect, useRef, useState } from 'react';
-import { sortNodes } from './treeUtils';
+          "/src/TreeNode.js": `import { useEffect, useRef, useState } from "react";
+import { sortNodes } from "./treeUtils";
 
 // One inline text box, used both for "new file / folder" and for "rename".
 export function NameInput({ initial, label, error, onCommit, onCancel }) {
   const [value, setValue] = useState(initial);
   const ref = useRef(null);
-  useEffect(() => { ref.current.focus(); ref.current.select(); }, []);
+  useEffect(() => {
+    ref.current.focus();
+    ref.current.select();
+  }, []);
   return (
     <span className="edit" onClick={(e) => e.stopPropagation()}>
       <input
@@ -573,11 +699,21 @@ export function NameInput({ initial, label, error, onCommit, onCancel }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') { e.preventDefault(); onCommit(value); }
-          if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onCommit(value);
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
         }}
       />
-      {error && <span role="alert" className="error">{error}</span>}
+      {error && (
+        <span role="alert" className="error">
+          {error}
+        </span>
+      )}
     </span>
   );
 }
@@ -587,21 +723,29 @@ export function NewItemRow({ depth, type, api }) {
     <li role="none">
       <div className="row" style={{ paddingLeft: 8 + (depth - 1) * 16 }}>
         <span className="chevron" />
-        <span aria-hidden="true">{type === 'folder' ? '📁' : '📄'}</span>
-        <NameInput initial="" label={'New ' + type + ' name'} error={api.error} onCommit={api.commit} onCancel={api.cancel} />
+        <span aria-hidden="true">{type === "folder" ? "📁" : "📄"}</span>
+        <NameInput
+          initial=""
+          label={"New " + type + " name"}
+          error={api.error}
+          onCommit={api.commit}
+          onCancel={api.cancel}
+        />
       </div>
     </li>
   );
 }
 
-// The recursive component: it renders one node, and for an open folder it renders
+// The recursive component: it renders one
+// node, and for an open folder it renders
 // itself again for every child, one level deeper.
 export default function TreeNode({ node, depth, api }) {
-  const isFolder = node.type === 'folder';
+  const isFolder = node.type === "folder";
   const open = isFolder && api.expanded.has(node.id);
   const selected = api.selectedId === node.id;
-  const renaming = api.editing?.kind === 'rename' && api.editing.id === node.id;
-  const creatingHere = api.editing?.kind === 'new' && api.editing.parentId === node.id;
+  const renaming = api.editing?.kind === "rename" && api.editing.id === node.id;
+  const creatingHere =
+    api.editing?.kind === "new" && api.editing.parentId === node.id;
 
   return (
     <li
@@ -612,17 +756,27 @@ export default function TreeNode({ node, depth, api }) {
       tabIndex={api.tabStopId === node.id ? 0 : -1}
       data-id={node.id}
       data-name={node.name}
-      onKeyDown={(e) => { if (e.target === e.currentTarget) api.onKeyDown(e, node.id); }}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget) api.onKeyDown(e, node.id);
+      }}
     >
       <div
-        className={'row' + (selected ? ' selected' : '')}
+        className={"row" + (selected ? " selected" : "")}
         style={{ paddingLeft: 8 + (depth - 1) * 16 }}
         onClick={() => api.onRowClick(node)}
       >
-        <span className="chevron" aria-hidden="true">{isFolder ? (open ? '▾' : '▸') : ''}</span>
-        <span aria-hidden="true">{isFolder ? '📁' : '📄'}</span>
+        <span className="chevron" aria-hidden="true">
+          {isFolder ? (open ? "▾" : "▸") : ""}
+        </span>
+        <span aria-hidden="true">{isFolder ? "📁" : "📄"}</span>
         {renaming ? (
-          <NameInput initial={node.name} label={'Rename ' + node.name} error={api.error} onCommit={api.commit} onCancel={api.cancel} />
+          <NameInput
+            initial={node.name}
+            label={"Rename " + node.name}
+            error={api.error}
+            onCommit={api.commit}
+            onCancel={api.cancel}
+          />
         ) : (
           <span className="name">{node.name}</span>
         )}
@@ -632,39 +786,62 @@ export default function TreeNode({ node, depth, api }) {
           {sortNodes(node.children).map((child) => (
             <TreeNode key={child.id} node={child} depth={depth + 1} api={api} />
           ))}
-          {creatingHere && <NewItemRow depth={depth + 1} type={api.editing.type} api={api} />}
+          {creatingHere && (
+            <NewItemRow depth={depth + 1} type={api.editing.type} api={api} />
+          )}
         </ul>
       )}
     </li>
   );
 }
 `,
-          "/src/treeUtils.js": `// Pure helpers for a NESTED tree: [{ id, name, type: 'folder' | 'file', children? }]
-// Every update returns a new array and copies only the folders on the path to the change.
+          "/src/treeUtils.js": `// Pure helpers for a NESTED tree: [{ id,
+// name, type: 'folder' | 'file', children? }]
+// Every update returns a new array and copies
+// only the folders on the path to the change.
 
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const initialTree = [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-    { id: 'index', name: 'index.js', type: 'file' },
-  ] },
-  { id: 'public', name: 'public', type: 'folder', children: [
-    { id: 'favicon', name: 'favicon.ico', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
-  { id: 'pkg', name: 'package.json', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "button", name: "Button.jsx", type: "file" },
+        ],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+      { id: "index", name: "index.js", type: "file" },
+    ],
+  },
+  {
+    id: "public",
+    name: "public",
+    type: "folder",
+    children: [{ id: "favicon", name: "favicon.ico", type: "file" }],
+  },
+  { id: "readme", name: "README.md", type: "file" },
+  { id: "pkg", name: "package.json", type: "file" },
 ];
 
-// Folders first, then A-Z. Used for rendering AND for keyboard order, so they agree.
+// Folders first, then A-Z. Used for rendering
+// AND for keyboard order, so they agree.
 export function sortNodes(nodes) {
   return [...nodes].sort((a, b) =>
-    a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 }
 
 export function findNode(nodes, id) {
@@ -691,10 +868,16 @@ export function findParentId(nodes, id, parentId = null) {
 export function updateNode(nodes, id, fn) {
   let changed = false;
   const next = nodes.map((n) => {
-    if (n.id === id) { changed = true; return fn(n); }
+    if (n.id === id) {
+      changed = true;
+      return fn(n);
+    }
     if (n.children) {
       const kids = updateNode(n.children, id, fn);
-      if (kids !== n.children) { changed = true; return { ...n, children: kids }; }
+      if (kids !== n.children) {
+        changed = true;
+        return { ...n, children: kids };
+      }
     }
     return n;
   });
@@ -705,10 +888,17 @@ export function removeNode(nodes, id) {
   let changed = false;
   const next = [];
   for (const n of nodes) {
-    if (n.id === id) { changed = true; continue; }
+    if (n.id === id) {
+      changed = true;
+      continue;
+    }
     if (n.children) {
       const kids = removeNode(n.children, id);
-      if (kids !== n.children) { changed = true; next.push({ ...n, children: kids }); continue; }
+      if (kids !== n.children) {
+        changed = true;
+        next.push({ ...n, children: kids });
+        continue;
+      }
     }
     next.push(n);
   }
@@ -717,46 +907,139 @@ export function removeNode(nodes, id) {
 
 export function insertNode(nodes, parentId, node) {
   if (parentId === null) return [...nodes, node];
-  return updateNode(nodes, parentId, (f) => ({ ...f, children: [...f.children, node] }));
+  return updateNode(nodes, parentId, (f) => ({
+    ...f,
+    children: [...f.children, node],
+  }));
 }
 
 export function countDescendants(node) {
-  return (node.children || []).reduce((sum, c) => sum + 1 + countDescendants(c), 0);
+  return (node.children || []).reduce(
+    (sum, c) => sum + 1 + countDescendants(c),
+    0,
+  );
 }
 
-// The rows a keyboard user can reach right now: open folders only, in render order.
-export function visibleRows(nodes, expanded, depth = 1, parentId = null, out = []) {
+// The rows a keyboard user can reach right
+// now: open folders only, in render order.
+export function visibleRows(
+  nodes,
+  expanded,
+  depth = 1,
+  parentId = null,
+  out = [],
+) {
   for (const n of sortNodes(nodes)) {
     out.push({ id: n.id, parentId, depth, node: n });
-    if (n.children && expanded.has(n.id)) visibleRows(n.children, expanded, depth + 1, n.id, out);
+    if (n.children && expanded.has(n.id))
+      visibleRows(n.children, expanded, depth + 1, n.id, out);
   }
   return out;
 }
 
 export function validateName(nodes, parentId, name, exceptId) {
-  const siblings = parentId === null ? nodes : findNode(nodes, parentId).children;
-  const clash = siblings.some((s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase());
-  return clash ? 'A file or folder named "' + name + '" already exists here' : '';
+  const siblings =
+    parentId === null ? nodes : findNode(nodes, parentId).children;
+  const clash = siblings.some(
+    (s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase(),
+  );
+  return clash
+    ? 'A file or folder named "' + name + '" already exists here'
+    : "";
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: default; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
-.row:hover { background: #1f2533; }
-.row.selected { background: #263354; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-.edit { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.edit input { background: #0f1115; color: #e6e6e6; border: 1px solid #6ea8ff; border-radius: 4px; padding: 3px 6px; }
-.error { color: #ff8a80; font-size: 12px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.selected {
+  background: #263354;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.edit input {
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #6ea8ff;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.error {
+  color: #ff8a80;
+  font-size: 12px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 `,
         },
       },
@@ -795,12 +1078,22 @@ Render nested folders and files (folders first, A to Z), toggle folders, select,
 ~~~vue
 <ul v-if="open" role="group">
   <!-- The component renders itself: Vue resolves TreeNode from this file name. -->
-  <TreeNode v-for="child in children" :key="child.id" :node="child" :depth="depth + 1" />
+  <TreeNode
+    v-for="child in children"
+    :key="child.id"
+    :node="child"
+    :depth="depth + 1"
+  />
   <li v-if="creatingHere" role="none">
     <div class="row" :style="{ paddingLeft: 8 + depth * 16 + 'px' }">
       <span class="chevron"></span>
       <span aria-hidden="true">{{ api.editing.type === 'folder' ? '📁' : '📄' }}</span>
-      <NameInput :label="'New ' + api.editing.type + ' name'" :error="api.error" @commit="api.commit" @cancel="api.cancel" />
+      <NameInput
+        :label="'New ' + api.editing.type + ' name'"
+        :error="api.error"
+        @commit="api.commit"
+        @cancel="api.cancel"
+      />
     </div>
   </li>
 </ul>
@@ -813,8 +1106,22 @@ The base case is a file or a closed folder: \`v-if="open"\` is false and the rec
 📌 **Interview term: provide / inject** — an ancestor makes a value available to every descendant, at any depth, without passing props through each level. See [provide and inject](/interview-question/what-are-provide-and-inject).
 
 ~~~js
-// reactive() unwraps the refs, so children read api.selectedId, not api.selectedId.value
-provide('explorer', reactive({ expanded, selectedId, tabStopId, editing, error, onRowClick, onKeyDown, commit, cancel }));
+// reactive() unwraps the refs, so children read
+// api.selectedId, not api.selectedId.value
+provide(
+  "explorer",
+  reactive({
+    expanded,
+    selectedId,
+    tabStopId,
+    editing,
+    error,
+    onRowClick,
+    onKeyDown,
+    commit,
+    cancel,
+  }),
+);
 ~~~
 
 Wrapping the object in \`reactive()\` unwraps the refs inside it, so a child reads \`api.selectedId\`, not \`api.selectedId.value\`, and the read is still tracked. Each \`TreeNode\` then only receives what differs per level: \`node\` and \`depth\`.
@@ -823,9 +1130,16 @@ Wrapping the object in \`reactive()\` unwraps the refs inside it, so a child rea
 
 ~~~js
 const rows = computed(() => visibleRows(tree, expanded));
-const selected = computed(() => (selectedId.value ? locate(tree, selectedId.value)?.node ?? null : null));
+const selected = computed(() =>
+  selectedId.value
+    ? (locate(tree, selectedId.value)?.node ?? null)
+    : null,
+);
 const tabStopId = computed(() =>
-  rows.value.some((r) => r.id === selectedId.value) ? selectedId.value : rows.value[0]?.id);
+  rows.value.some((r) => r.id === selectedId.value)
+    ? selectedId.value
+    : rows.value[0]?.id,
+);
 const topLevel = computed(() => sortNodes(tree));
 ~~~
 
@@ -838,21 +1152,31 @@ function commit(raw) {
   const name = raw.trim();
   if (!name) return cancel();
   const e = editing.value;
-  const parentId = e.kind === 'new' ? e.parentId : locate(tree, e.id).parent?.id ?? null;
-  const problem = validateName(siblingsOf(parentId), name, e.kind === 'rename' ? e.id : null);
-  if (problem) { error.value = problem; return; }
-  if (e.kind === 'new') {
+  const parentId =
+    e.kind === "new"
+      ? e.parentId
+      : (locate(tree, e.id).parent?.id ?? null);
+  const problem = validateName(
+    siblingsOf(parentId),
+    name,
+    e.kind === "rename" ? e.id : null,
+  );
+  if (problem) {
+    error.value = problem;
+    return;
+  }
+  if (e.kind === "new") {
     const node = { id: makeId(), name, type: e.type };
-    if (e.type === 'folder') node.children = [];
+    if (e.type === "folder") node.children = [];
     siblingsOf(parentId).push(node);
     selectedId.value = node.id;
-    status.value = 'Created ' + name;
+    status.value = "Created " + name;
   } else {
     locate(tree, e.id).node.name = name;
-    status.value = 'Renamed to ' + name;
+    status.value = "Renamed to " + name;
   }
   editing.value = null;
-  error.value = '';
+  error.value = "";
   focusSelected();
 }
 ~~~
@@ -992,52 +1316,79 @@ It matches the other two frameworks line for line: arrow keys move focus and ope
 **Conclusion:** In Vue a file explorer is one self-referencing SFC, a deep \`reactive\` tree that you mutate directly, a reactive \`Set\` for open folders, and \`provide\` / \`inject\` so the recursion only passes \`node\` and \`depth\`. Add the ARIA tree keys with \`.self\` and \`nextTick\` focus, and you have the base that the [toolbar](/interview-question/build-a-file-explorer-toolbar-breadcrumbs-search-context-menu) and [drag-and-drop](/interview-question/build-a-file-explorer-with-nested-drag-and-drop) questions build on.`,
         files: {
           "/src/App.vue": `<script setup>
-import { computed, nextTick, provide, reactive, ref } from 'vue';
-import TreeNode from './components/TreeNode.vue';
-import NameInput from './components/NameInput.vue';
-import { createTree, makeId, sortNodes, locate, countDescendants, visibleRows, validateName } from './treeData.js';
+import { computed, nextTick, provide, reactive, ref } from "vue";
+import TreeNode from "./components/TreeNode.vue";
+import NameInput from "./components/NameInput.vue";
+import {
+  createTree,
+  makeId,
+  sortNodes,
+  locate,
+  countDescendants,
+  visibleRows,
+  validateName,
+} from "./treeData.js";
 
-const tree = reactive(createTree());   // deep reactive: push / splice / assign just work
-const expanded = reactive(new Set());  // ids of open folders, kept apart from the data
+// deep reactive: push / splice / assign just work
+const tree = reactive(createTree());
+// ids of open folders, kept apart from the data
+const expanded = reactive(new Set());
 const selectedId = ref(null);
-const editing = ref(null);             // { kind: 'new', parentId, type } | { kind: 'rename', id }
-const error = ref('');
-const status = ref('');
+// { kind: 'new', parentId, type } | { kind: 'rename', id }
+const editing = ref(null);
+const error = ref("");
+const status = ref("");
 const treeEl = ref(null);
 
 const rows = computed(() => visibleRows(tree, expanded));
-const selected = computed(() => (selectedId.value ? locate(tree, selectedId.value)?.node ?? null : null));
+const selected = computed(() =>
+  selectedId.value ? (locate(tree, selectedId.value)?.node ?? null) : null,
+);
 const tabStopId = computed(() =>
-  rows.value.some((r) => r.id === selectedId.value) ? selectedId.value : rows.value[0]?.id);
+  rows.value.some((r) => r.id === selectedId.value)
+    ? selectedId.value
+    : rows.value[0]?.id,
+);
 const topLevel = computed(() => sortNodes(tree));
 
 async function focusSelected() {
   await nextTick();
   treeEl.value?.querySelector(\`[data-id="\${selectedId.value}"]\`)?.focus();
 }
-function select(id) { selectedId.value = id; focusSelected(); }
-function setOpen(id, open) { if (open) expanded.add(id); else expanded.delete(id); }
-const siblingsOf = (parentId) => (parentId === null ? tree : locate(tree, parentId).node.children);
+function select(id) {
+  selectedId.value = id;
+  focusSelected();
+}
+function setOpen(id, open) {
+  if (open) expanded.add(id);
+  else expanded.delete(id);
+}
+const siblingsOf = (parentId) =>
+  parentId === null ? tree : locate(tree, parentId).node.children;
 
 function startNew(type) {
   let parentId = null;
   const node = selected.value;
-  if (node) parentId = node.type === 'folder' ? node.id : locate(tree, node.id).parent?.id ?? null;
+  if (node)
+    parentId =
+      node.type === "folder"
+        ? node.id
+        : (locate(tree, node.id).parent?.id ?? null);
   if (parentId) setOpen(parentId, true);
-  editing.value = { kind: 'new', parentId, type };
-  error.value = '';
+  editing.value = { kind: "new", parentId, type };
+  error.value = "";
 }
 
 function startRename(node) {
   if (!node) return;
   selectedId.value = node.id;
-  editing.value = { kind: 'rename', id: node.id };
-  error.value = '';
+  editing.value = { kind: "rename", id: node.id };
+  error.value = "";
 }
 
 function cancel() {
   editing.value = null;
-  error.value = '';
+  error.value = "";
   focusSelected();
 }
 
@@ -1045,21 +1396,29 @@ function commit(raw) {
   const name = raw.trim();
   if (!name) return cancel();
   const e = editing.value;
-  const parentId = e.kind === 'new' ? e.parentId : locate(tree, e.id).parent?.id ?? null;
-  const problem = validateName(siblingsOf(parentId), name, e.kind === 'rename' ? e.id : null);
-  if (problem) { error.value = problem; return; }
-  if (e.kind === 'new') {
+  const parentId =
+    e.kind === "new" ? e.parentId : (locate(tree, e.id).parent?.id ?? null);
+  const problem = validateName(
+    siblingsOf(parentId),
+    name,
+    e.kind === "rename" ? e.id : null,
+  );
+  if (problem) {
+    error.value = problem;
+    return;
+  }
+  if (e.kind === "new") {
     const node = { id: makeId(), name, type: e.type };
-    if (e.type === 'folder') node.children = [];
+    if (e.type === "folder") node.children = [];
     siblingsOf(parentId).push(node);
     selectedId.value = node.id;
-    status.value = 'Created ' + name;
+    status.value = "Created " + name;
   } else {
     locate(tree, e.id).node.name = name;
-    status.value = 'Renamed to ' + name;
+    status.value = "Renamed to " + name;
   }
   editing.value = null;
-  error.value = '';
+  error.value = "";
   focusSelected();
 }
 
@@ -1067,39 +1426,65 @@ function remove(node) {
   if (!node) return;
   const inside = countDescendants(node);
   const { siblings, parent } = locate(tree, node.id);
-  siblings.splice(siblings.findIndex((s) => s.id === node.id), 1);
+  siblings.splice(
+    siblings.findIndex((s) => s.id === node.id),
+    1,
+  );
   select(parent ? parent.id : null);
-  status.value = 'Deleted ' + node.name + (inside ? ' and ' + inside + ' item' + (inside === 1 ? '' : 's') + ' inside' : '');
+  status.value =
+    "Deleted " +
+    node.name +
+    (inside
+      ? " and " + inside + " item" + (inside === 1 ? "" : "s") + " inside"
+      : "");
 }
 
 function onRowClick(node) {
   selectedId.value = node.id;
-  if (node.type === 'folder') setOpen(node.id, !expanded.has(node.id));
+  if (node.type === "folder") setOpen(node.id, !expanded.has(node.id));
 }
 
 function onKeyDown(e, id) {
   const list = rows.value;
   const i = list.findIndex((r) => r.id === id);
   const { node, parentId } = list[i];
-  const isFolder = node.type === 'folder';
+  const isFolder = node.type === "folder";
   const open = expanded.has(id);
-  if (e.key === 'ArrowDown') { if (list[i + 1]) select(list[i + 1].id); }
-  else if (e.key === 'ArrowUp') { if (list[i - 1]) select(list[i - 1].id); }
-  else if (e.key === 'ArrowRight') {
+  if (e.key === "ArrowDown") {
+    if (list[i + 1]) select(list[i + 1].id);
+  } else if (e.key === "ArrowUp") {
+    if (list[i - 1]) select(list[i - 1].id);
+  } else if (e.key === "ArrowRight") {
     if (isFolder && !open) setOpen(id, true);
     else if (isFolder && node.children.length) select(list[i + 1].id);
-  } else if (e.key === 'ArrowLeft') {
+  } else if (e.key === "ArrowLeft") {
     if (isFolder && open) setOpen(id, false);
     else if (parentId) select(parentId);
-  } else if (e.key === 'Enter') { selectedId.value = id; if (isFolder) setOpen(id, !open); }
-  else if (e.key === 'F2') startRename(node);
-  else if (e.key === 'Delete') remove(node);
+  } else if (e.key === "Enter") {
+    selectedId.value = id;
+    if (isFolder) setOpen(id, !open);
+  } else if (e.key === "F2") startRename(node);
+  else if (e.key === "Delete") remove(node);
   else return;
   e.preventDefault();
 }
 
-// reactive() unwraps the refs, so children read api.selectedId, not api.selectedId.value
-provide('explorer', reactive({ expanded, selectedId, tabStopId, editing, error, onRowClick, onKeyDown, commit, cancel }));
+// reactive() unwraps the refs, so children read
+// api.selectedId, not api.selectedId.value
+provide(
+  "explorer",
+  reactive({
+    expanded,
+    selectedId,
+    tabStopId,
+    editing,
+    error,
+    onRowClick,
+    onKeyDown,
+    commit,
+    cancel,
+  }),
+);
 </script>
 
 <template>
@@ -1107,17 +1492,41 @@ provide('explorer', reactive({ expanded, selectedId, tabStopId, editing, error, 
     <h1>Files</h1>
     <div class="toolbar" role="toolbar" aria-label="File actions">
       <button data-testid="new-file" @click="startNew('file')">+ File</button>
-      <button data-testid="new-folder" @click="startNew('folder')">+ Folder</button>
-      <button data-testid="rename" :disabled="!selected" @click="startRename(selected)">Rename</button>
-      <button data-testid="delete" :disabled="!selected" @click="remove(selected)">Delete</button>
+      <button
+        data-testid="new-folder"
+        @click="startNew('folder')"
+      >+ Folder</button>
+      <button
+        data-testid="rename"
+        :disabled="!selected"
+        @click="startRename(selected)"
+      >Rename</button>
+      <button
+        data-testid="delete"
+        :disabled="!selected"
+        @click="remove(selected)"
+      >Delete</button>
     </div>
     <ul ref="treeEl" role="tree" aria-label="Project files" class="tree">
-      <TreeNode v-for="node in topLevel" :key="node.id" :node="node" :depth="1" />
-      <li v-if="editing?.kind === 'new' && editing.parentId === null" role="none">
+      <TreeNode
+        v-for="node in topLevel"
+        :key="node.id"
+        :node="node"
+        :depth="1"
+      />
+      <li
+        v-if="editing?.kind === 'new' && editing.parentId === null"
+        role="none"
+      >
         <div class="row" style="padding-left: 8px">
           <span class="chevron"></span>
           <span aria-hidden="true">{{ editing.type === 'folder' ? '📁' : '📄' }}</span>
-          <NameInput :label="'New ' + editing.type + ' name'" :error="error" @commit="commit" @cancel="cancel" />
+          <NameInput
+            :label="'New ' + editing.type + ' name'"
+            :error="error"
+            @commit="commit"
+            @cancel="cancel"
+          />
         </div>
       </li>
     </ul>
@@ -1126,39 +1535,116 @@ provide('explorer', reactive({ expanded, selectedId, tabStopId, editing, error, 
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
-button:disabled { opacity: 0.45; cursor: default; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
-.row:hover { background: #1f2533; }
-.row.selected { background: #263354; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-.edit { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.edit input { background: #0f1115; color: #e6e6e6; border: 1px solid #6ea8ff; border-radius: 4px; padding: 3px 6px; }
-.error { color: #ff8a80; font-size: 12px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.selected {
+  background: #263354;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.edit input {
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #6ea8ff;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.error {
+  color: #ff8a80;
+  font-size: 12px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 </style>
 `,
           "/src/components/NameInput.vue": `<script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref } from "vue";
 
 const props = defineProps({
-  initial: { type: String, default: '' },
+  initial: { type: String, default: "" },
   label: { type: String, required: true },
-  error: { type: String, default: '' },
+  error: { type: String, default: "" },
 });
-const emit = defineEmits(['commit', 'cancel']);
+const emit = defineEmits(["commit", "cancel"]);
 
 const value = ref(props.initial);
 const el = ref(null);
-onMounted(() => { el.value.focus(); el.value.select(); });
+onMounted(() => {
+  el.value.focus();
+  el.value.select();
+});
 </script>
 
 <template>
@@ -1177,9 +1663,9 @@ onMounted(() => { el.value.focus(); el.value.select(); });
 </template>
 `,
           "/src/components/TreeNode.vue": `<script setup>
-import { computed, inject } from 'vue';
-import NameInput from './NameInput.vue';
-import { sortNodes } from '../treeData.js';
+import { computed, inject } from "vue";
+import NameInput from "./NameInput.vue";
+import { sortNodes } from "../treeData.js";
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -1187,15 +1673,23 @@ const props = defineProps({
 });
 // Shared explorer state comes from App.vue through provide / inject, so the
 // recursion only passes what changes per level: the node and its depth.
-const api = inject('explorer');
+const api = inject("explorer");
 
-const isFolder = computed(() => props.node.type === 'folder');
+const isFolder = computed(() => props.node.type === "folder");
 const open = computed(() => isFolder.value && api.expanded.has(props.node.id));
 const selected = computed(() => api.selectedId === props.node.id);
-const renaming = computed(() => api.editing?.kind === 'rename' && api.editing.id === props.node.id);
-const creatingHere = computed(() => api.editing?.kind === 'new' && api.editing.parentId === props.node.id);
-const children = computed(() => (open.value ? sortNodes(props.node.children) : []));
-const indent = computed(() => ({ paddingLeft: 8 + (props.depth - 1) * 16 + 'px' }));
+const renaming = computed(
+  () => api.editing?.kind === "rename" && api.editing.id === props.node.id,
+);
+const creatingHere = computed(
+  () => api.editing?.kind === "new" && api.editing.parentId === props.node.id,
+);
+const children = computed(() =>
+  open.value ? sortNodes(props.node.children) : [],
+);
+const indent = computed(() => ({
+  paddingLeft: 8 + (props.depth - 1) * 16 + "px",
+}));
 </script>
 
 <template>
@@ -1209,8 +1703,16 @@ const indent = computed(() => ({ paddingLeft: 8 + (props.depth - 1) * 16 + 'px' 
     :data-name="node.name"
     @keydown.self="api.onKeyDown($event, node.id)"
   >
-    <div class="row" :class="{ selected }" :style="indent" @click="api.onRowClick(node)">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
+    <div
+      class="row"
+      :class="{ selected }"
+      :style="indent"
+      @click="api.onRowClick(node)"
+    >
+      <span
+        class="chevron"
+        aria-hidden="true"
+      >{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
       <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
       <NameInput
         v-if="renaming"
@@ -1224,44 +1726,74 @@ const indent = computed(() => ({ paddingLeft: 8 + (props.depth - 1) * 16 + 'px' 
     </div>
     <ul v-if="open" role="group">
       <!-- The component renders itself: Vue resolves TreeNode from this file name. -->
-      <TreeNode v-for="child in children" :key="child.id" :node="child" :depth="depth + 1" />
+      <TreeNode
+        v-for="child in children"
+        :key="child.id"
+        :node="child"
+        :depth="depth + 1"
+      />
       <li v-if="creatingHere" role="none">
         <div class="row" :style="{ paddingLeft: 8 + depth * 16 + 'px' }">
           <span class="chevron"></span>
           <span aria-hidden="true">{{ api.editing.type === 'folder' ? '📁' : '📄' }}</span>
-          <NameInput :label="'New ' + api.editing.type + ' name'" :error="api.error" @commit="api.commit" @cancel="api.cancel" />
+          <NameInput
+            :label="'New ' + api.editing.type + ' name'"
+            :error="api.error"
+            @commit="api.commit"
+            @cancel="api.cancel"
+          />
         </div>
       </li>
     </ul>
   </li>
 </template>
 `,
-          "/src/treeData.js": `// Data and lookups for a NESTED tree: [{ id, name, type: 'folder' | 'file', children? }]
+          "/src/treeData.js": `// Data and lookups for a NESTED tree: [{ id,
+// name, type: 'folder' | 'file', children? }]
 // Vue tracks nested arrays and objects, so App.vue mutates this tree in place.
 
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const createTree = () => [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-    { id: 'index', name: 'index.js', type: 'file' },
-  ] },
-  { id: 'public', name: 'public', type: 'folder', children: [
-    { id: 'favicon', name: 'favicon.ico', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
-  { id: 'pkg', name: 'package.json', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "button", name: "Button.jsx", type: "file" },
+        ],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+      { id: "index", name: "index.js", type: "file" },
+    ],
+  },
+  {
+    id: "public",
+    name: "public",
+    type: "folder",
+    children: [{ id: "favicon", name: "favicon.ico", type: "file" }],
+  },
+  { id: "readme", name: "README.md", type: "file" },
+  { id: "pkg", name: "package.json", type: "file" },
 ];
 
-// Folders first, then A-Z. Returns a sorted COPY so the stored order is untouched.
+// Folders first, then A-Z. Returns a sorted
+// COPY so the stored order is untouched.
 export function sortNodes(nodes) {
   return [...nodes].sort((a, b) =>
-    a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 }
 
 // Finds a node together with the array that holds it and its parent folder.
@@ -1277,20 +1809,34 @@ export function locate(nodes, id, parent = null) {
 }
 
 export function countDescendants(node) {
-  return (node.children || []).reduce((sum, c) => sum + 1 + countDescendants(c), 0);
+  return (node.children || []).reduce(
+    (sum, c) => sum + 1 + countDescendants(c),
+    0,
+  );
 }
 
-export function visibleRows(nodes, expanded, depth = 1, parentId = null, out = []) {
+export function visibleRows(
+  nodes,
+  expanded,
+  depth = 1,
+  parentId = null,
+  out = [],
+) {
   for (const n of sortNodes(nodes)) {
     out.push({ id: n.id, parentId, depth, node: n });
-    if (n.children && expanded.has(n.id)) visibleRows(n.children, expanded, depth + 1, n.id, out);
+    if (n.children && expanded.has(n.id))
+      visibleRows(n.children, expanded, depth + 1, n.id, out);
   }
   return out;
 }
 
 export function validateName(siblings, name, exceptId) {
-  const clash = siblings.some((s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase());
-  return clash ? 'A file or folder named "' + name + '" already exists here' : '';
+  const clash = siblings.some(
+    (s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase(),
+  );
+  return clash
+    ? 'A file or folder named "' + name + '" already exists here'
+    : "";
 }
 `,
         },
@@ -1374,20 +1920,32 @@ Standalone components may use their own selector. While building the sibling [to
 ### Step 3: Getters for input-based values
 
 ~~~ts
-// Getters, not computed(): @Input fields are plain properties, and the template
-// re-reads these on every check while the signals inside them stay tracked.
-get isFolder() { return this.node.type === 'folder'; }
-get open() { return this.isFolder && this.store.expanded().has(this.node.id); }
-get selected() { return this.store.selectedId() === this.node.id; }
+// Getters, not computed(): @Input fields
+// are plain properties, and the template
+// re-reads these on every check while
+// the signals inside them stay tracked.
+get isFolder() {
+  return this.node.type === "folder";
+}
+get open() {
+  return this.isFolder && this.store.expanded().has(this.node.id);
+}
+get selected() {
+  return this.store.selectedId() === this.node.id;
+}
 get renaming() {
   const e = this.store.editing();
-  return e?.kind === 'rename' && e.id === this.node.id;
+  return e?.kind === "rename" && e.id === this.node.id;
 }
 get newType() {
   const e = this.store.editing();
-  return e?.kind === 'new' && e.parentId === this.node.id ? e.type : null;
+  return e?.kind === "new" && e.parentId === this.node.id
+    ? e.type
+    : null;
 }
-get children() { return sortNodes(this.node.children ?? []); }
+get children() {
+  return sortNodes(this.node.children ?? []);
+}
 ~~~
 
 \`node\` and \`depth\` are plain \`@Input\` fields, which a \`computed()\` cannot track. Getters are re-read whenever the template is checked, and the signals they call (\`expanded()\`, \`selectedId()\`) are still tracked, so changing a signal re-renders exactly the nodes that read it. See [computed vs getters](/interview-question/what-is-the-difference-between-computed-signals-and-standard-method-getter-calls).
@@ -1399,22 +1957,38 @@ commit(raw: string) {
   const name = raw.trim();
   const e = this.editing();
   if (!e) return;
-  if (!name) { this.cancel(); return; }
-  const parentId = e.kind === 'new' ? e.parentId : findParentId(this.tree(), e.id) ?? null;
-  const problem = validateName(this.tree(), parentId, name, e.kind === 'rename' ? e.id : null);
-  if (problem) { this.error.set(problem); return; }
-  if (e.kind === 'new') {
+  if (!name) {
+    this.cancel();
+    return;
+  }
+  const parentId =
+    e.kind === "new"
+      ? e.parentId
+      : (findParentId(this.tree(), e.id) ?? null);
+  const problem = validateName(
+    this.tree(),
+    parentId,
+    name,
+    e.kind === "rename" ? e.id : null,
+  );
+  if (problem) {
+    this.error.set(problem);
+    return;
+  }
+  if (e.kind === "new") {
     const node: FsNode = { id: makeId(), name, type: e.type };
-    if (e.type === 'folder') node.children = [];
+    if (e.type === "folder") node.children = [];
     this.tree.update((t) => insertNode(t, parentId, node));
     this.selectedId.set(node.id);
-    this.status.set('Created ' + name);
+    this.status.set("Created " + name);
   } else {
-    this.tree.update((t) => updateNode(t, e.id, (n) => ({ ...n, name })));
-    this.status.set('Renamed to ' + name);
+    this.tree.update((t) =>
+      updateNode(t, e.id, (n) => ({ ...n, name })),
+    );
+    this.status.set("Renamed to " + name);
   }
   this.editing.set(null);
-  this.error.set('');
+  this.error.set("");
   this.focusSelected();
 }
 ~~~
@@ -1427,10 +2001,16 @@ Each host \`<li>\` listens to \`keydown\`, but only acts when \`e.target === e.c
 
 ~~~ts
 private focusSelected() {
-  afterNextRender(() => {
-    const id = this.selectedId();
-    if (id) this.host.nativeElement.querySelector<HTMLElement>(\`[data-id="\${id}"]\`)?.focus();
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      const id = this.selectedId();
+      if (id)
+        this.host.nativeElement
+          .querySelector<HTMLElement>(\`[data-id="\${id}"]\`)
+          ?.focus();
+    },
+    { injector: this.injector },
+  );
 }
 ~~~
 
@@ -1557,26 +2137,41 @@ The output matches React and Vue exactly: arrows move focus and open or close fo
 
 **Conclusion:** The Angular explorer is one attribute-selector component that renders itself, a component-scoped signal store with copy-on-write tree helpers, getters for input-derived values, and \`afterNextRender\` for focus. Remember the \`forwardRef\` self-import for the playground compiler, and the same structure carries straight into the [drag-and-drop version](/interview-question/build-a-file-explorer-with-nested-drag-and-drop).`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, inject } from '@angular/core';
-import { ExplorerStore } from './explorer.store';
-import { NameInputComponent } from './name-input.component';
-import { TreeNodeComponent } from './tree-node.component';
-import { sortNodes } from './tree-utils';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, inject } from "@angular/core";
+import { ExplorerStore } from "./explorer.store";
+import { NameInputComponent } from "./name-input.component";
+import { TreeNodeComponent } from "./tree-node.component";
+import { sortNodes } from "./tree-utils";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [TreeNodeComponent, NameInputComponent],
   providers: [ExplorerStore],
-  encapsulation: ViewEncapsulation.None, // the recursive children share these styles
+  // the recursive children share these styles
+  encapsulation: ViewEncapsulation.None,
   template: \`
     <div class="app">
       <h1>Files</h1>
       <div class="toolbar" role="toolbar" aria-label="File actions">
-        <button data-testid="new-file" (click)="store.startNew('file')">+ File</button>
-        <button data-testid="new-folder" (click)="store.startNew('folder')">+ Folder</button>
-        <button data-testid="rename" [disabled]="!store.selected()" (click)="store.startRename(store.selected())">Rename</button>
-        <button data-testid="delete" [disabled]="!store.selected()" (click)="store.remove(store.selected())">Delete</button>
+        <button
+          data-testid="new-file"
+          (click)="store.startNew('file')"
+        >+ File</button>
+        <button
+          data-testid="new-folder"
+          (click)="store.startNew('folder')"
+        >+ Folder</button>
+        <button
+          data-testid="rename"
+          [disabled]="!store.selected()"
+          (click)="store.startRename(store.selected())"
+        >Rename</button>
+        <button
+          data-testid="delete"
+          [disabled]="!store.selected()"
+          (click)="store.remove(store.selected())"
+        >Delete</button>
       </div>
       <ul role="tree" aria-label="Project files" class="tree">
         @for (node of topLevel(); track node.id) {
@@ -1593,10 +2188,15 @@ import { sortNodes } from './tree-utils';
           </li>
         }
       </ul>
-      <p class="status" role="status" data-testid="status">{{ store.status() }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ store.status() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 520px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 18px; margin: 0 0 12px; }
@@ -1615,40 +2215,59 @@ import { sortNodes } from './tree-utils';
     .edit input { background: #0f1115; color: #e6e6e6; border: 1px solid #6ea8ff; border-radius: 4px; padding: 3px 6px; }
     .error { color: #ff8a80; font-size: 12px; }
     .status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   store = inject(ExplorerStore);
   topLevel = computed(() => sortNodes(this.store.tree()));
   rootNewType = computed(() => {
     const e = this.store.editing();
-    return e?.kind === 'new' && e.parentId === null ? e.type : null;
+    return e?.kind === "new" && e.parentId === null ? e.type : null;
   });
 }
 `,
-          "/src/app/explorer.store.ts": `import { ElementRef, Injectable, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+          "/src/app/explorer.store.ts": `import {
+  ElementRef,
+  Injectable,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import {
-  FsNode, initialTree, makeId, findNode, findParentId, updateNode, removeNode,
-  insertNode, countDescendants, visibleRows, validateName,
-} from './tree-utils';
+  FsNode,
+  initialTree,
+  makeId,
+  findNode,
+  findParentId,
+  updateNode,
+  removeNode,
+  insertNode,
+  countDescendants,
+  visibleRows,
+  validateName,
+} from "./tree-utils";
 
 export type Editing =
-  | { kind: 'new'; parentId: string | null; type: 'file' | 'folder' }
-  | { kind: 'rename'; id: string };
+  | { kind: "new"; parentId: string | null; type: "file" | "folder" }
+  | { kind: "rename"; id: string };
 
 // One store per explorer: AppComponent lists it in \`providers\`, every
 // recursive tree node injects the same instance.
 @Injectable()
 export class ExplorerStore {
-  private host = inject<ElementRef<HTMLElement>>(ElementRef); // the AppComponent element
+  // the AppComponent element
+  private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private injector = inject(Injector);
 
   readonly tree = signal<FsNode[]>(initialTree);
   readonly expanded = signal<ReadonlySet<string>>(new Set());
   readonly selectedId = signal<string | null>(null);
   readonly editing = signal<Editing | null>(null);
-  readonly error = signal('');
-  readonly status = signal('');
+  readonly error = signal("");
+  readonly status = signal("");
 
   readonly rows = computed(() => visibleRows(this.tree(), this.expanded()));
   readonly selected = computed(() => {
@@ -1658,45 +2277,59 @@ export class ExplorerStore {
   readonly tabStopId = computed(() => {
     const rows = this.rows();
     const id = this.selectedId();
-    return rows.some((r) => r.id === id) ? id : rows[0]?.id ?? null;
+    return rows.some((r) => r.id === id) ? id : (rows[0]?.id ?? null);
   });
 
   private focusSelected() {
-    afterNextRender(() => {
-      const id = this.selectedId();
-      if (id) this.host.nativeElement.querySelector<HTMLElement>(\`[data-id="\${id}"]\`)?.focus();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        const id = this.selectedId();
+        if (id)
+          this.host.nativeElement
+            .querySelector<HTMLElement>(\`[data-id="\${id}"]\`)
+            ?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
-  select(id: string | null) { this.selectedId.set(id); this.focusSelected(); }
+  select(id: string | null) {
+    this.selectedId.set(id);
+    this.focusSelected();
+  }
 
   setOpen(id: string, open: boolean) {
     this.expanded.update((prev) => {
       const next = new Set(prev);
-      if (open) next.add(id); else next.delete(id);
+      if (open) next.add(id);
+      else next.delete(id);
       return next;
     });
   }
 
-  startNew(type: 'file' | 'folder') {
+  startNew(type: "file" | "folder") {
     const node = this.selected();
     let parentId: string | null = null;
-    if (node) parentId = node.type === 'folder' ? node.id : findParentId(this.tree(), node.id) ?? null;
+    if (node)
+      parentId =
+        node.type === "folder"
+          ? node.id
+          : (findParentId(this.tree(), node.id) ?? null);
     if (parentId) this.setOpen(parentId, true);
-    this.editing.set({ kind: 'new', parentId, type });
-    this.error.set('');
+    this.editing.set({ kind: "new", parentId, type });
+    this.error.set("");
   }
 
   startRename(node: FsNode | null) {
     if (!node) return;
     this.selectedId.set(node.id);
-    this.editing.set({ kind: 'rename', id: node.id });
-    this.error.set('');
+    this.editing.set({ kind: "rename", id: node.id });
+    this.error.set("");
   }
 
   cancel() {
     this.editing.set(null);
-    this.error.set('');
+    this.error.set("");
     this.focusSelected();
   }
 
@@ -1704,22 +2337,34 @@ export class ExplorerStore {
     const name = raw.trim();
     const e = this.editing();
     if (!e) return;
-    if (!name) { this.cancel(); return; }
-    const parentId = e.kind === 'new' ? e.parentId : findParentId(this.tree(), e.id) ?? null;
-    const problem = validateName(this.tree(), parentId, name, e.kind === 'rename' ? e.id : null);
-    if (problem) { this.error.set(problem); return; }
-    if (e.kind === 'new') {
+    if (!name) {
+      this.cancel();
+      return;
+    }
+    const parentId =
+      e.kind === "new" ? e.parentId : (findParentId(this.tree(), e.id) ?? null);
+    const problem = validateName(
+      this.tree(),
+      parentId,
+      name,
+      e.kind === "rename" ? e.id : null,
+    );
+    if (problem) {
+      this.error.set(problem);
+      return;
+    }
+    if (e.kind === "new") {
       const node: FsNode = { id: makeId(), name, type: e.type };
-      if (e.type === 'folder') node.children = [];
+      if (e.type === "folder") node.children = [];
       this.tree.update((t) => insertNode(t, parentId, node));
       this.selectedId.set(node.id);
-      this.status.set('Created ' + name);
+      this.status.set("Created " + name);
     } else {
       this.tree.update((t) => updateNode(t, e.id, (n) => ({ ...n, name })));
-      this.status.set('Renamed to ' + name);
+      this.status.set("Renamed to " + name);
     }
     this.editing.set(null);
-    this.error.set('');
+    this.error.set("");
     this.focusSelected();
   }
 
@@ -1729,40 +2374,61 @@ export class ExplorerStore {
     const parentId = findParentId(this.tree(), node.id) ?? null;
     this.tree.update((t) => removeNode(t, node.id));
     this.select(parentId);
-    this.status.set('Deleted ' + node.name + (inside ? ' and ' + inside + ' item' + (inside === 1 ? '' : 's') + ' inside' : ''));
+    this.status.set(
+      "Deleted " +
+        node.name +
+        (inside
+          ? " and " + inside + " item" + (inside === 1 ? "" : "s") + " inside"
+          : ""),
+    );
   }
 
   onRowClick(node: FsNode) {
     this.selectedId.set(node.id);
-    if (node.type === 'folder') this.setOpen(node.id, !this.expanded().has(node.id));
+    if (node.type === "folder")
+      this.setOpen(node.id, !this.expanded().has(node.id));
   }
 
   onKeyDown(e: KeyboardEvent, id: string) {
     const rows = this.rows();
     const i = rows.findIndex((r) => r.id === id);
     const { node, parentId } = rows[i];
-    const isFolder = node.type === 'folder';
+    const isFolder = node.type === "folder";
     const open = this.expanded().has(id);
-    if (e.key === 'ArrowDown') { if (rows[i + 1]) this.select(rows[i + 1].id); }
-    else if (e.key === 'ArrowUp') { if (rows[i - 1]) this.select(rows[i - 1].id); }
-    else if (e.key === 'ArrowRight') {
+    if (e.key === "ArrowDown") {
+      if (rows[i + 1]) this.select(rows[i + 1].id);
+    } else if (e.key === "ArrowUp") {
+      if (rows[i - 1]) this.select(rows[i - 1].id);
+    } else if (e.key === "ArrowRight") {
       if (isFolder && !open) this.setOpen(id, true);
       else if (isFolder && node.children?.length) this.select(rows[i + 1].id);
-    } else if (e.key === 'ArrowLeft') {
+    } else if (e.key === "ArrowLeft") {
       if (isFolder && open) this.setOpen(id, false);
       else if (parentId) this.select(parentId);
-    } else if (e.key === 'Enter') { this.selectedId.set(id); if (isFolder) this.setOpen(id, !open); }
-    else if (e.key === 'F2') this.startRename(node);
-    else if (e.key === 'Delete') this.remove(node);
+    } else if (e.key === "Enter") {
+      this.selectedId.set(id);
+      if (isFolder) this.setOpen(id, !open);
+    } else if (e.key === "F2") this.startRename(node);
+    else if (e.key === "Delete") this.remove(node);
     else return;
     e.preventDefault();
   }
 }
 `,
-          "/src/app/name-input.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, signal } from '@angular/core';
+          "/src/app/name-input.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  ViewChild,
+  signal,
+} from "@angular/core";
 
 @Component({
-  selector: 'app-name-input',
+  selector: "app-name-input",
   standalone: true,
   template: \`
     <span class="edit" (click)="$event.stopPropagation()">
@@ -1783,16 +2449,18 @@ export class ExplorerStore {
   \`,
 })
 export class NameInputComponent implements OnInit, AfterViewInit {
-  @Input() initial = '';
-  @Input() label = '';
-  @Input() error = '';
+  @Input() initial = "";
+  @Input() label = "";
+  @Input() error = "";
   @Output() commit = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
-  @ViewChild('box') box!: ElementRef<HTMLInputElement>;
+  @ViewChild("box") box!: ElementRef<HTMLInputElement>;
 
-  value = signal('');
+  value = signal("");
 
-  ngOnInit() { this.value.set(this.initial); }
+  ngOnInit() {
+    this.value.set(this.initial);
+  }
 
   ngAfterViewInit() {
     this.box.nativeElement.focus();
@@ -1800,36 +2468,50 @@ export class NameInputComponent implements OnInit, AfterViewInit {
   }
 }
 `,
-          "/src/app/tree-node.component.ts": `import { Component, Input, forwardRef, inject } from '@angular/core';
-import { ExplorerStore } from './explorer.store';
-import { NameInputComponent } from './name-input.component';
-import { FsNode, sortNodes } from './tree-utils';
+          "/src/app/tree-node.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { ExplorerStore } from "./explorer.store";
+import { NameInputComponent } from "./name-input.component";
+import { FsNode, sortNodes } from "./tree-utils";
 
-// An attribute selector makes the <li> itself the component host, so the DOM stays
+// An attribute selector makes the <li> itself
+// the component host, so the DOM stays
 // ul > li > ul > li, the shape the ARIA tree pattern expects. The template uses
 // its own selector for the children; listing itself in imports (via forwardRef,
-// because the class is not defined yet) keeps that working under runtime JIT too.
+// because the class is not defined yet)
+// keeps that working under runtime JIT too.
 @Component({
-  selector: 'li[app-tree-node]',
+  selector: "li[app-tree-node]",
   standalone: true,
   imports: [NameInputComponent, forwardRef(() => TreeNodeComponent)],
   host: {
-    role: 'treeitem',
-    '[attr.aria-level]': 'depth',
-    '[attr.aria-expanded]': 'isFolder ? open : null',
-    '[attr.aria-selected]': 'selected',
-    '[attr.tabindex]': 'store.tabStopId() === node.id ? 0 : -1',
-    '[attr.data-id]': 'node.id',
-    '[attr.data-name]': 'node.name',
-    '(keydown)': 'onKey($event)',
+    role: "treeitem",
+    "[attr.aria-level]": "depth",
+    "[attr.aria-expanded]": "isFolder ? open : null",
+    "[attr.aria-selected]": "selected",
+    "[attr.tabindex]": "store.tabStopId() === node.id ? 0 : -1",
+    "[attr.data-id]": "node.id",
+    "[attr.data-name]": "node.name",
+    "(keydown)": "onKey($event)",
   },
   template: \`
-    <div class="row" [class.selected]="selected" [style.padding-left.px]="8 + (depth - 1) * 16" (click)="store.onRowClick(node)">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
-      <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
+    <div
+      class="row"
+      [class.selected]="selected"
+      [style.padding-left.px]="8 + (depth - 1) * 16"
+      (click)="store.onRowClick(node)"
+    >
+      <span class="chevron" aria-hidden="true">{{
+        isFolder ? (open ? "▾" : "▸") : ""
+      }}</span>
+      <span aria-hidden="true">{{ isFolder ? "📁" : "📄" }}</span>
       @if (renaming) {
-        <app-name-input [initial]="node.name" [label]="'Rename ' + node.name" [error]="store.error()"
-          (commit)="store.commit($event)" (cancel)="store.cancel()" />
+        <app-name-input
+          [initial]="node.name"
+          [label]="'Rename ' + node.name"
+          [error]="store.error()"
+          (commit)="store.commit($event)"
+          (cancel)="store.cancel()"
+        />
       } @else {
         <span class="name">{{ node.name }}</span>
       }
@@ -1843,9 +2525,15 @@ import { FsNode, sortNodes } from './tree-utils';
           <li role="none">
             <div class="row" [style.padding-left.px]="8 + depth * 16">
               <span class="chevron"></span>
-              <span aria-hidden="true">{{ type === 'folder' ? '📁' : '📄' }}</span>
-              <app-name-input [label]="'New ' + type + ' name'" [error]="store.error()"
-                (commit)="store.commit($event)" (cancel)="store.cancel()" />
+              <span aria-hidden="true">{{
+                type === "folder" ? "📁" : "📄"
+              }}</span>
+              <app-name-input
+                [label]="'New ' + type + ' name'"
+                [error]="store.error()"
+                (commit)="store.commit($event)"
+                (cancel)="store.cancel()"
+              />
             </div>
           </li>
         }
@@ -1858,20 +2546,29 @@ export class TreeNodeComponent {
   @Input() depth = 1;
   store = inject(ExplorerStore);
 
-  // Getters, not computed(): @Input fields are plain properties, and the template
+  // Getters, not computed(): @Input fields
+  // are plain properties, and the template
   // re-reads these on every check while the signals inside them stay tracked.
-  get isFolder() { return this.node.type === 'folder'; }
-  get open() { return this.isFolder && this.store.expanded().has(this.node.id); }
-  get selected() { return this.store.selectedId() === this.node.id; }
+  get isFolder() {
+    return this.node.type === "folder";
+  }
+  get open() {
+    return this.isFolder && this.store.expanded().has(this.node.id);
+  }
+  get selected() {
+    return this.store.selectedId() === this.node.id;
+  }
   get renaming() {
     const e = this.store.editing();
-    return e?.kind === 'rename' && e.id === this.node.id;
+    return e?.kind === "rename" && e.id === this.node.id;
   }
   get newType() {
     const e = this.store.editing();
-    return e?.kind === 'new' && e.parentId === this.node.id ? e.type : null;
+    return e?.kind === "new" && e.parentId === this.node.id ? e.type : null;
   }
-  get children() { return sortNodes(this.node.children ?? []); }
+  get children() {
+    return sortNodes(this.node.children ?? []);
+  }
 
   onKey(e: KeyboardEvent) {
     if (e.target === e.currentTarget) this.store.onKeyDown(e, this.node.id);
@@ -1879,40 +2576,65 @@ export class TreeNodeComponent {
 }
 `,
           "/src/app/tree-utils.ts": `// Pure, typed helpers for a NESTED tree. Signals compare by reference, so every
-// update returns a new array and copies only the folders on the path to the change.
+// update returns a new array and copies only
+// the folders on the path to the change.
 
 export interface FsNode {
   id: string;
   name: string;
-  type: 'folder' | 'file';
+  type: "folder" | "file";
   children?: FsNode[];
 }
 
-export interface Row { id: string; parentId: string | null; depth: number; node: FsNode; }
+export interface Row {
+  id: string;
+  parentId: string | null;
+  depth: number;
+  node: FsNode;
+}
 
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const initialTree: FsNode[] = [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-    { id: 'index', name: 'index.js', type: 'file' },
-  ] },
-  { id: 'public', name: 'public', type: 'folder', children: [
-    { id: 'favicon', name: 'favicon.ico', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
-  { id: 'pkg', name: 'package.json', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "button", name: "Button.jsx", type: "file" },
+        ],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+      { id: "index", name: "index.js", type: "file" },
+    ],
+  },
+  {
+    id: "public",
+    name: "public",
+    type: "folder",
+    children: [{ id: "favicon", name: "favicon.ico", type: "file" }],
+  },
+  { id: "readme", name: "README.md", type: "file" },
+  { id: "pkg", name: "package.json", type: "file" },
 ];
 
-// Folders first, then A-Z. Used for rendering AND for keyboard order, so they agree.
+// Folders first, then A-Z. Used for rendering
+// AND for keyboard order, so they agree.
 export function sortNodes(nodes: FsNode[]): FsNode[] {
   return [...nodes].sort((a, b) =>
-    a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 }
 
 export function findNode(nodes: FsNode[], id: string): FsNode | null {
@@ -1925,7 +2647,11 @@ export function findNode(nodes: FsNode[], id: string): FsNode | null {
 }
 
 // null = top level, undefined = not found
-export function findParentId(nodes: FsNode[], id: string, parentId: string | null = null): string | null | undefined {
+export function findParentId(
+  nodes: FsNode[],
+  id: string,
+  parentId: string | null = null,
+): string | null | undefined {
   for (const n of nodes) {
     if (n.id === id) return parentId;
     if (n.children) {
@@ -1936,13 +2662,23 @@ export function findParentId(nodes: FsNode[], id: string, parentId: string | nul
   return undefined;
 }
 
-export function updateNode(nodes: FsNode[], id: string, fn: (n: FsNode) => FsNode): FsNode[] {
+export function updateNode(
+  nodes: FsNode[],
+  id: string,
+  fn: (n: FsNode) => FsNode,
+): FsNode[] {
   let changed = false;
   const next = nodes.map((n) => {
-    if (n.id === id) { changed = true; return fn(n); }
+    if (n.id === id) {
+      changed = true;
+      return fn(n);
+    }
     if (n.children) {
       const kids = updateNode(n.children, id, fn);
-      if (kids !== n.children) { changed = true; return { ...n, children: kids }; }
+      if (kids !== n.children) {
+        changed = true;
+        return { ...n, children: kids };
+      }
     }
     return n;
   });
@@ -1953,38 +2689,73 @@ export function removeNode(nodes: FsNode[], id: string): FsNode[] {
   let changed = false;
   const next: FsNode[] = [];
   for (const n of nodes) {
-    if (n.id === id) { changed = true; continue; }
+    if (n.id === id) {
+      changed = true;
+      continue;
+    }
     if (n.children) {
       const kids = removeNode(n.children, id);
-      if (kids !== n.children) { changed = true; next.push({ ...n, children: kids }); continue; }
+      if (kids !== n.children) {
+        changed = true;
+        next.push({ ...n, children: kids });
+        continue;
+      }
     }
     next.push(n);
   }
   return changed ? next : nodes;
 }
 
-export function insertNode(nodes: FsNode[], parentId: string | null, node: FsNode): FsNode[] {
+export function insertNode(
+  nodes: FsNode[],
+  parentId: string | null,
+  node: FsNode,
+): FsNode[] {
   if (parentId === null) return [...nodes, node];
-  return updateNode(nodes, parentId, (f) => ({ ...f, children: [...(f.children ?? []), node] }));
+  return updateNode(nodes, parentId, (f) => ({
+    ...f,
+    children: [...(f.children ?? []), node],
+  }));
 }
 
 export function countDescendants(node: FsNode): number {
-  return (node.children || []).reduce((sum: number, c: FsNode): number => sum + 1 + countDescendants(c), 0);
+  return (node.children || []).reduce(
+    (sum: number, c: FsNode): number => sum + 1 + countDescendants(c),
+    0,
+  );
 }
 
-// The rows a keyboard user can reach right now: open folders only, in render order.
-export function visibleRows(nodes: FsNode[], expanded: ReadonlySet<string>, depth = 1, parentId: string | null = null, out: Row[] = []): Row[] {
+// The rows a keyboard user can reach right
+// now: open folders only, in render order.
+export function visibleRows(
+  nodes: FsNode[],
+  expanded: ReadonlySet<string>,
+  depth = 1,
+  parentId: string | null = null,
+  out: Row[] = [],
+): Row[] {
   for (const n of sortNodes(nodes)) {
     out.push({ id: n.id, parentId, depth, node: n });
-    if (n.children && expanded.has(n.id)) visibleRows(n.children, expanded, depth + 1, n.id, out);
+    if (n.children && expanded.has(n.id))
+      visibleRows(n.children, expanded, depth + 1, n.id, out);
   }
   return out;
 }
 
-export function validateName(nodes: FsNode[], parentId: string | null, name: string, exceptId: string | null): string {
-  const siblings = parentId === null ? nodes : findNode(nodes, parentId)?.children ?? [];
-  const clash = siblings.some((s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase());
-  return clash ? 'A file or folder named "' + name + '" already exists here' : '';
+export function validateName(
+  nodes: FsNode[],
+  parentId: string | null,
+  name: string,
+  exceptId: string | null,
+): string {
+  const siblings =
+    parentId === null ? nodes : (findNode(nodes, parentId)?.children ?? []);
+  const clash = siblings.some(
+    (s) => s.id !== exceptId && s.name.toLowerCase() === name.toLowerCase(),
+  );
+  return clash
+    ? 'A file or folder named "' + name + '" already exists here'
+    : "";
 }
 `,
         },
@@ -2093,7 +2864,12 @@ Everything on the right is computed during render. Nothing on the right is store
 📌 **Interview term: Parent map** — a \`Map\` from each id to its parent id, built in one depth-first walk. With it, "where am I?" is a short loop upwards instead of a search through the whole tree.
 
 ~~~js
-export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = new Map()) {
+export function indexTree(
+  nodes,
+  parentId = null,
+  byId = new Map(),
+  parentOf = new Map(),
+) {
   for (const n of nodes) {
     byId.set(n.id, n);
     parentOf.set(n.id, parentId);
@@ -2104,7 +2880,8 @@ export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = n
 
 export function pathTo(id, byId, parentOf) {
   const path = [];
-  for (let cur = id; cur != null; cur = parentOf.get(cur)) path.unshift(byId.get(cur));
+  for (let cur = id; cur != null; cur = parentOf.get(cur))
+    path.unshift(byId.get(cur));
   return path;
 }
 ~~~
@@ -2122,7 +2899,8 @@ export function filterTree(nodes, query, open = new Set()) {
     const self = n.name.toLowerCase().includes(query);
     const kids = n.children ? filterTree(n.children, query, open) : [];
     if (kids.length) open.add(n.id);
-    if (self || kids.length) out.push(n.children ? { ...n, children: kids } : n);
+    if (self || kids.length)
+      out.push(n.children ? { ...n, children: kids } : n);
   }
   return out;
 }
@@ -2134,7 +2912,11 @@ The open set is returned separately and used instead of \`expanded\` only while 
 const view = useMemo(() => {
   if (!q) return { nodes: tree, open: expanded, matches: null };
   const open = new Set();
-  return { nodes: filterTree(tree, q, open), open, matches: countMatches(tree, q) };
+  return {
+    nodes: filterTree(tree, q, open),
+    open,
+    matches: countMatches(tree, q),
+  };
 }, [tree, expanded, q]);
 ~~~
 
@@ -2162,20 +2944,25 @@ The menu listens for a press anywhere outside it, plus resize and scroll, and re
 
 ~~~jsx
 const onCloseRef = useRef(onClose);
-useEffect(() => { onCloseRef.current = onClose; });
+useEffect(() => {
+  onCloseRef.current = onClose;
+});
 
-// Mount: focus the first item, close on a press outside, a resize or a scroll.
+// Mount: focus the first item, close on
+// a press outside, a resize or a scroll.
 useEffect(() => {
   ref.current.querySelector('[role="menuitem"]').focus();
-  const onDown = (e) => { if (!ref.current.contains(e.target)) onCloseRef.current(false); };
+  const onDown = (e) => {
+    if (!ref.current.contains(e.target)) onCloseRef.current(false);
+  };
   const dismiss = () => onCloseRef.current(false);
-  document.addEventListener('pointerdown', onDown, true);
-  window.addEventListener('resize', dismiss);
-  window.addEventListener('scroll', dismiss, true);
+  document.addEventListener("pointerdown", onDown, true);
+  window.addEventListener("resize", dismiss);
+  window.addEventListener("scroll", dismiss, true);
   return () => {
-    document.removeEventListener('pointerdown', onDown, true);
-    window.removeEventListener('resize', dismiss);
-    window.removeEventListener('scroll', dismiss, true);
+    document.removeEventListener("pointerdown", onDown, true);
+    window.removeEventListener("resize", dismiss);
+    window.removeEventListener("scroll", dismiss, true);
   };
 }, []);
 ~~~
@@ -2190,15 +2977,22 @@ The rendered tree during a search is a filtered *copy*. Every action therefore l
 
 ~~~jsx
 function create(node, type) {
-  const parentId = node.type === 'folder' ? node.id : parentOf.get(node.id);
-  const siblings = parentId === null ? tree : byId.get(parentId).children;
+  const parentId =
+    node.type === "folder" ? node.id : parentOf.get(node.id);
+  const siblings =
+    parentId === null ? tree : byId.get(parentId).children;
   const item = { id: makeId(), name: uniqueName(siblings, type), type };
-  if (type === 'folder') item.children = [];
+  if (type === "folder") item.children = [];
   setTree((t) => insertNode(t, parentId, item));
   if (parentId) reveal(parentId, true);
   setSelectedId(item.id);
   focusPending.current = item.id;
-  setStatus('Created ' + item.name + ' in ' + (parentId ? byId.get(parentId).name : 'Project'));
+  setStatus(
+    "Created " +
+      item.name +
+      " in " +
+      (parentId ? byId.get(parentId).name : "Project"),
+  );
 }
 ~~~
 
@@ -2345,41 +3139,63 @@ Read it as: crumbs follow the selection (\`Project / src / [components]\`); "sea
 
 **Conclusion:** The toolbar is three derived views over one tree: a path from a parent map, a pruned copy with its own forced-open set, and a portaled menu that is clamped, dismissible and fully keyboard-operable. Keep the user's state untouched by the views, act on nodes by id, and you can extend it to [drag-and-drop](/interview-question/build-a-file-explorer-with-nested-drag-and-drop) without changing any of it.`,
         files: {
-          "/App.js": `import { useEffect, useMemo, useRef, useState } from 'react';
-import TreeItem from './src/TreeItem';
-import ContextMenu, { placeMenu } from './src/ContextMenu';
+          "/App.js": `import { useEffect, useMemo, useRef, useState } from "react";
+import TreeItem from "./src/TreeItem";
+import ContextMenu, { placeMenu } from "./src/ContextMenu";
 import {
-  initialTree, makeId, sortNodes, indexTree, pathTo, filterTree, countMatches,
-  updateNode, removeNode, insertNode, uniqueName,
-} from './src/tree';
+  initialTree,
+  makeId,
+  sortNodes,
+  indexTree,
+  pathTo,
+  filterTree,
+  countMatches,
+  updateNode,
+  removeNode,
+  insertNode,
+  uniqueName,
+} from "./src/tree";
 
 export default function App() {
   const [tree, setTree] = useState(initialTree);
-  const [expanded, setExpanded] = useState(() => new Set(['src']));
+  const [expanded, setExpanded] = useState(() => new Set(["src"]));
   const [selectedId, setSelectedId] = useState(null);
-  const [query, setQuery] = useState('');
-  const [menu, setMenu] = useState(null);           // { left, top, nodeId }
+  const [query, setQuery] = useState("");
+  const [menu, setMenu] = useState(null); // { left, top, nodeId }
   const [renamingId, setRenamingId] = useState(null);
-  const [renameError, setRenameError] = useState('');
-  const [status, setStatus] = useState('');
+  const [renameError, setRenameError] = useState("");
+  const [status, setStatus] = useState("");
   const treeRef = useRef(null);
   const focusPending = useRef(null);
 
-  // Everything below is derived from state on each render; nothing is duplicated.
+  // Everything below is derived from state
+  // on each render; nothing is duplicated.
   const { byId, parentOf } = useMemo(() => indexTree(tree), [tree]);
   const q = query.trim().toLowerCase();
   const view = useMemo(() => {
     if (!q) return { nodes: tree, open: expanded, matches: null };
     const open = new Set();
-    return { nodes: filterTree(tree, q, open), open, matches: countMatches(tree, q) };
+    return {
+      nodes: filterTree(tree, q, open),
+      open,
+      matches: countMatches(tree, q),
+    };
   }, [tree, expanded, q]);
   const selected = byId.get(selectedId) ?? null;
-  const folderId = !selected ? null : selected.type === 'folder' ? selected.id : parentOf.get(selected.id);
+  const folderId = !selected
+    ? null
+    : selected.type === "folder"
+      ? selected.id
+      : parentOf.get(selected.id);
   const crumbs = folderId ? pathTo(folderId, byId, parentOf) : [];
   const visible = sortNodes(view.nodes);
   const visibleIds = useMemo(() => {
     const ids = new Set();
-    const walk = (ns) => ns.forEach((n) => { ids.add(n.id); if (n.children && view.open.has(n.id)) walk(n.children); });
+    const walk = (ns) =>
+      ns.forEach((n) => {
+        ids.add(n.id);
+        if (n.children && view.open.has(n.id)) walk(n.children);
+      });
     walk(view.nodes);
     return ids;
   }, [view]);
@@ -2387,7 +3203,9 @@ export default function App() {
 
   useEffect(() => {
     if (!focusPending.current) return;
-    treeRef.current.querySelector(\`[data-id="\${focusPending.current}"]\`)?.focus();
+    treeRef.current
+      .querySelector(\`[data-id="\${focusPending.current}"]\`)
+      ?.focus();
     focusPending.current = null;
   });
 
@@ -2396,24 +3214,31 @@ export default function App() {
   function reveal(id, includeSelf) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      for (let cur = includeSelf ? id : parentOf.get(id); cur != null; cur = parentOf.get(cur)) next.add(cur);
+      for (
+        let cur = includeSelf ? id : parentOf.get(id);
+        cur != null;
+        cur = parentOf.get(cur)
+      )
+        next.add(cur);
       return next;
     });
   }
 
-  function navigate(id) {          // breadcrumb click
+  function navigate(id) {
+    // breadcrumb click
     setSelectedId(id);
     if (id) reveal(id, true);
-    setQuery('');
+    setQuery("");
   }
 
   function onRowClick(node) {
     setSelectedId(node.id);
     reveal(node.id, false);
-    if (node.type === 'folder' && !q) {
+    if (node.type === "folder" && !q) {
       setExpanded((prev) => {
         const next = new Set(prev);
-        if (next.has(node.id)) next.delete(node.id); else next.add(node.id);
+        if (next.has(node.id)) next.delete(node.id);
+        else next.add(node.id);
         return next;
       });
     }
@@ -2421,17 +3246,23 @@ export default function App() {
 
   const MENU_ITEMS = 4;
   function openMenu(e, node) {
-    e.preventDefault();             // suppress the browser menu
+    e.preventDefault(); // suppress the browser menu
     setSelectedId(node.id);
-    setMenu({ ...placeMenu(e.clientX, e.clientY, MENU_ITEMS), nodeId: node.id });
+    setMenu({
+      ...placeMenu(e.clientX, e.clientY, MENU_ITEMS),
+      nodeId: node.id,
+    });
   }
 
   function onRowKey(e, node) {
-    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
       e.preventDefault();
       const r = e.currentTarget.getBoundingClientRect();
       setSelectedId(node.id);
-      setMenu({ ...placeMenu(r.left + 24, r.bottom, MENU_ITEMS), nodeId: node.id });
+      setMenu({
+        ...placeMenu(r.left + 24, r.bottom, MENU_ITEMS),
+        nodeId: node.id,
+      });
     }
   }
 
@@ -2441,15 +3272,20 @@ export default function App() {
   }
 
   function create(node, type) {
-    const parentId = node.type === 'folder' ? node.id : parentOf.get(node.id);
+    const parentId = node.type === "folder" ? node.id : parentOf.get(node.id);
     const siblings = parentId === null ? tree : byId.get(parentId).children;
     const item = { id: makeId(), name: uniqueName(siblings, type), type };
-    if (type === 'folder') item.children = [];
+    if (type === "folder") item.children = [];
     setTree((t) => insertNode(t, parentId, item));
     if (parentId) reveal(parentId, true);
     setSelectedId(item.id);
     focusPending.current = item.id;
-    setStatus('Created ' + item.name + ' in ' + (parentId ? byId.get(parentId).name : 'Project'));
+    setStatus(
+      "Created " +
+        item.name +
+        " in " +
+        (parentId ? byId.get(parentId).name : "Project"),
+    );
   }
 
   function remove(node) {
@@ -2457,42 +3293,65 @@ export default function App() {
     setTree((t) => removeNode(t, node.id));
     setSelectedId(parentId);
     focusPending.current = parentId;
-    setStatus('Deleted ' + node.name);
+    setStatus("Deleted " + node.name);
   }
 
   function commitRename(raw) {
     const name = raw.trim();
     const node = byId.get(renamingId);
-    if (!name || name === node.name) { cancelRename(); return; }
+    if (!name || name === node.name) {
+      cancelRename();
+      return;
+    }
     const parentId = parentOf.get(node.id);
     const siblings = parentId === null ? tree : byId.get(parentId).children;
-    if (siblings.some((s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase())) {
+    if (
+      siblings.some(
+        (s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase(),
+      )
+    ) {
       setRenameError('"' + name + '" already exists here');
       return;
     }
     setTree((t) => updateNode(t, node.id, (n) => ({ ...n, name })));
-    setStatus('Renamed ' + node.name + ' to ' + name);
+    setStatus("Renamed " + node.name + " to " + name);
     cancelRename();
   }
 
   function cancelRename() {
     focusPending.current = renamingId;
     setRenamingId(null);
-    setRenameError('');
+    setRenameError("");
   }
 
   const target = menu ? byId.get(menu.nodeId) : null;
-  const menuItems = target ? [
-    { label: 'New file', run: () => create(target, 'file') },
-    { label: 'New folder', run: () => create(target, 'folder') },
-    { label: 'Rename', run: () => { setRenamingId(target.id); setRenameError(''); } },
-    { label: 'Delete', danger: true, run: () => remove(target) },
-  ] : [];
+  const menuItems = target
+    ? [
+        { label: "New file", run: () => create(target, "file") },
+        { label: "New folder", run: () => create(target, "folder") },
+        {
+          label: "Rename",
+          run: () => {
+            setRenamingId(target.id);
+            setRenameError("");
+          },
+        },
+        { label: "Delete", danger: true, run: () => remove(target) },
+      ]
+    : [];
 
   const api = {
-    query: q, selectedId, tabStopId, renamingId, renameError,
+    query: q,
+    selectedId,
+    tabStopId,
+    renamingId,
+    renameError,
     isOpen: (id) => view.open.has(id),
-    onRowClick, onRowKey, openMenu, commitRename, cancelRename,
+    onRowClick,
+    onRowKey,
+    openMenu,
+    commitRename,
+    cancelRename,
   };
 
   return (
@@ -2500,40 +3359,75 @@ export default function App() {
       <nav aria-label="Breadcrumb" className="crumbs" data-testid="breadcrumbs">
         <ol>
           <li>
-            {crumbs.length ? <button onClick={() => navigate(null)}>Project</button> : <span aria-current="page">Project</span>}
+            {crumbs.length ? (
+              <button onClick={() => navigate(null)}>Project</button>
+            ) : (
+              <span aria-current="page">Project</span>
+            )}
           </li>
           {crumbs.map((c, i) => (
             <li key={c.id}>
-              <span className="sep" aria-hidden="true">/</span>
-              {i === crumbs.length - 1
-                ? <span aria-current="page">{c.name}</span>
-                : <button onClick={() => navigate(c.id)}>{c.name}</button>}
+              <span className="sep" aria-hidden="true">
+                /
+              </span>
+              {i === crumbs.length - 1 ? (
+                <span aria-current="page">{c.name}</span>
+              ) : (
+                <button onClick={() => navigate(c.id)}>{c.name}</button>
+              )}
             </li>
           ))}
         </ol>
       </nav>
 
-      <input type="search" className="search" data-testid="search" placeholder="Filter files..."
-        aria-label="Filter files" aria-controls="file-tree" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input
+        type="search"
+        className="search"
+        data-testid="search"
+        placeholder="Filter files..."
+        aria-label="Filter files"
+        aria-controls="file-tree"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
       <p className="summary" aria-live="polite" data-testid="summary">
-        {view.matches === null ? '' : view.matches ? view.matches + ' match' + (view.matches === 1 ? '' : 'es') : 'No files match "' + query.trim() + '"'}
+        {view.matches === null
+          ? ""
+          : view.matches
+            ? view.matches + " match" + (view.matches === 1 ? "" : "es")
+            : 'No files match "' + query.trim() + '"'}
       </p>
 
-      <ul id="file-tree" role="tree" aria-label="Project files" className="tree" ref={treeRef}>
-        {visible.map((n) => <TreeItem key={n.id} node={n} depth={1} api={api} />)}
+      <ul
+        id="file-tree"
+        role="tree"
+        aria-label="Project files"
+        className="tree"
+        ref={treeRef}
+      >
+        {visible.map((n) => (
+          <TreeItem key={n.id} node={n} depth={1} api={api} />
+        ))}
       </ul>
-      <p className="status" role="status" data-testid="status">{status}</p>
+      <p className="status" role="status" data-testid="status">
+        {status}
+      </p>
 
       {menu && target && (
-        <ContextMenu left={menu.left} top={menu.top} label={'Actions for ' + target.name}
-          items={menuItems} onClose={closeMenu} />
+        <ContextMenu
+          left={menu.left}
+          top={menu.top}
+          label={"Actions for " + target.name}
+          items={menuItems}
+          onClose={closeMenu}
+        />
       )}
     </div>
   );
 }
 `,
-          "/src/ContextMenu.js": `import { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+          "/src/ContextMenu.js": `import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export const MENU_W = 180;
 const ITEM_H = 32;
@@ -2551,31 +3445,37 @@ export function placeMenu(x, y, itemCount) {
 export default function ContextMenu({ left, top, label, items, onClose }) {
   const ref = useRef(null);
   const onCloseRef = useRef(onClose);
-  useEffect(() => { onCloseRef.current = onClose; });
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
-  // Mount: focus the first item, close on a press outside, a resize or a scroll.
+  // Mount: focus the first item, close on
+  // a press outside, a resize or a scroll.
   useEffect(() => {
     ref.current.querySelector('[role="menuitem"]').focus();
-    const onDown = (e) => { if (!ref.current.contains(e.target)) onCloseRef.current(false); };
+    const onDown = (e) => {
+      if (!ref.current.contains(e.target)) onCloseRef.current(false);
+    };
     const dismiss = () => onCloseRef.current(false);
-    document.addEventListener('pointerdown', onDown, true);
-    window.addEventListener('resize', dismiss);
-    window.addEventListener('scroll', dismiss, true);
+    document.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("resize", dismiss);
+    window.addEventListener("scroll", dismiss, true);
     return () => {
-      document.removeEventListener('pointerdown', onDown, true);
-      window.removeEventListener('resize', dismiss);
-      window.removeEventListener('scroll', dismiss, true);
+      document.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("resize", dismiss);
+      window.removeEventListener("scroll", dismiss, true);
     };
   }, []);
 
   function onKeyDown(e) {
     const all = [...ref.current.querySelectorAll('[role="menuitem"]')];
     const i = all.indexOf(document.activeElement);
-    if (e.key === 'ArrowDown') all[(i + 1) % all.length].focus();
-    else if (e.key === 'ArrowUp') all[(i - 1 + all.length) % all.length].focus();
-    else if (e.key === 'Home') all[0].focus();
-    else if (e.key === 'End') all[all.length - 1].focus();
-    else if (e.key === 'Escape' || e.key === 'Tab') onClose(e.key === 'Escape');
+    if (e.key === "ArrowDown") all[(i + 1) % all.length].focus();
+    else if (e.key === "ArrowUp")
+      all[(i - 1 + all.length) % all.length].focus();
+    else if (e.key === "Home") all[0].focus();
+    else if (e.key === "End") all[all.length - 1].focus();
+    else if (e.key === "Escape" || e.key === "Tab") onClose(e.key === "Escape");
     else return;
     e.preventDefault();
   }
@@ -2583,11 +3483,26 @@ export default function ContextMenu({ left, top, label, items, onClose }) {
   // A portal renders the menu at the end of <body>, outside any parent that
   // clips with overflow: hidden or traps it in a lower stacking context.
   return createPortal(
-    <div ref={ref} role="menu" aria-label={label} className="menu" data-testid="context-menu"
-      style={{ left, top, width: MENU_W }} onKeyDown={onKeyDown}>
+    <div
+      ref={ref}
+      role="menu"
+      aria-label={label}
+      className="menu"
+      data-testid="context-menu"
+      style={{ left, top, width: MENU_W }}
+      onKeyDown={onKeyDown}
+    >
       {items.map((it) => (
-        <button key={it.label} role="menuitem" tabIndex={-1} className={it.danger ? 'danger' : ''}
-          onClick={() => { onClose(true); it.run(); }}>
+        <button
+          key={it.label}
+          role="menuitem"
+          tabIndex={-1}
+          className={it.danger ? "danger" : ""}
+          onClick={() => {
+            onClose(true);
+            it.run();
+          }}
+        >
           {it.label}
         </button>
       ))}
@@ -2598,32 +3513,61 @@ export default function ContextMenu({ left, top, label, items, onClose }) {
 `,
           "/src/tree.js": `// Nested tree data plus the derived lookups the toolbar needs.
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const initialTree = [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'searchbar', name: 'SearchBar.jsx', type: 'file' },
-    ] },
-    { id: 'hooks', name: 'hooks', type: 'folder', children: [
-      { id: 'usesearch', name: 'useSearch.js', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-  ] },
-  { id: 'docs', name: 'docs', type: 'folder', children: [
-    { id: 'guide', name: 'guide.md', type: 'file' },
-    { id: 'tips', name: 'search-tips.md', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "button", name: "Button.jsx", type: "file" },
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "searchbar", name: "SearchBar.jsx", type: "file" },
+        ],
+      },
+      {
+        id: "hooks",
+        name: "hooks",
+        type: "folder",
+        children: [{ id: "usesearch", name: "useSearch.js", type: "file" }],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    id: "docs",
+    name: "docs",
+    type: "folder",
+    children: [
+      { id: "guide", name: "guide.md", type: "file" },
+      { id: "tips", name: "search-tips.md", type: "file" },
+    ],
+  },
+  { id: "readme", name: "README.md", type: "file" },
 ];
 
-export const sortNodes = (nodes) => [...nodes].sort((a, b) =>
-  a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+export const sortNodes = (nodes) =>
+  [...nodes].sort((a, b) =>
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 
 // One walk builds both maps: id -> node and id -> parent id (null at the top).
-export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = new Map()) {
+export function indexTree(
+  nodes,
+  parentId = null,
+  byId = new Map(),
+  parentOf = new Map(),
+) {
   for (const n of nodes) {
     byId.set(n.id, n);
     parentOf.set(n.id, parentId);
@@ -2632,38 +3576,53 @@ export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = n
   return { byId, parentOf };
 }
 
-// Root-first list of ancestors, e.g. pathTo('modal') -> [src, components, Modal.jsx]
+// Root-first list of ancestors, e.g.
+// pathTo('modal') -> [src, components, Modal.jsx]
 export function pathTo(id, byId, parentOf) {
   const path = [];
-  for (let cur = id; cur != null; cur = parentOf.get(cur)) path.unshift(byId.get(cur));
+  for (let cur = id; cur != null; cur = parentOf.get(cur))
+    path.unshift(byId.get(cur));
   return path;
 }
 
 // Keep a node if it matches or if anything below it matches. Folders that are
-// kept because of a descendant are returned in \`open\`, so the matches are visible.
+// kept because of a descendant are returned
+// in \`open\`, so the matches are visible.
 export function filterTree(nodes, query, open = new Set()) {
   const out = [];
   for (const n of nodes) {
     const self = n.name.toLowerCase().includes(query);
     const kids = n.children ? filterTree(n.children, query, open) : [];
     if (kids.length) open.add(n.id);
-    if (self || kids.length) out.push(n.children ? { ...n, children: kids } : n);
+    if (self || kids.length)
+      out.push(n.children ? { ...n, children: kids } : n);
   }
   return out;
 }
 
 export function countMatches(nodes, query) {
-  return nodes.reduce((sum, n) => sum + (n.name.toLowerCase().includes(query) ? 1 : 0)
-    + (n.children ? countMatches(n.children, query) : 0), 0);
+  return nodes.reduce(
+    (sum, n) =>
+      sum +
+      (n.name.toLowerCase().includes(query) ? 1 : 0) +
+      (n.children ? countMatches(n.children, query) : 0),
+    0,
+  );
 }
 
 export function updateNode(nodes, id, fn) {
   let changed = false;
   const next = nodes.map((n) => {
-    if (n.id === id) { changed = true; return fn(n); }
+    if (n.id === id) {
+      changed = true;
+      return fn(n);
+    }
     if (n.children) {
       const kids = updateNode(n.children, id, fn);
-      if (kids !== n.children) { changed = true; return { ...n, children: kids }; }
+      if (kids !== n.children) {
+        changed = true;
+        return { ...n, children: kids };
+      }
     }
     return n;
   });
@@ -2674,10 +3633,17 @@ export function removeNode(nodes, id) {
   let changed = false;
   const next = [];
   for (const n of nodes) {
-    if (n.id === id) { changed = true; continue; }
+    if (n.id === id) {
+      changed = true;
+      continue;
+    }
     if (n.children) {
       const kids = removeNode(n.children, id);
-      if (kids !== n.children) { changed = true; next.push({ ...n, children: kids }); continue; }
+      if (kids !== n.children) {
+        changed = true;
+        next.push({ ...n, children: kids });
+        continue;
+      }
     }
     next.push(n);
   }
@@ -2686,21 +3652,26 @@ export function removeNode(nodes, id) {
 
 export function insertNode(nodes, parentId, node) {
   if (parentId === null) return [...nodes, node];
-  return updateNode(nodes, parentId, (f) => ({ ...f, children: [...f.children, node] }));
+  return updateNode(nodes, parentId, (f) => ({
+    ...f,
+    children: [...f.children, node],
+  }));
 }
 
-// "untitled.txt", then "untitled 2.txt", ... ; "New folder", then "New folder 2", ...
+// "untitled.txt", then "untitled 2.txt", ...
+// ; "New folder", then "New folder 2", ...
 export function uniqueName(siblings, type) {
-  const [base, ext] = type === 'folder' ? ['New folder', ''] : ['untitled', '.txt'];
+  const [base, ext] =
+    type === "folder" ? ["New folder", ""] : ["untitled", ".txt"];
   const taken = new Set(siblings.map((s) => s.name.toLowerCase()));
   for (let i = 1; ; i++) {
-    const name = base + (i === 1 ? '' : ' ' + i) + ext;
+    const name = base + (i === 1 ? "" : " " + i) + ext;
     if (!taken.has(name.toLowerCase())) return name;
   }
 }
 `,
-          "/src/TreeItem.js": `import { useEffect, useRef, useState } from 'react';
-import { sortNodes } from './tree';
+          "/src/TreeItem.js": `import { useEffect, useRef, useState } from "react";
+import { sortNodes } from "./tree";
 
 // Wrap the first case-insensitive match in <mark>, leave the rest as text.
 export function Highlight({ text, query }) {
@@ -2718,72 +3689,235 @@ export function Highlight({ text, query }) {
 function RenameInput({ node, error, onCommit, onCancel }) {
   const [value, setValue] = useState(node.name);
   const ref = useRef(null);
-  useEffect(() => { ref.current.focus(); ref.current.select(); }, []);
+  useEffect(() => {
+    ref.current.focus();
+    ref.current.select();
+  }, []);
   return (
     <span className="edit" onClick={(e) => e.stopPropagation()}>
-      <input ref={ref} data-testid="rename-input" aria-label={'Rename ' + node.name} value={value}
+      <input
+        ref={ref}
+        data-testid="rename-input"
+        aria-label={"Rename " + node.name}
+        value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') onCommit(value);
-          if (e.key === 'Escape') onCancel();
-        }} />
-      {error && <span role="alert" className="error">{error}</span>}
+          if (e.key === "Enter") onCommit(value);
+          if (e.key === "Escape") onCancel();
+        }}
+      />
+      {error && (
+        <span role="alert" className="error">
+          {error}
+        </span>
+      )}
     </span>
   );
 }
 
 export default function TreeItem({ node, depth, api }) {
-  const isFolder = node.type === 'folder';
+  const isFolder = node.type === "folder";
   const open = isFolder && api.isOpen(node.id);
   const selected = api.selectedId === node.id;
   return (
-    <li role="treeitem" aria-level={depth} aria-expanded={isFolder ? open : undefined} aria-selected={selected}
-      tabIndex={api.tabStopId === node.id ? 0 : -1} data-id={node.id} data-name={node.name}
-      onKeyDown={(e) => { if (e.target === e.currentTarget) api.onRowKey(e, node); }}>
-      <div className={'row' + (selected ? ' selected' : '')} style={{ paddingLeft: 8 + (depth - 1) * 16 }}
-        onClick={() => api.onRowClick(node)} onContextMenu={(e) => api.openMenu(e, node)}>
-        <span className="chevron" aria-hidden="true">{isFolder ? (open ? '▾' : '▸') : ''}</span>
-        <span aria-hidden="true">{isFolder ? '📁' : '📄'}</span>
-        {api.renamingId === node.id
-          ? <RenameInput node={node} error={api.renameError} onCommit={api.commitRename} onCancel={api.cancelRename} />
-          : <span className="name"><Highlight text={node.name} query={api.query} /></span>}
+    <li
+      role="treeitem"
+      aria-level={depth}
+      aria-expanded={isFolder ? open : undefined}
+      aria-selected={selected}
+      tabIndex={api.tabStopId === node.id ? 0 : -1}
+      data-id={node.id}
+      data-name={node.name}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget) api.onRowKey(e, node);
+      }}
+    >
+      <div
+        className={"row" + (selected ? " selected" : "")}
+        style={{ paddingLeft: 8 + (depth - 1) * 16 }}
+        onClick={() => api.onRowClick(node)}
+        onContextMenu={(e) => api.openMenu(e, node)}
+      >
+        <span className="chevron" aria-hidden="true">
+          {isFolder ? (open ? "▾" : "▸") : ""}
+        </span>
+        <span aria-hidden="true">{isFolder ? "📁" : "📄"}</span>
+        {api.renamingId === node.id ? (
+          <RenameInput
+            node={node}
+            error={api.renameError}
+            onCommit={api.commitRename}
+            onCancel={api.cancelRename}
+          />
+        ) : (
+          <span className="name">
+            <Highlight text={node.name} query={api.query} />
+          </span>
+        )}
       </div>
       {open && node.children.length > 0 && (
         <ul role="group">
-          {sortNodes(node.children).map((c) => <TreeItem key={c.id} node={c} depth={depth + 1} api={api} />)}
+          {sortNodes(node.children).map((c) => (
+            <TreeItem key={c.id} node={c} depth={depth + 1} api={api} />
+          ))}
         </ul>
       )}
     </li>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 8px; cursor: pointer; font: inherit; }
-.crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; list-style: none; margin: 0 0 10px; padding: 0; font-size: 14px; }
-.crumbs li { display: flex; align-items: center; gap: 4px; }
-.crumbs button { background: none; border: none; color: #8ab4ff; padding: 2px 4px; }
-.crumbs [aria-current] { font-weight: 600; padding: 2px 4px; }
-.sep { color: #5d667a; }
-.search { width: 100%; box-sizing: border-box; background: #161a23; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 8px 10px; }
-.summary { min-height: 1.2em; margin: 6px 0; color: #9aa3b5; font-size: 13px; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
-.row:hover { background: #1f2533; }
-.row.selected { background: #263354; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-mark { background: #6b5200; color: #ffe08a; border-radius: 2px; }
-.edit { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.edit input { background: #0f1115; color: #e6e6e6; border: 1px solid #6ea8ff; border-radius: 4px; padding: 3px 6px; }
-.error { color: #ff8a80; font-size: 12px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
-.menu { position: fixed; z-index: 10; display: flex; flex-direction: column; padding: 4px; background: #1d2230; border: 1px solid #343b4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
-.menu button { border: none; background: none; text-align: left; height: 32px; padding: 0 10px; }
-.menu button:focus { background: #263354; outline: none; }
-.menu .danger { color: #ff8a80; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  font-size: 14px;
+}
+.crumbs li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.crumbs button {
+  background: none;
+  border: none;
+  color: #8ab4ff;
+  padding: 2px 4px;
+}
+.crumbs [aria-current] {
+  font-weight: 600;
+  padding: 2px 4px;
+}
+.sep {
+  color: #5d667a;
+}
+.search {
+  width: 100%;
+  box-sizing: border-box;
+  background: #161a23;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.summary {
+  min-height: 1.2em;
+  margin: 6px 0;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.selected {
+  background: #263354;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+mark {
+  background: #6b5200;
+  color: #ffe08a;
+  border-radius: 2px;
+}
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.edit input {
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #6ea8ff;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.error {
+  color: #ff8a80;
+  font-size: 12px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.menu {
+  position: fixed;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #1d2230;
+  border: 1px solid #343b4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.menu button {
+  border: none;
+  background: none;
+  text-align: left;
+  height: 32px;
+  padding: 0 10px;
+}
+.menu button:focus {
+  background: #263354;
+  outline: none;
+}
+.menu .danger {
+  color: #ff8a80;
+}
 `,
         },
       },
@@ -2819,8 +3953,11 @@ Breadcrumbs for the current folder, a search that keeps ancestors and forces the
 const crumbs = computed(() => {
   const s = selected.value;
   if (!s) return [];
-  const folderId = s.type === 'folder' ? s.id : index.value.parentOf.get(s.id);
-  return folderId ? pathTo(folderId, index.value.byId, index.value.parentOf) : [];
+  const folderId =
+    s.type === "folder" ? s.id : index.value.parentOf.get(s.id);
+  return folderId
+    ? pathTo(folderId, index.value.byId, index.value.parentOf)
+    : [];
 });
 ~~~
 
@@ -2832,7 +3969,11 @@ const crumbs = computed(() => {
 const view = computed(() => {
   if (!q.value) return { nodes: tree, open: expanded, matches: null };
   const open = new Set();
-  return { nodes: filterTree(tree, q.value, open), open, matches: countMatches(tree, q.value) };
+  return {
+    nodes: filterTree(tree, q.value, open),
+    open,
+    matches: countMatches(tree, q.value),
+  };
 });
 ~~~
 
@@ -2846,10 +3987,25 @@ In \`TreeItem.vue\` a \`computed\` splits the name into three parts around the f
 
 ~~~vue
 <Teleport to="body">
-  <div ref="el" role="menu" class="menu" data-testid="context-menu" :aria-label="label"
-    :style="{ left: left + 'px', top: top + 'px' }" @keydown="onKeyDown">
-    <button v-for="it in items" :key="it.label" role="menuitem" tabindex="-1"
-      :class="{ danger: it.danger }" @click="choose(it)">{{ it.label }}</button>
+  <div
+    ref="el"
+    role="menu"
+    class="menu"
+    data-testid="context-menu"
+    :aria-label="label"
+    :style="{ left: left + 'px', top: top + 'px' }"
+    @keydown="onKeyDown"
+  >
+    <button
+      v-for="it in items"
+      :key="it.label"
+      role="menuitem"
+      tabindex="-1"
+      :class="{ danger: it.danger }"
+      @click="choose(it)"
+    >
+      {{ it.label }}
+    </button>
   </div>
 </Teleport>
 ~~~
@@ -2859,7 +4015,8 @@ Listeners for outside \`pointerdown\` (capture phase), resize and scroll are add
 ### Step 4: \`.prevent\` on contextmenu, and actions by id
 
 ~~~vue
-@click="api.onRowClick(node)" @contextmenu.prevent="api.openMenu($event, node)">
+@click="api.onRowClick(node)" @contextmenu.prevent="api.openMenu($event,
+node)">
 ~~~
 
 \`.prevent\` suppresses the browser menu. While searching, \`TreeItem\` renders filtered copies, so \`commitRename\` and \`remove\` look the real node up in \`index.value.byId\` and mutate that one in place: \`node.name = name\`, \`siblings.splice(i, 1)\`.
@@ -2995,13 +4152,24 @@ Identical to React and Angular: the crumbs follow the selection, the search keep
 **Conclusion:** In Vue the toolbar is a handful of \`computed\` views (index, crumbs, pruned tree, summary) over one reactive tree, a small emitting breadcrumbs component, and a teleported menu with lifecycle-managed listeners and keyboard focus. Keep the user's expanded set separate from the search, and act on real nodes by id.`,
         files: {
           "/src/App.vue": `<script setup>
-import { computed, nextTick, provide, reactive, ref } from 'vue';
-import TreeItem from './components/TreeItem.vue';
-import Breadcrumbs from './components/Breadcrumbs.vue';
-import ContextMenu from './components/ContextMenu.vue';
-import { createTree, makeId, sortNodes, indexTree, pathTo, filterTree, countMatches, uniqueName } from './tree.js';
+import { computed, nextTick, provide, reactive, ref } from "vue";
+import TreeItem from "./components/TreeItem.vue";
+import Breadcrumbs from "./components/Breadcrumbs.vue";
+import ContextMenu from "./components/ContextMenu.vue";
+import {
+  createTree,
+  makeId,
+  sortNodes,
+  indexTree,
+  pathTo,
+  filterTree,
+  countMatches,
+  uniqueName,
+} from "./tree.js";
 
-const MENU_W = 180, ITEM_H = 32, MENU_ITEMS = 4;
+const MENU_W = 180,
+  ITEM_H = 32,
+  MENU_ITEMS = 4;
 function placeMenu(x, y) {
   const h = MENU_ITEMS * ITEM_H + 8;
   return {
@@ -3011,13 +4179,13 @@ function placeMenu(x, y) {
 }
 
 const tree = reactive(createTree());
-const expanded = reactive(new Set(['src']));
+const expanded = reactive(new Set(["src"]));
 const selectedId = ref(null);
-const query = ref('');
-const menu = ref(null);            // { left, top, nodeId }
+const query = ref("");
+const menu = ref(null); // { left, top, nodeId }
 const renamingId = ref(null);
-const renameError = ref('');
-const status = ref('');
+const renameError = ref("");
+const status = ref("");
 const treeEl = ref(null);
 
 // Derived state: recomputed only when what it reads changes.
@@ -3026,37 +4194,61 @@ const q = computed(() => query.value.trim().toLowerCase());
 const view = computed(() => {
   if (!q.value) return { nodes: tree, open: expanded, matches: null };
   const open = new Set();
-  return { nodes: filterTree(tree, q.value, open), open, matches: countMatches(tree, q.value) };
+  return {
+    nodes: filterTree(tree, q.value, open),
+    open,
+    matches: countMatches(tree, q.value),
+  };
 });
 const visible = computed(() => sortNodes(view.value.nodes));
 const selected = computed(() => index.value.byId.get(selectedId.value) ?? null);
 const crumbs = computed(() => {
   const s = selected.value;
   if (!s) return [];
-  const folderId = s.type === 'folder' ? s.id : index.value.parentOf.get(s.id);
-  return folderId ? pathTo(folderId, index.value.byId, index.value.parentOf) : [];
+  const folderId = s.type === "folder" ? s.id : index.value.parentOf.get(s.id);
+  return folderId
+    ? pathTo(folderId, index.value.byId, index.value.parentOf)
+    : [];
 });
 const visibleIds = computed(() => {
   const ids = new Set();
-  const walk = (ns) => ns.forEach((n) => { ids.add(n.id); if (n.children && view.value.open.has(n.id)) walk(n.children); });
+  const walk = (ns) =>
+    ns.forEach((n) => {
+      ids.add(n.id);
+      if (n.children && view.value.open.has(n.id)) walk(n.children);
+    });
   walk(view.value.nodes);
   return ids;
 });
-const tabStopId = computed(() => (visibleIds.value.has(selectedId.value) ? selectedId.value : visible.value[0]?.id));
+const tabStopId = computed(() =>
+  visibleIds.value.has(selectedId.value)
+    ? selectedId.value
+    : visible.value[0]?.id,
+);
 const summary = computed(() => {
   const m = view.value.matches;
-  if (m === null) return '';
-  return m ? m + ' match' + (m === 1 ? '' : 'es') : 'No files match "' + query.value.trim() + '"';
+  if (m === null) return "";
+  return m
+    ? m + " match" + (m === 1 ? "" : "es")
+    : 'No files match "' + query.value.trim() + '"';
 });
-const target = computed(() => (menu.value ? index.value.byId.get(menu.value.nodeId) : null));
+const target = computed(() =>
+  menu.value ? index.value.byId.get(menu.value.nodeId) : null,
+);
 const menuItems = computed(() => {
   const t = target.value;
   if (!t) return [];
   return [
-    { label: 'New file', run: () => create(t, 'file') },
-    { label: 'New folder', run: () => create(t, 'folder') },
-    { label: 'Rename', run: () => { renamingId.value = t.id; renameError.value = ''; } },
-    { label: 'Delete', danger: true, run: () => remove(t) },
+    { label: "New file", run: () => create(t, "file") },
+    { label: "New folder", run: () => create(t, "folder") },
+    {
+      label: "Rename",
+      run: () => {
+        renamingId.value = t.id;
+        renameError.value = "";
+      },
+    },
+    { label: "Delete", danger: true, run: () => remove(t) },
   ];
 });
 
@@ -3067,30 +4259,37 @@ async function focusRow(id) {
 
 function reveal(id, includeSelf) {
   const { parentOf } = index.value;
-  for (let cur = includeSelf ? id : parentOf.get(id); cur != null; cur = parentOf.get(cur)) expanded.add(cur);
+  for (
+    let cur = includeSelf ? id : parentOf.get(id);
+    cur != null;
+    cur = parentOf.get(cur)
+  )
+    expanded.add(cur);
 }
 
 function navigate(id) {
   selectedId.value = id;
   if (id) reveal(id, true);
-  query.value = '';
+  query.value = "";
 }
 
 function onRowClick(node) {
   selectedId.value = node.id;
   reveal(node.id, false);
-  if (node.type === 'folder' && !q.value) {
-    if (expanded.has(node.id)) expanded.delete(node.id); else expanded.add(node.id);
+  if (node.type === "folder" && !q.value) {
+    if (expanded.has(node.id)) expanded.delete(node.id);
+    else expanded.add(node.id);
   }
 }
 
-function openMenu(e, node) {          // the template already called preventDefault (.prevent)
+function openMenu(e, node) {
+  // the template already called preventDefault (.prevent)
   selectedId.value = node.id;
   menu.value = { ...placeMenu(e.clientX, e.clientY), nodeId: node.id };
 }
 
 function onRowKey(e, node) {
-  if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+  if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
     e.preventDefault();
     const r = e.currentTarget.getBoundingClientRect();
     selectedId.value = node.id;
@@ -3106,39 +4305,50 @@ function closeMenu(returnFocus) {
 
 function create(node, type) {
   const { byId, parentOf } = index.value;
-  const parentId = node.type === 'folder' ? node.id : parentOf.get(node.id);
+  const parentId = node.type === "folder" ? node.id : parentOf.get(node.id);
   const siblings = parentId === null ? tree : byId.get(parentId).children;
   const item = { id: makeId(), name: uniqueName(siblings, type), type };
-  if (type === 'folder') item.children = [];
+  if (type === "folder") item.children = [];
   siblings.push(item);
   if (parentId) reveal(parentId, true);
   selectedId.value = item.id;
   focusRow(item.id);
-  status.value = 'Created ' + item.name + ' in ' + (parentId ? byId.get(parentId).name : 'Project');
+  status.value =
+    "Created " +
+    item.name +
+    " in " +
+    (parentId ? byId.get(parentId).name : "Project");
 }
 
 function remove(node) {
   const { byId, parentOf } = index.value;
   const parentId = parentOf.get(node.id);
   const siblings = parentId === null ? tree : byId.get(parentId).children;
-  siblings.splice(siblings.findIndex((s) => s.id === node.id), 1);
+  siblings.splice(
+    siblings.findIndex((s) => s.id === node.id),
+    1,
+  );
   selectedId.value = parentId;
   focusRow(parentId);
-  status.value = 'Deleted ' + node.name;
+  status.value = "Deleted " + node.name;
 }
 
 function commitRename(raw) {
   const name = raw.trim();
   const { byId, parentOf } = index.value;
-  const node = byId.get(renamingId.value);   // the real node, not a filtered copy
+  const node = byId.get(renamingId.value); // the real node, not a filtered copy
   if (!name || name === node.name) return cancelRename();
   const parentId = parentOf.get(node.id);
   const siblings = parentId === null ? tree : byId.get(parentId).children;
-  if (siblings.some((s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase())) {
+  if (
+    siblings.some(
+      (s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase(),
+    )
+  ) {
     renameError.value = '"' + name + '" already exists here';
     return;
   }
-  status.value = 'Renamed ' + node.name + ' to ' + name;
+  status.value = "Renamed " + node.name + " to " + name;
   node.name = name;
   cancelRename();
 }
@@ -3146,76 +4356,242 @@ function commitRename(raw) {
 function cancelRename() {
   focusRow(renamingId.value);
   renamingId.value = null;
-  renameError.value = '';
+  renameError.value = "";
 }
 
-provide('explorer', reactive({
-  query: q, selectedId, tabStopId, renamingId, renameError,
-  isOpen: (id) => view.value.open.has(id),
-  onRowClick, onRowKey, openMenu, commitRename, cancelRename,
-}));
+provide(
+  "explorer",
+  reactive({
+    query: q,
+    selectedId,
+    tabStopId,
+    renamingId,
+    renameError,
+    isOpen: (id) => view.value.open.has(id),
+    onRowClick,
+    onRowKey,
+    openMenu,
+    commitRename,
+    cancelRename,
+  }),
+);
 </script>
 
 <template>
   <div class="app">
     <Breadcrumbs :crumbs="crumbs" @navigate="navigate" />
-    <input v-model="query" type="search" class="search" data-testid="search" placeholder="Filter files..."
-      aria-label="Filter files" aria-controls="file-tree" />
-    <p class="summary" aria-live="polite" data-testid="summary">{{ summary }}</p>
-    <ul id="file-tree" ref="treeEl" role="tree" aria-label="Project files" class="tree">
+    <input
+      v-model="query"
+      type="search"
+      class="search"
+      data-testid="search"
+      placeholder="Filter files..."
+      aria-label="Filter files"
+      aria-controls="file-tree"
+    />
+    <p class="summary" aria-live="polite" data-testid="summary">
+      {{ summary }}
+    </p>
+    <ul
+      id="file-tree"
+      ref="treeEl"
+      role="tree"
+      aria-label="Project files"
+      class="tree"
+    >
       <TreeItem v-for="n in visible" :key="n.id" :node="n" :depth="1" />
     </ul>
     <p class="status" role="status" data-testid="status">{{ status }}</p>
-    <ContextMenu v-if="menu && target" :left="menu.left" :top="menu.top" :label="'Actions for ' + target.name"
-      :items="menuItems" @close="closeMenu" />
+    <ContextMenu
+      v-if="menu && target"
+      :left="menu.left"
+      :top="menu.top"
+      :label="'Actions for ' + target.name"
+      :items="menuItems"
+      @close="closeMenu"
+    />
   </div>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 8px; cursor: pointer; font: inherit; }
-.crumbs ol { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; list-style: none; margin: 0 0 10px; padding: 0; font-size: 14px; }
-.crumbs li { display: flex; align-items: center; gap: 4px; }
-.crumbs button { background: none; border: none; color: #8ab4ff; padding: 2px 4px; }
-.crumbs [aria-current] { font-weight: 600; padding: 2px 4px; }
-.sep { color: #5d667a; }
-.search { width: 100%; box-sizing: border-box; background: #161a23; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 8px 10px; }
-.summary { min-height: 1.2em; margin: 6px 0; color: #9aa3b5; font-size: 13px; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
-.row:hover { background: #1f2533; }
-.row.selected { background: #263354; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-mark { background: #6b5200; color: #ffe08a; border-radius: 2px; }
-.edit { display: flex; flex-direction: column; gap: 2px; flex: 1; }
-.edit input { background: #0f1115; color: #e6e6e6; border: 1px solid #6ea8ff; border-radius: 4px; padding: 3px 6px; }
-.error { color: #ff8a80; font-size: 12px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
-.menu { position: fixed; z-index: 10; width: 180px; display: flex; flex-direction: column; padding: 4px; background: #1d2230; border: 1px solid #343b4f; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
-.menu button { border: none; background: none; text-align: left; height: 32px; padding: 0 10px; }
-.menu button:focus { background: #263354; outline: none; }
-.menu .danger { color: #ff8a80; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  font-size: 14px;
+}
+.crumbs li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.crumbs button {
+  background: none;
+  border: none;
+  color: #8ab4ff;
+  padding: 2px 4px;
+}
+.crumbs [aria-current] {
+  font-weight: 600;
+  padding: 2px 4px;
+}
+.sep {
+  color: #5d667a;
+}
+.search {
+  width: 100%;
+  box-sizing: border-box;
+  background: #161a23;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.summary {
+  min-height: 1.2em;
+  margin: 6px 0;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.selected {
+  background: #263354;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+mark {
+  background: #6b5200;
+  color: #ffe08a;
+  border-radius: 2px;
+}
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+.edit input {
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #6ea8ff;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.error {
+  color: #ff8a80;
+  font-size: 12px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.menu {
+  position: fixed;
+  z-index: 10;
+  width: 180px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  background: #1d2230;
+  border: 1px solid #343b4f;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.menu button {
+  border: none;
+  background: none;
+  text-align: left;
+  height: 32px;
+  padding: 0 10px;
+}
+.menu button:focus {
+  background: #263354;
+  outline: none;
+}
+.menu .danger {
+  color: #ff8a80;
+}
 </style>
 `,
           "/src/components/Breadcrumbs.vue": `<script setup>
-defineProps({ crumbs: { type: Array, required: true } });   // root-first folder nodes
-const emit = defineEmits(['navigate']);                      // payload: folder id, or null for the root
+// root-first folder nodes
+defineProps({ crumbs: { type: Array, required: true } });
+// payload: folder id, or null for the root
+const emit = defineEmits(["navigate"]);
 </script>
 
 <template>
   <nav aria-label="Breadcrumb" class="crumbs" data-testid="breadcrumbs">
     <ol>
       <li>
-        <button v-if="crumbs.length" @click="emit('navigate', null)">Project</button>
+        <button
+          v-if="crumbs.length"
+          @click="emit('navigate', null)"
+        >Project</button>
         <span v-else aria-current="page">Project</span>
       </li>
       <li v-for="(c, i) in crumbs" :key="c.id">
         <span class="sep" aria-hidden="true">/</span>
-        <span v-if="i === crumbs.length - 1" aria-current="page">{{ c.name }}</span>
+        <span
+          v-if="i === crumbs.length - 1"
+          aria-current="page"
+        >{{ c.name }}</span>
         <button v-else @click="emit('navigate', c.id)">{{ c.name }}</button>
       </li>
     </ol>
@@ -3223,46 +4599,49 @@ const emit = defineEmits(['navigate']);                      // payload: folder 
 </template>
 `,
           "/src/components/ContextMenu.vue": `<script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from "vue";
 
 defineProps({
   left: { type: Number, required: true },
   top: { type: Number, required: true },
   label: { type: String, required: true },
-  items: { type: Array, required: true },   // [{ label, run, danger? }]
+  items: { type: Array, required: true }, // [{ label, run, danger? }]
 });
-const emit = defineEmits(['close']);       // payload: return focus to the row?
+const emit = defineEmits(["close"]); // payload: return focus to the row?
 const el = ref(null);
 
-const onDown = (e) => { if (!el.value.contains(e.target)) emit('close', false); };
-const dismiss = () => emit('close', false);
+const onDown = (e) => {
+  if (!el.value.contains(e.target)) emit("close", false);
+};
+const dismiss = () => emit("close", false);
 
 onMounted(() => {
   el.value.querySelector('[role="menuitem"]').focus();
-  document.addEventListener('pointerdown', onDown, true);
-  window.addEventListener('resize', dismiss);
-  window.addEventListener('scroll', dismiss, true);
+  document.addEventListener("pointerdown", onDown, true);
+  window.addEventListener("resize", dismiss);
+  window.addEventListener("scroll", dismiss, true);
 });
 onUnmounted(() => {
-  document.removeEventListener('pointerdown', onDown, true);
-  window.removeEventListener('resize', dismiss);
-  window.removeEventListener('scroll', dismiss, true);
+  document.removeEventListener("pointerdown", onDown, true);
+  window.removeEventListener("resize", dismiss);
+  window.removeEventListener("scroll", dismiss, true);
 });
 
 function onKeyDown(e) {
   const all = [...el.value.querySelectorAll('[role="menuitem"]')];
   const i = all.indexOf(document.activeElement);
-  if (e.key === 'ArrowDown') all[(i + 1) % all.length].focus();
-  else if (e.key === 'ArrowUp') all[(i - 1 + all.length) % all.length].focus();
-  else if (e.key === 'Home') all[0].focus();
-  else if (e.key === 'End') all[all.length - 1].focus();
-  else if (e.key === 'Escape' || e.key === 'Tab') emit('close', e.key === 'Escape');
+  if (e.key === "ArrowDown") all[(i + 1) % all.length].focus();
+  else if (e.key === "ArrowUp") all[(i - 1 + all.length) % all.length].focus();
+  else if (e.key === "Home") all[0].focus();
+  else if (e.key === "End") all[all.length - 1].focus();
+  else if (e.key === "Escape" || e.key === "Tab")
+    emit("close", e.key === "Escape");
   else return;
   e.preventDefault();
 }
 
 function choose(item) {
-  emit('close', true);
+  emit("close", true);
   item.run();
 }
 </script>
@@ -3270,46 +4649,73 @@ function choose(item) {
 <template>
   <!-- Teleport moves the menu to the end of <body>, away from clipping parents. -->
   <Teleport to="body">
-    <div ref="el" role="menu" class="menu" data-testid="context-menu" :aria-label="label"
-      :style="{ left: left + 'px', top: top + 'px' }" @keydown="onKeyDown">
-      <button v-for="it in items" :key="it.label" role="menuitem" tabindex="-1"
-        :class="{ danger: it.danger }" @click="choose(it)">{{ it.label }}</button>
+    <div
+      ref="el"
+      role="menu"
+      class="menu"
+      data-testid="context-menu"
+      :aria-label="label"
+      :style="{ left: left + 'px', top: top + 'px' }"
+      @keydown="onKeyDown"
+    >
+      <button
+        v-for="it in items"
+        :key="it.label"
+        role="menuitem"
+        tabindex="-1"
+        :class="{ danger: it.danger }"
+        @click="choose(it)"
+      >
+        {{ it.label }}
+      </button>
     </div>
   </Teleport>
 </template>
 `,
           "/src/components/TreeItem.vue": `<script setup>
-import { computed, inject, nextTick, ref, watch } from 'vue';
-import { sortNodes } from '../tree.js';
+import { computed, inject, nextTick, ref, watch } from "vue";
+import { sortNodes } from "../tree.js";
 
 const props = defineProps({
   node: { type: Object, required: true },
   depth: { type: Number, default: 1 },
 });
-const api = inject('explorer');
+const api = inject("explorer");
 
-const isFolder = computed(() => props.node.type === 'folder');
+const isFolder = computed(() => props.node.type === "folder");
 const open = computed(() => isFolder.value && api.isOpen(props.node.id));
 const selected = computed(() => api.selectedId === props.node.id);
-const children = computed(() => (open.value ? sortNodes(props.node.children) : []));
+const children = computed(() =>
+  open.value ? sortNodes(props.node.children) : [],
+);
 const renaming = computed(() => api.renamingId === props.node.id);
 
 // The first case-insensitive match, split into three pieces for <mark>.
 const parts = computed(() => {
   const name = props.node.name;
   const i = api.query ? name.toLowerCase().indexOf(api.query) : -1;
-  return i < 0 ? null : [name.slice(0, i), name.slice(i, i + api.query.length), name.slice(i + api.query.length)];
+  return i < 0
+    ? null
+    : [
+        name.slice(0, i),
+        name.slice(i, i + api.query.length),
+        name.slice(i + api.query.length),
+      ];
 });
 
-const draft = ref('');
+const draft = ref("");
 const box = ref(null);
-watch(renaming, async (on) => {
-  if (!on) return;
-  draft.value = props.node.name;
-  await nextTick();
-  box.value.focus();
-  box.value.select();
-}, { immediate: true });
+watch(
+  renaming,
+  async (on) => {
+    if (!on) return;
+    draft.value = props.node.name;
+    await nextTick();
+    box.value.focus();
+    box.value.select();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
@@ -3318,18 +4724,33 @@ watch(renaming, async (on) => {
     :data-id="node.id" :data-name="node.name" @keydown.self="api.onRowKey($event, node)">
     <div class="row" :class="{ selected }" :style="{ paddingLeft: 8 + (depth - 1) * 16 + 'px' }"
       @click="api.onRowClick(node)" @contextmenu.prevent="api.openMenu($event, node)">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
+      <span
+        class="chevron"
+        aria-hidden="true"
+      >{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
       <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
       <span v-if="renaming" class="edit" @click.stop>
         <input ref="box" v-model="draft" data-testid="rename-input" :aria-label="'Rename ' + node.name"
           @keydown.enter="api.commitRename(draft)" @keydown.escape="api.cancelRename()" />
-        <span v-if="api.renameError" role="alert" class="error">{{ api.renameError }}</span>
+        <span
+          v-if="api.renameError"
+          role="alert"
+          class="error"
+        >{{ api.renameError }}</span>
       </span>
-      <span v-else-if="parts" class="name">{{ parts[0] }}<mark>{{ parts[1] }}</mark>{{ parts[2] }}</span>
+      <span
+        v-else-if="parts"
+        class="name"
+      >{{ parts[0] }}<mark>{{ parts[1] }}</mark>{{ parts[2] }}</span>
       <span v-else class="name">{{ node.name }}</span>
     </div>
     <ul v-if="children.length" role="group">
-      <TreeItem v-for="c in children" :key="c.id" :node="c" :depth="depth + 1" />
+      <TreeItem
+        v-for="c in children"
+        :key="c.id"
+        :node="c"
+        :depth="depth + 1"
+      />
     </ul>
   </li>
 </template>
@@ -3337,32 +4758,61 @@ watch(renaming, async (on) => {
           "/src/tree.js": `// Nested tree data plus the derived lookups the toolbar needs. App.vue mutates
 // the reactive tree in place, so there are no copy-on-write helpers here.
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const createTree = () => [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'searchbar', name: 'SearchBar.jsx', type: 'file' },
-    ] },
-    { id: 'hooks', name: 'hooks', type: 'folder', children: [
-      { id: 'usesearch', name: 'useSearch.js', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-  ] },
-  { id: 'docs', name: 'docs', type: 'folder', children: [
-    { id: 'guide', name: 'guide.md', type: 'file' },
-    { id: 'tips', name: 'search-tips.md', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "button", name: "Button.jsx", type: "file" },
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "searchbar", name: "SearchBar.jsx", type: "file" },
+        ],
+      },
+      {
+        id: "hooks",
+        name: "hooks",
+        type: "folder",
+        children: [{ id: "usesearch", name: "useSearch.js", type: "file" }],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    id: "docs",
+    name: "docs",
+    type: "folder",
+    children: [
+      { id: "guide", name: "guide.md", type: "file" },
+      { id: "tips", name: "search-tips.md", type: "file" },
+    ],
+  },
+  { id: "readme", name: "README.md", type: "file" },
 ];
 
-export const sortNodes = (nodes) => [...nodes].sort((a, b) =>
-  a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+export const sortNodes = (nodes) =>
+  [...nodes].sort((a, b) =>
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 
 // One walk builds both maps: id -> node and id -> parent id (null at the top).
-export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = new Map()) {
+export function indexTree(
+  nodes,
+  parentId = null,
+  byId = new Map(),
+  parentOf = new Map(),
+) {
   for (const n of nodes) {
     byId.set(n.id, n);
     parentOf.set(n.id, parentId);
@@ -3371,37 +4821,48 @@ export function indexTree(nodes, parentId = null, byId = new Map(), parentOf = n
   return { byId, parentOf };
 }
 
-// Root-first list of ancestors, e.g. pathTo('modal') -> [src, components, Modal.jsx]
+// Root-first list of ancestors, e.g.
+// pathTo('modal') -> [src, components, Modal.jsx]
 export function pathTo(id, byId, parentOf) {
   const path = [];
-  for (let cur = id; cur != null; cur = parentOf.get(cur)) path.unshift(byId.get(cur));
+  for (let cur = id; cur != null; cur = parentOf.get(cur))
+    path.unshift(byId.get(cur));
   return path;
 }
 
 // Keep a node if it matches or if anything below it matches. Folders that are
-// kept because of a descendant are returned in \`open\`, so the matches are visible.
+// kept because of a descendant are returned
+// in \`open\`, so the matches are visible.
 export function filterTree(nodes, query, open = new Set()) {
   const out = [];
   for (const n of nodes) {
     const self = n.name.toLowerCase().includes(query);
     const kids = n.children ? filterTree(n.children, query, open) : [];
     if (kids.length) open.add(n.id);
-    if (self || kids.length) out.push(n.children ? { ...n, children: kids } : n);
+    if (self || kids.length)
+      out.push(n.children ? { ...n, children: kids } : n);
   }
   return out;
 }
 
 export function countMatches(nodes, query) {
-  return nodes.reduce((sum, n) => sum + (n.name.toLowerCase().includes(query) ? 1 : 0)
-    + (n.children ? countMatches(n.children, query) : 0), 0);
+  return nodes.reduce(
+    (sum, n) =>
+      sum +
+      (n.name.toLowerCase().includes(query) ? 1 : 0) +
+      (n.children ? countMatches(n.children, query) : 0),
+    0,
+  );
 }
 
-// "untitled.txt", then "untitled 2.txt", ... ; "New folder", then "New folder 2", ...
+// "untitled.txt", then "untitled 2.txt", ...
+// ; "New folder", then "New folder 2", ...
 export function uniqueName(siblings, type) {
-  const [base, ext] = type === 'folder' ? ['New folder', ''] : ['untitled', '.txt'];
+  const [base, ext] =
+    type === "folder" ? ["New folder", ""] : ["untitled", ".txt"];
   const taken = new Set(siblings.map((s) => s.name.toLowerCase()));
   for (let i = 1; ; i++) {
-    const name = base + (i === 1 ? '' : ' ' + i) + ext;
+    const name = base + (i === 1 ? "" : " " + i) + ext;
     if (!taken.has(name.toLowerCase())) return name;
   }
 }
@@ -3438,9 +4899,9 @@ Breadcrumbs, search that keeps ancestors open only while active, highlights, and
 ~~~ts
 readonly crumbs = computed(() => {
   const ix = this.index();
-  const s = ix.byId.get(this.selectedId() ?? '');
+  const s = ix.byId.get(this.selectedId() ?? "");
   if (!s) return [];
-  const folderId = s.type === 'folder' ? s.id : ix.parentOf.get(s.id);
+  const folderId = s.type === "folder" ? s.id : ix.parentOf.get(s.id);
   return folderId ? pathTo(folderId, ix) : [];
 });
 ~~~
@@ -3452,9 +4913,18 @@ readonly crumbs = computed(() => {
 ~~~ts
 readonly view = computed(() => {
   const q = this.q();
-  if (!q) return { nodes: this.tree(), open: this.expanded(), matches: null as number | null };
+  if (!q)
+    return {
+      nodes: this.tree(),
+      open: this.expanded(),
+      matches: null as number | null,
+    };
   const open = new Set<string>();
-  return { nodes: filterTree(this.tree(), q, open), open: open as ReadonlySet<string>, matches: countMatches(this.tree(), q) };
+  return {
+    nodes: filterTree(this.tree(), q, open),
+    open: open as ReadonlySet<string>,
+    matches: countMatches(this.tree(), q),
+  };
 });
 ~~~
 
@@ -3469,13 +4939,19 @@ ngAfterViewInit() {
   document.body.appendChild(this.el);
   this.el.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
 }
-ngOnDestroy() { this.el.remove(); }
+ngOnDestroy() {
+  this.el.remove();
+}
 
-@HostListener('document:pointerdown', ['$event'])
-onDocDown(e: Event) { if (!this.el.contains(e.target as Node)) this.close.emit(false); }
+@HostListener("document:pointerdown", ["$event"])
+onDocDown(e: Event) {
+  if (!this.el.contains(e.target as Node)) this.close.emit(false);
+}
 
-@HostListener('window:resize')
-onResize() { this.close.emit(false); }
+@HostListener("window:resize")
+onResize() {
+  this.close.emit(false);
+}
 ~~~
 
 📌 **Interview term: @HostListener** — a decorator that subscribes a method to an event on the host, or globally with a \`document:\` or \`window:\` prefix, and unsubscribes when the component is destroyed. See [@HostListener and @HostBinding](/interview-question/what-do-hostlistener-and-hostbinding-do). It listens in the bubbling phase only, so a capture-phase listener would need \`addEventListener\` by hand.
@@ -3617,14 +5093,14 @@ It matches React and Vue line for line, including the menu being a child of \`bo
 
 **Conclusion:** The Angular toolbar is a set of \`computed\` signals (index, crumbs, pruned view, summary) over one tree, a breadcrumbs component with an \`@Output\`, and a self-moving menu component driven by \`@HostListener\`. Know that the CDK does the menu for you in production, and remember the self-import for recursive components in the playground.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from '@angular/core';
-import { ExplorerState } from './explorer-state';
-import { TreeItemComponent } from './tree-item.component';
-import { BreadcrumbsComponent } from './breadcrumbs.component';
-import { ContextMenuComponent } from './context-menu.component';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
+import { ExplorerState } from "./explorer-state";
+import { TreeItemComponent } from "./tree-item.component";
+import { BreadcrumbsComponent } from "./breadcrumbs.component";
+import { ContextMenuComponent } from "./context-menu.component";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [TreeItemComponent, BreadcrumbsComponent, ContextMenuComponent],
   providers: [ExplorerState],
@@ -3634,7 +5110,11 @@ import { ContextMenuComponent } from './context-menu.component';
       <app-breadcrumbs [crumbs]="s.crumbs()" (navigate)="s.navigate($event)" />
       <input type="search" class="search" data-testid="search" placeholder="Filter files..."
         aria-label="Filter files" aria-controls="file-tree" #q [value]="s.query()" (input)="s.query.set(q.value)" />
-      <p class="summary" aria-live="polite" data-testid="summary">{{ s.summary() }}</p>
+      <p
+        class="summary"
+        aria-live="polite"
+        data-testid="summary"
+      >{{ s.summary() }}</p>
       <ul id="file-tree" role="tree" aria-label="Project files" class="tree">
         @for (n of s.visible(); track n.id) {
           <li app-tree-item [node]="n" [depth]="1"></li>
@@ -3649,7 +5129,8 @@ import { ContextMenuComponent } from './context-menu.component';
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 520px; margin: 0 auto; padding: 16px; }
     button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 8px; cursor: pointer; font: inherit; }
@@ -3677,17 +5158,18 @@ import { ContextMenuComponent } from './context-menu.component';
     .menu button { border: none; background: none; text-align: left; height: 32px; padding: 0 10px; }
     .menu button:focus { background: #263354; outline: none; }
     .menu .danger { color: #ff8a80; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   s = inject(ExplorerState);
 }
 `,
-          "/src/app/breadcrumbs.component.ts": `import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { FsNode } from './tree';
+          "/src/app/breadcrumbs.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { FsNode } from "./tree";
 
 @Component({
-  selector: 'app-breadcrumbs',
+  selector: "app-breadcrumbs",
   standalone: true,
   template: \`
     <nav aria-label="Breadcrumb" class="crumbs" data-testid="breadcrumbs">
@@ -3718,51 +5200,84 @@ export class BreadcrumbsComponent {
   @Output() navigate = new EventEmitter<string | null>();
 }
 `,
-          "/src/app/context-menu.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, Output, inject } from '@angular/core';
-import { MenuItem } from './explorer-state';
+          "/src/app/context-menu.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnDestroy,
+  Output,
+  inject,
+} from "@angular/core";
+import { MenuItem } from "./explorer-state";
 
 // Angular has no built-in portal outside the CDK (@angular/cdk/overlay), so the
-// component moves its own host element to the end of <body> and removes it again.
+// component moves its own host element to
+// the end of <body> and removes it again.
 @Component({
-  selector: 'app-context-menu',
+  selector: "app-context-menu",
   standalone: true,
-  host: { role: 'menu', class: 'menu', 'data-testid': 'context-menu', '[attr.aria-label]': 'label',
-    '[style.left.px]': 'left', '[style.top.px]': 'top' },
+  host: {
+    role: "menu",
+    class: "menu",
+    "data-testid": "context-menu",
+    "[attr.aria-label]": "label",
+    "[style.left.px]": "left",
+    "[style.top.px]": "top",
+  },
   template: \`
     @for (it of items; track it.label) {
-      <button role="menuitem" tabindex="-1" [class.danger]="it.danger" (click)="choose(it)">{{ it.label }}</button>
+      <button
+        role="menuitem"
+        tabindex="-1"
+        [class.danger]="it.danger"
+        (click)="choose(it)"
+      >{{ it.label }}</button>
     }
   \`,
 })
 export class ContextMenuComponent implements AfterViewInit, OnDestroy {
   @Input() left = 0;
   @Input() top = 0;
-  @Input() label = '';
+  @Input() label = "";
   @Input() items: MenuItem[] = [];
-  @Output() close = new EventEmitter<boolean>();   // true = return focus to the row
+  // true = return focus to the row
+  @Output() close = new EventEmitter<boolean>();
   private el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   ngAfterViewInit() {
     document.body.appendChild(this.el);
     this.el.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
   }
-  ngOnDestroy() { this.el.remove(); }
+  ngOnDestroy() {
+    this.el.remove();
+  }
 
-  @HostListener('document:pointerdown', ['$event'])
-  onDocDown(e: Event) { if (!this.el.contains(e.target as Node)) this.close.emit(false); }
+  @HostListener("document:pointerdown", ["$event"])
+  onDocDown(e: Event) {
+    if (!this.el.contains(e.target as Node)) this.close.emit(false);
+  }
 
-  @HostListener('window:resize')
-  onResize() { this.close.emit(false); }
+  @HostListener("window:resize")
+  onResize() {
+    this.close.emit(false);
+  }
 
-  @HostListener('keydown', ['$event'])
+  @HostListener("keydown", ["$event"])
   onKeyDown(e: KeyboardEvent) {
-    const all = Array.from(this.el.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+    const all = Array.from(
+      this.el.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    );
     const i = all.indexOf(document.activeElement as HTMLElement);
-    if (e.key === 'ArrowDown') all[(i + 1) % all.length].focus();
-    else if (e.key === 'ArrowUp') all[(i - 1 + all.length) % all.length].focus();
-    else if (e.key === 'Home') all[0].focus();
-    else if (e.key === 'End') all[all.length - 1].focus();
-    else if (e.key === 'Escape' || e.key === 'Tab') this.close.emit(e.key === 'Escape');
+    if (e.key === "ArrowDown") all[(i + 1) % all.length].focus();
+    else if (e.key === "ArrowUp")
+      all[(i - 1 + all.length) % all.length].focus();
+    else if (e.key === "Home") all[0].focus();
+    else if (e.key === "End") all[all.length - 1].focus();
+    else if (e.key === "Escape" || e.key === "Tab")
+      this.close.emit(e.key === "Escape");
     else return;
     e.preventDefault();
   }
@@ -3773,15 +5288,39 @@ export class ContextMenuComponent implements AfterViewInit, OnDestroy {
   }
 }
 `,
-          "/src/app/explorer-state.ts": `import { ElementRef, Injectable, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
+          "/src/app/explorer-state.ts": `import {
+  ElementRef,
+  Injectable,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import {
-  FsNode, initialTree, makeId, sortNodes, indexTree, pathTo, filterTree, countMatches,
-  updateNode, removeNode, insertNode, uniqueName,
-} from './tree';
+  FsNode,
+  initialTree,
+  makeId,
+  sortNodes,
+  indexTree,
+  pathTo,
+  filterTree,
+  countMatches,
+  updateNode,
+  removeNode,
+  insertNode,
+  uniqueName,
+} from "./tree";
 
-export interface MenuItem { label: string; danger?: boolean; run: () => void; }
+export interface MenuItem {
+  label: string;
+  danger?: boolean;
+  run: () => void;
+}
 
-const MENU_W = 180, ITEM_H = 32, MENU_ITEMS = 4;
+const MENU_W = 180,
+  ITEM_H = 32,
+  MENU_ITEMS = 4;
 function placeMenu(x: number, y: number) {
   const h = MENU_ITEMS * ITEM_H + 8;
   return {
@@ -3797,73 +5336,108 @@ export class ExplorerState {
   private injector = inject(Injector);
 
   readonly tree = signal<FsNode[]>(initialTree);
-  readonly expanded = signal<ReadonlySet<string>>(new Set(['src']));
+  readonly expanded = signal<ReadonlySet<string>>(new Set(["src"]));
   readonly selectedId = signal<string | null>(null);
-  readonly query = signal('');
-  readonly menu = signal<{ left: number; top: number; nodeId: string } | null>(null);
+  readonly query = signal("");
+  readonly menu = signal<{ left: number; top: number; nodeId: string } | null>(
+    null,
+  );
   readonly renamingId = signal<string | null>(null);
-  readonly renameError = signal('');
-  readonly status = signal('');
+  readonly renameError = signal("");
+  readonly status = signal("");
 
   // Derived state, each recomputed only when a signal it read has changed.
   readonly index = computed(() => indexTree(this.tree()));
   readonly q = computed(() => this.query().trim().toLowerCase());
   readonly view = computed(() => {
     const q = this.q();
-    if (!q) return { nodes: this.tree(), open: this.expanded(), matches: null as number | null };
+    if (!q)
+      return {
+        nodes: this.tree(),
+        open: this.expanded(),
+        matches: null as number | null,
+      };
     const open = new Set<string>();
-    return { nodes: filterTree(this.tree(), q, open), open: open as ReadonlySet<string>, matches: countMatches(this.tree(), q) };
+    return {
+      nodes: filterTree(this.tree(), q, open),
+      open: open as ReadonlySet<string>,
+      matches: countMatches(this.tree(), q),
+    };
   });
   readonly visible = computed(() => sortNodes(this.view().nodes));
   readonly crumbs = computed(() => {
     const ix = this.index();
-    const s = ix.byId.get(this.selectedId() ?? '');
+    const s = ix.byId.get(this.selectedId() ?? "");
     if (!s) return [];
-    const folderId = s.type === 'folder' ? s.id : ix.parentOf.get(s.id);
+    const folderId = s.type === "folder" ? s.id : ix.parentOf.get(s.id);
     return folderId ? pathTo(folderId, ix) : [];
   });
   readonly tabStopId = computed(() => {
     const ids = new Set<string>();
     const open = this.view().open;
-    const walk = (ns: FsNode[]) => ns.forEach((n) => { ids.add(n.id); if (n.children && open.has(n.id)) walk(n.children); });
+    const walk = (ns: FsNode[]) =>
+      ns.forEach((n) => {
+        ids.add(n.id);
+        if (n.children && open.has(n.id)) walk(n.children);
+      });
     walk(this.view().nodes);
     const id = this.selectedId();
-    return id && ids.has(id) ? id : this.visible()[0]?.id ?? null;
+    return id && ids.has(id) ? id : (this.visible()[0]?.id ?? null);
   });
   readonly summary = computed(() => {
     const m = this.view().matches;
-    if (m === null) return '';
-    return m ? m + ' match' + (m === 1 ? '' : 'es') : 'No files match "' + this.query().trim() + '"';
+    if (m === null) return "";
+    return m
+      ? m + " match" + (m === 1 ? "" : "es")
+      : 'No files match "' + this.query().trim() + '"';
   });
   readonly target = computed(() => {
     const m = this.menu();
-    return m ? this.index().byId.get(m.nodeId) ?? null : null;
+    return m ? (this.index().byId.get(m.nodeId) ?? null) : null;
   });
   readonly menuItems = computed<MenuItem[]>(() => {
     const t = this.target();
     if (!t) return [];
     return [
-      { label: 'New file', run: () => this.create(t, 'file') },
-      { label: 'New folder', run: () => this.create(t, 'folder') },
-      { label: 'Rename', run: () => { this.renamingId.set(t.id); this.renameError.set(''); } },
-      { label: 'Delete', danger: true, run: () => this.remove(t) },
+      { label: "New file", run: () => this.create(t, "file") },
+      { label: "New folder", run: () => this.create(t, "folder") },
+      {
+        label: "Rename",
+        run: () => {
+          this.renamingId.set(t.id);
+          this.renameError.set("");
+        },
+      },
+      { label: "Delete", danger: true, run: () => this.remove(t) },
     ];
   });
 
-  isOpen(id: string) { return this.view().open.has(id); }
+  isOpen(id: string) {
+    return this.view().open.has(id);
+  }
 
   private focusRow(id: string | null | undefined) {
     if (!id) return;
-    afterNextRender(() => {
-      this.host.nativeElement.querySelector<HTMLElement>(\`[data-id="\${id}"]\`)?.focus();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        this.host.nativeElement
+          .querySelector<HTMLElement>(\`[data-id="\${id}"]\`)
+          ?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private reveal(id: string, includeSelf: boolean) {
     const { parentOf } = this.index();
     this.expanded.update((prev) => {
       const next = new Set(prev);
-      for (let cur = includeSelf ? id : parentOf.get(id); cur != null; cur = parentOf.get(cur)) next.add(cur);
+      for (
+        let cur = includeSelf ? id : parentOf.get(id);
+        cur != null;
+        cur = parentOf.get(cur)
+      )
+        next.add(cur);
       return next;
     });
   }
@@ -3871,16 +5445,17 @@ export class ExplorerState {
   navigate(id: string | null) {
     this.selectedId.set(id);
     if (id) this.reveal(id, true);
-    this.query.set('');
+    this.query.set("");
   }
 
   onRowClick(node: FsNode) {
     this.selectedId.set(node.id);
     this.reveal(node.id, false);
-    if (node.type === 'folder' && !this.q()) {
+    if (node.type === "folder" && !this.q()) {
       this.expanded.update((prev) => {
         const next = new Set(prev);
-        if (next.has(node.id)) next.delete(node.id); else next.add(node.id);
+        if (next.has(node.id)) next.delete(node.id);
+        else next.add(node.id);
         return next;
       });
     }
@@ -3893,7 +5468,7 @@ export class ExplorerState {
   }
 
   onRowKey(e: KeyboardEvent, node: FsNode) {
-    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+    if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
       e.preventDefault();
       const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
       this.selectedId.set(node.id);
@@ -3907,17 +5482,28 @@ export class ExplorerState {
     if (returnFocus) this.focusRow(id);
   }
 
-  create(node: FsNode, type: 'file' | 'folder') {
+  create(node: FsNode, type: "file" | "folder") {
     const { byId, parentOf } = this.index();
-    const parentId = node.type === 'folder' ? node.id : parentOf.get(node.id) ?? null;
-    const siblings = parentId === null ? this.tree() : byId.get(parentId)?.children ?? [];
-    const item: FsNode = { id: makeId(), name: uniqueName(siblings, type), type };
-    if (type === 'folder') item.children = [];
+    const parentId =
+      node.type === "folder" ? node.id : (parentOf.get(node.id) ?? null);
+    const siblings =
+      parentId === null ? this.tree() : (byId.get(parentId)?.children ?? []);
+    const item: FsNode = {
+      id: makeId(),
+      name: uniqueName(siblings, type),
+      type,
+    };
+    if (type === "folder") item.children = [];
     this.tree.update((t) => insertNode(t, parentId, item));
     if (parentId) this.reveal(parentId, true);
     this.selectedId.set(item.id);
     this.focusRow(item.id);
-    this.status.set('Created ' + item.name + ' in ' + (parentId ? byId.get(parentId)?.name : 'Project'));
+    this.status.set(
+      "Created " +
+        item.name +
+        " in " +
+        (parentId ? byId.get(parentId)?.name : "Project"),
+    );
   }
 
   remove(node: FsNode) {
@@ -3925,68 +5511,103 @@ export class ExplorerState {
     this.tree.update((t) => removeNode(t, node.id));
     this.selectedId.set(parentId);
     this.focusRow(parentId);
-    this.status.set('Deleted ' + node.name);
+    this.status.set("Deleted " + node.name);
   }
 
   commitRename(raw: string) {
     const name = raw.trim();
     const { byId, parentOf } = this.index();
-    const node = byId.get(this.renamingId() ?? '');
+    const node = byId.get(this.renamingId() ?? "");
     if (!node) return;
-    if (!name || name === node.name) { this.cancelRename(); return; }
+    if (!name || name === node.name) {
+      this.cancelRename();
+      return;
+    }
     const parentId = parentOf.get(node.id) ?? null;
-    const siblings = parentId === null ? this.tree() : byId.get(parentId)?.children ?? [];
-    if (siblings.some((s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase())) {
+    const siblings =
+      parentId === null ? this.tree() : (byId.get(parentId)?.children ?? []);
+    if (
+      siblings.some(
+        (s) => s.id !== node.id && s.name.toLowerCase() === name.toLowerCase(),
+      )
+    ) {
       this.renameError.set('"' + name + '" already exists here');
       return;
     }
     this.tree.update((t) => updateNode(t, node.id, (n) => ({ ...n, name })));
-    this.status.set('Renamed ' + node.name + ' to ' + name);
+    this.status.set("Renamed " + node.name + " to " + name);
     this.cancelRename();
   }
 
   cancelRename() {
     this.focusRow(this.renamingId());
     this.renamingId.set(null);
-    this.renameError.set('');
+    this.renameError.set("");
   }
 }
 `,
-          "/src/app/tree-item.component.ts": `import { Component, ElementRef, Input, ViewChild, effect, forwardRef, inject, signal } from '@angular/core';
-import { ExplorerState } from './explorer-state';
-import { FsNode, sortNodes } from './tree';
+          "/src/app/tree-item.component.ts": `import {
+  Component,
+  ElementRef,
+  Input,
+  ViewChild,
+  effect,
+  forwardRef,
+  inject,
+  signal,
+} from "@angular/core";
+import { ExplorerState } from "./explorer-state";
+import { FsNode, sortNodes } from "./tree";
 
-// Recursive: it lists itself in imports. Without that, the playground JIT reported
+// Recursive: it lists itself in imports.
+// Without that, the playground JIT reported
 // NG0303 (unknown property node on li) while the AOT build was fine.
 @Component({
-  selector: 'li[app-tree-item]',
+  selector: "li[app-tree-item]",
   standalone: true,
   imports: [forwardRef(() => TreeItemComponent)],
   host: {
-    role: 'treeitem',
-    '[attr.aria-level]': 'depth',
-    '[attr.aria-expanded]': 'isFolder ? open : null',
-    '[attr.aria-selected]': 'selected',
-    '[attr.tabindex]': 'state.tabStopId() === node.id ? 0 : -1',
-    '[attr.data-id]': 'node.id',
-    '[attr.data-name]': 'node.name',
-    '(keydown)': 'onKey($event)',
+    role: "treeitem",
+    "[attr.aria-level]": "depth",
+    "[attr.aria-expanded]": "isFolder ? open : null",
+    "[attr.aria-selected]": "selected",
+    "[attr.tabindex]": "state.tabStopId() === node.id ? 0 : -1",
+    "[attr.data-id]": "node.id",
+    "[attr.data-name]": "node.name",
+    "(keydown)": "onKey($event)",
   },
   template: \`
-    <div class="row" [class.selected]="selected" [style.padding-left.px]="8 + (depth - 1) * 16"
-      (click)="state.onRowClick(node)" (contextmenu)="state.openMenu($event, node)">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
-      <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
+    <div
+      class="row"
+      [class.selected]="selected"
+      [style.padding-left.px]="8 + (depth - 1) * 16"
+      (click)="state.onRowClick(node)"
+      (contextmenu)="state.openMenu($event, node)"
+    >
+      <span class="chevron" aria-hidden="true">{{
+        isFolder ? (open ? "▾" : "▸") : ""
+      }}</span>
+      <span aria-hidden="true">{{ isFolder ? "📁" : "📄" }}</span>
       @if (renaming) {
         <span class="edit" (click)="$event.stopPropagation()">
-          <input #box data-testid="rename-input" [attr.aria-label]="'Rename ' + node.name" [value]="draft()"
-            (input)="draft.set(box.value)" (keydown.enter)="state.commitRename(draft())" (keydown.escape)="state.cancelRename()" />
+          <input
+            #box
+            data-testid="rename-input"
+            [attr.aria-label]="'Rename ' + node.name"
+            [value]="draft()"
+            (input)="draft.set(box.value)"
+            (keydown.enter)="state.commitRename(draft())"
+            (keydown.escape)="state.cancelRename()"
+          />
           @if (state.renameError()) {
             <span role="alert" class="error">{{ state.renameError() }}</span>
           }
         </span>
       } @else if (parts; as p) {
-        <span class="name">{{ p[0] }}<mark>{{ p[1] }}</mark>{{ p[2] }}</span>
+        <span class="name"
+          >{{ p[0] }}<mark>{{ p[1] }}</mark
+          >{{ p[2] }}</span
+        >
       } @else {
         <span class="name">{{ node.name }}</span>
       }
@@ -4003,28 +5624,50 @@ import { FsNode, sortNodes } from './tree';
 export class TreeItemComponent {
   @Input({ required: true }) node!: FsNode;
   @Input() depth = 1;
-  @ViewChild('box') set box(el: ElementRef<HTMLInputElement> | undefined) {
+  @ViewChild("box") set box(el: ElementRef<HTMLInputElement> | undefined) {
     // Runs when the rename input appears: focus it and select the old name.
-    if (el) { el.nativeElement.focus(); el.nativeElement.select(); }
+    if (el) {
+      el.nativeElement.focus();
+      el.nativeElement.select();
+    }
   }
   state = inject(ExplorerState);
-  draft = signal('');
+  draft = signal("");
 
   constructor() {
     // Seed the draft each time this row enters rename mode.
-    effect(() => { if (this.state.renamingId() === this.node?.id) this.draft.set(this.node.name); });
+    effect(() => {
+      if (this.state.renamingId() === this.node?.id)
+        this.draft.set(this.node.name);
+    });
   }
 
-  get isFolder() { return this.node.type === 'folder'; }
-  get open() { return this.isFolder && this.state.isOpen(this.node.id); }
-  get selected() { return this.state.selectedId() === this.node.id; }
-  get renaming() { return this.state.renamingId() === this.node.id; }
-  get children() { return this.open ? sortNodes(this.node.children ?? []) : []; }
+  get isFolder() {
+    return this.node.type === "folder";
+  }
+  get open() {
+    return this.isFolder && this.state.isOpen(this.node.id);
+  }
+  get selected() {
+    return this.state.selectedId() === this.node.id;
+  }
+  get renaming() {
+    return this.state.renamingId() === this.node.id;
+  }
+  get children() {
+    return this.open ? sortNodes(this.node.children ?? []) : [];
+  }
   get parts(): [string, string, string] | null {
     const q = this.state.q();
     const name = this.node.name;
     const i = q ? name.toLowerCase().indexOf(q) : -1;
-    return i < 0 ? null : [name.slice(0, i), name.slice(i, i + q.length), name.slice(i + q.length)];
+    return i < 0
+      ? null
+      : [
+          name.slice(0, i),
+          name.slice(i, i + q.length),
+          name.slice(i + q.length),
+        ];
   }
 
   onKey(e: KeyboardEvent) {
@@ -4032,44 +5675,77 @@ export class TreeItemComponent {
   }
 }
 `,
-          "/src/app/tree.ts": `// Nested tree data plus the derived lookups the toolbar needs. Signals compare by
-// reference, so updates are copy-on-write: only folders on the changed path are copied.
+          "/src/app/tree.ts": `// Nested tree data plus the derived lookups
+// the toolbar needs. Signals compare by
+// reference, so updates are copy-on-write:
+// only folders on the changed path are copied.
 export interface FsNode {
   id: string;
   name: string;
-  type: 'folder' | 'file';
+  type: "folder" | "file";
   children?: FsNode[];
 }
-export interface TreeIndex { byId: Map<string, FsNode>; parentOf: Map<string, string | null>; }
+export interface TreeIndex {
+  byId: Map<string, FsNode>;
+  parentOf: Map<string, string | null>;
+}
 
 let nextId = 1;
-export const makeId = () => 'n' + nextId++;
+export const makeId = () => "n" + nextId++;
 
 export const initialTree: FsNode[] = [
-  { id: 'src', name: 'src', type: 'folder', children: [
-    { id: 'components', name: 'components', type: 'folder', children: [
-      { id: 'button', name: 'Button.jsx', type: 'file' },
-      { id: 'modal', name: 'Modal.jsx', type: 'file' },
-      { id: 'searchbar', name: 'SearchBar.jsx', type: 'file' },
-    ] },
-    { id: 'hooks', name: 'hooks', type: 'folder', children: [
-      { id: 'usesearch', name: 'useSearch.js', type: 'file' },
-    ] },
-    { id: 'app', name: 'App.jsx', type: 'file' },
-  ] },
-  { id: 'docs', name: 'docs', type: 'folder', children: [
-    { id: 'guide', name: 'guide.md', type: 'file' },
-    { id: 'tips', name: 'search-tips.md', type: 'file' },
-  ] },
-  { id: 'readme', name: 'README.md', type: 'file' },
+  {
+    id: "src",
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        id: "components",
+        name: "components",
+        type: "folder",
+        children: [
+          { id: "button", name: "Button.jsx", type: "file" },
+          { id: "modal", name: "Modal.jsx", type: "file" },
+          { id: "searchbar", name: "SearchBar.jsx", type: "file" },
+        ],
+      },
+      {
+        id: "hooks",
+        name: "hooks",
+        type: "folder",
+        children: [{ id: "usesearch", name: "useSearch.js", type: "file" }],
+      },
+      { id: "app", name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    id: "docs",
+    name: "docs",
+    type: "folder",
+    children: [
+      { id: "guide", name: "guide.md", type: "file" },
+      { id: "tips", name: "search-tips.md", type: "file" },
+    ],
+  },
+  { id: "readme", name: "README.md", type: "file" },
 ];
 
-export const sortNodes = (nodes: FsNode[]): FsNode[] => [...nodes].sort((a, b) =>
-  a.type !== b.type ? (a.type === 'folder' ? -1 : 1) : a.name.localeCompare(b.name));
+export const sortNodes = (nodes: FsNode[]): FsNode[] =>
+  [...nodes].sort((a, b) =>
+    a.type !== b.type
+      ? a.type === "folder"
+        ? -1
+        : 1
+      : a.name.localeCompare(b.name),
+  );
 
 // One walk builds both maps: id -> node and id -> parent id (null at the top).
-export function indexTree(nodes: FsNode[], parentId: string | null = null,
-  byId = new Map<string, FsNode>(), parentOf = new Map<string, string | null>()): TreeIndex {
+export function indexTree(
+  nodes: FsNode[],
+  parentId: string | null = null,
+  byId = new Map<string, FsNode>(),
+  parentOf = new Map<string, string | null>(),
+): TreeIndex {
   for (const n of nodes) {
     byId.set(n.id, n);
     parentOf.set(n.id, parentId);
@@ -4078,38 +5754,65 @@ export function indexTree(nodes: FsNode[], parentId: string | null = null,
   return { byId, parentOf };
 }
 
-// Root-first list of ancestors, e.g. pathTo('modal') -> [src, components, Modal.jsx]
+// Root-first list of ancestors, e.g.
+// pathTo('modal') -> [src, components, Modal.jsx]
 export function pathTo(id: string, { byId, parentOf }: TreeIndex): FsNode[] {
   const path: FsNode[] = [];
-  for (let cur: string | null | undefined = id; cur != null; cur = parentOf.get(cur)) path.unshift(byId.get(cur)!);
+  for (
+    let cur: string | null | undefined = id;
+    cur != null;
+    cur = parentOf.get(cur)
+  )
+    path.unshift(byId.get(cur)!);
   return path;
 }
 
 // Keep a node if it matches or if anything below it matches. Folders that are
-// kept because of a descendant are returned in \`open\`, so the matches are visible.
-export function filterTree(nodes: FsNode[], query: string, open = new Set<string>()): FsNode[] {
+// kept because of a descendant are returned
+// in \`open\`, so the matches are visible.
+export function filterTree(
+  nodes: FsNode[],
+  query: string,
+  open = new Set<string>(),
+): FsNode[] {
   const out: FsNode[] = [];
   for (const n of nodes) {
     const self = n.name.toLowerCase().includes(query);
     const kids = n.children ? filterTree(n.children, query, open) : [];
     if (kids.length) open.add(n.id);
-    if (self || kids.length) out.push(n.children ? { ...n, children: kids } : n);
+    if (self || kids.length)
+      out.push(n.children ? { ...n, children: kids } : n);
   }
   return out;
 }
 
 export function countMatches(nodes: FsNode[], query: string): number {
-  return nodes.reduce((sum: number, n: FsNode): number => sum + (n.name.toLowerCase().includes(query) ? 1 : 0)
-    + (n.children ? countMatches(n.children, query) : 0), 0);
+  return nodes.reduce(
+    (sum: number, n: FsNode): number =>
+      sum +
+      (n.name.toLowerCase().includes(query) ? 1 : 0) +
+      (n.children ? countMatches(n.children, query) : 0),
+    0,
+  );
 }
 
-export function updateNode(nodes: FsNode[], id: string, fn: (n: FsNode) => FsNode): FsNode[] {
+export function updateNode(
+  nodes: FsNode[],
+  id: string,
+  fn: (n: FsNode) => FsNode,
+): FsNode[] {
   let changed = false;
   const next = nodes.map((n) => {
-    if (n.id === id) { changed = true; return fn(n); }
+    if (n.id === id) {
+      changed = true;
+      return fn(n);
+    }
     if (n.children) {
       const kids = updateNode(n.children, id, fn);
-      if (kids !== n.children) { changed = true; return { ...n, children: kids }; }
+      if (kids !== n.children) {
+        changed = true;
+        return { ...n, children: kids };
+      }
     }
     return n;
   });
@@ -4120,27 +5823,46 @@ export function removeNode(nodes: FsNode[], id: string): FsNode[] {
   let changed = false;
   const next: FsNode[] = [];
   for (const n of nodes) {
-    if (n.id === id) { changed = true; continue; }
+    if (n.id === id) {
+      changed = true;
+      continue;
+    }
     if (n.children) {
       const kids = removeNode(n.children, id);
-      if (kids !== n.children) { changed = true; next.push({ ...n, children: kids }); continue; }
+      if (kids !== n.children) {
+        changed = true;
+        next.push({ ...n, children: kids });
+        continue;
+      }
     }
     next.push(n);
   }
   return changed ? next : nodes;
 }
 
-export function insertNode(nodes: FsNode[], parentId: string | null, node: FsNode): FsNode[] {
+export function insertNode(
+  nodes: FsNode[],
+  parentId: string | null,
+  node: FsNode,
+): FsNode[] {
   if (parentId === null) return [...nodes, node];
-  return updateNode(nodes, parentId, (f) => ({ ...f, children: [...(f.children ?? []), node] }));
+  return updateNode(nodes, parentId, (f) => ({
+    ...f,
+    children: [...(f.children ?? []), node],
+  }));
 }
 
-// "untitled.txt", then "untitled 2.txt", ... ; "New folder", then "New folder 2", ...
-export function uniqueName(siblings: FsNode[], type: 'file' | 'folder'): string {
-  const [base, ext] = type === 'folder' ? ['New folder', ''] : ['untitled', '.txt'];
+// "untitled.txt", then "untitled 2.txt", ...
+// ; "New folder", then "New folder 2", ...
+export function uniqueName(
+  siblings: FsNode[],
+  type: "file" | "folder",
+): string {
+  const [base, ext] =
+    type === "folder" ? ["New folder", ""] : ["untitled", ".txt"];
   const taken = new Set(siblings.map((s) => s.name.toLowerCase()));
   for (let i = 1; ; i++) {
-    const name = base + (i === 1 ? '' : ' ' + i) + ext;
+    const name = base + (i === 1 ? "" : " " + i) + ext;
     if (!taken.has(name.toLowerCase())) return name;
   }
 }
@@ -4217,13 +5939,29 @@ So the whole question is three decisions: **where** would this drop land (before
 
 ~~~js
 export function normalize(items) {
-  const nodes = { [ROOT]: { id: ROOT, name: 'Project', type: 'folder', parentId: null, childIds: [] } };
-  const walk = (list, parentId) => list.forEach((item) => {
-    const id = parentId === ROOT ? item.name : parentId + '/' + item.name;
-    nodes[id] = { id, name: item.name, type: item.type, parentId, childIds: [] };
-    nodes[parentId].childIds.push(id);
-    if (item.children) walk(item.children, id);
-  });
+  const nodes = {
+    [ROOT]: {
+      id: ROOT,
+      name: "Project",
+      type: "folder",
+      parentId: null,
+      childIds: [],
+    },
+  };
+  const walk = (list, parentId) =>
+    list.forEach((item) => {
+      const id =
+        parentId === ROOT ? item.name : parentId + "/" + item.name;
+      nodes[id] = {
+        id,
+        name: item.name,
+        type: item.type,
+        parentId,
+        childIds: [],
+      };
+      nodes[parentId].childIds.push(id);
+      if (item.children) walk(item.children, id);
+    });
   walk(items, ROOT);
   return nodes;
 }
@@ -4268,7 +6006,8 @@ Files have no "inside", so their row splits in halves. For the guard, the dashed
 
 ~~~js
 export function isSelfOrAncestor(nodes, ancestorId, id) {
-  for (let cur = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+  for (let cur = id; cur != null; cur = nodes[cur].parentId)
+    if (cur === ancestorId) return true;
   return false;
 }
 ~~~
@@ -4277,22 +6016,51 @@ export function isSelfOrAncestor(nodes, ancestorId, id) {
 
 ~~~js
 export function moveNode(nodes, dragId, targetId, position) {
-  if (dragId === targetId) return { nodes };          // dropped on itself: nothing to do
+  // dropped on itself: nothing to do
+  if (dragId === targetId) return { nodes };
   const drag = nodes[dragId];
-  const parentId = position === 'inside' ? targetId : nodes[targetId].parentId;
+  const parentId =
+    position === "inside" ? targetId : nodes[targetId].parentId;
   const parent = nodes[parentId];
   if (isSelfOrAncestor(nodes, dragId, parentId)) {
-    return { error: 'Cannot move ' + drag.name + ' into itself or one of its subfolders' };
+    return {
+      error:
+        "Cannot move " +
+        drag.name +
+        " into itself or one of its subfolders",
+    };
   }
-  if (parent.childIds.some((c) => c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase())) {
-    return { error: 'A ' + drag.type + ' named ' + drag.name + ' already exists in ' + parent.name };
+  if (
+    parent.childIds.some(
+      (c) =>
+        c !== dragId &&
+        nodes[c].name.toLowerCase() === drag.name.toLowerCase(),
+    )
+  ) {
+    return {
+      error:
+        "A " +
+        drag.type +
+        " named " +
+        drag.name +
+        " already exists in " +
+        parent.name,
+    };
   }
   const next = { ...nodes };
   const oldParent = nodes[drag.parentId];
-  next[oldParent.id] = { ...oldParent, childIds: oldParent.childIds.filter((c) => c !== dragId) };
+  next[oldParent.id] = {
+    ...oldParent,
+    childIds: oldParent.childIds.filter((c) => c !== dragId),
+  };
   const kids = [...next[parentId].childIds];
-  if (position === 'inside') kids.push(dragId);
-  else kids.splice(kids.indexOf(targetId) + (position === 'after' ? 1 : 0), 0, dragId);
+  if (position === "inside") kids.push(dragId);
+  else
+    kids.splice(
+      kids.indexOf(targetId) + (position === "after" ? 1 : 0),
+      0,
+      dragId,
+    );
   next[parentId] = { ...next[parentId], childIds: kids };
   next[dragId] = { ...drag, parentId };
   return { nodes: next };
@@ -4308,17 +6076,32 @@ The move copies the map once and replaces at most three nodes: the old parent, t
 ~~~jsx
 function measure(e, id) {
   const r = e.currentTarget.getBoundingClientRect();
-  const position = dropPosition(nodes[id], (e.clientY - r.top) / r.height);
-  const parentId = position === 'inside' ? id : nodes[id].parentId;
-  const valid = dragRef.current !== id && !isSelfOrAncestor(nodes, dragRef.current, parentId);
+  const position = dropPosition(
+    nodes[id],
+    (e.clientY - r.top) / r.height,
+  );
+  const parentId = position === "inside" ? id : nodes[id].parentId;
+  const valid =
+    dragRef.current !== id &&
+    !isSelfOrAncestor(nodes, dragRef.current, parentId);
   return { id, position, valid };
 }
 
 function onDragOver(e, id) {
   if (!dragRef.current) return;
   const t = measure(e, id);
-  if (t.valid) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } // preventDefault = "drop allowed here"
-  setDropTarget((prev) => (prev && prev.id === t.id && prev.position === t.position && prev.valid === t.valid ? prev : t));
+  if (t.valid) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  } // preventDefault = "drop allowed here"
+  setDropTarget((prev) =>
+    prev &&
+    prev.id === t.id &&
+    prev.position === t.position &&
+    prev.valid === t.valid
+      ? prev
+      : t,
+  );
 }
 ~~~
 
@@ -4490,37 +6273,53 @@ Read it as: \`Button.jsx\` dropped mid-row on \`hooks\` goes inside and opens \`
 
 **Conclusion:** Nested drag-and-drop is a data problem first: normalize the tree so a move is three small edits, and guard it by walking up the parent chain so a folder can never land inside itself. The UI is then the \`dragover\` contract (measure, decide, \`preventDefault\` only when valid), a ref for the dragged id, cleanup on \`dragend\`, and a keyboard path through the same move function. For the related list-only version see the [Kanban board with drag and drop](/interview-question/build-a-kanban-board-with-drag-and-drop) and the [drag-and-drop reordering utility](/interview-question/implement-a-drag-and-drop-list-reordering-utility-without-a-library).`,
         files: {
-          "/App.js": `import { useRef, useState } from 'react';
-import TreeRow from './src/TreeRow';
-import { ROOT, initialNodes, dropPosition, isSelfOrAncestor, moveNode, describeMove, visibleIds } from './src/normalized';
+          "/App.js": `import { useRef, useState } from "react";
+import TreeRow from "./src/TreeRow";
+import {
+  ROOT,
+  initialNodes,
+  dropPosition,
+  isSelfOrAncestor,
+  moveNode,
+  describeMove,
+  visibleIds,
+} from "./src/normalized";
 
 export default function App() {
   const [nodes, setNodes] = useState(initialNodes);
-  const [expanded, setExpanded] = useState(() => new Set(['src', 'src/components', 'docs']));
-  const [dragId, setDragId] = useState(null);         // for styling the dragged row
+  const [expanded, setExpanded] = useState(
+    () => new Set(["src", "src/components", "docs"]),
+  );
+  const [dragId, setDragId] = useState(null); // for styling the dragged row
   const [dropTarget, setDropTarget] = useState(null); // { id, position, valid }
-  const [cutId, setCutId] = useState(null);           // keyboard move: Ctrl+X then Ctrl+V
+  const [cutId, setCutId] = useState(null); // keyboard move: Ctrl+X then Ctrl+V
   const [focusId, setFocusId] = useState(nodes[ROOT].childIds[0]);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState("");
   const treeRef = useRef(null);
-  // During dragover the browser hides dataTransfer data (protected mode), so the
+  // During dragover the browser hides
+  // dataTransfer data (protected mode), so the
   // id being dragged is kept here instead of read back from the event.
   const dragRef = useRef(null);
 
   function toggle(id) {
     setExpanded((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   function doMove(from, targetId, position) {
     const result = moveNode(nodes, from, targetId, position);
-    if (result.error) { setStatus(result.error); return false; }
+    if (result.error) {
+      setStatus(result.error);
+      return false;
+    }
     if (result.nodes === nodes) return false;
     setNodes(result.nodes);
-    if (position === 'inside') setExpanded((prev) => new Set(prev).add(targetId));
+    if (position === "inside")
+      setExpanded((prev) => new Set(prev).add(targetId));
     setStatus(describeMove(nodes, from, targetId, position));
     return true;
   }
@@ -4528,14 +6327,17 @@ export default function App() {
   function measure(e, id) {
     const r = e.currentTarget.getBoundingClientRect();
     const position = dropPosition(nodes[id], (e.clientY - r.top) / r.height);
-    const parentId = position === 'inside' ? id : nodes[id].parentId;
-    const valid = dragRef.current !== id && !isSelfOrAncestor(nodes, dragRef.current, parentId);
+    const parentId = position === "inside" ? id : nodes[id].parentId;
+    const valid =
+      dragRef.current !== id &&
+      !isSelfOrAncestor(nodes, dragRef.current, parentId);
     return { id, position, valid };
   }
 
   function onDragStart(e, id) {
-    e.dataTransfer.setData('text/plain', nodes[id].name); // Firefox will not start a drag without data
-    e.dataTransfer.effectAllowed = 'move';
+    // Firefox will not start a drag without data
+    e.dataTransfer.setData("text/plain", nodes[id].name);
+    e.dataTransfer.effectAllowed = "move";
     dragRef.current = id;
     setDragId(id);
   }
@@ -4543,8 +6345,18 @@ export default function App() {
   function onDragOver(e, id) {
     if (!dragRef.current) return;
     const t = measure(e, id);
-    if (t.valid) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; } // preventDefault = "drop allowed here"
-    setDropTarget((prev) => (prev && prev.id === t.id && prev.position === t.position && prev.valid === t.valid ? prev : t));
+    if (t.valid) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    } // preventDefault = "drop allowed here"
+    setDropTarget((prev) =>
+      prev &&
+      prev.id === t.id &&
+      prev.position === t.position &&
+      prev.valid === t.valid
+        ? prev
+        : t,
+    );
   }
 
   function onDrop(e, id) {
@@ -4571,67 +6383,126 @@ export default function App() {
     const ids = visibleIds(nodes, expanded);
     const i = ids.indexOf(id);
     const mod = e.ctrlKey || e.metaKey;
-    if (e.key === 'ArrowDown' && ids[i + 1]) focusRow(ids[i + 1]);
-    else if (e.key === 'ArrowUp' && ids[i - 1]) focusRow(ids[i - 1]);
-    else if (e.key === 'Enter' && nodes[id].type === 'folder') toggle(id);
-    else if (mod && e.key.toLowerCase() === 'x') {
+    if (e.key === "ArrowDown" && ids[i + 1]) focusRow(ids[i + 1]);
+    else if (e.key === "ArrowUp" && ids[i - 1]) focusRow(ids[i - 1]);
+    else if (e.key === "Enter" && nodes[id].type === "folder") toggle(id);
+    else if (mod && e.key.toLowerCase() === "x") {
       setCutId(id);
-      setStatus('Cut ' + nodes[id].name + '. Focus a folder and press Ctrl+V to move it there.');
-    } else if (mod && e.key.toLowerCase() === 'v' && cutId) {
-      const position = nodes[id].type === 'folder' ? 'inside' : 'after';
+      setStatus(
+        "Cut " +
+          nodes[id].name +
+          ". Focus a folder and press Ctrl+V to move it there.",
+      );
+    } else if (mod && e.key.toLowerCase() === "v" && cutId) {
+      const position = nodes[id].type === "folder" ? "inside" : "after";
       if (doMove(cutId, id, position)) setCutId(null);
-    } else if (e.key === 'Escape' && cutId) {
+    } else if (e.key === "Escape" && cutId) {
       setCutId(null);
-      setStatus('Move cancelled');
+      setStatus("Move cancelled");
     } else return;
     e.preventDefault();
   }
 
-  const api = { nodes, expanded, dragId, dropTarget, cutId, focusId, setFocusId, toggle, onKeyDown, onDragStart, onDragOver, onDrop, onDragEnd };
+  const api = {
+    nodes,
+    expanded,
+    dragId,
+    dropTarget,
+    cutId,
+    focusId,
+    setFocusId,
+    toggle,
+    onKeyDown,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    onDragEnd,
+  };
 
   return (
     <div className="app">
       <h1>Files</h1>
-      <p className="hint">Drag a row onto a folder to move it inside, or near a top or bottom edge to reorder. Keyboard: Ctrl+X, then Ctrl+V on a folder.</p>
+      <p className="hint">
+        Drag a row onto a folder to move it inside, or near a top or bottom edge
+        to reorder. Keyboard: Ctrl+X, then Ctrl+V on a folder.
+      </p>
       <ul role="tree" aria-label="Project files" className="tree" ref={treeRef}>
-        {nodes[ROOT].childIds.map((id) => <TreeRow key={id} id={id} depth={1} api={api} />)}
+        {nodes[ROOT].childIds.map((id) => (
+          <TreeRow key={id} id={id} depth={1} api={api} />
+        ))}
       </ul>
-      <p className="status" role="status" data-testid="status">{status}</p>
+      <p className="status" role="status" data-testid="status">
+        {status}
+      </p>
     </div>
   );
 }
 `,
-          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat map of id -> node, where each node knows
-// its parentId and the ordered ids of its children. Moving a subtree is then two
+          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat
+// map of id -> node, where each node knows
+// its parentId and the ordered ids of its
+// children. Moving a subtree is then two
 // small edits (old parent, new parent) no matter how deep it sits.
 
 const seed = [
-  { name: 'src', type: 'folder', children: [
-    { name: 'components', type: 'folder', children: [
-      { name: 'Button.jsx', type: 'file' },
-      { name: 'Modal.jsx', type: 'file' },
-    ] },
-    { name: 'hooks', type: 'folder', children: [{ name: 'useTree.js', type: 'file' }] },
-    { name: 'App.jsx', type: 'file' },
-  ] },
-  { name: 'docs', type: 'folder', children: [
-    { name: 'guide.md', type: 'file' },
-    { name: 'README.md', type: 'file' },
-  ] },
-  { name: 'README.md', type: 'file' },
+  {
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        name: "components",
+        type: "folder",
+        children: [
+          { name: "Button.jsx", type: "file" },
+          { name: "Modal.jsx", type: "file" },
+        ],
+      },
+      {
+        name: "hooks",
+        type: "folder",
+        children: [{ name: "useTree.js", type: "file" }],
+      },
+      { name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    name: "docs",
+    type: "folder",
+    children: [
+      { name: "guide.md", type: "file" },
+      { name: "README.md", type: "file" },
+    ],
+  },
+  { name: "README.md", type: "file" },
 ];
 
-export const ROOT = 'root';
+export const ROOT = "root";
 
-// Nested JSON (what an API usually returns) -> normalized map. Ids are paths, so they are stable.
+// Nested JSON (what an API usually returns) ->
+// normalized map. Ids are paths, so they are stable.
 export function normalize(items) {
-  const nodes = { [ROOT]: { id: ROOT, name: 'Project', type: 'folder', parentId: null, childIds: [] } };
-  const walk = (list, parentId) => list.forEach((item) => {
-    const id = parentId === ROOT ? item.name : parentId + '/' + item.name;
-    nodes[id] = { id, name: item.name, type: item.type, parentId, childIds: [] };
-    nodes[parentId].childIds.push(id);
-    if (item.children) walk(item.children, id);
-  });
+  const nodes = {
+    [ROOT]: {
+      id: ROOT,
+      name: "Project",
+      type: "folder",
+      parentId: null,
+      childIds: [],
+    },
+  };
+  const walk = (list, parentId) =>
+    list.forEach((item) => {
+      const id = parentId === ROOT ? item.name : parentId + "/" + item.name;
+      nodes[id] = {
+        id,
+        name: item.name,
+        type: item.type,
+        parentId,
+        childIds: [],
+      };
+      nodes[parentId].childIds.push(id);
+      if (item.children) walk(item.children, id);
+    });
   walk(items, ROOT);
   return nodes;
 }
@@ -4640,35 +6511,61 @@ export const initialNodes = normalize(seed);
 
 // Is \`ancestorId\` the node itself or anywhere above \`id\`? Walks up, O(depth).
 export function isSelfOrAncestor(nodes, ancestorId, id) {
-  for (let cur = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+  for (let cur = id; cur != null; cur = nodes[cur].parentId)
+    if (cur === ancestorId) return true;
   return false;
 }
 
 // Where a drop would land: 'before' | 'after' | 'inside', from the pointer's
 // position inside the row (0 = top edge, 1 = bottom edge).
 export function dropPosition(node, ratio) {
-  if (node.type === 'folder') return ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'inside';
-  return ratio < 0.5 ? 'before' : 'after';
+  if (node.type === "folder")
+    return ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+  return ratio < 0.5 ? "before" : "after";
 }
 
 // Returns { nodes } on success or { error } when the move is not allowed.
 export function moveNode(nodes, dragId, targetId, position) {
-  if (dragId === targetId) return { nodes };          // dropped on itself: nothing to do
+  if (dragId === targetId) return { nodes }; // dropped on itself: nothing to do
   const drag = nodes[dragId];
-  const parentId = position === 'inside' ? targetId : nodes[targetId].parentId;
+  const parentId = position === "inside" ? targetId : nodes[targetId].parentId;
   const parent = nodes[parentId];
   if (isSelfOrAncestor(nodes, dragId, parentId)) {
-    return { error: 'Cannot move ' + drag.name + ' into itself or one of its subfolders' };
+    return {
+      error:
+        "Cannot move " + drag.name + " into itself or one of its subfolders",
+    };
   }
-  if (parent.childIds.some((c) => c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase())) {
-    return { error: 'A ' + drag.type + ' named ' + drag.name + ' already exists in ' + parent.name };
+  if (
+    parent.childIds.some(
+      (c) =>
+        c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase(),
+    )
+  ) {
+    return {
+      error:
+        "A " +
+        drag.type +
+        " named " +
+        drag.name +
+        " already exists in " +
+        parent.name,
+    };
   }
   const next = { ...nodes };
   const oldParent = nodes[drag.parentId];
-  next[oldParent.id] = { ...oldParent, childIds: oldParent.childIds.filter((c) => c !== dragId) };
+  next[oldParent.id] = {
+    ...oldParent,
+    childIds: oldParent.childIds.filter((c) => c !== dragId),
+  };
   const kids = [...next[parentId].childIds];
-  if (position === 'inside') kids.push(dragId);
-  else kids.splice(kids.indexOf(targetId) + (position === 'after' ? 1 : 0), 0, dragId);
+  if (position === "inside") kids.push(dragId);
+  else
+    kids.splice(
+      kids.indexOf(targetId) + (position === "after" ? 1 : 0),
+      0,
+      dragId,
+    );
   next[parentId] = { ...next[parentId], childIds: kids };
   next[dragId] = { ...drag, parentId };
   return { nodes: next };
@@ -4676,15 +6573,17 @@ export function moveNode(nodes, dragId, targetId, position) {
 
 export function describeMove(nodes, dragId, targetId, position) {
   const what = nodes[dragId].name;
-  if (position === 'inside') return 'Moved ' + what + ' into ' + nodes[targetId].name;
-  return 'Moved ' + what + ' ' + position + ' ' + nodes[targetId].name;
+  if (position === "inside")
+    return "Moved " + what + " into " + nodes[targetId].name;
+  return "Moved " + what + " " + position + " " + nodes[targetId].name;
 }
 
 // Visible rows in order, for ArrowUp / ArrowDown.
 export function visibleIds(nodes, expanded, id = ROOT, out = []) {
   for (const c of nodes[id].childIds) {
     out.push(c);
-    if (nodes[c].type === 'folder' && expanded.has(c)) visibleIds(nodes, expanded, c, out);
+    if (nodes[c].type === "folder" && expanded.has(c))
+      visibleIds(nodes, expanded, c, out);
   }
   return out;
 }
@@ -4693,58 +6592,146 @@ export function visibleIds(nodes, expanded, id = ROOT, out = []) {
 // row only needs its id and depth; children come from node.childIds.
 export default function TreeRow({ id, depth, api }) {
   const node = api.nodes[id];
-  const isFolder = node.type === 'folder';
+  const isFolder = node.type === "folder";
   const open = isFolder && api.expanded.has(id);
   const drop = api.dropTarget?.id === id ? api.dropTarget : null;
-  const cls = ['row'];
-  if (api.dragId === id) cls.push('dragging');
-  if (api.cutId === id) cls.push('cut');
-  if (drop) cls.push(drop.valid ? 'drop-' + drop.position : 'drop-invalid');
+  const cls = ["row"];
+  if (api.dragId === id) cls.push("dragging");
+  if (api.cutId === id) cls.push("cut");
+  if (drop) cls.push(drop.valid ? "drop-" + drop.position : "drop-invalid");
 
   return (
-    <li role="treeitem" aria-level={depth} aria-expanded={isFolder ? open : undefined}
-      tabIndex={api.focusId === id ? 0 : -1} data-id={id} data-name={node.name}
-      onKeyDown={(e) => { if (e.target === e.currentTarget) api.onKeyDown(e, id); }}
-      onFocus={(e) => { if (e.target === e.currentTarget) api.setFocusId(id); }}>
-      <div className={cls.join(' ')} style={{ paddingLeft: 8 + (depth - 1) * 16 }}
-        data-drop={drop ? (drop.valid ? drop.position : 'invalid') : undefined}
+    <li
+      role="treeitem"
+      aria-level={depth}
+      aria-expanded={isFolder ? open : undefined}
+      tabIndex={api.focusId === id ? 0 : -1}
+      data-id={id}
+      data-name={node.name}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget) api.onKeyDown(e, id);
+      }}
+      onFocus={(e) => {
+        if (e.target === e.currentTarget) api.setFocusId(id);
+      }}
+    >
+      <div
+        className={cls.join(" ")}
+        style={{ paddingLeft: 8 + (depth - 1) * 16 }}
+        data-drop={drop ? (drop.valid ? drop.position : "invalid") : undefined}
         draggable="true"
         onClick={() => isFolder && api.toggle(id)}
         onDragStart={(e) => api.onDragStart(e, id)}
         onDragOver={(e) => api.onDragOver(e, id)}
         onDrop={(e) => api.onDrop(e, id)}
-        onDragEnd={api.onDragEnd}>
-        <span className="chevron" aria-hidden="true">{isFolder ? (open ? '▾' : '▸') : ''}</span>
-        <span aria-hidden="true">{isFolder ? '📁' : '📄'}</span>
+        onDragEnd={api.onDragEnd}
+      >
+        <span className="chevron" aria-hidden="true">
+          {isFolder ? (open ? "▾" : "▸") : ""}
+        </span>
+        <span aria-hidden="true">{isFolder ? "📁" : "📄"}</span>
         <span className="name">{node.name}</span>
       </div>
       {open && node.childIds.length > 0 && (
         <ul role="group">
-          {node.childIds.map((c) => <TreeRow key={c} id={c} depth={depth + 1} api={api} />)}
+          {node.childIds.map((c) => (
+            <TreeRow key={c} id={c} depth={depth + 1} api={api} />
+          ))}
         </ul>
       )}
     </li>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 6px; }
-.hint { color: #9aa3b5; font-size: 13px; margin: 0 0 10px; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { position: relative; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; cursor: grab; border-radius: 4px; user-select: none; }
-.row:hover { background: #1f2533; }
-.row.dragging, .row.cut { opacity: 0.45; }
-.row.drop-inside { background: #263354; outline: 1px dashed #6ea8ff; }
-.row.drop-before::before, .row.drop-after::after { content: ""; position: absolute; left: 8px; right: 8px; height: 2px; background: #6ea8ff; }
-.row.drop-before::before { top: 0; }
-.row.drop-after::after { bottom: 0; }
-.row.drop-invalid { background: #3a1d22; cursor: no-drop; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+.hint {
+  color: #9aa3b5;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  cursor: grab;
+  border-radius: 4px;
+  user-select: none;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.dragging,
+.row.cut {
+  opacity: 0.45;
+}
+.row.drop-inside {
+  background: #263354;
+  outline: 1px dashed #6ea8ff;
+}
+.row.drop-before::before,
+.row.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #6ea8ff;
+}
+.row.drop-before::before {
+  top: 0;
+}
+.row.drop-after::after {
+  bottom: 0;
+}
+.row.drop-invalid {
+  background: #3a1d22;
+  cursor: no-drop;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 `,
         },
       },
@@ -4777,27 +6764,52 @@ Normalized \`id -> node\` map with \`parentId\` and ordered \`childIds\`; before
 
 ~~~js
 export function isSelfOrAncestor(nodes, ancestorId, id) {
-  for (let cur = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+  for (let cur = id; cur != null; cur = nodes[cur].parentId)
+    if (cur === ancestorId) return true;
   return false;
 }
 
 export function moveNode(nodes, dragId, targetId, position) {
-  if (dragId === targetId) return '';
+  if (dragId === targetId) return "";
   const drag = nodes[dragId];
-  const parentId = position === 'inside' ? targetId : nodes[targetId].parentId;
+  const parentId =
+    position === "inside" ? targetId : nodes[targetId].parentId;
   const parent = nodes[parentId];
   if (isSelfOrAncestor(nodes, dragId, parentId)) {
-    return 'Cannot move ' + drag.name + ' into itself or one of its subfolders';
+    return (
+      "Cannot move " +
+      drag.name +
+      " into itself or one of its subfolders"
+    );
   }
-  if (parent.childIds.some((c) => c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase())) {
-    return 'A ' + drag.type + ' named ' + drag.name + ' already exists in ' + parent.name;
+  if (
+    parent.childIds.some(
+      (c) =>
+        c !== dragId &&
+        nodes[c].name.toLowerCase() === drag.name.toLowerCase(),
+    )
+  ) {
+    return (
+      "A " +
+      drag.type +
+      " named " +
+      drag.name +
+      " already exists in " +
+      parent.name
+    );
   }
   const old = nodes[drag.parentId].childIds;
   old.splice(old.indexOf(dragId), 1);
-  if (position === 'inside') parent.childIds.push(dragId);
-  else parent.childIds.splice(parent.childIds.indexOf(targetId) + (position === 'after' ? 1 : 0), 0, dragId);
+  if (position === "inside") parent.childIds.push(dragId);
+  else
+    parent.childIds.splice(
+      parent.childIds.indexOf(targetId) +
+        (position === "after" ? 1 : 0),
+      0,
+      dragId,
+    );
   drag.parentId = parentId;
-  return '';
+  return "";
 }
 ~~~
 
@@ -4811,10 +6823,20 @@ export function moveNode(nodes, dragId, targetId, position) {
 function onDragOver(e, id) {
   if (!state.dragId) return;
   const t = measure(e, id);
-  // Only a cancelled dragover marks a valid drop zone, so this cannot be @dragover.prevent.
-  if (t.valid) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+  // Only a cancelled dragover marks a valid drop
+  // zone, so this cannot be @dragover.prevent.
+  if (t.valid) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
   const d = state.dropTarget;
-  if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid) state.dropTarget = t;
+  if (
+    !d ||
+    d.id !== t.id ||
+    d.position !== t.position ||
+    d.valid !== t.valid
+  )
+    state.dropTarget = t;
 }
 ~~~
 
@@ -4959,34 +6981,52 @@ Line for line the same as React and Angular: inside, before and after drops work
 **Conclusion:** In Vue, nested drag-and-drop is a reactive normalized map you mutate in place, a walk up \`parentId\` to forbid cycles, and drag handlers that call \`preventDefault\` only when the drop is valid. Keep the dragged id in state, clean up on \`dragend\`, and route the keyboard path through the same \`moveNode\`.`,
         files: {
           "/src/App.vue": `<script setup>
-import { provide, reactive, ref } from 'vue';
-import TreeRow from './components/TreeRow.vue';
-import { ROOT, createNodes, dropPosition, isSelfOrAncestor, moveNode, describeMove, visibleIds } from './normalized.js';
+import { provide, reactive, ref } from "vue";
+import TreeRow from "./components/TreeRow.vue";
+import {
+  ROOT,
+  createNodes,
+  dropPosition,
+  isSelfOrAncestor,
+  moveNode,
+  describeMove,
+  visibleIds,
+} from "./normalized.js";
 
 const nodes = reactive(createNodes());
 const state = reactive({
   nodes,
-  expanded: new Set(['src', 'src/components', 'docs']),
-  dragId: null,          // also read during dragover: the browser hides dataTransfer data then
-  dropTarget: null,      // { id, position, valid }
-  cutId: null,           // keyboard move: Ctrl+X then Ctrl+V
+  expanded: new Set(["src", "src/components", "docs"]),
+  // also read during dragover: the browser hides dataTransfer data then
+  dragId: null,
+  dropTarget: null, // { id, position, valid }
+  cutId: null, // keyboard move: Ctrl+X then Ctrl+V
   focusId: nodes[ROOT].childIds[0],
-  toggle, onKeyDown, onDragStart, onDragOver, onDrop, onDragEnd,
+  toggle,
+  onKeyDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 });
-const status = ref('');
+const status = ref("");
 const treeEl = ref(null);
-provide('dnd', state);
+provide("dnd", state);
 
 function toggle(id) {
-  if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
+  if (state.expanded.has(id)) state.expanded.delete(id);
+  else state.expanded.add(id);
 }
 
 function doMove(from, targetId, position) {
   if (from === targetId) return false;
   const message = describeMove(nodes, from, targetId, position);
   const error = moveNode(nodes, from, targetId, position);
-  if (error) { status.value = error; return false; }
-  if (position === 'inside') state.expanded.add(targetId);
+  if (error) {
+    status.value = error;
+    return false;
+  }
+  if (position === "inside") state.expanded.add(targetId);
   status.value = message;
   return true;
 }
@@ -4994,24 +7034,30 @@ function doMove(from, targetId, position) {
 function measure(e, id) {
   const r = e.currentTarget.getBoundingClientRect();
   const position = dropPosition(nodes[id], (e.clientY - r.top) / r.height);
-  const parentId = position === 'inside' ? id : nodes[id].parentId;
-  const valid = state.dragId !== id && !isSelfOrAncestor(nodes, state.dragId, parentId);
+  const parentId = position === "inside" ? id : nodes[id].parentId;
+  const valid =
+    state.dragId !== id && !isSelfOrAncestor(nodes, state.dragId, parentId);
   return { id, position, valid };
 }
 
 function onDragStart(e, id) {
-  e.dataTransfer.setData('text/plain', nodes[id].name);
-  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData("text/plain", nodes[id].name);
+  e.dataTransfer.effectAllowed = "move";
   state.dragId = id;
 }
 
 function onDragOver(e, id) {
   if (!state.dragId) return;
   const t = measure(e, id);
-  // Only a cancelled dragover marks a valid drop zone, so this cannot be @dragover.prevent.
-  if (t.valid) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+  // Only a cancelled dragover marks a valid drop
+  // zone, so this cannot be @dragover.prevent.
+  if (t.valid) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
   const d = state.dropTarget;
-  if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid) state.dropTarget = t;
+  if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid)
+    state.dropTarget = t;
 }
 
 function onDrop(e, id) {
@@ -5033,18 +7079,21 @@ function onKeyDown(e, id) {
   const ids = visibleIds(nodes, state.expanded);
   const i = ids.indexOf(id);
   const mod = e.ctrlKey || e.metaKey;
-  if (e.key === 'ArrowDown' && ids[i + 1]) focusRow(ids[i + 1]);
-  else if (e.key === 'ArrowUp' && ids[i - 1]) focusRow(ids[i - 1]);
-  else if (e.key === 'Enter' && nodes[id].type === 'folder') toggle(id);
-  else if (mod && e.key.toLowerCase() === 'x') {
+  if (e.key === "ArrowDown" && ids[i + 1]) focusRow(ids[i + 1]);
+  else if (e.key === "ArrowUp" && ids[i - 1]) focusRow(ids[i - 1]);
+  else if (e.key === "Enter" && nodes[id].type === "folder") toggle(id);
+  else if (mod && e.key.toLowerCase() === "x") {
     state.cutId = id;
-    status.value = 'Cut ' + nodes[id].name + '. Focus a folder and press Ctrl+V to move it there.';
-  } else if (mod && e.key.toLowerCase() === 'v' && state.cutId) {
-    const position = nodes[id].type === 'folder' ? 'inside' : 'after';
+    status.value =
+      "Cut " +
+      nodes[id].name +
+      ". Focus a folder and press Ctrl+V to move it there.";
+  } else if (mod && e.key.toLowerCase() === "v" && state.cutId) {
+    const position = nodes[id].type === "folder" ? "inside" : "after";
     if (doMove(state.cutId, id, position)) state.cutId = null;
-  } else if (e.key === 'Escape' && state.cutId) {
+  } else if (e.key === "Escape" && state.cutId) {
     state.cutId = null;
-    status.value = 'Move cancelled';
+    status.value = "Move cancelled";
   } else return;
   e.preventDefault();
 }
@@ -5055,50 +7104,130 @@ function onKeyDown(e, id) {
     <h1>Files</h1>
     <p class="hint">Drag a row onto a folder to move it inside, or near a top or bottom edge to reorder. Keyboard: Ctrl+X, then Ctrl+V on a folder.</p>
     <ul ref="treeEl" role="tree" aria-label="Project files" class="tree">
-      <TreeRow v-for="id in nodes[ROOT].childIds" :key="id" :id="id" :depth="1" />
+      <TreeRow
+        v-for="id in nodes[ROOT].childIds"
+        :key="id"
+        :id="id"
+        :depth="1"
+      />
     </ul>
     <p class="status" role="status" data-testid="status">{{ status }}</p>
   </div>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 6px; }
-.hint { color: #9aa3b5; font-size: 13px; margin: 0 0 10px; }
-.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
-.tree { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 6px 0; }
-.row { position: relative; display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; cursor: grab; border-radius: 4px; user-select: none; }
-.row:hover { background: #1f2533; }
-.row.dragging, .row.cut { opacity: 0.45; }
-.row.drop-inside { background: #263354; outline: 1px dashed #6ea8ff; }
-.row.drop-before::before, .row.drop-after::after { content: ""; position: absolute; left: 8px; right: 8px; height: 2px; background: #6ea8ff; }
-.row.drop-before::before { top: 0; }
-.row.drop-after::after { bottom: 0; }
-.row.drop-invalid { background: #3a1d22; cursor: no-drop; }
-[role="treeitem"]:focus { outline: none; }
-[role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
-.chevron { width: 12px; color: #8a93a8; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+.hint {
+  color: #9aa3b5;
+  font-size: 13px;
+  margin: 0 0 10px;
+}
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tree {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px;
+  cursor: grab;
+  border-radius: 4px;
+  user-select: none;
+}
+.row:hover {
+  background: #1f2533;
+}
+.row.dragging,
+.row.cut {
+  opacity: 0.45;
+}
+.row.drop-inside {
+  background: #263354;
+  outline: 1px dashed #6ea8ff;
+}
+.row.drop-before::before,
+.row.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: #6ea8ff;
+}
+.row.drop-before::before {
+  top: 0;
+}
+.row.drop-after::after {
+  bottom: 0;
+}
+.row.drop-invalid {
+  background: #3a1d22;
+  cursor: no-drop;
+}
+[role="treeitem"]:focus {
+  outline: none;
+}
+[role="treeitem"]:focus-visible > .row {
+  outline: 2px solid #6ea8ff;
+  outline-offset: -2px;
+}
+.chevron {
+  width: 12px;
+  color: #8a93a8;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 </style>
 `,
           "/src/components/TreeRow.vue": `<script setup>
-import { computed, inject } from 'vue';
+import { computed, inject } from "vue";
 
 const props = defineProps({
   id: { type: String, required: true },
   depth: { type: Number, default: 1 },
 });
-const api = inject('dnd');
+const api = inject("dnd");
 
 const node = computed(() => api.nodes[props.id]);
-const isFolder = computed(() => node.value.type === 'folder');
+const isFolder = computed(() => node.value.type === "folder");
 const open = computed(() => isFolder.value && api.expanded.has(props.id));
-const drop = computed(() => (api.dropTarget?.id === props.id ? api.dropTarget : null));
+const drop = computed(() =>
+  api.dropTarget?.id === props.id ? api.dropTarget : null,
+);
 const rowClass = computed(() => ({
   dragging: api.dragId === props.id,
   cut: api.cutId === props.id,
-  ['drop-' + (drop.value ? (drop.value.valid ? drop.value.position : 'invalid') : 'none')]: !!drop.value,
+  ["drop-" +
+  (drop.value ? (drop.value.valid ? drop.value.position : "invalid") : "none")]:
+    !!drop.value,
 }));
 </script>
 
@@ -5114,7 +7243,10 @@ const rowClass = computed(() => ({
       @dragover="api.onDragOver($event, id)"
       @drop.prevent="api.onDrop($event, id)"
       @dragend="api.onDragEnd()">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
+      <span
+        class="chevron"
+        aria-hidden="true"
+      >{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
       <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
       <span class="name">{{ node.name }}</span>
     </div>
@@ -5124,38 +7256,72 @@ const rowClass = computed(() => ({
   </li>
 </template>
 `,
-          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat map of id -> node, where each node knows
-// its parentId and the ordered ids of its children. Moving a subtree is then two
+          "/src/normalized.js": `// The tree is stored NORMALIZED: a flat
+// map of id -> node, where each node knows
+// its parentId and the ordered ids of its
+// children. Moving a subtree is then two
 // small edits (old parent, new parent) no matter how deep it sits. In Vue the
 // map lives in reactive(), so those edits are plain mutations.
 
 const seed = [
-  { name: 'src', type: 'folder', children: [
-    { name: 'components', type: 'folder', children: [
-      { name: 'Button.jsx', type: 'file' },
-      { name: 'Modal.jsx', type: 'file' },
-    ] },
-    { name: 'hooks', type: 'folder', children: [{ name: 'useTree.js', type: 'file' }] },
-    { name: 'App.jsx', type: 'file' },
-  ] },
-  { name: 'docs', type: 'folder', children: [
-    { name: 'guide.md', type: 'file' },
-    { name: 'README.md', type: 'file' },
-  ] },
-  { name: 'README.md', type: 'file' },
+  {
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        name: "components",
+        type: "folder",
+        children: [
+          { name: "Button.jsx", type: "file" },
+          { name: "Modal.jsx", type: "file" },
+        ],
+      },
+      {
+        name: "hooks",
+        type: "folder",
+        children: [{ name: "useTree.js", type: "file" }],
+      },
+      { name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    name: "docs",
+    type: "folder",
+    children: [
+      { name: "guide.md", type: "file" },
+      { name: "README.md", type: "file" },
+    ],
+  },
+  { name: "README.md", type: "file" },
 ];
 
-export const ROOT = 'root';
+export const ROOT = "root";
 
-// Nested JSON (what an API usually returns) -> normalized map. Ids are paths, so they are stable.
+// Nested JSON (what an API usually returns) ->
+// normalized map. Ids are paths, so they are stable.
 export function normalize(items) {
-  const nodes = { [ROOT]: { id: ROOT, name: 'Project', type: 'folder', parentId: null, childIds: [] } };
-  const walk = (list, parentId) => list.forEach((item) => {
-    const id = parentId === ROOT ? item.name : parentId + '/' + item.name;
-    nodes[id] = { id, name: item.name, type: item.type, parentId, childIds: [] };
-    nodes[parentId].childIds.push(id);
-    if (item.children) walk(item.children, id);
-  });
+  const nodes = {
+    [ROOT]: {
+      id: ROOT,
+      name: "Project",
+      type: "folder",
+      parentId: null,
+      childIds: [],
+    },
+  };
+  const walk = (list, parentId) =>
+    list.forEach((item) => {
+      const id = parentId === ROOT ? item.name : parentId + "/" + item.name;
+      nodes[id] = {
+        id,
+        name: item.name,
+        type: item.type,
+        parentId,
+        childIds: [],
+      };
+      nodes[parentId].childIds.push(id);
+      if (item.children) walk(item.children, id);
+    });
   walk(items, ROOT);
   return nodes;
 }
@@ -5164,49 +7330,70 @@ export const createNodes = () => normalize(seed);
 
 // Is \`ancestorId\` the node itself or anywhere above \`id\`? Walks up, O(depth).
 export function isSelfOrAncestor(nodes, ancestorId, id) {
-  for (let cur = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+  for (let cur = id; cur != null; cur = nodes[cur].parentId)
+    if (cur === ancestorId) return true;
   return false;
 }
 
 // Where a drop would land: 'before' | 'after' | 'inside', from the pointer's
 // position inside the row (0 = top edge, 1 = bottom edge).
 export function dropPosition(node, ratio) {
-  if (node.type === 'folder') return ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'inside';
-  return ratio < 0.5 ? 'before' : 'after';
+  if (node.type === "folder")
+    return ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+  return ratio < 0.5 ? "before" : "after";
 }
 
 // Checks the rules, then edits the reactive map IN PLACE: two childIds arrays
 // and one parentId. Returns an error string, or '' when the move happened.
 export function moveNode(nodes, dragId, targetId, position) {
-  if (dragId === targetId) return '';
+  if (dragId === targetId) return "";
   const drag = nodes[dragId];
-  const parentId = position === 'inside' ? targetId : nodes[targetId].parentId;
+  const parentId = position === "inside" ? targetId : nodes[targetId].parentId;
   const parent = nodes[parentId];
   if (isSelfOrAncestor(nodes, dragId, parentId)) {
-    return 'Cannot move ' + drag.name + ' into itself or one of its subfolders';
+    return "Cannot move " + drag.name + " into itself or one of its subfolders";
   }
-  if (parent.childIds.some((c) => c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase())) {
-    return 'A ' + drag.type + ' named ' + drag.name + ' already exists in ' + parent.name;
+  if (
+    parent.childIds.some(
+      (c) =>
+        c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase(),
+    )
+  ) {
+    return (
+      "A " +
+      drag.type +
+      " named " +
+      drag.name +
+      " already exists in " +
+      parent.name
+    );
   }
   const old = nodes[drag.parentId].childIds;
   old.splice(old.indexOf(dragId), 1);
-  if (position === 'inside') parent.childIds.push(dragId);
-  else parent.childIds.splice(parent.childIds.indexOf(targetId) + (position === 'after' ? 1 : 0), 0, dragId);
+  if (position === "inside") parent.childIds.push(dragId);
+  else
+    parent.childIds.splice(
+      parent.childIds.indexOf(targetId) + (position === "after" ? 1 : 0),
+      0,
+      dragId,
+    );
   drag.parentId = parentId;
-  return '';
+  return "";
 }
 
 export function describeMove(nodes, dragId, targetId, position) {
   const what = nodes[dragId].name;
-  if (position === 'inside') return 'Moved ' + what + ' into ' + nodes[targetId].name;
-  return 'Moved ' + what + ' ' + position + ' ' + nodes[targetId].name;
+  if (position === "inside")
+    return "Moved " + what + " into " + nodes[targetId].name;
+  return "Moved " + what + " " + position + " " + nodes[targetId].name;
 }
 
 // Visible rows in order, for ArrowUp / ArrowDown.
 export function visibleIds(nodes, expanded, id = ROOT, out = []) {
   for (const c of nodes[id].childIds) {
     out.push(c);
-    if (nodes[c].type === 'folder' && expanded.has(c)) visibleIds(nodes, expanded, c, out);
+    if (nodes[c].type === "folder" && expanded.has(c))
+      visibleIds(nodes, expanded, c, out);
   }
   return out;
 }
@@ -5240,8 +7427,17 @@ Normalized map, before / inside / after zones, the descendant guard while hoveri
 ### Step 1: Guard and copy-on-write move
 
 ~~~ts
-export function isSelfOrAncestor(nodes: NodeMap, ancestorId: string, id: string): boolean {
-  for (let cur: string | null = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+export function isSelfOrAncestor(
+  nodes: NodeMap,
+  ancestorId: string,
+  id: string,
+): boolean {
+  for (
+    let cur: string | null = id;
+    cur != null;
+    cur = nodes[cur].parentId
+  )
+    if (cur === ancestorId) return true;
   return false;
 }
 ~~~
@@ -5254,9 +7450,18 @@ export function isSelfOrAncestor(nodes: NodeMap, ancestorId: string, id: string)
 onDragOver(e: DragEvent, id: string) {
   if (!this.dragId()) return;
   const t = this.measure(e, id);
-  if (t.valid) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }
+  if (t.valid) {
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  }
   const d = this.dropTarget();
-  if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid) this.dropTarget.set(t);
+  if (
+    !d ||
+    d.id !== t.id ||
+    d.position !== t.position ||
+    d.valid !== t.valid
+  )
+    this.dropTarget.set(t);
 }
 ~~~
 
@@ -5265,13 +7470,18 @@ onDragOver(e: DragEvent, id: string) {
 ### Step 3: The row template
 
 ~~~ts
-<div class="row" [class]="rowClass" [style.padding-left.px]="8 + (depth - 1) * 16"
-  [attr.data-drop]="dropLabel" draggable="true"
+<div
+  class="row"
+  [class]="rowClass"
+  [style.padding-left.px]="8 + (depth - 1) * 16"
+  [attr.data-drop]="dropLabel"
+  draggable="true"
   (click)="isFolder && tree.toggle(id)"
   (dragstart)="tree.onDragStart($event, id)"
   (dragover)="tree.onDragOver($event, id)"
   (drop)="tree.onDrop($event, id)"
-  (dragend)="tree.onDragEnd()">
+  (dragend)="tree.onDragEnd()"
+></div>
 ~~~
 
 Event bindings such as \`(dragover)\` pass the native \`DragEvent\`. Handlers live on the row \`div\`, which does not contain the children, so nested drags do not bubble into ancestor handlers. The component lists itself in \`imports\` with \`forwardRef\`, which the playground JIT needs for recursion.
@@ -5399,13 +7609,13 @@ Identical to React and Vue: inside, before and after drops, a folder moving with
 
 **Conclusion:** Angular nested drag-and-drop is a normalized map in a signal, a parent-chain walk that forbids cycles, \`(dragover)\` that cancels only valid drops, and a service that owns drag state, keyboard moves and status. Copy only the nodes you touch so the signal changes, and keep the self-import for recursion.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from '@angular/core';
-import { DndTree } from './dnd-tree';
-import { TreeRowComponent } from './tree-row.component';
-import { ROOT } from './normalized';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
+import { DndTree } from "./dnd-tree";
+import { TreeRowComponent } from "./tree-row.component";
+import { ROOT } from "./normalized";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [TreeRowComponent],
   providers: [DndTree],
@@ -5419,10 +7629,15 @@ import { ROOT } from './normalized';
           <li app-tree-row [id]="id" [depth]="1"></li>
         }
       </ul>
-      <p class="status" role="status" data-testid="status">{{ tree.status() }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ tree.status() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 520px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 18px; margin: 0 0 6px; }
@@ -5441,34 +7656,53 @@ import { ROOT } from './normalized';
     [role="treeitem"]:focus-visible > .row { outline: 2px solid #6ea8ff; outline-offset: -2px; }
     .chevron { width: 12px; color: #8a93a8; }
     .status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   tree = inject(DndTree);
   root = ROOT;
 }
 `,
-          "/src/app/dnd-tree.ts": `import { ElementRef, Injectable, inject, signal } from '@angular/core';
-import { NodeMap, Position, ROOT, initialNodes, dropPosition, isSelfOrAncestor, moveNode, describeMove, visibleIds } from './normalized';
+          "/src/app/dnd-tree.ts": `import { ElementRef, Injectable, inject, signal } from "@angular/core";
+import {
+  NodeMap,
+  Position,
+  ROOT,
+  initialNodes,
+  dropPosition,
+  isSelfOrAncestor,
+  moveNode,
+  describeMove,
+  visibleIds,
+} from "./normalized";
 
-export interface DropTarget { id: string; position: Position; valid: boolean; }
+export interface DropTarget {
+  id: string;
+  position: Position;
+  valid: boolean;
+}
 
 @Injectable()
 export class DndTree {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly nodes = signal<NodeMap>(initialNodes);
-  readonly expanded = signal<ReadonlySet<string>>(new Set(['src', 'src/components', 'docs']));
-  readonly dragId = signal<string | null>(null);   // kept here: dataTransfer data is hidden during dragover
+  readonly expanded = signal<ReadonlySet<string>>(
+    new Set(["src", "src/components", "docs"]),
+  );
+  // kept here: dataTransfer data is hidden during dragover
+  readonly dragId = signal<string | null>(null);
   readonly dropTarget = signal<DropTarget | null>(null);
   readonly cutId = signal<string | null>(null);
   readonly focusId = signal<string>(initialNodes[ROOT].childIds[0]);
-  readonly status = signal('');
+  readonly status = signal("");
 
   toggle(id: string) {
     this.expanded.update((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -5476,10 +7710,14 @@ export class DndTree {
   private doMove(from: string, targetId: string, position: Position): boolean {
     const before = this.nodes();
     const result = moveNode(before, from, targetId, position);
-    if (result.error) { this.status.set(result.error); return false; }
+    if (result.error) {
+      this.status.set(result.error);
+      return false;
+    }
     if (!result.nodes || result.nodes === before) return false;
     this.nodes.set(result.nodes);
-    if (position === 'inside') this.expanded.update((prev) => new Set(prev).add(targetId));
+    if (position === "inside")
+      this.expanded.update((prev) => new Set(prev).add(targetId));
     this.status.set(describeMove(before, from, targetId, position));
     return true;
   }
@@ -5489,22 +7727,30 @@ export class DndTree {
     const drag = this.dragId()!;
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const position = dropPosition(nodes[id], (e.clientY - r.top) / r.height);
-    const parentId = position === 'inside' ? id : nodes[id].parentId!;
-    return { id, position, valid: drag !== id && !isSelfOrAncestor(nodes, drag, parentId) };
+    const parentId = position === "inside" ? id : nodes[id].parentId!;
+    return {
+      id,
+      position,
+      valid: drag !== id && !isSelfOrAncestor(nodes, drag, parentId),
+    };
   }
 
   onDragStart(e: DragEvent, id: string) {
-    e.dataTransfer?.setData('text/plain', this.nodes()[id].name);
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer?.setData("text/plain", this.nodes()[id].name);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
     this.dragId.set(id);
   }
 
   onDragOver(e: DragEvent, id: string) {
     if (!this.dragId()) return;
     const t = this.measure(e, id);
-    if (t.valid) { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; }
+    if (t.valid) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    }
     const d = this.dropTarget();
-    if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid) this.dropTarget.set(t);
+    if (!d || d.id !== t.id || d.position !== t.position || d.valid !== t.valid)
+      this.dropTarget.set(t);
   }
 
   onDrop(e: DragEvent, id: string) {
@@ -5521,7 +7767,9 @@ export class DndTree {
 
   private focusRow(id: string) {
     this.focusId.set(id);
-    this.host.nativeElement.querySelector<HTMLElement>(\`[data-id="\${id}"]\`)?.focus();
+    this.host.nativeElement
+      .querySelector<HTMLElement>(\`[data-id="\${id}"]\`)
+      ?.focus();
   }
 
   onKeyDown(e: KeyboardEvent, id: string) {
@@ -5530,60 +7778,110 @@ export class DndTree {
     const i = ids.indexOf(id);
     const mod = e.ctrlKey || e.metaKey;
     const cut = this.cutId();
-    if (e.key === 'ArrowDown' && ids[i + 1]) this.focusRow(ids[i + 1]);
-    else if (e.key === 'ArrowUp' && ids[i - 1]) this.focusRow(ids[i - 1]);
-    else if (e.key === 'Enter' && nodes[id].type === 'folder') this.toggle(id);
-    else if (mod && e.key.toLowerCase() === 'x') {
+    if (e.key === "ArrowDown" && ids[i + 1]) this.focusRow(ids[i + 1]);
+    else if (e.key === "ArrowUp" && ids[i - 1]) this.focusRow(ids[i - 1]);
+    else if (e.key === "Enter" && nodes[id].type === "folder") this.toggle(id);
+    else if (mod && e.key.toLowerCase() === "x") {
       this.cutId.set(id);
-      this.status.set('Cut ' + nodes[id].name + '. Focus a folder and press Ctrl+V to move it there.');
-    } else if (mod && e.key.toLowerCase() === 'v' && cut) {
-      const position: Position = nodes[id].type === 'folder' ? 'inside' : 'after';
+      this.status.set(
+        "Cut " +
+          nodes[id].name +
+          ". Focus a folder and press Ctrl+V to move it there.",
+      );
+    } else if (mod && e.key.toLowerCase() === "v" && cut) {
+      const position: Position =
+        nodes[id].type === "folder" ? "inside" : "after";
       if (this.doMove(cut, id, position)) this.cutId.set(null);
-    } else if (e.key === 'Escape' && cut) {
+    } else if (e.key === "Escape" && cut) {
       this.cutId.set(null);
-      this.status.set('Move cancelled');
+      this.status.set("Move cancelled");
     } else return;
     e.preventDefault();
   }
 }
 `,
-          "/src/app/normalized.ts": `// The tree is stored NORMALIZED: a flat map of id -> node, where each node knows
-// its parentId and the ordered ids of its children. Moving a subtree is then two
+          "/src/app/normalized.ts": `// The tree is stored NORMALIZED: a flat
+// map of id -> node, where each node knows
+// its parentId and the ordered ids of its
+// children. Moving a subtree is then two
 // small edits (old parent, new parent) no matter how deep it sits. Signals need
-// new references, so a move copies the map and the (at most three) nodes it touches.
+// new references, so a move copies the map
+// and the (at most three) nodes it touches.
 
-export interface FsNode { id: string; name: string; type: 'folder' | 'file'; parentId: string | null; childIds: string[]; }
+export interface FsNode {
+  id: string;
+  name: string;
+  type: "folder" | "file";
+  parentId: string | null;
+  childIds: string[];
+}
 export type NodeMap = Record<string, FsNode>;
-export type Position = 'before' | 'after' | 'inside';
-interface SeedItem { name: string; type: 'folder' | 'file'; children?: SeedItem[]; }
+export type Position = "before" | "after" | "inside";
+interface SeedItem {
+  name: string;
+  type: "folder" | "file";
+  children?: SeedItem[];
+}
 
 const seed: SeedItem[] = [
-  { name: 'src', type: 'folder', children: [
-    { name: 'components', type: 'folder', children: [
-      { name: 'Button.jsx', type: 'file' },
-      { name: 'Modal.jsx', type: 'file' },
-    ] },
-    { name: 'hooks', type: 'folder', children: [{ name: 'useTree.js', type: 'file' }] },
-    { name: 'App.jsx', type: 'file' },
-  ] },
-  { name: 'docs', type: 'folder', children: [
-    { name: 'guide.md', type: 'file' },
-    { name: 'README.md', type: 'file' },
-  ] },
-  { name: 'README.md', type: 'file' },
+  {
+    name: "src",
+    type: "folder",
+    children: [
+      {
+        name: "components",
+        type: "folder",
+        children: [
+          { name: "Button.jsx", type: "file" },
+          { name: "Modal.jsx", type: "file" },
+        ],
+      },
+      {
+        name: "hooks",
+        type: "folder",
+        children: [{ name: "useTree.js", type: "file" }],
+      },
+      { name: "App.jsx", type: "file" },
+    ],
+  },
+  {
+    name: "docs",
+    type: "folder",
+    children: [
+      { name: "guide.md", type: "file" },
+      { name: "README.md", type: "file" },
+    ],
+  },
+  { name: "README.md", type: "file" },
 ];
 
-export const ROOT = 'root';
+export const ROOT = "root";
 
-// Nested JSON (what an API usually returns) -> normalized map. Ids are paths, so they are stable.
+// Nested JSON (what an API usually returns) ->
+// normalized map. Ids are paths, so they are stable.
 export function normalize(items: SeedItem[]): NodeMap {
-  const nodes: NodeMap = { [ROOT]: { id: ROOT, name: 'Project', type: 'folder', parentId: null, childIds: [] } };
-  const walk = (list: SeedItem[], parentId: string): void => list.forEach((item) => {
-    const id = parentId === ROOT ? item.name : parentId + '/' + item.name;
-    nodes[id] = { id, name: item.name, type: item.type, parentId, childIds: [] };
-    nodes[parentId].childIds.push(id);
-    if (item.children) walk(item.children, id);
-  });
+  const nodes: NodeMap = {
+    [ROOT]: {
+      id: ROOT,
+      name: "Project",
+      type: "folder",
+      parentId: null,
+      childIds: [],
+    },
+  };
+  const walk = (list: SeedItem[], parentId: string): void =>
+    list.forEach((item) => {
+      const id = parentId === ROOT ? item.name : parentId + "/" + item.name;
+      nodes[id] = {
+        id,
+        name: item.name,
+        type: item.type,
+        parentId,
+        childIds: [],
+      };
+      nodes[parentId].childIds.push(id);
+      if (item.children) walk(item.children, id);
+    });
   walk(items, ROOT);
   return nodes;
 }
@@ -5591,83 +7889,138 @@ export function normalize(items: SeedItem[]): NodeMap {
 export const initialNodes = normalize(seed);
 
 // Is \`ancestorId\` the node itself or anywhere above \`id\`? Walks up, O(depth).
-export function isSelfOrAncestor(nodes: NodeMap, ancestorId: string, id: string): boolean {
-  for (let cur: string | null = id; cur != null; cur = nodes[cur].parentId) if (cur === ancestorId) return true;
+export function isSelfOrAncestor(
+  nodes: NodeMap,
+  ancestorId: string,
+  id: string,
+): boolean {
+  for (let cur: string | null = id; cur != null; cur = nodes[cur].parentId)
+    if (cur === ancestorId) return true;
   return false;
 }
 
 // Where a drop would land: 'before' | 'after' | 'inside', from the pointer's
 // position inside the row (0 = top edge, 1 = bottom edge).
 export function dropPosition(node: FsNode, ratio: number): Position {
-  if (node.type === 'folder') return ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'inside';
-  return ratio < 0.5 ? 'before' : 'after';
+  if (node.type === "folder")
+    return ratio < 0.25 ? "before" : ratio > 0.75 ? "after" : "inside";
+  return ratio < 0.5 ? "before" : "after";
 }
 
 // Returns { nodes } on success or { error } when the move is not allowed.
-export function moveNode(nodes: NodeMap, dragId: string, targetId: string, position: Position): { nodes?: NodeMap; error?: string } {
-  if (dragId === targetId) return { nodes };          // dropped on itself: nothing to do
+export function moveNode(
+  nodes: NodeMap,
+  dragId: string,
+  targetId: string,
+  position: Position,
+): { nodes?: NodeMap; error?: string } {
+  if (dragId === targetId) return { nodes }; // dropped on itself: nothing to do
   const drag = nodes[dragId];
-  const parentId = position === 'inside' ? targetId : nodes[targetId].parentId!;
+  const parentId = position === "inside" ? targetId : nodes[targetId].parentId!;
   const parent = nodes[parentId];
   if (isSelfOrAncestor(nodes, dragId, parentId)) {
-    return { error: 'Cannot move ' + drag.name + ' into itself or one of its subfolders' };
+    return {
+      error:
+        "Cannot move " + drag.name + " into itself or one of its subfolders",
+    };
   }
-  if (parent.childIds.some((c) => c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase())) {
-    return { error: 'A ' + drag.type + ' named ' + drag.name + ' already exists in ' + parent.name };
+  if (
+    parent.childIds.some(
+      (c) =>
+        c !== dragId && nodes[c].name.toLowerCase() === drag.name.toLowerCase(),
+    )
+  ) {
+    return {
+      error:
+        "A " +
+        drag.type +
+        " named " +
+        drag.name +
+        " already exists in " +
+        parent.name,
+    };
   }
   const next = { ...nodes };
   const oldParent = nodes[drag.parentId!];
-  next[oldParent.id] = { ...oldParent, childIds: oldParent.childIds.filter((c) => c !== dragId) };
+  next[oldParent.id] = {
+    ...oldParent,
+    childIds: oldParent.childIds.filter((c) => c !== dragId),
+  };
   const kids = [...next[parentId].childIds];
-  if (position === 'inside') kids.push(dragId);
-  else kids.splice(kids.indexOf(targetId) + (position === 'after' ? 1 : 0), 0, dragId);
+  if (position === "inside") kids.push(dragId);
+  else
+    kids.splice(
+      kids.indexOf(targetId) + (position === "after" ? 1 : 0),
+      0,
+      dragId,
+    );
   next[parentId] = { ...next[parentId], childIds: kids };
   next[dragId] = { ...drag, parentId };
   return { nodes: next };
 }
 
-export function describeMove(nodes: NodeMap, dragId: string, targetId: string, position: Position): string {
+export function describeMove(
+  nodes: NodeMap,
+  dragId: string,
+  targetId: string,
+  position: Position,
+): string {
   const what = nodes[dragId].name;
-  if (position === 'inside') return 'Moved ' + what + ' into ' + nodes[targetId].name;
-  return 'Moved ' + what + ' ' + position + ' ' + nodes[targetId].name;
+  if (position === "inside")
+    return "Moved " + what + " into " + nodes[targetId].name;
+  return "Moved " + what + " " + position + " " + nodes[targetId].name;
 }
 
 // Visible rows in order, for ArrowUp / ArrowDown.
-export function visibleIds(nodes: NodeMap, expanded: ReadonlySet<string>, id = ROOT, out: string[] = []): string[] {
+export function visibleIds(
+  nodes: NodeMap,
+  expanded: ReadonlySet<string>,
+  id = ROOT,
+  out: string[] = [],
+): string[] {
   for (const c of nodes[id].childIds) {
     out.push(c);
-    if (nodes[c].type === 'folder' && expanded.has(c)) visibleIds(nodes, expanded, c, out);
+    if (nodes[c].type === "folder" && expanded.has(c))
+      visibleIds(nodes, expanded, c, out);
   }
   return out;
 }
 `,
-          "/src/app/tree-row.component.ts": `import { Component, Input, forwardRef, inject } from '@angular/core';
-import { DndTree } from './dnd-tree';
+          "/src/app/tree-row.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { DndTree } from "./dnd-tree";
 
 @Component({
-  selector: 'li[app-tree-row]',
+  selector: "li[app-tree-row]",
   standalone: true,
-  imports: [forwardRef(() => TreeRowComponent)],   // recursive: lists itself (see the JIT note)
+  // recursive: lists itself (see the JIT note)
+  imports: [forwardRef(() => TreeRowComponent)],
   host: {
-    role: 'treeitem',
-    '[attr.aria-level]': 'depth',
-    '[attr.aria-expanded]': 'isFolder ? open : null',
-    '[attr.tabindex]': 'tree.focusId() === id ? 0 : -1',
-    '[attr.data-id]': 'id',
-    '[attr.data-name]': 'node.name',
-    '(keydown)': 'onKey($event)',
-    '(focus)': 'onFocus($event)',
+    role: "treeitem",
+    "[attr.aria-level]": "depth",
+    "[attr.aria-expanded]": "isFolder ? open : null",
+    "[attr.tabindex]": "tree.focusId() === id ? 0 : -1",
+    "[attr.data-id]": "id",
+    "[attr.data-name]": "node.name",
+    "(keydown)": "onKey($event)",
+    "(focus)": "onFocus($event)",
   },
   template: \`
-    <div class="row" [class]="rowClass" [style.padding-left.px]="8 + (depth - 1) * 16"
-      [attr.data-drop]="dropLabel" draggable="true"
+    <div
+      class="row"
+      [class]="rowClass"
+      [style.padding-left.px]="8 + (depth - 1) * 16"
+      [attr.data-drop]="dropLabel"
+      draggable="true"
       (click)="isFolder && tree.toggle(id)"
       (dragstart)="tree.onDragStart($event, id)"
       (dragover)="tree.onDragOver($event, id)"
       (drop)="tree.onDrop($event, id)"
-      (dragend)="tree.onDragEnd()">
-      <span class="chevron" aria-hidden="true">{{ isFolder ? (open ? '▾' : '▸') : '' }}</span>
-      <span aria-hidden="true">{{ isFolder ? '📁' : '📄' }}</span>
+      (dragend)="tree.onDragEnd()"
+    >
+      <span class="chevron" aria-hidden="true">{{
+        isFolder ? (open ? "▾" : "▸") : ""
+      }}</span>
+      <span aria-hidden="true">{{ isFolder ? "📁" : "📄" }}</span>
       <span class="name">{{ node.name }}</span>
     </div>
     @if (open && node.childIds.length) {
@@ -5684,24 +8037,34 @@ export class TreeRowComponent {
   @Input() depth = 1;
   tree = inject(DndTree);
 
-  get node() { return this.tree.nodes()[this.id]; }
-  get isFolder() { return this.node.type === 'folder'; }
-  get open() { return this.isFolder && this.tree.expanded().has(this.id); }
+  get node() {
+    return this.tree.nodes()[this.id];
+  }
+  get isFolder() {
+    return this.node.type === "folder";
+  }
+  get open() {
+    return this.isFolder && this.tree.expanded().has(this.id);
+  }
   get dropLabel() {
     const d = this.tree.dropTarget();
-    return d && d.id === this.id ? (d.valid ? d.position : 'invalid') : null;
+    return d && d.id === this.id ? (d.valid ? d.position : "invalid") : null;
   }
   get rowClass() {
-    const cls = ['row'];
-    if (this.tree.dragId() === this.id) cls.push('dragging');
-    if (this.tree.cutId() === this.id) cls.push('cut');
+    const cls = ["row"];
+    if (this.tree.dragId() === this.id) cls.push("dragging");
+    if (this.tree.cutId() === this.id) cls.push("cut");
     const drop = this.dropLabel;
-    if (drop) cls.push('drop-' + drop);
-    return cls.join(' ');
+    if (drop) cls.push("drop-" + drop);
+    return cls.join(" ");
   }
 
-  onKey(e: KeyboardEvent) { if (e.target === e.currentTarget) this.tree.onKeyDown(e, this.id); }
-  onFocus(e: FocusEvent) { if (e.target === e.currentTarget) this.tree.focusId.set(this.id); }
+  onKey(e: KeyboardEvent) {
+    if (e.target === e.currentTarget) this.tree.onKeyDown(e, this.id);
+  }
+  onFocus(e: FocusEvent) {
+    if (e.target === e.currentTarget) this.tree.focusId.set(this.id);
+  }
 }
 `,
         },
@@ -5807,9 +8170,9 @@ Solid arrows are the derivation: only Lemon is stored, and Citrus, Fruit (omitte
 ~~~js
 export function computeStates(node, checked, states = new Map()) {
   if (!node.children) {
-    const s = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s = checked.has(node.id) ? "checked" : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -5818,7 +8181,10 @@ export function computeStates(node, checked, states = new Map()) {
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 ~~~
@@ -5830,9 +8196,10 @@ A parent is \`checked\` when every leaf below it is, \`unchecked\` when none is,
 ~~~js
 export function toggle(node, checked, states) {
   const next = new Set(checked);
-  const turnOn = states.get(node.id) !== 'checked';
+  const turnOn = states.get(node.id) !== "checked";
   for (const id of leafIds(node)) {
-    if (turnOn) next.add(id); else next.delete(id);
+    if (turnOn) next.add(id);
+    else next.delete(id);
   }
   return next;
 }
@@ -5844,7 +8211,10 @@ The App owns the set and memoizes the derivation ([useMemo](/interview-question/
 
 ~~~jsx
 const [checked, setChecked] = useState(() => new Set(initialChecked));
-const { on, total, states } = useMemo(() => computeStates(groceries, checked), [checked]);
+const { on, total, states } = useMemo(
+  () => computeStates(groceries, checked),
+  [checked],
+);
 ~~~
 
 ### Step 3: The \`indeterminate\` property
@@ -5864,20 +8234,36 @@ So the checkbox gets a [ref](/interview-question/describe-the-useref-hook-and-it
 export default function CheckNode({ node, states, onToggle }) {
   const state = states.get(node.id);
   const ref = useRef(null);
-  // indeterminate is a DOM PROPERTY with no HTML attribute, so it cannot be
-  // rendered as a prop; set it on the element after every commit instead.
-  useEffect(() => { ref.current.indeterminate = state === 'mixed'; });
+  // indeterminate is a DOM PROPERTY with
+  // no HTML attribute, so it cannot be
+  // rendered as a prop; set it on the
+  // element after every commit instead.
+  useEffect(() => {
+    ref.current.indeterminate = state === "mixed";
+  });
 
   return (
     <li>
-      <label className={node.children ? 'parent' : ''}>
-        <input ref={ref} type="checkbox" data-id={node.id} checked={state === 'checked'}
-          onChange={() => onToggle(node)} />
+      <label className={node.children ? "parent" : ""}>
+        <input
+          ref={ref}
+          type="checkbox"
+          data-id={node.id}
+          checked={state === "checked"}
+          onChange={() => onToggle(node)}
+        />
         {node.label}
       </label>
       {node.children && (
         <ul role="group" aria-label={node.label}>
-          {node.children.map((c) => <CheckNode key={c.id} node={c} states={states} onToggle={onToggle} />)}
+          {node.children.map((c) => (
+            <CheckNode
+              key={c.id}
+              node={c}
+              states={states}
+              onToggle={onToggle}
+            />
+          ))}
         </ul>
       )}
     </li>
@@ -6032,48 +8418,75 @@ What it shows: on load only Lemon is stored, yet Citrus, Fruit and All read \`in
 
 **Conclusion:** Store only the checked leaves, derive every parent in one post-order pass, write only leaves on toggle, and set the \`indeterminate\` property from a ref after each commit. That model makes "down" and "up" propagation the same code path as rendering, so the tree is always consistent. The same pattern underlies the nested comments counts in [Build a Nested Comments widget](/interview-question/build-a-nested-comments-widget).`,
         files: {
-          "/App.js": `import { useMemo, useState } from 'react';
-import CheckNode from './src/CheckNode';
-import { groceries, initialChecked, computeStates, toggle, selectedLabels } from './src/checkTree';
+          "/App.js": `import { useMemo, useState } from "react";
+import CheckNode from "./src/CheckNode";
+import {
+  groceries,
+  initialChecked,
+  computeStates,
+  toggle,
+  selectedLabels,
+} from "./src/checkTree";
 
 export default function App() {
   // The single source of truth: a Set of checked LEAF ids.
   const [checked, setChecked] = useState(() => new Set(initialChecked));
-  const { on, total, states } = useMemo(() => computeStates(groceries, checked), [checked]);
+  const { on, total, states } = useMemo(
+    () => computeStates(groceries, checked),
+    [checked],
+  );
   const labels = selectedLabels(groceries, checked);
 
   return (
     <div className="app">
       <h1>Shopping list</h1>
       <ul className="checks">
-        <CheckNode node={groceries} states={states} onToggle={(node) => setChecked((prev) => toggle(node, prev, states))} />
+        <CheckNode
+          node={groceries}
+          states={states}
+          onToggle={(node) => setChecked((prev) => toggle(node, prev, states))}
+        />
       </ul>
       <p className="summary" aria-live="polite" data-testid="summary">
-        {on} of {total} selected{labels.length ? ': ' + labels.join(', ') : ''}
+        {on} of {total} selected{labels.length ? ": " + labels.join(", ") : ""}
       </p>
     </div>
   );
 }
 `,
-          "/src/CheckNode.js": `import { useEffect, useRef } from 'react';
+          "/src/CheckNode.js": `import { useEffect, useRef } from "react";
 
 export default function CheckNode({ node, states, onToggle }) {
   const state = states.get(node.id);
   const ref = useRef(null);
   // indeterminate is a DOM PROPERTY with no HTML attribute, so it cannot be
   // rendered as a prop; set it on the element after every commit instead.
-  useEffect(() => { ref.current.indeterminate = state === 'mixed'; });
+  useEffect(() => {
+    ref.current.indeterminate = state === "mixed";
+  });
 
   return (
     <li>
-      <label className={node.children ? 'parent' : ''}>
-        <input ref={ref} type="checkbox" data-id={node.id} checked={state === 'checked'}
-          onChange={() => onToggle(node)} />
+      <label className={node.children ? "parent" : ""}>
+        <input
+          ref={ref}
+          type="checkbox"
+          data-id={node.id}
+          checked={state === "checked"}
+          onChange={() => onToggle(node)}
+        />
         {node.label}
       </label>
       {node.children && (
         <ul role="group" aria-label={node.label}>
-          {node.children.map((c) => <CheckNode key={c.id} node={c} states={states} onToggle={onToggle} />)}
+          {node.children.map((c) => (
+            <CheckNode
+              key={c.id}
+              node={c}
+              states={states}
+              onToggle={onToggle}
+            />
+          ))}
         </ul>
       )}
     </li>
@@ -6084,25 +8497,39 @@ export default function CheckNode({ node, states, onToggle }) {
 // so a parent can never disagree with its children.
 
 export const groceries = {
-  id: 'all', label: 'All groceries', children: [
-    { id: 'fruit', label: 'Fruit', children: [
-      { id: 'apple', label: 'Apple' },
-      { id: 'banana', label: 'Banana' },
-      { id: 'citrus', label: 'Citrus', children: [
-        { id: 'orange', label: 'Orange' },
-        { id: 'lemon', label: 'Lemon' },
-        { id: 'lime', label: 'Lime' },
-      ] },
-    ] },
-    { id: 'veg', label: 'Vegetables', children: [
-      { id: 'carrot', label: 'Carrot' },
-      { id: 'potato', label: 'Potato' },
-    ] },
-    { id: 'dairy', label: 'Dairy', children: [{ id: 'milk', label: 'Milk' }] },
+  id: "all",
+  label: "All groceries",
+  children: [
+    {
+      id: "fruit",
+      label: "Fruit",
+      children: [
+        { id: "apple", label: "Apple" },
+        { id: "banana", label: "Banana" },
+        {
+          id: "citrus",
+          label: "Citrus",
+          children: [
+            { id: "orange", label: "Orange" },
+            { id: "lemon", label: "Lemon" },
+            { id: "lime", label: "Lime" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "veg",
+      label: "Vegetables",
+      children: [
+        { id: "carrot", label: "Carrot" },
+        { id: "potato", label: "Potato" },
+      ],
+    },
+    { id: "dairy", label: "Dairy", children: [{ id: "milk", label: "Milk" }] },
   ],
 };
 
-export const initialChecked = ['lemon'];
+export const initialChecked = ["lemon"];
 
 export function leafIds(node, out = []) {
   if (!node.children) out.push(node.id);
@@ -6114,9 +8541,9 @@ export function leafIds(node, out = []) {
 // Children are counted before their parent, so the whole tree costs O(n).
 export function computeStates(node, checked, states = new Map()) {
   if (!node.children) {
-    const s = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s = checked.has(node.id) ? "checked" : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -6125,7 +8552,10 @@ export function computeStates(node, checked, states = new Map()) {
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 
@@ -6133,29 +8563,72 @@ export function computeStates(node, checked, states = new Map()) {
 // unchecked OR mixed parent checks all of them (what a native click does too).
 export function toggle(node, checked, states) {
   const next = new Set(checked);
-  const turnOn = states.get(node.id) !== 'checked';
+  const turnOn = states.get(node.id) !== "checked";
   for (const id of leafIds(node)) {
-    if (turnOn) next.add(id); else next.delete(id);
+    if (turnOn) next.add(id);
+    else next.delete(id);
   }
   return next;
 }
 
 export function selectedLabels(node, checked, out = []) {
-  if (!node.children) { if (checked.has(node.id)) out.push(node.label); }
-  else node.children.forEach((c) => selectedLabels(c, checked, out));
+  if (!node.children) {
+    if (checked.has(node.id)) out.push(node.label);
+  } else node.children.forEach((c) => selectedLabels(c, checked, out));
   return out;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 480px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-.checks, .checks ul { list-style: none; margin: 0; padding: 0; }
-.checks { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 8px 12px; }
-.checks ul { padding-left: 22px; border-left: 1px solid #262c3b; margin-left: 7px; }
-label { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; }
-label.parent { font-weight: 600; }
-input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6ea8ff; }
-.summary { color: #9aa3b5; font-size: 14px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.checks,
+.checks ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.checks {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.checks ul {
+  padding-left: 22px;
+  border-left: 1px solid #262c3b;
+  margin-left: 7px;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  cursor: pointer;
+}
+label.parent {
+  font-weight: 600;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6ea8ff;
+}
+.summary {
+  color: #9aa3b5;
+  font-size: 14px;
+}
 `,
         },
       },
@@ -6191,9 +8664,9 @@ Recursive checkbox tree; parent click checks all leaves (or clears them if fully
 ~~~js
 export function computeStates(node, checked, states = new Map()) {
   if (!node.children) {
-    const s = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s = checked.has(node.id) ? "checked" : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -6202,7 +8675,10 @@ export function computeStates(node, checked, states = new Map()) {
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 ~~~
@@ -6213,9 +8689,10 @@ export function computeStates(node, checked, states = new Map()) {
 
 ~~~js
 export function toggle(node, checked, states) {
-  const turnOn = states.get(node.id) !== 'checked';
+  const turnOn = states.get(node.id) !== "checked";
   for (const id of leafIds(node)) {
-    if (turnOn) checked.add(id); else checked.delete(id);
+    if (turnOn) checked.add(id);
+    else checked.delete(id);
   }
 }
 ~~~
@@ -6227,10 +8704,13 @@ Only leaves are written. Clicking a fully checked parent clears its leaves; clic
 📌 **Interview term: DOM property binding** — when a bound name exists as a property on the element (\`'indeterminate' in input\` is true), Vue sets the property instead of an attribute. That is exactly what \`indeterminate\` needs, since it has no HTML attribute.
 
 ~~~vue
-<input type="checkbox" :data-id="node.id"
+<input
+  type="checkbox"
+  :data-id="node.id"
   :checked="states.get(node.id) === 'checked'"
   :indeterminate="states.get(node.id) === 'mixed'"
-  @change="emit('toggle', node)" />
+  @change="emit('toggle', node)"
+/>
 ~~~
 
 ### Step 4: Events through the recursion
@@ -6370,13 +8850,20 @@ Vue patches a DOM property only when the bound value changes, so after a click y
 **Conclusion:** In Vue, tri-state checkboxes are a reactive \`Set\` of leaf ids, one \`computed\` that derives every parent, a \`toggle\` that writes leaves only, and \`:indeterminate\` bound as a DOM property. Keep every click changing state, or restore the DOM yourself, because Vue only patches values that changed.`,
         files: {
           "/src/App.vue": `<script setup>
-import { computed, reactive } from 'vue';
-import CheckNode from './components/CheckNode.vue';
-import { groceries, initialChecked, computeStates, toggle, selectedLabels } from './checkTree.js';
+import { computed, reactive } from "vue";
+import CheckNode from "./components/CheckNode.vue";
+import {
+  groceries,
+  initialChecked,
+  computeStates,
+  toggle,
+  selectedLabels,
+} from "./checkTree.js";
 
 // The single source of truth: a reactive Set of checked LEAF ids.
 const checked = reactive(new Set(initialChecked));
-// Re-derived only when the Set changes: { on, total, states: Map(id -> state) }.
+// Re-derived only when the Set changes: {
+// on, total, states: Map(id -> state) }.
 const result = computed(() => computeStates(groceries, checked));
 const labels = computed(() => selectedLabels(groceries, checked));
 
@@ -6398,41 +8885,96 @@ function onToggle(node) {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 480px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-.checks, .checks ul { list-style: none; margin: 0; padding: 0; }
-.checks { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 8px 12px; }
-.checks ul { padding-left: 22px; border-left: 1px solid #262c3b; margin-left: 7px; }
-label { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; }
-label.parent { font-weight: 600; }
-input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6ea8ff; }
-.summary { color: #9aa3b5; font-size: 14px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+.checks,
+.checks ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.checks {
+  background: #161a23;
+  border: 1px solid #262c3b;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.checks ul {
+  padding-left: 22px;
+  border-left: 1px solid #262c3b;
+  margin-left: 7px;
+}
+label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  cursor: pointer;
+}
+label.parent {
+  font-weight: 600;
+}
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #6ea8ff;
+}
+.summary {
+  color: #9aa3b5;
+  font-size: 14px;
+}
 </style>
 `,
           "/src/checkTree.js": `// Only LEAVES are stored as checked. Every parent state is derived from them,
 // so a parent can never disagree with its children.
 
 export const groceries = {
-  id: 'all', label: 'All groceries', children: [
-    { id: 'fruit', label: 'Fruit', children: [
-      { id: 'apple', label: 'Apple' },
-      { id: 'banana', label: 'Banana' },
-      { id: 'citrus', label: 'Citrus', children: [
-        { id: 'orange', label: 'Orange' },
-        { id: 'lemon', label: 'Lemon' },
-        { id: 'lime', label: 'Lime' },
-      ] },
-    ] },
-    { id: 'veg', label: 'Vegetables', children: [
-      { id: 'carrot', label: 'Carrot' },
-      { id: 'potato', label: 'Potato' },
-    ] },
-    { id: 'dairy', label: 'Dairy', children: [{ id: 'milk', label: 'Milk' }] },
+  id: "all",
+  label: "All groceries",
+  children: [
+    {
+      id: "fruit",
+      label: "Fruit",
+      children: [
+        { id: "apple", label: "Apple" },
+        { id: "banana", label: "Banana" },
+        {
+          id: "citrus",
+          label: "Citrus",
+          children: [
+            { id: "orange", label: "Orange" },
+            { id: "lemon", label: "Lemon" },
+            { id: "lime", label: "Lime" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "veg",
+      label: "Vegetables",
+      children: [
+        { id: "carrot", label: "Carrot" },
+        { id: "potato", label: "Potato" },
+      ],
+    },
+    { id: "dairy", label: "Dairy", children: [{ id: "milk", label: "Milk" }] },
   ],
 };
 
-export const initialChecked = ['lemon'];
+export const initialChecked = ["lemon"];
 
 export function leafIds(node, out = []) {
   if (!node.children) out.push(node.id);
@@ -6444,9 +8986,9 @@ export function leafIds(node, out = []) {
 // Children are counted before their parent, so the whole tree costs O(n).
 export function computeStates(node, checked, states = new Map()) {
   if (!node.children) {
-    const s = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s = checked.has(node.id) ? "checked" : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -6455,7 +8997,10 @@ export function computeStates(node, checked, states = new Map()) {
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 
@@ -6463,15 +9008,17 @@ export function computeStates(node, checked, states = new Map()) {
 // unchecked OR mixed parent checks all of them (what a native click does too).
 // Mutates the reactive Set in place.
 export function toggle(node, checked, states) {
-  const turnOn = states.get(node.id) !== 'checked';
+  const turnOn = states.get(node.id) !== "checked";
   for (const id of leafIds(node)) {
-    if (turnOn) checked.add(id); else checked.delete(id);
+    if (turnOn) checked.add(id);
+    else checked.delete(id);
   }
 }
 
 export function selectedLabels(node, checked, out = []) {
-  if (!node.children) { if (checked.has(node.id)) out.push(node.label); }
-  else node.children.forEach((c) => selectedLabels(c, checked, out));
+  if (!node.children) {
+    if (checked.has(node.id)) out.push(node.label);
+  } else node.children.forEach((c) => selectedLabels(c, checked, out));
   return out;
 }
 `,
@@ -6480,22 +9027,32 @@ defineProps({
   node: { type: Object, required: true },
   states: { type: Map, required: true },
 });
-// Each level re-emits its children's event, so App.vue receives the clicked node.
-const emit = defineEmits(['toggle']);
+// Each level re-emits its children's event,
+// so App.vue receives the clicked node.
+const emit = defineEmits(["toggle"]);
 </script>
 
 <template>
   <li>
     <label :class="{ parent: node.children }">
       <!-- indeterminate exists on the element, so Vue sets it as a DOM property -->
-      <input type="checkbox" :data-id="node.id"
+      <input
+        type="checkbox"
+        :data-id="node.id"
         :checked="states.get(node.id) === 'checked'"
         :indeterminate="states.get(node.id) === 'mixed'"
-        @change="emit('toggle', node)" />
+        @change="emit('toggle', node)"
+      />
       {{ node.label }}
     </label>
     <ul v-if="node.children" role="group" :aria-label="node.label">
-      <CheckNode v-for="c in node.children" :key="c.id" :node="c" :states="states" @toggle="emit('toggle', $event)" />
+      <CheckNode
+        v-for="c in node.children"
+        :key="c.id"
+        :node="c"
+        :states="states"
+        @toggle="emit('toggle', $event)"
+      />
     </ul>
   </li>
 </template>
@@ -6531,11 +9088,17 @@ Recursive tree, parent click fills or clears its leaves, checked / unchecked / i
 ### Step 1: Derive in one pass
 
 ~~~ts
-export function computeStates(node: CheckItem, checked: ReadonlySet<string>, states: StateMap = new Map()): { on: number; total: number; states: StateMap } {
+export function computeStates(
+  node: CheckItem,
+  checked: ReadonlySet<string>,
+  states: StateMap = new Map(),
+): { on: number; total: number; states: StateMap } {
   if (!node.children) {
-    const s: CheckState = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s: CheckState = checked.has(node.id)
+      ? "checked"
+      : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -6544,7 +9107,10 @@ export function computeStates(node: CheckItem, checked: ReadonlySet<string>, sta
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 ~~~
@@ -6559,7 +9125,9 @@ result = computed(() => computeStates(this.tree, this.checked()));
 labels = computed(() => selectedLabels(this.tree, this.checked()));
 
 onToggle(node: CheckItem) {
-  this.checked.update((prev) => toggle(node, prev, this.result().states));
+  this.checked.update((prev) =>
+    toggle(node, prev, this.result().states),
+  );
 }
 ~~~
 
@@ -6570,10 +9138,13 @@ onToggle(node: CheckItem) {
 📌 **Interview term: Property binding** — \`[name]="expr"\` writes the element *property* \`name\`. \`[indeterminate]\` therefore sets \`input.indeterminate\` directly; \`[attr.indeterminate]\` would write an attribute the browser ignores.
 
 ~~~ts
-<input type="checkbox" [attr.data-id]="node.id"
+<input
+  type="checkbox"
+  [attr.data-id]="node.id"
   [checked]="states.get(node.id) === 'checked'"
   [indeterminate]="states.get(node.id) === 'mixed'"
-  (change)="toggle.emit(node)" />
+  (change)="toggle.emit(node)"
+/>
 ~~~
 
 ### Step 4: Outputs through the recursion
@@ -6712,12 +9283,19 @@ Angular writes a property only when the bound value changes, so the DOM keeps th
 
 **Conclusion:** Angular tri-state checkboxes are a signal holding a \`Set\` of leaf ids, a \`computed\` post-order derivation, a \`toggle\` that returns a new Set, and \`[indeterminate]\` as a property binding. Make every click change state, because Angular only writes bindings whose value changed.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, signal } from '@angular/core';
-import { CheckNodeComponent } from './check-node.component';
-import { CheckItem, groceries, initialChecked, computeStates, toggle, selectedLabels } from './check-tree';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, signal } from "@angular/core";
+import { CheckNodeComponent } from "./check-node.component";
+import {
+  CheckItem,
+  groceries,
+  initialChecked,
+  computeStates,
+  toggle,
+  selectedLabels,
+} from "./check-tree";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CheckNodeComponent],
   encapsulation: ViewEncapsulation.None,
@@ -6725,29 +9303,80 @@ import { CheckItem, groceries, initialChecked, computeStates, toggle, selectedLa
     <div class="app">
       <h1>Shopping list</h1>
       <ul class="checks">
-        <li app-check-node [node]="tree" [states]="result().states" (toggle)="onToggle($event)"></li>
+        <li
+          app-check-node
+          [node]="tree"
+          [states]="result().states"
+          (toggle)="onToggle($event)"
+        ></li>
       </ul>
       <p class="summary" aria-live="polite" data-testid="summary">
-        {{ result().on }} of {{ result().total }} selected{{ labels().length ? ': ' + labels().join(', ') : '' }}
+        {{ result().on }} of {{ result().total }} selected{{
+          labels().length ? ": " + labels().join(", ") : ""
+        }}
       </p>
     </div>
   \`,
-  styles: [\`
-    body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .app { max-width: 480px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 18px; margin: 0 0 12px; }
-    .checks, .checks ul { list-style: none; margin: 0; padding: 0; }
-    .checks { background: #161a23; border: 1px solid #262c3b; border-radius: 8px; padding: 8px 12px; }
-    .checks ul { padding-left: 22px; border-left: 1px solid #262c3b; margin-left: 7px; }
-    label { display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer; }
-    label.parent { font-weight: 600; }
-    input[type="checkbox"] { width: 18px; height: 18px; accent-color: #6ea8ff; }
-    .summary { color: #9aa3b5; font-size: 14px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 480px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      .checks,
+      .checks ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .checks {
+        background: #161a23;
+        border: 1px solid #262c3b;
+        border-radius: 8px;
+        padding: 8px 12px;
+      }
+      .checks ul {
+        padding-left: 22px;
+        border-left: 1px solid #262c3b;
+        margin-left: 7px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+        cursor: pointer;
+      }
+      label.parent {
+        font-weight: 600;
+      }
+      input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: #6ea8ff;
+      }
+      .summary {
+        color: #9aa3b5;
+        font-size: 14px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   tree = groceries;
-  // The single source of truth: a Set of checked LEAF ids, replaced (never mutated) on change.
+  // The single source of truth: a Set of checked
+  // LEAF ids, replaced (never mutated) on change.
   checked = signal<ReadonlySet<string>>(new Set(initialChecked));
   result = computed(() => computeStates(this.tree, this.checked()));
   labels = computed(() => selectedLabels(this.tree, this.checked()));
@@ -6757,26 +9386,41 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/check-node.component.ts": `import { Component, EventEmitter, Input, Output, forwardRef } from '@angular/core';
-import { CheckItem, StateMap } from './check-tree';
+          "/src/app/check-node.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  forwardRef,
+} from "@angular/core";
+import { CheckItem, StateMap } from "./check-tree";
 
 @Component({
-  selector: 'li[app-check-node]',
+  selector: "li[app-check-node]",
   standalone: true,
-  imports: [forwardRef(() => CheckNodeComponent)],   // it renders itself for the children
+  // it renders itself for the children
+  imports: [forwardRef(() => CheckNodeComponent)],
   template: \`
     <label [class.parent]="!!node.children">
       <!-- [indeterminate] is a property binding: it writes input.indeterminate directly -->
-      <input type="checkbox" [attr.data-id]="node.id"
+      <input
+        type="checkbox"
+        [attr.data-id]="node.id"
         [checked]="states.get(node.id) === 'checked'"
         [indeterminate]="states.get(node.id) === 'mixed'"
-        (change)="toggle.emit(node)" />
+        (change)="toggle.emit(node)"
+      />
       {{ node.label }}
     </label>
     @if (node.children) {
       <ul role="group" [attr.aria-label]="node.label">
         @for (c of node.children; track c.id) {
-          <li app-check-node [node]="c" [states]="states" (toggle)="toggle.emit($event)"></li>
+          <li
+            app-check-node
+            [node]="c"
+            [states]="states"
+            (toggle)="toggle.emit($event)"
+          ></li>
         }
       </ul>
     }
@@ -6785,36 +9429,55 @@ import { CheckItem, StateMap } from './check-tree';
 export class CheckNodeComponent {
   @Input({ required: true }) node!: CheckItem;
   @Input({ required: true }) states!: StateMap;
-  @Output() toggle = new EventEmitter<CheckItem>();   // re-emitted level by level up to the root
+  // re-emitted level by level up to the root
+  @Output() toggle = new EventEmitter<CheckItem>();
 }
 `,
           "/src/app/check-tree.ts": `// Only LEAVES are stored as checked. Every parent state is derived from them,
 // so a parent can never disagree with its children.
 
-export interface CheckItem { id: string; label: string; children?: CheckItem[]; }
-export type CheckState = 'checked' | 'unchecked' | 'mixed';
+export interface CheckItem {
+  id: string;
+  label: string;
+  children?: CheckItem[];
+}
+export type CheckState = "checked" | "unchecked" | "mixed";
 export type StateMap = Map<string, CheckState>;
 
 export const groceries: CheckItem = {
-  id: 'all', label: 'All groceries', children: [
-    { id: 'fruit', label: 'Fruit', children: [
-      { id: 'apple', label: 'Apple' },
-      { id: 'banana', label: 'Banana' },
-      { id: 'citrus', label: 'Citrus', children: [
-        { id: 'orange', label: 'Orange' },
-        { id: 'lemon', label: 'Lemon' },
-        { id: 'lime', label: 'Lime' },
-      ] },
-    ] },
-    { id: 'veg', label: 'Vegetables', children: [
-      { id: 'carrot', label: 'Carrot' },
-      { id: 'potato', label: 'Potato' },
-    ] },
-    { id: 'dairy', label: 'Dairy', children: [{ id: 'milk', label: 'Milk' }] },
+  id: "all",
+  label: "All groceries",
+  children: [
+    {
+      id: "fruit",
+      label: "Fruit",
+      children: [
+        { id: "apple", label: "Apple" },
+        { id: "banana", label: "Banana" },
+        {
+          id: "citrus",
+          label: "Citrus",
+          children: [
+            { id: "orange", label: "Orange" },
+            { id: "lemon", label: "Lemon" },
+            { id: "lime", label: "Lime" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "veg",
+      label: "Vegetables",
+      children: [
+        { id: "carrot", label: "Carrot" },
+        { id: "potato", label: "Potato" },
+      ],
+    },
+    { id: "dairy", label: "Dairy", children: [{ id: "milk", label: "Milk" }] },
   ],
 };
 
-export const initialChecked: string[] = ['lemon'];
+export const initialChecked: string[] = ["lemon"];
 
 export function leafIds(node: CheckItem, out: string[] = []): string[] {
   if (!node.children) out.push(node.id);
@@ -6824,11 +9487,15 @@ export function leafIds(node: CheckItem, out: string[] = []): string[] {
 
 // One post-order walk: each node's state is 'checked' | 'unchecked' | 'mixed'.
 // Children are counted before their parent, so the whole tree costs O(n).
-export function computeStates(node: CheckItem, checked: ReadonlySet<string>, states: StateMap = new Map()): { on: number; total: number; states: StateMap } {
+export function computeStates(
+  node: CheckItem,
+  checked: ReadonlySet<string>,
+  states: StateMap = new Map(),
+): { on: number; total: number; states: StateMap } {
   if (!node.children) {
-    const s: CheckState = checked.has(node.id) ? 'checked' : 'unchecked';
+    const s: CheckState = checked.has(node.id) ? "checked" : "unchecked";
     states.set(node.id, s);
-    return { on: s === 'checked' ? 1 : 0, total: 1, states };
+    return { on: s === "checked" ? 1 : 0, total: 1, states };
   }
   let on = 0;
   let total = 0;
@@ -6837,24 +9504,37 @@ export function computeStates(node: CheckItem, checked: ReadonlySet<string>, sta
     on += r.on;
     total += r.total;
   }
-  states.set(node.id, on === 0 ? 'unchecked' : on === total ? 'checked' : 'mixed');
+  states.set(
+    node.id,
+    on === 0 ? "unchecked" : on === total ? "checked" : "mixed",
+  );
   return { on, total, states };
 }
 
 // Clicking a parent that is fully checked clears its leaves; clicking an
 // unchecked OR mixed parent checks all of them (what a native click does too).
-export function toggle(node: CheckItem, checked: ReadonlySet<string>, states: StateMap): Set<string> {
+export function toggle(
+  node: CheckItem,
+  checked: ReadonlySet<string>,
+  states: StateMap,
+): Set<string> {
   const next = new Set(checked);
-  const turnOn = states.get(node.id) !== 'checked';
+  const turnOn = states.get(node.id) !== "checked";
   for (const id of leafIds(node)) {
-    if (turnOn) next.add(id); else next.delete(id);
+    if (turnOn) next.add(id);
+    else next.delete(id);
   }
   return next;
 }
 
-export function selectedLabels(node: CheckItem, checked: ReadonlySet<string>, out: string[] = []): string[] {
-  if (!node.children) { if (checked.has(node.id)) out.push(node.label); }
-  else node.children.forEach((c) => selectedLabels(c, checked, out));
+export function selectedLabels(
+  node: CheckItem,
+  checked: ReadonlySet<string>,
+  out: string[] = [],
+): string[] {
+  if (!node.children) {
+    if (checked.has(node.id)) out.push(node.label);
+  } else node.children.forEach((c) => selectedLabels(c, checked, out));
   return out;
 }
 `,
@@ -6957,14 +9637,16 @@ The solid arrow down is props (\`comment\`, \`depth\`, \`onReply\`, \`onDelete\`
 export function addReply(list, parentId, comment) {
   if (parentId === null) return [...list, comment];
   return list.map((c) => {
-    if (c.id === parentId) return { ...c, replies: [...c.replies, comment] };
+    if (c.id === parentId)
+      return { ...c, replies: [...c.replies, comment] };
     const replies = addReply(c.replies, parentId, comment);
     return replies === c.replies ? c : { ...c, replies };
   });
 }
 
 export function removeComment(list, id) {
-  if (list.some((c) => c.id === id)) return list.filter((c) => c.id !== id);
+  if (list.some((c) => c.id === id))
+    return list.filter((c) => c.id !== id);
   let changed = false;
   const next = list.map((c) => {
     const replies = removeComment(c.replies, id);
@@ -6975,7 +9657,8 @@ export function removeComment(list, id) {
   return changed ? next : list;
 }
 
-export const countAll = (list) => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+export const countAll = (list) =>
+  list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 ~~~
 
 Removing the comment removes its \`replies\` with it, which is exactly "delete the subtree". \`countAll\` counts a list and everything below it, used for the header and the hidden note.
@@ -6985,13 +9668,21 @@ Removing the comment removes its \`replies\` with it, which is exactly "delete t
 📌 **Interview term: Recursive component** — a component that renders itself for its children, with a base case (no replies, or collapsed) that stops the recursion.
 
 ~~~jsx
-{!collapsed && comment.replies.length > 0 && (
-  <ul className="replies">
-    {comment.replies.map((r) => (
-      <Comment key={r.id} comment={r} depth={depth + 1} onReply={onReply} onDelete={onDelete} />
-    ))}
-  </ul>
-)}
+{
+  !collapsed && comment.replies.length > 0 && (
+    <ul className="replies">
+      {comment.replies.map((r) => (
+        <Comment
+          key={r.id}
+          comment={r}
+          depth={depth + 1}
+          onReply={onReply}
+          onDelete={onDelete}
+        />
+      ))}
+    </ul>
+  );
+}
 ~~~
 
 \`key={r.id}\` keeps each comment's local state attached to the right comment when a sibling is added or removed; an index key would move an open reply box to the wrong comment after a delete ([the key prop](/interview-question/what-is-the-purpose-of-the-key-prop-when-rendering-lists-in-react)).
@@ -7014,7 +9705,7 @@ function submit(e) {
   e?.preventDefault();
   if (!text.trim()) return;
   onSubmit(text.trim());
-  setText('');
+  setText("");
 }
 ~~~
 
@@ -7143,43 +9834,71 @@ It shows: the reply box opens focused with a label naming the parent and a disab
 
 **Conclusion:** Nested comments are one recursive component over a \`{ replies: [] }\` tree, immutable helpers by id for reply and delete, and per-comment UI state for collapse and reply. Use id keys, count subtrees for the totals, and keep the controls real buttons. Voting, sorting and depth limits build on exactly this structure.`,
         files: {
-          "/App.js": `import { useState } from 'react';
-import Comment from './src/Comment';
-import ReplyBox from './src/ReplyBox';
-import { initialComments, makeId, addReply, removeComment, countAll } from './src/comments';
+          "/App.js": `import { useState } from "react";
+import Comment from "./src/Comment";
+import ReplyBox from "./src/ReplyBox";
+import {
+  initialComments,
+  makeId,
+  addReply,
+  removeComment,
+  countAll,
+} from "./src/comments";
 
 export default function App() {
   const [comments, setComments] = useState(initialComments);
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState("");
 
   function reply(parentId, text) {
-    const comment = { id: makeId(), author: 'You', text, replies: [] };
+    const comment = { id: makeId(), author: "You", text, replies: [] };
     setComments((list) => addReply(list, parentId, comment));
-    setStatus(parentId ? 'Reply posted' : 'Comment posted');
+    setStatus(parentId ? "Reply posted" : "Comment posted");
   }
 
   function remove(comment) {
     const inside = countAll(comment.replies);
     setComments((list) => removeComment(list, comment.id));
-    setStatus('Deleted a comment' + (inside ? ' and ' + inside + (inside === 1 ? ' reply' : ' replies') : ''));
+    setStatus(
+      "Deleted a comment" +
+        (inside
+          ? " and " + inside + (inside === 1 ? " reply" : " replies")
+          : ""),
+    );
   }
 
   const total = countAll(comments);
   return (
     <div className="app">
-      <h1 data-testid="count">{total} {total === 1 ? 'comment' : 'comments'}</h1>
-      <ReplyBox label="Add a comment" submitLabel="Comment" autoFocus={false} onSubmit={(t) => reply(null, t)} />
+      <h1 data-testid="count">
+        {total} {total === 1 ? "comment" : "comments"}
+      </h1>
+      <ReplyBox
+        label="Add a comment"
+        submitLabel="Comment"
+        autoFocus={false}
+        onSubmit={(t) => reply(null, t)}
+      />
       <ul className="thread">
-        {comments.map((c) => <Comment key={c.id} comment={c} depth={0} onReply={reply} onDelete={remove} />)}
+        {comments.map((c) => (
+          <Comment
+            key={c.id}
+            comment={c}
+            depth={0}
+            onReply={reply}
+            onDelete={remove}
+          />
+        ))}
       </ul>
-      <p className="status" role="status" data-testid="status">{status}</p>
+      <p className="status" role="status" data-testid="status">
+        {status}
+      </p>
     </div>
   );
 }
 `,
-          "/src/Comment.js": `import { useState } from 'react';
-import ReplyBox from './ReplyBox';
-import { countAll } from './comments';
+          "/src/Comment.js": `import { useState } from "react";
+import ReplyBox from "./ReplyBox";
+import { countAll } from "./comments";
 
 // Recursive: a comment renders its replies with this same component.
 // "collapsed" and "replying" are UI state, so they live here, not in the data.
@@ -7190,33 +9909,60 @@ export default function Comment({ comment, depth, onReply, onDelete }) {
 
   return (
     <li className="comment" data-id={comment.id} data-depth={depth}>
-      <article aria-label={'Comment by ' + comment.author}>
+      <article aria-label={"Comment by " + comment.author}>
         <header>
-          <button className="toggle" aria-expanded={!collapsed} data-testid="toggle"
-            aria-label={(collapsed ? 'Expand' : 'Collapse') + ' thread by ' + comment.author}
-            onClick={() => setCollapsed((c) => !c)}>{collapsed ? '[+]' : '[-]'}</button>
+          <button
+            className="toggle"
+            aria-expanded={!collapsed}
+            data-testid="toggle"
+            aria-label={
+              (collapsed ? "Expand" : "Collapse") +
+              " thread by " +
+              comment.author
+            }
+            onClick={() => setCollapsed((c) => !c)}
+          >
+            {collapsed ? "[+]" : "[-]"}
+          </button>
           <strong>{comment.author}</strong>
         </header>
         {!collapsed && <p className="text">{comment.text}</p>}
         {!collapsed && (
           <div className="actions">
-            <button data-testid="reply" onClick={() => setReplying(true)}>Reply</button>
-            <button data-testid="delete" onClick={() => onDelete(comment)}>Delete</button>
+            <button data-testid="reply" onClick={() => setReplying(true)}>
+              Reply
+            </button>
+            <button data-testid="delete" onClick={() => onDelete(comment)}>
+              Delete
+            </button>
           </div>
         )}
         {replying && !collapsed && (
-          <ReplyBox label={'Reply to ' + comment.author}
-            onSubmit={(text) => { onReply(comment.id, text); setReplying(false); }}
-            onCancel={() => setReplying(false)} />
+          <ReplyBox
+            label={"Reply to " + comment.author}
+            onSubmit={(text) => {
+              onReply(comment.id, text);
+              setReplying(false);
+            }}
+            onCancel={() => setReplying(false)}
+          />
         )}
         {collapsed && hidden > 0 && (
-          <p className="hidden-note">{hidden} {hidden === 1 ? 'reply' : 'replies'} hidden</p>
+          <p className="hidden-note">
+            {hidden} {hidden === 1 ? "reply" : "replies"} hidden
+          </p>
         )}
       </article>
       {!collapsed && comment.replies.length > 0 && (
         <ul className="replies">
           {comment.replies.map((r) => (
-            <Comment key={r.id} comment={r} depth={depth + 1} onReply={onReply} onDelete={onDelete} />
+            <Comment
+              key={r.id}
+              comment={r}
+              depth={depth + 1}
+              onReply={onReply}
+              onDelete={onDelete}
+            />
           ))}
         </ul>
       )}
@@ -7225,20 +9971,51 @@ export default function Comment({ comment, depth, onReply, onDelete }) {
 }
 `,
           "/src/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
-// The helpers return new arrays and copy only the comments on the path to the change.
+// The helpers return new arrays and copy only
+// the comments on the path to the change.
 
 let nextId = 100;
-export const makeId = () => 'c' + nextId++;
+export const makeId = () => "c" + nextId++;
 
 export const initialComments = [
-  { id: 'c1', author: 'Asha', text: 'Should the explorer load folders lazily?', replies: [
-    { id: 'c2', author: 'Ben', text: 'Yes, fetch children on first expand.', replies: [
-      { id: 'c3', author: 'Asha', text: 'And cache them per folder id.', replies: [] },
-      { id: 'c4', author: 'Chen', text: 'Show a spinner row while loading.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Dana', text: 'Only for very large trees.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Eli', text: 'Ship the eager version first.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    text: "Should the explorer load folders lazily?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        text: "Yes, fetch children on first expand.",
+        replies: [
+          {
+            id: "c3",
+            author: "Asha",
+            text: "And cache them per folder id.",
+            replies: [],
+          },
+          {
+            id: "c4",
+            author: "Chen",
+            text: "Show a spinner row while loading.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Dana",
+        text: "Only for very large trees.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Eli",
+    text: "Ship the eager version first.",
+    replies: [],
+  },
 ];
 
 export function addReply(list, parentId, comment) {
@@ -7263,56 +10040,154 @@ export function removeComment(list, id) {
   return changed ? next : list;
 }
 
-export const countAll = (list) => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+export const countAll = (list) =>
+  list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 `,
-          "/src/ReplyBox.js": `import { useEffect, useRef, useState } from 'react';
+          "/src/ReplyBox.js": `import { useEffect, useRef, useState } from "react";
 
 // Controlled textarea. Ctrl+Enter (or Cmd+Enter) posts, Escape cancels.
-export default function ReplyBox({ label, submitLabel = 'Post', onSubmit, onCancel, autoFocus = true }) {
-  const [text, setText] = useState('');
+export default function ReplyBox({
+  label,
+  submitLabel = "Post",
+  onSubmit,
+  onCancel,
+  autoFocus = true,
+}) {
+  const [text, setText] = useState("");
   const ref = useRef(null);
-  useEffect(() => { if (autoFocus) ref.current.focus(); }, [autoFocus]);
+  useEffect(() => {
+    if (autoFocus) ref.current.focus();
+  }, [autoFocus]);
 
   function submit(e) {
     e?.preventDefault();
     if (!text.trim()) return;
     onSubmit(text.trim());
-    setText('');
+    setText("");
   }
 
   return (
     <form className="reply-box" onSubmit={submit}>
-      <textarea ref={ref} aria-label={label} data-testid="reply-text" rows={2} value={text}
+      <textarea
+        ref={ref}
+        aria-label={label}
+        data-testid="reply-text"
+        rows={2}
+        value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submit(e);
-          if (e.key === 'Escape' && onCancel) onCancel();
-        }} />
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submit(e);
+          if (e.key === "Escape" && onCancel) onCancel();
+        }}
+      />
       <div className="reply-actions">
-        <button type="submit" data-testid="post" disabled={!text.trim()}>{submitLabel}</button>
-        {onCancel && <button type="button" onClick={onCancel}>Cancel</button>}
+        <button type="submit" data-testid="post" disabled={!text.trim()}>
+          {submitLabel}
+        </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
       </div>
     </form>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 13px; }
-button:disabled { opacity: 0.45; cursor: default; }
-.thread, .replies { list-style: none; margin: 0; padding: 0; }
-.replies { margin-left: 10px; padding-left: 14px; border-left: 2px solid #262c3b; }
-.comment article { padding: 8px 0; }
-.comment header { display: flex; align-items: center; gap: 8px; }
-.toggle { border: none; background: none; color: #8a93a8; padding: 0 2px; font-family: monospace; }
-.text { margin: 4px 0 6px; line-height: 1.4; overflow-wrap: anywhere; }
-.actions { display: flex; gap: 6px; }
-.hidden-note { margin: 4px 0; color: #8a93a8; font-size: 13px; font-style: italic; }
-.reply-box { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
-.reply-box textarea { background: #161a23; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 8px; font: inherit; resize: vertical; }
-.reply-actions { display: flex; gap: 6px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.thread,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.replies {
+  margin-left: 10px;
+  padding-left: 14px;
+  border-left: 2px solid #262c3b;
+}
+.comment article {
+  padding: 8px 0;
+}
+.comment header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toggle {
+  border: none;
+  background: none;
+  color: #8a93a8;
+  padding: 0 2px;
+  font-family: monospace;
+}
+.text {
+  margin: 4px 0 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.hidden-note {
+  margin: 4px 0;
+  color: #8a93a8;
+  font-size: 13px;
+  font-style: italic;
+}
+.reply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+.reply-box textarea {
+  background: #161a23;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  resize: vertical;
+}
+.reply-actions {
+  display: flex;
+  gap: 6px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 `,
         },
       },
@@ -7346,16 +10221,25 @@ Recursive render with indentation and thread line; inline reply with disabled Po
 
 ~~~js
 function reply(parentId, text) {
-  const comment = { id: makeId(), author: 'You', text, replies: [] };
-  (parentId ? findById(comments, parentId).replies : comments).push(comment);
-  status.value = parentId ? 'Reply posted' : 'Comment posted';
+  const comment = { id: makeId(), author: "You", text, replies: [] };
+  (parentId ? findById(comments, parentId).replies : comments).push(
+    comment,
+  );
+  status.value = parentId ? "Reply posted" : "Comment posted";
 }
 
 function remove(comment) {
   const inside = countAll(comment.replies);
   const siblings = findSiblings(comments, comment.id);
-  siblings.splice(siblings.findIndex((c) => c.id === comment.id), 1);
-  status.value = 'Deleted a comment' + (inside ? ' and ' + inside + (inside === 1 ? ' reply' : ' replies') : '');
+  siblings.splice(
+    siblings.findIndex((c) => c.id === comment.id),
+    1,
+  );
+  status.value =
+    "Deleted a comment" +
+    (inside
+      ? " and " + inside + (inside === 1 ? " reply" : " replies")
+      : "");
 }
 ~~~
 
@@ -7365,7 +10249,12 @@ function remove(comment) {
 
 ~~~vue
 <ul v-if="!collapsed && comment.replies.length" class="replies">
-  <Comment v-for="r in comment.replies" :key="r.id" :comment="r" :depth="depth + 1" />
+  <Comment
+    v-for="r in comment.replies"
+    :key="r.id"
+    :comment="r"
+    :depth="depth + 1"
+  />
 </ul>
 ~~~
 
@@ -7378,9 +10267,16 @@ function remove(comment) {
 ### Step 4: Key modifiers on the reply box
 
 ~~~vue
-<textarea ref="box" v-model="text" :aria-label="label" data-testid="reply-text" rows="2"
-  @keydown.ctrl.enter.prevent="submit" @keydown.meta.enter.prevent="submit"
-  @keydown.escape="cancellable && emit('cancel')"></textarea>
+<textarea
+  ref="box"
+  v-model="text"
+  :aria-label="label"
+  data-testid="reply-text"
+  rows="2"
+  @keydown.ctrl.enter.prevent="submit"
+  @keydown.meta.enter.prevent="submit"
+  @keydown.escape="cancellable && emit('cancel')"
+></textarea>
 ~~~
 
 \`.ctrl.enter\` and \`.meta.enter\` cover Windows/Linux and macOS; \`v-model\` keeps the text in a local ref; Post is \`:disabled="!text.trim()"\`.
@@ -7499,13 +10395,13 @@ Identical to React and Angular: focused, labelled reply box with Post disabled f
 **Conclusion:** In Vue, nested comments are a self-referencing SFC over a deep reactive tree, in-place \`push\` and \`splice\` for reply and delete, provided actions for any depth, and local refs for collapse and reply. Keep keys stable and counts recursive.`,
         files: {
           "/src/App.vue": `<script setup>
-import { computed, provide, reactive, ref } from 'vue';
-import Comment from './components/Comment.vue';
-import ReplyBox from './components/ReplyBox.vue';
-import { createComments, makeId, findSiblings, countAll } from './comments.js';
+import { computed, provide, reactive, ref } from "vue";
+import Comment from "./components/Comment.vue";
+import ReplyBox from "./components/ReplyBox.vue";
+import { createComments, makeId, findSiblings, countAll } from "./comments.js";
 
 const comments = reactive(createComments());
-const status = ref('');
+const status = ref("");
 const total = computed(() => countAll(comments));
 
 function findById(list, id) {
@@ -7518,20 +10414,25 @@ function findById(list, id) {
 }
 
 function reply(parentId, text) {
-  const comment = { id: makeId(), author: 'You', text, replies: [] };
+  const comment = { id: makeId(), author: "You", text, replies: [] };
   (parentId ? findById(comments, parentId).replies : comments).push(comment);
-  status.value = parentId ? 'Reply posted' : 'Comment posted';
+  status.value = parentId ? "Reply posted" : "Comment posted";
 }
 
 function remove(comment) {
   const inside = countAll(comment.replies);
   const siblings = findSiblings(comments, comment.id);
-  siblings.splice(siblings.findIndex((c) => c.id === comment.id), 1);
-  status.value = 'Deleted a comment' + (inside ? ' and ' + inside + (inside === 1 ? ' reply' : ' replies') : '');
+  siblings.splice(
+    siblings.findIndex((c) => c.id === comment.id),
+    1,
+  );
+  status.value =
+    "Deleted a comment" +
+    (inside ? " and " + inside + (inside === 1 ? " reply" : " replies") : "");
 }
 
 // Every Comment, however deep, gets the same two actions without prop drilling.
-provide('thread', { reply, remove });
+provide("thread", { reply, remove });
 </script>
 
 <template>
@@ -7547,40 +10448,147 @@ provide('thread', { reply, remove });
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 560px; margin: 0 auto; padding: 16px; }
-h1 { font-size: 18px; margin: 0 0 12px; }
-button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 13px; }
-button:disabled { opacity: 0.45; cursor: default; }
-.thread, .replies { list-style: none; margin: 0; padding: 0; }
-.replies { margin-left: 10px; padding-left: 14px; border-left: 2px solid #262c3b; }
-.comment article { padding: 8px 0; }
-.comment header { display: flex; align-items: center; gap: 8px; }
-.toggle { border: none; background: none; color: #8a93a8; padding: 0 2px; font-family: monospace; }
-.text { margin: 4px 0 6px; line-height: 1.4; overflow-wrap: anywhere; }
-.actions { display: flex; gap: 6px; }
-.hidden-note { margin: 4px 0; color: #8a93a8; font-size: 13px; font-style: italic; }
-.reply-box { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
-.reply-box textarea { background: #161a23; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 8px; font: inherit; resize: vertical; }
-.reply-actions { display: flex; gap: 6px; }
-.status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.thread,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.replies {
+  margin-left: 10px;
+  padding-left: 14px;
+  border-left: 2px solid #262c3b;
+}
+.comment article {
+  padding: 8px 0;
+}
+.comment header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toggle {
+  border: none;
+  background: none;
+  color: #8a93a8;
+  padding: 0 2px;
+  font-family: monospace;
+}
+.text {
+  margin: 4px 0 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.hidden-note {
+  margin: 4px 0;
+  color: #8a93a8;
+  font-size: 13px;
+  font-style: italic;
+}
+.reply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+.reply-box textarea {
+  background: #161a23;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  resize: vertical;
+}
+.reply-actions {
+  display: flex;
+  gap: 6px;
+}
+.status {
+  min-height: 1.2em;
+  color: #9aa3b5;
+  font-size: 13px;
+}
 </style>
 `,
           "/src/comments.js": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
 // App.vue keeps it in reactive(), so replies are pushed and spliced in place.
 
 let nextId = 100;
-export const makeId = () => 'c' + nextId++;
+export const makeId = () => "c" + nextId++;
 
 export const createComments = () => [
-  { id: 'c1', author: 'Asha', text: 'Should the explorer load folders lazily?', replies: [
-    { id: 'c2', author: 'Ben', text: 'Yes, fetch children on first expand.', replies: [
-      { id: 'c3', author: 'Asha', text: 'And cache them per folder id.', replies: [] },
-      { id: 'c4', author: 'Chen', text: 'Show a spinner row while loading.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Dana', text: 'Only for very large trees.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Eli', text: 'Ship the eager version first.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    text: "Should the explorer load folders lazily?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        text: "Yes, fetch children on first expand.",
+        replies: [
+          {
+            id: "c3",
+            author: "Asha",
+            text: "And cache them per folder id.",
+            replies: [],
+          },
+          {
+            id: "c4",
+            author: "Chen",
+            text: "Show a spinner row while loading.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Dana",
+        text: "Only for very large trees.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Eli",
+    text: "Ship the eager version first.",
+    replies: [],
+  },
 ];
 
 // The array that holds comment \`id\` (its siblings), or null.
@@ -7593,18 +10601,19 @@ export function findSiblings(list, id) {
   return null;
 }
 
-export const countAll = (list) => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+export const countAll = (list) =>
+  list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 `,
           "/src/components/Comment.vue": `<script setup>
-import { computed, inject, ref } from 'vue';
-import ReplyBox from './ReplyBox.vue';
-import { countAll } from '../comments.js';
+import { computed, inject, ref } from "vue";
+import ReplyBox from "./ReplyBox.vue";
+import { countAll } from "../comments.js";
 
 const props = defineProps({
   comment: { type: Object, required: true },
   depth: { type: Number, default: 0 },
 });
-const thread = inject('thread');        // { reply(parentId, text), remove(comment) }
+const thread = inject("thread"); // { reply(parentId, text), remove(comment) }
 
 // UI-only state, local to this comment.
 const collapsed = ref(false);
@@ -7630,37 +10639,55 @@ function post(text) {
         <p class="text">{{ comment.text }}</p>
         <div class="actions">
           <button data-testid="reply" @click="replying = true">Reply</button>
-          <button data-testid="delete" @click="thread.remove(comment)">Delete</button>
+          <button
+            data-testid="delete"
+            @click="thread.remove(comment)"
+          >Delete</button>
         </div>
-        <ReplyBox v-if="replying" :label="'Reply to ' + comment.author" @submit="post" @cancel="replying = false" />
+        <ReplyBox
+          v-if="replying"
+          :label="'Reply to ' + comment.author"
+          @submit="post"
+          @cancel="replying = false"
+        />
       </template>
-      <p v-else-if="hidden" class="hidden-note">{{ hidden }} {{ hidden === 1 ? 'reply' : 'replies' }} hidden</p>
+      <p
+        v-else-if="hidden"
+        class="hidden-note"
+      >{{ hidden }} {{ hidden === 1 ? 'reply' : 'replies' }} hidden</p>
     </article>
     <ul v-if="!collapsed && comment.replies.length" class="replies">
-      <Comment v-for="r in comment.replies" :key="r.id" :comment="r" :depth="depth + 1" />
+      <Comment
+        v-for="r in comment.replies"
+        :key="r.id"
+        :comment="r"
+        :depth="depth + 1"
+      />
     </ul>
   </li>
 </template>
 `,
           "/src/components/ReplyBox.vue": `<script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref } from "vue";
 
 const props = defineProps({
   label: { type: String, required: true },
-  submitLabel: { type: String, default: 'Post' },
+  submitLabel: { type: String, default: "Post" },
   cancellable: { type: Boolean, default: true },
   autoFocus: { type: Boolean, default: true },
 });
-const emit = defineEmits(['submit', 'cancel']);
-const text = ref('');
+const emit = defineEmits(["submit", "cancel"]);
+const text = ref("");
 const box = ref(null);
-onMounted(() => { if (props.autoFocus) box.value.focus(); });
+onMounted(() => {
+  if (props.autoFocus) box.value.focus();
+});
 
 function submit() {
   const t = text.value.trim();
   if (!t) return;
-  emit('submit', t);
-  text.value = '';
+  emit("submit", t);
+  text.value = "";
 }
 </script>
 
@@ -7671,8 +10698,16 @@ function submit() {
       @keydown.ctrl.enter.prevent="submit" @keydown.meta.enter.prevent="submit"
       @keydown.escape="cancellable && emit('cancel')"></textarea>
     <div class="reply-actions">
-      <button type="submit" data-testid="post" :disabled="!text.trim()">{{ submitLabel }}</button>
-      <button v-if="cancellable" type="button" @click="emit('cancel')">Cancel</button>
+      <button
+        type="submit"
+        data-testid="post"
+        :disabled="!text.trim()"
+      >{{ submitLabel }}</button>
+      <button
+        v-if="cancellable"
+        type="button"
+        @click="emit('cancel')"
+      >Cancel</button>
     </div>
   </form>
 </template>
@@ -7709,19 +10744,29 @@ Recursive render, inline reply (blank disabled, Ctrl/Cmd+Enter, Escape), collaps
 ~~~ts
 export class CommentStore {
   readonly comments = signal<CommentNode[]>(initialComments);
-  readonly status = signal('');
+  readonly status = signal("");
   readonly total = computed(() => countAll(this.comments()));
 
   reply(parentId: string | null, text: string) {
-    const comment: CommentNode = { id: makeId(), author: 'You', text, replies: [] };
+    const comment: CommentNode = {
+      id: makeId(),
+      author: "You",
+      text,
+      replies: [],
+    };
     this.comments.update((list) => addReply(list, parentId, comment));
-    this.status.set(parentId ? 'Reply posted' : 'Comment posted');
+    this.status.set(parentId ? "Reply posted" : "Comment posted");
   }
 
   remove(comment: CommentNode) {
     const inside = countAll(comment.replies);
     this.comments.update((list) => removeComment(list, comment.id));
-    this.status.set('Deleted a comment' + (inside ? ' and ' + inside + (inside === 1 ? ' reply' : ' replies') : ''));
+    this.status.set(
+      "Deleted a comment" +
+        (inside
+          ? " and " + inside + (inside === 1 ? " reply" : " replies")
+          : ""),
+    );
   }
 }
 ~~~
@@ -7745,11 +10790,17 @@ The selector \`li[app-comment]\` makes the \`<li>\` itself the component host, s
 ### Step 3: Key event bindings
 
 ~~~ts
-<textarea #box [attr.aria-label]="label" data-testid="reply-text" rows="2" [value]="text()"
+<textarea
+  #box
+  [attr.aria-label]="label"
+  data-testid="reply-text"
+  rows="2"
+  [value]="text()"
   (input)="text.set(box.value)"
   (keydown.control.enter)="$event.preventDefault(); submit()"
   (keydown.meta.enter)="$event.preventDefault(); submit()"
-  (keydown.escape)="cancellable && cancel.emit()"></textarea>
+  (keydown.escape)="cancellable && cancel.emit()"
+></textarea>
 ~~~
 
 Angular's key event syntax filters by key and modifiers: \`(keydown.control.enter)\` and \`(keydown.meta.enter)\` post, \`(keydown.escape)\` cancels. The output is named \`posted\`, not \`submit\`, because an output called \`submit\` would collide with the native \`submit\` event bubbling from the inner form, and the parent's handler would also run with the DOM event. A probe with an \`@Output() submit\` on a component wrapping a form, bound as \`(submit)="got($event)"\`, logged two calls for one click in both AOT and JIT:
@@ -7875,13 +10926,13 @@ Identical to React and Vue: labelled, focused box with Post disabled for blank t
 
 **Conclusion:** In Angular, nested comments are a recursive \`li[app-comment]\` that imports itself, a component-scoped signal store with immutable helpers, local signals for collapse and reply, and a reply box with key event bindings. Name outputs so they never collide with DOM events.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from '@angular/core';
-import { CommentStore } from './comment-store';
-import { CommentComponent } from './comment.component';
-import { ReplyBoxComponent } from './reply-box.component';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
+import { CommentStore } from "./comment-store";
+import { CommentComponent } from "./comment.component";
+import { ReplyBoxComponent } from "./reply-box.component";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CommentComponent, ReplyBoxComponent],
   providers: [CommentStore],
@@ -7896,10 +10947,15 @@ import { ReplyBoxComponent } from './reply-box.component';
           <li app-comment [comment]="c" [depth]="0"></li>
         }
       </ul>
-      <p class="status" role="status" data-testid="status">{{ store.status() }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ store.status() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 560px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 18px; margin: 0 0 12px; }
@@ -7917,45 +10973,68 @@ import { ReplyBoxComponent } from './reply-box.component';
     .reply-box textarea { background: #161a23; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 8px; font: inherit; resize: vertical; }
     .reply-actions { display: flex; gap: 6px; }
     .status { min-height: 1.2em; color: #9aa3b5; font-size: 13px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   store = inject(CommentStore);
 }
 `,
-          "/src/app/comment-store.ts": `import { Injectable, computed, signal } from '@angular/core';
-import { CommentNode, initialComments, makeId, addReply, removeComment, countAll } from './comments';
+          "/src/app/comment-store.ts": `import { Injectable, computed, signal } from "@angular/core";
+import {
+  CommentNode,
+  initialComments,
+  makeId,
+  addReply,
+  removeComment,
+  countAll,
+} from "./comments";
 
-// Provided by AppComponent; every recursive CommentComponent injects the same one.
+// Provided by AppComponent; every recursive
+// CommentComponent injects the same one.
 @Injectable()
 export class CommentStore {
   readonly comments = signal<CommentNode[]>(initialComments);
-  readonly status = signal('');
+  readonly status = signal("");
   readonly total = computed(() => countAll(this.comments()));
 
   reply(parentId: string | null, text: string) {
-    const comment: CommentNode = { id: makeId(), author: 'You', text, replies: [] };
+    const comment: CommentNode = {
+      id: makeId(),
+      author: "You",
+      text,
+      replies: [],
+    };
     this.comments.update((list) => addReply(list, parentId, comment));
-    this.status.set(parentId ? 'Reply posted' : 'Comment posted');
+    this.status.set(parentId ? "Reply posted" : "Comment posted");
   }
 
   remove(comment: CommentNode) {
     const inside = countAll(comment.replies);
     this.comments.update((list) => removeComment(list, comment.id));
-    this.status.set('Deleted a comment' + (inside ? ' and ' + inside + (inside === 1 ? ' reply' : ' replies') : ''));
+    this.status.set(
+      "Deleted a comment" +
+        (inside
+          ? " and " + inside + (inside === 1 ? " reply" : " replies")
+          : ""),
+    );
   }
 }
 `,
-          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject, signal } from '@angular/core';
-import { CommentStore } from './comment-store';
-import { ReplyBoxComponent } from './reply-box.component';
-import { CommentNode, countAll } from './comments';
+          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject, signal } from "@angular/core";
+import { CommentStore } from "./comment-store";
+import { ReplyBoxComponent } from "./reply-box.component";
+import { CommentNode, countAll } from "./comments";
 
 @Component({
-  selector: 'li[app-comment]',
+  selector: "li[app-comment]",
   standalone: true,
   imports: [ReplyBoxComponent, forwardRef(() => CommentComponent)],
-  host: { class: 'comment', '[attr.data-id]': 'comment.id', '[attr.data-depth]': 'depth' },
+  host: {
+    class: "comment",
+    "[attr.data-id]": "comment.id",
+    "[attr.data-depth]": "depth",
+  },
   template: \`
     <article [attr.aria-label]="'Comment by ' + comment.author">
       <header>
@@ -7967,11 +11046,21 @@ import { CommentNode, countAll } from './comments';
       @if (!collapsed()) {
         <p class="text">{{ comment.text }}</p>
         <div class="actions">
-          <button data-testid="reply" (click)="replying.set(true)">Reply</button>
-          <button data-testid="delete" (click)="store.remove(comment)">Delete</button>
+          <button
+            data-testid="reply"
+            (click)="replying.set(true)"
+          >Reply</button>
+          <button
+            data-testid="delete"
+            (click)="store.remove(comment)"
+          >Delete</button>
         </div>
         @if (replying()) {
-          <app-reply-box [label]="'Reply to ' + comment.author" (posted)="post($event)" (cancel)="replying.set(false)" />
+          <app-reply-box
+            [label]="'Reply to ' + comment.author"
+            (posted)="post($event)"
+            (cancel)="replying.set(false)"
+          />
         }
       } @else if (hidden) {
         <p class="hidden-note">{{ hidden }} {{ hidden === 1 ? 'reply' : 'replies' }} hidden</p>
@@ -7994,7 +11083,9 @@ export class CommentComponent {
   collapsed = signal(false);
   replying = signal(false);
 
-  get hidden() { return countAll(this.comment.replies); }
+  get hidden() {
+    return countAll(this.comment.replies);
+  }
 
   post(text: string) {
     this.store.reply(this.comment.id, text);
@@ -8003,25 +11094,65 @@ export class CommentComponent {
 }
 `,
           "/src/app/comments.ts": `// Comments are a NESTED tree: { id, author, text, replies: [...] }.
-// Signals compare by reference, so the helpers return new arrays and copy only the comments on the path to the change.
+// Signals compare by reference, so the helpers return new
+// arrays and copy only the comments on the path to the change.
 
-export interface CommentNode { id: string; author: string; text: string; replies: CommentNode[]; }
+export interface CommentNode {
+  id: string;
+  author: string;
+  text: string;
+  replies: CommentNode[];
+}
 
 let nextId = 100;
-export const makeId = () => 'c' + nextId++;
+export const makeId = () => "c" + nextId++;
 
 export const initialComments: CommentNode[] = [
-  { id: 'c1', author: 'Asha', text: 'Should the explorer load folders lazily?', replies: [
-    { id: 'c2', author: 'Ben', text: 'Yes, fetch children on first expand.', replies: [
-      { id: 'c3', author: 'Asha', text: 'And cache them per folder id.', replies: [] },
-      { id: 'c4', author: 'Chen', text: 'Show a spinner row while loading.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Dana', text: 'Only for very large trees.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Eli', text: 'Ship the eager version first.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    text: "Should the explorer load folders lazily?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        text: "Yes, fetch children on first expand.",
+        replies: [
+          {
+            id: "c3",
+            author: "Asha",
+            text: "And cache them per folder id.",
+            replies: [],
+          },
+          {
+            id: "c4",
+            author: "Chen",
+            text: "Show a spinner row while loading.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Dana",
+        text: "Only for very large trees.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Eli",
+    text: "Ship the eager version first.",
+    replies: [],
+  },
 ];
 
-export function addReply(list: CommentNode[], parentId: string | null, comment: CommentNode): CommentNode[] {
+export function addReply(
+  list: CommentNode[],
+  parentId: string | null,
+  comment: CommentNode,
+): CommentNode[] {
   if (parentId === null) return [...list, comment];
   return list.map((c) => {
     if (c.id === parentId) return { ...c, replies: [...c.replies, comment] };
@@ -8043,12 +11174,25 @@ export function removeComment(list: CommentNode[], id: string): CommentNode[] {
   return changed ? next : list;
 }
 
-export const countAll = (list: CommentNode[]): number => list.reduce((n: number, c: CommentNode): number => n + 1 + countAll(c.replies), 0);
+export const countAll = (list: CommentNode[]): number =>
+  list.reduce(
+    (n: number, c: CommentNode): number => n + 1 + countAll(c.replies),
+    0,
+  );
 `,
-          "/src/app/reply-box.component.ts": `import { AfterViewInit, Component, ElementRef, EventEmitter, Input, Output, ViewChild, signal } from '@angular/core';
+          "/src/app/reply-box.component.ts": `import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  signal,
+} from "@angular/core";
 
 @Component({
-  selector: 'app-reply-box',
+  selector: "app-reply-box",
   standalone: true,
   template: \`
     <form class="reply-box" (submit)="$event.preventDefault(); submit()">
@@ -8058,7 +11202,11 @@ export const countAll = (list: CommentNode[]): number => list.reduce((n: number,
         (keydown.meta.enter)="$event.preventDefault(); submit()"
         (keydown.escape)="cancellable && cancel.emit()"></textarea>
       <div class="reply-actions">
-        <button type="submit" data-testid="post" [disabled]="!text().trim()">{{ submitLabel }}</button>
+        <button
+          type="submit"
+          data-testid="post"
+          [disabled]="!text().trim()"
+        >{{ submitLabel }}</button>
         @if (cancellable) {
           <button type="button" (click)="cancel.emit()">Cancel</button>
         }
@@ -8067,22 +11215,24 @@ export const countAll = (list: CommentNode[]): number => list.reduce((n: number,
   \`,
 })
 export class ReplyBoxComponent implements AfterViewInit {
-  @Input() label = '';
-  @Input() submitLabel = 'Post';
+  @Input() label = "";
+  @Input() submitLabel = "Post";
   @Input() cancellable = true;
   @Input() autoFocus = true;
   @Output() posted = new EventEmitter<string>();
   @Output() cancel = new EventEmitter<void>();
-  @ViewChild('box') box!: ElementRef<HTMLTextAreaElement>;
-  text = signal('');
+  @ViewChild("box") box!: ElementRef<HTMLTextAreaElement>;
+  text = signal("");
 
-  ngAfterViewInit() { if (this.autoFocus) this.box.nativeElement.focus(); }
+  ngAfterViewInit() {
+    if (this.autoFocus) this.box.nativeElement.focus();
+  }
 
   submit() {
     const t = this.text().trim();
     if (!t) return;
     this.posted.emit(t);
-    this.text.set('');
+    this.text.set("");
   }
 }
 `,
@@ -8197,7 +11347,13 @@ Rolling back to the *confirmed* value, not to "the value before this click", is 
 ~~~js
 export function sendVote(id, vote, fail) {
   return new Promise((resolve, reject) => {
-    setTimeout(() => (fail ? reject(new Error('Network error')) : resolve({ id, vote })), 300);
+    setTimeout(
+      () =>
+        fail
+          ? reject(new Error("Network error"))
+          : resolve({ id, vote }),
+      300,
+    );
   });
 }
 ~~~
@@ -8209,18 +11365,25 @@ The \`fail\` flag is captured when the request is sent, so the driver can make o
 ~~~jsx
 function vote(comment, dir) {
   const id = comment.id;
-  const next = (votes[id] || 0) === dir ? 0 : dir;   // same arrow again = remove my vote
-  setVotes((v) => ({ ...v, [id]: next }));           // 1. optimistic: show it now
+  // same arrow again = remove my vote
+  const next = (votes[id] || 0) === dir ? 0 : dir;
+  setVotes((v) => ({ ...v, [id]: next })); // 1. optimistic: show it now
   const seq = (latest.current[id] || 0) + 1;
   latest.current[id] = seq;
   sendVote(id, next, simulateFailure).then(
-    () => {                                          // 2a. confirmed
+    () => {
+      // 2a. confirmed
       if (latest.current[id] === seq) confirmed.current[id] = next;
     },
-    () => {                                          // 2b. failed: roll back, unless a newer click superseded this one
+    () => {
+      // 2b. failed: roll back, unless a newer click superseded this one
       if (latest.current[id] !== seq) return;
       setVotes((v) => ({ ...v, [id]: confirmed.current[id] || 0 }));
-      setStatus('Could not save your vote on the comment by ' + comment.author + '. It was restored.');
+      setStatus(
+        "Could not save your vote on the comment by " +
+          comment.author +
+          ". It was restored.",
+      );
     },
   );
 }
@@ -8236,7 +11399,8 @@ function vote(comment, dir) {
 
 ~~~js
 export const SORTS = {
-  best: (a, b) => b.score - a.score || a.at - b.at,  // ranked by server score, ties: older first
+  // ranked by server score, ties: older first
+  best: (a, b) => b.score - a.score || a.at - b.at,
   new: (a, b) => b.at - a.at,
 };
 ~~~
@@ -8246,20 +11410,39 @@ export const SORTS = {
 ### Step 4: Lifted collapse, thread lines, depth limit
 
 ~~~jsx
-{!collapsed && replies.length > 0 && (tooDeep ? (
-  <button className="continue" data-testid="continue" onClick={() => ctx.openThread(comment.id)}>
-    Continue this thread ({countAll(comment.replies)} more)
-  </button>
-) : (
-  <div className="branch">
-    {/* The thread line is a real button: clicking the rail collapses this comment. */}
-    <button className="rail" data-testid="rail" aria-label={'Collapse thread by ' + comment.author}
-      onClick={() => ctx.toggleCollapsed(comment.id)} />
-    <ul className="replies">
-      {replies.map((r) => <Comment key={r.id} comment={r} depth={depth + 1} ctx={ctx} />)}
-    </ul>
-  </div>
-))}
+{
+  !collapsed &&
+    replies.length > 0 &&
+    (tooDeep ? (
+      <button
+        className="continue"
+        data-testid="continue"
+        onClick={() => ctx.openThread(comment.id)}
+      >
+        Continue this thread ({countAll(comment.replies)} more)
+      </button>
+    ) : (
+      <div className="branch">
+        {/* The thread line is a real button: clicking the rail collapses this comment. */}
+        <button
+          className="rail"
+          data-testid="rail"
+          aria-label={"Collapse thread by " + comment.author}
+          onClick={() => ctx.toggleCollapsed(comment.id)}
+        />
+        <ul className="replies">
+          {replies.map((r) => (
+            <Comment
+              key={r.id}
+              comment={r}
+              depth={depth + 1}
+              ctx={ctx}
+            />
+          ))}
+        </ul>
+      </div>
+    ));
+}
 ~~~
 
 Collapse lives in a \`Set\` in \`App\` instead of each \`Comment\`. That matters here: the "continue this thread" view renders the same comments under a different parent, and a component-local flag would reset on remount. The thread line is a real \`<button>\` with an \`aria-label\`, so it is focusable and announced. Past \`MAX_DEPTH\`, replies are replaced by a "Continue this thread" button that sets \`threadId\`.
@@ -8267,7 +11450,8 @@ Collapse lives in a \`Set\` in \`App\` instead of each \`Comment\`. That matters
 ### Step 5: Focus after switching views
 
 ~~~jsx
-// After switching between the full list and one thread, move focus to the heading.
+// After switching between the full list and
+// one thread, move focus to the heading.
 useEffect(() => {
   if (!focusHeading.current) return;
   focusHeading.current = false;
@@ -8409,24 +11593,32 @@ Read it as: Best ranks by score at every level, and New by time; \`c8\` is hidde
 
 **Conclusion:** The hard parts of a voting thread are not visual: keep server data and the user's vote apart, update optimistically, roll back to a confirmed value, and let only the newest request win. Rank on stable data, lift collapse into a \`Set\` of ids so it survives every view, cap the depth with a focus-managed "continue" view, and the widget behaves like the real thing. The single-button version of the voting idea is the [Like button](/interview-question/build-a-like-button).`,
         files: {
-          "/App.js": `import { useEffect, useRef, useState } from 'react';
-import Comment from './src/Comment';
-import { initialComments, sortLevel, findComment, sendVote } from './src/thread';
+          "/App.js": `import { useEffect, useRef, useState } from "react";
+import Comment from "./src/Comment";
+import {
+  initialComments,
+  sortLevel,
+  findComment,
+  sendVote,
+} from "./src/thread";
 
 export default function App() {
   const [comments] = useState(initialComments);
-  const [sort, setSort] = useState('best');
-  const [votes, setVotes] = useState({});              // id -> -1 | 0 | 1, shown optimistically
+  const [sort, setSort] = useState("best");
+  // id -> -1 | 0 | 1, shown optimistically
+  const [votes, setVotes] = useState({});
   const [collapsed, setCollapsed] = useState(() => new Set());
-  const [threadId, setThreadId] = useState(null);      // "continue this thread" root, or null
+  // "continue this thread" root, or null
+  const [threadId, setThreadId] = useState(null);
   const [simulateFailure, setSimulateFailure] = useState(false);
-  const [status, setStatus] = useState('');
-  const confirmed = useRef({});                         // id -> last vote the server accepted
-  const latest = useRef({});                            // id -> sequence number of the newest request
+  const [status, setStatus] = useState("");
+  const confirmed = useRef({}); // id -> last vote the server accepted
+  const latest = useRef({}); // id -> sequence number of the newest request
   const headingRef = useRef(null);
   const focusHeading = useRef(false);
 
-  // After switching between the full list and one thread, move focus to the heading.
+  // After switching between the full list and
+  // one thread, move focus to the heading.
   useEffect(() => {
     if (!focusHeading.current) return;
     focusHeading.current = false;
@@ -8440,18 +11632,25 @@ export default function App() {
 
   function vote(comment, dir) {
     const id = comment.id;
-    const next = (votes[id] || 0) === dir ? 0 : dir;   // same arrow again = remove my vote
-    setVotes((v) => ({ ...v, [id]: next }));           // 1. optimistic: show it now
+    // same arrow again = remove my vote
+    const next = (votes[id] || 0) === dir ? 0 : dir;
+    setVotes((v) => ({ ...v, [id]: next })); // 1. optimistic: show it now
     const seq = (latest.current[id] || 0) + 1;
     latest.current[id] = seq;
     sendVote(id, next, simulateFailure).then(
-      () => {                                          // 2a. confirmed
+      () => {
+        // 2a. confirmed
         if (latest.current[id] === seq) confirmed.current[id] = next;
       },
-      () => {                                          // 2b. failed: roll back, unless a newer click superseded this one
+      () => {
+        // 2b. failed: roll back, unless a newer click superseded this one
         if (latest.current[id] !== seq) return;
         setVotes((v) => ({ ...v, [id]: confirmed.current[id] || 0 }));
-        setStatus('Could not save your vote on the comment by ' + comment.author + '. It was restored.');
+        setStatus(
+          "Could not save your vote on the comment by " +
+            comment.author +
+            ". It was restored.",
+        );
       },
     );
   }
@@ -8459,42 +11658,70 @@ export default function App() {
   function toggleCollapsed(id) {
     setCollapsed((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   const ctx = { votes, collapsed, sort, vote, toggleCollapsed, openThread };
-  const root = threadId ? [findComment(comments, threadId)] : sortLevel(comments, sort);
+  const root = threadId
+    ? [findComment(comments, threadId)]
+    : sortLevel(comments, sort);
 
   return (
     <div className="app">
       <div className="bar">
-        <h1 ref={headingRef} tabIndex={-1}>{threadId ? 'Thread' : 'Discussion'}</h1>
-        <label>Sort{' '}
-          <select data-testid="sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <h1 ref={headingRef} tabIndex={-1}>
+          {threadId ? "Thread" : "Discussion"}
+        </h1>
+        <label>
+          Sort{" "}
+          <select
+            data-testid="sort"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="best">Best</option>
             <option value="new">New</option>
           </select>
         </label>
       </div>
       <label className="fail">
-        <input type="checkbox" data-testid="fail" checked={simulateFailure}
-          onChange={(e) => setSimulateFailure(e.target.checked)} /> Simulate vote failures
+        <input
+          type="checkbox"
+          data-testid="fail"
+          checked={simulateFailure}
+          onChange={(e) => setSimulateFailure(e.target.checked)}
+        />{" "}
+        Simulate vote failures
       </label>
-      {threadId && <button className="back" data-testid="back" onClick={() => openThread(null)}>← Back to all comments</button>}
+      {threadId && (
+        <button
+          className="back"
+          data-testid="back"
+          onClick={() => openThread(null)}
+        >
+          ← Back to all comments
+        </button>
+      )}
       <ul className="thread">
-        {root.map((c) => <Comment key={c.id} comment={c} depth={0} ctx={ctx} />)}
+        {root.map((c) => (
+          <Comment key={c.id} comment={c} depth={0} ctx={ctx} />
+        ))}
       </ul>
-      <p className="status" role="status" data-testid="status">{status}</p>
+      <p className="status" role="status" data-testid="status">
+        {status}
+      </p>
     </div>
   );
 }
 `,
-          "/src/Comment.js": `import { MAX_DEPTH, countAll, sortLevel } from './thread';
+          "/src/Comment.js": `import { MAX_DEPTH, countAll, sortLevel } from "./thread";
 
 // Recursive comment. All state (votes, collapsed ids, sort) is owned by App and
-// passed down in \`ctx\`, so it survives re-sorting and the "continue thread" view.
+// passed down in \`ctx\`, so it survives
+// re-sorting and the "continue thread" view.
 export default function Comment({ comment, depth, ctx }) {
   const myVote = ctx.votes[comment.id] || 0;
   const points = comment.score + myVote;
@@ -8504,43 +11731,83 @@ export default function Comment({ comment, depth, ctx }) {
 
   return (
     <li className="comment" data-id={comment.id} data-depth={depth}>
-      <article aria-label={'Comment by ' + comment.author}>
+      <article aria-label={"Comment by " + comment.author}>
         <header>
-          <button className="toggle" data-testid="toggle" aria-expanded={!collapsed}
-            aria-label={(collapsed ? 'Expand' : 'Collapse') + ' thread by ' + comment.author}
-            onClick={() => ctx.toggleCollapsed(comment.id)}>{collapsed ? '[+]' : '[-]'}</button>
+          <button
+            className="toggle"
+            data-testid="toggle"
+            aria-expanded={!collapsed}
+            aria-label={
+              (collapsed ? "Expand" : "Collapse") +
+              " thread by " +
+              comment.author
+            }
+            onClick={() => ctx.toggleCollapsed(comment.id)}
+          >
+            {collapsed ? "[+]" : "[-]"}
+          </button>
           <strong>{comment.author}</strong>
-          <span className="points" data-testid="points">{points} {Math.abs(points) === 1 ? 'point' : 'points'}</span>
+          <span className="points" data-testid="points">
+            {points} {Math.abs(points) === 1 ? "point" : "points"}
+          </span>
           {collapsed && countAll(comment.replies) > 0 && (
-            <span className="hidden-note">{countAll(comment.replies)} hidden</span>
+            <span className="hidden-note">
+              {countAll(comment.replies)} hidden
+            </span>
           )}
         </header>
         {!collapsed && (
           <>
             <p className="text">{comment.text}</p>
             <div className="actions">
-              <button className={'vote up' + (myVote === 1 ? ' on' : '')} data-testid="up" aria-pressed={myVote === 1}
-                aria-label={'Upvote comment by ' + comment.author} onClick={() => ctx.vote(comment, 1)}>▲</button>
-              <button className={'vote down' + (myVote === -1 ? ' on' : '')} data-testid="down" aria-pressed={myVote === -1}
-                aria-label={'Downvote comment by ' + comment.author} onClick={() => ctx.vote(comment, -1)}>▼</button>
+              <button
+                className={"vote up" + (myVote === 1 ? " on" : "")}
+                data-testid="up"
+                aria-pressed={myVote === 1}
+                aria-label={"Upvote comment by " + comment.author}
+                onClick={() => ctx.vote(comment, 1)}
+              >
+                ▲
+              </button>
+              <button
+                className={"vote down" + (myVote === -1 ? " on" : "")}
+                data-testid="down"
+                aria-pressed={myVote === -1}
+                aria-label={"Downvote comment by " + comment.author}
+                onClick={() => ctx.vote(comment, -1)}
+              >
+                ▼
+              </button>
             </div>
           </>
         )}
       </article>
-      {!collapsed && replies.length > 0 && (tooDeep ? (
-        <button className="continue" data-testid="continue" onClick={() => ctx.openThread(comment.id)}>
-          Continue this thread ({countAll(comment.replies)} more)
-        </button>
-      ) : (
-        <div className="branch">
-          {/* The thread line is a real button: clicking the rail collapses this comment. */}
-          <button className="rail" data-testid="rail" aria-label={'Collapse thread by ' + comment.author}
-            onClick={() => ctx.toggleCollapsed(comment.id)} />
-          <ul className="replies">
-            {replies.map((r) => <Comment key={r.id} comment={r} depth={depth + 1} ctx={ctx} />)}
-          </ul>
-        </div>
-      ))}
+      {!collapsed &&
+        replies.length > 0 &&
+        (tooDeep ? (
+          <button
+            className="continue"
+            data-testid="continue"
+            onClick={() => ctx.openThread(comment.id)}
+          >
+            Continue this thread ({countAll(comment.replies)} more)
+          </button>
+        ) : (
+          <div className="branch">
+            {/* The thread line is a real button: clicking the rail collapses this comment. */}
+            <button
+              className="rail"
+              data-testid="rail"
+              aria-label={"Collapse thread by " + comment.author}
+              onClick={() => ctx.toggleCollapsed(comment.id)}
+            />
+            <ul className="replies">
+              {replies.map((r) => (
+                <Comment key={r.id} comment={r} depth={depth + 1} ctx={ctx} />
+              ))}
+            </ul>
+          </div>
+        ))}
     </li>
   );
 }
@@ -8548,30 +11815,89 @@ export default function Comment({ comment, depth, ctx }) {
           "/src/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
-export const MAX_DEPTH = 3;   // depth 0..3 render inline, deeper replies get "Continue this thread"
+// depth 0..3 render inline, deeper replies get "Continue this thread"
+export const MAX_DEPTH = 3;
 
 export const initialComments = [
-  { id: 'c1', author: 'Asha', at: 10, score: 10, text: 'Lazy-load folder children on first expand?', replies: [
-    { id: 'c2', author: 'Ben', at: 40, score: 5, text: 'Yes, and cache them by folder id.', replies: [
-      { id: 'c3', author: 'Chen', at: 50, score: 1, text: 'Invalidate the cache on rename.', replies: [
-        { id: 'c7', author: 'Dana', at: 70, score: 2, text: 'Or key it by path and id.', replies: [
-          { id: 'c8', author: 'Eli', at: 80, score: 1, text: 'Ids survive a rename, paths do not.', replies: [] },
-        ] },
-      ] },
-      { id: 'c4', author: 'Fay', at: 60, score: 3, text: 'Show a spinner row meanwhile.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Gus', at: 30, score: 9, text: 'Only for trees over a few thousand nodes.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Hana', at: 5, score: 15, text: 'Ship the eager version first, measure later.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    at: 10,
+    score: 10,
+    text: "Lazy-load folder children on first expand?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        at: 40,
+        score: 5,
+        text: "Yes, and cache them by folder id.",
+        replies: [
+          {
+            id: "c3",
+            author: "Chen",
+            at: 50,
+            score: 1,
+            text: "Invalidate the cache on rename.",
+            replies: [
+              {
+                id: "c7",
+                author: "Dana",
+                at: 70,
+                score: 2,
+                text: "Or key it by path and id.",
+                replies: [
+                  {
+                    id: "c8",
+                    author: "Eli",
+                    at: 80,
+                    score: 1,
+                    text: "Ids survive a rename, paths do not.",
+                    replies: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: "c4",
+            author: "Fay",
+            at: 60,
+            score: 3,
+            text: "Show a spinner row meanwhile.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Gus",
+        at: 30,
+        score: 9,
+        text: "Only for trees over a few thousand nodes.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Hana",
+    at: 5,
+    score: 15,
+    text: "Ship the eager version first, measure later.",
+    replies: [],
+  },
 ];
 
 export const SORTS = {
-  best: (a, b) => b.score - a.score || a.at - b.at,  // ranked by server score, ties: older first
+  // ranked by server score, ties: older first
+  best: (a, b) => b.score - a.score || a.at - b.at,
   new: (a, b) => b.at - a.at,
 };
 
 export const sortLevel = (list, sort) => [...list].sort(SORTS[sort]);
-export const countAll = (list) => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+export const countAll = (list) =>
+  list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 
 export function findComment(list, id) {
   for (const c of list) {
@@ -8582,37 +11908,142 @@ export function findComment(list, id) {
   return null;
 }
 
-// Simulated server: resolves after 300 ms, or rejects when \`fail\` was on at send time.
+// Simulated server: resolves after 300 ms, or
+// rejects when \`fail\` was on at send time.
 export function sendVote(id, vote, fail) {
   return new Promise((resolve, reject) => {
-    setTimeout(() => (fail ? reject(new Error('Network error')) : resolve({ id, vote })), 300);
+    setTimeout(
+      () => (fail ? reject(new Error("Network error")) : resolve({ id, vote })),
+      300,
+    );
   });
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 600px; margin: 0 auto; padding: 16px; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-h1 { font-size: 18px; margin: 0; outline: none; }
-select, button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 8px; cursor: pointer; font: inherit; font-size: 13px; }
-.fail { display: block; margin: 8px 0; color: #9aa3b5; font-size: 13px; }
-.back { margin-bottom: 8px; }
-.thread, .replies { list-style: none; margin: 0; padding: 0; }
-.comment article { padding: 6px 0; }
-.comment header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.toggle { border: none; background: none; color: #8a93a8; padding: 0 2px; font-family: monospace; }
-.points { color: #9aa3b5; font-size: 13px; }
-.hidden-note { color: #8a93a8; font-size: 13px; font-style: italic; }
-.text { margin: 4px 0 6px; line-height: 1.4; overflow-wrap: anywhere; }
-.actions { display: flex; gap: 6px; }
-.vote { width: 32px; padding: 2px 0; }
-.vote.up.on { color: #ff9e64; border-color: #ff9e64; }
-.vote.down.on { color: #7aa2f7; border-color: #7aa2f7; }
-.branch { display: flex; }
-.rail { flex: 0 0 14px; margin: 0 6px 0 4px; padding: 0; border: none; border-radius: 0; background: none; border-left: 2px solid #262c3b; }
-.rail:hover, .rail:focus-visible { border-left-color: #6ea8ff; }
-.replies { flex: 1; min-width: 0; }
-.continue { margin: 4px 0 8px 22px; color: #8ab4ff; background: none; border: none; }
-.status { min-height: 1.2em; color: #ff8a80; font-size: 13px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+  outline: none;
+}
+select,
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.fail {
+  display: block;
+  margin: 8px 0;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.back {
+  margin-bottom: 8px;
+}
+.thread,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.comment article {
+  padding: 6px 0;
+}
+.comment header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.toggle {
+  border: none;
+  background: none;
+  color: #8a93a8;
+  padding: 0 2px;
+  font-family: monospace;
+}
+.points {
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.hidden-note {
+  color: #8a93a8;
+  font-size: 13px;
+  font-style: italic;
+}
+.text {
+  margin: 4px 0 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.vote {
+  width: 32px;
+  padding: 2px 0;
+}
+.vote.up.on {
+  color: #ff9e64;
+  border-color: #ff9e64;
+}
+.vote.down.on {
+  color: #7aa2f7;
+  border-color: #7aa2f7;
+}
+.branch {
+  display: flex;
+}
+.rail {
+  flex: 0 0 14px;
+  margin: 0 6px 0 4px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  border-left: 2px solid #262c3b;
+}
+.rail:hover,
+.rail:focus-visible {
+  border-left-color: #6ea8ff;
+}
+.replies {
+  flex: 1;
+  min-width: 0;
+}
+.continue {
+  margin: 4px 0 8px 22px;
+  color: #8ab4ff;
+  background: none;
+  border: none;
+}
+.status {
+  min-height: 1.2em;
+  color: #ff8a80;
+  font-size: 13px;
+}
 `,
         },
       },
@@ -8649,15 +12080,21 @@ Up/down votes with \`aria-pressed\`, optimistic with rollback and a stale-respon
 function vote(comment, dir) {
   const id = comment.id;
   const next = (votes[id] || 0) === dir ? 0 : dir;
-  votes[id] = next;                          // 1. optimistic
+  votes[id] = next; // 1. optimistic
   const seq = (latest[id] || 0) + 1;
   latest[id] = seq;
   sendVote(id, next, simulateFailure.value).then(
-    () => { if (latest[id] === seq) confirmed[id] = next; },
-    () => {                                  // 2. roll back only if no newer click replaced this one
+    () => {
+      if (latest[id] === seq) confirmed[id] = next;
+    },
+    () => {
+      // 2. roll back only if no newer click replaced this one
       if (latest[id] !== seq) return;
       votes[id] = confirmed[id] || 0;
-      status.value = 'Could not save your vote on the comment by ' + comment.author + '. It was restored.';
+      status.value =
+        "Could not save your vote on the comment by " +
+        comment.author +
+        ". It was restored.";
     },
   );
 }
@@ -8673,9 +12110,13 @@ function vote(comment, dir) {
 const myVote = computed(() => ctx.votes[props.comment.id] || 0);
 const points = computed(() => props.comment.score + myVote.value);
 const collapsed = computed(() => ctx.collapsed.has(props.comment.id));
-const replies = computed(() => sortLevel(props.comment.replies, ctx.sort));
+const replies = computed(() =>
+  sortLevel(props.comment.replies, ctx.sort),
+);
 const hidden = computed(() => countAll(props.comment.replies));
-const tooDeep = computed(() => props.depth >= MAX_DEPTH && replies.value.length > 0);
+const tooDeep = computed(
+  () => props.depth >= MAX_DEPTH && replies.value.length > 0,
+);
 ~~~
 
 Each comment derives its points as \`score + myVote\`, and sorts its own replies with \`sortLevel\`, which returns a sorted copy. Best ranks by the server score only, so a vote never moves a row under the pointer.
@@ -8684,14 +12125,28 @@ Each comment derives its points as \`score + myVote\`, and sorts its own replies
 
 ~~~vue
 <template v-if="!collapsed && replies.length">
-  <button v-if="tooDeep" class="continue" data-testid="continue" @click="ctx.openThread(comment.id)">
+  <button
+    v-if="tooDeep"
+    class="continue"
+    data-testid="continue"
+    @click="ctx.openThread(comment.id)"
+  >
     Continue this thread ({{ hidden }} more)
   </button>
   <div v-else class="branch">
-    <button class="rail" data-testid="rail" :aria-label="'Collapse thread by ' + comment.author"
-      @click="ctx.toggleCollapsed(comment.id)"></button>
+    <button
+      class="rail"
+      data-testid="rail"
+      :aria-label="'Collapse thread by ' + comment.author"
+      @click="ctx.toggleCollapsed(comment.id)"
+    ></button>
     <ul class="replies">
-      <Comment v-for="r in replies" :key="r.id" :comment="r" :depth="depth + 1" />
+      <Comment
+        v-for="r in replies"
+        :key="r.id"
+        :comment="r"
+        :depth="depth + 1"
+      />
     </ul>
   </div>
 </template>
@@ -8827,42 +12282,53 @@ The behaviour lines match React and Angular exactly: instant votes with \`aria-p
 **Conclusion:** In Vue, a voting thread is a reactive vote map beside untouched server data, an optimistic flow with a confirmed rollback target and a sequence guard, per-level sorted copies on stable data, a lifted reactive \`Set\` for collapse, and a focus-managed continue-thread view.`,
         files: {
           "/src/App.vue": `<script setup>
-import { computed, nextTick, provide, reactive, ref } from 'vue';
-import Comment from './components/Comment.vue';
-import { initialComments, sortLevel, findComment, sendVote } from './thread.js';
+import { computed, nextTick, provide, reactive, ref } from "vue";
+import Comment from "./components/Comment.vue";
+import { initialComments, sortLevel, findComment, sendVote } from "./thread.js";
 
-const comments = initialComments;           // read-only here: only votes change
-const sort = ref('best');
-const votes = reactive({});                 // id -> -1 | 0 | 1, shown optimistically
+const comments = initialComments; // read-only here: only votes change
+const sort = ref("best");
+const votes = reactive({}); // id -> -1 | 0 | 1, shown optimistically
 const collapsed = reactive(new Set());
-const threadId = ref(null);                 // "continue this thread" root, or null
+const threadId = ref(null); // "continue this thread" root, or null
 const simulateFailure = ref(false);
-const status = ref('');
+const status = ref("");
 const heading = ref(null);
 // Bookkeeping that never renders: plain objects, not reactive.
-const confirmed = {};                       // id -> last vote the server accepted
-const latest = {};                          // id -> sequence number of the newest request
+const confirmed = {}; // id -> last vote the server accepted
+const latest = {}; // id -> sequence number of the newest request
 
-const root = computed(() => (threadId.value ? [findComment(comments, threadId.value)] : sortLevel(comments, sort.value)));
+const root = computed(() =>
+  threadId.value
+    ? [findComment(comments, threadId.value)]
+    : sortLevel(comments, sort.value),
+);
 
 function vote(comment, dir) {
   const id = comment.id;
   const next = (votes[id] || 0) === dir ? 0 : dir;
-  votes[id] = next;                          // 1. optimistic
+  votes[id] = next; // 1. optimistic
   const seq = (latest[id] || 0) + 1;
   latest[id] = seq;
   sendVote(id, next, simulateFailure.value).then(
-    () => { if (latest[id] === seq) confirmed[id] = next; },
-    () => {                                  // 2. roll back only if no newer click replaced this one
+    () => {
+      if (latest[id] === seq) confirmed[id] = next;
+    },
+    () => {
+      // 2. roll back only if no newer click replaced this one
       if (latest[id] !== seq) return;
       votes[id] = confirmed[id] || 0;
-      status.value = 'Could not save your vote on the comment by ' + comment.author + '. It was restored.';
+      status.value =
+        "Could not save your vote on the comment by " +
+        comment.author +
+        ". It was restored.";
     },
   );
 }
 
 function toggleCollapsed(id) {
-  if (collapsed.has(id)) collapsed.delete(id); else collapsed.add(id);
+  if (collapsed.has(id)) collapsed.delete(id);
+  else collapsed.add(id);
 }
 
 async function openThread(id) {
@@ -8871,13 +12337,19 @@ async function openThread(id) {
   heading.value.focus();
 }
 
-provide('discussion', reactive({ votes, collapsed, sort, vote, toggleCollapsed, openThread }));
+provide(
+  "discussion",
+  reactive({ votes, collapsed, sort, vote, toggleCollapsed, openThread }),
+);
 </script>
 
 <template>
   <div class="app">
     <div class="bar">
-      <h1 ref="heading" tabindex="-1">{{ threadId ? 'Thread' : 'Discussion' }}</h1>
+      <h1
+        ref="heading"
+        tabindex="-1"
+      >{{ threadId ? 'Thread' : 'Discussion' }}</h1>
       <label>Sort
         <select v-model="sort" data-testid="sort">
           <option value="best">Best</option>
@@ -8886,9 +12358,18 @@ provide('discussion', reactive({ votes, collapsed, sort, vote, toggleCollapsed, 
       </label>
     </div>
     <label class="fail">
-      <input v-model="simulateFailure" type="checkbox" data-testid="fail" /> Simulate vote failures
+      <input
+        v-model="simulateFailure"
+        type="checkbox"
+        data-testid="fail"
+      /> Simulate vote failures
     </label>
-    <button v-if="threadId" class="back" data-testid="back" @click="openThread(null)">← Back to all comments</button>
+    <button
+      v-if="threadId"
+      class="back"
+      data-testid="back"
+      @click="openThread(null)"
+    >← Back to all comments</button>
     <ul class="thread">
       <Comment v-for="c in root" :key="c.id" :comment="c" :depth="0" />
     </ul>
@@ -8897,49 +12378,153 @@ provide('discussion', reactive({ votes, collapsed, sort, vote, toggleCollapsed, 
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.app { max-width: 600px; margin: 0 auto; padding: 16px; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-h1 { font-size: 18px; margin: 0; outline: none; }
-select, button { background: #1d2230; color: #e6e6e6; border: 1px solid #343b4f; border-radius: 6px; padding: 4px 8px; cursor: pointer; font: inherit; font-size: 13px; }
-.fail { display: block; margin: 8px 0; color: #9aa3b5; font-size: 13px; }
-.back { margin-bottom: 8px; }
-.thread, .replies { list-style: none; margin: 0; padding: 0; }
-.comment article { padding: 6px 0; }
-.comment header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.toggle { border: none; background: none; color: #8a93a8; padding: 0 2px; font-family: monospace; }
-.points { color: #9aa3b5; font-size: 13px; }
-.hidden-note { color: #8a93a8; font-size: 13px; font-style: italic; }
-.text { margin: 4px 0 6px; line-height: 1.4; overflow-wrap: anywhere; }
-.actions { display: flex; gap: 6px; }
-.vote { width: 32px; padding: 2px 0; }
-.vote.up.on { color: #ff9e64; border-color: #ff9e64; }
-.vote.down.on { color: #7aa2f7; border-color: #7aa2f7; }
-.branch { display: flex; }
-.rail { flex: 0 0 14px; margin: 0 6px 0 4px; padding: 0; border: none; border-radius: 0; background: none; border-left: 2px solid #262c3b; }
-.rail:hover, .rail:focus-visible { border-left-color: #6ea8ff; }
-.replies { flex: 1; min-width: 0; }
-.continue { margin: 4px 0 8px 22px; color: #8ab4ff; background: none; border: none; }
-.status { min-height: 1.2em; color: #ff8a80; font-size: 13px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+  outline: none;
+}
+select,
+button {
+  background: #1d2230;
+  color: #e6e6e6;
+  border: 1px solid #343b4f;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.fail {
+  display: block;
+  margin: 8px 0;
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.back {
+  margin-bottom: 8px;
+}
+.thread,
+.replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.comment article {
+  padding: 6px 0;
+}
+.comment header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.toggle {
+  border: none;
+  background: none;
+  color: #8a93a8;
+  padding: 0 2px;
+  font-family: monospace;
+}
+.points {
+  color: #9aa3b5;
+  font-size: 13px;
+}
+.hidden-note {
+  color: #8a93a8;
+  font-size: 13px;
+  font-style: italic;
+}
+.text {
+  margin: 4px 0 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: 6px;
+}
+.vote {
+  width: 32px;
+  padding: 2px 0;
+}
+.vote.up.on {
+  color: #ff9e64;
+  border-color: #ff9e64;
+}
+.vote.down.on {
+  color: #7aa2f7;
+  border-color: #7aa2f7;
+}
+.branch {
+  display: flex;
+}
+.rail {
+  flex: 0 0 14px;
+  margin: 0 6px 0 4px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  border-left: 2px solid #262c3b;
+}
+.rail:hover,
+.rail:focus-visible {
+  border-left-color: #6ea8ff;
+}
+.replies {
+  flex: 1;
+  min-width: 0;
+}
+.continue {
+  margin: 4px 0 8px 22px;
+  color: #8ab4ff;
+  background: none;
+  border: none;
+}
+.status {
+  min-height: 1.2em;
+  color: #ff8a80;
+  font-size: 13px;
+}
 </style>
 `,
           "/src/components/Comment.vue": `<script setup>
-import { computed, inject } from 'vue';
-import { MAX_DEPTH, countAll, sortLevel } from '../thread.js';
+import { computed, inject } from "vue";
+import { MAX_DEPTH, countAll, sortLevel } from "../thread.js";
 
 const props = defineProps({
   comment: { type: Object, required: true },
   depth: { type: Number, default: 0 },
 });
-// Shared state and actions from App.vue: votes, collapsed, sort, vote(), toggleCollapsed(), openThread()
-const ctx = inject('discussion');
+// Shared state and actions from App.vue: votes, collapsed,
+// sort, vote(), toggleCollapsed(), openThread()
+const ctx = inject("discussion");
 
 const myVote = computed(() => ctx.votes[props.comment.id] || 0);
 const points = computed(() => props.comment.score + myVote.value);
 const collapsed = computed(() => ctx.collapsed.has(props.comment.id));
 const replies = computed(() => sortLevel(props.comment.replies, ctx.sort));
 const hidden = computed(() => countAll(props.comment.replies));
-const tooDeep = computed(() => props.depth >= MAX_DEPTH && replies.value.length > 0);
+const tooDeep = computed(
+  () => props.depth >= MAX_DEPTH && replies.value.length > 0,
+);
 </script>
 
 <template>
@@ -8950,8 +12535,14 @@ const tooDeep = computed(() => props.depth >= MAX_DEPTH && replies.value.length 
           :aria-label="(collapsed ? 'Expand' : 'Collapse') + ' thread by ' + comment.author"
           @click="ctx.toggleCollapsed(comment.id)">{{ collapsed ? '[+]' : '[-]' }}</button>
         <strong>{{ comment.author }}</strong>
-        <span class="points" data-testid="points">{{ points }} {{ Math.abs(points) === 1 ? 'point' : 'points' }}</span>
-        <span v-if="collapsed && hidden" class="hidden-note">{{ hidden }} hidden</span>
+        <span
+          class="points"
+          data-testid="points"
+        >{{ points }} {{ Math.abs(points) === 1 ? 'point' : 'points' }}</span>
+        <span
+          v-if="collapsed && hidden"
+          class="hidden-note"
+        >{{ hidden }} hidden</span>
       </header>
       <template v-if="!collapsed">
         <p class="text">{{ comment.text }}</p>
@@ -8964,14 +12555,24 @@ const tooDeep = computed(() => props.depth >= MAX_DEPTH && replies.value.length 
       </template>
     </article>
     <template v-if="!collapsed && replies.length">
-      <button v-if="tooDeep" class="continue" data-testid="continue" @click="ctx.openThread(comment.id)">
+      <button
+        v-if="tooDeep"
+        class="continue"
+        data-testid="continue"
+        @click="ctx.openThread(comment.id)"
+      >
         Continue this thread ({{ hidden }} more)
       </button>
       <div v-else class="branch">
         <button class="rail" data-testid="rail" :aria-label="'Collapse thread by ' + comment.author"
           @click="ctx.toggleCollapsed(comment.id)"></button>
         <ul class="replies">
-          <Comment v-for="r in replies" :key="r.id" :comment="r" :depth="depth + 1" />
+          <Comment
+            v-for="r in replies"
+            :key="r.id"
+            :comment="r"
+            :depth="depth + 1"
+          />
         </ul>
       </div>
     </template>
@@ -8981,30 +12582,89 @@ const tooDeep = computed(() => props.depth >= MAX_DEPTH && replies.value.length 
           "/src/thread.js": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
-export const MAX_DEPTH = 3;   // depth 0..3 render inline, deeper replies get "Continue this thread"
+// depth 0..3 render inline, deeper replies get "Continue this thread"
+export const MAX_DEPTH = 3;
 
 export const initialComments = [
-  { id: 'c1', author: 'Asha', at: 10, score: 10, text: 'Lazy-load folder children on first expand?', replies: [
-    { id: 'c2', author: 'Ben', at: 40, score: 5, text: 'Yes, and cache them by folder id.', replies: [
-      { id: 'c3', author: 'Chen', at: 50, score: 1, text: 'Invalidate the cache on rename.', replies: [
-        { id: 'c7', author: 'Dana', at: 70, score: 2, text: 'Or key it by path and id.', replies: [
-          { id: 'c8', author: 'Eli', at: 80, score: 1, text: 'Ids survive a rename, paths do not.', replies: [] },
-        ] },
-      ] },
-      { id: 'c4', author: 'Fay', at: 60, score: 3, text: 'Show a spinner row meanwhile.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Gus', at: 30, score: 9, text: 'Only for trees over a few thousand nodes.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Hana', at: 5, score: 15, text: 'Ship the eager version first, measure later.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    at: 10,
+    score: 10,
+    text: "Lazy-load folder children on first expand?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        at: 40,
+        score: 5,
+        text: "Yes, and cache them by folder id.",
+        replies: [
+          {
+            id: "c3",
+            author: "Chen",
+            at: 50,
+            score: 1,
+            text: "Invalidate the cache on rename.",
+            replies: [
+              {
+                id: "c7",
+                author: "Dana",
+                at: 70,
+                score: 2,
+                text: "Or key it by path and id.",
+                replies: [
+                  {
+                    id: "c8",
+                    author: "Eli",
+                    at: 80,
+                    score: 1,
+                    text: "Ids survive a rename, paths do not.",
+                    replies: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: "c4",
+            author: "Fay",
+            at: 60,
+            score: 3,
+            text: "Show a spinner row meanwhile.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Gus",
+        at: 30,
+        score: 9,
+        text: "Only for trees over a few thousand nodes.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Hana",
+    at: 5,
+    score: 15,
+    text: "Ship the eager version first, measure later.",
+    replies: [],
+  },
 ];
 
 export const SORTS = {
-  best: (a, b) => b.score - a.score || a.at - b.at,  // ranked by server score, ties: older first
+  // ranked by server score, ties: older first
+  best: (a, b) => b.score - a.score || a.at - b.at,
   new: (a, b) => b.at - a.at,
 };
 
 export const sortLevel = (list, sort) => [...list].sort(SORTS[sort]);
-export const countAll = (list) => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+export const countAll = (list) =>
+  list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
 
 export function findComment(list, id) {
   for (const c of list) {
@@ -9015,10 +12675,14 @@ export function findComment(list, id) {
   return null;
 }
 
-// Simulated server: resolves after 300 ms, or rejects when \`fail\` was on at send time.
+// Simulated server: resolves after 300 ms, or
+// rejects when \`fail\` was on at send time.
 export function sendVote(id, vote, fail) {
   return new Promise((resolve, reject) => {
-    setTimeout(() => (fail ? reject(new Error('Network error')) : resolve({ id, vote })), 300);
+    setTimeout(
+      () => (fail ? reject(new Error("Network error")) : resolve({ id, vote })),
+      300,
+    );
   });
 }
 `,
@@ -9055,15 +12719,25 @@ Up/down votes with \`aria-pressed\`, optimistic with rollback and a stale-respon
 vote(comment: Post, dir: Vote) {
   const id = comment.id;
   const next: Vote = this.myVote(id) === dir ? 0 : dir;
-  this.votes.update((v) => ({ ...v, [id]: next }));       // 1. optimistic
+  this.votes.update((v) => ({ ...v, [id]: next })); // 1. optimistic
   const seq = (this.latest[id] ?? 0) + 1;
   this.latest[id] = seq;
   sendVote(id, next, this.simulateFailure()).then(
-    () => { if (this.latest[id] === seq) this.confirmed[id] = next; },
-    () => {                                                // 2. roll back unless superseded
+    () => {
+      if (this.latest[id] === seq) this.confirmed[id] = next;
+    },
+    () => {
+      // 2. roll back unless superseded
       if (this.latest[id] !== seq) return;
-      this.votes.update((v) => ({ ...v, [id]: this.confirmed[id] ?? 0 }));
-      this.status.set('Could not save your vote on the comment by ' + comment.author + '. It was restored.');
+      this.votes.update((v) => ({
+        ...v,
+        [id]: this.confirmed[id] ?? 0,
+      }));
+      this.status.set(
+        "Could not save your vote on the comment by " +
+          comment.author +
+          ". It was restored.",
+      );
     },
   );
 }
@@ -9076,12 +12750,24 @@ vote(comment: Post, dir: Vote) {
 ### Step 2: Getters over inputs
 
 ~~~ts
-get myVote() { return this.d.myVote(this.comment.id); }
-get points() { return this.comment.score + this.myVote; }
-get collapsed() { return this.d.collapsed().has(this.comment.id); }
-get replies() { return sortLevel(this.comment.replies, this.d.sort()); }
-get hidden() { return countAll(this.comment.replies); }
-get tooDeep() { return this.depth >= MAX_DEPTH && this.comment.replies.length > 0; }
+get myVote() {
+  return this.d.myVote(this.comment.id);
+}
+get points() {
+  return this.comment.score + this.myVote;
+}
+get collapsed() {
+  return this.d.collapsed().has(this.comment.id);
+}
+get replies() {
+  return sortLevel(this.comment.replies, this.d.sort());
+}
+get hidden() {
+  return countAll(this.comment.replies);
+}
+get tooDeep() {
+  return this.depth >= MAX_DEPTH && this.comment.replies.length > 0;
+}
 ~~~
 
 These read \`@Input\` fields and signals; the template re-evaluates them on each check, and the signals keep them reactive (see [computed vs getters](/interview-question/what-is-the-difference-between-computed-signals-and-standard-method-getter-calls)). Best sorts by the server score only, so a vote never moves a row.
@@ -9115,7 +12801,11 @@ The thread line is a labelled button. \`collapsed\` is a signal holding a \`Set\
 ~~~ts
 openThread(id: string | null) {
   this.threadId.set(id);
-  afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus(), { injector: this.injector });
+  afterNextRender(
+    () =>
+      this.host.nativeElement.querySelector<HTMLElement>("h1")?.focus(),
+    { injector: this.injector },
+  );
 }
 ~~~
 
@@ -9236,12 +12926,12 @@ Behaviour matches React and Vue line for line, including the \`c4\` race where t
 
 **Conclusion:** In Angular, a voting thread is a signal map of the user's votes beside read-only scores, an optimistic flow with a confirmed rollback target and a sequence guard, signals written from promise callbacks for zoneless rendering, stable per-level sorting, a lifted \`Set\` signal for collapse, and \`afterNextRender\` focus for the continue-thread view.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from '@angular/core';
-import { Discussion } from './discussion';
-import { CommentComponent } from './comment.component';
+          "/src/app/app.component.ts": `import { Component, ViewEncapsulation, inject } from "@angular/core";
+import { Discussion } from "./discussion";
+import { CommentComponent } from "./comment.component";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [CommentComponent],
   providers: [Discussion],
@@ -9251,17 +12941,32 @@ import { CommentComponent } from './comment.component';
       <div class="bar">
         <h1 tabindex="-1">{{ d.threadId() ? 'Thread' : 'Discussion' }}</h1>
         <label>Sort
-          <select #s data-testid="sort" [value]="d.sort()" (change)="d.sort.set($any(s.value))">
+          <select
+            #s
+            data-testid="sort"
+            [value]="d.sort()"
+            (change)="d.sort.set($any(s.value))"
+          >
             <option value="best">Best</option>
             <option value="new">New</option>
           </select>
         </label>
       </div>
       <label class="fail">
-        <input #f type="checkbox" data-testid="fail" [checked]="d.simulateFailure()" (change)="d.simulateFailure.set(f.checked)" /> Simulate vote failures
+        <input
+          #f
+          type="checkbox"
+          data-testid="fail"
+          [checked]="d.simulateFailure()"
+          (change)="d.simulateFailure.set(f.checked)"
+        /> Simulate vote failures
       </label>
       @if (d.threadId()) {
-        <button class="back" data-testid="back" (click)="d.openThread(null)">← Back to all comments</button>
+        <button
+          class="back"
+          data-testid="back"
+          (click)="d.openThread(null)"
+        >← Back to all comments</button>
       }
       <ul class="thread">
         @for (c of d.root(); track c.id) {
@@ -9271,7 +12976,8 @@ import { CommentComponent } from './comment.component';
       <p class="status" role="status" data-testid="status">{{ d.status() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .app { max-width: 600px; margin: 0 auto; padding: 16px; }
     .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -9296,21 +13002,26 @@ import { CommentComponent } from './comment.component';
     .replies { flex: 1; min-width: 0; }
     .continue { margin: 4px 0 8px 22px; color: #8ab4ff; background: none; border: none; }
     .status { min-height: 1.2em; color: #ff8a80; font-size: 13px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   d = inject(Discussion);
 }
 `,
-          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject } from '@angular/core';
-import { Discussion } from './discussion';
-import { MAX_DEPTH, Post, countAll, sortLevel } from './thread';
+          "/src/app/comment.component.ts": `import { Component, Input, forwardRef, inject } from "@angular/core";
+import { Discussion } from "./discussion";
+import { MAX_DEPTH, Post, countAll, sortLevel } from "./thread";
 
 @Component({
-  selector: 'li[app-comment]',
+  selector: "li[app-comment]",
   standalone: true,
   imports: [forwardRef(() => CommentComponent)],
-  host: { class: 'comment', '[attr.data-id]': 'comment.id', '[attr.data-depth]': 'depth' },
+  host: {
+    class: "comment",
+    "[attr.data-id]": "comment.id",
+    "[attr.data-depth]": "depth",
+  },
   template: \`
     <article [attr.aria-label]="'Comment by ' + comment.author">
       <header>
@@ -9318,7 +13029,10 @@ import { MAX_DEPTH, Post, countAll, sortLevel } from './thread';
           [attr.aria-label]="(collapsed ? 'Expand' : 'Collapse') + ' thread by ' + comment.author"
           (click)="d.toggleCollapsed(comment.id)">{{ collapsed ? '[+]' : '[-]' }}</button>
         <strong>{{ comment.author }}</strong>
-        <span class="points" data-testid="points">{{ points }} {{ points === 1 || points === -1 ? 'point' : 'points' }}</span>
+        <span
+          class="points"
+          data-testid="points"
+        >{{ points }} {{ points === 1 || points === -1 ? 'point' : 'points' }}</span>
         @if (collapsed && hidden) {
           <span class="hidden-note">{{ hidden }} hidden</span>
         }
@@ -9335,7 +13049,11 @@ import { MAX_DEPTH, Post, countAll, sortLevel } from './thread';
     </article>
     @if (!collapsed && replies.length) {
       @if (tooDeep) {
-        <button class="continue" data-testid="continue" (click)="d.openThread(comment.id)">
+        <button
+          class="continue"
+          data-testid="continue"
+          (click)="d.openThread(comment.id)"
+        >
           Continue this thread ({{ hidden }} more)
         </button>
       } @else {
@@ -9357,29 +13075,57 @@ export class CommentComponent {
   @Input() depth = 0;
   d = inject(Discussion);
 
-  get myVote() { return this.d.myVote(this.comment.id); }
-  get points() { return this.comment.score + this.myVote; }
-  get collapsed() { return this.d.collapsed().has(this.comment.id); }
-  get replies() { return sortLevel(this.comment.replies, this.d.sort()); }
-  get hidden() { return countAll(this.comment.replies); }
-  get tooDeep() { return this.depth >= MAX_DEPTH && this.comment.replies.length > 0; }
+  get myVote() {
+    return this.d.myVote(this.comment.id);
+  }
+  get points() {
+    return this.comment.score + this.myVote;
+  }
+  get collapsed() {
+    return this.d.collapsed().has(this.comment.id);
+  }
+  get replies() {
+    return sortLevel(this.comment.replies, this.d.sort());
+  }
+  get hidden() {
+    return countAll(this.comment.replies);
+  }
+  get tooDeep() {
+    return this.depth >= MAX_DEPTH && this.comment.replies.length > 0;
+  }
 }
 `,
-          "/src/app/discussion.ts": `import { ElementRef, Injectable, Injector, afterNextRender, computed, inject, signal } from '@angular/core';
-import { Post, SortKey, Vote, initialComments, sortLevel, findComment, sendVote } from './thread';
+          "/src/app/discussion.ts": `import {
+  ElementRef,
+  Injectable,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import {
+  Post,
+  SortKey,
+  Vote,
+  initialComments,
+  sortLevel,
+  findComment,
+  sendVote,
+} from "./thread";
 
 @Injectable()
 export class Discussion {
   private host = inject<ElementRef<HTMLElement>>(ElementRef);
   private injector = inject(Injector);
 
-  readonly comments = initialComments;                      // read-only here: only votes change
-  readonly sort = signal<SortKey>('best');
-  readonly votes = signal<Record<string, Vote>>({});        // shown optimistically
+  readonly comments = initialComments; // read-only here: only votes change
+  readonly sort = signal<SortKey>("best");
+  readonly votes = signal<Record<string, Vote>>({}); // shown optimistically
   readonly collapsed = signal<ReadonlySet<string>>(new Set());
   readonly threadId = signal<string | null>(null);
   readonly simulateFailure = signal(false);
-  readonly status = signal('');
+  readonly status = signal("");
   // Bookkeeping that never renders: plain fields, not signals.
   private confirmed: Record<string, Vote> = {};
   private latest: Record<string, number> = {};
@@ -9390,20 +13136,29 @@ export class Discussion {
     return hit ? [hit] : sortLevel(this.comments, this.sort());
   });
 
-  myVote(id: string): Vote { return this.votes()[id] ?? 0; }
+  myVote(id: string): Vote {
+    return this.votes()[id] ?? 0;
+  }
 
   vote(comment: Post, dir: Vote) {
     const id = comment.id;
     const next: Vote = this.myVote(id) === dir ? 0 : dir;
-    this.votes.update((v) => ({ ...v, [id]: next }));       // 1. optimistic
+    this.votes.update((v) => ({ ...v, [id]: next })); // 1. optimistic
     const seq = (this.latest[id] ?? 0) + 1;
     this.latest[id] = seq;
     sendVote(id, next, this.simulateFailure()).then(
-      () => { if (this.latest[id] === seq) this.confirmed[id] = next; },
-      () => {                                                // 2. roll back unless superseded
+      () => {
+        if (this.latest[id] === seq) this.confirmed[id] = next;
+      },
+      () => {
+        // 2. roll back unless superseded
         if (this.latest[id] !== seq) return;
         this.votes.update((v) => ({ ...v, [id]: this.confirmed[id] ?? 0 }));
-        this.status.set('Could not save your vote on the comment by ' + comment.author + '. It was restored.');
+        this.status.set(
+          "Could not save your vote on the comment by " +
+            comment.author +
+            ". It was restored.",
+        );
       },
     );
   }
@@ -9411,48 +13166,119 @@ export class Discussion {
   toggleCollapsed(id: string) {
     this.collapsed.update((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   openThread(id: string | null) {
     this.threadId.set(id);
-    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('h1')?.focus(), { injector: this.injector });
+    afterNextRender(
+      () => this.host.nativeElement.querySelector<HTMLElement>("h1")?.focus(),
+      { injector: this.injector },
+    );
   }
 }
 `,
           "/src/app/thread.ts": `// Data, sorting and a SIMULATED vote API (no network in the playground).
 // \`score\` is the server score WITHOUT my vote; my vote lives in a separate map.
 
-export interface Post { id: string; author: string; at: number; score: number; text: string; replies: Post[]; }
-export type SortKey = 'best' | 'new';
+export interface Post {
+  id: string;
+  author: string;
+  at: number;
+  score: number;
+  text: string;
+  replies: Post[];
+}
+export type SortKey = "best" | "new";
 export type Vote = -1 | 0 | 1;
 
-export const MAX_DEPTH = 3;   // depth 0..3 render inline, deeper replies get "Continue this thread"
+// depth 0..3 render inline, deeper replies get "Continue this thread"
+export const MAX_DEPTH = 3;
 
 export const initialComments: Post[] = [
-  { id: 'c1', author: 'Asha', at: 10, score: 10, text: 'Lazy-load folder children on first expand?', replies: [
-    { id: 'c2', author: 'Ben', at: 40, score: 5, text: 'Yes, and cache them by folder id.', replies: [
-      { id: 'c3', author: 'Chen', at: 50, score: 1, text: 'Invalidate the cache on rename.', replies: [
-        { id: 'c7', author: 'Dana', at: 70, score: 2, text: 'Or key it by path and id.', replies: [
-          { id: 'c8', author: 'Eli', at: 80, score: 1, text: 'Ids survive a rename, paths do not.', replies: [] },
-        ] },
-      ] },
-      { id: 'c4', author: 'Fay', at: 60, score: 3, text: 'Show a spinner row meanwhile.', replies: [] },
-    ] },
-    { id: 'c5', author: 'Gus', at: 30, score: 9, text: 'Only for trees over a few thousand nodes.', replies: [] },
-  ] },
-  { id: 'c6', author: 'Hana', at: 5, score: 15, text: 'Ship the eager version first, measure later.', replies: [] },
+  {
+    id: "c1",
+    author: "Asha",
+    at: 10,
+    score: 10,
+    text: "Lazy-load folder children on first expand?",
+    replies: [
+      {
+        id: "c2",
+        author: "Ben",
+        at: 40,
+        score: 5,
+        text: "Yes, and cache them by folder id.",
+        replies: [
+          {
+            id: "c3",
+            author: "Chen",
+            at: 50,
+            score: 1,
+            text: "Invalidate the cache on rename.",
+            replies: [
+              {
+                id: "c7",
+                author: "Dana",
+                at: 70,
+                score: 2,
+                text: "Or key it by path and id.",
+                replies: [
+                  {
+                    id: "c8",
+                    author: "Eli",
+                    at: 80,
+                    score: 1,
+                    text: "Ids survive a rename, paths do not.",
+                    replies: [],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            id: "c4",
+            author: "Fay",
+            at: 60,
+            score: 3,
+            text: "Show a spinner row meanwhile.",
+            replies: [],
+          },
+        ],
+      },
+      {
+        id: "c5",
+        author: "Gus",
+        at: 30,
+        score: 9,
+        text: "Only for trees over a few thousand nodes.",
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "c6",
+    author: "Hana",
+    at: 5,
+    score: 15,
+    text: "Ship the eager version first, measure later.",
+    replies: [],
+  },
 ];
 
 export const SORTS: Record<SortKey, (a: Post, b: Post) => number> = {
-  best: (a, b) => b.score - a.score || a.at - b.at,  // ranked by server score, ties: older first
+  // ranked by server score, ties: older first
+  best: (a, b) => b.score - a.score || a.at - b.at,
   new: (a, b) => b.at - a.at,
 };
 
-export const sortLevel = (list: Post[], sort: SortKey): Post[] => [...list].sort(SORTS[sort]);
-export const countAll = (list: Post[]): number => list.reduce((n: number, c: Post): number => n + 1 + countAll(c.replies), 0);
+export const sortLevel = (list: Post[], sort: SortKey): Post[] =>
+  [...list].sort(SORTS[sort]);
+export const countAll = (list: Post[]): number =>
+  list.reduce((n: number, c: Post): number => n + 1 + countAll(c.replies), 0);
 
 export function findComment(list: Post[], id: string): Post | null {
   for (const c of list) {
@@ -9463,10 +13289,18 @@ export function findComment(list: Post[], id: string): Post | null {
   return null;
 }
 
-// Simulated server: resolves after 300 ms, or rejects when \`fail\` was on at send time.
-export function sendVote(id: string, vote: Vote, fail: boolean): Promise<{ id: string; vote: Vote }> {
+// Simulated server: resolves after 300 ms, or
+// rejects when \`fail\` was on at send time.
+export function sendVote(
+  id: string,
+  vote: Vote,
+  fail: boolean,
+): Promise<{ id: string; vote: Vote }> {
   return new Promise((resolve, reject) => {
-    setTimeout(() => (fail ? reject(new Error('Network error')) : resolve({ id, vote })), 300);
+    setTimeout(
+      () => (fail ? reject(new Error("Network error")) : resolve({ id, vote })),
+      300,
+    );
   });
 }
 `,

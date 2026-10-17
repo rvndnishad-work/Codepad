@@ -159,14 +159,16 @@ The App owns all board state; each Column is a mostly presentational component t
 \`\`\`jsx
 // Move a card into column toColId, in front of the card currently at
 // beforeIndex (cardIds.length means "at the end"). The index is counted
-// BEFORE the moved card is taken out, which is exactly what a drop target
+// BEFORE the moved card is taken out,
+// which is exactly what a drop target
 // ("insert before this card") gives you.
 export function moveCard(board, cardId, toColId, beforeIndex) {
   const from = findCard(board, cardId);
   if (!from) return board;
   let index = beforeIndex;
   if (from.colId === toColId && from.index < index) index -= 1;
-  if (from.colId === toColId && from.index === index) return board; // no-op
+  // no-op
+  if (from.colId === toColId && from.index === index) return board;
   const columns = board.columns.map((col) => {
     let ids = col.cardIds;
     if (col.id === from.colId) ids = ids.filter((id) => id !== cardId);
@@ -189,14 +191,19 @@ start(e, id) {
   dragId.current = id;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", id); // Firefox needs data to start a drag
+    // Firefox needs data to start a drag
+    e.dataTransfer.setData("text/plain", id);
   }
   setDraggingId(id);
 },
 over(e, target) {
   if (!dragId.current) return;
   e.preventDefault(); // without this the browser refuses the drop
-  setOver((o) => (o && o.colId === target.colId && o.index === target.index ? o : target));
+  setOver((o) =>
+    o && o.colId === target.colId && o.index === target.index
+      ? o
+      : target,
+  );
 },
 \`\`\`
 
@@ -211,7 +218,9 @@ The dragged id lives in a ref, not only in state, because drop handlers need it 
 \`\`\`jsx
 const targetFrom = (e) => {
   const el = e.target.closest && e.target.closest("[data-card]");
-  const index = el ? col.cardIds.indexOf(el.dataset.card) : col.cardIds.length;
+  const index = el
+    ? col.cardIds.indexOf(el.dataset.card)
+    : col.cardIds.length;
   return { colId: col.id, index };
 };
 \`\`\`
@@ -227,12 +236,22 @@ const pos = findCard(board, id);
 const c = board.columns.findIndex((col) => col.id === pos.colId);
 let target = null;
 if (e.key === "ArrowUp" && pos.index > 0) target = [c, pos.index - 1];
-if (e.key === "ArrowDown" && pos.index < board.columns[c].cardIds.length - 1) target = [c, pos.index + 2];
+if (
+  e.key === "ArrowDown" &&
+  pos.index < board.columns[c].cardIds.length - 1
+)
+  target = [c, pos.index + 2];
 if (e.key === "ArrowLeft" && c > 0) target = [c - 1, pos.index];
-if (e.key === "ArrowRight" && c < board.columns.length - 1) target = [c + 1, pos.index];
+if (e.key === "ArrowRight" && c < board.columns.length - 1)
+  target = [c + 1, pos.index];
 if (!target) return;
 e.preventDefault();
-const next = moveCard(board, id, board.columns[target[0]].id, target[1]);
+const next = moveCard(
+  board,
+  id,
+  board.columns[target[0]].id,
+  target[1],
+);
 setBoard(next);
 setMessage(title + " moved to " + where(next, id));
 \`\`\`
@@ -244,7 +263,8 @@ Look at \`ArrowDown\`: it passes \`pos.index + 2\`. With "insert before" indexes
 📌 **Interview term: Focus management** — keeping the keyboard focus somewhere sensible after the UI changes. When a card moves to another column, React renders it inside a different \`<ul>\`, so it is a brand-new DOM node and the old focused node is gone. Focus silently falls back to \`<body>\`, and the keyboard user is lost.
 
 \`\`\`jsx
-// A card that moves to another column is a NEW DOM node, so focus is lost.
+// A card that moves to another column
+// is a NEW DOM node, so focus is lost.
 // Put it back on the card that is being moved with the keyboard.
 useEffect(() => {
   if (grab) cardEls.current.get(grab.id)?.focus();
@@ -257,7 +277,8 @@ useEffect(() => {
 
 \`\`\`jsx
 function onAdd(colId, title) {
-  const id = newCardId(); // outside the updater: StrictMode runs updaters twice
+  // outside the updater: StrictMode runs updaters twice
+  const id = newCardId();
   setBoard((b) => addCard(b, colId, id, title));
 }
 \`\`\`
@@ -299,7 +320,7 @@ Clean-up belongs in \`dragend\`, not in \`drop\`, because a user can press Escap
 
 The solution was mounted exactly as the playground mounts it, \`createRoot(#root).render(<StrictMode><App /></StrictMode>)\`, by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. jsdom has no \`DragEvent\` and no real \`DataTransfer\`, so the driver dispatches \`MouseEvent\`s named \`dragstart\`, \`dragover\`, \`drop\` and \`dragend\` with a small \`dataTransfer\` stub attached, then presses real keyboard events on the cards. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start: To Do: Write spec, Design API, Set up CI | In Progress: Build login | Done: Kick-off
 drag Write spec onto Build login | dragover.defaultPrevented=true | marker on: c4
   board: To Do: Design API, Set up CI | In Progress: Write spec, Build login | Done: Kick-off
@@ -324,7 +345,7 @@ What it proves: the drop indicator lands on the right card (\`marker on: c4\`), 
 
 The same React solution was then bundled with esbuild and opened in Chromium 141 through playwright-core 1.64.1, whose \`dragAndDrop\` produces real native drag events:
 
-\`\`\`
+\`\`\`text
 start  : To Do: Write spec, Design API, Set up CI | In Progress: Build login | Done: Kick-off
 drag 1 : To Do: Design API, Set up CI | In Progress: Write spec, Build login | Done: Kick-off
 drag 2 : To Do: Design API, Set up CI, Kick-off | In Progress: Write spec, Build login | Done: -
@@ -443,7 +464,13 @@ Not checked here: how a real screen reader voices the announcements, touch dragg
 **Conclusion:** A good Kanban board is a small state model plus a precise event contract. Keep columns as id arrays, push every move through one pure function that knows about the downward off-by-one, allow drops by calling \`preventDefault\` in \`dragover\`, and clean up in \`dragend\`. Then add the part that separates strong candidates: a grab-mode keyboard path through the same function, focus restored onto the card's new node, and a live region that tells screen-reader users what happened. The verified run shows all of that working under StrictMode, in jsdom and in real Chromium.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import { initialBoard, moveCard, addCard, newCardId, findCard } from "./src/board";
+import {
+  initialBoard,
+  moveCard,
+  addCard,
+  newCardId,
+  findCard,
+} from "./src/board";
 import Column from "./src/Column";
 
 export default function App() {
@@ -464,7 +491,9 @@ export default function App() {
   const where = (b, id) => {
     const pos = findCard(b, id);
     const col = b.columns.find((c) => c.id === pos.colId);
-    return col.title + ", position " + (pos.index + 1) + " of " + col.cardIds.length;
+    return (
+      col.title + ", position " + (pos.index + 1) + " of " + col.cardIds.length
+    );
   };
 
   // ---- pointer path: HTML5 drag and drop ----
@@ -473,14 +502,17 @@ export default function App() {
       dragId.current = id;
       if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", id); // Firefox needs data to start a drag
+        // Firefox needs data to start a drag
+        e.dataTransfer.setData("text/plain", id);
       }
       setDraggingId(id);
     },
     over(e, target) {
       if (!dragId.current) return;
       e.preventDefault(); // without this the browser refuses the drop
-      setOver((o) => (o && o.colId === target.colId && o.index === target.index ? o : target));
+      setOver((o) =>
+        o && o.colId === target.colId && o.index === target.index ? o : target,
+      );
     },
     leave(colId) {
       setOver((o) => (o && o.colId === colId ? null : o));
@@ -501,7 +533,8 @@ export default function App() {
     },
   };
 
-  // ---- keyboard path: Space picks up, arrows move, Space drops, Escape cancels ----
+  // ---- keyboard path: Space picks up, arrows
+  // move, Space drops, Escape cancels ----
   function onCardKey(e, id) {
     const title = board.cards[id].title;
     if (e.key === " " || e.key === "Enter") {
@@ -511,7 +544,11 @@ export default function App() {
         setMessage(title + " dropped in " + where(board, id));
       } else {
         setGrab({ id, snapshot: board });
-        setMessage("Picked up " + title + ". Arrow keys move, Space drops, Escape cancels.");
+        setMessage(
+          "Picked up " +
+            title +
+            ". Arrow keys move, Space drops, Escape cancels.",
+        );
       }
       return;
     }
@@ -519,16 +556,23 @@ export default function App() {
     if (e.key === "Escape") {
       setBoard(grab.snapshot);
       setGrab(null);
-      setMessage("Move cancelled. " + title + " is back in " + where(grab.snapshot, id));
+      setMessage(
+        "Move cancelled. " + title + " is back in " + where(grab.snapshot, id),
+      );
       return;
     }
     const pos = findCard(board, id);
     const c = board.columns.findIndex((col) => col.id === pos.colId);
     let target = null;
     if (e.key === "ArrowUp" && pos.index > 0) target = [c, pos.index - 1];
-    if (e.key === "ArrowDown" && pos.index < board.columns[c].cardIds.length - 1) target = [c, pos.index + 2];
+    if (
+      e.key === "ArrowDown" &&
+      pos.index < board.columns[c].cardIds.length - 1
+    )
+      target = [c, pos.index + 2];
     if (e.key === "ArrowLeft" && c > 0) target = [c - 1, pos.index];
-    if (e.key === "ArrowRight" && c < board.columns.length - 1) target = [c + 1, pos.index];
+    if (e.key === "ArrowRight" && c < board.columns.length - 1)
+      target = [c + 1, pos.index];
     if (!target) return;
     e.preventDefault();
     const next = moveCard(board, id, board.columns[target[0]].id, target[1]);
@@ -537,7 +581,8 @@ export default function App() {
   }
 
   function onAdd(colId, title) {
-    const id = newCardId(); // outside the updater: StrictMode runs updaters twice
+    // outside the updater: StrictMode runs updaters twice
+    const id = newCardId();
     setBoard((b) => addCard(b, colId, id, title));
   }
 
@@ -545,7 +590,8 @@ export default function App() {
     <main className="board-app">
       <h1>Sprint board</h1>
       <p id="kb-help" className="hint">
-        Drag cards, or focus one and press Space to pick it up, arrows to move, Space to drop.
+        Drag cards, or focus one and press Space to pick it up, arrows to move,
+        Space to drop.
       </p>
       <div className="board">
         {board.columns.map((col) => (
@@ -559,25 +605,47 @@ export default function App() {
             drag={drag}
             onCardKey={onCardKey}
             onAdd={onAdd}
-            cardRef={(id, el) => (el ? cardEls.current.set(id, el) : cardEls.current.delete(id))}
+            cardRef={(id, el) =>
+              el ? cardEls.current.set(id, el) : cardEls.current.delete(id)
+            }
           />
         ))}
       </div>
-      <p role="status" aria-live="polite" className="sr-only" data-testid="live">{message}</p>
+      <p
+        role="status"
+        aria-live="polite"
+        className="sr-only"
+        data-testid="live"
+      >
+        {message}
+      </p>
     </main>
   );
 }
 `,
           "/src/Column.js": `import { useState } from "react";
 
-export default function Column({ col, cards, over, draggingId, grabbedId, drag, onCardKey, onAdd, cardRef }) {
+export default function Column({
+  col,
+  cards,
+  over,
+  draggingId,
+  grabbedId,
+  drag,
+  onCardKey,
+  onAdd,
+  cardRef,
+}) {
   const [draft, setDraft] = useState("");
 
   // One handler for the whole list (event delegation): the card under the
-  // pointer means "insert before it"; empty space below the cards means "append".
+  // pointer means "insert before it"; empty
+  // space below the cards means "append".
   const targetFrom = (e) => {
     const el = e.target.closest && e.target.closest("[data-card]");
-    const index = el ? col.cardIds.indexOf(el.dataset.card) : col.cardIds.length;
+    const index = el
+      ? col.cardIds.indexOf(el.dataset.card)
+      : col.cardIds.length;
     return { colId: col.id, index };
   };
 
@@ -590,7 +658,11 @@ export default function Column({ col, cards, over, draggingId, grabbedId, drag, 
   }
 
   return (
-    <section className="column" aria-labelledby={col.id + "-h"} data-testid={"col-" + col.id}>
+    <section
+      className="column"
+      aria-labelledby={col.id + "-h"}
+      data-testid={"col-" + col.id}
+    >
       <h2 id={col.id + "-h"}>
         {col.title} <span className="count">{col.cardIds.length}</span>
       </h2>
@@ -695,30 +767,124 @@ export function addCard(board, colId, id, title) {
   return {
     cards: { ...board.cards, [id]: { id, title } },
     columns: board.columns.map((col) =>
-      col.id === colId ? { ...col, cardIds: [...col.cardIds, id] } : col
+      col.id === colId ? { ...col, cardIds: [...col.cardIds, id] } : col,
     ),
   };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 15px/1.4 system-ui, sans-serif; }
-.board-app { padding: 16px; max-width: 980px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 14px; }
-.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.column { background: #171c25; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
-.column h2 { font-size: 0.95rem; margin: 2px 4px 10px; display: flex; justify-content: space-between; }
-.count { background: #2a3140; border-radius: 999px; padding: 0 8px; font-size: 0.8rem; }
-.cards { list-style: none; margin: 0; padding: 4px; min-height: 60px; flex: 1; border-radius: 8px; border-bottom: 3px solid transparent; }
-.cards.drop-end { border-bottom-color: #5b8cff; }
-.card { background: #222a37; border: 1px solid #323b4d; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: grab; border-top: 3px solid transparent; }
-.card:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
-.card.dragging { opacity: 0.4; }
-.card.grabbed { background: #2c3a57; border-color: #5b8cff; box-shadow: 0 6px 16px #0008; }
-.card.drop-before { border-top-color: #5b8cff; }
-.add { display: flex; gap: 6px; margin-top: 6px; }
-.add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
-.add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    15px/1.4 system-ui,
+    sans-serif;
+}
+.board-app {
+  padding: 16px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.column {
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.column h2 {
+  font-size: 0.95rem;
+  margin: 2px 4px 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.count {
+  background: #2a3140;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-height: 60px;
+  flex: 1;
+  border-radius: 8px;
+  border-bottom: 3px solid transparent;
+}
+.cards.drop-end {
+  border-bottom-color: #5b8cff;
+}
+.card {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+  border-top: 3px solid transparent;
+}
+.card:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: 2px;
+}
+.card.dragging {
+  opacity: 0.4;
+}
+.card.grabbed {
+  background: #2c3a57;
+  border-color: #5b8cff;
+  box-shadow: 0 6px 16px #0008;
+}
+.card.drop-before {
+  border-top-color: #5b8cff;
+}
+.add {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.add input {
+  flex: 1;
+  min-width: 0;
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.add button {
+  background: #5b8cff;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -754,7 +920,8 @@ How the state maps onto Vue:
 ### Step 1: the move, written the Vue way
 
 \`\`\`jsx
-// Insert the card in front of the card currently at beforeIndex in toCol
+// Insert the card in front of the card
+// currently at beforeIndex in toCol
 // (toCol.cardIds.length means "at the end"), counted before removal.
 export function moveCard(board, cardId, toColId, beforeIndex) {
   const from = findCard(board, cardId);
@@ -791,12 +958,10 @@ The column owns no board state. It declares its emits with \`defineEmits\` and t
 ### Step 3: the drag handlers in the parent
 
 \`\`\`vue
-function onDragStart(e, id) {
-  dragId = id;
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", id); // Firefox needs data to start a drag
-  }
+function onDragStart(e, id) { dragId = id; if (e.dataTransfer) {
+e.dataTransfer.effectAllowed = "move";
+e.dataTransfer.setData("text/plain", id); // Firefox needs data to start
+a drag }
 \`\`\`
 
 \`setData\` is there because Firefox will not start a drag without data. \`onDragOver\` only assigns \`over.value\` when the target actually changed, because \`dragover\` fires many times a second. Clean-up lives in \`onDragEnd\`, which runs even when the user cancels and no \`drop\` ever fires.
@@ -808,11 +973,9 @@ function onDragStart(e, id) {
 📌 **Interview term: nextTick** — a promise that resolves after Vue has patched the DOM for the current state changes. When a card moves to another column, it is rendered by a different \`v-for\`, so it is a new element and focus is lost. Waiting for \`nextTick\` and focusing the new node fixes it.
 
 \`\`\`vue
-async function refocus(id) {
-  await nextTick();
-  const el = boardEl.value.querySelector('[data-card="' + id + '"]');
-  if (el) el.focus();
-}
+async function refocus(id) { await nextTick(); const el =
+boardEl.value.querySelector('[data-card="' + id + '"]'); if (el)
+el.focus(); }
 \`\`\`
 
 The keyboard handler computes a target \`[column, beforeIndex]\` from the arrow key and calls the same \`moveCard\`; \`ArrowDown\` passes \`index + 2\` because of the "insert before" rule.
@@ -821,7 +984,7 @@ The keyboard handler computes a target \`[column, beforeIndex]\` from the arrow 
 
 Compiled with \`@vue/compiler-sfc\` and mounted with \`createApp(App).mount("#app")\` by \`scripts/verify-mc-solution.mjs\` in jsdom 29. jsdom has no \`DragEvent\` or \`DataTransfer\`, so the driver dispatches \`MouseEvent\`s named \`dragstart\`, \`dragover\`, \`drop\` and \`dragend\` with a \`dataTransfer\` stub, then real keyboard events. Output (the second drag, onto the empty end of To Do, is trimmed):
 
-\`\`\`
+\`\`\`text
 start: To Do: Write spec, Design API, Set up CI | In Progress: Build login | Done: Kick-off
 drag Write spec onto Build login | dragover.defaultPrevented=true | marker on: c4
   board: To Do: Design API, Set up CI | In Progress: Write spec, Build login | Done: Kick-off
@@ -937,7 +1100,14 @@ The same driver printed identical lines for the React and Angular solutions. \`s
           "/src/App.vue": `<script setup>
 import { reactive, ref, nextTick } from "vue";
 import KanbanColumn from "./components/KanbanColumn.vue";
-import { createBoard, moveCard, addCard, findCard, snapshot, restore } from "./board.js";
+import {
+  createBoard,
+  moveCard,
+  addCard,
+  findCard,
+  snapshot,
+  restore,
+} from "./board.js";
 
 const board = reactive(createBoard());
 const over = ref(null); // { colId, index } under the pointer
@@ -965,14 +1135,16 @@ function onDragStart(e, id) {
   dragId = id;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", id); // Firefox needs data to start a drag
+    // Firefox needs data to start a drag
+    e.dataTransfer.setData("text/plain", id);
   }
   draggingId.value = id;
 }
 function onDragOver(target) {
   if (!dragId) return;
   const o = over.value;
-  if (!o || o.colId !== target.colId || o.index !== target.index) over.value = target;
+  if (!o || o.colId !== target.colId || o.index !== target.index)
+    over.value = target;
 }
 function onDragLeave(colId) {
   if (over.value && over.value.colId === colId) over.value = null;
@@ -990,7 +1162,8 @@ function onDragEnd() {
   over.value = null;
 }
 
-// ---- keyboard path: Space picks up, arrows move, Space drops, Escape cancels ----
+// ---- keyboard path: Space picks up, arrows
+// move, Space drops, Escape cancels ----
 function onCardKey(e, id) {
   const title = board.cards[id].title;
   if (e.key === " " || e.key === "Enter") {
@@ -1000,7 +1173,10 @@ function onCardKey(e, id) {
       message.value = title + " dropped in " + where(id);
     } else {
       grab.value = { id, snap: snapshot(board) };
-      message.value = "Picked up " + title + ". Arrow keys move, Space drops, Escape cancels.";
+      message.value =
+        "Picked up " +
+        title +
+        ". Arrow keys move, Space drops, Escape cancels.";
     }
     return;
   }
@@ -1016,9 +1192,11 @@ function onCardKey(e, id) {
   const c = board.columns.indexOf(col);
   let target = null;
   if (e.key === "ArrowUp" && index > 0) target = [c, index - 1];
-  if (e.key === "ArrowDown" && index < col.cardIds.length - 1) target = [c, index + 2];
+  if (e.key === "ArrowDown" && index < col.cardIds.length - 1)
+    target = [c, index + 2];
   if (e.key === "ArrowLeft" && c > 0) target = [c - 1, index];
-  if (e.key === "ArrowRight" && c < board.columns.length - 1) target = [c + 1, index];
+  if (e.key === "ArrowRight" && c < board.columns.length - 1)
+    target = [c + 1, index];
   if (!target) return;
   e.preventDefault();
   moveCard(board, id, board.columns[target[0]].id, target[1]);
@@ -1031,7 +1209,8 @@ function onCardKey(e, id) {
   <main class="board-app">
     <h1>Sprint board</h1>
     <p id="kb-help" class="hint">
-      Drag cards, or focus one and press Space to pick it up, arrows to move, Space to drop.
+      Drag cards, or focus one and press Space to pick it up, arrows to move,
+      Space to drop.
     </p>
     <div ref="boardEl" class="board">
       <KanbanColumn
@@ -1051,17 +1230,48 @@ function onCardKey(e, id) {
         @add="(title) => addCard(board, col.id, title)"
       />
     </div>
-    <p role="status" aria-live="polite" class="sr-only" data-testid="live">{{ message }}</p>
+    <p role="status" aria-live="polite" class="sr-only" data-testid="live">
+      {{ message }}
+    </p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 15px/1.4 system-ui, sans-serif; }
-.board-app { padding: 16px; max-width: 980px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 14px; }
-.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    15px/1.4 system-ui,
+    sans-serif;
+}
+.board-app {
+  padding: 16px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/board.js": `// Board state and the moves on it. In Vue the board is a reactive() object,
@@ -1109,7 +1319,9 @@ export function snapshot(board) {
 }
 
 export function restore(board, snap) {
-  board.columns.forEach((c, i) => c.cardIds.splice(0, c.cardIds.length, ...snap[i]));
+  board.columns.forEach((c, i) =>
+    c.cardIds.splice(0, c.cardIds.length, ...snap[i]),
+  );
 }
 
 let nextId = 6;
@@ -1129,18 +1341,29 @@ const props = defineProps({
   draggingId: { type: String, default: null },
   grabbedId: { type: String, default: null },
 });
-const emit = defineEmits(["card-dragstart", "card-dragend", "list-dragover", "list-dragleave", "list-drop", "card-key", "add"]);
+const emit = defineEmits([
+  "card-dragstart",
+  "card-dragend",
+  "list-dragover",
+  "list-dragleave",
+  "list-drop",
+  "card-key",
+  "add",
+]);
 const draft = ref("");
 
 // One listener on the list (event delegation): the card under the pointer
 // means "insert before it", empty space below the cards means "append".
 function targetFrom(e) {
   const el = e.target.closest && e.target.closest("[data-card]");
-  const index = el ? props.col.cardIds.indexOf(el.dataset.card) : props.col.cardIds.length;
+  const index = el
+    ? props.col.cardIds.indexOf(el.dataset.card)
+    : props.col.cardIds.length;
   return { colId: props.col.id, index };
 }
 function onLeave(e) {
-  if (!e.currentTarget.contains(e.relatedTarget)) emit("list-dragleave", props.col.id);
+  if (!e.currentTarget.contains(e.relatedTarget))
+    emit("list-dragleave", props.col.id);
 }
 function submit() {
   const title = draft.value.trim();
@@ -1151,7 +1374,11 @@ function submit() {
 </script>
 
 <template>
-  <section class="column" :aria-labelledby="col.id + '-h'" :data-testid="'col-' + col.id">
+  <section
+    class="column"
+    :aria-labelledby="col.id + '-h'"
+    :data-testid="'col-' + col.id"
+  >
     <h2 :id="col.id + '-h'">{{ col.title }} <span class="count">{{ col.cardIds.length }}</span></h2>
     <!-- .prevent on dragover is what tells the browser this list accepts drops -->
     <ul
@@ -1180,26 +1407,96 @@ function submit() {
       </li>
     </ul>
     <form class="add" @submit.prevent="submit">
-      <input v-model="draft" placeholder="New card" :aria-label="'New card in ' + col.title" :data-testid="'add-' + col.id" />
+      <input
+        v-model="draft"
+        placeholder="New card"
+        :aria-label="'New card in ' + col.title"
+        :data-testid="'add-' + col.id"
+      />
       <button type="submit">Add</button>
     </form>
   </section>
 </template>
 
 <style scoped>
-.column { background: #171c25; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; }
-.column h2 { font-size: 0.95rem; margin: 2px 4px 10px; display: flex; justify-content: space-between; }
-.count { background: #2a3140; border-radius: 999px; padding: 0 8px; font-size: 0.8rem; }
-.cards { list-style: none; margin: 0; padding: 4px; min-height: 60px; flex: 1; border-radius: 8px; border-bottom: 3px solid transparent; }
-.cards.drop-end { border-bottom-color: #5b8cff; }
-.card { background: #222a37; border: 1px solid #323b4d; border-top: 3px solid transparent; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: grab; }
-.card:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
-.card.dragging { opacity: 0.4; }
-.card.grabbed { background: #2c3a57; border-color: #5b8cff; box-shadow: 0 6px 16px #0008; }
-.card.drop-before { border-top-color: #5b8cff; }
-.add { display: flex; gap: 6px; margin-top: 6px; }
-.add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
-.add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.column {
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+.column h2 {
+  font-size: 0.95rem;
+  margin: 2px 4px 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.count {
+  background: #2a3140;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-height: 60px;
+  flex: 1;
+  border-radius: 8px;
+  border-bottom: 3px solid transparent;
+}
+.cards.drop-end {
+  border-bottom-color: #5b8cff;
+}
+.card {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-top: 3px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: grab;
+}
+.card:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: 2px;
+}
+.card.dragging {
+  opacity: 0.4;
+}
+.card.grabbed {
+  background: #2c3a57;
+  border-color: #5b8cff;
+  box-shadow: 0 6px 16px #0008;
+}
+.card.drop-before {
+  border-top-color: #5b8cff;
+}
+.add {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.add input {
+  flex: 1;
+  min-width: 0;
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.add button {
+  background: #5b8cff;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 </style>
 `,
         },
@@ -1234,7 +1531,8 @@ Three columns; drop on a card to insert before it, on empty space to append; reo
 ### Step 1: one immutable move
 
 \`\`\`ts
-// Insert in front of the card currently at beforeIndex (length = at the end),
+// Insert in front of the card currently
+// at beforeIndex (length = at the end),
 // counted before the moved card is taken out.
 export function moveCard(board: Board, cardId: string, toColId: string, beforeIndex: number): Board {
   const from = findCard(board, cardId);
@@ -1275,7 +1573,8 @@ dragOver(e: DragEvent, target: DropTarget) {
   if (!this.dragId) return;
   e.preventDefault(); // without this the browser refuses the drop
   const o = this.over();
-  if (!o || o.colId !== target.colId || o.index !== target.index) this.over.set(target);
+  if (!o || o.colId !== target.colId || o.index !== target.index)
+    this.over.set(target);
 }
 \`\`\`
 
@@ -1289,10 +1588,15 @@ dragOver(e: DragEvent, target: DropTarget) {
 
 \`\`\`ts
 private refocus(id: string) {
-  afterNextRender(() => {
-    const el = (this.host.nativeElement as HTMLElement).querySelector('[data-card="' + id + '"]') as HTMLElement | null;
-    if (el) el.focus();
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      const el = (this.host.nativeElement as HTMLElement).querySelector(
+        '[data-card="' + id + '"]',
+      ) as HTMLElement | null;
+      if (el) el.focus();
+    },
+    { injector: this.injector },
+  );
 }
 \`\`\`
 
@@ -1302,7 +1606,7 @@ A card that moves to another column is created by a different \`@for\` block, so
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers by \`scripts/verify-mc-solution.mjs\`, once AOT with \`strictTemplates\` and once through the runtime JIT. jsdom has no \`DragEvent\` or \`DataTransfer\`, so the driver dispatches \`MouseEvent\`s named like drag events with a \`dataTransfer\` stub, then keyboard events. AOT output (the second drag is trimmed; the JIT run printed the same lines):
 
-\`\`\`
+\`\`\`text
 start: To Do: Write spec, Design API, Set up CI | In Progress: Build login | Done: Kick-off
 drag Write spec onto Build login | dragover.defaultPrevented=true | marker on: c4
   board: To Do: Design API, Set up CI | In Progress: Write spec, Build login | Done: Kick-off
@@ -1415,9 +1719,23 @@ These lines match the React and Vue runs exactly. Real-browser behaviour was che
 ---
 **Conclusion:** In Angular the board is one signal holding immutable, normalised data, and every move, mouse or keyboard, goes through one pure function. Accept drops with \`preventDefault\` in \`dragover\`, clean up in \`dragend\`, track cards by id in \`@for\`, and use \`afterNextRender\` to put focus back on a card that now lives in another column. Both the AOT build and the playground JIT printed the same verified output as the React and Vue solutions.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, Injector, afterNextRender, inject, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  inject,
+  signal,
+} from "@angular/core";
 import { KanbanColumnComponent } from "./kanban-column.component";
-import { Board, DropTarget, addCard, findCard, initialBoard, moveCard } from "./board";
+import {
+  Board,
+  DropTarget,
+  addCard,
+  findCard,
+  initialBoard,
+  moveCard,
+} from "./board";
 
 @Component({
   selector: "app-root",
@@ -1447,17 +1765,24 @@ import { Board, DropTarget, addCard, findCard, initialBoard, moveCard } from "./
           />
         }
       </div>
-      <p role="status" aria-live="polite" class="sr-only" data-testid="live">{{ message() }}</p>
+      <p
+        role="status"
+        aria-live="polite"
+        class="sr-only"
+        data-testid="live"
+      >{{ message() }}</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 15px/1.4 system-ui, sans-serif; }
     .board-app { padding: 16px; max-width: 980px; margin: 0 auto; }
     h1 { font-size: 1.3rem; margin: 0 0 4px; }
     .hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 14px; }
     .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   board = signal<Board>(initialBoard);
@@ -1469,22 +1794,35 @@ export class AppComponent {
   private host = inject(ElementRef<HTMLElement>);
   private injector = inject(Injector);
 
-  grabbedId() { const g = this.grab(); return g ? g.id : null; }
-  overIndex(colId: string) { const o = this.over(); return o && o.colId === colId ? o.index : null; }
+  grabbedId() {
+    const g = this.grab();
+    return g ? g.id : null;
+  }
+  overIndex(colId: string) {
+    const o = this.over();
+    return o && o.colId === colId ? o.index : null;
+  }
 
   private where(b: Board, id: string) {
     const pos = findCard(b, id)!;
     const col = b.columns.find((c) => c.id === pos.colId)!;
-    return col.title + ", position " + (pos.index + 1) + " of " + col.cardIds.length;
+    return (
+      col.title + ", position " + (pos.index + 1) + " of " + col.cardIds.length
+    );
   }
 
   // A card that changes column is a new element (another @for), so focus is
   // lost. afterNextRender runs once the DOM reflects the new board.
   private refocus(id: string) {
-    afterNextRender(() => {
-      const el = (this.host.nativeElement as HTMLElement).querySelector('[data-card="' + id + '"]') as HTMLElement | null;
-      if (el) el.focus();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        const el = (this.host.nativeElement as HTMLElement).querySelector(
+          '[data-card="' + id + '"]',
+        ) as HTMLElement | null;
+        if (el) el.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   // ---- pointer path: HTML5 drag and drop ----
@@ -1492,7 +1830,8 @@ export class AppComponent {
     this.dragId = id;
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", id); // Firefox needs data to start a drag
+      // Firefox needs data to start a drag
+      e.dataTransfer.setData("text/plain", id);
     }
     this.draggingId.set(id);
   }
@@ -1500,7 +1839,8 @@ export class AppComponent {
     if (!this.dragId) return;
     e.preventDefault(); // without this the browser refuses the drop
     const o = this.over();
-    if (!o || o.colId !== target.colId || o.index !== target.index) this.over.set(target);
+    if (!o || o.colId !== target.colId || o.index !== target.index)
+      this.over.set(target);
   }
   dragLeave(colId: string) {
     const o = this.over();
@@ -1512,7 +1852,9 @@ export class AppComponent {
     if (!id) return;
     const next = moveCard(this.board(), id, target.colId, target.index);
     this.board.set(next);
-    this.message.set(next.cards[id].title + " dropped in " + this.where(next, id));
+    this.message.set(
+      next.cards[id].title + " dropped in " + this.where(next, id),
+    );
     this.dragEnd();
   }
   dragEnd() {
@@ -1521,7 +1863,8 @@ export class AppComponent {
     this.over.set(null);
   }
 
-  // ---- keyboard path: Space picks up, arrows move, Space drops, Escape cancels ----
+  // ---- keyboard path: Space picks up, arrows
+  // move, Space drops, Escape cancels ----
   onCardKey(e: KeyboardEvent, id: string) {
     const board = this.board();
     const title = board.cards[id].title;
@@ -1533,7 +1876,11 @@ export class AppComponent {
         this.message.set(title + " dropped in " + this.where(board, id));
       } else {
         this.grab.set({ id, snapshot: board });
-        this.message.set("Picked up " + title + ". Arrow keys move, Space drops, Escape cancels.");
+        this.message.set(
+          "Picked up " +
+            title +
+            ". Arrow keys move, Space drops, Escape cancels.",
+        );
       }
       return;
     }
@@ -1541,7 +1888,12 @@ export class AppComponent {
     if (e.key === "Escape") {
       this.board.set(grab.snapshot);
       this.grab.set(null);
-      this.message.set("Move cancelled. " + title + " is back in " + this.where(grab.snapshot, id));
+      this.message.set(
+        "Move cancelled. " +
+          title +
+          " is back in " +
+          this.where(grab.snapshot, id),
+      );
       this.refocus(id);
       return;
     }
@@ -1549,9 +1901,14 @@ export class AppComponent {
     const c = board.columns.findIndex((col) => col.id === pos.colId);
     let target: [number, number] | null = null;
     if (e.key === "ArrowUp" && pos.index > 0) target = [c, pos.index - 1];
-    if (e.key === "ArrowDown" && pos.index < board.columns[c].cardIds.length - 1) target = [c, pos.index + 2];
+    if (
+      e.key === "ArrowDown" &&
+      pos.index < board.columns[c].cardIds.length - 1
+    )
+      target = [c, pos.index + 2];
     if (e.key === "ArrowLeft" && c > 0) target = [c - 1, pos.index];
-    if (e.key === "ArrowRight" && c < board.columns.length - 1) target = [c + 1, pos.index];
+    if (e.key === "ArrowRight" && c < board.columns.length - 1)
+      target = [c + 1, pos.index];
     if (!target) return;
     e.preventDefault();
     const next = moveCard(board, id, board.columns[target[0]].id, target[1]);
@@ -1566,11 +1923,25 @@ export class AppComponent {
 }
 `,
           "/src/app/board.ts": `// Pure, immutable board logic. The component keeps the board in a signal and
-// replaces it with a new object on every move, so signal equality sees the change.
-export interface Card { id: string; title: string; }
-export interface Column { id: string; title: string; cardIds: string[]; }
-export interface Board { columns: Column[]; cards: Record<string, Card>; }
-export interface DropTarget { colId: string; index: number; }
+// replaces it with a new object on every
+// move, so signal equality sees the change.
+export interface Card {
+  id: string;
+  title: string;
+}
+export interface Column {
+  id: string;
+  title: string;
+  cardIds: string[];
+}
+export interface Board {
+  columns: Column[];
+  cards: Record<string, Card>;
+}
+export interface DropTarget {
+  colId: string;
+  index: number;
+}
 
 export const initialBoard: Board = {
   columns: [
@@ -1587,7 +1958,10 @@ export const initialBoard: Board = {
   },
 };
 
-export function findCard(board: Board, cardId: string): { colId: string; index: number } | null {
+export function findCard(
+  board: Board,
+  cardId: string,
+): { colId: string; index: number } | null {
   for (const col of board.columns) {
     const index = col.cardIds.indexOf(cardId);
     if (index !== -1) return { colId: col.id, index };
@@ -1597,7 +1971,12 @@ export function findCard(board: Board, cardId: string): { colId: string; index: 
 
 // Insert in front of the card currently at beforeIndex (length = at the end),
 // counted before the moved card is taken out.
-export function moveCard(board: Board, cardId: string, toColId: string, beforeIndex: number): Board {
+export function moveCard(
+  board: Board,
+  cardId: string,
+  toColId: string,
+  beforeIndex: number,
+): Board {
   const from = findCard(board, cardId);
   if (!from) return board;
   let index = beforeIndex;
@@ -1620,7 +1999,9 @@ export function addCard(board: Board, colId: string, title: string): Board {
   const id = "c" + nextId++;
   return {
     cards: { ...board.cards, [id]: { id, title } },
-    columns: board.columns.map((col) => (col.id === colId ? { ...col, cardIds: [...col.cardIds, id] } : col)),
+    columns: board.columns.map((col) =>
+      col.id === colId ? { ...col, cardIds: [...col.cardIds, id] } : col,
+    ),
   };
 }
 `,
@@ -1633,7 +2014,11 @@ import { Card, Column, DropTarget } from "./board";
   standalone: true,
   imports: [FormsModule],
   template: \`
-    <section class="column" [attr.aria-labelledby]="col.id + '-h'" [attr.data-testid]="'col-' + col.id">
+    <section
+      class="column"
+      [attr.aria-labelledby]="col.id + '-h'"
+      [attr.data-testid]="'col-' + col.id"
+    >
       <h2 [id]="col.id + '-h'">{{ col.title }} <span class="count">{{ col.cardIds.length }}</span></h2>
       <ul
         class="cards"
@@ -1667,7 +2052,8 @@ import { Card, Column, DropTarget } from "./board";
       </form>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .column { background: #171c25; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
     .column h2 { font-size: 0.95rem; margin: 2px 4px 10px; display: flex; justify-content: space-between; }
     .count { background: #2a3140; border-radius: 999px; padding: 0 8px; font-size: 0.8rem; }
@@ -1681,7 +2067,8 @@ import { Card, Column, DropTarget } from "./board";
     .add { display: flex; gap: 6px; margin-top: 6px; }
     .add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
     .add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class KanbanColumnComponent {
   @Input({ required: true }) col!: Column;
@@ -1689,27 +2076,45 @@ export class KanbanColumnComponent {
   @Input() over: number | null = null;
   @Input() draggingId: string | null = null;
   @Input() grabbedId: string | null = null;
-  @Output() cardDragStart = new EventEmitter<{ event: DragEvent; id: string }>();
+  @Output() cardDragStart = new EventEmitter<{
+    event: DragEvent;
+    id: string;
+  }>();
   @Output() cardDragEnd = new EventEmitter<void>();
   @Output() cardKey = new EventEmitter<{ event: KeyboardEvent; id: string }>();
-  @Output() listOver = new EventEmitter<{ event: DragEvent; target: DropTarget }>();
+  @Output() listOver = new EventEmitter<{
+    event: DragEvent;
+    target: DropTarget;
+  }>();
   @Output() listLeave = new EventEmitter<string>();
-  @Output() listDrop = new EventEmitter<{ event: DragEvent; target: DropTarget }>();
+  @Output() listDrop = new EventEmitter<{
+    event: DragEvent;
+    target: DropTarget;
+  }>();
   @Output() add = new EventEmitter<string>();
   draft = signal("");
 
   // One listener on the list (event delegation): the card under the pointer
   // means "insert before it", empty space below the cards means "append".
   private targetFrom(e: Event): DropTarget {
-    const el = (e.target as Element).closest("[data-card]") as HTMLElement | null;
-    const index = el ? this.col.cardIds.indexOf(el.dataset["card"] || "") : this.col.cardIds.length;
+    const el = (e.target as Element).closest(
+      "[data-card]",
+    ) as HTMLElement | null;
+    const index = el
+      ? this.col.cardIds.indexOf(el.dataset["card"] || "")
+      : this.col.cardIds.length;
     return { colId: this.col.id, index };
   }
-  onOver(e: DragEvent) { this.listOver.emit({ event: e, target: this.targetFrom(e) }); }
-  onDrop(e: DragEvent) { this.listDrop.emit({ event: e, target: this.targetFrom(e) }); }
+  onOver(e: DragEvent) {
+    this.listOver.emit({ event: e, target: this.targetFrom(e) });
+  }
+  onDrop(e: DragEvent) {
+    this.listDrop.emit({ event: e, target: this.targetFrom(e) });
+  }
   onLeave(e: DragEvent) {
     const to = e.relatedTarget as Node | null;
-    if (!(e.currentTarget as HTMLElement).contains(to)) this.listLeave.emit(this.col.id);
+    if (!(e.currentTarget as HTMLElement).contains(to))
+      this.listLeave.emit(this.col.id);
   }
   submit(e: Event) {
     e.preventDefault();
@@ -1786,7 +2191,8 @@ Four columns with editable limits and badges, two lane groupings (assignee or pr
 📌 **Interview term: Single source of truth** — store each fact once. Here one flat, ordered array of cards holds everything; a card's column is its \`status\` field, its lane is its \`assignee\` or \`priority\` field, and its position is its place in the array.
 
 \`\`\`jsx
-export const countIn = (cards, status) => cards.filter((c) => c.status === status).length;
+export const countIn = (cards, status) =>
+  cards.filter((c) => c.status === status).length;
 export const cellCards = (cards, groupBy, lane, status) =>
   cards.filter((c) => c.status === status && c[groupBy] === lane);
 \`\`\`
@@ -1835,7 +2241,8 @@ Switching the grouping from assignee to priority changes only \`groupBy\`; every
 📌 **Interview term: WIP limit** — work-in-progress limit, the maximum number of cards a column may hold. Its purpose is to make the team finish work before starting more.
 
 \`\`\`jsx
-// The WIP rule. Moving inside the same column (reorder, or across lanes)
+// The WIP rule. Moving inside the same
+// column (reorder, or across lanes)
 // never changes that column's count, so it is always allowed.
 export function canMove(cards, limits, cardId, toStatus) {
   const card = cards.find((c) => c.id === cardId);
@@ -1850,7 +2257,8 @@ The first early return is the subtle part. A card that stays in its column, whet
 ### Step 2: the move as one pure function
 
 \`\`\`jsx
-// Take the card out, patch its status and lane field, and put it back in
+// Take the card out, patch its status
+// and lane field, and put it back in
 // front of beforeId (or at the end, which is the end of its cell too).
 export function moveCard(cards, cardId, patch, beforeId) {
   const card = cards.find((c) => c.id === cardId);
@@ -1858,7 +2266,9 @@ export function moveCard(cards, cardId, patch, beforeId) {
   const rest = cards.filter((c) => c.id !== cardId);
   const at = beforeId ? rest.findIndex((c) => c.id === beforeId) : -1;
   const moved = { ...card, ...patch };
-  return at === -1 ? [...rest, moved] : [...rest.slice(0, at), moved, ...rest.slice(at)];
+  return at === -1
+    ? [...rest, moved]
+    : [...rest.slice(0, at), moved, ...rest.slice(at)];
 }
 \`\`\`
 
@@ -1890,7 +2300,12 @@ over(e, lane, status, beforeId) {
   // the browser shows a no-drop cursor and never fires drop.
   if (!blocked) e.preventDefault();
   const o = overRef.current;
-  if (!o || o.lane !== lane || o.status !== status || o.beforeId !== beforeId) {
+  if (
+    !o ||
+    o.lane !== lane ||
+    o.status !== status ||
+    o.beforeId !== beforeId
+  ) {
     overRef.current = { lane, status, beforeId, blocked };
     setOver(overRef.current);
   }
@@ -1898,7 +2313,8 @@ over(e, lane, status, beforeId) {
 drop(e, lane, status, beforeId) {
   e.preventDefault();
   const id = dragId.current;
-  if (id) tryMove(id, status, lane, beforeId); // guarded again: never trust the hover
+  // guarded again: never trust the hover
+  if (id) tryMove(id, status, lane, beforeId);
   overRef.current = null; // handled: dragend must not report it
   drag.end();
 },
@@ -1914,10 +2330,13 @@ function onCardKey(e, card) {
   const c = COLUMNS.findIndex((col) => col.id === card.status);
   const l = lanes.indexOf(card[groupBy]);
   let to = null;
-  if (e.key === "ArrowLeft" && c > 0) to = [COLUMNS[c - 1].id, lanes[l]];
-  if (e.key === "ArrowRight" && c < COLUMNS.length - 1) to = [COLUMNS[c + 1].id, lanes[l]];
+  if (e.key === "ArrowLeft" && c > 0)
+    to = [COLUMNS[c - 1].id, lanes[l]];
+  if (e.key === "ArrowRight" && c < COLUMNS.length - 1)
+    to = [COLUMNS[c + 1].id, lanes[l]];
   if (e.key === "ArrowUp" && l > 0) to = [card.status, lanes[l - 1]];
-  if (e.key === "ArrowDown" && l < lanes.length - 1) to = [card.status, lanes[l + 1]];
+  if (e.key === "ArrowDown" && l < lanes.length - 1)
+    to = [card.status, lanes[l + 1]];
   if (!to) return;
   e.preventDefault();
   if (tryMove(card.id, to[0], to[1], null)) setFocusId(card.id);
@@ -1957,7 +2376,7 @@ The limit inputs write \`null\` for an empty field. The badge shows \`count/limi
 
 Mounted under \`<StrictMode>\` by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. The driver dispatches drag events as \`MouseEvent\`s with a \`dataTransfer\` stub (jsdom has no \`DragEvent\`), keyboard events with \`shiftKey\`, and input events on the limit fields and the grouping select. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start
     Asha: todo[Login page, Fix flaky test] doing[Payment form] review[] done[]
     Ben: todo[Search API] doing[] review[Audit logs] done[Onboarding copy]
@@ -1997,7 +2416,7 @@ Read the important lines: a hover over a full Doing cell returns \`defaultPreven
 
 In real Chromium 141 (playwright-core 1.64.1, native drag events), the blocked drop really never reached a \`drop\` listener:
 
-\`\`\`
+\`\`\`text
 Login page now in Ben|doing | drop events: 1
 Search API now in Ben|todo | drop events: 1 | alert: Doing is at its WIP limit (2/2). Search API was not moved.
 360px: page scrollWidth 360 | board scroller scrollWidth 728
@@ -2110,7 +2529,16 @@ At 360 px the grid scrolls inside its own container while the page itself does n
 **Conclusion:** Swimlanes and WIP limits look like two features but rest on one design: a single ordered card list from which columns, lanes and counts are derived, and a single guarded entry point that every input goes through. HTML5 drag and drop already knows how to refuse a drop, as long as you only call \`preventDefault\` when the guard says yes and report rejections from \`dragend\`. The verified run shows the blocked hover, the alert without a \`drop\` event, the forced drop refused, same-column moves allowed in a full column, and the over-limit badge after a limit is lowered.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import { COLUMNS, LANES, initialCards, initialLimits, countIn, cellCards, canMove, moveCard } from "./src/model";
+import {
+  COLUMNS,
+  LANES,
+  initialCards,
+  initialLimits,
+  countIn,
+  cellCards,
+  canMove,
+  moveCard,
+} from "./src/model";
 import Cell from "./src/Cell";
 
 export default function App() {
@@ -2136,8 +2564,16 @@ export default function App() {
   function tryMove(id, status, lane, beforeId) {
     const card = cards.find((c) => c.id === id);
     if (!canMove(cards, limits, id, status)) {
-      setAlert(titleOf(status) + " is at its WIP limit (" + countIn(cards, status) + "/" + limits[status] +
-        "). " + card.title + " was not moved.");
+      setAlert(
+        titleOf(status) +
+          " is at its WIP limit (" +
+          countIn(cards, status) +
+          "/" +
+          limits[status] +
+          "). " +
+          card.title +
+          " was not moved.",
+      );
       return false;
     }
     setCards(moveCard(cards, id, { status, [groupBy]: lane }, beforeId));
@@ -2162,7 +2598,12 @@ export default function App() {
       // the browser shows a no-drop cursor and never fires drop.
       if (!blocked) e.preventDefault();
       const o = overRef.current;
-      if (!o || o.lane !== lane || o.status !== status || o.beforeId !== beforeId) {
+      if (
+        !o ||
+        o.lane !== lane ||
+        o.status !== status ||
+        o.beforeId !== beforeId
+      ) {
         overRef.current = { lane, status, beforeId, blocked };
         setOver(overRef.current);
       }
@@ -2170,13 +2611,15 @@ export default function App() {
     drop(e, lane, status, beforeId) {
       e.preventDefault();
       const id = dragId.current;
-      if (id) tryMove(id, status, lane, beforeId); // guarded again: never trust the hover
+      // guarded again: never trust the hover
+      if (id) tryMove(id, status, lane, beforeId);
       overRef.current = null; // handled: dragend must not report it
       drag.end();
     },
     end() {
       const o = overRef.current;
-      if (o && o.blocked && dragId.current) tryMove(dragId.current, o.status, o.lane, null);
+      if (o && o.blocked && dragId.current)
+        tryMove(dragId.current, o.status, o.lane, null);
       dragId.current = null;
       overRef.current = null;
       setOver(null);
@@ -2189,9 +2632,11 @@ export default function App() {
     const l = lanes.indexOf(card[groupBy]);
     let to = null;
     if (e.key === "ArrowLeft" && c > 0) to = [COLUMNS[c - 1].id, lanes[l]];
-    if (e.key === "ArrowRight" && c < COLUMNS.length - 1) to = [COLUMNS[c + 1].id, lanes[l]];
+    if (e.key === "ArrowRight" && c < COLUMNS.length - 1)
+      to = [COLUMNS[c + 1].id, lanes[l]];
     if (e.key === "ArrowUp" && l > 0) to = [card.status, lanes[l - 1]];
-    if (e.key === "ArrowDown" && l < lanes.length - 1) to = [card.status, lanes[l + 1]];
+    if (e.key === "ArrowDown" && l < lanes.length - 1)
+      to = [card.status, lanes[l + 1]];
     if (!to) return;
     e.preventDefault();
     if (tryMove(card.id, to[0], to[1], null)) setFocusId(card.id);
@@ -2208,58 +2653,104 @@ export default function App() {
         <h1>Team board</h1>
         <label>
           Swimlanes by{" "}
-          <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)} data-testid="group-by">
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value)}
+            data-testid="group-by"
+          >
             <option value="assignee">Assignee</option>
             <option value="priority">Priority</option>
           </select>
         </label>
       </header>
-      <p id="kb-help" className="hint">Drag cards between cells, or focus a card and press Shift + arrow keys.</p>
+      <p id="kb-help" className="hint">
+        Drag cards between cells, or focus a card and press Shift + arrow keys.
+      </p>
       <div className="scroller">
-        <div className="grid" style={{ gridTemplateColumns: "96px repeat(" + COLUMNS.length + ", minmax(150px, 1fr))" }}>
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns:
+              "96px repeat(" + COLUMNS.length + ", minmax(150px, 1fr))",
+          }}
+        >
           <div className="corner" />
           {COLUMNS.map((col) => {
             const n = countIn(cards, col.id);
             const limit = limits[col.id];
-            const state = limit == null ? "" : n > limit ? " over-limit" : n === limit ? " at-limit" : "";
+            const state =
+              limit == null
+                ? ""
+                : n > limit
+                  ? " over-limit"
+                  : n === limit
+                    ? " at-limit"
+                    : "";
             return (
               <div key={col.id} className="col-head" data-col={col.id}>
                 <span>{col.title}</span>
-                <span className={"badge" + state} data-testid={"badge-" + col.id}>
+                <span
+                  className={"badge" + state}
+                  data-testid={"badge-" + col.id}
+                >
                   {limit == null ? n : n + "/" + limit}
                 </span>
                 <input
-                  type="number" min="0" placeholder="no limit" value={limit == null ? "" : limit}
+                  type="number"
+                  min="0"
+                  placeholder="no limit"
+                  value={limit == null ? "" : limit}
                   onChange={(e) => setLimit(col.id, e.target.value)}
-                  aria-label={"WIP limit for " + col.title} data-testid={"limit-" + col.id}
+                  aria-label={"WIP limit for " + col.title}
+                  data-testid={"limit-" + col.id}
                 />
               </div>
             );
           })}
           {lanes.map((lane) => [
-            <h2 key={lane} className="lane-head" data-lane={lane}>{lane}</h2>,
+            <h2 key={lane} className="lane-head" data-lane={lane}>
+              {lane}
+            </h2>,
             ...COLUMNS.map((col) => (
               <Cell
                 key={lane + col.id}
                 lane={lane}
                 col={col}
                 cards={cellCards(cards, groupBy, lane, col.id)}
-                over={over && over.lane === lane && over.status === col.id ? over : null}
+                over={
+                  over && over.lane === lane && over.status === col.id
+                    ? over
+                    : null
+                }
                 drag={drag}
                 onCardKey={onCardKey}
-                cardRef={(id, el) => (el ? cardEls.current.set(id, el) : cardEls.current.delete(id))}
+                cardRef={(id, el) =>
+                  el ? cardEls.current.set(id, el) : cardEls.current.delete(id)
+                }
               />
             )),
           ])}
         </div>
       </div>
-      <p role="status" className="sr-only" data-testid="live">{message}</p>
-      <p role="alert" className="alert" data-testid="alert">{alert}</p>
+      <p role="status" className="sr-only" data-testid="live">
+        {message}
+      </p>
+      <p role="alert" className="alert" data-testid="alert">
+        {alert}
+      </p>
     </main>
   );
 }
 `,
-          "/src/Cell.js": `export default function Cell({ lane, col, cards, over, drag, onCardKey, cardRef }) {
+          "/src/Cell.js": `export default function Cell({
+  lane,
+  col,
+  cards,
+  over,
+  drag,
+  onCardKey,
+  cardRef,
+}) {
   // Card under the pointer = insert before it; empty space = end of this cell.
   const beforeFrom = (e) => {
     const el = e.target.closest && e.target.closest("[data-card]");
@@ -2279,7 +2770,12 @@ export default function App() {
           key={card.id}
           ref={(el) => cardRef(card.id, el)}
           data-card={card.id}
-          className={"card" + (over && !over.blocked && over.beforeId === card.id ? " drop-before" : "")}
+          className={
+            "card" +
+            (over && !over.blocked && over.beforeId === card.id
+              ? " drop-before"
+              : "")
+          }
           draggable="true"
           tabIndex={0}
           aria-describedby="kb-help"
@@ -2289,7 +2785,9 @@ export default function App() {
           onKeyDown={(e) => onCardKey(e, card)}
         >
           <span className="title">{card.title}</span>
-          <span className={"tag " + card.priority.toLowerCase()}>{card.priority}</span>
+          <span className={"tag " + card.priority.toLowerCase()}>
+            {card.priority}
+          </span>
         </li>
       ))}
     </ul>
@@ -2307,15 +2805,52 @@ export const COLUMNS = [
 export const LANES = { assignee: ["Asha", "Ben"], priority: ["High", "Low"] };
 export const initialLimits = { todo: null, doing: 2, review: 1, done: null };
 export const initialCards = [
-  { id: "k1", title: "Login page", status: "todo", assignee: "Asha", priority: "High" },
-  { id: "k2", title: "Search API", status: "todo", assignee: "Ben", priority: "Low" },
-  { id: "k3", title: "Fix flaky test", status: "todo", assignee: "Asha", priority: "Low" },
-  { id: "k4", title: "Payment form", status: "doing", assignee: "Asha", priority: "High" },
-  { id: "k5", title: "Audit logs", status: "review", assignee: "Ben", priority: "High" },
-  { id: "k6", title: "Onboarding copy", status: "done", assignee: "Ben", priority: "Low" },
+  {
+    id: "k1",
+    title: "Login page",
+    status: "todo",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k2",
+    title: "Search API",
+    status: "todo",
+    assignee: "Ben",
+    priority: "Low",
+  },
+  {
+    id: "k3",
+    title: "Fix flaky test",
+    status: "todo",
+    assignee: "Asha",
+    priority: "Low",
+  },
+  {
+    id: "k4",
+    title: "Payment form",
+    status: "doing",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k5",
+    title: "Audit logs",
+    status: "review",
+    assignee: "Ben",
+    priority: "High",
+  },
+  {
+    id: "k6",
+    title: "Onboarding copy",
+    status: "done",
+    assignee: "Ben",
+    priority: "Low",
+  },
 ];
 
-export const countIn = (cards, status) => cards.filter((c) => c.status === status).length;
+export const countIn = (cards, status) =>
+  cards.filter((c) => c.status === status).length;
 export const cellCards = (cards, groupBy, lane, status) =>
   cards.filter((c) => c.status === status && c[groupBy] === lane);
 
@@ -2336,35 +2871,162 @@ export function moveCard(cards, cardId, patch, beforeId) {
   const rest = cards.filter((c) => c.id !== cardId);
   const at = beforeId ? rest.findIndex((c) => c.id === beforeId) : -1;
   const moved = { ...card, ...patch };
-  return at === -1 ? [...rest, moved] : [...rest.slice(0, at), moved, ...rest.slice(at)];
+  return at === -1
+    ? [...rest, moved]
+    : [...rest.slice(0, at), moved, ...rest.slice(at)];
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 1100px; margin: 0 auto; }
-.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
-h1 { font-size: 1.3rem; margin: 0; }
-select, .col-head input { background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 4px 6px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 6px 0 12px; }
-.scroller { overflow-x: auto; padding-bottom: 6px; }
-.grid { display: grid; gap: 8px; min-width: 700px; }
-.col-head { background: #171c25; border: 1px solid #2a3140; border-radius: 8px; padding: 8px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; font-weight: 600; }
-.col-head input { grid-column: 1 / -1; width: 100%; box-sizing: border-box; font-weight: 400; }
-.badge { background: #2a3140; border-radius: 999px; padding: 0 8px; font-size: 0.8rem; }
-.badge.at-limit { background: #6b4e12; color: #ffd27a; }
-.badge.over-limit { background: #7a1f2b; color: #ffc2c9; }
-.lane-head { font-size: 0.9rem; margin: 0; padding: 8px; color: #b9c2d3; writing-mode: horizontal-tb; }
-.cell { list-style: none; margin: 0; padding: 6px; min-height: 70px; background: #141922; border: 1px dashed #2a3140; border-radius: 8px; }
-.cell.drop-ok { border-color: #5b8cff; background: #172036; }
-.cell.blocked { border-color: #e5484d; background: #2a1418; cursor: no-drop; }
-.card { background: #222a37; border: 1px solid #323b4d; border-top: 3px solid #323b4d; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: grab; display: flex; justify-content: space-between; gap: 6px; }
-.card:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
-.card.drop-before { border-top-color: #5b8cff; }
-.tag { font-size: 0.7rem; border-radius: 4px; padding: 1px 6px; align-self: start; }
-.tag.high { background: #4a2330; color: #ffb3c1; }
-.tag.low { background: #213a2c; color: #a8e6bf; }
-.alert { min-height: 1.4em; color: #ff8f96; margin: 10px 0 0; }
-.alert:empty { visibility: hidden; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+select,
+.col-head input {
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 6px 0 12px;
+}
+.scroller {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.grid {
+  display: grid;
+  gap: 8px;
+  min-width: 700px;
+}
+.col-head {
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+.col-head input {
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 400;
+}
+.badge {
+  background: #2a3140;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+.badge.at-limit {
+  background: #6b4e12;
+  color: #ffd27a;
+}
+.badge.over-limit {
+  background: #7a1f2b;
+  color: #ffc2c9;
+}
+.lane-head {
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 8px;
+  color: #b9c2d3;
+  writing-mode: horizontal-tb;
+}
+.cell {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-height: 70px;
+  background: #141922;
+  border: 1px dashed #2a3140;
+  border-radius: 8px;
+}
+.cell.drop-ok {
+  border-color: #5b8cff;
+  background: #172036;
+}
+.cell.blocked {
+  border-color: #e5484d;
+  background: #2a1418;
+  cursor: no-drop;
+}
+.card {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-top: 3px solid #323b4d;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.card:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: 2px;
+}
+.card.drop-before {
+  border-top-color: #5b8cff;
+}
+.tag {
+  font-size: 0.7rem;
+  border-radius: 4px;
+  padding: 1px 6px;
+  align-self: start;
+}
+.tag.high {
+  background: #4a2330;
+  color: #ffb3c1;
+}
+.tag.low {
+  background: #213a2c;
+  color: #a8e6bf;
+}
+.alert {
+  min-height: 1.4em;
+  color: #ff8f96;
+  margin: 10px 0 0;
+}
+.alert:empty {
+  visibility: hidden;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -2396,11 +3058,9 @@ Four columns (To Do, Doing max 2, Review max 1, Done) with editable limits and \
 📌 **Interview term: computed** — a cached derived value. \`counts\` loops over the cards once per change and is shared by the badges and the WIP guard; see [computed vs watch](/interview-question/what-is-the-difference-between-computed-and-watch).
 
 \`\`\`vue
-// Derived once per change, shared by badges and the WIP guard.
-const counts = computed(() => {
-  const n = Object.fromEntries(COLUMNS.map((c) => [c.id, 0]));
-  for (const c of cards.value) n[c.status]++;
-  return n;
+// Derived once per change, shared by badges and the WIP guard. const
+counts = computed(() => { const n = Object.fromEntries(COLUMNS.map((c)
+=> [c.id, 0])); for (const c of cards.value) n[c.status]++; return n;
 });
 \`\`\`
 
@@ -2411,7 +3071,8 @@ const counts = computed(() => {
 📌 **Interview term: WIP limit** — the maximum number of cards a column may hold.
 
 \`\`\`jsx
-// The WIP rule. A move inside the same column (reorder or lane change) never
+// The WIP rule. A move inside the same
+// column (reorder or lane change) never
 // changes that column's count, so it is always allowed.
 export function canMove(cards, limits, counts, cardId, toStatus) {
   const card = cards.find((c) => c.id === cardId);
@@ -2426,8 +3087,10 @@ A move that keeps a card in its column, whether a reorder or a lane change, neve
 ### Step 2: the move mutates the reactive array
 
 \`\`\`jsx
-// Mutates the reactive array in place: take the card out, patch it, put it
-// back in front of beforeId (or at the end, which is also the end of its cell).
+// Mutates the reactive array in place:
+// take the card out, patch it, put it
+// back in front of beforeId (or at the
+// end, which is also the end of its cell).
 export function moveCard(cards, cardId, patch, beforeId) {
   const from = cards.findIndex((c) => c.id === cardId);
   if (from === -1 || cardId === beforeId) return;
@@ -2444,13 +3107,11 @@ export function moveCard(cards, cardId, patch, beforeId) {
 ### Step 3: one guarded entry point
 
 \`\`\`vue
-function tryMove(id, status, lane, beforeId) {
-  const card = cards.value.find((c) => c.id === id);
-  if (!canMove(cards.value, limits, counts.value, id, status)) {
-    alertMsg.value = titleOf(status) + " is at its WIP limit (" + counts.value[status] + "/" + limits[status] +
-      "). " + card.title + " was not moved.";
-    return false;
-  }
+function tryMove(id, status, lane, beforeId) { const card =
+cards.value.find((c) => c.id === id); if (!canMove(cards.value, limits,
+counts.value, id, status)) { alertMsg.value = titleOf(status) + " is at
+its WIP limit (" + counts.value[status] + "/" + limits[status] + "). " +
+card.title + " was not moved."; return false; }
 \`\`\`
 
 Drop, drag end and the keyboard handler all call \`tryMove\`. That is the whole trick: a rule enforced in one function cannot be bypassed by an input path you forgot.
@@ -2462,14 +3123,12 @@ Drop, drag end and the keyboard handler all call \`tryMove\`. That is the whole 
 In the basic board the list used \`@dragover.prevent\`. Here the cell must decide per hover, so the child emits the raw event and the parent prevents only when allowed:
 
 \`\`\`vue
-function onDragOver({ event, lane, status, beforeId }) {
-  if (!dragId) return;
-  const blocked = !canMove(cards.value, limits, counts.value, dragId, status);
-  // Not calling preventDefault is how HTML5 DnD says "no drop here".
-  if (!blocked) event.preventDefault();
-  const o = over.value;
-  if (!o || o.lane !== lane || o.status !== status || o.beforeId !== beforeId) over.value = { lane, status, beforeId, blocked };
-}
+function onDragOver({ event, lane, status, beforeId }) { if (!dragId)
+return; const blocked = !canMove(cards.value, limits, counts.value,
+dragId, status); // Not calling preventDefault is how HTML5 DnD says "no
+drop here". if (!blocked) event.preventDefault(); const o = over.value;
+if (!o || o.lane !== lane || o.status !== status || o.beforeId !==
+beforeId) over.value = { lane, status, beforeId, blocked }; }
 \`\`\`
 
 Since a refused drop never fires \`drop\`, \`onDragEnd\` reports the rejection by running \`tryMove\` for the last blocked hover. The \`drop\` handler calls \`tryMove\` again: never trust the hover.
@@ -2482,7 +3141,7 @@ The grid is a CSS grid: a header row, then for every lane one heading plus one \
 
 Compiled with \`@vue/compiler-sfc\` and mounted with \`createApp(App).mount("#app")\` in jsdom 29 by \`scripts/verify-mc-solution.mjs\`. Drag events are \`MouseEvent\`s with a \`dataTransfer\` stub. Output (the move after raising the Doing limit to 3 and the priority grouping are trimmed; the full run matches the React doc line for line):
 
-\`\`\`
+\`\`\`text
 start
     Asha: todo[Login page, Fix flaky test] doing[Payment form] review[] done[]
     Ben: todo[Search API] doing[] review[Audit logs] done[Onboarding copy]
@@ -2605,7 +3264,14 @@ limit Review cleared | badges: todo=1 doing=3/1(over) review=1 done=1
           "/src/App.vue": `<script setup>
 import { ref, reactive, computed, nextTick } from "vue";
 import SwimCell from "./components/SwimCell.vue";
-import { COLUMNS, LANES, initialCards, initialLimits, canMove, moveCard } from "./model.js";
+import {
+  COLUMNS,
+  LANES,
+  initialCards,
+  initialLimits,
+  canMove,
+  moveCard,
+} from "./model.js";
 
 const cards = ref(initialCards());
 const limits = reactive(initialLimits());
@@ -2624,19 +3290,31 @@ const counts = computed(() => {
   return n;
 });
 const titleOf = (status) => COLUMNS.find((c) => c.id === status).title;
-const cellCards = (lane, status) => cards.value.filter((c) => c.status === status && c[groupBy.value] === lane);
+const cellCards = (lane, status) =>
+  cards.value.filter((c) => c.status === status && c[groupBy.value] === lane);
 const badgeState = (id) => {
   const limit = limits[id];
   if (limit == null) return "";
-  return counts.value[id] > limit ? "over-limit" : counts.value[id] === limit ? "at-limit" : "";
+  return counts.value[id] > limit
+    ? "over-limit"
+    : counts.value[id] === limit
+      ? "at-limit"
+      : "";
 };
 
 // The single entry point for BOTH drag and keyboard: one guard, one commit.
 function tryMove(id, status, lane, beforeId) {
   const card = cards.value.find((c) => c.id === id);
   if (!canMove(cards.value, limits, counts.value, id, status)) {
-    alertMsg.value = titleOf(status) + " is at its WIP limit (" + counts.value[status] + "/" + limits[status] +
-      "). " + card.title + " was not moved.";
+    alertMsg.value =
+      titleOf(status) +
+      " is at its WIP limit (" +
+      counts.value[status] +
+      "/" +
+      limits[status] +
+      "). " +
+      card.title +
+      " was not moved.";
     return false;
   }
   moveCard(cards.value, id, { status, [groupBy.value]: lane }, beforeId);
@@ -2658,17 +3336,20 @@ function onDragOver({ event, lane, status, beforeId }) {
   // Not calling preventDefault is how HTML5 DnD says "no drop here".
   if (!blocked) event.preventDefault();
   const o = over.value;
-  if (!o || o.lane !== lane || o.status !== status || o.beforeId !== beforeId) over.value = { lane, status, beforeId, blocked };
+  if (!o || o.lane !== lane || o.status !== status || o.beforeId !== beforeId)
+    over.value = { lane, status, beforeId, blocked };
 }
 function onDrop({ event, lane, status, beforeId }) {
   event.preventDefault();
-  if (dragId) tryMove(dragId, status, lane, beforeId); // guarded again: never trust the hover
+  // guarded again: never trust the hover
+  if (dragId) tryMove(dragId, status, lane, beforeId);
   over.value = null; // handled: dragend must not report it
   onDragEnd();
 }
 function onDragEnd() {
   const o = over.value;
-  if (o && o.blocked && dragId) tryMove(dragId, o.status, o.lane, null); // reports the rejection
+  // reports the rejection
+  if (o && o.blocked && dragId) tryMove(dragId, o.status, o.lane, null);
   dragId = null;
   over.value = null;
 }
@@ -2680,9 +3361,11 @@ async function onCardKey({ event, card }) {
   const l = ls.indexOf(card[groupBy.value]);
   let to = null;
   if (event.key === "ArrowLeft" && c > 0) to = [COLUMNS[c - 1].id, ls[l]];
-  if (event.key === "ArrowRight" && c < COLUMNS.length - 1) to = [COLUMNS[c + 1].id, ls[l]];
+  if (event.key === "ArrowRight" && c < COLUMNS.length - 1)
+    to = [COLUMNS[c + 1].id, ls[l]];
   if (event.key === "ArrowUp" && l > 0) to = [card.status, ls[l - 1]];
-  if (event.key === "ArrowDown" && l < ls.length - 1) to = [card.status, ls[l + 1]];
+  if (event.key === "ArrowDown" && l < ls.length - 1)
+    to = [card.status, ls[l + 1]];
   if (!to) return;
   event.preventDefault();
   if (!tryMove(card.id, to[0], to[1], null)) return;
@@ -2708,13 +3391,28 @@ function setLimit(status, raw) {
         </select>
       </label>
     </header>
-    <p id="kb-help" class="hint">Drag cards between cells, or focus a card and press Shift + arrow keys.</p>
+    <p
+      id="kb-help"
+      class="hint"
+    >Drag cards between cells, or focus a card and press Shift + arrow keys.</p>
     <div class="scroller">
-      <div class="grid" :style="{ gridTemplateColumns: '96px repeat(' + COLUMNS.length + ', minmax(150px, 1fr))' }">
+      <div
+        class="grid"
+        :style="{ gridTemplateColumns: '96px repeat(' + COLUMNS.length + ', minmax(150px, 1fr))' }"
+      >
         <div class="corner"></div>
-        <div v-for="col in COLUMNS" :key="col.id" class="col-head" :data-col="col.id">
+        <div
+          v-for="col in COLUMNS"
+          :key="col.id"
+          class="col-head"
+          :data-col="col.id"
+        >
           <span>{{ col.title }}</span>
-          <span class="badge" :class="badgeState(col.id)" :data-testid="'badge-' + col.id">
+          <span
+            class="badge"
+            :class="badgeState(col.id)"
+            :data-testid="'badge-' + col.id"
+          >
             {{ limits[col.id] == null ? counts[col.id] : counts[col.id] + "/" + limits[col.id] }}
           </span>
           <input type="number" min="0" placeholder="no limit" :value="limits[col.id] == null ? '' : limits[col.id]"
@@ -2744,23 +3442,105 @@ function setLimit(status, raw) {
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 1100px; margin: 0 auto; }
-.top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
-h1 { font-size: 1.3rem; margin: 0; }
-select, .col-head input { background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 4px 6px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 6px 0 12px; }
-.scroller { overflow-x: auto; padding-bottom: 6px; }
-.grid { display: grid; gap: 8px; min-width: 700px; }
-.col-head { background: #171c25; border: 1px solid #2a3140; border-radius: 8px; padding: 8px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; font-weight: 600; }
-.col-head input { grid-column: 1 / -1; width: 100%; box-sizing: border-box; font-weight: 400; }
-.badge { background: #2a3140; border-radius: 999px; padding: 0 8px; font-size: 0.8rem; }
-.badge.at-limit { background: #6b4e12; color: #ffd27a; }
-.badge.over-limit { background: #7a1f2b; color: #ffc2c9; }
-.lane-head { font-size: 0.9rem; margin: 0; padding: 8px; color: #b9c2d3; }
-.alert { min-height: 1.4em; color: #ff8f96; margin: 10px 0 0; }
-.alert:empty { visibility: hidden; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+select,
+.col-head input {
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 4px 6px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 6px 0 12px;
+}
+.scroller {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.grid {
+  display: grid;
+  gap: 8px;
+  min-width: 700px;
+}
+.col-head {
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+.col-head input {
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 400;
+}
+.badge {
+  background: #2a3140;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.8rem;
+}
+.badge.at-limit {
+  background: #6b4e12;
+  color: #ffd27a;
+}
+.badge.over-limit {
+  background: #7a1f2b;
+  color: #ffc2c9;
+}
+.lane-head {
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 8px;
+  color: #b9c2d3;
+}
+.alert {
+  min-height: 1.4em;
+  color: #ff8f96;
+  margin: 10px 0 0;
+}
+.alert:empty {
+  visibility: hidden;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/components/SwimCell.vue": `<script setup>
@@ -2770,12 +3550,23 @@ const props = defineProps({
   cards: { type: Array, required: true },
   over: { type: Object, default: null },
 });
-const emit = defineEmits(["card-dragstart", "card-dragend", "cell-dragover", "cell-drop", "card-key"]);
+const emit = defineEmits([
+  "card-dragstart",
+  "card-dragend",
+  "cell-dragover",
+  "cell-drop",
+  "card-key",
+]);
 
 // Card under the pointer = insert before it; empty space = end of this cell.
 function payload(event) {
   const el = event.target.closest && event.target.closest("[data-card]");
-  return { event, lane: props.lane, status: props.col.id, beforeId: el ? el.dataset.card : null };
+  return {
+    event,
+    lane: props.lane,
+    status: props.col.id,
+    beforeId: el ? el.dataset.card : null,
+  };
 }
 </script>
 
@@ -2804,21 +3595,66 @@ function payload(event) {
       @keydown="emit('card-key', { event: $event, card })"
     >
       <span class="title">{{ card.title }}</span>
-      <span class="tag" :class="card.priority.toLowerCase()">{{ card.priority }}</span>
+      <span
+        class="tag"
+        :class="card.priority.toLowerCase()"
+      >{{ card.priority }}</span>
     </li>
   </ul>
 </template>
 
 <style scoped>
-.cell { list-style: none; margin: 0; padding: 6px; min-height: 70px; background: #141922; border: 1px dashed #2a3140; border-radius: 8px; }
-.cell.drop-ok { border-color: #5b8cff; background: #172036; }
-.cell.blocked { border-color: #e5484d; background: #2a1418; cursor: no-drop; }
-.card { background: #222a37; border: 1px solid #323b4d; border-top: 3px solid #323b4d; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: grab; display: flex; justify-content: space-between; gap: 6px; }
-.card:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
-.card.drop-before { border-top-color: #5b8cff; }
-.tag { font-size: 0.7rem; border-radius: 4px; padding: 1px 6px; align-self: start; }
-.tag.high { background: #4a2330; color: #ffb3c1; }
-.tag.low { background: #213a2c; color: #a8e6bf; }
+.cell {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-height: 70px;
+  background: #141922;
+  border: 1px dashed #2a3140;
+  border-radius: 8px;
+}
+.cell.drop-ok {
+  border-color: #5b8cff;
+  background: #172036;
+}
+.cell.blocked {
+  border-color: #e5484d;
+  background: #2a1418;
+  cursor: no-drop;
+}
+.card {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-top: 3px solid #323b4d;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  cursor: grab;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+.card:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: 2px;
+}
+.card.drop-before {
+  border-top-color: #5b8cff;
+}
+.tag {
+  font-size: 0.7rem;
+  border-radius: 4px;
+  padding: 1px 6px;
+  align-self: start;
+}
+.tag.high {
+  background: #4a2330;
+  color: #ffb3c1;
+}
+.tag.low {
+  background: #213a2c;
+  color: #a8e6bf;
+}
 </style>
 `,
           "/src/model.js": `// One flat, ordered list of cards. Columns and swimlanes are DERIVED by
@@ -2830,14 +3666,55 @@ export const COLUMNS = [
   { id: "done", title: "Done" },
 ];
 export const LANES = { assignee: ["Asha", "Ben"], priority: ["High", "Low"] };
-export const initialLimits = () => ({ todo: null, doing: 2, review: 1, done: null });
+export const initialLimits = () => ({
+  todo: null,
+  doing: 2,
+  review: 1,
+  done: null,
+});
 export const initialCards = () => [
-  { id: "k1", title: "Login page", status: "todo", assignee: "Asha", priority: "High" },
-  { id: "k2", title: "Search API", status: "todo", assignee: "Ben", priority: "Low" },
-  { id: "k3", title: "Fix flaky test", status: "todo", assignee: "Asha", priority: "Low" },
-  { id: "k4", title: "Payment form", status: "doing", assignee: "Asha", priority: "High" },
-  { id: "k5", title: "Audit logs", status: "review", assignee: "Ben", priority: "High" },
-  { id: "k6", title: "Onboarding copy", status: "done", assignee: "Ben", priority: "Low" },
+  {
+    id: "k1",
+    title: "Login page",
+    status: "todo",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k2",
+    title: "Search API",
+    status: "todo",
+    assignee: "Ben",
+    priority: "Low",
+  },
+  {
+    id: "k3",
+    title: "Fix flaky test",
+    status: "todo",
+    assignee: "Asha",
+    priority: "Low",
+  },
+  {
+    id: "k4",
+    title: "Payment form",
+    status: "doing",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k5",
+    title: "Audit logs",
+    status: "review",
+    assignee: "Ben",
+    priority: "High",
+  },
+  {
+    id: "k6",
+    title: "Onboarding copy",
+    status: "done",
+    assignee: "Ben",
+    priority: "Low",
+  },
 ];
 
 // The WIP rule. A move inside the same column (reorder or lane change) never
@@ -2895,7 +3772,12 @@ Four columns with editable limits and \`count/limit\` badges; lanes by assignee 
 📌 **Interview term: WIP limit** — the maximum number of cards a column may hold.
 
 \`\`\`ts
-export function canMove(cards: Card[], limits: Limits, cardId: string, toStatus: Status): boolean {
+export function canMove(
+  cards: Card[],
+  limits: Limits,
+  cardId: string,
+  toStatus: Status,
+): boolean {
   const card = cards.find((c) => c.id === cardId);
   const limit = limits[toStatus];
   if (!card || card.status === toStatus || limit === null) return true;
@@ -2927,12 +3809,27 @@ private tryMove(id: string, status: Status, lane: string, beforeId: string | nul
 \`\`\`ts
 dragOver(d: CellDragEvent) {
   if (!this.dragId) return;
-  const blocked = !canMove(this.cards(), this.limits(), this.dragId, d.status);
+  const blocked = !canMove(
+    this.cards(),
+    this.limits(),
+    this.dragId,
+    d.status,
+  );
   // Not calling preventDefault is how HTML5 DnD says "no drop here".
   if (!blocked) d.event.preventDefault();
   const o = this.over();
-  if (!o || o.lane !== d.lane || o.status !== d.status || o.beforeId !== d.beforeId)
-    this.over.set({ lane: d.lane, status: d.status, beforeId: d.beforeId, blocked });
+  if (
+    !o ||
+    o.lane !== d.lane ||
+    o.status !== d.status ||
+    o.beforeId !== d.beforeId
+  )
+    this.over.set({
+      lane: d.lane,
+      status: d.status,
+      beforeId: d.beforeId,
+      blocked,
+    });
 }
 \`\`\`
 
@@ -2954,7 +3851,7 @@ Shift + Left and Right change column, Shift + Up and Down change lane, all throu
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, AOT with \`strictTemplates\` and again through the runtime JIT. Drag events are \`MouseEvent\`s with a \`dataTransfer\` stub. AOT output, trimmed after the limit edits (JIT printed the same):
 
-\`\`\`
+\`\`\`text
 start
     Asha: todo[Login page, Fix flaky test] doing[Payment form] review[] done[]
     Ben: todo[Search API] doing[] review[Audit logs] done[Onboarding copy]
@@ -3079,9 +3976,30 @@ The lines match the React and Vue runs exactly. Layout, the native no-drop curso
 ---
 **Conclusion:** The Angular swimlane board is a few signals and one guarded method. Lanes are a \`computed\`, cells and counts are derived from one card list, every input path calls \`tryMove\`, and drops are refused natively by preventing \`dragover\` only when allowed. The build also surfaced a real Angular 22 dev warning, NG0956, which led to tracking lanes by position. Both AOT and JIT printed the same verified output as React and Vue.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, Injector, afterNextRender, computed, inject, signal } from "@angular/core";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import { SwimCellComponent, CellDragEvent } from "./swim-cell.component";
-import { COLUMNS, LANES, Card, GroupBy, Limits, Over, Status, canMove, countIn, initialCards, initialLimits, moveCard } from "./model";
+import {
+  COLUMNS,
+  LANES,
+  Card,
+  GroupBy,
+  Limits,
+  Over,
+  Status,
+  canMove,
+  countIn,
+  initialCards,
+  initialLimits,
+  moveCard,
+} from "./model";
 
 @Component({
   selector: "app-root",
@@ -3093,15 +4011,25 @@ import { COLUMNS, LANES, Card, GroupBy, Limits, Over, Status, canMove, countIn, 
         <h1>Team board</h1>
         <label>
           Swimlanes by
-          <select [value]="groupBy()" (change)="setGroupBy($event)" data-testid="group-by">
+          <select
+            [value]="groupBy()"
+            (change)="setGroupBy($event)"
+            data-testid="group-by"
+          >
             <option value="assignee">Assignee</option>
             <option value="priority">Priority</option>
           </select>
         </label>
       </header>
-      <p id="kb-help" class="hint">Drag cards between cells, or focus a card and press Shift + arrow keys.</p>
+      <p
+        id="kb-help"
+        class="hint"
+      >Drag cards between cells, or focus a card and press Shift + arrow keys.</p>
       <div class="scroller">
-        <div class="grid" [style.grid-template-columns]="'96px repeat(' + columns.length + ', minmax(150px, 1fr))'">
+        <div
+          class="grid"
+          [style.grid-template-columns]="'96px repeat(' + columns.length + ', minmax(150px, 1fr))'"
+        >
           <div class="corner"></div>
           @for (col of columns; track col.id) {
             <div class="col-head" [attr.data-col]="col.id">
@@ -3135,7 +4063,8 @@ import { COLUMNS, LANES, Card, GroupBy, Limits, Over, Status, canMove, countIn, 
       <p role="alert" class="alert" data-testid="alert">{{ alertMsg() }}</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
     .app { padding: 16px; max-width: 1100px; margin: 0 auto; }
     .top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
@@ -3153,7 +4082,8 @@ import { COLUMNS, LANES, Card, GroupBy, Limits, Over, Status, canMove, countIn, 
     .alert { min-height: 1.4em; color: #ff8f96; margin: 10px 0 0; }
     .alert:empty { visibility: hidden; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly columns = COLUMNS;
@@ -3168,7 +4098,9 @@ export class AppComponent {
   private host = inject(ElementRef<HTMLElement>);
   private injector = inject(Injector);
 
-  private titleOf(status: Status) { return COLUMNS.find((c) => c.id === status)!.title; }
+  private titleOf(status: Status) {
+    return COLUMNS.find((c) => c.id === status)!.title;
+  }
   cellCards(lane: string, status: Status) {
     const g = this.groupBy();
     return this.cards().filter((c) => c.status === status && c[g] === lane);
@@ -3190,17 +4122,34 @@ export class AppComponent {
   }
 
   // The single entry point for BOTH drag and keyboard: one guard, one commit.
-  private tryMove(id: string, status: Status, lane: string, beforeId: string | null): boolean {
+  private tryMove(
+    id: string,
+    status: Status,
+    lane: string,
+    beforeId: string | null,
+  ): boolean {
     const cards = this.cards();
     const card = cards.find((c) => c.id === id)!;
     if (!canMove(cards, this.limits(), id, status)) {
-      this.alertMsg.set(this.titleOf(status) + " is at its WIP limit (" + countIn(cards, status) + "/" + this.limits()[status] +
-        "). " + card.title + " was not moved.");
+      this.alertMsg.set(
+        this.titleOf(status) +
+          " is at its WIP limit (" +
+          countIn(cards, status) +
+          "/" +
+          this.limits()[status] +
+          "). " +
+          card.title +
+          " was not moved.",
+      );
       return false;
     }
-    this.cards.set(moveCard(cards, id, { status, [this.groupBy()]: lane }, beforeId));
+    this.cards.set(
+      moveCard(cards, id, { status, [this.groupBy()]: lane }, beforeId),
+    );
     this.alertMsg.set("");
-    this.message.set(card.title + " moved to " + this.titleOf(status) + ", " + lane);
+    this.message.set(
+      card.title + " moved to " + this.titleOf(status) + ", " + lane,
+    );
     return true;
   }
 
@@ -3213,22 +4162,40 @@ export class AppComponent {
   }
   dragOver(d: CellDragEvent) {
     if (!this.dragId) return;
-    const blocked = !canMove(this.cards(), this.limits(), this.dragId, d.status);
+    const blocked = !canMove(
+      this.cards(),
+      this.limits(),
+      this.dragId,
+      d.status,
+    );
     // Not calling preventDefault is how HTML5 DnD says "no drop here".
     if (!blocked) d.event.preventDefault();
     const o = this.over();
-    if (!o || o.lane !== d.lane || o.status !== d.status || o.beforeId !== d.beforeId)
-      this.over.set({ lane: d.lane, status: d.status, beforeId: d.beforeId, blocked });
+    if (
+      !o ||
+      o.lane !== d.lane ||
+      o.status !== d.status ||
+      o.beforeId !== d.beforeId
+    )
+      this.over.set({
+        lane: d.lane,
+        status: d.status,
+        beforeId: d.beforeId,
+        blocked,
+      });
   }
   drop(d: CellDragEvent) {
     d.event.preventDefault();
-    if (this.dragId) this.tryMove(this.dragId, d.status, d.lane, d.beforeId); // guarded again
+    // guarded again
+    if (this.dragId) this.tryMove(this.dragId, d.status, d.lane, d.beforeId);
     this.over.set(null); // handled: dragend must not report it
     this.dragEnd();
   }
   dragEnd() {
     const o = this.over();
-    if (o && o.blocked && this.dragId) this.tryMove(this.dragId, o.status, o.lane, null); // reports the rejection
+    if (o && o.blocked && this.dragId)
+      // reports the rejection
+      this.tryMove(this.dragId, o.status, o.lane, null);
     this.dragId = null;
     this.over.set(null);
   }
@@ -3241,17 +4208,24 @@ export class AppComponent {
     const l = lanes.indexOf(card[g]);
     let to: [Status, string] | null = null;
     if (e.key === "ArrowLeft" && c > 0) to = [COLUMNS[c - 1].id, lanes[l]];
-    if (e.key === "ArrowRight" && c < COLUMNS.length - 1) to = [COLUMNS[c + 1].id, lanes[l]];
+    if (e.key === "ArrowRight" && c < COLUMNS.length - 1)
+      to = [COLUMNS[c + 1].id, lanes[l]];
     if (e.key === "ArrowUp" && l > 0) to = [card.status, lanes[l - 1]];
-    if (e.key === "ArrowDown" && l < lanes.length - 1) to = [card.status, lanes[l + 1]];
+    if (e.key === "ArrowDown" && l < lanes.length - 1)
+      to = [card.status, lanes[l + 1]];
     if (!to) return;
     e.preventDefault();
     if (!this.tryMove(card.id, to[0], to[1], null)) return;
     // The card now renders in another cell, so it is a new element.
-    afterNextRender(() => {
-      const el = (this.host.nativeElement as HTMLElement).querySelector('[data-card="' + card.id + '"]') as HTMLElement | null;
-      if (el) el.focus();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        const el = (this.host.nativeElement as HTMLElement).querySelector(
+          '[data-card="' + card.id + '"]',
+        ) as HTMLElement | null;
+        if (el) el.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   setLimit(status: Status, e: Event) {
@@ -3268,9 +4242,20 @@ export class AppComponent {
 // filtering, so a card can never be "in two places".
 export type Status = "todo" | "doing" | "review" | "done";
 export type GroupBy = "assignee" | "priority";
-export interface Card { id: string; title: string; status: Status; assignee: string; priority: string; }
+export interface Card {
+  id: string;
+  title: string;
+  status: Status;
+  assignee: string;
+  priority: string;
+}
 export type Limits = Record<Status, number | null>;
-export interface Over { lane: string; status: Status; beforeId: string | null; blocked: boolean; }
+export interface Over {
+  lane: string;
+  status: Status;
+  beforeId: string | null;
+  blocked: boolean;
+}
 
 export const COLUMNS: { id: Status; title: string }[] = [
   { id: "todo", title: "To Do" },
@@ -3278,22 +4263,72 @@ export const COLUMNS: { id: Status; title: string }[] = [
   { id: "review", title: "Review" },
   { id: "done", title: "Done" },
 ];
-export const LANES: Record<GroupBy, string[]> = { assignee: ["Asha", "Ben"], priority: ["High", "Low"] };
-export const initialLimits: Limits = { todo: null, doing: 2, review: 1, done: null };
+export const LANES: Record<GroupBy, string[]> = {
+  assignee: ["Asha", "Ben"],
+  priority: ["High", "Low"],
+};
+export const initialLimits: Limits = {
+  todo: null,
+  doing: 2,
+  review: 1,
+  done: null,
+};
 export const initialCards: Card[] = [
-  { id: "k1", title: "Login page", status: "todo", assignee: "Asha", priority: "High" },
-  { id: "k2", title: "Search API", status: "todo", assignee: "Ben", priority: "Low" },
-  { id: "k3", title: "Fix flaky test", status: "todo", assignee: "Asha", priority: "Low" },
-  { id: "k4", title: "Payment form", status: "doing", assignee: "Asha", priority: "High" },
-  { id: "k5", title: "Audit logs", status: "review", assignee: "Ben", priority: "High" },
-  { id: "k6", title: "Onboarding copy", status: "done", assignee: "Ben", priority: "Low" },
+  {
+    id: "k1",
+    title: "Login page",
+    status: "todo",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k2",
+    title: "Search API",
+    status: "todo",
+    assignee: "Ben",
+    priority: "Low",
+  },
+  {
+    id: "k3",
+    title: "Fix flaky test",
+    status: "todo",
+    assignee: "Asha",
+    priority: "Low",
+  },
+  {
+    id: "k4",
+    title: "Payment form",
+    status: "doing",
+    assignee: "Asha",
+    priority: "High",
+  },
+  {
+    id: "k5",
+    title: "Audit logs",
+    status: "review",
+    assignee: "Ben",
+    priority: "High",
+  },
+  {
+    id: "k6",
+    title: "Onboarding copy",
+    status: "done",
+    assignee: "Ben",
+    priority: "Low",
+  },
 ];
 
-export const countIn = (cards: Card[], status: Status) => cards.filter((c) => c.status === status).length;
+export const countIn = (cards: Card[], status: Status) =>
+  cards.filter((c) => c.status === status).length;
 
 // The WIP rule. A move inside the same column (reorder or lane change) never
 // changes that column's count, so it is always allowed.
-export function canMove(cards: Card[], limits: Limits, cardId: string, toStatus: Status): boolean {
+export function canMove(
+  cards: Card[],
+  limits: Limits,
+  cardId: string,
+  toStatus: Status,
+): boolean {
   const card = cards.find((c) => c.id === cardId);
   const limit = limits[toStatus];
   if (!card || card.status === toStatus || limit === null) return true;
@@ -3302,19 +4337,31 @@ export function canMove(cards: Card[], limits: Limits, cardId: string, toStatus:
 
 // Immutable: take the card out, patch it, put it back in front of beforeId
 // (or at the end, which is also the end of its cell).
-export function moveCard(cards: Card[], cardId: string, patch: Partial<Card>, beforeId: string | null): Card[] {
+export function moveCard(
+  cards: Card[],
+  cardId: string,
+  patch: Partial<Card>,
+  beforeId: string | null,
+): Card[] {
   const card = cards.find((c) => c.id === cardId);
   if (!card || cardId === beforeId) return cards;
   const rest = cards.filter((c) => c.id !== cardId);
   const at = beforeId ? rest.findIndex((c) => c.id === beforeId) : -1;
   const moved = { ...card, ...patch };
-  return at === -1 ? [...rest, moved] : [...rest.slice(0, at), moved, ...rest.slice(at)];
+  return at === -1
+    ? [...rest, moved]
+    : [...rest.slice(0, at), moved, ...rest.slice(at)];
 }
 `,
           "/src/app/swim-cell.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { Card, Over, Status } from "./model";
 
-export interface CellDragEvent { event: DragEvent; lane: string; status: Status; beforeId: string | null; }
+export interface CellDragEvent {
+  event: DragEvent;
+  lane: string;
+  status: Status;
+  beforeId: string | null;
+}
 
 @Component({
   selector: "app-swim-cell",
@@ -3334,7 +4381,9 @@ export interface CellDragEvent { event: DragEvent; lane: string; status: Status;
         <li
           [attr.data-card]="card.id"
           class="card"
-          [class.drop-before]="over !== null && !over.blocked && over.beforeId === card.id"
+          [class.drop-before]="
+            over !== null && !over.blocked && over.beforeId === card.id
+          "
           draggable="true"
           tabindex="0"
           aria-describedby="kb-help"
@@ -3344,22 +4393,70 @@ export interface CellDragEvent { event: DragEvent; lane: string; status: Status;
           (keydown)="cardKey.emit({ event: $event, card: card })"
         >
           <span class="title">{{ card.title }}</span>
-          <span class="tag" [class]="'tag ' + card.priority.toLowerCase()">{{ card.priority }}</span>
+          <span class="tag" [class]="'tag ' + card.priority.toLowerCase()">{{
+            card.priority
+          }}</span>
         </li>
       }
     </ul>
   \`,
-  styles: [\`
-    .cell { list-style: none; margin: 0; padding: 6px; min-height: 70px; height: 100%; box-sizing: border-box; background: #141922; border: 1px dashed #2a3140; border-radius: 8px; }
-    .cell.drop-ok { border-color: #5b8cff; background: #172036; }
-    .cell.blocked { border-color: #e5484d; background: #2a1418; cursor: no-drop; }
-    .card { background: #222a37; border: 1px solid #323b4d; border-top: 3px solid #323b4d; border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; cursor: grab; display: flex; justify-content: space-between; gap: 6px; }
-    .card:focus-visible { outline: 2px solid #5b8cff; outline-offset: 2px; }
-    .card.drop-before { border-top-color: #5b8cff; }
-    .tag { font-size: 0.7rem; border-radius: 4px; padding: 1px 6px; align-self: start; }
-    .tag.high { background: #4a2330; color: #ffb3c1; }
-    .tag.low { background: #213a2c; color: #a8e6bf; }
-  \`],
+  styles: [
+    \`
+      .cell {
+        list-style: none;
+        margin: 0;
+        padding: 6px;
+        min-height: 70px;
+        height: 100%;
+        box-sizing: border-box;
+        background: #141922;
+        border: 1px dashed #2a3140;
+        border-radius: 8px;
+      }
+      .cell.drop-ok {
+        border-color: #5b8cff;
+        background: #172036;
+      }
+      .cell.blocked {
+        border-color: #e5484d;
+        background: #2a1418;
+        cursor: no-drop;
+      }
+      .card {
+        background: #222a37;
+        border: 1px solid #323b4d;
+        border-top: 3px solid #323b4d;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        cursor: grab;
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .card:focus-visible {
+        outline: 2px solid #5b8cff;
+        outline-offset: 2px;
+      }
+      .card.drop-before {
+        border-top-color: #5b8cff;
+      }
+      .tag {
+        font-size: 0.7rem;
+        border-radius: 4px;
+        padding: 1px 6px;
+        align-self: start;
+      }
+      .tag.high {
+        background: #4a2330;
+        color: #ffb3c1;
+      }
+      .tag.low {
+        background: #213a2c;
+        color: #a8e6bf;
+      }
+    \`,
+  ],
 })
 export class SwimCellComponent {
   @Input({ required: true }) lane!: string;
@@ -3367,7 +4464,10 @@ export class SwimCellComponent {
   @Input() statusTitle = "";
   @Input() cards: Card[] = [];
   @Input() over: Over | null = null;
-  @Output() cardDragStart = new EventEmitter<{ event: DragEvent; id: string }>();
+  @Output() cardDragStart = new EventEmitter<{
+    event: DragEvent;
+    id: string;
+  }>();
   @Output() cardDragEnd = new EventEmitter<void>();
   @Output() cellOver = new EventEmitter<CellDragEvent>();
   @Output() cellDrop = new EventEmitter<CellDragEvent>();
@@ -3375,8 +4475,15 @@ export class SwimCellComponent {
 
   // Card under the pointer = insert before it; empty space = end of this cell.
   payload(event: DragEvent): CellDragEvent {
-    const el = (event.target as Element).closest("[data-card]") as HTMLElement | null;
-    return { event, lane: this.lane, status: this.status, beforeId: el ? el.dataset["card"] || null : null };
+    const el = (event.target as Element).closest(
+      "[data-card]",
+    ) as HTMLElement | null;
+    return {
+      event,
+      lane: this.lane,
+      status: this.status,
+      beforeId: el ? el.dataset["card"] || null : null,
+    };
   }
 }
 `,
@@ -3493,7 +4600,8 @@ apply(op) {
   this.clock = Math.max(this.clock, op.ts[0]);
   const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
   const cur = card[op.field];
-  if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+  if (!cur || newer(op.ts, cur.ts))
+    card[op.field] = { value: op.value, ts: op.ts };
 }
 \`\`\`
 
@@ -3517,7 +4625,8 @@ write(cardId, fields) {
 📌 **Interview term: Fractional index** — a sortable number between two neighbours. Moving a card between positions 2 and 3 gives it 2.5; nobody else's position changes, so two people reordering different cards never conflict.
 
 \`\`\`jsx
-// Place a card in col, in front of beforeId (null = at the end). The new
+// Place a card in col, in front of
+// beforeId (null = at the end). The new
 // pos is a number between the neighbours: no other card has to change.
 move(cardId, col, beforeId) {
   const list = this.view()[col].filter((c) => c.id !== cardId);
@@ -3537,7 +4646,8 @@ Two replicas can pick the same number concurrently (both append at \`last + 1\`)
 📌 **Interview term: External store** — state that lives outside React and notifies subscribers. \`useSyncExternalStore(subscribe, getSnapshot)\` is the React hook for reading one safely; see [what problem useSyncExternalStore solves](/interview-question/what-problem-does-usesyncexternalstore-solve).
 
 \`\`\`jsx
-// The replica is an external store: React re-renders when its version changes.
+// The replica is an external store: React
+// re-renders when its version changes.
 useSyncExternalStore(replica.subscribe, replica.getVersion);
 const view = replica.view();
 \`\`\`
@@ -3551,10 +4661,14 @@ Remote renames have one UI wrinkle: the title is an uncontrolled \`<input defaul
 \`\`\`jsx
 flush() {
   if (!online.A || !online.B) return;
-  for (const [from, to] of [[a, b], [b, a]]) {
+  for (const [from, to] of [
+    [a, b],
+    [b, a],
+  ]) {
     if (!from.outbox.length) continue;
     const ops = from.outbox.splice(0);
-    setTimeout(() => to.receive(ops), latency); // in flight for \`latency\` ms
+    // in flight for \`latency\` ms
+    setTimeout(() => to.receive(ops), latency);
   }
   a.changed();
   b.changed();
@@ -3576,7 +4690,10 @@ const docA = new Y.Doc();
 const docB = new Y.Doc();
 const cardsA = docA.getMap("cards");
 docA.transact(() => {
-  for (const [id, title, col] of [["c1", "Design API", "todo"], ["c2", "Kick-off", "todo"]]) {
+  for (const [id, title, col] of [
+    ["c1", "Design API", "todo"],
+    ["c2", "Kick-off", "todo"],
+  ]) {
     const card = new Y.Map();
     card.set("title", title);
     card.set("col", col);
@@ -3593,13 +4710,19 @@ cardsB.get("c2").set("title", "Kick-off call");
 cardsA.delete("c2");
 
 // Reconnect: exchange only what the other side is missing.
-Y.applyUpdate(docB, Y.encodeStateAsUpdate(docA, Y.encodeStateVector(docB)));
-Y.applyUpdate(docA, Y.encodeStateAsUpdate(docB, Y.encodeStateVector(docA)));
+Y.applyUpdate(
+  docB,
+  Y.encodeStateAsUpdate(docA, Y.encodeStateVector(docB)),
+);
+Y.applyUpdate(
+  docA,
+  Y.encodeStateAsUpdate(docB, Y.encodeStateVector(docA)),
+);
 \`\`\`
 
 Three runs printed:
 
-\`\`\`
+\`\`\`text
 A: {"c1":{"title":"Design API","col":"doing"}}
 B: {"c1":{"title":"Design API","col":"doing"}}
 converged: true
@@ -3622,7 +4745,7 @@ Both documents always agree, but **which** concurrent \`set\` wins changed betwe
 
 Mounted under \`<StrictMode>\` by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. The driver clicks real buttons and checkboxes, types titles, dispatches drag events with a \`dataTransfer\` stub, and waits real time for the 300 ms network. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start
   A: todo[Design API, Kick-off] doing[Build login] done[Set up CI]  (clock 4 · 0 op(s) waiting)
   B: todo[Design API, Kick-off] doing[Build login] done[Set up CI]  (clock 4 · 0 op(s) waiting)
@@ -3784,11 +4907,22 @@ export default function App() {
     <main className="app">
       <h1>Collaborative board</h1>
       <p className="hint">
-        Two replicas sync through a simulated network (300 ms latency). Take one offline, edit both, then reconnect.
+        Two replicas sync through a simulated network (300 ms latency). Take one
+        offline, edit both, then reconnect.
       </p>
       <div className="replicas">
-        <ReplicaBoard replica={net.a} name="Tab A" online={online.A} onToggle={() => toggle("A")} />
-        <ReplicaBoard replica={net.b} name="Tab B" online={online.B} onToggle={() => toggle("B")} />
+        <ReplicaBoard
+          replica={net.a}
+          name="Tab A"
+          online={online.A}
+          onToggle={() => toggle("A")}
+        />
+        <ReplicaBoard
+          replica={net.b}
+          name="Tab B"
+          online={online.B}
+          onToggle={() => toggle("B")}
+        />
       </div>
     </main>
   );
@@ -3798,7 +4932,8 @@ export default function App() {
 import { COLUMNS } from "./crdt";
 
 export default function ReplicaBoard({ replica, name, online, onToggle }) {
-  // The replica is an external store: React re-renders when its version changes.
+  // The replica is an external store: React
+  // re-renders when its version changes.
   useSyncExternalStore(replica.subscribe, replica.getVersion);
   const view = replica.view();
   const [draft, setDraft] = useState("");
@@ -3825,7 +4960,12 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
       <header>
         <h2>{name}</h2>
         <label className="toggle">
-          <input type="checkbox" checked={online} onChange={onToggle} data-testid={"online-" + id} />
+          <input
+            type="checkbox"
+            checked={online}
+            onChange={onToggle}
+            data-testid={"online-" + id}
+          />
           {online ? "Online" : "Offline"}
         </label>
       </header>
@@ -3841,7 +4981,8 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
               onDragOver={(e) => dragId.current && e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
-                if (dragId.current) replica.move(dragId.current, col.id, beforeFrom(e));
+                if (dragId.current)
+                  replica.move(dragId.current, col.id, beforeFrom(e));
                 dragId.current = null;
               }}
             >
@@ -3852,7 +4993,8 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
                   draggable="true"
                   onDragStart={(e) => {
                     dragId.current = card.id;
-                    if (e.dataTransfer) e.dataTransfer.setData("text/plain", card.id);
+                    if (e.dataTransfer)
+                      e.dataTransfer.setData("text/plain", card.id);
                   }}
                   onDragEnd={() => (dragId.current = null)}
                 >
@@ -3866,11 +5008,30 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
                     onKeyDown={(e) => e.key === "Enter" && commitTitle(e, card)}
                   />
                   <span className="actions">
-                    <button disabled={c === 0} aria-label={"Move " + card.title + " left"}
-                      onClick={() => replica.move(card.id, COLUMNS[c - 1].id, null)}>◀</button>
-                    <button disabled={c === COLUMNS.length - 1} aria-label={"Move " + card.title + " right"}
-                      onClick={() => replica.move(card.id, COLUMNS[c + 1].id, null)}>▶</button>
-                    <button aria-label={"Delete " + card.title} onClick={() => replica.remove(card.id)}>✕</button>
+                    <button
+                      disabled={c === 0}
+                      aria-label={"Move " + card.title + " left"}
+                      onClick={() =>
+                        replica.move(card.id, COLUMNS[c - 1].id, null)
+                      }
+                    >
+                      ◀
+                    </button>
+                    <button
+                      disabled={c === COLUMNS.length - 1}
+                      aria-label={"Move " + card.title + " right"}
+                      onClick={() =>
+                        replica.move(card.id, COLUMNS[c + 1].id, null)
+                      }
+                    >
+                      ▶
+                    </button>
+                    <button
+                      aria-label={"Delete " + card.title}
+                      onClick={() => replica.remove(card.id)}
+                    >
+                      ✕
+                    </button>
                   </span>
                 </li>
               ))}
@@ -3879,8 +5040,13 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
         ))}
       </div>
       <form className="add" onSubmit={add}>
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="New card in To Do"
-          aria-label={"New card in " + name} data-testid={"add-" + id} />
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="New card in To Do"
+          aria-label={"New card in " + name}
+          data-testid={"add-" + id}
+        />
         <button type="submit">Add</button>
       </form>
     </section>
@@ -3925,7 +5091,8 @@ export class Replica {
     this.clock = Math.max(this.clock, op.ts[0]);
     const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
     const cur = card[op.field];
-    if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+    if (!cur || newer(op.ts, cur.ts))
+      card[op.field] = { value: op.value, ts: op.ts };
   }
   // A local edit: one timestamp for all fields written together.
   write(cardId, fields) {
@@ -3946,16 +5113,25 @@ export class Replica {
     const cols = Object.fromEntries(COLUMNS.map((c) => [c.id, []]));
     for (const [id, f] of Object.entries(this.cards)) {
       if (!f.title || !f.place || (f.deleted && f.deleted.value)) continue;
-      cols[f.place.value.col].push({ id, title: f.title.value, pos: f.place.value.pos });
+      cols[f.place.value.col].push({
+        id,
+        title: f.title.value,
+        pos: f.place.value.pos,
+      });
     }
-    for (const list of Object.values(cols)) list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
+    for (const list of Object.values(cols))
+      list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
     return cols;
   }
   // ---- intentions, expressed as register writes ----
   add(col, title) {
     const list = this.view()[col];
     const pos = list.length ? list[list.length - 1].pos + 1 : 1;
-    this.write(this.id + "-" + ++this.seq, { title, place: { col, pos }, deleted: false });
+    this.write(this.id + "-" + ++this.seq, {
+      title,
+      place: { col, pos },
+      deleted: false,
+    });
   }
   // Place a card in col, in front of beforeId (null = at the end). The new
   // pos is a number between the neighbours: no other card has to change.
@@ -3982,14 +5158,25 @@ export function createNetwork(latency = 300) {
   const a = new Replica("A");
   const b = new Replica("B");
   const seed = new Replica("S"); // stands in for "loaded from the server"
-  [["todo", "Design API"], ["todo", "Kick-off"], ["doing", "Build login"], ["done", "Set up CI"]].forEach(([c, t]) => seed.add(c, t));
+  [
+    ["todo", "Design API"],
+    ["todo", "Kick-off"],
+    ["doing", "Build login"],
+    ["done", "Set up CI"],
+  ].forEach(([c, t]) => seed.add(c, t));
   a.receive(seed.outbox);
   b.receive(seed.outbox);
   const online = { A: true, B: true };
   const listeners = new Set();
   const net = {
-    a, b, latency, online,
-    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    a,
+    b,
+    latency,
+    online,
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
     setOnline(id, value) {
       online[id] = value;
       listeners.forEach((fn) => fn());
@@ -3997,10 +5184,14 @@ export function createNetwork(latency = 300) {
     },
     flush() {
       if (!online.A || !online.B) return;
-      for (const [from, to] of [[a, b], [b, a]]) {
+      for (const [from, to] of [
+        [a, b],
+        [b, a],
+      ]) {
         if (!from.outbox.length) continue;
         const ops = from.outbox.splice(0);
-        setTimeout(() => to.receive(ops), latency); // in flight for \`latency\` ms
+        // in flight for \`latency\` ms
+        setTimeout(() => to.receive(ops), latency);
       }
       a.changed();
       b.changed();
@@ -4011,28 +5202,140 @@ export function createNetwork(latency = 300) {
   return net;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 1200px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 12px; }
-.replicas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
-.replica { background: #141922; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; min-width: 0; }
-.replica header { display: flex; justify-content: space-between; align-items: center; }
-.replica h2 { font-size: 1rem; margin: 0; }
-.toggle { display: flex; gap: 6px; align-items: center; }
-.meta { color: #9aa3b2; font-size: 0.8rem; margin: 4px 0 8px; }
-.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.col h3 { font-size: 0.8rem; margin: 0 0 6px; color: #b9c2d3; }
-.col ul { list-style: none; margin: 0; padding: 4px; min-height: 60px; background: #10141b; border-radius: 6px; }
-.col li { background: #222a37; border: 1px solid #323b4d; border-radius: 6px; padding: 6px; margin-bottom: 6px; cursor: grab; }
-.title-input { width: 100%; box-sizing: border-box; background: transparent; color: inherit; border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; font: inherit; }
-.title-input:focus { border-color: #5b8cff; outline: none; background: #0f1218; }
-.actions { display: flex; gap: 4px; margin-top: 4px; }
-.actions button { flex: 1; background: #2a3140; color: inherit; border: 0; border-radius: 4px; padding: 2px 0; cursor: pointer; }
-.actions button:disabled { opacity: 0.3; cursor: default; }
-.add { display: flex; gap: 6px; margin-top: 8px; }
-.add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
-.add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.replicas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
+.replica {
+  background: #141922;
+  border: 1px solid #2a3140;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+.replica header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.replica h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+.toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.meta {
+  color: #9aa3b2;
+  font-size: 0.8rem;
+  margin: 4px 0 8px;
+}
+.cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.col h3 {
+  font-size: 0.8rem;
+  margin: 0 0 6px;
+  color: #b9c2d3;
+}
+.col ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-height: 60px;
+  background: #10141b;
+  border-radius: 6px;
+}
+.col li {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px;
+  margin-bottom: 6px;
+  cursor: grab;
+}
+.title-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font: inherit;
+}
+.title-input:focus {
+  border-color: #5b8cff;
+  outline: none;
+  background: #0f1218;
+}
+.actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.actions button {
+  flex: 1;
+  background: #2a3140;
+  color: inherit;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.actions button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.add {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.add input {
+  flex: 1;
+  min-width: 0;
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.add button {
+  background: #5b8cff;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 `,
         },
       },
@@ -4064,7 +5367,8 @@ apply(op) {
   this.clock = Math.max(this.clock, op.ts[0]);
   const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
   const cur = card[op.field];
-  if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+  if (!cur || newer(op.ts, cur.ts))
+    card[op.field] = { value: op.value, ts: op.ts };
 }
 \`\`\`
 
@@ -4079,14 +5383,13 @@ The network and replicas are created as plain objects in \`App.vue\` and passed 
 📌 **Interview term: External store bridge** — subscribe to the outside object and bump a reactive counter on every change; computeds that read the counter recompute.
 
 \`\`\`vue
-// Bridge the external store into Vue: bump a ref on every change and let
-// computeds that read it recompute.
-const version = ref(0);
-let stop = null;
-onMounted(() => { stop = props.replica.subscribe(() => version.value++); });
-onUnmounted(() => stop && stop());
-const view = computed(() => (version.value, props.replica.view()));
-const meta = computed(() => (version.value, { clock: props.replica.clock, waiting: props.replica.outbox.length }));
+// Bridge the external store into Vue: bump a ref on every change and
+let // computeds that read it recompute. const version = ref(0); let
+stop = null; onMounted(() => { stop = props.replica.subscribe(() =>
+version.value++); }); onUnmounted(() => stop && stop()); const view =
+computed(() => (version.value, props.replica.view())); const meta =
+computed(() => (version.value, { clock: props.replica.clock, waiting:
+props.replica.outbox.length }));
 \`\`\`
 
 The comma expression \`(version.value, props.replica.view())\` reads the counter so the computed depends on it, then returns the derived board. \`onUnmounted\` removes the subscription; see [Vue lifecycle hooks](/interview-question/what-are-vue-lifecycle-hooks).
@@ -4117,7 +5420,7 @@ The title is \`<input :value="card.title">\` committed on Enter or blur. Vue onl
 
 Compiled with \`@vue/compiler-sfc\` and mounted with \`createApp(App).mount("#app")\` in jsdom 29. The driver clicks buttons and the Online checkbox, types, dispatches drag events with a \`dataTransfer\` stub and waits real time for the network. Output from the partition onward (the first sync is trimmed):
 
-\`\`\`
+\`\`\`text
 B goes offline
 concurrent edits while partitioned
   A: todo[Write tests, Docs] doing[Build login] done[Set up CI, Design API]  (clock 9 · 6 op(s) waiting)
@@ -4149,7 +5452,8 @@ const card = new Y.Map();
 card.set("title", "Design API");
 card.set("col", "todo");
 cards.set("c1", card);
-doc.on("update", (update) => sendToPeers(update)); // a provider such as y-websocket does this
+// a provider such as y-websocket does this
+doc.on("update", (update) => sendToPeers(update));
 // in a component: cards.observeDeep(() => version.value++)
 \`\`\`
 
@@ -4257,21 +5561,54 @@ function toggle(id) {
   <main class="app">
     <h1>Collaborative board</h1>
     <p class="hint">
-      Two replicas sync through a simulated network (300 ms latency). Take one offline, edit both, then reconnect.
+      Two replicas sync through a simulated network (300 ms latency). Take one
+      offline, edit both, then reconnect.
     </p>
     <div class="replicas">
-      <ReplicaBoard :replica="net.a" name="Tab A" :online="online.A" @toggle="toggle('A')" />
-      <ReplicaBoard :replica="net.b" name="Tab B" :online="online.B" @toggle="toggle('B')" />
+      <ReplicaBoard
+        :replica="net.a"
+        name="Tab A"
+        :online="online.A"
+        @toggle="toggle('A')"
+      />
+      <ReplicaBoard
+        :replica="net.b"
+        name="Tab B"
+        :online="online.B"
+        @toggle="toggle('B')"
+      />
     </div>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 1200px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 12px; }
-.replicas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.4 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.replicas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 14px;
+}
 </style>
 `,
           "/src/components/ReplicaBoard.vue": `<script setup>
@@ -4289,10 +5626,17 @@ defineEmits(["toggle"]);
 // computeds that read it recompute.
 const version = ref(0);
 let stop = null;
-onMounted(() => { stop = props.replica.subscribe(() => version.value++); });
+onMounted(() => {
+  stop = props.replica.subscribe(() => version.value++);
+});
 onUnmounted(() => stop && stop());
 const view = computed(() => (version.value, props.replica.view()));
-const meta = computed(() => (version.value, { clock: props.replica.clock, waiting: props.replica.outbox.length }));
+const meta = computed(
+  () => (
+    version.value,
+    { clock: props.replica.clock, waiting: props.replica.outbox.length }
+  ),
+);
 
 const draft = ref("");
 let dragId = null;
@@ -4302,7 +5646,9 @@ function beforeFrom(e) {
   const el = e.target.closest && e.target.closest("[data-card]");
   return el ? el.dataset.card : null;
 }
-function onDragOver(e) { if (dragId) e.preventDefault(); }
+function onDragOver(e) {
+  if (dragId) e.preventDefault();
+}
 function onDrop(e, col) {
   e.preventDefault();
   if (dragId) props.replica.move(dragId, col, beforeFrom(e));
@@ -4328,15 +5674,27 @@ function add() {
     <header>
       <h2>{{ name }}</h2>
       <label class="toggle">
-        <input type="checkbox" :checked="online" @change="$emit('toggle')" :data-testid="'online-' + id" />
+        <input
+          type="checkbox"
+          :checked="online"
+          @change="$emit('toggle')"
+          :data-testid="'online-' + id"
+        />
         {{ online ? "Online" : "Offline" }}
       </label>
     </header>
-    <p class="meta" :data-testid="'status-' + id">clock {{ meta.clock }} · {{ meta.waiting }} op(s) waiting</p>
+    <p
+      class="meta"
+      :data-testid="'status-' + id"
+    >clock {{ meta.clock }} · {{ meta.waiting }} op(s) waiting</p>
     <div class="cols">
       <div v-for="(col, c) in COLUMNS" :key="col.id" class="col">
         <h3>{{ col.title }}</h3>
-        <ul :data-col="col.id" @dragover="onDragOver" @drop="onDrop($event, col.id)">
+        <ul
+          :data-col="col.id"
+          @dragover="onDragOver"
+          @drop="onDrop($event, col.id)"
+        >
           <li v-for="card in view[col.id]" :key="card.id" :data-card="card.id" draggable="true"
             @dragstart="onDragStart($event, card.id)" @dragend="dragId = null">
             <!-- :value is re-applied when a remote rename changes card.title -->
@@ -4347,37 +5705,135 @@ function add() {
                 @click="replica.move(card.id, COLUMNS[c - 1].id, null)">◀</button>
               <button :disabled="c === COLUMNS.length - 1" :aria-label="'Move ' + card.title + ' right'"
                 @click="replica.move(card.id, COLUMNS[c + 1].id, null)">▶</button>
-              <button :aria-label="'Delete ' + card.title" @click="replica.remove(card.id)">✕</button>
+              <button
+                :aria-label="'Delete ' + card.title"
+                @click="replica.remove(card.id)"
+              >✕</button>
             </span>
           </li>
         </ul>
       </div>
     </div>
     <form class="add" @submit.prevent="add">
-      <input v-model="draft" placeholder="New card in To Do" :aria-label="'New card in ' + name" :data-testid="'add-' + id" />
+      <input
+        v-model="draft"
+        placeholder="New card in To Do"
+        :aria-label="'New card in ' + name"
+        :data-testid="'add-' + id"
+      />
       <button type="submit">Add</button>
     </form>
   </section>
 </template>
 
 <style scoped>
-.replica { background: #141922; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; min-width: 0; }
-.replica header { display: flex; justify-content: space-between; align-items: center; }
-.replica h2 { font-size: 1rem; margin: 0; }
-.toggle { display: flex; gap: 6px; align-items: center; }
-.meta { color: #9aa3b2; font-size: 0.8rem; margin: 4px 0 8px; }
-.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.col h3 { font-size: 0.8rem; margin: 0 0 6px; color: #b9c2d3; }
-.col ul { list-style: none; margin: 0; padding: 4px; min-height: 60px; background: #10141b; border-radius: 6px; }
-.col li { background: #222a37; border: 1px solid #323b4d; border-radius: 6px; padding: 6px; margin-bottom: 6px; cursor: grab; }
-.title-input { width: 100%; box-sizing: border-box; background: transparent; color: inherit; border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; font: inherit; }
-.title-input:focus { border-color: #5b8cff; outline: none; background: #0f1218; }
-.actions { display: flex; gap: 4px; margin-top: 4px; }
-.actions button { flex: 1; background: #2a3140; color: inherit; border: 0; border-radius: 4px; padding: 2px 0; cursor: pointer; }
-.actions button:disabled { opacity: 0.3; cursor: default; }
-.add { display: flex; gap: 6px; margin-top: 8px; }
-.add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
-.add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.replica {
+  background: #141922;
+  border: 1px solid #2a3140;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+.replica header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.replica h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+.toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.meta {
+  color: #9aa3b2;
+  font-size: 0.8rem;
+  margin: 4px 0 8px;
+}
+.cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.col h3 {
+  font-size: 0.8rem;
+  margin: 0 0 6px;
+  color: #b9c2d3;
+}
+.col ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-height: 60px;
+  background: #10141b;
+  border-radius: 6px;
+}
+.col li {
+  background: #222a37;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px;
+  margin-bottom: 6px;
+  cursor: grab;
+}
+.title-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font: inherit;
+}
+.title-input:focus {
+  border-color: #5b8cff;
+  outline: none;
+  background: #0f1218;
+}
+.actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.actions button {
+  flex: 1;
+  background: #2a3140;
+  color: inherit;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+.actions button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.add {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.add input {
+  flex: 1;
+  min-width: 0;
+  background: #0f1218;
+  color: inherit;
+  border: 1px solid #323b4d;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.add button {
+  background: #5b8cff;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/crdt.js": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
@@ -4418,7 +5874,8 @@ export class Replica {
     this.clock = Math.max(this.clock, op.ts[0]);
     const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
     const cur = card[op.field];
-    if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+    if (!cur || newer(op.ts, cur.ts))
+      card[op.field] = { value: op.value, ts: op.ts };
   }
   // A local edit: one timestamp for all fields written together.
   write(cardId, fields) {
@@ -4439,16 +5896,25 @@ export class Replica {
     const cols = Object.fromEntries(COLUMNS.map((c) => [c.id, []]));
     for (const [id, f] of Object.entries(this.cards)) {
       if (!f.title || !f.place || (f.deleted && f.deleted.value)) continue;
-      cols[f.place.value.col].push({ id, title: f.title.value, pos: f.place.value.pos });
+      cols[f.place.value.col].push({
+        id,
+        title: f.title.value,
+        pos: f.place.value.pos,
+      });
     }
-    for (const list of Object.values(cols)) list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
+    for (const list of Object.values(cols))
+      list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
     return cols;
   }
   // ---- intentions, expressed as register writes ----
   add(col, title) {
     const list = this.view()[col];
     const pos = list.length ? list[list.length - 1].pos + 1 : 1;
-    this.write(this.id + "-" + ++this.seq, { title, place: { col, pos }, deleted: false });
+    this.write(this.id + "-" + ++this.seq, {
+      title,
+      place: { col, pos },
+      deleted: false,
+    });
   }
   // Place a card in col, in front of beforeId (null = at the end). The new
   // pos is a number between the neighbours: no other card has to change.
@@ -4475,14 +5941,25 @@ export function createNetwork(latency = 300) {
   const a = new Replica("A");
   const b = new Replica("B");
   const seed = new Replica("S"); // stands in for "loaded from the server"
-  [["todo", "Design API"], ["todo", "Kick-off"], ["doing", "Build login"], ["done", "Set up CI"]].forEach(([c, t]) => seed.add(c, t));
+  [
+    ["todo", "Design API"],
+    ["todo", "Kick-off"],
+    ["doing", "Build login"],
+    ["done", "Set up CI"],
+  ].forEach(([c, t]) => seed.add(c, t));
   a.receive(seed.outbox);
   b.receive(seed.outbox);
   const online = { A: true, B: true };
   const listeners = new Set();
   const net = {
-    a, b, latency, online,
-    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    a,
+    b,
+    latency,
+    online,
+    subscribe(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
     setOnline(id, value) {
       online[id] = value;
       listeners.forEach((fn) => fn());
@@ -4490,10 +5967,14 @@ export function createNetwork(latency = 300) {
     },
     flush() {
       if (!online.A || !online.B) return;
-      for (const [from, to] of [[a, b], [b, a]]) {
+      for (const [from, to] of [
+        [a, b],
+        [b, a],
+      ]) {
         if (!from.outbox.length) continue;
         const ops = from.outbox.splice(0);
-        setTimeout(() => to.receive(ops), latency); // in flight for \`latency\` ms
+        // in flight for \`latency\` ms
+        setTimeout(() => to.receive(ops), latency);
       }
       a.changed();
       b.changed();
@@ -4534,7 +6015,8 @@ apply(op: Op) {
   this.clock = Math.max(this.clock, op.ts[0]);
   const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
   const cur = card[op.field];
-  if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+  if (!cur || newer(op.ts, cur.ts))
+    card[op.field] = { value: op.value, ts: op.ts };
 }
 \`\`\`
 
@@ -4549,17 +6031,25 @@ apply(op: Op) {
 📌 **Interview term: Signal bridge** — subscribe to an outside object and bump a \`signal\` counter; \`computed\`s that read the counter recompute. In a zoneless app this is what makes a \`setTimeout\` delivery re-render.
 
 \`\`\`ts
-// Bridge the external store into signals: bump a version on every change.
+// Bridge the external store into signals:
+// bump a version on every change.
 private version = signal(0);
 view = computed(() => (this.version(), this.replica.view()));
-meta = computed(() => (this.version(), { clock: this.replica.clock, waiting: this.replica.outbox.length }));
+meta = computed(
+  () => (
+    this.version(),
+    { clock: this.replica.clock, waiting: this.replica.outbox.length }
+  ),
+);
 draft = signal("");
 dragId: string | null = null;
 private destroyRef = inject(DestroyRef);
 
 ngOnInit() {
   // @Input values exist from ngOnInit on, not in the constructor.
-  const stop = this.replica.subscribe(() => this.version.update((v) => v + 1));
+  const stop = this.replica.subscribe(() =>
+    this.version.update((v) => v + 1),
+  );
   this.destroyRef.onDestroy(stop);
 }
 \`\`\`
@@ -4590,7 +6080,7 @@ move(cardId: string, col: ColId, beforeId: string | null) {
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, AOT with \`strictTemplates\` and through the runtime JIT. The driver clicks real buttons and checkboxes, types, dispatches drag events with a \`dataTransfer\` stub and waits real time. AOT output from the partition onward (JIT printed the same):
 
-\`\`\`
+\`\`\`text
 B goes offline
 concurrent edits while partitioned
   A: todo[Write tests, Docs] doing[Build login] done[Set up CI, Design API]  (clock 9 · 6 op(s) waiting)
@@ -4622,8 +6112,10 @@ const card = new Y.Map<string>();
 card.set("title", "Design API");
 card.set("col", "todo");
 cards.set("c1", card);
-doc.on("update", (update: Uint8Array) => provider.send(update)); // y-websocket or y-webrtc in practice
-cards.observeDeep(() => version.update((v) => v + 1)); // the same signal bridge
+// y-websocket or y-webrtc in practice
+doc.on("update", (update: Uint8Array) => provider.send(update));
+// the same signal bridge
+cards.observeDeep(() => version.update((v) => v + 1));
 \`\`\`
 
 In the private run, concurrent sets of one key converged on both documents, and the document with the higher random \`clientID\` won.
@@ -4722,21 +6214,59 @@ import { Network } from "./crdt";
     <main class="app">
       <h1>Collaborative board</h1>
       <p class="hint">
-        Two replicas sync through a simulated network (300 ms latency). Take one offline, edit both, then reconnect.
+        Two replicas sync through a simulated network (300 ms latency). Take one
+        offline, edit both, then reconnect.
       </p>
       <div class="replicas">
-        <app-replica-board [replica]="net.a" name="Tab A" [online]="online().A" (toggle)="toggle('A')" />
-        <app-replica-board [replica]="net.b" name="Tab B" [online]="online().B" (toggle)="toggle('B')" />
+        <app-replica-board
+          [replica]="net.a"
+          name="Tab A"
+          [online]="online().A"
+          (toggle)="toggle('A')"
+        />
+        <app-replica-board
+          [replica]="net.b"
+          name="Tab B"
+          [online]="online().B"
+          (toggle)="toggle('B')"
+        />
       </div>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 14px/1.4 system-ui, sans-serif; }
-    .app { padding: 16px; max-width: 1200px; margin: 0 auto; }
-    h1 { font-size: 1.3rem; margin: 0 0 4px; }
-    .hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 12px; }
-    .replicas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        position: fixed;
+        inset: 0;
+        overflow: auto;
+        background: #0f1218;
+        color: #e6e9ef;
+        font:
+          14px/1.4 system-ui,
+          sans-serif;
+      }
+      .app {
+        padding: 16px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.3rem;
+        margin: 0 0 4px;
+      }
+      .hint {
+        color: #9aa3b2;
+        font-size: 0.85rem;
+        margin: 0 0 12px;
+      }
+      .replicas {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 14px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   // Two replicas in one page, standing in for two browser tabs.
@@ -4763,9 +6293,21 @@ export const COLUMNS: { id: ColId; title: string }[] = [
   { id: "done", title: "Done" },
 ];
 export type Ts = [number, string];
-export interface Place { col: ColId; pos: number; }
-export interface Op { cardId: string; field: string; value: unknown; ts: Ts; }
-export interface CardView { id: string; title: string; pos: number; }
+export interface Place {
+  col: ColId;
+  pos: number;
+}
+export interface Op {
+  cardId: string;
+  field: string;
+  value: unknown;
+  ts: Ts;
+}
+export interface CardView {
+  id: string;
+  title: string;
+  pos: number;
+}
 type Register = { value: any; ts: Ts };
 
 const newer = (a: Ts, b: Ts) => a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]);
@@ -4780,15 +6322,20 @@ export class Replica {
 
   subscribe(fn: () => void) {
     this.listeners.add(fn);
-    return () => { this.listeners.delete(fn); };
+    return () => {
+      this.listeners.delete(fn);
+    };
   }
-  changed() { this.listeners.forEach((fn) => fn()); }
+  changed() {
+    this.listeners.forEach((fn) => fn());
+  }
   // Merge one op. Safe to call twice with the same op (idempotent).
   apply(op: Op) {
     this.clock = Math.max(this.clock, op.ts[0]);
     const card = this.cards[op.cardId] || (this.cards[op.cardId] = {});
     const cur = card[op.field];
-    if (!cur || newer(op.ts, cur.ts)) card[op.field] = { value: op.value, ts: op.ts };
+    if (!cur || newer(op.ts, cur.ts))
+      card[op.field] = { value: op.value, ts: op.ts };
   }
   // A local edit: one timestamp for all fields written together.
   private write(cardId: string, fields: Record<string, unknown>) {
@@ -4808,18 +6355,24 @@ export class Replica {
   view(): Record<ColId, CardView[]> {
     const cols: Record<ColId, CardView[]> = { todo: [], doing: [], done: [] };
     for (const [id, f] of Object.entries(this.cards)) {
-      if (!f["title"] || !f["place"] || (f["deleted"] && f["deleted"].value)) continue;
+      if (!f["title"] || !f["place"] || (f["deleted"] && f["deleted"].value))
+        continue;
       const place = f["place"].value as Place;
       cols[place.col].push({ id, title: f["title"].value, pos: place.pos });
     }
-    for (const list of Object.values(cols)) list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
+    for (const list of Object.values(cols))
+      list.sort((a, b) => a.pos - b.pos || (a.id < b.id ? -1 : 1));
     return cols;
   }
   // ---- intentions, expressed as register writes ----
   add(col: ColId, title: string) {
     const list = this.view()[col];
     const pos = list.length ? list[list.length - 1].pos + 1 : 1;
-    this.write(this.id + "-" + ++this.seq, { title, place: { col, pos }, deleted: false });
+    this.write(this.id + "-" + ++this.seq, {
+      title,
+      place: { col, pos },
+      deleted: false,
+    });
   }
   // Place a card in col, in front of beforeId (null = at the end). The new
   // pos is a number between the neighbours: no other card has to change.
@@ -4832,8 +6385,12 @@ export class Replica {
     else pos = (list[i - 1].pos + list[i].pos) / 2;
     this.write(cardId, { place: { col, pos } });
   }
-  rename(cardId: string, title: string) { this.write(cardId, { title }); }
-  remove(cardId: string) { this.write(cardId, { deleted: true }); }
+  rename(cardId: string, title: string) {
+    this.write(cardId, { title });
+  }
+  remove(cardId: string) {
+    this.write(cardId, { deleted: true });
+  }
 }
 
 // Two replicas and a link between them with latency. Ops wait in each
@@ -4844,12 +6401,21 @@ export class Network {
   private online: Record<string, boolean> = { A: true, B: true };
   constructor(private latency = 300) {
     const seed = new Replica("S"); // stands in for "loaded from the server"
-    const rows: [ColId, string][] = [["todo", "Design API"], ["todo", "Kick-off"], ["doing", "Build login"], ["done", "Set up CI"]];
+    const rows: [ColId, string][] = [
+      ["todo", "Design API"],
+      ["todo", "Kick-off"],
+      ["doing", "Build login"],
+      ["done", "Set up CI"],
+    ];
     rows.forEach(([c, t]) => seed.add(c, t));
     this.a.receive(seed.outbox);
     this.b.receive(seed.outbox);
-    this.a.subscribe(() => { if (this.a.outbox.length) this.flush(); });
-    this.b.subscribe(() => { if (this.b.outbox.length) this.flush(); });
+    this.a.subscribe(() => {
+      if (this.a.outbox.length) this.flush();
+    });
+    this.b.subscribe(() => {
+      if (this.b.outbox.length) this.flush();
+    });
   }
   setOnline(id: string, value: boolean) {
     this.online[id] = value;
@@ -4857,40 +6423,75 @@ export class Network {
   }
   flush() {
     if (!this.online["A"] || !this.online["B"]) return;
-    const pairs: [Replica, Replica][] = [[this.a, this.b], [this.b, this.a]];
+    const pairs: [Replica, Replica][] = [
+      [this.a, this.b],
+      [this.b, this.a],
+    ];
     for (const [from, to] of pairs) {
       if (!from.outbox.length) continue;
       const ops = from.outbox.splice(0);
-      setTimeout(() => to.receive(ops), this.latency); // in flight for \`latency\` ms
+      // in flight for \`latency\` ms
+      setTimeout(() => to.receive(ops), this.latency);
     }
     this.a.changed();
     this.b.changed();
   }
 }
 `,
-          "/src/app/replica-board.component.ts": `import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, computed, inject, signal } from "@angular/core";
+          "/src/app/replica-board.component.ts": `import {
+  Component,
+  DestroyRef,
+  EventEmitter,
+  Input,
+  OnInit,
+  Output,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import { COLUMNS, CardView, ColId, Replica } from "./crdt";
 
 @Component({
   selector: "app-replica-board",
   standalone: true,
   template: \`
-    <section class="replica" [attr.data-replica]="replica.id" [attr.aria-label]="name">
+    <section
+      class="replica"
+      [attr.data-replica]="replica.id"
+      [attr.aria-label]="name"
+    >
       <header>
         <h2>{{ name }}</h2>
         <label class="toggle">
-          <input type="checkbox" [checked]="online" (change)="toggle.emit()" [attr.data-testid]="'online-' + replica.id" />
+          <input
+            type="checkbox"
+            [checked]="online"
+            (change)="toggle.emit()"
+            [attr.data-testid]="'online-' + replica.id"
+          />
           {{ online ? "Online" : "Offline" }}
         </label>
       </header>
-      <p class="meta" [attr.data-testid]="'status-' + replica.id">clock {{ meta().clock }} · {{ meta().waiting }} op(s) waiting</p>
+      <p
+        class="meta"
+        [attr.data-testid]="'status-' + replica.id"
+      >clock {{ meta().clock }} · {{ meta().waiting }} op(s) waiting</p>
       <div class="cols">
         @for (col of columns; track col.id; let c = $index) {
           <div class="col">
             <h3>{{ col.title }}</h3>
-            <ul [attr.data-col]="col.id" (dragover)="onDragOver($event)" (drop)="onDrop($event, col.id)">
+            <ul
+              [attr.data-col]="col.id"
+              (dragover)="onDragOver($event)"
+              (drop)="onDrop($event, col.id)"
+            >
               @for (card of view()[col.id]; track card.id) {
-                <li [attr.data-card]="card.id" draggable="true" (dragstart)="onDragStart($event, card.id)" (dragend)="dragId = null">
+                <li
+                  [attr.data-card]="card.id"
+                  draggable="true"
+                  (dragstart)="onDragStart($event, card.id)"
+                  (dragend)="dragId = null"
+                >
                   <!-- [value] is re-applied when a remote rename changes card.title -->
                   <input class="title-input" [value]="card.title" [attr.aria-label]="'Title of ' + card.title"
                     (blur)="commitTitle($event, card)" (keydown.enter)="commitTitle($event, card)" />
@@ -4899,7 +6500,10 @@ import { COLUMNS, CardView, ColId, Replica } from "./crdt";
                       (click)="replica.move(card.id, columns[c - 1].id, null)">◀</button>
                     <button [disabled]="c === columns.length - 1" [attr.aria-label]="'Move ' + card.title + ' right'"
                       (click)="replica.move(card.id, columns[c + 1].id, null)">▶</button>
-                    <button [attr.aria-label]="'Delete ' + card.title" (click)="replica.remove(card.id)">✕</button>
+                    <button
+                      [attr.aria-label]="'Delete ' + card.title"
+                      (click)="replica.remove(card.id)"
+                    >✕</button>
                   </span>
                 </li>
               }
@@ -4914,7 +6518,8 @@ import { COLUMNS, CardView, ColId, Replica } from "./crdt";
       </form>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .replica { background: #141922; border: 1px solid #2a3140; border-radius: 10px; padding: 10px; min-width: 0; }
     .replica header { display: flex; justify-content: space-between; align-items: center; }
     .replica h2 { font-size: 1rem; margin: 0; }
@@ -4932,7 +6537,8 @@ import { COLUMNS, CardView, ColId, Replica } from "./crdt";
     .add { display: flex; gap: 6px; margin-top: 8px; }
     .add input { flex: 1; min-width: 0; background: #0f1218; color: inherit; border: 1px solid #323b4d; border-radius: 6px; padding: 6px 8px; }
     .add button { background: #5b8cff; color: #fff; border: 0; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class ReplicaBoardComponent implements OnInit {
   @Input({ required: true }) replica!: Replica;
@@ -4943,25 +6549,41 @@ export class ReplicaBoardComponent implements OnInit {
   // Bridge the external store into signals: bump a version on every change.
   private version = signal(0);
   view = computed(() => (this.version(), this.replica.view()));
-  meta = computed(() => (this.version(), { clock: this.replica.clock, waiting: this.replica.outbox.length }));
+  meta = computed(
+    () => (
+      this.version(),
+      { clock: this.replica.clock, waiting: this.replica.outbox.length }
+    ),
+  );
   draft = signal("");
   dragId: string | null = null;
   private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
     // @Input values exist from ngOnInit on, not in the constructor.
-    const stop = this.replica.subscribe(() => this.version.update((v) => v + 1));
+    const stop = this.replica.subscribe(() =>
+      this.version.update((v) => v + 1),
+    );
     this.destroyRef.onDestroy(stop);
   }
   onDragStart(e: DragEvent, id: string) {
     this.dragId = id;
     if (e.dataTransfer) e.dataTransfer.setData("text/plain", id);
   }
-  onDragOver(e: DragEvent) { if (this.dragId) e.preventDefault(); }
+  onDragOver(e: DragEvent) {
+    if (this.dragId) e.preventDefault();
+  }
   onDrop(e: DragEvent, col: ColId) {
     e.preventDefault();
-    const el = (e.target as Element).closest("[data-card]") as HTMLElement | null;
-    if (this.dragId) this.replica.move(this.dragId, col, el ? el.dataset["card"] || null : null);
+    const el = (e.target as Element).closest(
+      "[data-card]",
+    ) as HTMLElement | null;
+    if (this.dragId)
+      this.replica.move(
+        this.dragId,
+        col,
+        el ? el.dataset["card"] || null : null,
+      );
     this.dragId = null;
   }
   commitTitle(e: Event, card: CardView) {
@@ -5047,7 +6669,11 @@ A sidebar, an 8 px handle and a main area. Drag or keyboard changes the sidebar 
 
 \`\`\`jsx
 const { size, dragging, handleProps } = useResizable({
-  initial: 280, min: 180, max: 480, step: 10, storageKey: "demo-sidebar-width",
+  initial: 280,
+  min: 180,
+  max: 480,
+  step: 10,
+  storageKey: "demo-sidebar-width",
 });
 <aside style={{ width: size }} />
 <div {...handleProps} className="handle" aria-label="Resize sidebar" aria-controls="sidebar" />
@@ -5095,7 +6721,8 @@ function readStored(key, fallback) {
     const v = key ? Number(localStorage.getItem(key)) : NaN;
     return Number.isFinite(v) && v > 0 ? v : fallback;
   } catch {
-    return fallback; // storage can throw (private mode, blocked cookies)
+    // storage can throw (private mode, blocked cookies)
+    return fallback;
   }
 \`\`\`
 
@@ -5115,9 +6742,11 @@ function onPointerDown(e) {
   const startSize = size;
   const handle = e.currentTarget;
   if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
-  // The new size depends only on where the drag STARTED, not on the last
+  // The new size depends only on where
+  // the drag STARTED, not on the last
   // move, so a dropped or coalesced pointermove cannot make it drift.
-  const onMove = (ev) => setSize(clamp(startSize + ev.clientX - startX, min, max));
+  const onMove = (ev) =>
+    setSize(clamp(startSize + ev.clientX - startX, min, max));
   const stop = () => {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", stop);
@@ -5153,7 +6782,12 @@ useEffect(() => () => stopRef.current && stopRef.current(), []);
 \`\`\`jsx
 function onKeyDown(e) {
   const big = e.shiftKey ? step * 5 : step;
-  const next = { ArrowLeft: size - big, ArrowRight: size + big, Home: min, End: max }[e.key];
+  const next = {
+    ArrowLeft: size - big,
+    ArrowRight: size + big,
+    Home: min,
+    End: max,
+  }[e.key];
   if (next === undefined) return;
   e.preventDefault();
   setSize(clamp(next, min, max));
@@ -5166,7 +6800,9 @@ function onKeyDown(e) {
 // Persist once the drag is over, not on every pointermove.
 useEffect(() => {
   if (dragging || !storageKey) return;
-  try { localStorage.setItem(storageKey, String(size)); } catch {}
+  try {
+    localStorage.setItem(storageKey, String(size));
+  } catch {}
 }, [size, dragging, storageKey]);
 \`\`\`
 
@@ -5176,7 +6812,7 @@ While \`dragging\` is true the effect returns early, so a two-second drag does n
 
 Mounted under \`<StrictMode>\` by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. jsdom has no layout, but the hook reads only \`clientX\`, so the driver dispatches real \`PointerEvent\`s with chosen coordinates (jsdom 29 implements \`PointerEvent\`; it lacks \`setPointerCapture\`). Output, unedited:
 
-\`\`\`
+\`\`\`text
 start: width=280px aria-valuenow=280 stored=280 | role=separator orientation=vertical min=180 max=480
 pointerdown x=284, move to x=334: width=330px aria-valuenow=330 stored=280
 move to x=900: width=480px aria-valuenow=480 stored=280
@@ -5195,7 +6831,7 @@ The drag computes from the start (284 to 334 gives exactly +50), clamps both way
 
 Then the same build ran in Chromium 141 through playwright-core 1.64.1, with real mouse input and real layout, served from a local server so storage survives a reload:
 
-\`\`\`
+\`\`\`text
 start rendered width: 280 handle at x = 280
 after +100 px real drag: 380
 dragged far right: 480
@@ -5315,12 +6951,21 @@ The 360 px line needed a fix found by this run: the first version overflowed to 
 
 export default function App() {
   const { size, dragging, handleProps } = useResizable({
-    initial: 280, min: 180, max: 480, step: 10, storageKey: "demo-sidebar-width",
+    initial: 280,
+    min: 180,
+    max: 480,
+    step: 10,
+    storageKey: "demo-sidebar-width",
   });
 
   return (
     <div className={"layout" + (dragging ? " is-dragging" : "")}>
-      <aside id="sidebar" className="sidebar" style={{ width: size }} data-testid="sidebar">
+      <aside
+        id="sidebar"
+        className="sidebar"
+        style={{ width: size }}
+        data-testid="sidebar"
+      >
         <h2>Files</h2>
         <ul>
           <li>index.html</li>
@@ -5328,11 +6973,19 @@ export default function App() {
           <li>a-very-long-file-name-that-wraps.js</li>
         </ul>
       </aside>
-      <div {...handleProps} className="handle" aria-label="Resize sidebar" aria-controls="sidebar" />
+      <div
+        {...handleProps}
+        className="handle"
+        aria-label="Resize sidebar"
+        aria-controls="sidebar"
+      />
       <main className="content">
         <h1>Editor</h1>
         <p data-testid="size">Sidebar width: {size}px</p>
-        <p className="hint">Drag the bar, or focus it and use the arrow keys (Shift for bigger steps), Home and End. Double-click resets.</p>
+        <p className="hint">
+          Drag the bar, or focus it and use the arrow keys (Shift for bigger
+          steps), Home and End. Double-click resets.
+        </p>
       </main>
     </div>
   );
@@ -5353,15 +7006,26 @@ function readStored(key, fallback) {
 
 // One resize handle for one panel edge. The hook owns the size; the caller
 // decides where it goes (width of a sidebar, height of a drawer, ...).
-export function useResizable({ initial = 280, min = 180, max = 480, step = 10, storageKey } = {}) {
-  const [size, setSize] = useState(() => clamp(readStored(storageKey, initial), min, max));
+export function useResizable({
+  initial = 280,
+  min = 180,
+  max = 480,
+  step = 10,
+  storageKey,
+} = {}) {
+  const [size, setSize] = useState(() =>
+    clamp(readStored(storageKey, initial), min, max),
+  );
   const [dragging, setDragging] = useState(false);
-  const stopRef = useRef(null); // removes the window listeners of the drag in progress
+  // removes the window listeners of the drag in progress
+  const stopRef = useRef(null);
 
   // Persist once the drag is over, not on every pointermove.
   useEffect(() => {
     if (dragging || !storageKey) return;
-    try { localStorage.setItem(storageKey, String(size)); } catch {}
+    try {
+      localStorage.setItem(storageKey, String(size));
+    } catch {}
   }, [size, dragging, storageKey]);
 
   // If the component unmounts mid-drag, do not leave listeners on window.
@@ -5376,7 +7040,8 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
     if (handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
     // The new size depends only on where the drag STARTED, not on the last
     // move, so a dropped or coalesced pointermove cannot make it drift.
-    const onMove = (ev) => setSize(clamp(startSize + ev.clientX - startX, min, max));
+    const onMove = (ev) =>
+      setSize(clamp(startSize + ev.clientX - startX, min, max));
     const stop = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", stop);
@@ -5393,7 +7058,12 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
 
   function onKeyDown(e) {
     const big = e.shiftKey ? step * 5 : step;
-    const next = { ArrowLeft: size - big, ArrowRight: size + big, Home: min, End: max }[e.key];
+    const next = {
+      ArrowLeft: size - big,
+      ArrowRight: size + big,
+      Home: min,
+      End: max,
+    }[e.key];
     if (next === undefined) return;
     e.preventDefault();
     setSize(clamp(next, min, max));
@@ -5402,7 +7072,8 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
   const handleProps = {
     role: "separator",
     tabIndex: 0,
-    "aria-orientation": "vertical", // the bar is vertical; it splits left from right
+    // the bar is vertical; it splits left from right
+    "aria-orientation": "vertical",
     "aria-valuenow": size,
     "aria-valuemin": min,
     "aria-valuemax": max,
@@ -5413,18 +7084,69 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
   return { size, dragging, handleProps };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.layout { display: flex; height: 100vh; min-height: 320px; }
-.layout.is-dragging { cursor: col-resize; user-select: none; }
-.sidebar { flex: none; max-width: 65vw; background: #171c25; padding: 12px; box-sizing: border-box; overflow: auto; overflow-wrap: anywhere; }
-.sidebar h2 { font-size: 0.95rem; margin: 0 0 8px; }
-.sidebar ul { margin: 0; padding-left: 18px; color: #b9c2d3; }
-.handle { flex: none; width: 8px; cursor: col-resize; background: #2a3140; touch-action: none; }
-.handle:hover, .is-dragging .handle { background: #5b8cff; }
-.handle:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; background: #3b4a6b; }
-.content { flex: 1; min-width: 0; padding: 16px; }
-.content h1 { font-size: 1.2rem; margin: 0 0 8px; }
-.hint { color: #9aa3b2; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.layout {
+  display: flex;
+  height: 100vh;
+  min-height: 320px;
+}
+.layout.is-dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+.sidebar {
+  flex: none;
+  max-width: 65vw;
+  background: #171c25;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.sidebar h2 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+.sidebar ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #b9c2d3;
+}
+.handle {
+  flex: none;
+  width: 8px;
+  cursor: col-resize;
+  background: #2a3140;
+  touch-action: none;
+}
+.handle:hover,
+.is-dragging .handle {
+  background: #5b8cff;
+}
+.handle:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: -2px;
+  background: #3b4a6b;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+}
+.content h1 {
+  font-size: 1.2rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+}
 `,
         },
       },
@@ -5448,9 +7170,15 @@ The API, designed for one-line use in a template:
 
 \`\`\`vue
 const { size, dragging, handleAttrs, handleEvents } = useResizable({
-  initial: 280, min: 180, max: 480, step: 10, storageKey: "demo-sidebar-width",
-});
-<div v-bind="handleAttrs" v-on="handleEvents" class="handle" aria-label="Resize sidebar" aria-controls="sidebar"></div>
+initial: 280, min: 180, max: 480, step: 10, storageKey:
+"demo-sidebar-width", });
+<div
+  v-bind="handleAttrs"
+  v-on="handleEvents"
+  class="handle"
+  aria-label="Resize sidebar"
+  aria-controls="sidebar"
+></div>
 \`\`\`
 
 📌 **Interview term: Object syntax for v-bind and v-on** — \`v-bind="obj"\` spreads attributes and \`v-on="obj"\` attaches every listener in an object. The composable returns \`handleAttrs\` as a \`computed\` (its \`aria-valuenow\` changes) and \`handleEvents\` as a plain object (the functions never change).
@@ -5475,9 +7203,12 @@ function onPointerdown(e) {
   e.preventDefault(); // no text selection while dragging
   const startX = e.clientX;
   const startSize = size.value;
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   // Size depends only on where the drag STARTED, so it cannot drift.
-  const onMove = (ev) => { size.value = clamp(startSize + ev.clientX - startX, min, max); };
+  const onMove = (ev) => {
+    size.value = clamp(startSize + ev.clientX - startX, min, max);
+  };
   stop = () => {
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", stop);
@@ -5508,10 +7239,16 @@ onScopeDispose(() => stop && stop());
 
 \`\`\`jsx
 // Persist once the drag is over, not on every pointermove.
-watch([size, dragging], () => {
-  if (dragging.value || !storageKey) return;
-  try { localStorage.setItem(storageKey, String(size.value)); } catch {}
-}, { immediate: true });
+watch(
+  [size, dragging],
+  () => {
+    if (dragging.value || !storageKey) return;
+    try {
+      localStorage.setItem(storageKey, String(size.value));
+    } catch {}
+  },
+  { immediate: true },
+);
 \`\`\`
 
 📌 **Interview term: watch with sources array** — \`watch([a, b], fn)\` runs \`fn\` when either changes. Here it skips writes while \`dragging\` is true, so a drag writes storage once, on release. Reading storage is wrapped in \`try\`/\`catch\` because it can throw in some privacy modes.
@@ -5526,7 +7263,7 @@ watch([size, dragging], () => {
 
 Compiled with \`@vue/compiler-sfc\` and mounted with \`createApp(App).mount("#app")\` in jsdom 29. jsdom has no layout; the composable reads only \`clientX\`, so the driver dispatches real \`PointerEvent\`s with chosen coordinates. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start: width=280px aria-valuenow=280 stored=280 | role=separator orientation=vertical min=180 max=480
 pointerdown x=284, move to x=334: width=330px aria-valuenow=330 stored=280
 move to x=900: width=480px aria-valuenow=480 stored=280
@@ -5639,13 +7376,22 @@ These lines are identical to the React and Angular runs. A real-browser check (C
 import { useResizable } from "./useResizable.js";
 
 const { size, dragging, handleAttrs, handleEvents } = useResizable({
-  initial: 280, min: 180, max: 480, step: 10, storageKey: "demo-sidebar-width",
+  initial: 280,
+  min: 180,
+  max: 480,
+  step: 10,
+  storageKey: "demo-sidebar-width",
 });
 </script>
 
 <template>
   <div class="layout" :class="{ 'is-dragging': dragging }">
-    <aside id="sidebar" class="sidebar" :style="{ width: size + 'px' }" data-testid="sidebar">
+    <aside
+      id="sidebar"
+      class="sidebar"
+      :style="{ width: size + 'px' }"
+      data-testid="sidebar"
+    >
       <h2>Files</h2>
       <ul>
         <li>index.html</li>
@@ -5653,7 +7399,13 @@ const { size, dragging, handleAttrs, handleEvents } = useResizable({
         <li>a-very-long-file-name-that-wraps.js</li>
       </ul>
     </aside>
-    <div v-bind="handleAttrs" v-on="handleEvents" class="handle" aria-label="Resize sidebar" aria-controls="sidebar"></div>
+    <div
+      v-bind="handleAttrs"
+      v-on="handleEvents"
+      class="handle"
+      aria-label="Resize sidebar"
+      aria-controls="sidebar"
+    ></div>
     <main class="content">
       <h1>Editor</h1>
       <p data-testid="size">Sidebar width: {{ size }}px</p>
@@ -5663,18 +7415,69 @@ const { size, dragging, handleAttrs, handleEvents } = useResizable({
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.layout { display: flex; height: 100vh; min-height: 320px; }
-.layout.is-dragging { cursor: col-resize; user-select: none; }
-.sidebar { flex: none; max-width: 65vw; background: #171c25; padding: 12px; box-sizing: border-box; overflow: auto; overflow-wrap: anywhere; }
-.sidebar h2 { font-size: 0.95rem; margin: 0 0 8px; }
-.sidebar ul { margin: 0; padding-left: 18px; color: #b9c2d3; }
-.handle { flex: none; width: 8px; cursor: col-resize; background: #2a3140; touch-action: none; }
-.handle:hover, .is-dragging .handle { background: #5b8cff; }
-.handle:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; background: #3b4a6b; }
-.content { flex: 1; min-width: 0; padding: 16px; }
-.content h1 { font-size: 1.2rem; margin: 0 0 8px; }
-.hint { color: #9aa3b2; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.layout {
+  display: flex;
+  height: 100vh;
+  min-height: 320px;
+}
+.layout.is-dragging {
+  cursor: col-resize;
+  user-select: none;
+}
+.sidebar {
+  flex: none;
+  max-width: 65vw;
+  background: #171c25;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.sidebar h2 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+.sidebar ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #b9c2d3;
+}
+.handle {
+  flex: none;
+  width: 8px;
+  cursor: col-resize;
+  background: #2a3140;
+  touch-action: none;
+}
+.handle:hover,
+.is-dragging .handle {
+  background: #5b8cff;
+}
+.handle:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: -2px;
+  background: #3b4a6b;
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+}
+.content h1 {
+  font-size: 1.2rem;
+  margin: 0 0 8px;
+}
+.hint {
+  color: #9aa3b2;
+}
 </style>
 `,
           "/src/useResizable.js": `import { ref, computed, watch, onScopeDispose } from "vue";
@@ -5692,25 +7495,40 @@ function readStored(key, fallback) {
 
 // A composable for one resize handle. It returns reactive state plus two
 // objects made for v-bind and v-on, so the template stays one line.
-export function useResizable({ initial = 280, min = 180, max = 480, step = 10, storageKey } = {}) {
+export function useResizable({
+  initial = 280,
+  min = 180,
+  max = 480,
+  step = 10,
+  storageKey,
+} = {}) {
   const size = ref(clamp(readStored(storageKey, initial), min, max));
   const dragging = ref(false);
   let stop = null;
 
   // Persist once the drag is over, not on every pointermove.
-  watch([size, dragging], () => {
-    if (dragging.value || !storageKey) return;
-    try { localStorage.setItem(storageKey, String(size.value)); } catch {}
-  }, { immediate: true });
+  watch(
+    [size, dragging],
+    () => {
+      if (dragging.value || !storageKey) return;
+      try {
+        localStorage.setItem(storageKey, String(size.value));
+      } catch {}
+    },
+    { immediate: true },
+  );
 
   function onPointerdown(e) {
     if (e.button !== 0) return; // left button / primary touch only
     e.preventDefault(); // no text selection while dragging
     const startX = e.clientX;
     const startSize = size.value;
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+    if (e.currentTarget.setPointerCapture)
+      e.currentTarget.setPointerCapture(e.pointerId);
     // Size depends only on where the drag STARTED, so it cannot drift.
-    const onMove = (ev) => { size.value = clamp(startSize + ev.clientX - startX, min, max); };
+    const onMove = (ev) => {
+      size.value = clamp(startSize + ev.clientX - startX, min, max);
+    };
     stop = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", stop);
@@ -5726,7 +7544,12 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
 
   function onKeydown(e) {
     const big = e.shiftKey ? step * 5 : step;
-    const next = { ArrowLeft: size.value - big, ArrowRight: size.value + big, Home: min, End: max }[e.key];
+    const next = {
+      ArrowLeft: size.value - big,
+      ArrowRight: size.value + big,
+      Home: min,
+      End: max,
+    }[e.key];
     if (next === undefined) return;
     e.preventDefault();
     size.value = clamp(next, min, max);
@@ -5739,7 +7562,8 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
   const handleAttrs = computed(() => ({
     role: "separator",
     tabindex: 0,
-    "aria-orientation": "vertical", // the bar is vertical; it splits left from right
+    // the bar is vertical; it splits left from right
+    "aria-orientation": "vertical",
     "aria-valuenow": size.value,
     "aria-valuemin": min,
     "aria-valuemax": max,
@@ -5747,7 +7571,9 @@ export function useResizable({ initial = 280, min = 180, max = 480, step = 10, s
   const handleEvents = {
     pointerdown: onPointerdown,
     keydown: onKeydown,
-    dblclick: () => { size.value = clamp(initial, min, max); },
+    dblclick: () => {
+      size.value = clamp(initial, min, max);
+    },
   };
   return { size, dragging, handleAttrs, handleEvents };
 }
@@ -5774,8 +7600,18 @@ Sidebar, 8 px handle, main area; drag or keys resize between 180 and 480 px; dou
 
 \`\`\`html
 <aside id="sidebar" [style.width.px]="r.size()">...</aside>
-<div appResizeHandle #r="resizable" [initial]="280" [min]="180" [max]="480" [step]="10"
-  storageKey="demo-sidebar-width" class="handle" aria-label="Resize sidebar" aria-controls="sidebar"></div>
+<div
+  appResizeHandle
+  #r="resizable"
+  [initial]="280"
+  [min]="180"
+  [max]="480"
+  [step]="10"
+  storageKey="demo-sidebar-width"
+  class="handle"
+  aria-label="Resize sidebar"
+  aria-controls="sidebar"
+></div>
 \`\`\`
 
 | Piece | Angular tool | Why |
@@ -5800,7 +7636,8 @@ Sidebar, 8 px handle, main area; drag or keys resize between 180 and 480 px; dou
   host: {
     role: "separator",
     tabindex: "0",
-    "aria-orientation": "vertical", // the bar is vertical; it splits left from right
+    // the bar is vertical; it splits left from right
+    "aria-orientation": "vertical",
     "[attr.aria-valuenow]": "size()",
     "[attr.aria-valuemin]": "min",
     "[attr.aria-valuemax]": "max",
@@ -5823,13 +7660,20 @@ onPointerDown(e: PointerEvent) {
   this.dragging.set(true);
 }
 
-// Window listeners are registered by Angular and removed when the directive
+// Window listeners are registered by
+// Angular and removed when the directive
 // is destroyed. They ignore events unless a drag is in progress.
 @HostListener("window:pointermove", ["$event"])
 onPointerMove(e: PointerEvent) {
   if (!this.start) return;
   // Size depends only on where the drag STARTED, so it cannot drift.
-  this.size.set(clamp(this.start.size + e.clientX - this.start.x, this.min, this.max));
+  this.size.set(
+    clamp(
+      this.start.size + e.clientX - this.start.x,
+      this.min,
+      this.max,
+    ),
+  );
 }
 
 @HostListener("window:pointerup")
@@ -5851,8 +7695,18 @@ The size is \`start.size + clientX - start.x\`, computed from where the drag sta
 ngOnInit() {
   // @Input values are only set from ngOnInit on.
   let stored = NaN;
-  try { stored = this.storageKey ? Number(localStorage.getItem(this.storageKey)) : NaN; } catch {}
-  this.size.set(clamp(Number.isFinite(stored) && stored > 0 ? stored : this.initial, this.min, this.max));
+  try {
+    stored = this.storageKey
+      ? Number(localStorage.getItem(this.storageKey))
+      : NaN;
+  } catch {}
+  this.size.set(
+    clamp(
+      Number.isFinite(stored) && stored > 0 ? stored : this.initial,
+      this.min,
+      this.max,
+    ),
+  );
   this.ready.set(true);
 }
 \`\`\`
@@ -5869,7 +7723,7 @@ ArrowLeft and ArrowRight change the size by \`step\` (five times with Shift), Ho
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, AOT with \`strictTemplates\` and through the runtime JIT. The driver dispatches real \`PointerEvent\`s with chosen \`clientX\` (jsdom has no layout and no \`setPointerCapture\`). AOT output, unedited (JIT printed the same):
 
-\`\`\`
+\`\`\`text
 start: width=280px aria-valuenow=280 stored=280 | role=separator orientation=vertical min=180 max=480
 pointerdown x=284, move to x=334: width=330px aria-valuenow=330 stored=280
 move to x=900: width=480px aria-valuenow=480 stored=280
@@ -5988,7 +7842,12 @@ import { ResizeHandleDirective } from "./resize-handle.directive";
   imports: [ResizeHandleDirective],
   template: \`
     <div class="layout" [class.is-dragging]="r.dragging()">
-      <aside id="sidebar" class="sidebar" [style.width.px]="r.size()" data-testid="sidebar">
+      <aside
+        id="sidebar"
+        class="sidebar"
+        [style.width.px]="r.size()"
+        data-testid="sidebar"
+      >
         <h2>Files</h2>
         <ul>
           <li>index.html</li>
@@ -6005,7 +7864,8 @@ import { ResizeHandleDirective } from "./resize-handle.directive";
       </main>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
     .layout { display: flex; height: 100vh; min-height: 320px; }
     .layout.is-dragging { cursor: col-resize; user-select: none; }
@@ -6018,13 +7878,22 @@ import { ResizeHandleDirective } from "./resize-handle.directive";
     .content { flex: 1; min-width: 0; padding: 16px; }
     .content h1 { font-size: 1.2rem; margin: 0 0 8px; }
     .hint { color: #9aa3b2; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/resize-handle.directive.ts": `import { Directive, HostListener, Input, OnInit, effect, signal } from "@angular/core";
+          "/src/app/resize-handle.directive.ts": `import {
+  Directive,
+  HostListener,
+  Input,
+  OnInit,
+  effect,
+  signal,
+} from "@angular/core";
 
-const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const clamp = (v: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, v));
 
 // An attribute directive for one resize handle. It owns the size signal;
 // the template reads it through exportAs: #r="resizable", then r.size().
@@ -6035,7 +7904,8 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
   host: {
     role: "separator",
     tabindex: "0",
-    "aria-orientation": "vertical", // the bar is vertical; it splits left from right
+    // the bar is vertical; it splits left from right
+    "aria-orientation": "vertical",
     "[attr.aria-valuenow]": "size()",
     "[attr.aria-valuemin]": "min",
     "[attr.aria-valuemax]": "max",
@@ -6057,15 +7927,27 @@ export class ResizeHandleDirective implements OnInit {
     effect(() => {
       const size = this.size();
       if (!this.ready() || this.dragging() || !this.storageKey) return;
-      try { localStorage.setItem(this.storageKey, String(size)); } catch {}
+      try {
+        localStorage.setItem(this.storageKey, String(size));
+      } catch {}
     });
   }
 
   ngOnInit() {
     // @Input values are only set from ngOnInit on.
     let stored = NaN;
-    try { stored = this.storageKey ? Number(localStorage.getItem(this.storageKey)) : NaN; } catch {}
-    this.size.set(clamp(Number.isFinite(stored) && stored > 0 ? stored : this.initial, this.min, this.max));
+    try {
+      stored = this.storageKey
+        ? Number(localStorage.getItem(this.storageKey))
+        : NaN;
+    } catch {}
+    this.size.set(
+      clamp(
+        Number.isFinite(stored) && stored > 0 ? stored : this.initial,
+        this.min,
+        this.max,
+      ),
+    );
     this.ready.set(true);
   }
 
@@ -6085,7 +7967,9 @@ export class ResizeHandleDirective implements OnInit {
   onPointerMove(e: PointerEvent) {
     if (!this.start) return;
     // Size depends only on where the drag STARTED, so it cannot drift.
-    this.size.set(clamp(this.start.size + e.clientX - this.start.x, this.min, this.max));
+    this.size.set(
+      clamp(this.start.size + e.clientX - this.start.x, this.min, this.max),
+    );
   }
 
   @HostListener("window:pointerup")
@@ -6100,7 +7984,12 @@ export class ResizeHandleDirective implements OnInit {
   onKeyDown(e: KeyboardEvent) {
     const big = e.shiftKey ? this.step * 5 : this.step;
     const s = this.size();
-    const map: Record<string, number> = { ArrowLeft: s - big, ArrowRight: s + big, Home: this.min, End: this.max };
+    const map: Record<string, number> = {
+      ArrowLeft: s - big,
+      ArrowRight: s + big,
+      Home: this.min,
+      End: this.max,
+    };
     if (!(e.key in map)) return;
     e.preventDefault();
     this.size.set(clamp(map[e.key], this.min, this.max));
@@ -6211,7 +8100,10 @@ The tall accent bar belongs to the outer horizontal split (side-by-side panes, s
 \`\`\`jsx
 function measure() {
   const r = box.current.getBoundingClientRect();
-  return { start: horizontal ? r.left : r.top, total: Math.max(0, (horizontal ? r.width : r.height) - GUTTER) };
+  return {
+    start: horizontal ? r.left : r.top,
+    total: Math.max(0, (horizontal ? r.width : r.height) - GUTTER),
+  };
 }
 \`\`\`
 
@@ -6219,7 +8111,10 @@ function measure() {
 // First pane in px, kept between minFirst and (total - minSecond).
 // If the container is too small for both minimums, the first pane wins.
 function clampPx(px, t) {
-  return Math.min(Math.max(px, minFirst), Math.max(minFirst, t - minSecond));
+  return Math.min(
+    Math.max(px, minFirst),
+    Math.max(minFirst, t - minSecond),
+  );
 }
 \`\`\`
 
@@ -6234,8 +8129,10 @@ function onPointerDown(e) {
   const m = measure();
   const pos = (ev) => (horizontal ? ev.clientX : ev.clientY);
   const startPx = (collapsed ? 0 : fraction) * m.total;
-  const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  // where inside the bar the pointer went down
+  const grab = pos(e) - (m.start + startPx);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   const onMove = (ev) => setPx(pos(ev) - m.start - grab, m.total);
   const stop = () => {
     window.removeEventListener("pointermove", onMove);
@@ -6257,12 +8154,14 @@ function onPointerDown(e) {
 ### Step 3: window resize re-applies the pixel rules
 
 \`\`\`jsx
-// Measure before paint, and re-apply the px constraints whenever the window resizes.
+// Measure before paint, and re-apply the px
+// constraints whenever the window resizes.
 useLayoutEffect(() => {
   function onResize() {
     const m = measure();
     setTotal(m.total);
-    if (m.total > 0) setFraction((f) => clampPx(f * m.total, m.total) / m.total);
+    if (m.total > 0)
+      setFraction((f) => clampPx(f * m.total, m.total) / m.total);
   }
   onResize();
   window.addEventListener("resize", onResize);
@@ -6283,7 +8182,8 @@ function onKeyDown(e) {
   const delta = e.shiftKey ? step * 5 : step;
   const [less, more] = horizontal ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
   if (e.key === "Enter") {
-    // WAI-ARIA window splitter: Enter collapses the first pane and restores it.
+    // WAI-ARIA window splitter: Enter collapses
+    // the first pane and restores it.
     e.preventDefault();
     if (collapsed) setCollapsed(false);
     else setCollapsed(true); // fraction is kept, so restoring is free
@@ -6298,8 +8198,8 @@ Only the keys of the pane axis do anything: Left and Right on the side-by-side s
 ### Step 5: the separator attributes
 
 \`\`\`jsx
-className="gutter"
-role="separator"
+className = "gutter";
+role = "separator";
 tabIndex={0}
 aria-label={label}
 aria-controls={id + "-first"}
@@ -6323,7 +8223,7 @@ onDoubleClick={() => setFraction(clampPx(initial * total, total) / total || init
 
 Mounted under \`<StrictMode>\` by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. Every \`getBoundingClientRect()\` in jsdom is 0 by 0, so the driver gives the outer container a 1008 by 600 box (1000 px free after the bar) and the inner one 700 by 600 at x 308, fires a window \`resize\`, then drives \`PointerEvent\`s and keys. Output, unedited:
 
-\`\`\`
+\`\`\`text
 after measuring (window resize)
     outer now=30 min=16 max=76 text="300 pixels"
     inner now=60 min=20 max=86 text="355 pixels"
@@ -6348,7 +8248,7 @@ Note the last two lines: at 608 px the old 76% split would leave the right side 
 
 In real Chromium 141 (playwright-core 1.64.1, real mouse and layout), with a 1024 by 640 viewport the free width is exactly 1000 px, as in the jsdom stub:
 
-\`\`\`
+\`\`\`text
 start   : navigator 300px wide, right side 700px, editor 370px tall, terminal 246px tall
 outer +200 px: navigator 500px wide, right side 500px, editor 370px tall, terminal 246px tall
 inner dragged to the bottom: navigator 500px wide, right side 500px, editor 536px tall, terminal 80px tall
@@ -6467,12 +8367,26 @@ At 360 px the page does not scroll sideways, and the right side gets 176 px, les
 export default function App() {
   return (
     <div className="ide">
-      <SplitPane id="outer" direction="horizontal" initial={0.3} minFirst={160} minSecond={240} label="Resize navigator">
+      <SplitPane
+        id="outer"
+        direction="horizontal"
+        initial={0.3}
+        minFirst={160}
+        minSecond={240}
+        label="Resize navigator"
+      >
         <nav className="panel">
           <h2>Navigator</h2>
           <p>min 160 px</p>
         </nav>
-        <SplitPane id="inner" direction="vertical" initial={0.6} minFirst={120} minSecond={80} label="Resize terminal">
+        <SplitPane
+          id="inner"
+          direction="vertical"
+          initial={0.6}
+          minFirst={120}
+          minSecond={80}
+          label="Resize terminal"
+        >
           <section className="panel">
             <h2>Editor</h2>
             <p>min 120 px tall; the right side keeps at least 240 px</p>
@@ -6495,7 +8409,16 @@ const GUTTER = 8; // px taken by the separator bar
 // ("vertical"). The split is stored as a FRACTION of the free space so it
 // survives window resizes; min sizes are in px, so they are applied against
 // the container size measured at the moment they matter.
-export default function SplitPane({ id, direction = "horizontal", initial = 0.5, minFirst = 0, minSecond = 0, step = 20, label, children }) {
+export default function SplitPane({
+  id,
+  direction = "horizontal",
+  initial = 0.5,
+  minFirst = 0,
+  minSecond = 0,
+  step = 20,
+  label,
+  children,
+}) {
   const horizontal = direction === "horizontal";
   const box = useRef(null);
   const [fraction, setFraction] = useState(initial);
@@ -6506,7 +8429,10 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
 
   function measure() {
     const r = box.current.getBoundingClientRect();
-    return { start: horizontal ? r.left : r.top, total: Math.max(0, (horizontal ? r.width : r.height) - GUTTER) };
+    return {
+      start: horizontal ? r.left : r.top,
+      total: Math.max(0, (horizontal ? r.width : r.height) - GUTTER),
+    };
   }
   // First pane in px, kept between minFirst and (total - minSecond).
   // If the container is too small for both minimums, the first pane wins.
@@ -6519,12 +8445,14 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
     setFraction(clampPx(px, t) / t);
   }
 
-  // Measure before paint, and re-apply the px constraints whenever the window resizes.
+  // Measure before paint, and re-apply the px
+  // constraints whenever the window resizes.
   useLayoutEffect(() => {
     function onResize() {
       const m = measure();
       setTotal(m.total);
-      if (m.total > 0) setFraction((f) => clampPx(f * m.total, m.total) / m.total);
+      if (m.total > 0)
+        setFraction((f) => clampPx(f * m.total, m.total) / m.total);
     }
     onResize();
     window.addEventListener("resize", onResize);
@@ -6539,8 +8467,10 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
     const m = measure();
     const pos = (ev) => (horizontal ? ev.clientX : ev.clientY);
     const startPx = (collapsed ? 0 : fraction) * m.total;
-    const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
-    if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+    // where inside the bar the pointer went down
+    const grab = pos(e) - (m.start + startPx);
+    if (e.currentTarget.setPointerCapture)
+      e.currentTarget.setPointerCapture(e.pointerId);
     const onMove = (ev) => setPx(pos(ev) - m.start - grab, m.total);
     const stop = () => {
       window.removeEventListener("pointermove", onMove);
@@ -6558,15 +8488,23 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
     const m = measure();
     const now = (collapsed ? 0 : fraction) * m.total;
     const delta = e.shiftKey ? step * 5 : step;
-    const [less, more] = horizontal ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+    const [less, more] = horizontal
+      ? ["ArrowLeft", "ArrowRight"]
+      : ["ArrowUp", "ArrowDown"];
     if (e.key === "Enter") {
-      // WAI-ARIA window splitter: Enter collapses the first pane and restores it.
+      // WAI-ARIA window splitter: Enter collapses
+      // the first pane and restores it.
       e.preventDefault();
       if (collapsed) setCollapsed(false);
       else setCollapsed(true); // fraction is kept, so restoring is free
       return;
     }
-    const px = { [less]: now - delta, [more]: now + delta, Home: minFirst, End: m.total - minSecond }[e.key];
+    const px = {
+      [less]: now - delta,
+      [more]: now + delta,
+      Home: minFirst,
+      End: m.total - minSecond,
+    }[e.key];
     if (px === undefined) return;
     e.preventDefault();
     setPx(px, m.total);
@@ -6576,7 +8514,12 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
   const firstPx = Math.round(f * total);
   return (
     <div ref={box} className={"split " + direction} data-split={id}>
-      <div id={id + "-first"} className="pane" style={{ flexBasis: "calc((100% - " + GUTTER + "px) * " + f + ")" }} hidden={collapsed}>
+      <div
+        id={id + "-first"}
+        className="pane"
+        style={{ flexBasis: "calc((100% - " + GUTTER + "px) * " + f + ")" }}
+        hidden={collapsed}
+      >
         {first}
       </div>
       <div
@@ -6587,34 +8530,104 @@ export default function SplitPane({ id, direction = "horizontal", initial = 0.5,
         aria-controls={id + "-first"}
         aria-orientation={horizontal ? "vertical" : "horizontal"}
         aria-valuenow={Math.round(f * 100)}
-        aria-valuemin={collapsed || !total ? 0 : Math.round((minFirst / total) * 100)}
-        aria-valuemax={total ? Math.round((Math.max(minFirst, total - minSecond) / total) * 100) : 100}
+        aria-valuemin={
+          collapsed || !total ? 0 : Math.round((minFirst / total) * 100)
+        }
+        aria-valuemax={
+          total
+            ? Math.round((Math.max(minFirst, total - minSecond) / total) * 100)
+            : 100
+        }
         aria-valuetext={collapsed ? "collapsed" : firstPx + " pixels"}
         onPointerDown={onPointerDown}
         onKeyDown={onKeyDown}
-        onDoubleClick={() => setFraction(clampPx(initial * total, total) / total || initial)}
+        onDoubleClick={() =>
+          setFraction(clampPx(initial * total, total) / total || initial)
+        }
       />
       <div className="pane grow">{second}</div>
     </div>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.ide { height: 100vh; min-height: 360px; padding: 8px; box-sizing: border-box; }
-.split { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
-.split.horizontal { flex-direction: row; }
-.split.vertical { flex-direction: column; }
-.pane { flex: none; min-width: 0; min-height: 0; overflow: auto; }
-.pane.grow { flex: 1 1 0; }
-.pane[hidden] { display: none; }
-.gutter { flex: none; background: #2a3140; touch-action: none; border-radius: 4px; }
-.split.horizontal > .gutter { width: 8px; cursor: col-resize; }
-.split.vertical > .gutter { height: 8px; cursor: row-resize; }
-.gutter:hover { background: #5b8cff; }
-.gutter:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; background: #3b4a6b; }
-.panel { height: 100%; box-sizing: border-box; background: #171c25; border: 1px solid #2a3140; border-radius: 8px; padding: 10px 12px; }
-.panel h2 { font-size: 0.95rem; margin: 0 0 4px; }
-.panel p { margin: 0; color: #9aa3b2; font-size: 0.85rem; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.ide {
+  height: 100vh;
+  min-height: 360px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.split.horizontal {
+  flex-direction: row;
+}
+.split.vertical {
+  flex-direction: column;
+}
+.pane {
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.pane.grow {
+  flex: 1 1 0;
+}
+.pane[hidden] {
+  display: none;
+}
+.gutter {
+  flex: none;
+  background: #2a3140;
+  touch-action: none;
+  border-radius: 4px;
+}
+.split.horizontal > .gutter {
+  width: 8px;
+  cursor: col-resize;
+}
+.split.vertical > .gutter {
+  height: 8px;
+  cursor: row-resize;
+}
+.gutter:hover {
+  background: #5b8cff;
+}
+.gutter:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: -2px;
+  background: #3b4a6b;
+}
+.panel {
+  height: 100%;
+  box-sizing: border-box;
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.panel h2 {
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+}
+.panel p {
+  margin: 0;
+  color: #9aa3b2;
+  font-size: 0.85rem;
+}
 `,
         },
       },
@@ -6650,11 +8663,10 @@ A reusable \`SplitPane.vue\` with \`direction\`, \`initial\` (fraction), \`min-f
 ### Step 1: one two-sided clamp
 
 \`\`\`vue
-// First pane in px, kept between minFirst and (total - minSecond).
-// If the container is too small for both minimums, the first pane wins.
-function clampPx(px, t) {
-  return Math.min(Math.max(px, props.minFirst), Math.max(props.minFirst, t - props.minSecond));
-}
+// First pane in px, kept between minFirst and (total - minSecond). //
+If the container is too small for both minimums, the first pane wins.
+function clampPx(px, t) { return Math.min(Math.max(px, props.minFirst),
+Math.max(props.minFirst, t - props.minSecond)); }
 \`\`\`
 
 The first pane stays between \`minFirst\` and \`total - minSecond\`; if the container is smaller than both minimums, \`Math.max\` lets the first pane win.
@@ -6662,25 +8674,20 @@ The first pane stays between \`minFirst\` and \`total - minSecond\`; if the cont
 ### Step 2: axis-aware drag with a grab offset
 
 \`\`\`vue
-function onPointerdown(e) {
-  if (e.button !== 0) return;
-  e.preventDefault();
-  const m = measure();
-  const pos = (ev) => (horizontal.value ? ev.clientX : ev.clientY);
-  const startPx = (collapsed.value ? 0 : fraction.value) * m.total;
-  const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
-  const onMove = (ev) => setPx(pos(ev) - m.start - grab, m.total);
-  stop = () => {
-    window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", stop);
-    window.removeEventListener("pointercancel", stop);
-    stop = null;
-  };
-  window.addEventListener("pointermove", onMove);
-  window.addEventListener("pointerup", stop);
-  window.addEventListener("pointercancel", stop);
-}
+function onPointerdown(e) { if (e.button !== 0) return;
+e.preventDefault(); const m = measure(); const pos = (ev) =>
+(horizontal.value ? ev.clientX : ev.clientY); const startPx =
+(collapsed.value ? 0 : fraction.value) * m.total; const grab = pos(e) -
+(m.start + startPx); // where inside the bar the pointer went down if
+(e.currentTarget.setPointerCapture)
+e.currentTarget.setPointerCapture(e.pointerId); const onMove = (ev) =>
+setPx(pos(ev) - m.start - grab, m.total); stop = () => {
+window.removeEventListener("pointermove", onMove);
+window.removeEventListener("pointerup", stop);
+window.removeEventListener("pointercancel", stop); stop = null; };
+window.addEventListener("pointermove", onMove);
+window.addEventListener("pointerup", stop);
+window.addEventListener("pointercancel", stop); }
 \`\`\`
 
 📌 **Interview term: Grab offset** — where inside the bar the pointer went down, kept for the whole drag so the bar does not jump under the pointer. \`pos\` reads \`clientX\` or \`clientY\` by direction, and that is the whole axis switch.
@@ -6694,15 +8701,12 @@ function onPointerdown(e) {
 📌 **Interview term: aria-orientation on a separator** — describes the bar: side-by-side panes are divided by a vertical bar, so a horizontal split has \`aria-orientation="vertical"\`.
 
 \`\`\`vue
-const aria = computed(() => {
-  const t = total.value;
-  return {
-    "aria-valuenow": Math.round(f.value * 100),
-    "aria-valuemin": collapsed.value || !t ? 0 : Math.round((props.minFirst / t) * 100),
-    "aria-valuemax": t ? Math.round((Math.max(props.minFirst, t - props.minSecond) / t) * 100) : 100,
-    "aria-valuetext": collapsed.value ? "collapsed" : Math.round(f.value * t) + " pixels",
-  };
-});
+const aria = computed(() => { const t = total.value; return {
+"aria-valuenow": Math.round(f.value * 100), "aria-valuemin":
+collapsed.value || !t ? 0 : Math.round((props.minFirst / t) * 100),
+"aria-valuemax": t ? Math.round((Math.max(props.minFirst, t -
+props.minSecond) / t) * 100) : 100, "aria-valuetext": collapsed.value ?
+"collapsed" : Math.round(f.value * t) + " pixels", }; });
 \`\`\`
 
 The template spreads it with \`v-bind="aria"\` on the gutter, next to \`role="separator"\`, \`tabindex="0"\`, \`aria-controls\` and the orientation. Keys follow the WAI-ARIA window splitter pattern: arrows along the axis only, Shift for five steps, Home and End to the limits, Enter to collapse and restore (the fraction is kept, so restoring is free).
@@ -6717,7 +8721,7 @@ Every pane has \`min-width: 0\` and \`min-height: 0\`, because flex items defaul
 
 Compiled with \`@vue/compiler-sfc\`, mounted with \`createApp(App).mount("#app")\` in jsdom 29. The driver gives the outer container a 1008 by 600 box and the inner one 700 by 600 at x 308, fires a window \`resize\`, then drives \`PointerEvent\`s and keys. Output, unedited:
 
-\`\`\`
+\`\`\`text
 after measuring (window resize)
     outer now=30 min=16 max=76 text="300 pixels"
     inner now=60 min=20 max=86 text="355 pixels"
@@ -6839,7 +8843,14 @@ import SplitPane from "./components/SplitPane.vue";
 
 <template>
   <div class="ide">
-    <SplitPane id="outer" direction="horizontal" :initial="0.3" :min-first="160" :min-second="240" label="Resize navigator">
+    <SplitPane
+      id="outer"
+      direction="horizontal"
+      :initial="0.3"
+      :min-first="160"
+      :min-second="240"
+      label="Resize navigator"
+    >
       <template #first>
         <nav class="panel">
           <h2>Navigator</h2>
@@ -6847,7 +8858,14 @@ import SplitPane from "./components/SplitPane.vue";
         </nav>
       </template>
       <template #second>
-        <SplitPane id="inner" direction="vertical" :initial="0.6" :min-first="120" :min-second="80" label="Resize terminal">
+        <SplitPane
+          id="inner"
+          direction="vertical"
+          :initial="0.6"
+          :min-first="120"
+          :min-second="80"
+          label="Resize terminal"
+        >
           <template #first>
             <section class="panel">
               <h2>Editor</h2>
@@ -6867,11 +8885,37 @@ import SplitPane from "./components/SplitPane.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.ide { height: 100vh; min-height: 360px; padding: 8px; box-sizing: border-box; }
-.panel { height: 100%; box-sizing: border-box; background: #171c25; border: 1px solid #2a3140; border-radius: 8px; padding: 10px 12px; }
-.panel h2 { font-size: 0.95rem; margin: 0 0 4px; }
-.panel p { margin: 0; color: #9aa3b2; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.ide {
+  height: 100vh;
+  min-height: 360px;
+  padding: 8px;
+  box-sizing: border-box;
+}
+.panel {
+  height: 100%;
+  box-sizing: border-box;
+  background: #171c25;
+  border: 1px solid #2a3140;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.panel h2 {
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+}
+.panel p {
+  margin: 0;
+  color: #9aa3b2;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/SplitPane.vue": `<script setup>
@@ -6902,12 +8946,18 @@ const horizontal = computed(() => props.direction === "horizontal");
 function measure() {
   const r = box.value.getBoundingClientRect();
   const h = horizontal.value;
-  return { start: h ? r.left : r.top, total: Math.max(0, (h ? r.width : r.height) - GUTTER) };
+  return {
+    start: h ? r.left : r.top,
+    total: Math.max(0, (h ? r.width : r.height) - GUTTER),
+  };
 }
 // First pane in px, kept between minFirst and (total - minSecond).
 // If the container is too small for both minimums, the first pane wins.
 function clampPx(px, t) {
-  return Math.min(Math.max(px, props.minFirst), Math.max(props.minFirst, t - props.minSecond));
+  return Math.min(
+    Math.max(px, props.minFirst),
+    Math.max(props.minFirst, t - props.minSecond),
+  );
 }
 function setPx(px, t) {
   if (t <= 0) return;
@@ -6917,7 +8967,8 @@ function setPx(px, t) {
 function onResize() {
   const m = measure();
   total.value = m.total;
-  if (m.total > 0) fraction.value = clampPx(fraction.value * m.total, m.total) / m.total;
+  if (m.total > 0)
+    fraction.value = clampPx(fraction.value * m.total, m.total) / m.total;
 }
 onMounted(() => {
   onResize();
@@ -6934,8 +8985,10 @@ function onPointerdown(e) {
   const m = measure();
   const pos = (ev) => (horizontal.value ? ev.clientX : ev.clientY);
   const startPx = (collapsed.value ? 0 : fraction.value) * m.total;
-  const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
-  if (e.currentTarget.setPointerCapture) e.currentTarget.setPointerCapture(e.pointerId);
+  // where inside the bar the pointer went down
+  const grab = pos(e) - (m.start + startPx);
+  if (e.currentTarget.setPointerCapture)
+    e.currentTarget.setPointerCapture(e.pointerId);
   const onMove = (ev) => setPx(pos(ev) - m.start - grab, m.total);
   stop = () => {
     window.removeEventListener("pointermove", onMove);
@@ -6952,7 +9005,9 @@ function onKeydown(e) {
   const m = measure();
   const now = (collapsed.value ? 0 : fraction.value) * m.total;
   const delta = e.shiftKey ? props.step * 5 : props.step;
-  const [less, more] = horizontal.value ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+  const [less, more] = horizontal.value
+    ? ["ArrowLeft", "ArrowRight"]
+    : ["ArrowUp", "ArrowDown"];
   if (e.key === "Enter") {
     // WAI-ARIA window splitter: Enter collapses the first pane and restores it.
     e.preventDefault();
@@ -6960,13 +9015,20 @@ function onKeydown(e) {
     else collapsed.value = true; // fraction is kept, so restoring is free
     return;
   }
-  const px = { [less]: now - delta, [more]: now + delta, Home: props.minFirst, End: m.total - props.minSecond }[e.key];
+  const px = {
+    [less]: now - delta,
+    [more]: now + delta,
+    Home: props.minFirst,
+    End: m.total - props.minSecond,
+  }[e.key];
   if (px === undefined) return;
   e.preventDefault();
   setPx(px, m.total);
 }
 function onDblclick() {
-  fraction.value = total.value ? clampPx(props.initial * total.value, total.value) / total.value : props.initial;
+  fraction.value = total.value
+    ? clampPx(props.initial * total.value, total.value) / total.value
+    : props.initial;
 }
 
 const f = computed(() => (collapsed.value ? 0 : fraction.value));
@@ -6974,16 +9036,26 @@ const aria = computed(() => {
   const t = total.value;
   return {
     "aria-valuenow": Math.round(f.value * 100),
-    "aria-valuemin": collapsed.value || !t ? 0 : Math.round((props.minFirst / t) * 100),
-    "aria-valuemax": t ? Math.round((Math.max(props.minFirst, t - props.minSecond) / t) * 100) : 100,
-    "aria-valuetext": collapsed.value ? "collapsed" : Math.round(f.value * t) + " pixels",
+    "aria-valuemin":
+      collapsed.value || !t ? 0 : Math.round((props.minFirst / t) * 100),
+    "aria-valuemax": t
+      ? Math.round((Math.max(props.minFirst, t - props.minSecond) / t) * 100)
+      : 100,
+    "aria-valuetext": collapsed.value
+      ? "collapsed"
+      : Math.round(f.value * t) + " pixels",
   };
 });
 </script>
 
 <template>
   <div ref="box" class="split" :class="direction" :data-split="id">
-    <div :id="id + '-first'" class="pane" :style="{ flexBasis: 'calc((100% - ' + GUTTER + 'px) * ' + f + ')' }" :hidden="collapsed">
+    <div
+      :id="id + '-first'"
+      class="pane"
+      :style="{ flexBasis: 'calc((100% - ' + GUTTER + 'px) * ' + f + ')' }"
+      :hidden="collapsed"
+    >
       <slot name="first" />
     </div>
     <div
@@ -7003,17 +9075,53 @@ const aria = computed(() => {
 </template>
 
 <style scoped>
-.split { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
-.split.horizontal { flex-direction: row; }
-.split.vertical { flex-direction: column; }
-.pane { flex: none; min-width: 0; min-height: 0; overflow: auto; }
-.pane.grow { flex: 1 1 0; }
-.pane[hidden] { display: none; }
-.gutter { flex: none; background: #2a3140; touch-action: none; border-radius: 4px; }
-.split.horizontal > .gutter { width: 8px; cursor: col-resize; }
-.split.vertical > .gutter { height: 8px; cursor: row-resize; }
-.gutter:hover { background: #5b8cff; }
-.gutter:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; background: #3b4a6b; }
+.split {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.split.horizontal {
+  flex-direction: row;
+}
+.split.vertical {
+  flex-direction: column;
+}
+.pane {
+  flex: none;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.pane.grow {
+  flex: 1 1 0;
+}
+.pane[hidden] {
+  display: none;
+}
+.gutter {
+  flex: none;
+  background: #2a3140;
+  touch-action: none;
+  border-radius: 4px;
+}
+.split.horizontal > .gutter {
+  width: 8px;
+  cursor: col-resize;
+}
+.split.vertical > .gutter {
+  height: 8px;
+  cursor: row-resize;
+}
+.gutter:hover {
+  background: #5b8cff;
+}
+.gutter:focus-visible {
+  outline: 2px solid #5b8cff;
+  outline-offset: -2px;
+  background: #3b4a6b;
+}
 </style>
 `,
         },
@@ -7050,9 +9158,24 @@ A reusable \`app-split-pane\` with \`direction\`, \`initial\`, \`minFirst\`, \`m
 📌 **Interview term: Multi-slot projection** — \`<ng-content select="[paneFirst]" />\` and \`<ng-content select="[paneSecond]" />\` place the parent's elements marked with those attributes into each pane. The inner split pane is just an element marked \`paneSecond\`. See [multi-slot content projection](/interview-question/what-is-standard-content-projection-vs-multi-slot-content-projection).
 
 \`\`\`html
-<app-split-pane id="outer" direction="horizontal" [initial]="0.3" [minFirst]="160" [minSecond]="240" label="Resize navigator">
+<app-split-pane
+  id="outer"
+  direction="horizontal"
+  [initial]="0.3"
+  [minFirst]="160"
+  [minSecond]="240"
+  label="Resize navigator"
+>
   <nav paneFirst class="panel">...</nav>
-  <app-split-pane paneSecond id="inner" direction="vertical" [initial]="0.6" [minFirst]="120" [minSecond]="80" label="Resize terminal">
+  <app-split-pane
+    paneSecond
+    id="inner"
+    direction="vertical"
+    [initial]="0.6"
+    [minFirst]="120"
+    [minSecond]="80"
+    label="Resize terminal"
+  >
     <section paneFirst class="panel">...</section>
     <section paneSecond class="panel">...</section>
   </app-split-pane>
@@ -7065,7 +9188,10 @@ A reusable \`app-split-pane\` with \`direction\`, \`initial\`, \`minFirst\`, \`m
 // First pane in px, kept between minFirst and (total - minSecond).
 // If the container is too small for both minimums, the first pane wins.
 private clampPx(px: number, t: number) {
-  return Math.min(Math.max(px, this.minFirst), Math.max(this.minFirst, t - this.minSecond));
+  return Math.min(
+    Math.max(px, this.minFirst),
+    Math.max(this.minFirst, t - this.minSecond),
+  );
 }
 \`\`\`
 
@@ -7074,14 +9200,19 @@ onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return;
   e.preventDefault();
   const m = this.measure();
-  const pos = (ev: PointerEvent) => (this.horizontal ? ev.clientX : ev.clientY);
+  const pos = (ev: PointerEvent) =>
+    this.horizontal ? ev.clientX : ev.clientY;
   const startPx = this.f() * m.total;
-  const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
+  // where inside the bar the pointer went down
+  const grab = pos(e) - (m.start + startPx);
   const el = e.currentTarget as HTMLElement;
   if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
-  // Renderer2.listen returns an unlisten function: one per window listener.
+  // Renderer2.listen returns an unlisten
+  // function: one per window listener.
   const offs = [
-    this.renderer.listen("window", "pointermove", (ev: PointerEvent) => this.setPx(pos(ev) - m.start - grab, m.total)),
+    this.renderer.listen("window", "pointermove", (ev: PointerEvent) =>
+      this.setPx(pos(ev) - m.start - grab, m.total),
+    ),
     this.renderer.listen("window", "pointerup", () => this.end()),
     this.renderer.listen("window", "pointercancel", () => this.end()),
   ];
@@ -7107,7 +9238,7 @@ The gutter binds \`[attr.aria-valuenow]\`, \`min\`, \`max\` and \`aria-valuetext
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, AOT with \`strictTemplates\` and through the runtime JIT. The driver gives the outer container a 1008 by 600 box and the inner one 700 by 600 at x 308, fires a window \`resize\`, then drives \`PointerEvent\`s and keys. AOT output, unedited (JIT printed the same):
 
-\`\`\`
+\`\`\`text
 after measuring (window resize)
     outer now=30 min=16 max=76 text="300 pixels"
     inner now=60 min=20 max=86 text="355 pixels"
@@ -7232,12 +9363,27 @@ import { SplitPaneComponent } from "./split-pane.component";
   imports: [SplitPaneComponent],
   template: \`
     <div class="ide">
-      <app-split-pane id="outer" direction="horizontal" [initial]="0.3" [minFirst]="160" [minSecond]="240" label="Resize navigator">
+      <app-split-pane
+        id="outer"
+        direction="horizontal"
+        [initial]="0.3"
+        [minFirst]="160"
+        [minSecond]="240"
+        label="Resize navigator"
+      >
         <nav paneFirst class="panel">
           <h2>Navigator</h2>
           <p>min 160 px</p>
         </nav>
-        <app-split-pane paneSecond id="inner" direction="vertical" [initial]="0.6" [minFirst]="120" [minSecond]="80" label="Resize terminal">
+        <app-split-pane
+          paneSecond
+          id="inner"
+          direction="vertical"
+          [initial]="0.6"
+          [minFirst]="120"
+          [minSecond]="80"
+          label="Resize terminal"
+        >
           <section paneFirst class="panel">
             <h2>Editor</h2>
             <p>min 120 px tall; the right side keeps at least 240 px</p>
@@ -7250,17 +9396,61 @@ import { SplitPaneComponent } from "./split-pane.component";
       </app-split-pane>
     </div>
   \`,
-  styles: [\`
-    :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-    .ide { height: 100vh; min-height: 360px; padding: 8px; box-sizing: border-box; }
-    .panel { display: block; height: 100%; box-sizing: border-box; background: #171c25; border: 1px solid #2a3140; border-radius: 8px; padding: 10px 12px; }
-    .panel h2 { font-size: 0.95rem; margin: 0 0 4px; }
-    .panel p { margin: 0; color: #9aa3b2; font-size: 0.85rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        position: fixed;
+        inset: 0;
+        overflow: auto;
+        background: #0f1218;
+        color: #e6e9ef;
+        font:
+          14px/1.5 system-ui,
+          sans-serif;
+      }
+      .ide {
+        height: 100vh;
+        min-height: 360px;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .panel {
+        display: block;
+        height: 100%;
+        box-sizing: border-box;
+        background: #171c25;
+        border: 1px solid #2a3140;
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .panel h2 {
+        font-size: 0.95rem;
+        margin: 0 0 4px;
+      }
+      .panel p {
+        margin: 0;
+        color: #9aa3b2;
+        font-size: 0.85rem;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/split-pane.component.ts": `import { Component, DestroyRef, ElementRef, HostListener, Input, Renderer2, ViewChild, afterNextRender, computed, inject, signal } from "@angular/core";
+          "/src/app/split-pane.component.ts": `import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  Input,
+  Renderer2,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 
 const GUTTER = 8; // px taken by the separator bar
 
@@ -7271,10 +9461,23 @@ const GUTTER = 8; // px taken by the separator bar
 @Component({
   selector: "app-split-pane",
   standalone: true,
-  host: { style: "display: block; width: 100%; height: 100%; min-width: 0; min-height: 0" },
+  host: {
+    style:
+      "display: block; width: 100%; height: 100%; min-width: 0; min-height: 0",
+  },
   template: \`
-    <div #box class="split" [class]="'split ' + direction" [attr.data-split]="id">
-      <div [id]="id + '-first'" class="pane" [style.flex-basis]="basis()" [hidden]="collapsed()">
+    <div
+      #box
+      class="split"
+      [class]="'split ' + direction"
+      [attr.data-split]="id"
+    >
+      <div
+        [id]="id + '-first'"
+        class="pane"
+        [style.flex-basis]="basis()"
+        [hidden]="collapsed()"
+      >
         <ng-content select="[paneFirst]" />
       </div>
       <div
@@ -7283,7 +9486,9 @@ const GUTTER = 8; // px taken by the separator bar
         tabindex="0"
         [attr.aria-label]="label"
         [attr.aria-controls]="id + '-first'"
-        [attr.aria-orientation]="direction === 'horizontal' ? 'vertical' : 'horizontal'"
+        [attr.aria-orientation]="
+          direction === 'horizontal' ? 'vertical' : 'horizontal'
+        "
         [attr.aria-valuenow]="aria().now"
         [attr.aria-valuemin]="aria().min"
         [attr.aria-valuemax]="aria().max"
@@ -7295,24 +9500,65 @@ const GUTTER = 8; // px taken by the separator bar
       <div class="pane grow"><ng-content select="[paneSecond]" /></div>
     </div>
   \`,
-  styles: [\`
-    .split { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 0; }
-    .split.horizontal { flex-direction: row; }
-    .split.vertical { flex-direction: column; }
-    .pane { flex: none; min-width: 0; min-height: 0; overflow: auto; }
-    .pane.grow { flex: 1 1 0; }
-    .pane[hidden] { display: none; }
-    .gutter { flex: none; background: #2a3140; touch-action: none; border-radius: 4px; }
-    .split.horizontal > .gutter { width: 8px; cursor: col-resize; }
-    .split.vertical > .gutter { height: 8px; cursor: row-resize; }
-    .gutter:hover { background: #5b8cff; }
-    .gutter:focus-visible { outline: 2px solid #5b8cff; outline-offset: -2px; background: #3b4a6b; }
-  \`],
+  styles: [
+    \`
+      .split {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        min-width: 0;
+        min-height: 0;
+      }
+      .split.horizontal {
+        flex-direction: row;
+      }
+      .split.vertical {
+        flex-direction: column;
+      }
+      .pane {
+        flex: none;
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+      }
+      .pane.grow {
+        flex: 1 1 0;
+      }
+      .pane[hidden] {
+        display: none;
+      }
+      .gutter {
+        flex: none;
+        background: #2a3140;
+        touch-action: none;
+        border-radius: 4px;
+      }
+      .split.horizontal > .gutter {
+        width: 8px;
+        cursor: col-resize;
+      }
+      .split.vertical > .gutter {
+        height: 8px;
+        cursor: row-resize;
+      }
+      .gutter:hover {
+        background: #5b8cff;
+      }
+      .gutter:focus-visible {
+        outline: 2px solid #5b8cff;
+        outline-offset: -2px;
+        background: #3b4a6b;
+      }
+    \`,
+  ],
 })
 export class SplitPaneComponent {
   @Input({ required: true }) id!: string;
   @Input() direction: "horizontal" | "vertical" = "horizontal";
-  @Input() set initial(v: number) { this.initialValue = v; this.fraction.set(v); }
+  @Input() set initial(v: number) {
+    this.initialValue = v;
+    this.fraction.set(v);
+  }
   @Input() minFirst = 0;
   @Input() minSecond = 0;
   @Input() step = 20;
@@ -7334,25 +9580,37 @@ export class SplitPaneComponent {
     return {
       now: Math.round(f * 100),
       min: this.collapsed() || !t ? 0 : Math.round((this.minFirst / t) * 100),
-      max: t ? Math.round((Math.max(this.minFirst, t - this.minSecond) / t) * 100) : 100,
+      max: t
+        ? Math.round((Math.max(this.minFirst, t - this.minSecond) / t) * 100)
+        : 100,
       text: this.collapsed() ? "collapsed" : Math.round(f * t) + " pixels",
     };
   });
 
   constructor() {
     afterNextRender(() => this.onResize()); // measure once the DOM exists
-    inject(DestroyRef).onDestroy(() => { if (this.stopDrag) this.stopDrag(); });
+    inject(DestroyRef).onDestroy(() => {
+      if (this.stopDrag) this.stopDrag();
+    });
   }
 
-  private get horizontal() { return this.direction === "horizontal"; }
+  private get horizontal() {
+    return this.direction === "horizontal";
+  }
   private measure() {
     const r = this.box.nativeElement.getBoundingClientRect();
-    return { start: this.horizontal ? r.left : r.top, total: Math.max(0, (this.horizontal ? r.width : r.height) - GUTTER) };
+    return {
+      start: this.horizontal ? r.left : r.top,
+      total: Math.max(0, (this.horizontal ? r.width : r.height) - GUTTER),
+    };
   }
   // First pane in px, kept between minFirst and (total - minSecond).
   // If the container is too small for both minimums, the first pane wins.
   private clampPx(px: number, t: number) {
-    return Math.min(Math.max(px, this.minFirst), Math.max(this.minFirst, t - this.minSecond));
+    return Math.min(
+      Math.max(px, this.minFirst),
+      Math.max(this.minFirst, t - this.minSecond),
+    );
   }
   private setPx(px: number, t: number) {
     if (t <= 0) return;
@@ -7364,21 +9622,28 @@ export class SplitPaneComponent {
   onResize() {
     const m = this.measure();
     this.total.set(m.total);
-    if (m.total > 0) this.fraction.set(this.clampPx(this.fraction() * m.total, m.total) / m.total);
+    if (m.total > 0)
+      this.fraction.set(
+        this.clampPx(this.fraction() * m.total, m.total) / m.total,
+      );
   }
 
   onPointerDown(e: PointerEvent) {
     if (e.button !== 0) return;
     e.preventDefault();
     const m = this.measure();
-    const pos = (ev: PointerEvent) => (this.horizontal ? ev.clientX : ev.clientY);
+    const pos = (ev: PointerEvent) =>
+      this.horizontal ? ev.clientX : ev.clientY;
     const startPx = this.f() * m.total;
-    const grab = pos(e) - (m.start + startPx); // where inside the bar the pointer went down
+    // where inside the bar the pointer went down
+    const grab = pos(e) - (m.start + startPx);
     const el = e.currentTarget as HTMLElement;
     if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
     // Renderer2.listen returns an unlisten function: one per window listener.
     const offs = [
-      this.renderer.listen("window", "pointermove", (ev: PointerEvent) => this.setPx(pos(ev) - m.start - grab, m.total)),
+      this.renderer.listen("window", "pointermove", (ev: PointerEvent) =>
+        this.setPx(pos(ev) - m.start - grab, m.total),
+      ),
       this.renderer.listen("window", "pointerup", () => this.end()),
       this.renderer.listen("window", "pointercancel", () => this.end()),
     ];
@@ -7393,14 +9658,23 @@ export class SplitPaneComponent {
     const m = this.measure();
     const now = this.f() * m.total;
     const delta = e.shiftKey ? this.step * 5 : this.step;
-    const [less, more] = this.horizontal ? ["ArrowLeft", "ArrowRight"] : ["ArrowUp", "ArrowDown"];
+    const [less, more] = this.horizontal
+      ? ["ArrowLeft", "ArrowRight"]
+      : ["ArrowUp", "ArrowDown"];
     if (e.key === "Enter") {
-      // WAI-ARIA window splitter: Enter collapses the first pane and restores it.
+      // WAI-ARIA window splitter: Enter collapses
+      // the first pane and restores it.
       e.preventDefault();
-      this.collapsed.update((c) => !c); // fraction is kept, so restoring is free
+      // fraction is kept, so restoring is free
+      this.collapsed.update((c) => !c);
       return;
     }
-    const map: Record<string, number> = { [less]: now - delta, [more]: now + delta, Home: this.minFirst, End: m.total - this.minSecond };
+    const map: Record<string, number> = {
+      [less]: now - delta,
+      [more]: now + delta,
+      Home: this.minFirst,
+      End: m.total - this.minSecond,
+    };
     if (!(e.key in map)) return;
     e.preventDefault();
     this.setPx(map[e.key], m.total);
@@ -7408,7 +9682,9 @@ export class SplitPaneComponent {
 
   reset() {
     const t = this.total();
-    this.fraction.set(t ? this.clampPx(this.initialValue * t, t) / t : this.initialValue);
+    this.fraction.set(
+      t ? this.clampPx(this.initialValue * t, t) / t : this.initialValue,
+    );
   }
 }
 `,
@@ -7517,11 +9793,13 @@ A 6 by 8 grid; drag selects a rectangle with live preview; Ctrl or Cmd adds or s
 ### Step 1: pure helpers
 
 \`\`\`jsx
-// Every key in the rectangle spanned by two corner cells, in either direction.
+// Every key in the rectangle spanned by
+// two corner cells, in either direction.
 export function rectKeys([r1, c1], [r2, c2]) {
   const keys = [];
   for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++)
-    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) keys.push(key(r, c));
+    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++)
+      keys.push(key(r, c));
   return keys;
 }
 \`\`\`
@@ -7529,13 +9807,15 @@ export function rectKeys([r1, c1], [r2, c2]) {
 \`\`\`jsx
 // What the grid shows: the committed selection, or, during a drag, the
 // committed selection combined with the live rectangle. Nothing is
-// committed until pointerup, so cancelling a drag is just forgetting it.
+// committed until pointerup, so cancelling
+// a drag is just forgetting it.
 export function combine(committed, drag) {
   if (!drag) return committed;
   const rect = rectKeys(drag.anchor, drag.current);
   if (drag.mode === "replace") return new Set(rect);
   const next = new Set(committed);
-  for (const k of rect) drag.mode === "add" ? next.add(k) : next.delete(k);
+  for (const k of rect)
+    drag.mode === "add" ? next.add(k) : next.delete(k);
   return next;
 }
 \`\`\`
@@ -7547,12 +9827,16 @@ export function combine(committed, drag) {
 📌 **Interview term: Hit testing** — working out which element is under a point. Instead of asking every cell "is the pointer over you?", the grid divides the offset inside its own box by the cell size.
 
 \`\`\`jsx
-// Map a pointer position to a cell using the grid box, clamped to the edges
+// Map a pointer position to a cell using
+// the grid box, clamped to the edges
 // so a drag that leaves the grid keeps selecting up to the border.
 export function cellAt(rect, x, y) {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 \`\`\`
 
@@ -7569,9 +9853,15 @@ function onPointerDown(e) {
   rectRef.current = gridRef.current.getBoundingClientRect();
   const cell = cellAt(rectRef.current, e.clientX, e.clientY);
   const additive = e.ctrlKey || e.metaKey;
-  const mode = !additive ? "replace" : committed.has(key(...cell)) ? "subtract" : "add";
-  // Capture: moves keep arriving here even when the pointer leaves the grid.
-  if (gridRef.current.setPointerCapture) gridRef.current.setPointerCapture(e.pointerId);
+  const mode = !additive
+    ? "replace"
+    : committed.has(key(...cell))
+      ? "subtract"
+      : "add";
+  // Capture: moves keep arriving here even
+  // when the pointer leaves the grid.
+  if (gridRef.current.setPointerCapture)
+    gridRef.current.setPointerCapture(e.pointerId);
   setDrag({ anchor: cell, current: cell, mode });
   setAnchor(cell);
   setFocus(cell);
@@ -7584,7 +9874,8 @@ function onPointerMove(e) {
   if (!drag) return;
   const cell = cellAt(rectRef.current, e.clientX, e.clientY);
   if (cell[0] !== drag.current[0] || cell[1] !== drag.current[1]) {
-    setDrag({ ...drag, current: cell }); // re-render only when the cell changes
+    // re-render only when the cell changes
+    setDrag({ ...drag, current: cell });
     setFocus(cell);
   }
 \`\`\`
@@ -7598,10 +9889,18 @@ function onPointerMove(e) {
 📌 **Interview term: Roving tabindex** — only one cell has \`tabIndex={0}\` and every other has \`-1\`, so the whole grid is one Tab stop and the arrow keys move focus inside it. It is the ARIA grid pattern.
 
 \`\`\`jsx
-const d = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+const d = {
+  ArrowUp: [-1, 0],
+  ArrowDown: [1, 0],
+  ArrowLeft: [0, -1],
+  ArrowRight: [0, 1],
+}[e.key];
 if (!d) return;
 e.preventDefault();
-const to = [Math.min(ROWS - 1, Math.max(0, focus[0] + d[0])), Math.min(COLS - 1, Math.max(0, focus[1] + d[1]))];
+const to = [
+  Math.min(ROWS - 1, Math.max(0, focus[0] + d[0])),
+  Math.min(COLS - 1, Math.max(0, focus[1] + d[1])),
+];
 setFocus(to);
 if (e.shiftKey) setCommitted(new Set(rectKeys(anchor, to)));
 else setAnchor(to);
@@ -7617,7 +9916,7 @@ The container is \`role="grid"\` with \`aria-multiselectable="true"\`, each row 
 
 Mounted under \`<StrictMode>\` by \`scripts/verify-mc-solution.mjs\` on React 19.3.1 in jsdom 29. jsdom has no layout, so the driver gives the grid a 320 by 240 box at (0, 0), which makes every cell 40 px, and dispatches \`PointerEvent\`s with chosen coordinates plus keyboard events. Each picture is the 6 rows, \`#\` for selected. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start:          ........ ........ ........ ........ ........ ........ | 0 seats selected
 drag 1,1->2,3:  ........ .###.... .###.... ........ ........ ........ | 6 seats selected | previews: 6
 pointerup:      ........ .###.... .###.... ........ ........ ........ | 6 seats selected | focus on 2,3
@@ -7636,7 +9935,7 @@ The preview count during the first drag (6 cells marked \`preview\`) shows the d
 
 In real Chromium 141 (playwright-core 1.64.1, real mouse, real layout with gaps):
 
-\`\`\`
+\`\`\`text
 mid-drag : ........ .###.... .###.... ........ ........ ........ | 6 seats selected
 outside  : ........ .####### .####### .####### .####### .####### | 35 seats selected
 released : ........ .####### .####### .####### .####### .####### | 35 seats selected | focus 5,7
@@ -7755,9 +10054,11 @@ import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./src/selection";
 
 export default function App() {
   const [committed, setCommitted] = useState(() => new Set());
-  const [drag, setDrag] = useState(null); // { anchor, current, mode } while the pointer is down
+  // { anchor, current, mode } while the pointer is down
+  const [drag, setDrag] = useState(null);
   const [focus, setFocus] = useState([0, 0]); // roving tabindex position
-  const [anchor, setAnchor] = useState([0, 0]); // corner that Shift+Arrow extends from
+  // corner that Shift+Arrow extends from
+  const [anchor, setAnchor] = useState([0, 0]);
   const gridRef = useRef(null);
   const cellRefs = useRef({});
   const rectRef = useRef(null); // grid box measured at pointerdown
@@ -7766,7 +10067,8 @@ export default function App() {
 
   // Move DOM focus with the roving tabindex, but only once the grid has focus.
   useEffect(() => {
-    if (gridRef.current.contains(document.activeElement)) cellRefs.current[key(...focus)].focus();
+    if (gridRef.current.contains(document.activeElement))
+      cellRefs.current[key(...focus)].focus();
   }, [focus]);
 
   function onPointerDown(e) {
@@ -7775,9 +10077,14 @@ export default function App() {
     rectRef.current = gridRef.current.getBoundingClientRect();
     const cell = cellAt(rectRef.current, e.clientX, e.clientY);
     const additive = e.ctrlKey || e.metaKey;
-    const mode = !additive ? "replace" : committed.has(key(...cell)) ? "subtract" : "add";
+    const mode = !additive
+      ? "replace"
+      : committed.has(key(...cell))
+        ? "subtract"
+        : "add";
     // Capture: moves keep arriving here even when the pointer leaves the grid.
-    if (gridRef.current.setPointerCapture) gridRef.current.setPointerCapture(e.pointerId);
+    if (gridRef.current.setPointerCapture)
+      gridRef.current.setPointerCapture(e.pointerId);
     setDrag({ anchor: cell, current: cell, mode });
     setAnchor(cell);
     setFocus(cell);
@@ -7787,7 +10094,8 @@ export default function App() {
     if (!drag) return;
     const cell = cellAt(rectRef.current, e.clientX, e.clientY);
     if (cell[0] !== drag.current[0] || cell[1] !== drag.current[1]) {
-      setDrag({ ...drag, current: cell }); // re-render only when the cell changes
+      // re-render only when the cell changes
+      setDrag({ ...drag, current: cell });
       setFocus(cell);
     }
   }
@@ -7800,7 +10108,8 @@ export default function App() {
   function onKeyDown(e) {
     if (e.key === "Escape") {
       e.preventDefault();
-      if (drag) setDrag(null); // cancel the drag in progress
+      if (drag)
+        setDrag(null); // cancel the drag in progress
       else setCommitted(new Set());
       return;
     }
@@ -7818,10 +10127,18 @@ export default function App() {
       setAnchor(focus);
       return;
     }
-    const d = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+    const d = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    }[e.key];
     if (!d) return;
     e.preventDefault();
-    const to = [Math.min(ROWS - 1, Math.max(0, focus[0] + d[0])), Math.min(COLS - 1, Math.max(0, focus[1] + d[1]))];
+    const to = [
+      Math.min(ROWS - 1, Math.max(0, focus[0] + d[0])),
+      Math.min(COLS - 1, Math.max(0, focus[1] + d[1])),
+    ];
     setFocus(to);
     if (e.shiftKey) setCommitted(new Set(rectKeys(anchor, to)));
     else setAnchor(to);
@@ -7831,8 +10148,9 @@ export default function App() {
     <main className="app">
       <h1>Seat picker</h1>
       <p className="hint" id="grid-help">
-        Drag to select a block. Ctrl or Cmd + drag adds (or removes, if you start on a selected seat).
-        Keyboard: arrows move, Shift + arrows extend, Space toggles, Ctrl + A all, Escape clears.
+        Drag to select a block. Ctrl or Cmd + drag adds (or removes, if you
+        start on a selected seat). Keyboard: arrows move, Shift + arrows extend,
+        Space toggles, Ctrl + A all, Escape clears.
       </p>
       <div
         ref={gridRef}
@@ -7862,14 +10180,20 @@ export default function App() {
                   aria-selected={on}
                   aria-label={"Row " + (r + 1) + ", seat " + (c + 1)}
                   tabIndex={focus[0] === r && focus[1] === c ? 0 : -1}
-                  className={"cell" + (on ? " on" : "") + (drag && on !== committed.has(k) ? " preview" : "")}
+                  className={
+                    "cell" +
+                    (on ? " on" : "") +
+                    (drag && on !== committed.has(k) ? " preview" : "")
+                  }
                 />
               );
             })}
           </div>
         ))}
       </div>
-      <p role="status" data-testid="count">{shown.size} {shown.size === 1 ? "seat" : "seats"} selected</p>
+      <p role="status" data-testid="count">
+        {shown.size} {shown.size === 1 ? "seat" : "seats"} selected
+      </p>
     </main>
   );
 }
@@ -7883,7 +10207,8 @@ export const key = (r, c) => r + "," + c;
 export function rectKeys([r1, c1], [r2, c2]) {
   const keys = [];
   for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++)
-    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) keys.push(key(r, c));
+    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++)
+      keys.push(key(r, c));
   return keys;
 }
 
@@ -7904,19 +10229,62 @@ export function combine(committed, drag) {
 export function cellAt(rect, x, y) {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 520px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 12px; }
-.grid { display: grid; gap: 4px; user-select: none; touch-action: none; }
-.row { display: contents; }
-.cell { aspect-ratio: 1; background: #1d2330; border: 1px solid #2f3747; border-radius: 6px; cursor: cell; }
-.cell.on { background: #2f5bd3; border-color: #6f93ff; }
-.cell.preview { outline: 2px dashed #9fb6ff; outline-offset: -3px; }
-.cell:focus-visible { outline: 2px solid #ffca28; outline-offset: 1px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.grid {
+  display: grid;
+  gap: 4px;
+  user-select: none;
+  touch-action: none;
+}
+.row {
+  display: contents;
+}
+.cell {
+  aspect-ratio: 1;
+  background: #1d2330;
+  border: 1px solid #2f3747;
+  border-radius: 6px;
+  cursor: cell;
+}
+.cell.on {
+  background: #2f5bd3;
+  border-color: #6f93ff;
+}
+.cell.preview {
+  outline: 2px dashed #9fb6ff;
+  outline-offset: -3px;
+}
+.cell:focus-visible {
+  outline: 2px solid #ffca28;
+  outline-offset: 1px;
+}
 `,
         },
       },
@@ -7953,24 +10321,30 @@ A 6 by 8 grid; drag selects a rectangle with a live preview; Ctrl or Cmd adds, o
 \`\`\`jsx
 // What the grid shows: the committed selection, or, during a drag, the
 // committed selection combined with the live rectangle. Nothing is
-// committed until pointerup, so cancelling a drag is just forgetting it.
+// committed until pointerup, so cancelling
+// a drag is just forgetting it.
 export function combine(committed, drag) {
   if (!drag) return committed;
   const rect = rectKeys(drag.anchor, drag.current);
   if (drag.mode === "replace") return new Set(rect);
   const next = new Set(committed);
-  for (const k of rect) drag.mode === "add" ? next.add(k) : next.delete(k);
+  for (const k of rect)
+    drag.mode === "add" ? next.add(k) : next.delete(k);
   return next;
 }
 \`\`\`
 
 \`\`\`jsx
-// Map a pointer position to a cell using the grid box, clamped to the edges
+// Map a pointer position to a cell using
+// the grid box, clamped to the edges
 // so a drag that leaves the grid keeps selecting up to the border.
 export function cellAt(rect, x, y) {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 \`\`\`
 
@@ -7981,31 +10355,23 @@ export function cellAt(rect, x, y) {
 📌 **Interview term: Pointer capture** — \`setPointerCapture(pointerId)\` routes every further event of that pointer to the grid until release. Touch screens capture implicitly to where the touch started, which is why per-cell enter events fail there.
 
 \`\`\`vue
-function onPointerdown(e) {
-  if (e.button !== 0) return;
-  e.preventDefault(); // no text selection; we move focus ourselves
-  rect = grid.value.getBoundingClientRect();
-  const cell = cellAt(rect, e.clientX, e.clientY);
-  const additive = e.ctrlKey || e.metaKey;
-  const mode = !additive ? "replace" : committed.value.has(key(...cell)) ? "subtract" : "add";
-  // Capture: moves keep arriving here even when the pointer leaves the grid.
-  if (grid.value.setPointerCapture) grid.value.setPointerCapture(e.pointerId);
-  drag.value = { anchor: cell, current: cell, mode };
-  anchor.value = cell;
-  focus.value = cell;
-  focusCell(cell);
-}
+function onPointerdown(e) { if (e.button !== 0) return;
+e.preventDefault(); // no text selection; we move focus ourselves rect =
+grid.value.getBoundingClientRect(); const cell = cellAt(rect, e.clientX,
+e.clientY); const additive = e.ctrlKey || e.metaKey; const mode =
+!additive ? "replace" : committed.value.has(key(...cell)) ? "subtract" :
+"add"; // Capture: moves keep arriving here even when the pointer leaves
+the grid. if (grid.value.setPointerCapture)
+grid.value.setPointerCapture(e.pointerId); drag.value = { anchor: cell,
+current: cell, mode }; anchor.value = cell; focus.value = cell;
+focusCell(cell); }
 \`\`\`
 
 \`\`\`vue
-function onPointermove(e) {
-  if (!drag.value) return;
-  const cell = cellAt(rect, e.clientX, e.clientY);
-  const cur = drag.value.current;
-  if (cell[0] !== cur[0] || cell[1] !== cur[1]) {
-    drag.value.current = cell; // update only when the cell changes
-    focus.value = cell;
-  }
+function onPointermove(e) { if (!drag.value) return; const cell =
+cellAt(rect, e.clientX, e.clientY); const cur = drag.value.current; if
+(cell[0] !== cur[0] || cell[1] !== cur[1]) { drag.value.current = cell;
+// update only when the cell changes focus.value = cell; }
 \`\`\`
 
 \`drag.value.current = cell\` mutates the deep \`ref\`, which Vue tracks, and only when the pointer crosses into a new cell. \`onPointerup\` assigns \`committed.value = shown.value\`; \`@pointercancel\` sets \`drag\` to null.
@@ -8015,11 +10381,9 @@ function onPointermove(e) {
 📌 **Interview term: Roving tabindex** — exactly one cell has \`tabindex="0"\`, the rest \`-1\`, so the grid is one Tab stop and arrows move focus inside it.
 
 \`\`\`vue
-// Move DOM focus with the roving tabindex, but only once the grid has focus.
-watch(focus, async (cell) => {
-  await nextTick();
-  if (grid.value.contains(document.activeElement)) focusCell(cell);
-});
+// Move DOM focus with the roving tabindex, but only once the grid has
+focus. watch(focus, async (cell) => { await nextTick(); if
+(grid.value.contains(document.activeElement)) focusCell(cell); });
 \`\`\`
 
 The watcher waits for \`nextTick\` so the new \`tabindex\` is in the DOM, and only moves focus when focus is already inside the grid. Shift + arrow selects \`rectKeys(anchor, focus)\`, Space toggles one cell in a new \`Set\`, Ctrl + A selects all, Escape cancels a drag or clears.
@@ -8032,7 +10396,7 @@ Rows are \`role="row"\` with \`display: contents\`, so all cells sit in one CSS 
 
 Compiled with \`@vue/compiler-sfc\`, mounted with \`createApp(App).mount("#app")\` in jsdom 29. The driver gives the grid a 320 by 240 box (40 px cells) and dispatches \`PointerEvent\`s with chosen coordinates plus keyboard events; \`#\` marks a selected cell. Output, unedited:
 
-\`\`\`
+\`\`\`text
 start:          ........ ........ ........ ........ ........ ........ | 0 seats selected
 drag 1,1->2,3:  ........ .###.... .###.... ........ ........ ........ | 6 seats selected | previews: 6
 pointerup:      ........ .###.... .###.... ........ ........ ........ | 6 seats selected | focus on 2,3
@@ -8142,7 +10506,14 @@ These lines match the React and Angular runs. A real-browser check with real lay
 **Conclusion:** In Vue the drag-to-select grid is a \`shallowRef\` Set, a \`drag\` ref and one \`computed\` that combines them. Map coordinates to cells from the grid box, capture the pointer, update only on a new cell, and commit on release so Escape and \`pointercancel\` cost nothing. A roving tabindex driven by a watcher gives keyboard users the same power. The verified run matches React and Angular line for line.`,
         files: {
           "/src/App.vue": `<script setup>
-import { ref, shallowRef, computed, watch, nextTick, useTemplateRef } from "vue";
+import {
+  ref,
+  shallowRef,
+  computed,
+  watch,
+  nextTick,
+  useTemplateRef,
+} from "vue";
 import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./selection.js";
 
 // shallowRef + replace-on-write: a Set is swapped, never mutated in place,
@@ -8156,8 +10527,11 @@ let rect = null; // grid box measured at pointerdown
 
 const shown = computed(() => combine(committed.value, drag.value));
 const cells = [];
-for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) cells.push({ r, c, k: key(r, c) });
-const rows = Array.from({ length: ROWS }, (_, r) => cells.slice(r * COLS, r * COLS + COLS));
+for (let r = 0; r < ROWS; r++)
+  for (let c = 0; c < COLS; c++) cells.push({ r, c, k: key(r, c) });
+const rows = Array.from({ length: ROWS }, (_, r) =>
+  cells.slice(r * COLS, r * COLS + COLS),
+);
 
 function focusCell(cell) {
   const el = grid.value.querySelector('[data-cell="' + key(...cell) + '"]');
@@ -8175,7 +10549,11 @@ function onPointerdown(e) {
   rect = grid.value.getBoundingClientRect();
   const cell = cellAt(rect, e.clientX, e.clientY);
   const additive = e.ctrlKey || e.metaKey;
-  const mode = !additive ? "replace" : committed.value.has(key(...cell)) ? "subtract" : "add";
+  const mode = !additive
+    ? "replace"
+    : committed.value.has(key(...cell))
+      ? "subtract"
+      : "add";
   // Capture: moves keep arriving here even when the pointer leaves the grid.
   if (grid.value.setPointerCapture) grid.value.setPointerCapture(e.pointerId);
   drag.value = { anchor: cell, current: cell, mode };
@@ -8201,7 +10579,8 @@ function onPointerup() {
 function onKeydown(e) {
   if (e.key === "Escape") {
     e.preventDefault();
-    if (drag.value) drag.value = null; // cancel the drag in progress
+    if (drag.value)
+      drag.value = null; // cancel the drag in progress
     else committed.value = new Set();
     return;
   }
@@ -8219,11 +10598,19 @@ function onKeydown(e) {
     anchor.value = focus.value;
     return;
   }
-  const d = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }[e.key];
+  const d = {
+    ArrowUp: [-1, 0],
+    ArrowDown: [1, 0],
+    ArrowLeft: [0, -1],
+    ArrowRight: [0, 1],
+  }[e.key];
   if (!d) return;
   e.preventDefault();
   const [r, c] = focus.value;
-  const to = [Math.min(ROWS - 1, Math.max(0, r + d[0])), Math.min(COLS - 1, Math.max(0, c + d[1]))];
+  const to = [
+    Math.min(ROWS - 1, Math.max(0, r + d[0])),
+    Math.min(COLS - 1, Math.max(0, c + d[1])),
+  ];
   focus.value = to;
   if (e.shiftKey) committed.value = new Set(rectKeys(anchor.value, to));
   else anchor.value = to;
@@ -8266,21 +10653,64 @@ function onKeydown(e) {
         ></div>
       </div>
     </div>
-    <p role="status" data-testid="count">{{ shown.size }} {{ shown.size === 1 ? "seat" : "seats" }} selected</p>
+    <p
+      role="status"
+      data-testid="count"
+    >{{ shown.size }} {{ shown.size === 1 ? "seat" : "seats" }} selected</p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
-.app { padding: 16px; max-width: 520px; margin: 0 auto; }
-h1 { font-size: 1.3rem; margin: 0 0 4px; }
-.hint { color: #9aa3b2; font-size: 0.85rem; margin: 0 0 12px; }
-.grid { display: grid; gap: 4px; user-select: none; touch-action: none; }
-.row { display: contents; }
-.cell { aspect-ratio: 1; background: #1d2330; border: 1px solid #2f3747; border-radius: 6px; cursor: cell; }
-.cell.on { background: #2f5bd3; border-color: #6f93ff; }
-.cell.preview { outline: 2px dashed #9fb6ff; outline-offset: -3px; }
-.cell:focus-visible { outline: 2px solid #ffca28; outline-offset: 1px; }
+body {
+  margin: 0;
+  background: #0f1218;
+  color: #e6e9ef;
+  font:
+    14px/1.5 system-ui,
+    sans-serif;
+}
+.app {
+  padding: 16px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: 1.3rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #9aa3b2;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+.grid {
+  display: grid;
+  gap: 4px;
+  user-select: none;
+  touch-action: none;
+}
+.row {
+  display: contents;
+}
+.cell {
+  aspect-ratio: 1;
+  background: #1d2330;
+  border: 1px solid #2f3747;
+  border-radius: 6px;
+  cursor: cell;
+}
+.cell.on {
+  background: #2f5bd3;
+  border-color: #6f93ff;
+}
+.cell.preview {
+  outline: 2px dashed #9fb6ff;
+  outline-offset: -3px;
+}
+.cell:focus-visible {
+  outline: 2px solid #ffca28;
+  outline-offset: 1px;
+}
 </style>
 `,
           "/src/selection.js": `// Pure selection helpers. A cell is the string key "row,col".
@@ -8292,7 +10722,8 @@ export const key = (r, c) => r + "," + c;
 export function rectKeys([r1, c1], [r2, c2]) {
   const keys = [];
   for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++)
-    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) keys.push(key(r, c));
+    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++)
+      keys.push(key(r, c));
   return keys;
 }
 
@@ -8313,7 +10744,10 @@ export function combine(committed, drag) {
 export function cellAt(rect, x, y) {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 `,
         },
@@ -8364,7 +10798,10 @@ export function combine(committed: Set<string>, drag: Drag | null): Set<string> 
 export function cellAt(rect: DOMRect, x: number, y: number): Cell {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 \`\`\`
 
@@ -8382,8 +10819,13 @@ onPointerDown(e: PointerEvent) {
   this.rect = grid.getBoundingClientRect();
   const cell = cellAt(this.rect, e.clientX, e.clientY);
   const additive = e.ctrlKey || e.metaKey;
-  const mode = !additive ? "replace" : this.committed().has(key(cell[0], cell[1])) ? "subtract" : "add";
-  // Capture: moves keep arriving here even when the pointer leaves the grid.
+  const mode = !additive
+    ? "replace"
+    : this.committed().has(key(cell[0], cell[1]))
+      ? "subtract"
+      : "add";
+  // Capture: moves keep arriving here even
+  // when the pointer leaves the grid.
   if (grid.setPointerCapture) grid.setPointerCapture(e.pointerId);
   this.drag.set({ anchor: cell, current: cell, mode });
   this.anchor = cell;
@@ -8397,7 +10839,8 @@ onPointerMove(e: PointerEvent) {
   if (!d || !this.rect) return;
   const cell = cellAt(this.rect, e.clientX, e.clientY);
   if (cell[0] !== d.current[0] || cell[1] !== d.current[1]) {
-    this.drag.set({ ...d, current: cell }); // new object only when the cell changes
+    // new object only when the cell changes
+    this.drag.set({ ...d, current: cell });
     this.moveFocus(cell);
   }
 \`\`\`
@@ -8412,10 +10855,15 @@ onPointerMove(e: PointerEvent) {
 // Roving tabindex: update the signal, then move DOM focus after render.
 private moveFocus(cell: Cell) {
   this.focus.set(cell);
-  afterNextRender(() => {
-    const el = this.grid.nativeElement.querySelector('[data-cell="' + key(cell[0], cell[1]) + '"]') as HTMLElement | null;
-    if (el) el.focus();
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      const el = this.grid.nativeElement.querySelector(
+        '[data-cell="' + key(cell[0], cell[1]) + '"]',
+      ) as HTMLElement | null;
+      if (el) el.focus();
+    },
+    { injector: this.injector },
+  );
 }
 \`\`\`
 
@@ -8429,7 +10877,7 @@ The signal update changes which cell has \`tabindex="0"\`; \`afterNextRender\` f
 
 Booted with \`bootstrapApplication(AppComponent)\` and no providers, AOT with \`strictTemplates\` and through the runtime JIT. The driver gives the grid a 320 by 240 box (40 px cells) and dispatches \`PointerEvent\`s with chosen coordinates plus keyboard events; \`#\` marks a selected cell. AOT output, unedited (JIT printed the same):
 
-\`\`\`
+\`\`\`text
 start:          ........ ........ ........ ........ ........ ........ | 0 seats selected
 drag 1,1->2,3:  ........ .###.... .###.... ........ ........ ........ | 6 seats selected | previews: 6
 pointerup:      ........ .###.... .###.... ........ ........ ........ | 6 seats selected | focus on 2,3
@@ -8538,8 +10986,26 @@ These lines match the React and Vue runs. Real layout was checked in Chromium on
 ---
 **Conclusion:** In Angular the grid is three signals and one \`computed\`: a committed Set replaced on every change, a drag that holds the gesture, and the derived selection that renders. Hit-test from the grid box, capture the pointer, commit on release, and move DOM focus with \`afterNextRender\` whenever the roving position changes, which is exactly the bug the shared driver caught. AOT and JIT matched the React and Vue output.`,
         files: {
-          "/src/app/app.component.ts": `import { Component, ElementRef, Injector, ViewChild, afterNextRender, computed, inject, signal } from "@angular/core";
-import { COLS, Cell, Drag, ROWS, cellAt, combine, key, rectKeys } from "./selection";
+          "/src/app/app.component.ts": `import {
+  Component,
+  ElementRef,
+  Injector,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
+import {
+  COLS,
+  Cell,
+  Drag,
+  ROWS,
+  cellAt,
+  combine,
+  key,
+  rectKeys,
+} from "./selection";
 
 @Component({
   selector: "app-root",
@@ -8583,10 +11049,14 @@ import { COLS, Cell, Drag, ROWS, cellAt, combine, key, rectKeys } from "./select
           </div>
         }
       </div>
-      <p role="status" data-testid="count">{{ shown().size }} {{ shown().size === 1 ? "seat" : "seats" }} selected</p>
+      <p
+        role="status"
+        data-testid="count"
+      >{{ shown().size }} {{ shown().size === 1 ? "seat" : "seats" }} selected</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; position: fixed; inset: 0; overflow: auto; background: #0f1218; color: #e6e9ef; font: 14px/1.5 system-ui, sans-serif; }
     .app { padding: 16px; max-width: 520px; margin: 0 auto; }
     h1 { font-size: 1.3rem; margin: 0 0 4px; }
@@ -8597,12 +11067,14 @@ import { COLS, Cell, Drag, ROWS, cellAt, combine, key, rectKeys } from "./select
     .cell.on { background: #2f5bd3; border-color: #6f93ff; }
     .cell.preview { outline: 2px dashed #9fb6ff; outline-offset: -3px; }
     .cell:focus-visible { outline: 2px solid #ffca28; outline-offset: 1px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly cols = COLS;
   readonly rows = Array.from({ length: ROWS }, (_, r) =>
-    Array.from({ length: COLS }, (_, c) => ({ r, c, k: key(r, c) })));
+    Array.from({ length: COLS }, (_, c) => ({ r, c, k: key(r, c) })),
+  );
   committed = signal<Set<string>>(new Set());
   drag = signal<Drag | null>(null); // set while the pointer is down
   focus = signal<Cell>([0, 0]); // roving tabindex position
@@ -8615,10 +11087,15 @@ export class AppComponent {
   // Roving tabindex: update the signal, then move DOM focus after render.
   private moveFocus(cell: Cell) {
     this.focus.set(cell);
-    afterNextRender(() => {
-      const el = this.grid.nativeElement.querySelector('[data-cell="' + key(cell[0], cell[1]) + '"]') as HTMLElement | null;
-      if (el) el.focus();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        const el = this.grid.nativeElement.querySelector(
+          '[data-cell="' + key(cell[0], cell[1]) + '"]',
+        ) as HTMLElement | null;
+        if (el) el.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   onPointerDown(e: PointerEvent) {
@@ -8628,7 +11105,11 @@ export class AppComponent {
     this.rect = grid.getBoundingClientRect();
     const cell = cellAt(this.rect, e.clientX, e.clientY);
     const additive = e.ctrlKey || e.metaKey;
-    const mode = !additive ? "replace" : this.committed().has(key(cell[0], cell[1])) ? "subtract" : "add";
+    const mode = !additive
+      ? "replace"
+      : this.committed().has(key(cell[0], cell[1]))
+        ? "subtract"
+        : "add";
     // Capture: moves keep arriving here even when the pointer leaves the grid.
     if (grid.setPointerCapture) grid.setPointerCapture(e.pointerId);
     this.drag.set({ anchor: cell, current: cell, mode });
@@ -8640,7 +11121,8 @@ export class AppComponent {
     if (!d || !this.rect) return;
     const cell = cellAt(this.rect, e.clientX, e.clientY);
     if (cell[0] !== d.current[0] || cell[1] !== d.current[1]) {
-      this.drag.set({ ...d, current: cell }); // new object only when the cell changes
+      // new object only when the cell changes
+      this.drag.set({ ...d, current: cell });
       this.moveFocus(cell);
     }
   }
@@ -8653,7 +11135,8 @@ export class AppComponent {
   onKeyDown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
-      if (this.drag()) this.drag.set(null); // cancel the drag in progress
+      if (this.drag())
+        this.drag.set(null); // cancel the drag in progress
       else this.committed.set(new Set());
       return;
     }
@@ -8673,11 +11156,19 @@ export class AppComponent {
       this.anchor = f;
       return;
     }
-    const moves: Record<string, Cell> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+    const moves: Record<string, Cell> = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    };
     const d = moves[e.key];
     if (!d) return;
     e.preventDefault();
-    const to: Cell = [Math.min(ROWS - 1, Math.max(0, f[0] + d[0])), Math.min(COLS - 1, Math.max(0, f[1] + d[1]))];
+    const to: Cell = [
+      Math.min(ROWS - 1, Math.max(0, f[0] + d[0])),
+      Math.min(COLS - 1, Math.max(0, f[1] + d[1])),
+    ];
     this.moveFocus(to);
     if (e.shiftKey) this.committed.set(new Set(rectKeys(this.anchor, to)));
     else this.anchor = to;
@@ -8687,7 +11178,11 @@ export class AppComponent {
           "/src/app/selection.ts": `// Pure selection helpers. A cell is the string key "row,col".
 export type Cell = [number, number];
 export type Mode = "replace" | "add" | "subtract";
-export interface Drag { anchor: Cell; current: Cell; mode: Mode; }
+export interface Drag {
+  anchor: Cell;
+  current: Cell;
+  mode: Mode;
+}
 export const ROWS = 6;
 export const COLS = 8;
 export const key = (r: number, c: number) => r + "," + c;
@@ -8696,14 +11191,18 @@ export const key = (r: number, c: number) => r + "," + c;
 export function rectKeys([r1, c1]: Cell, [r2, c2]: Cell): string[] {
   const keys: string[] = [];
   for (let r = Math.min(r1, r2); r <= Math.max(r1, r2); r++)
-    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++) keys.push(key(r, c));
+    for (let c = Math.min(c1, c2); c <= Math.max(c1, c2); c++)
+      keys.push(key(r, c));
   return keys;
 }
 
 // What the grid shows: the committed selection, or, during a drag, the
 // committed selection combined with the live rectangle. Nothing is
 // committed until pointerup, so cancelling a drag is just forgetting it.
-export function combine(committed: Set<string>, drag: Drag | null): Set<string> {
+export function combine(
+  committed: Set<string>,
+  drag: Drag | null,
+): Set<string> {
   if (!drag) return committed;
   const rect = rectKeys(drag.anchor, drag.current);
   if (drag.mode === "replace") return new Set(rect);
@@ -8720,7 +11219,10 @@ export function combine(committed: Set<string>, drag: Drag | null): Set<string> 
 export function cellAt(rect: DOMRect, x: number, y: number): Cell {
   const c = Math.floor(((x - rect.left) / rect.width) * COLS);
   const r = Math.floor(((y - rect.top) / rect.height) * ROWS);
-  return [Math.min(ROWS - 1, Math.max(0, r)), Math.min(COLS - 1, Math.max(0, c))];
+  return [
+    Math.min(ROWS - 1, Math.max(0, r)),
+    Math.min(COLS - 1, Math.max(0, c)),
+  ];
 }
 `,
         },

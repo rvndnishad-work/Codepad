@@ -136,7 +136,8 @@ Start with the part that has no timers at all. It takes a <code>Date</code> and 
 ~~~js
 const pad = (n) => String(n).padStart(2, "0");
 
-// Pure function: Date + format flag in, display strings out. Easy to test.
+// Pure function: Date + format flag in,
+// display strings out. Easy to test.
 export function formatClock(date, hour12) {
   const h = date.getHours();
   const m = pad(date.getMinutes());
@@ -147,7 +148,12 @@ export function formatClock(date, hour12) {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 ~~~
@@ -164,8 +170,10 @@ Two details interviewers check:
 ~~~js
 import { useEffect, useState } from "react";
 
-// Returns the current Date and re-renders on every new wall-clock second.
-// Each tick reads the real time and schedules itself for the NEXT second
+// Returns the current Date and re-renders
+// on every new wall-clock second.
+// Each tick reads the real time and
+// schedules itself for the NEXT second
 // boundary, so a late or skipped tick never accumulates as drift.
 export function useNow() {
   const [now, setNow] = useState(() => new Date());
@@ -178,7 +186,8 @@ export function useNow() {
       id = setTimeout(tick, 1000 - (d.getTime() % 1000));
     };
     id = setTimeout(tick, 1000 - (Date.now() % 1000));
-    return () => clearTimeout(id); // runs on unmount and in the StrictMode re-run
+    // runs on unmount and in the StrictMode re-run
+    return () => clearTimeout(id);
   }, []);
 
   return now;
@@ -211,12 +220,16 @@ export default function DigitalClock() {
 
   return (
     <section className="clock" aria-labelledby="clock-title">
-      <h1 id="clock-title" className="title">Digital Clock</h1>
+      <h1 id="clock-title" className="title">
+        Digital Clock
+      </h1>
       <time className="time" dateTime={iso} data-testid="time">
         {time}
         {period && <span className="period"> {period}</span>}
       </time>
-      <p className="date" data-testid="date">{date}</p>
+      <p className="date" data-testid="date">
+        {date}
+      </p>
       <button
         type="button"
         className="toggle"
@@ -412,12 +425,16 @@ export default function DigitalClock() {
 
   return (
     <section className="clock" aria-labelledby="clock-title">
-      <h1 id="clock-title" className="title">Digital Clock</h1>
+      <h1 id="clock-title" className="title">
+        Digital Clock
+      </h1>
       <time className="time" dateTime={iso} data-testid="time">
         {time}
         {period && <span className="period"> {period}</span>}
       </time>
-      <p className="date" data-testid="date">{date}</p>
+      <p className="date" data-testid="date">
+        {date}
+      </p>
       <button
         type="button"
         className="toggle"
@@ -444,7 +461,12 @@ export function formatClock(date, hour12) {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 `,
@@ -464,22 +486,76 @@ export function useNow() {
       id = setTimeout(tick, 1000 - (d.getTime() % 1000));
     };
     id = setTimeout(tick, 1000 - (Date.now() % 1000));
-    return () => clearTimeout(id); // runs on unmount and in the StrictMode re-run
+    // runs on unmount and in the StrictMode re-run
+    return () => clearTimeout(id);
   }, []);
 
   return now;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.clock { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
-.title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.time { display: block; font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; }
-.period { font-size: 0.45em; color: #7dd3fc; }
-.date { margin: 8px 0 20px; color: #cbd5e1; }
-.toggle { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 8px 16px; font: inherit; cursor: pointer; }
-.toggle[aria-pressed="true"] { background: #0369a1; border-color: #38bdf8; }
-.toggle:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.clock {
+  width: 100%;
+  max-width: 420px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.time {
+  display: block;
+  font-size: clamp(2.4rem, 13vw, 3.6rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+}
+.period {
+  font-size: 0.45em;
+  color: #7dd3fc;
+}
+.date {
+  margin: 8px 0 20px;
+  color: #cbd5e1;
+}
+.toggle {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+.toggle[aria-pressed="true"] {
+  background: #0369a1;
+  border-color: #38bdf8;
+}
+.toggle:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 `,
         },
       },
@@ -515,7 +591,8 @@ Show <code>HH:MM:SS</code> zero-padded with the date, toggle 12/24-hour, flip th
 ~~~js
 const pad = (n) => String(n).padStart(2, "0");
 
-// Pure function: Date + format flag in, display strings out. Easy to test.
+// Pure function: Date + format flag in,
+// display strings out. Easy to test.
 export function formatClock(date, hour12) {
   const h = date.getHours();
   const m = pad(date.getMinutes());
@@ -526,7 +603,12 @@ export function formatClock(date, hour12) {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 ~~~
@@ -538,9 +620,11 @@ export function formatClock(date, hour12) {
 ~~~js
 import { onMounted, onUnmounted, shallowRef } from "vue";
 
-// A ref holding the current Date, refreshed on every new wall-clock second.
+// A ref holding the current Date, refreshed
+// on every new wall-clock second.
 // Each tick reads the real time and aims at the NEXT second boundary,
-// so a late tick is corrected on the following one instead of adding up.
+// so a late tick is corrected on the
+// following one instead of adding up.
 export function useNow() {
   const now = shallowRef(new Date());
   let id;
@@ -579,7 +663,8 @@ const view = computed(() => formatClock(now.value, hour12.value));
   <section class="clock" aria-labelledby="clock-title">
     <h1 id="clock-title" class="title">Digital Clock</h1>
     <time class="time" :datetime="view.iso" data-testid="time">
-      {{ view.time }} <span v-if="view.period" class="period">{{ view.period }}</span>
+      {{ view.time }}
+      <span v-if="view.period" class="period">{{ view.period }}</span>
     </time>
     <p class="date" data-testid="date">{{ view.date }}</p>
     <button
@@ -595,14 +680,56 @@ const view = computed(() => formatClock(now.value, hour12.value));
 </template>
 
 <style scoped>
-.clock { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
-.title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.time { display: block; font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; }
-.period { font-size: 0.45em; color: #7dd3fc; }
-.date { margin: 8px 0 20px; color: #cbd5e1; }
-.toggle { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 8px 16px; font: inherit; cursor: pointer; }
-.toggle[aria-pressed="true"] { background: #0369a1; border-color: #38bdf8; }
-.toggle:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+.clock {
+  width: 100%;
+  max-width: 420px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.time {
+  display: block;
+  font-size: clamp(2.4rem, 13vw, 3.6rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+}
+.period {
+  font-size: 0.45em;
+  color: #7dd3fc;
+}
+.date {
+  margin: 8px 0 20px;
+  color: #cbd5e1;
+}
+.toggle {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+.toggle[aria-pressed="true"] {
+  background: #0369a1;
+  border-color: #38bdf8;
+}
+.toggle:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 </style>
 ~~~
 
@@ -738,8 +865,19 @@ import DigitalClock from "./components/DigitalClock.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
 </style>
 `,
           "/src/components/DigitalClock.vue": `<script setup>
@@ -756,7 +894,8 @@ const view = computed(() => formatClock(now.value, hour12.value));
   <section class="clock" aria-labelledby="clock-title">
     <h1 id="clock-title" class="title">Digital Clock</h1>
     <time class="time" :datetime="view.iso" data-testid="time">
-      {{ view.time }} <span v-if="view.period" class="period">{{ view.period }}</span>
+      {{ view.time }}
+      <span v-if="view.period" class="period">{{ view.period }}</span>
     </time>
     <p class="date" data-testid="date">{{ view.date }}</p>
     <button
@@ -772,14 +911,56 @@ const view = computed(() => formatClock(now.value, hour12.value));
 </template>
 
 <style scoped>
-.clock { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
-.title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.time { display: block; font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; }
-.period { font-size: 0.45em; color: #7dd3fc; }
-.date { margin: 8px 0 20px; color: #cbd5e1; }
-.toggle { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 8px 16px; font: inherit; cursor: pointer; }
-.toggle[aria-pressed="true"] { background: #0369a1; border-color: #38bdf8; }
-.toggle:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+.clock {
+  width: 100%;
+  max-width: 420px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.time {
+  display: block;
+  font-size: clamp(2.4rem, 13vw, 3.6rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #38bdf8;
+}
+.period {
+  font-size: 0.45em;
+  color: #7dd3fc;
+}
+.date {
+  margin: 8px 0 20px;
+  color: #cbd5e1;
+}
+.toggle {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+.toggle[aria-pressed="true"] {
+  background: #0369a1;
+  border-color: #38bdf8;
+}
+.toggle:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/composables/useNow.js": `import { onMounted, onUnmounted, shallowRef } from "vue";
@@ -814,7 +995,12 @@ export function formatClock(date, hour12) {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 `,
@@ -860,7 +1046,8 @@ export interface ClockView {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-// Pure function: Date + format flag in, display strings out. Easy to test.
+// Pure function: Date + format flag in,
+// display strings out. Easy to test.
 export function formatClock(date: Date, hour12: boolean): ClockView {
   const h = date.getHours();
   const m = pad(date.getMinutes());
@@ -870,7 +1057,12 @@ export function formatClock(date: Date, hour12: boolean): ClockView {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso: pad(h) + ":" + m + ":" + s,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 ~~~
@@ -880,7 +1072,13 @@ export function formatClock(date: Date, hour12: boolean): ClockView {
 ### The component
 
 ~~~ts
-import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
+import {
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 import { formatClock } from "./format-clock";
 
 @Component({
@@ -889,7 +1087,11 @@ import { formatClock } from "./format-clock";
   template: \`
     <section class="clock" aria-labelledby="clock-title">
       <h1 id="clock-title" class="title">Digital Clock</h1>
-      <time class="time" [attr.datetime]="view().iso" data-testid="time">
+      <time
+        class="time"
+        [attr.datetime]="view().iso"
+        data-testid="time"
+      >
         {{ view().time }}@if (view().period) {<span class="period"> {{ view().period }}</span>}
       </time>
       <p class="date" data-testid="date">{{ view().date }}</p>
@@ -904,7 +1106,8 @@ import { formatClock } from "./format-clock";
       </button>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .clock { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
     .title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .time { display: block; font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; }
@@ -913,17 +1116,21 @@ import { formatClock } from "./format-clock";
     .toggle { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 8px 16px; font: inherit; cursor: pointer; }
     .toggle[aria-pressed="true"] { background: #0369a1; border-color: #38bdf8; }
     .toggle:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class DigitalClockComponent {
   readonly now = signal(new Date());
   readonly hour12 = signal(false);
-  readonly view = computed(() => formatClock(this.now(), this.hour12()));
+  readonly view = computed(() =>
+    formatClock(this.now(), this.hour12()),
+  );
 
   private timerId: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
-    // Each tick reads the real time and aims at the NEXT second boundary.
+    // Each tick reads the real time and
+    // aims at the NEXT second boundary.
     const tick = () => {
       const d = new Date();
       this.now.set(d);
@@ -1088,11 +1295,25 @@ import { DigitalClockComponent } from "./digital-clock.component";
   standalone: true,
   imports: [DigitalClockComponent],
   template: \`<main class="page"><app-digital-clock /></main>\`,
-  encapsulation: ViewEncapsulation.None, // these two rules are global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  \`],
+  // these two rules are global on purpose
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -1120,7 +1341,8 @@ import { formatClock } from "./format-clock";
       </button>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .clock { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; text-align: center; box-sizing: border-box; }
     .title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .time { display: block; font-size: clamp(2.4rem, 13vw, 3.6rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #38bdf8; }
@@ -1129,7 +1351,8 @@ import { formatClock } from "./format-clock";
     .toggle { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 8px 16px; font: inherit; cursor: pointer; }
     .toggle[aria-pressed="true"] { background: #0369a1; border-color: #38bdf8; }
     .toggle:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class DigitalClockComponent {
   readonly now = signal(new Date());
@@ -1169,7 +1392,12 @@ export function formatClock(date: Date, hour12: boolean): ClockView {
     time: pad(shownHour) + ":" + m + ":" + s,
     period: hour12 ? (h < 12 ? "AM" : "PM") : "",
     iso: pad(h) + ":" + m + ":" + s,
-    date: date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+    date: date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
   };
 }
 `,
@@ -1321,9 +1549,12 @@ The face is a 200 by 200 <code>viewBox</code> centred on (100, 100). A point at 
 ~~~js
 import { useEffect, useState } from "react";
 
-// smooth = true : re-read the time on every animation frame (sweeping hand).
-// smooth = false: re-read it once per second, aimed at the next second boundary.
-// Either way the angle comes from the real time, never from a tick counter.
+// smooth = true : re-read the time on
+// every animation frame (sweeping hand).
+// smooth = false: re-read it once per
+// second, aimed at the next second boundary.
+// Either way the angle comes from the
+// real time, never from a tick counter.
 export function useClockTime(smooth) {
   const [now, setNow] = useState(() => new Date());
 
@@ -1372,7 +1603,15 @@ const now = useClockTime(smooth);
 const a = handAngles(now, smooth);
 const label = "Analog clock showing " + spokenTime(now);
 
-<line x1="100" y1="112" x2="100" y2="52" className="hand hour" transform={rotate(a.hour)} data-testid="hand-hour" />
+<line
+  x1="100"
+  y1="112"
+  x2="100"
+  y2="52"
+  className="hand hour"
+  transform={rotate(a.hour)}
+  data-testid="hand-hour"
+/>
 <line x1="100" y1="114" x2="100" y2="30" className="hand minute" transform={rotate(a.minute)} data-testid="hand-minute" />
 <line x1="100" y1="120" x2="100" y2="22" className="hand second" transform={rotate(a.second)} data-testid="hand-second" />
 ~~~
@@ -1537,30 +1776,80 @@ export default function AnalogClock() {
   return (
     <section className="card">
       <h1 className="title">Analog Clock</h1>
-      <svg className="face" viewBox="0 0 200 200" role="img" aria-label={label} data-testid="clock">
+      <svg
+        className="face"
+        viewBox="0 0 200 200"
+        role="img"
+        aria-label={label}
+        data-testid="clock"
+      >
         <circle cx="100" cy="100" r="96" className="rim" />
         {TICKS.map((t) => (
-          <line key={t.i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} className={t.major ? "tick major" : "tick"} />
+          <line
+            key={t.i}
+            x1={t.x1}
+            y1={t.y1}
+            x2={t.x2}
+            y2={t.y2}
+            className={t.major ? "tick major" : "tick"}
+          />
         ))}
         {NUMBERS.map((n) => (
-          <text key={n.n} x={n.x} y={n.y} className="num" textAnchor="middle" dominantBaseline="central">
+          <text
+            key={n.n}
+            x={n.x}
+            y={n.y}
+            className="num"
+            textAnchor="middle"
+            dominantBaseline="central"
+          >
             {n.n}
           </text>
         ))}
-        <line x1="100" y1="112" x2="100" y2="52" className="hand hour" transform={rotate(a.hour)} data-testid="hand-hour" />
-        <line x1="100" y1="114" x2="100" y2="30" className="hand minute" transform={rotate(a.minute)} data-testid="hand-minute" />
-        <line x1="100" y1="120" x2="100" y2="22" className="hand second" transform={rotate(a.second)} data-testid="hand-second" />
+        <line
+          x1="100"
+          y1="112"
+          x2="100"
+          y2="52"
+          className="hand hour"
+          transform={rotate(a.hour)}
+          data-testid="hand-hour"
+        />
+        <line
+          x1="100"
+          y1="114"
+          x2="100"
+          y2="30"
+          className="hand minute"
+          transform={rotate(a.minute)}
+          data-testid="hand-minute"
+        />
+        <line
+          x1="100"
+          y1="120"
+          x2="100"
+          y2="22"
+          className="hand second"
+          transform={rotate(a.second)}
+          data-testid="hand-second"
+        />
         <circle cx="100" cy="100" r="4" className="pin" />
       </svg>
       <label className="switch">
-        <input type="checkbox" checked={smooth} onChange={(e) => setSmooth(e.target.checked)} data-testid="smooth" />
+        <input
+          type="checkbox"
+          checked={smooth}
+          onChange={(e) => setSmooth(e.target.checked)}
+          data-testid="smooth"
+        />
         Smooth second hand
       </label>
     </section>
   );
 }
 `,
-          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s, minute hand 6 deg/min, hour hand 30 deg/h.
+          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
+// minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
 export function handAngles(date, smooth) {
@@ -1574,7 +1863,13 @@ export function handAngles(date, smooth) {
 export const pad = (n) => String(n).padStart(2, "0");
 
 export function spokenTime(date) {
-  return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+  return (
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds())
+  );
 }
 
 // Static face geometry, computed once at module load.
@@ -1598,13 +1893,18 @@ export const TICKS = Array.from({ length: 60 }, (_, i) => {
 export const NUMBERS = Array.from({ length: 12 }, (_, i) => {
   const n = i + 1;
   const a = rad(n * 30);
-  return { n, x: round(100 + 68 * Math.sin(a)), y: round(100 - 68 * Math.cos(a)) };
+  return {
+    n,
+    x: round(100 + 68 * Math.sin(a)),
+    y: round(100 - 68 * Math.cos(a)),
+  };
 });
 `,
           "/src/useClockTime.js": `import { useEffect, useState } from "react";
 
 // smooth = true : re-read the time on every animation frame (sweeping hand).
-// smooth = false: re-read it once per second, aimed at the next second boundary.
+// smooth = false: re-read it once per
+// second, aimed at the next second boundary.
 // Either way the angle comes from the real time, never from a tick counter.
 export function useClockTime(smooth) {
   const [now, setNow] = useState(() => new Date());
@@ -1635,22 +1935,90 @@ export function useClockTime(smooth) {
   return now;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 360px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 20px 16px; text-align: center; box-sizing: border-box; }
-.title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.face { width: 100%; max-width: 300px; height: auto; }
-.rim { fill: #0f172a; stroke: #334155; stroke-width: 3; }
-.tick { stroke: #475569; stroke-width: 1; }
-.tick.major { stroke: #cbd5e1; stroke-width: 2.5; }
-.num { fill: #e2e8f0; font-size: 13px; font-weight: 600; }
-.hand { stroke-linecap: round; }
-.hour { stroke: #e2e8f0; stroke-width: 6; }
-.minute { stroke: #94a3b8; stroke-width: 4; }
-.second { stroke: #f97316; stroke-width: 1.5; }
-.pin { fill: #f97316; }
-.switch { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; cursor: pointer; }
-.switch input { width: 18px; height: 18px; accent-color: #38bdf8; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.face {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+}
+.rim {
+  fill: #0f172a;
+  stroke: #334155;
+  stroke-width: 3;
+}
+.tick {
+  stroke: #475569;
+  stroke-width: 1;
+}
+.tick.major {
+  stroke: #cbd5e1;
+  stroke-width: 2.5;
+}
+.num {
+  fill: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hand {
+  stroke-linecap: round;
+}
+.hour {
+  stroke: #e2e8f0;
+  stroke-width: 6;
+}
+.minute {
+  stroke: #94a3b8;
+  stroke-width: 4;
+}
+.second {
+  stroke: #f97316;
+  stroke-width: 1.5;
+}
+.pin {
+  fill: #f97316;
+}
+.switch {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  cursor: pointer;
+}
+.switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: #38bdf8;
+}
 `,
         },
       },
@@ -1702,9 +2070,12 @@ The face uses <code>x = 100 + r sin a</code>, <code>y = 100 - r cos a</code> (SV
 ~~~js
 import { onUnmounted, shallowRef, watch } from "vue";
 
-// smooth = true : re-read the time on every animation frame (sweeping hand).
-// smooth = false: re-read it once per second, aimed at the next second boundary.
-// Either way the angle comes from the real time, never from a tick counter.
+// smooth = true : re-read the time on
+// every animation frame (sweeping hand).
+// smooth = false: re-read it once per
+// second, aimed at the next second boundary.
+// Either way the angle comes from the
+// real time, never from a tick counter.
 export function useClockTime(smooth) {
   const now = shallowRef(new Date());
   let frame = 0;
@@ -1750,9 +2121,33 @@ The callback calls <code>stop()</code> before starting a loop, so a switch never
 
 ~~~vue
 <!-- AnalogClock.vue (excerpt) -->
-<line x1="100" y1="112" x2="100" y2="52" class="hand hour" :transform="rotate(angles.hour)" data-testid="hand-hour" />
-<line x1="100" y1="114" x2="100" y2="30" class="hand minute" :transform="rotate(angles.minute)" data-testid="hand-minute" />
-<line x1="100" y1="120" x2="100" y2="22" class="hand second" :transform="rotate(angles.second)" data-testid="hand-second" />
+<line
+  x1="100"
+  y1="112"
+  x2="100"
+  y2="52"
+  class="hand hour"
+  :transform="rotate(angles.hour)"
+  data-testid="hand-hour"
+/>
+<line
+  x1="100"
+  y1="114"
+  x2="100"
+  y2="30"
+  class="hand minute"
+  :transform="rotate(angles.minute)"
+  data-testid="hand-minute"
+/>
+<line
+  x1="100"
+  y1="120"
+  x2="100"
+  y2="22"
+  class="hand second"
+  :transform="rotate(angles.second)"
+  data-testid="hand-second"
+/>
 
 <label class="switch">
   <input v-model="smooth" type="checkbox" data-testid="smooth" />
@@ -1893,11 +2288,23 @@ import AnalogClock from "./components/AnalogClock.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
 </style>
 `,
-          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s, minute hand 6 deg/min, hour hand 30 deg/h.
+          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
+// minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
 export function handAngles(date, smooth) {
@@ -1911,7 +2318,13 @@ export function handAngles(date, smooth) {
 export const pad = (n) => String(n).padStart(2, "0");
 
 export function spokenTime(date) {
-  return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+  return (
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds())
+  );
 }
 
 // Static face geometry, computed once at module load.
@@ -1935,7 +2348,11 @@ export const TICKS = Array.from({ length: 60 }, (_, i) => {
 export const NUMBERS = Array.from({ length: 12 }, (_, i) => {
   const n = i + 1;
   const a = rad(n * 30);
-  return { n, x: round(100 + 68 * Math.sin(a)), y: round(100 - 68 * Math.cos(a)) };
+  return {
+    n,
+    x: round(100 + 68 * Math.sin(a)),
+    y: round(100 - 68 * Math.cos(a)),
+  };
 });
 `,
           "/src/components/AnalogClock.vue": `<script setup>
@@ -1953,24 +2370,62 @@ const rotate = (deg) => "rotate(" + deg.toFixed(2) + " 100 100)";
 <template>
   <section class="card">
     <h1 class="title">Analog Clock</h1>
-    <svg class="face" viewBox="0 0 200 200" role="img" :aria-label="label" data-testid="clock">
+    <svg
+      class="face"
+      viewBox="0 0 200 200"
+      role="img"
+      :aria-label="label"
+      data-testid="clock"
+    >
       <circle cx="100" cy="100" r="96" class="rim" />
       <line
         v-for="t in TICKS"
         :key="t.i"
-        :x1="t.x1" :y1="t.y1" :x2="t.x2" :y2="t.y2"
+        :x1="t.x1"
+        :y1="t.y1"
+        :x2="t.x2"
+        :y2="t.y2"
         class="tick"
         :class="{ major: t.major }"
       />
       <text
         v-for="n in NUMBERS"
         :key="n.n"
-        :x="n.x" :y="n.y"
-        class="num" text-anchor="middle" dominant-baseline="central"
-      >{{ n.n }}</text>
-      <line x1="100" y1="112" x2="100" y2="52" class="hand hour" :transform="rotate(angles.hour)" data-testid="hand-hour" />
-      <line x1="100" y1="114" x2="100" y2="30" class="hand minute" :transform="rotate(angles.minute)" data-testid="hand-minute" />
-      <line x1="100" y1="120" x2="100" y2="22" class="hand second" :transform="rotate(angles.second)" data-testid="hand-second" />
+        :x="n.x"
+        :y="n.y"
+        class="num"
+        text-anchor="middle"
+        dominant-baseline="central"
+      >
+        {{ n.n }}
+      </text>
+      <line
+        x1="100"
+        y1="112"
+        x2="100"
+        y2="52"
+        class="hand hour"
+        :transform="rotate(angles.hour)"
+        data-testid="hand-hour"
+      />
+      <line
+        x1="100"
+        y1="114"
+        x2="100"
+        y2="30"
+        class="hand minute"
+        :transform="rotate(angles.minute)"
+        data-testid="hand-minute"
+      />
+      <line
+        x1="100"
+        y1="120"
+        x2="100"
+        y2="22"
+        class="hand second"
+        :transform="rotate(angles.second)"
+        data-testid="hand-second"
+      />
       <circle cx="100" cy="100" r="4" class="pin" />
     </svg>
     <label class="switch">
@@ -1981,26 +2436,84 @@ const rotate = (deg) => "rotate(" + deg.toFixed(2) + " 100 100)";
 </template>
 
 <style scoped>
-.card { width: 100%; max-width: 360px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 20px 16px; text-align: center; box-sizing: border-box; }
-.title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.face { width: 100%; max-width: 300px; height: auto; }
-.rim { fill: #0f172a; stroke: #334155; stroke-width: 3; }
-.tick { stroke: #475569; stroke-width: 1; }
-.tick.major { stroke: #cbd5e1; stroke-width: 2.5; }
-.num { fill: #e2e8f0; font-size: 13px; font-weight: 600; }
-.hand { stroke-linecap: round; }
-.hour { stroke: #e2e8f0; stroke-width: 6; }
-.minute { stroke: #94a3b8; stroke-width: 4; }
-.second { stroke: #f97316; stroke-width: 1.5; }
-.pin { fill: #f97316; }
-.switch { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; cursor: pointer; }
-.switch input { width: 18px; height: 18px; accent-color: #38bdf8; }
+.card {
+  width: 100%;
+  max-width: 360px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.face {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+}
+.rim {
+  fill: #0f172a;
+  stroke: #334155;
+  stroke-width: 3;
+}
+.tick {
+  stroke: #475569;
+  stroke-width: 1;
+}
+.tick.major {
+  stroke: #cbd5e1;
+  stroke-width: 2.5;
+}
+.num {
+  fill: #e2e8f0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hand {
+  stroke-linecap: round;
+}
+.hour {
+  stroke: #e2e8f0;
+  stroke-width: 6;
+}
+.minute {
+  stroke: #94a3b8;
+  stroke-width: 4;
+}
+.second {
+  stroke: #f97316;
+  stroke-width: 1.5;
+}
+.pin {
+  fill: #f97316;
+}
+.switch {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+  cursor: pointer;
+}
+.switch input {
+  width: 18px;
+  height: 18px;
+  accent-color: #38bdf8;
+}
 </style>
 `,
           "/src/composables/useClockTime.js": `import { onUnmounted, shallowRef, watch } from "vue";
 
 // smooth = true : re-read the time on every animation frame (sweeping hand).
-// smooth = false: re-read it once per second, aimed at the next second boundary.
+// smooth = false: re-read it once per
+// second, aimed at the next second boundary.
 // Either way the angle comes from the real time, never from a tick counter.
 export function useClockTime(smooth) {
   const now = shallowRef(new Date());
@@ -2089,7 +2602,9 @@ Tick and number positions use <code>x = 100 + r sin a</code>, <code>y = 100 - r 
 readonly smooth = signal(true);
 readonly now = signal(new Date());
 readonly angles = computed(() => handAngles(this.now(), this.smooth()));
-readonly label = computed(() => "Analog clock showing " + spokenTime(this.now()));
+readonly label = computed(
+  () => "Analog clock showing " + spokenTime(this.now()),
+);
 
 constructor() {
   effect((onCleanup) => {
@@ -2126,10 +2641,30 @@ The effect reads only <code>smooth()</code> synchronously. <code>now</code> is w
 ~~~html
 <!-- analog-clock.component.ts template (excerpt) -->
 @for (t of ticks; track t.i) {
-  <line [attr.x1]="t.x1" [attr.y1]="t.y1" [attr.x2]="t.x2" [attr.y2]="t.y2" class="tick" [class.major]="t.major" />
+  <line
+    [attr.x1]="t.x1"
+    [attr.y1]="t.y1"
+    [attr.x2]="t.x2"
+    [attr.y2]="t.y2"
+    class="tick"
+    [class.major]="t.major"
+  />
 }
-<line x1="100" y1="120" x2="100" y2="22" class="hand second" [attr.transform]="rotate(angles().second)" data-testid="hand-second" />
-<input type="checkbox" [checked]="smooth()" (change)="onToggle($event)" data-testid="smooth" />
+<line
+  x1="100"
+  y1="120"
+  x2="100"
+  y2="22"
+  class="hand second"
+  [attr.transform]="rotate(angles().second)"
+  data-testid="hand-second"
+/>
+<input
+  type="checkbox"
+  [checked]="smooth()"
+  (change)="onToggle($event)"
+  data-testid="smooth"
+/>
 ~~~
 
 📌 **Interview term: Attribute binding** — <code>[attr.name]</code> sets an HTML or SVG attribute rather than a DOM property. SVG geometry such as <code>x1</code> and <code>transform</code> must be bound this way; <code>[x1]</code> fails the AOT build here with NG8002, "Can't bind to 'x1' since it isn't a known property of ':svg:line'".
@@ -2281,26 +2816,75 @@ import { handAngles, spokenTime, TICKS, NUMBERS } from "./clock-math";
   template: \`
     <section class="card">
       <h1 class="title">Analog Clock</h1>
-      <svg class="face" viewBox="0 0 200 200" role="img" [attr.aria-label]="label()" data-testid="clock">
+      <svg
+        class="face"
+        viewBox="0 0 200 200"
+        role="img"
+        [attr.aria-label]="label()"
+        data-testid="clock"
+      >
         <circle cx="100" cy="100" r="96" class="rim" />
         @for (t of ticks; track t.i) {
-          <line [attr.x1]="t.x1" [attr.y1]="t.y1" [attr.x2]="t.x2" [attr.y2]="t.y2" class="tick" [class.major]="t.major" />
+          <line
+            [attr.x1]="t.x1"
+            [attr.y1]="t.y1"
+            [attr.x2]="t.x2"
+            [attr.y2]="t.y2"
+            class="tick"
+            [class.major]="t.major"
+          />
         }
         @for (n of numbers; track n.n) {
-          <text [attr.x]="n.x" [attr.y]="n.y" class="num" text-anchor="middle" dominant-baseline="central">{{ n.n }}</text>
+          <text
+            [attr.x]="n.x"
+            [attr.y]="n.y"
+            class="num"
+            text-anchor="middle"
+            dominant-baseline="central"
+          >{{ n.n }}</text>
         }
-        <line x1="100" y1="112" x2="100" y2="52" class="hand hour" [attr.transform]="rotate(angles().hour)" data-testid="hand-hour" />
-        <line x1="100" y1="114" x2="100" y2="30" class="hand minute" [attr.transform]="rotate(angles().minute)" data-testid="hand-minute" />
-        <line x1="100" y1="120" x2="100" y2="22" class="hand second" [attr.transform]="rotate(angles().second)" data-testid="hand-second" />
+        <line
+          x1="100"
+          y1="112"
+          x2="100"
+          y2="52"
+          class="hand hour"
+          [attr.transform]="rotate(angles().hour)"
+          data-testid="hand-hour"
+        />
+        <line
+          x1="100"
+          y1="114"
+          x2="100"
+          y2="30"
+          class="hand minute"
+          [attr.transform]="rotate(angles().minute)"
+          data-testid="hand-minute"
+        />
+        <line
+          x1="100"
+          y1="120"
+          x2="100"
+          y2="22"
+          class="hand second"
+          [attr.transform]="rotate(angles().second)"
+          data-testid="hand-second"
+        />
         <circle cx="100" cy="100" r="4" class="pin" />
       </svg>
       <label class="switch">
-        <input type="checkbox" [checked]="smooth()" (change)="onToggle($event)" data-testid="smooth" />
+        <input
+          type="checkbox"
+          [checked]="smooth()"
+          (change)="onToggle($event)"
+          data-testid="smooth"
+        />
         Smooth second hand
       </label>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .card { width: 100%; max-width: 360px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 20px 16px; text-align: center; box-sizing: border-box; }
     .title { margin: 0 0 12px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .face { width: 100%; max-width: 300px; height: auto; }
@@ -2315,7 +2899,8 @@ import { handAngles, spokenTime, TICKS, NUMBERS } from "./clock-math";
     .pin { fill: #f97316; }
     .switch { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; cursor: pointer; }
     .switch input { width: 18px; height: 18px; accent-color: #38bdf8; }
-  \`],
+  \`,
+  ],
 })
 export class AnalogClockComponent {
   readonly ticks = TICKS;
@@ -2323,10 +2908,13 @@ export class AnalogClockComponent {
   readonly smooth = signal(true);
   readonly now = signal(new Date());
   readonly angles = computed(() => handAngles(this.now(), this.smooth()));
-  readonly label = computed(() => "Analog clock showing " + spokenTime(this.now()));
+  readonly label = computed(
+    () => "Analog clock showing " + spokenTime(this.now()),
+  );
 
   constructor() {
-    // Re-runs whenever smooth() changes; onCleanup stops the previous loop first
+    // Re-runs whenever smooth() changes;
+    // onCleanup stops the previous loop first
     // and also runs when the component is destroyed.
     effect((onCleanup) => {
       let frame = 0;
@@ -2369,18 +2957,37 @@ import { AnalogClockComponent } from "./analog-clock.component";
   standalone: true,
   imports: [AnalogClockComponent],
   template: \`<main class="page"><app-analog-clock /></main>\`,
-  encapsulation: ViewEncapsulation.None, // these two rules are global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  \`],
+  // these two rules are global on purpose
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/clock-math.ts": `// Degrees per unit: second hand 6 deg/s, minute hand 6 deg/min, hour hand 30 deg/h.
+          "/src/app/clock-math.ts": `// Degrees per unit: second hand 6 deg/s,
+// minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
-export interface Angles { hour: number; minute: number; second: number }
+export interface Angles {
+  hour: number;
+  minute: number;
+  second: number;
+}
 
 export function handAngles(date: Date, smooth: boolean): Angles {
   const ms = smooth ? date.getMilliseconds() : 0;
@@ -2393,7 +3000,13 @@ export function handAngles(date: Date, smooth: boolean): Angles {
 export const pad = (n: number) => String(n).padStart(2, "0");
 
 export function spokenTime(date: Date): string {
-  return pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+  return (
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds())
+  );
 }
 
 // Static face geometry, computed once at module load.
@@ -2417,7 +3030,11 @@ export const TICKS = Array.from({ length: 60 }, (_, i) => {
 export const NUMBERS = Array.from({ length: 12 }, (_, i) => {
   const n = i + 1;
   const a = rad(n * 30);
-  return { n, x: round(100 + 68 * Math.sin(a)), y: round(100 - 68 * Math.cos(a)) };
+  return {
+    n,
+    x: round(100 + 68 * Math.sin(a)),
+    y: round(100 - 68 * Math.cos(a)),
+  };
 });
 `,
         },
@@ -2531,7 +3148,13 @@ const pad = (n) => String(n).padStart(2, "0");
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 ~~~
 
@@ -2588,7 +3211,8 @@ const pause = () => {
   setBankedMs(bankedMs + performance.now() - startedAt);
   setStartedAt(null);
 };
-const lap = () => setLaps([...laps, bankedMs + performance.now() - startedAt]);
+const lap = () =>
+  setLaps([...laps, bankedMs + performance.now() - startedAt]);
 const reset = () => {
   setBankedMs(0);
   setStartedAt(null);
@@ -2608,7 +3232,12 @@ Pause and Lap read <code>performance.now()</code> at the moment of the click, no
 
 ~~~jsx
 // Stopwatch.js (excerpt)
-<div className="display" role="timer" aria-label="Elapsed time" data-testid="display">
+<div
+  className="display"
+  role="timer"
+  aria-label="Elapsed time"
+  data-testid="display"
+>
   {formatElapsed(elapsed)}
 </div>
 <div className="controls">
@@ -2782,9 +3411,12 @@ import { formatElapsed } from "./formatElapsed";
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
 export default function Stopwatch() {
-  const [bankedMs, setBankedMs] = useState(0); // time from earlier runs, before the last pause
-  const [startedAt, setStartedAt] = useState(null); // performance.now() of the current run, or null
-  const [now, setNow] = useState(0); // last redraw time, only used while running
+  // time from earlier runs, before the last pause
+  const [bankedMs, setBankedMs] = useState(0);
+  // performance.now() of the current run, or null
+  const [startedAt, setStartedAt] = useState(null);
+  // last redraw time, only used while running
+  const [now, setNow] = useState(0);
   const [laps, setLaps] = useState([]); // total elapsed at each lap press
 
   const running = startedAt !== null;
@@ -2805,7 +3437,8 @@ export default function Stopwatch() {
     setBankedMs(bankedMs + performance.now() - startedAt);
     setStartedAt(null);
   };
-  const lap = () => setLaps([...laps, bankedMs + performance.now() - startedAt]);
+  const lap = () =>
+    setLaps([...laps, bankedMs + performance.now() - startedAt]);
   const reset = () => {
     setBankedMs(0);
     setStartedAt(null);
@@ -2816,23 +3449,50 @@ export default function Stopwatch() {
 
   return (
     <section className="card" aria-labelledby="sw-title">
-      <h1 id="sw-title" className="title">Stopwatch</h1>
-      <div className="display" role="timer" aria-label="Elapsed time" data-testid="display">
+      <h1 id="sw-title" className="title">
+        Stopwatch
+      </h1>
+      <div
+        className="display"
+        role="timer"
+        aria-label="Elapsed time"
+        data-testid="display"
+      >
         {formatElapsed(elapsed)}
       </div>
       <div className="controls">
-        <button type="button" className="primary" onClick={running ? pause : start} data-testid="toggle">
+        <button
+          type="button"
+          className="primary"
+          onClick={running ? pause : start}
+          data-testid="toggle"
+        >
           {label}
         </button>
-        <button type="button" onClick={lap} disabled={!running} data-testid="lap">
+        <button
+          type="button"
+          onClick={lap}
+          disabled={!running}
+          data-testid="lap"
+        >
           Lap
         </button>
-        <button type="button" onClick={reset} disabled={elapsed === 0 && laps.length === 0} data-testid="reset">
+        <button
+          type="button"
+          onClick={reset}
+          disabled={elapsed === 0 && laps.length === 0}
+          data-testid="reset"
+        >
           Reset
         </button>
       </div>
       {laps.length > 0 && (
-        <ol className="laps" aria-label="Laps" aria-live="polite" data-testid="laps">
+        <ol
+          className="laps"
+          aria-label="Laps"
+          aria-live="polite"
+          data-testid="laps"
+        >
           {laps.map((total, i) => (
             <li key={i}>
               <span>Lap {i + 1}</span>
@@ -2851,22 +3511,98 @@ export default function Stopwatch() {
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; }
-.title { margin: 0 0 12px; text-align: center; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.display { text-align: center; font-size: clamp(2.6rem, 14vw, 3.8rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #a5f3fc; }
-.controls { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
-.controls button { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls .primary { background: #0e7490; border-color: #22d3ee; }
-.controls button:disabled { opacity: 0.45; cursor: not-allowed; }
-.controls button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-.laps { list-style: none; margin: 0; padding: 0; border-top: 1px solid #1f2937; font-variant-numeric: tabular-nums; }
-.laps li { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #1f2937; }
-.muted { color: #94a3b8; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.display {
+  text-align: center;
+  font-size: clamp(2.6rem, 14vw, 3.8rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #a5f3fc;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.controls button {
+  flex: 1;
+  max-width: 120px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls .primary {
+  background: #0e7490;
+  border-color: #22d3ee;
+}
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.controls button:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+.laps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+.laps li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 4px;
+  border-bottom: 1px solid #1f2937;
+}
+.muted {
+  color: #94a3b8;
+}
 `,
         },
       },
@@ -2903,7 +3639,13 @@ const pad = (n) => String(n).padStart(2, "0");
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 ~~~
 
@@ -2914,10 +3656,20 @@ Flooring to whole centiseconds first means the display never shows a second that
 ~~~js
 // Stopwatch.vue, script setup (excerpt)
 const running = computed(() => startedAt.value !== null);
-const elapsed = computed(() => bankedMs.value + (running.value ? Math.max(0, now.value - startedAt.value) : 0));
-const label = computed(() => (running.value ? "Pause" : elapsed.value > 0 ? "Resume" : "Start"));
+const elapsed = computed(
+  () =>
+    bankedMs.value +
+    (running.value ? Math.max(0, now.value - startedAt.value) : 0),
+);
+const label = computed(() =>
+  running.value ? "Pause" : elapsed.value > 0 ? "Resume" : "Start",
+);
 const rows = computed(() =>
-  laps.value.map((total, i) => ({ n: i + 1, split: total - (i > 0 ? laps.value[i - 1] : 0), total })),
+  laps.value.map((total, i) => ({
+    n: i + 1,
+    split: total - (i > 0 ? laps.value[i - 1] : 0),
+    total,
+  })),
 );
 ~~~
 
@@ -2936,8 +3688,10 @@ import { formatElapsed } from "../formatElapsed";
 
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
-const bankedMs = ref(0); // time from earlier runs, before the last pause
-const startedAt = ref(null); // performance.now() of the current run, or null
+// time from earlier runs, before the last pause
+const bankedMs = ref(0);
+// performance.now() of the current run, or null
+const startedAt = ref(null);
 const now = ref(0); // last redraw time, only used while running
 const laps = ref([]); // total elapsed at each lap press
 let timer = 0;
@@ -3144,8 +3898,19 @@ import Stopwatch from "./components/Stopwatch.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
 </style>
 `,
           "/src/components/Stopwatch.vue": `<script setup>
@@ -3161,10 +3926,20 @@ const laps = ref([]); // total elapsed at each lap press
 let timer = 0;
 
 const running = computed(() => startedAt.value !== null);
-const elapsed = computed(() => bankedMs.value + (running.value ? Math.max(0, now.value - startedAt.value) : 0));
-const label = computed(() => (running.value ? "Pause" : elapsed.value > 0 ? "Resume" : "Start"));
+const elapsed = computed(
+  () =>
+    bankedMs.value +
+    (running.value ? Math.max(0, now.value - startedAt.value) : 0),
+);
+const label = computed(() =>
+  running.value ? "Pause" : elapsed.value > 0 ? "Resume" : "Start",
+);
 const rows = computed(() =>
-  laps.value.map((total, i) => ({ n: i + 1, split: total - (i > 0 ? laps.value[i - 1] : 0), total })),
+  laps.value.map((total, i) => ({
+    n: i + 1,
+    split: total - (i > 0 ? laps.value[i - 1] : 0),
+    total,
+  })),
 );
 
 function start() {
@@ -3192,13 +3967,39 @@ onUnmounted(() => clearInterval(timer));
 <template>
   <section class="card" aria-labelledby="sw-title">
     <h1 id="sw-title" class="title">Stopwatch</h1>
-    <div class="display" role="timer" aria-label="Elapsed time" data-testid="display">{{ formatElapsed(elapsed) }}</div>
+    <div
+      class="display"
+      role="timer"
+      aria-label="Elapsed time"
+      data-testid="display"
+    >{{ formatElapsed(elapsed) }}</div>
     <div class="controls">
-      <button type="button" class="primary" data-testid="toggle" @click="running ? pause() : start()">{{ label }}</button>
-      <button type="button" :disabled="!running" data-testid="lap" @click="lap">Lap</button>
-      <button type="button" :disabled="elapsed === 0 && laps.length === 0" data-testid="reset" @click="reset">Reset</button>
+      <button
+        type="button"
+        class="primary"
+        data-testid="toggle"
+        @click="running ? pause() : start()"
+      >{{ label }}</button>
+      <button
+        type="button"
+        :disabled="!running"
+        data-testid="lap"
+        @click="lap"
+      >Lap</button>
+      <button
+        type="button"
+        :disabled="elapsed === 0 && laps.length === 0"
+        data-testid="reset"
+        @click="reset"
+      >Reset</button>
     </div>
-    <ol v-if="rows.length" class="laps" aria-label="Laps" aria-live="polite" data-testid="laps">
+    <ol
+      v-if="rows.length"
+      class="laps"
+      aria-label="Laps"
+      aria-live="polite"
+      data-testid="laps"
+    >
       <li v-for="row in rows" :key="row.n">
         <span>Lap {{ row.n }}</span>
         <span>{{ formatElapsed(row.split) }}</span>
@@ -3209,17 +4010,76 @@ onUnmounted(() => clearInterval(timer));
 </template>
 
 <style scoped>
-.card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; }
-.title { margin: 0 0 12px; text-align: center; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.display { text-align: center; font-size: clamp(2.6rem, 14vw, 3.8rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #a5f3fc; }
-.controls { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
-.controls button { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls .primary { background: #0e7490; border-color: #22d3ee; }
-.controls button:disabled { opacity: 0.45; cursor: not-allowed; }
-.controls button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-.laps { list-style: none; margin: 0; padding: 0; border-top: 1px solid #1f2937; font-variant-numeric: tabular-nums; }
-.laps li { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #1f2937; }
-.muted { color: #94a3b8; }
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+.title {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.display {
+  text-align: center;
+  font-size: clamp(2.6rem, 14vw, 3.8rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #a5f3fc;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.controls button {
+  flex: 1;
+  max-width: 120px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls .primary {
+  background: #0e7490;
+  border-color: #22d3ee;
+}
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.controls button:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
+.laps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #1f2937;
+  font-variant-numeric: tabular-nums;
+}
+.laps li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 4px;
+  border-bottom: 1px solid #1f2937;
+}
+.muted {
+  color: #94a3b8;
+}
 </style>
 `,
           "/src/formatElapsed.js": `const pad = (n) => String(n).padStart(2, "0");
@@ -3227,7 +4087,13 @@ onUnmounted(() => clearInterval(timer));
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 `,
         },
@@ -3265,7 +4131,13 @@ const pad = (n: number) => String(n).padStart(2, "0");
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms: number): string {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 ~~~
 
@@ -3274,19 +4146,30 @@ export function formatElapsed(ms: number): string {
 ~~~ts
 // stopwatch.component.ts (class)
 export class StopwatchComponent {
-  readonly bankedMs = signal(0); // time from earlier runs, before the last pause
-  readonly startedAt = signal<number | null>(null); // performance.now() of the current run
+  // time from earlier runs, before the last pause
+  readonly bankedMs = signal(0);
+  // performance.now() of the current run
+  readonly startedAt = signal<number | null>(null);
   readonly now = signal(0); // last redraw time, only used while running
-  readonly laps = signal<number[]>([]); // total elapsed at each lap press
+  // total elapsed at each lap press
+  readonly laps = signal<number[]>([]);
 
   readonly running = computed(() => this.startedAt() !== null);
   readonly elapsed = computed(() => {
     const s = this.startedAt();
-    return this.bankedMs() + (s === null ? 0 : Math.max(0, this.now() - s));
+    return (
+      this.bankedMs() + (s === null ? 0 : Math.max(0, this.now() - s))
+    );
   });
-  readonly label = computed(() => (this.running() ? "Pause" : this.elapsed() > 0 ? "Resume" : "Start"));
+  readonly label = computed(() =>
+    this.running() ? "Pause" : this.elapsed() > 0 ? "Resume" : "Start",
+  );
   readonly rows = computed(() =>
-    this.laps().map((total, i, all) => ({ n: i + 1, split: total - (i > 0 ? all[i - 1] : 0), total })),
+    this.laps().map((total, i, all) => ({
+      n: i + 1,
+      split: total - (i > 0 ? all[i - 1] : 0),
+      total,
+    })),
   );
   readonly fmt = formatElapsed;
 
@@ -3300,17 +4183,23 @@ export class StopwatchComponent {
     const t = performance.now();
     this.startedAt.set(t);
     this.now.set(t);
-    this.timer = setInterval(() => this.now.set(performance.now()), TICK_MS);
+    this.timer = setInterval(
+      () => this.now.set(performance.now()),
+      TICK_MS,
+    );
   }
 
   pause(): void {
     clearInterval(this.timer);
-    this.bankedMs.update((b) => b + performance.now() - (this.startedAt() ?? 0));
+    this.bankedMs.update(
+      (b) => b + performance.now() - (this.startedAt() ?? 0),
+    );
     this.startedAt.set(null);
   }
 
   lap(): void {
-    const total = this.bankedMs() + performance.now() - (this.startedAt() ?? 0);
+    const total =
+      this.bankedMs() + performance.now() - (this.startedAt() ?? 0);
     this.laps.update((l) => [...l, total]);
   }
 
@@ -3341,14 +4230,39 @@ Things to point out:
 ### The template
 
 ~~~html
-<div class="display" role="timer" aria-label="Elapsed time" data-testid="display">{{ fmt(elapsed()) }}</div>
+<div
+  class="display"
+  role="timer"
+  aria-label="Elapsed time"
+  data-testid="display"
+>{{ fmt(elapsed()) }}</div>
 <div class="controls">
-  <button type="button" class="primary" data-testid="toggle" (click)="running() ? pause() : start()">{{ label() }}</button>
-  <button type="button" [disabled]="!running()" data-testid="lap" (click)="lap()">Lap</button>
-  <button type="button" [disabled]="elapsed() === 0 && laps().length === 0" data-testid="reset" (click)="reset()">Reset</button>
+  <button
+    type="button"
+    class="primary"
+    data-testid="toggle"
+    (click)="running() ? pause() : start()"
+  >{{ label() }}</button>
+  <button
+    type="button"
+    [disabled]="!running()"
+    data-testid="lap"
+    (click)="lap()"
+  >Lap</button>
+  <button
+    type="button"
+    [disabled]="elapsed() === 0 && laps().length === 0"
+    data-testid="reset"
+    (click)="reset()"
+  >Reset</button>
 </div>
 @if (rows().length) {
-  <ol class="laps" aria-label="Laps" aria-live="polite" data-testid="laps">
+  <ol
+    class="laps"
+    aria-label="Laps"
+    aria-live="polite"
+    data-testid="laps"
+  >
     @for (row of rows(); track row.n) {
       <li>
         <span>Lap {{ row.n }}</span>
@@ -3506,11 +4420,25 @@ import { StopwatchComponent } from "./stopwatch.component";
   standalone: true,
   imports: [StopwatchComponent],
   template: \`<main class="page"><app-stopwatch /></main>\`,
-  encapsulation: ViewEncapsulation.None, // these two rules are global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  \`],
+  // these two rules are global on purpose
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -3519,7 +4447,13 @@ export class AppComponent {}
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms: number): string {
   const cs = Math.floor(ms / 10);
-  return pad(Math.floor(cs / 6000)) + ":" + pad(Math.floor(cs / 100) % 60) + "." + pad(cs % 100);
+  return (
+    pad(Math.floor(cs / 6000)) +
+    ":" +
+    pad(Math.floor(cs / 100) % 60) +
+    "." +
+    pad(cs % 100)
+  );
 }
 `,
           "/src/app/stopwatch.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
@@ -3533,14 +4467,39 @@ const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
   template: \`
     <section class="card" aria-labelledby="sw-title">
       <h1 id="sw-title" class="title">Stopwatch</h1>
-      <div class="display" role="timer" aria-label="Elapsed time" data-testid="display">{{ fmt(elapsed()) }}</div>
+      <div
+        class="display"
+        role="timer"
+        aria-label="Elapsed time"
+        data-testid="display"
+      >{{ fmt(elapsed()) }}</div>
       <div class="controls">
-        <button type="button" class="primary" data-testid="toggle" (click)="running() ? pause() : start()">{{ label() }}</button>
-        <button type="button" [disabled]="!running()" data-testid="lap" (click)="lap()">Lap</button>
-        <button type="button" [disabled]="elapsed() === 0 && laps().length === 0" data-testid="reset" (click)="reset()">Reset</button>
+        <button
+          type="button"
+          class="primary"
+          data-testid="toggle"
+          (click)="running() ? pause() : start()"
+        >{{ label() }}</button>
+        <button
+          type="button"
+          [disabled]="!running()"
+          data-testid="lap"
+          (click)="lap()"
+        >Lap</button>
+        <button
+          type="button"
+          [disabled]="elapsed() === 0 && laps().length === 0"
+          data-testid="reset"
+          (click)="reset()"
+        >Reset</button>
       </div>
       @if (rows().length) {
-        <ol class="laps" aria-label="Laps" aria-live="polite" data-testid="laps">
+        <ol
+          class="laps"
+          aria-label="Laps"
+          aria-live="polite"
+          data-testid="laps"
+        >
           @for (row of rows(); track row.n) {
             <li>
               <span>Lap {{ row.n }}</span>
@@ -3552,7 +4511,8 @@ const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
       }
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; }
     .title { margin: 0 0 12px; text-align: center; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .display { text-align: center; font-size: clamp(2.6rem, 14vw, 3.8rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #a5f3fc; }
@@ -3564,11 +4524,14 @@ const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
     .laps { list-style: none; margin: 0; padding: 0; border-top: 1px solid #1f2937; font-variant-numeric: tabular-nums; }
     .laps li { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #1f2937; }
     .muted { color: #94a3b8; }
-  \`],
+  \`,
+  ],
 })
 export class StopwatchComponent {
-  readonly bankedMs = signal(0); // time from earlier runs, before the last pause
-  readonly startedAt = signal<number | null>(null); // performance.now() of the current run
+  // time from earlier runs, before the last pause
+  readonly bankedMs = signal(0);
+  // performance.now() of the current run
+  readonly startedAt = signal<number | null>(null);
   readonly now = signal(0); // last redraw time, only used while running
   readonly laps = signal<number[]>([]); // total elapsed at each lap press
 
@@ -3577,9 +4540,15 @@ export class StopwatchComponent {
     const s = this.startedAt();
     return this.bankedMs() + (s === null ? 0 : Math.max(0, this.now() - s));
   });
-  readonly label = computed(() => (this.running() ? "Pause" : this.elapsed() > 0 ? "Resume" : "Start"));
+  readonly label = computed(() =>
+    this.running() ? "Pause" : this.elapsed() > 0 ? "Resume" : "Start",
+  );
   readonly rows = computed(() =>
-    this.laps().map((total, i, all) => ({ n: i + 1, split: total - (i > 0 ? all[i - 1] : 0), total })),
+    this.laps().map((total, i, all) => ({
+      n: i + 1,
+      split: total - (i > 0 ? all[i - 1] : 0),
+      total,
+    })),
   );
   readonly fmt = formatElapsed;
 
@@ -3598,7 +4567,9 @@ export class StopwatchComponent {
 
   pause(): void {
     clearInterval(this.timer);
-    this.bankedMs.update((b) => b + performance.now() - (this.startedAt() ?? 0));
+    this.bankedMs.update(
+      (b) => b + performance.now() - (this.startedAt() ?? 0),
+    );
     this.startedAt.set(null);
   }
 
@@ -3733,7 +4704,8 @@ export function formatRemaining(ms) {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value, max) =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 ~~~
 
 📌 **Interview term: Rounding up the display** — show <code>Math.ceil(ms / 1000)</code> seconds. With 2.3 s left the screen says 00:03; it says 00:00 only when time is really over. Flooring would show 00:00 for the whole final second while the timer is still running, which looks broken.
@@ -3746,7 +4718,13 @@ export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number
 // CountdownTimer.js (excerpt)
 const totalMs = (minutes * 60 + seconds) * 1000;
 const leftMs =
-  status === "running" ? Math.max(0, endAt - now) : status === "paused" ? pausedLeft : status === "done" ? 0 : totalMs;
+  status === "running"
+    ? Math.max(0, endAt - now)
+    : status === "paused"
+      ? pausedLeft
+      : status === "done"
+        ? 0
+        : totalMs;
 ~~~
 
 📌 **Interview term: Deadline-based countdown** — store when the countdown ends and compute <code>endAt - now</code> whenever you render. Nothing is ever decremented, so missed ticks cannot make it late.
@@ -3763,11 +4741,13 @@ useEffect(() => {
   const tick = () => {
     const left = endAt - Date.now();
     if (left <= 0) {
-      setStatus("done"); // the only place "done" is set, so it happens once
+      // the only place "done" is set, so it happens once
+      setStatus("done");
       return;
     }
     setNow(Date.now());
-    // Wake up exactly when the shown second changes (or at the deadline).
+    // Wake up exactly when the shown
+    // second changes (or at the deadline).
     id = setTimeout(tick, left % 1000 || 1000);
   };
   tick();
@@ -3809,15 +4789,22 @@ Start doubles as Resume (it checks <code>status</code>) and as "start again" aft
 
 ~~~jsx
 // CountdownTimer.js (excerpt)
-<div className={status === "done" ? "display done" : "display"} role="timer" aria-label="Time remaining" data-testid="display">
+<div
+  className={status === "done" ? "display done" : "display"}
+  role="timer"
+  aria-label="Time remaining"
+  data-testid="display"
+>
   {formatRemaining(leftMs)}
 </div>
 ...
-{status === "done" && (
-  <p className="alert" role="alert" data-testid="alert">
-    Time is up!
-  </p>
-)}
+{
+  status === "done" && (
+    <p className="alert" role="alert" data-testid="alert">
+      Time is up!
+    </p>
+  );
+}
 ~~~
 
 📌 **Interview term: role="alert"** — an assertive live region. When an element with this role appears, screen readers interrupt and read it. It is the right tool for "time is up", and the wrong one for the ticking digits, which use the silent <code>role="timer"</code>.
@@ -3970,14 +4957,21 @@ import { clamp, formatRemaining } from "./time";
 export default function CountdownTimer() {
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(10);
-  const [status, setStatus] = useState("idle"); // idle | running | paused | done
+  // idle | running | paused | done
+  const [status, setStatus] = useState("idle");
   const [endAt, setEndAt] = useState(0); // Date.now() deadline while running
   const [pausedLeft, setPausedLeft] = useState(0); // ms left, banked on pause
   const [now, setNow] = useState(() => Date.now());
 
   const totalMs = (minutes * 60 + seconds) * 1000;
   const leftMs =
-    status === "running" ? Math.max(0, endAt - now) : status === "paused" ? pausedLeft : status === "done" ? 0 : totalMs;
+    status === "running"
+      ? Math.max(0, endAt - now)
+      : status === "paused"
+        ? pausedLeft
+        : status === "done"
+          ? 0
+          : totalMs;
 
   useEffect(() => {
     if (status !== "running") return;
@@ -4012,29 +5006,66 @@ export default function CountdownTimer() {
   };
 
   const locked = status === "running" || status === "paused";
-  const primary = status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start";
+  const primary =
+    status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start";
 
   return (
     <section className="card" aria-labelledby="cd-title">
-      <h1 id="cd-title" className="title">Countdown Timer</h1>
+      <h1 id="cd-title" className="title">
+        Countdown Timer
+      </h1>
       <div className="inputs">
         <label>
           Minutes
-          <input type="number" inputMode="numeric" min="0" max="99" value={minutes} disabled={locked} onChange={edit(setMinutes, 99)} data-testid="minutes" />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            max="99"
+            value={minutes}
+            disabled={locked}
+            onChange={edit(setMinutes, 99)}
+            data-testid="minutes"
+          />
         </label>
         <label>
           Seconds
-          <input type="number" inputMode="numeric" min="0" max="59" value={seconds} disabled={locked} onChange={edit(setSeconds, 59)} data-testid="seconds" />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            max="59"
+            value={seconds}
+            disabled={locked}
+            onChange={edit(setSeconds, 59)}
+            data-testid="seconds"
+          />
         </label>
       </div>
-      <div className={status === "done" ? "display done" : "display"} role="timer" aria-label="Time remaining" data-testid="display">
+      <div
+        className={status === "done" ? "display done" : "display"}
+        role="timer"
+        aria-label="Time remaining"
+        data-testid="display"
+      >
         {formatRemaining(leftMs)}
       </div>
       <div className="controls">
-        <button type="button" className="primary" disabled={!locked && totalMs === 0} onClick={status === "running" ? pause : start} data-testid="toggle">
+        <button
+          type="button"
+          className="primary"
+          disabled={!locked && totalMs === 0}
+          onClick={status === "running" ? pause : start}
+          data-testid="toggle"
+        >
           {primary}
         </button>
-        <button type="button" disabled={status === "idle"} onClick={() => setStatus("idle")} data-testid="reset">
+        <button
+          type="button"
+          disabled={status === "idle"}
+          onClick={() => setStatus("idle")}
+          data-testid="reset"
+        >
           Reset
         </button>
       </div>
@@ -4057,24 +5088,112 @@ export function formatRemaining(ms) {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value, max) =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.inputs { display: flex; gap: 12px; justify-content: center; }
-.inputs label { display: grid; gap: 4px; font-size: 0.85rem; color: #cbd5e1; text-align: left; }
-.inputs input { width: 90px; padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font: inherit; font-size: 1.1rem; }
-.inputs input:disabled { opacity: 0.5; }
-.display { margin: 16px 0; font-size: clamp(2.8rem, 15vw, 4rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #fde68a; }
-.display.done { color: #f87171; }
-.controls { display: flex; gap: 8px; justify-content: center; }
-.controls button { flex: 1; max-width: 140px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls .primary { background: #a16207; border-color: #facc15; }
-.controls button:disabled { opacity: 0.45; cursor: not-allowed; }
-button:focus-visible, input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.alert { margin: 16px 0 0; padding: 10px; border-radius: 10px; background: #450a0a; color: #fecaca; font-weight: 600; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.inputs label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  text-align: left;
+}
+.inputs input {
+  width: 90px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 1.1rem;
+}
+.inputs input:disabled {
+  opacity: 0.5;
+}
+.display {
+  margin: 16px 0;
+  font-size: clamp(2.8rem, 15vw, 4rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fde68a;
+}
+.display.done {
+  color: #f87171;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.controls button {
+  flex: 1;
+  max-width: 140px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls .primary {
+  background: #a16207;
+  border-color: #facc15;
+}
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.alert {
+  margin: 16px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #450a0a;
+  color: #fecaca;
+  font-weight: 600;
+}
 `,
         },
       },
@@ -4117,7 +5236,8 @@ export function formatRemaining(ms) {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value, max) =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 ~~~
 
 📌 **Interview term: Rounding up the display** — <code>Math.ceil</code> to whole seconds: 2.3 s left shows 00:03 and 00:00 appears only when time is really over.
@@ -4126,9 +5246,12 @@ export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number
 
 ~~~js
 // CountdownTimer.vue (excerpt)
-const totalMs = computed(() => (minutes.value * 60 + seconds.value) * 1000);
+const totalMs = computed(
+  () => (minutes.value * 60 + seconds.value) * 1000,
+);
 const leftMs = computed(() => {
-  if (status.value === "running") return Math.max(0, endAt.value - now.value);
+  if (status.value === "running")
+    return Math.max(0, endAt.value - now.value);
   if (status.value === "paused") return pausedLeft.value;
   return status.value === "done" ? 0 : totalMs.value;
 });
@@ -4146,11 +5269,13 @@ watch([status, endAt], ([s, end], _old, onCleanup) => {
   const tick = () => {
     const left = end - Date.now();
     if (left <= 0) {
-      status.value = "done"; // the only place "done" is set, so it happens once
+      // the only place "done" is set, so it happens once
+      status.value = "done";
       return;
     }
     now.value = Date.now();
-    id = setTimeout(tick, left % 1000 || 1000); // wake when the shown second changes
+    // wake when the shown second changes
+    id = setTimeout(tick, left % 1000 || 1000);
   };
   tick();
   onCleanup(() => clearTimeout(id));
@@ -4174,17 +5299,20 @@ function toggle() {
     return;
   }
   const t = Date.now();
-  endAt.value = t + (status.value === "paused" ? pausedLeft.value : totalMs.value);
+  endAt.value =
+    t + (status.value === "paused" ? pausedLeft.value : totalMs.value);
   now.value = t;
   status.value = "running";
 }
 
-// Templates unwrap refs, so the template passes a field name, not the ref itself.
+// Templates unwrap refs, so the template
+// passes a field name, not the ref itself.
 const fields = { minutes: [minutes, 99], seconds: [seconds, 59] };
 function edit(name, event) {
   const [target, max] = fields[name];
   target.value = clamp(event.target.value, max);
-  event.target.value = String(target.value); // show the clamped number even if the ref did not change
+  // show the clamped number even if the ref did not change
+  event.target.value = String(target.value);
   status.value = "idle";
 }
 ~~~
@@ -4330,8 +5458,19 @@ import CountdownTimer from "./components/CountdownTimer.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
 </style>
 `,
           "/src/components/CountdownTimer.vue": `<script setup>
@@ -4351,8 +5490,16 @@ const leftMs = computed(() => {
   if (status.value === "paused") return pausedLeft.value;
   return status.value === "done" ? 0 : totalMs.value;
 });
-const locked = computed(() => status.value === "running" || status.value === "paused");
-const primary = computed(() => (status.value === "running" ? "Pause" : status.value === "paused" ? "Resume" : "Start"));
+const locked = computed(
+  () => status.value === "running" || status.value === "paused",
+);
+const primary = computed(() =>
+  status.value === "running"
+    ? "Pause"
+    : status.value === "paused"
+      ? "Resume"
+      : "Start",
+);
 
 // One timeout chain per run. onCleanup stops it when status or endAt change,
 // and Vue also stops this watcher when the component unmounts.
@@ -4366,7 +5513,8 @@ watch([status, endAt], ([s, end], _old, onCleanup) => {
       return;
     }
     now.value = Date.now();
-    id = setTimeout(tick, left % 1000 || 1000); // wake when the shown second changes
+    // wake when the shown second changes
+    id = setTimeout(tick, left % 1000 || 1000);
   };
   tick();
   onCleanup(() => clearTimeout(id));
@@ -4379,17 +5527,20 @@ function toggle() {
     return;
   }
   const t = Date.now();
-  endAt.value = t + (status.value === "paused" ? pausedLeft.value : totalMs.value);
+  endAt.value =
+    t + (status.value === "paused" ? pausedLeft.value : totalMs.value);
   now.value = t;
   status.value = "running";
 }
 
-// Templates unwrap refs, so the template passes a field name, not the ref itself.
+// Templates unwrap refs, so the template
+// passes a field name, not the ref itself.
 const fields = { minutes: [minutes, 99], seconds: [seconds, 59] };
 function edit(name, event) {
   const [target, max] = fields[name];
   target.value = clamp(event.target.value, max);
-  event.target.value = String(target.value); // show the clamped number even if the ref did not change
+  // show the clamped number even if the ref did not change
+  event.target.value = String(target.value);
   status.value = "idle";
 }
 </script>
@@ -4400,37 +5551,152 @@ function edit(name, event) {
     <div class="inputs">
       <label>
         Minutes
-        <input type="number" inputmode="numeric" min="0" max="99" :value="minutes" :disabled="locked" data-testid="minutes" @input="edit('minutes', $event)" />
+        <input
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="99"
+          :value="minutes"
+          :disabled="locked"
+          data-testid="minutes"
+          @input="edit('minutes', $event)"
+        />
       </label>
       <label>
         Seconds
-        <input type="number" inputmode="numeric" min="0" max="59" :value="seconds" :disabled="locked" data-testid="seconds" @input="edit('seconds', $event)" />
+        <input
+          type="number"
+          inputmode="numeric"
+          min="0"
+          max="59"
+          :value="seconds"
+          :disabled="locked"
+          data-testid="seconds"
+          @input="edit('seconds', $event)"
+        />
       </label>
     </div>
-    <div :class="['display', { done: status === 'done' }]" role="timer" aria-label="Time remaining" data-testid="display">{{ formatRemaining(leftMs) }}</div>
+    <div
+      :class="['display', { done: status === 'done' }]"
+      role="timer"
+      aria-label="Time remaining"
+      data-testid="display"
+    >{{ formatRemaining(leftMs) }}</div>
     <div class="controls">
-      <button type="button" class="primary" :disabled="!locked && totalMs === 0" data-testid="toggle" @click="toggle">{{ primary }}</button>
-      <button type="button" :disabled="status === 'idle'" data-testid="reset" @click="status = 'idle'">Reset</button>
+      <button
+        type="button"
+        class="primary"
+        :disabled="!locked && totalMs === 0"
+        data-testid="toggle"
+        @click="toggle"
+      >{{ primary }}</button>
+      <button
+        type="button"
+        :disabled="status === 'idle'"
+        data-testid="reset"
+        @click="status = 'idle'"
+      >Reset</button>
     </div>
-    <p v-if="status === 'done'" class="alert" role="alert" data-testid="alert">Time is up!</p>
+    <p
+      v-if="status === 'done'"
+      class="alert"
+      role="alert"
+      data-testid="alert"
+    >Time is up!</p>
   </section>
 </template>
 
 <style scoped>
-.card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.inputs { display: flex; gap: 12px; justify-content: center; }
-.inputs label { display: grid; gap: 4px; font-size: 0.85rem; color: #cbd5e1; text-align: left; }
-.inputs input { width: 90px; padding: 8px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font: inherit; font-size: 1.1rem; }
-.inputs input:disabled { opacity: 0.5; }
-.display { margin: 16px 0; font-size: clamp(2.8rem, 15vw, 4rem); font-weight: 700; font-variant-numeric: tabular-nums; color: #fde68a; }
-.display.done { color: #f87171; }
-.controls { display: flex; gap: 8px; justify-content: center; }
-.controls button { flex: 1; max-width: 140px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls .primary { background: #a16207; border-color: #facc15; }
-.controls button:disabled { opacity: 0.45; cursor: not-allowed; }
-button:focus-visible, input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.alert { margin: 16px 0 0; padding: 10px; border-radius: 10px; background: #450a0a; color: #fecaca; font-weight: 600; }
+.card {
+  width: 100%;
+  max-width: 400px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.inputs {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.inputs label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  text-align: left;
+}
+.inputs input {
+  width: 90px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 1.1rem;
+}
+.inputs input:disabled {
+  opacity: 0.5;
+}
+.display {
+  margin: 16px 0;
+  font-size: clamp(2.8rem, 15vw, 4rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fde68a;
+}
+.display.done {
+  color: #f87171;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.controls button {
+  flex: 1;
+  max-width: 140px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls .primary {
+  background: #a16207;
+  border-color: #facc15;
+}
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.alert {
+  margin: 16px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: #450a0a;
+  color: #fecaca;
+  font-weight: 600;
+}
 </style>
 `,
           "/src/time.js": `const pad = (n) => String(n).padStart(2, "0");
@@ -4443,7 +5709,8 @@ export function formatRemaining(ms) {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value, max) => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value, max) =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 `,
         },
       },
@@ -4486,7 +5753,8 @@ export function formatRemaining(ms: number): string {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value: string | number, max: number): number => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value: string | number, max: number): number =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 ~~~
 
 📌 **Interview term: Rounding up the display** — <code>Math.ceil</code> to seconds, so 00:00 appears only when time is truly over.
@@ -4495,7 +5763,9 @@ export const clamp = (value: string | number, max: number): number => Math.min(m
 
 ~~~ts
 // countdown-timer.component.ts (class excerpt)
-readonly totalMs = computed(() => (this.minutes() * 60 + this.seconds()) * 1000);
+readonly totalMs = computed(
+  () => (this.minutes() * 60 + this.seconds()) * 1000,
+);
 readonly leftMs = computed(() => {
   const s = this.status();
   if (s === "running") return Math.max(0, this.endAt() - this.now());
@@ -4511,11 +5781,13 @@ constructor() {
     const tick = () => {
       const left = end - Date.now();
       if (left <= 0) {
-        this.status.set("done"); // the only place "done" is set, so it happens once
+        // the only place "done" is set, so it happens once
+        this.status.set("done");
         return;
       }
       this.now.set(Date.now());
-      id = setTimeout(tick, left % 1000 || 1000); // wake when the shown second changes
+      // wake when the shown second changes
+      id = setTimeout(tick, left % 1000 || 1000);
     };
     tick();
     onCleanup(() => clearTimeout(id));
@@ -4544,7 +5816,10 @@ toggle(): void {
     return;
   }
   const t = Date.now();
-  this.endAt.set(t + (this.status() === "paused" ? this.pausedLeft() : this.totalMs()));
+  this.endAt.set(
+    t +
+      (this.status() === "paused" ? this.pausedLeft() : this.totalMs()),
+  );
   this.now.set(t);
   this.status.set("running");
 }
@@ -4553,7 +5828,8 @@ edit(which: "m" | "s", event: Event): void {
   const input = event.target as HTMLInputElement;
   const value = clamp(input.value, which === "m" ? 99 : 59);
   (which === "m" ? this.minutes : this.seconds).set(value);
-  input.value = String(value); // show the clamped number even if the signal did not change
+  // show the clamped number even if the signal did not change
+  input.value = String(value);
   this.status.set("idle");
 }
 ~~~
@@ -4712,11 +5988,25 @@ import { CountdownTimerComponent } from "./countdown-timer.component";
   standalone: true,
   imports: [CountdownTimerComponent],
   template: \`<main class="page"><app-countdown-timer /></main>\`,
-  encapsulation: ViewEncapsulation.None, // these two rules are global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  \`],
+  // these two rules are global on purpose
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -4734,24 +6024,60 @@ type Status = "idle" | "running" | "paused" | "done";
       <div class="inputs">
         <label>
           Minutes
-          <input type="number" inputmode="numeric" min="0" max="99" [value]="minutes()" [disabled]="locked()" data-testid="minutes" (input)="edit('m', $event)" />
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            max="99"
+            [value]="minutes()"
+            [disabled]="locked()"
+            data-testid="minutes"
+            (input)="edit('m', $event)"
+          />
         </label>
         <label>
           Seconds
-          <input type="number" inputmode="numeric" min="0" max="59" [value]="seconds()" [disabled]="locked()" data-testid="seconds" (input)="edit('s', $event)" />
+          <input
+            type="number"
+            inputmode="numeric"
+            min="0"
+            max="59"
+            [value]="seconds()"
+            [disabled]="locked()"
+            data-testid="seconds"
+            (input)="edit('s', $event)"
+          />
         </label>
       </div>
-      <div class="display" [class.done]="status() === 'done'" role="timer" aria-label="Time remaining" data-testid="display">{{ fmt(leftMs()) }}</div>
+      <div
+        class="display"
+        [class.done]="status() === 'done'"
+        role="timer"
+        aria-label="Time remaining"
+        data-testid="display"
+      >{{ fmt(leftMs()) }}</div>
       <div class="controls">
-        <button type="button" class="primary" [disabled]="!locked() && totalMs() === 0" data-testid="toggle" (click)="toggle()">{{ primary() }}</button>
-        <button type="button" [disabled]="status() === 'idle'" data-testid="reset" (click)="status.set('idle')">Reset</button>
+        <button
+          type="button"
+          class="primary"
+          [disabled]="!locked() && totalMs() === 0"
+          data-testid="toggle"
+          (click)="toggle()"
+        >{{ primary() }}</button>
+        <button
+          type="button"
+          [disabled]="status() === 'idle'"
+          data-testid="reset"
+          (click)="status.set('idle')"
+        >Reset</button>
       </div>
       @if (status() === "done") {
         <p class="alert" role="alert" data-testid="alert">Time is up!</p>
       }
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .card { width: 100%; max-width: 400px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
     .title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .inputs { display: flex; gap: 12px; justify-content: center; }
@@ -4766,7 +6092,8 @@ type Status = "idle" | "running" | "paused" | "done";
     .controls button:disabled { opacity: 0.45; cursor: not-allowed; }
     button:focus-visible, input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
     .alert { margin: 16px 0 0; padding: 10px; border-radius: 10px; background: #450a0a; color: #fecaca; font-weight: 600; }
-  \`],
+  \`,
+  ],
 })
 export class CountdownTimerComponent {
   readonly minutes = signal(0);
@@ -4776,15 +6103,25 @@ export class CountdownTimerComponent {
   readonly pausedLeft = signal(0); // ms left, banked on pause
   readonly now = signal(Date.now());
 
-  readonly totalMs = computed(() => (this.minutes() * 60 + this.seconds()) * 1000);
+  readonly totalMs = computed(
+    () => (this.minutes() * 60 + this.seconds()) * 1000,
+  );
   readonly leftMs = computed(() => {
     const s = this.status();
     if (s === "running") return Math.max(0, this.endAt() - this.now());
     if (s === "paused") return this.pausedLeft();
     return s === "done" ? 0 : this.totalMs();
   });
-  readonly locked = computed(() => this.status() === "running" || this.status() === "paused");
-  readonly primary = computed(() => (this.status() === "running" ? "Pause" : this.status() === "paused" ? "Resume" : "Start"));
+  readonly locked = computed(
+    () => this.status() === "running" || this.status() === "paused",
+  );
+  readonly primary = computed(() =>
+    this.status() === "running"
+      ? "Pause"
+      : this.status() === "paused"
+        ? "Resume"
+        : "Start",
+  );
   readonly fmt = formatRemaining;
 
   constructor() {
@@ -4797,11 +6134,13 @@ export class CountdownTimerComponent {
       const tick = () => {
         const left = end - Date.now();
         if (left <= 0) {
-          this.status.set("done"); // the only place "done" is set, so it happens once
+          // the only place "done" is set, so it happens once
+          this.status.set("done");
           return;
         }
         this.now.set(Date.now());
-        id = setTimeout(tick, left % 1000 || 1000); // wake when the shown second changes
+        // wake when the shown second changes
+        id = setTimeout(tick, left % 1000 || 1000);
       };
       tick();
       onCleanup(() => clearTimeout(id));
@@ -4815,7 +6154,9 @@ export class CountdownTimerComponent {
       return;
     }
     const t = Date.now();
-    this.endAt.set(t + (this.status() === "paused" ? this.pausedLeft() : this.totalMs()));
+    this.endAt.set(
+      t + (this.status() === "paused" ? this.pausedLeft() : this.totalMs()),
+    );
     this.now.set(t);
     this.status.set("running");
   }
@@ -4824,7 +6165,8 @@ export class CountdownTimerComponent {
     const input = event.target as HTMLInputElement;
     const value = clamp(input.value, which === "m" ? 99 : 59);
     (which === "m" ? this.minutes : this.seconds).set(value);
-    input.value = String(value); // show the clamped number even if the signal did not change
+    // show the clamped number even if the signal did not change
+    input.value = String(value);
     this.status.set("idle");
   }
 }
@@ -4839,7 +6181,8 @@ export function formatRemaining(ms: number): string {
 }
 
 // Whole number between 0 and max; empty or junk input becomes 0.
-export const clamp = (value: string | number, max: number): number => Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
+export const clamp = (value: string | number, max: number): number =>
+  Math.min(max, Math.max(0, Math.floor(Number(value) || 0)));
 `,
         },
       },
@@ -4949,7 +6292,8 @@ export const LIGHTS = {
   green: { ms: 2500, next: "yellow", label: "Green: go" },
   yellow: { ms: 1000, next: "red", label: "Yellow: prepare to stop" },
 };
-export const ORDER = ["red", "yellow", "green"]; // top to bottom on the housing
+// top to bottom on the housing
+export const ORDER = ["red", "yellow", "green"];
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — a model with a fixed set of states, exactly one active at a time, and defined transitions between them. Here each state carries its own duration and the name of the next state, so the engine never needs to know which colour is which.
@@ -4964,10 +6308,12 @@ export const ORDER = ["red", "yellow", "green"]; // top to bottom on the housing
 // TrafficLight.js (excerpt)
 const [light, setLight] = useState("red");
 const [running, setRunning] = useState(true);
-const [remaining, setRemaining] = useState(LIGHTS.red.ms); // ms left in this light
+// ms left in this light
+const [remaining, setRemaining] = useState(LIGHTS.red.ms);
 const endsAt = useRef(0); // when the current light ends, while running
 
-// One timeout per light. It is re-armed whenever the light, the remaining
+// One timeout per light. It is re-armed
+// whenever the light, the remaining
 // time or the running flag change, and cleared before every re-arm.
 useEffect(() => {
   if (!running) return;
@@ -4998,7 +6344,8 @@ The cleanup is the safety rail. A copy of this component with the <code>return (
 ~~~jsx
 // TrafficLight.js (excerpt)
 const togglePause = () => {
-  if (running) setRemaining(Math.max(0, endsAt.current - performance.now()));
+  if (running)
+    setRemaining(Math.max(0, endsAt.current - performance.now()));
   setRunning(!running);
 };
 const next = () => {
@@ -5020,7 +6367,11 @@ Next always gives the new colour its full duration and does not touch <code>runn
 // TrafficLight.js (excerpt)
 <div className="housing" aria-hidden="true">
   {ORDER.map((name) => (
-    <span key={name} className={"lamp " + name + (light === name ? " on" : "")} data-testid={"lamp-" + name} />
+    <span
+      key={name}
+      className={"lamp " + name + (light === name ? " on" : "")}
+      data-testid={"lamp-" + name}
+    />
   ))}
 </div>
 <p className="status" role="status" data-testid="status">
@@ -5174,7 +6525,8 @@ import { LIGHTS, ORDER } from "./lights";
 export default function TrafficLight() {
   const [light, setLight] = useState("red");
   const [running, setRunning] = useState(true);
-  const [remaining, setRemaining] = useState(LIGHTS.red.ms); // ms left in this light
+  // ms left in this light
+  const [remaining, setRemaining] = useState(LIGHTS.red.ms);
   const endsAt = useRef(0); // when the current light ends, while running
 
   // One timeout per light. It is re-armed whenever the light, the remaining
@@ -5202,10 +6554,16 @@ export default function TrafficLight() {
 
   return (
     <section className="card" aria-labelledby="tl-title">
-      <h1 id="tl-title" className="title">Traffic Light</h1>
+      <h1 id="tl-title" className="title">
+        Traffic Light
+      </h1>
       <div className="housing" aria-hidden="true">
         {ORDER.map((name) => (
-          <span key={name} className={"lamp " + name + (light === name ? " on" : "")} data-testid={"lamp-" + name} />
+          <span
+            key={name}
+            className={"lamp " + name + (light === name ? " on" : "")}
+            data-testid={"lamp-" + name}
+          />
         ))}
       </div>
       <p className="status" role="status" data-testid="status">
@@ -5233,24 +6591,107 @@ export const LIGHTS = {
 };
 export const ORDER = ["red", "yellow", "green"]; // top to bottom on the housing
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 320px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.housing { display: inline-flex; flex-direction: column; gap: 14px; padding: 16px; background: #020617; border: 2px solid #334155; border-radius: 24px; }
-.lamp { width: 72px; height: 72px; border-radius: 50%; opacity: 0.22; transition: opacity 0.2s, box-shadow 0.2s; }
-.lamp.red { background: #ef4444; }
-.lamp.yellow { background: #facc15; }
-.lamp.green { background: #22c55e; }
-.lamp.on { opacity: 1; box-shadow: 0 0 28px currentColor; }
-.lamp.red.on { color: #ef4444; }
-.lamp.yellow.on { color: #facc15; }
-.lamp.green.on { color: #22c55e; }
-.status { min-height: 1.5em; margin: 16px 0; font-weight: 600; }
-.controls { display: flex; gap: 8px; justify-content: center; }
-.controls button { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .lamp { transition: none; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 320px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.housing {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #020617;
+  border: 2px solid #334155;
+  border-radius: 24px;
+}
+.lamp {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  opacity: 0.22;
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
+}
+.lamp.red {
+  background: #ef4444;
+}
+.lamp.yellow {
+  background: #facc15;
+}
+.lamp.green {
+  background: #22c55e;
+}
+.lamp.on {
+  opacity: 1;
+  box-shadow: 0 0 28px currentColor;
+}
+.lamp.red.on {
+  color: #ef4444;
+}
+.lamp.yellow.on {
+  color: #facc15;
+}
+.lamp.green.on {
+  color: #22c55e;
+}
+.status {
+  min-height: 1.5em;
+  margin: 16px 0;
+  font-weight: 600;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.controls button {
+  flex: 1;
+  max-width: 120px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls button:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lamp {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -5286,7 +6727,8 @@ export const LIGHTS = {
   green: { ms: 2500, next: "yellow", label: "Green: go" },
   yellow: { ms: 1000, next: "red", label: "Yellow: prepare to stop" },
 };
-export const ORDER = ["red", "yellow", "green"]; // top to bottom on the housing
+// top to bottom on the housing
+export const ORDER = ["red", "yellow", "green"];
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — a fixed set of states, one active at a time, with defined transitions. Each entry here holds its duration and its next state, so the engine never names a colour.
@@ -5300,7 +6742,9 @@ export const ORDER = ["red", "yellow", "green"]; // top to bottom on the housing
 const light = ref("red");
 const running = ref(true);
 const remaining = ref(LIGHTS.red.ms); // ms left in this light
-let endsAt = 0; // when the current light ends, while running (not reactive: never rendered)
+// when the current light ends, while
+// running (not reactive: never rendered)
+let endsAt = 0;
 
 watch(
   [light, remaining, running],
@@ -5328,7 +6772,8 @@ The timeout sets both <code>light</code> and <code>remaining</code> in the same 
 ~~~js
 // TrafficLight.vue, script setup (excerpt)
 function togglePause() {
-  if (running.value) remaining.value = Math.max(0, endsAt - performance.now());
+  if (running.value)
+    remaining.value = Math.max(0, endsAt - performance.now());
   running.value = !running.value;
 }
 function next() {
@@ -5345,9 +6790,16 @@ function next() {
 
 ~~~vue
 <div class="housing" aria-hidden="true">
-  <span v-for="name in ORDER" :key="name" :class="['lamp', name, { on: light === name }]" :data-testid="'lamp-' + name" />
+  <span
+    v-for="name in ORDER"
+    :key="name"
+    :class="['lamp', name, { on: light === name }]"
+    :data-testid="'lamp-' + name"
+  />
 </div>
-<p class="status" role="status" data-testid="status">{{ LIGHTS[light].label }}{{ running ? "" : " (paused)" }}</p>
+<p class="status" role="status" data-testid="status">
+  {{ LIGHTS[light].label }}{{ running ? "" : " (paused)" }}
+</p>
 ~~~
 
 📌 **Interview term: role="status"** — a polite live region; the new text is read when the screen reader is idle. The lamps are decorative (<code>aria-hidden</code>), and the status says "Green: go" in words, so colour is never the only signal.
@@ -5481,8 +6933,19 @@ import TrafficLight from "./components/TrafficLight.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
 </style>
 `,
           "/src/components/TrafficLight.vue": `<script setup>
@@ -5492,7 +6955,8 @@ import { LIGHTS, ORDER } from "../lights";
 const light = ref("red");
 const running = ref(true);
 const remaining = ref(LIGHTS.red.ms); // ms left in this light
-let endsAt = 0; // when the current light ends, while running (not reactive: never rendered)
+// when the current light ends, while running (not reactive: never rendered)
+let endsAt = 0;
 
 // One timeout per light, re-armed when light, remaining or running change.
 // onCleanup clears the old one first; Vue stops the watcher on unmount.
@@ -5524,33 +6988,114 @@ function next() {
   <section class="card" aria-labelledby="tl-title">
     <h1 id="tl-title" class="title">Traffic Light</h1>
     <div class="housing" aria-hidden="true">
-      <span v-for="name in ORDER" :key="name" :class="['lamp', name, { on: light === name }]" :data-testid="'lamp-' + name" />
+      <span
+        v-for="name in ORDER"
+        :key="name"
+        :class="['lamp', name, { on: light === name }]"
+        :data-testid="'lamp-' + name"
+      />
     </div>
-    <p class="status" role="status" data-testid="status">{{ LIGHTS[light].label }}{{ running ? "" : " (paused)" }}</p>
+    <p class="status" role="status" data-testid="status">
+      {{ LIGHTS[light].label }}{{ running ? "" : " (paused)" }}
+    </p>
     <div class="controls">
-      <button type="button" data-testid="pause" @click="togglePause">{{ running ? "Pause" : "Resume" }}</button>
+      <button type="button" data-testid="pause" @click="togglePause">
+        {{ running ? "Pause" : "Resume" }}
+      </button>
       <button type="button" data-testid="next" @click="next">Next</button>
     </div>
   </section>
 </template>
 
 <style scoped>
-.card { width: 100%; max-width: 320px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.housing { display: inline-flex; flex-direction: column; gap: 14px; padding: 16px; background: #020617; border: 2px solid #334155; border-radius: 24px; }
-.lamp { width: 72px; height: 72px; border-radius: 50%; opacity: 0.22; transition: opacity 0.2s, box-shadow 0.2s; }
-.lamp.red { background: #ef4444; }
-.lamp.yellow { background: #facc15; }
-.lamp.green { background: #22c55e; }
-.lamp.on { opacity: 1; box-shadow: 0 0 28px currentColor; }
-.lamp.red.on { color: #ef4444; }
-.lamp.yellow.on { color: #facc15; }
-.lamp.green.on { color: #22c55e; }
-.status { min-height: 1.5em; margin: 16px 0; font-weight: 600; }
-.controls { display: flex; gap: 8px; justify-content: center; }
-.controls button { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-.controls button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .lamp { transition: none; } }
+.card {
+  width: 100%;
+  max-width: 320px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.housing {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #020617;
+  border: 2px solid #334155;
+  border-radius: 24px;
+}
+.lamp {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  opacity: 0.22;
+  transition:
+    opacity 0.2s,
+    box-shadow 0.2s;
+}
+.lamp.red {
+  background: #ef4444;
+}
+.lamp.yellow {
+  background: #facc15;
+}
+.lamp.green {
+  background: #22c55e;
+}
+.lamp.on {
+  opacity: 1;
+  box-shadow: 0 0 28px currentColor;
+}
+.lamp.red.on {
+  color: #ef4444;
+}
+.lamp.yellow.on {
+  color: #facc15;
+}
+.lamp.green.on {
+  color: #22c55e;
+}
+.status {
+  min-height: 1.5em;
+  margin: 16px 0;
+  font-weight: 600;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.controls button {
+  flex: 1;
+  max-width: 120px;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+.controls button:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lamp {
+    transition: none;
+  }
+}
 </style>
 `,
           "/src/lights.js": `// The whole traffic light as data: a finite state machine.
@@ -5593,12 +7138,16 @@ Three lamps with one lit; red 3 s, green 2.5 s, yellow 1 s, looping; Pause keeps
 // Each state knows how long it lasts and which state comes next.
 export type Light = "red" | "yellow" | "green";
 
-export const LIGHTS: Record<Light, { ms: number; next: Light; label: string }> = {
+export const LIGHTS: Record<
+  Light,
+  { ms: number; next: Light; label: string }
+> = {
   red: { ms: 3000, next: "green", label: "Red: stop" },
   green: { ms: 2500, next: "yellow", label: "Green: go" },
   yellow: { ms: 1000, next: "red", label: "Yellow: prepare to stop" },
 };
-export const ORDER: Light[] = ["red", "yellow", "green"]; // top to bottom on the housing
+// top to bottom on the housing
+export const ORDER: Light[] = ["red", "yellow", "green"];
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — fixed states, one active at a time, defined transitions. The <code>Light</code> union plus <code>Record&lt;Light, ...&gt;</code> makes the compiler check that every state has a duration, a label and a valid next state.
@@ -5612,7 +7161,8 @@ export const ORDER: Light[] = ["red", "yellow", "green"]; // top to bottom on th
 readonly light = signal<Light>("red");
 readonly running = signal(true);
 readonly remaining = signal(LIGHTS.red.ms); // ms left in this light
-private endsAt = 0; // when the current light ends, while running (never rendered)
+// when the current light ends, while running (never rendered)
+private endsAt = 0;
 
 constructor() {
   effect((onCleanup) => {
@@ -5620,7 +7170,10 @@ constructor() {
     const ms = this.remaining();
     if (!this.running()) return;
     this.endsAt = performance.now() + ms;
-    const id = setTimeout(() => untracked(() => this.go(LIGHTS[l].next)), ms);
+    const id = setTimeout(
+      () => untracked(() => this.go(LIGHTS[l].next)),
+      ms,
+    );
     onCleanup(() => clearTimeout(id));
   });
 }
@@ -5631,7 +7184,8 @@ private go(next: Light): void {
 }
 
 togglePause(): void {
-  if (this.running()) this.remaining.set(Math.max(0, this.endsAt - performance.now()));
+  if (this.running())
+    this.remaining.set(Math.max(0, this.endsAt - performance.now()));
   this.running.update((r) => !r);
 }
 
@@ -5653,10 +7207,18 @@ next(): void {
 ~~~html
 <div class="housing" aria-hidden="true">
   @for (name of order; track name) {
-    <span [class]="'lamp ' + name" [class.on]="light() === name" [attr.data-testid]="'lamp-' + name"></span>
+    <span
+      [class]="'lamp ' + name"
+      [class.on]="light() === name"
+      [attr.data-testid]="'lamp-' + name"
+    ></span>
   }
 </div>
-<p class="status" role="status" data-testid="status">{{ lights[light()].label }}{{ running() ? "" : " (paused)" }}</p>
+<p
+  class="status"
+  role="status"
+  data-testid="status"
+>{{ lights[light()].label }}{{ running() ? "" : " (paused)" }}</p>
 ~~~
 
 📌 **Interview term: role="status"** — a polite live region announcing the new text without interrupting; the lamps are decorative and hidden, so meaning never depends on colour alone.
@@ -5805,11 +7367,25 @@ import { TrafficLightComponent } from "./traffic-light.component";
   standalone: true,
   imports: [TrafficLightComponent],
   template: \`<main class="page"><app-traffic-light /></main>\`,
-  encapsulation: ViewEncapsulation.None, // these two rules are global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-  \`],
+  // these two rules are global on purpose
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -5817,12 +7393,14 @@ export class AppComponent {}
 // Each state knows how long it lasts and which state comes next.
 export type Light = "red" | "yellow" | "green";
 
-export const LIGHTS: Record<Light, { ms: number; next: Light; label: string }> = {
-  red: { ms: 3000, next: "green", label: "Red: stop" },
-  green: { ms: 2500, next: "yellow", label: "Green: go" },
-  yellow: { ms: 1000, next: "red", label: "Yellow: prepare to stop" },
-};
-export const ORDER: Light[] = ["red", "yellow", "green"]; // top to bottom on the housing
+export const LIGHTS: Record<Light, { ms: number; next: Light; label: string }> =
+  {
+    red: { ms: 3000, next: "green", label: "Red: stop" },
+    green: { ms: 2500, next: "yellow", label: "Green: go" },
+    yellow: { ms: 1000, next: "red", label: "Yellow: prepare to stop" },
+  };
+// top to bottom on the housing
+export const ORDER: Light[] = ["red", "yellow", "green"];
 `,
           "/src/app/traffic-light.component.ts": `import { Component, effect, signal, untracked } from "@angular/core";
 import { LIGHTS, ORDER, Light } from "./lights";
@@ -5835,17 +7413,30 @@ import { LIGHTS, ORDER, Light } from "./lights";
       <h1 id="tl-title" class="title">Traffic Light</h1>
       <div class="housing" aria-hidden="true">
         @for (name of order; track name) {
-          <span [class]="'lamp ' + name" [class.on]="light() === name" [attr.data-testid]="'lamp-' + name"></span>
+          <span
+            [class]="'lamp ' + name"
+            [class.on]="light() === name"
+            [attr.data-testid]="'lamp-' + name"
+          ></span>
         }
       </div>
-      <p class="status" role="status" data-testid="status">{{ lights[light()].label }}{{ running() ? "" : " (paused)" }}</p>
+      <p
+        class="status"
+        role="status"
+        data-testid="status"
+      >{{ lights[light()].label }}{{ running() ? "" : " (paused)" }}</p>
       <div class="controls">
-        <button type="button" data-testid="pause" (click)="togglePause()">{{ running() ? "Pause" : "Resume" }}</button>
+        <button
+          type="button"
+          data-testid="pause"
+          (click)="togglePause()"
+        >{{ running() ? "Pause" : "Resume" }}</button>
         <button type="button" data-testid="next" (click)="next()">Next</button>
       </div>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .card { width: 100%; max-width: 320px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
     .title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
     .housing { display: inline-flex; flex-direction: column; gap: 14px; padding: 16px; background: #020617; border: 2px solid #334155; border-radius: 24px; }
@@ -5862,7 +7453,8 @@ import { LIGHTS, ORDER, Light } from "./lights";
     .controls button { flex: 1; max-width: 120px; padding: 10px 0; border-radius: 10px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
     .controls button:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { .lamp { transition: none; } }
-  \`],
+  \`,
+  ],
 })
 export class TrafficLightComponent {
   readonly lights = LIGHTS;
@@ -5870,7 +7462,8 @@ export class TrafficLightComponent {
   readonly light = signal<Light>("red");
   readonly running = signal(true);
   readonly remaining = signal(LIGHTS.red.ms); // ms left in this light
-  private endsAt = 0; // when the current light ends, while running (never rendered)
+  // when the current light ends, while running (never rendered)
+  private endsAt = 0;
 
   constructor() {
     // One timeout per light, re-armed when light, remaining or running change.
@@ -5891,7 +7484,8 @@ export class TrafficLightComponent {
   }
 
   togglePause(): void {
-    if (this.running()) this.remaining.set(Math.max(0, this.endsAt - performance.now()));
+    if (this.running())
+      this.remaining.set(Math.max(0, this.endsAt - performance.now()));
     this.running.update((r) => !r);
   }
 
@@ -6006,8 +7600,10 @@ Every arrow is one <code>setTimeout</code>. The machine always knows exactly one
 ### Step 1: the machine, with no timers in it
 
 ~~~js
-// The typewriter as a pure state machine. Given where we are, return how long
-// to wait and what the next state is. No timers in here, so it is easy to test.
+// The typewriter as a pure state machine.
+// Given where we are, return how long
+// to wait and what the next state is. No
+// timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
 //   deleting -> one less character every deleteMs
@@ -6016,13 +7612,30 @@ export const START = { index: 0, count: 0, deleting: false };
 
 export function plan(state, words, t) {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return {
+      delay: t.typeMs,
+      next: { ...state, count: state.count + 1 },
+    };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return {
+      delay: t.deleteMs,
+      next: { ...state, count: state.count - 1 },
+    };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state, words) => words[state.index].slice(0, state.count);
+export const visibleText = (state, words) =>
+  words[state.index].slice(0, state.count);
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — the component is always in one well-defined state, and a single function decides the next state. Here the "mood" is not even stored separately: it follows from <code>deleting</code> and how <code>count</code> compares with the word length.
@@ -6037,15 +7650,28 @@ Note the modulo in the last branch: <code>(state.index + 1) % words.length</code
 import { useEffect, useState } from "react";
 import { START, plan, visibleText } from "./typewriterMachine";
 
-export default function Typewriter({ prefix, words, typeMs = 100, deleteMs = 50, holdMs = 1000, gapMs = 300 }) {
+export default function Typewriter({
+  prefix,
+  words,
+  typeMs = 100,
+  deleteMs = 50,
+  holdMs = 1000,
+  gapMs = 300,
+}) {
   const [state, setState] = useState(START);
   const [paused, setPaused] = useState(false);
 
-  // Exactly one pending timeout at any time: each step schedules the next
+  // Exactly one pending timeout at any
+  // time: each step schedules the next
   // one, and the cleanup cancels it before a re-run or on unmount.
   useEffect(() => {
     if (paused) return;
-    const { delay, next } = plan(state, words, { typeMs, deleteMs, holdMs, gapMs });
+    const { delay, next } = plan(state, words, {
+      typeMs,
+      deleteMs,
+      holdMs,
+      gapMs,
+    });
     const id = setTimeout(() => setState(next), delay);
     return () => clearTimeout(id);
   }, [state, paused, words, typeMs, deleteMs, holdMs, gapMs]);
@@ -6053,13 +7679,23 @@ export default function Typewriter({ prefix, words, typeMs = 100, deleteMs = 50,
   return (
     <div className="tw">
       <p className="line">
-        <span className="sr-only">{prefix + " " + words.join(", ")}</span>
+        <span className="sr-only">
+          {prefix + " " + words.join(", ")}
+        </span>
         <span aria-hidden="true">
-          {prefix} <span className="word" data-testid="word">{visibleText(state, words)}</span>
+          {prefix}{" "}
+          <span className="word" data-testid="word">
+            {visibleText(state, words)}
+          </span>
           <span className={paused ? "caret still" : "caret"} />
         </span>
       </p>
-      <button type="button" aria-pressed={paused} onClick={() => setPaused(!paused)} data-testid="pause">
+      <button
+        type="button"
+        aria-pressed={paused}
+        onClick={() => setPaused(!paused)}
+        data-testid="pause"
+      >
         Pause animation
       </button>
     </div>
@@ -6078,7 +7714,8 @@ The dependency list includes every value the effect reads: <code>state</code>, <
 ~~~jsx
 import Typewriter from "./src/Typewriter";
 
-// Defined outside the component so the array keeps one identity across renders.
+// Defined outside the component so the
+// array keeps one identity across renders.
 const WORDS = ["React", "Vue", "Angular"];
 
 export default function App() {
@@ -6086,7 +7723,14 @@ export default function App() {
     <main className="page">
       <section className="card">
         <h1 className="title">Typewriter Effect</h1>
-        <Typewriter prefix="I build with" words={WORDS} typeMs={100} deleteMs={50} holdMs={1000} gapMs={300} />
+        <Typewriter
+          prefix="I build with"
+          words={WORDS}
+          typeMs={100}
+          deleteMs={50}
+          holdMs={1000}
+          gapMs={300}
+        />
       </section>
     </main>
   );
@@ -6101,7 +7745,10 @@ export default function App() {
 <p className="line">
   <span className="sr-only">{prefix + " " + words.join(", ")}</span>
   <span aria-hidden="true">
-    {prefix} <span className="word" data-testid="word">{visibleText(state, words)}</span>
+    {prefix}{" "}
+    <span className="word" data-testid="word">
+      {visibleText(state, words)}
+    </span>
     <span className={paused ? "caret still" : "caret"} />
   </span>
 </p>
@@ -6258,7 +7905,14 @@ export default function App() {
     <main className="page">
       <section className="card">
         <h1 className="title">Typewriter Effect</h1>
-        <Typewriter prefix="I build with" words={WORDS} typeMs={100} deleteMs={50} holdMs={1000} gapMs={300} />
+        <Typewriter
+          prefix="I build with"
+          words={WORDS}
+          typeMs={100}
+          deleteMs={50}
+          holdMs={1000}
+          gapMs={300}
+        />
       </section>
     </main>
   );
@@ -6267,7 +7921,14 @@ export default function App() {
           "/src/Typewriter.js": `import { useEffect, useState } from "react";
 import { START, plan, visibleText } from "./typewriterMachine";
 
-export default function Typewriter({ prefix, words, typeMs = 100, deleteMs = 50, holdMs = 1000, gapMs = 300 }) {
+export default function Typewriter({
+  prefix,
+  words,
+  typeMs = 100,
+  deleteMs = 50,
+  holdMs = 1000,
+  gapMs = 300,
+}) {
   const [state, setState] = useState(START);
   const [paused, setPaused] = useState(false);
 
@@ -6275,7 +7936,12 @@ export default function Typewriter({ prefix, words, typeMs = 100, deleteMs = 50,
   // one, and the cleanup cancels it before a re-run or on unmount.
   useEffect(() => {
     if (paused) return;
-    const { delay, next } = plan(state, words, { typeMs, deleteMs, holdMs, gapMs });
+    const { delay, next } = plan(state, words, {
+      typeMs,
+      deleteMs,
+      holdMs,
+      gapMs,
+    });
     const id = setTimeout(() => setState(next), delay);
     return () => clearTimeout(id);
   }, [state, paused, words, typeMs, deleteMs, holdMs, gapMs]);
@@ -6285,11 +7951,19 @@ export default function Typewriter({ prefix, words, typeMs = 100, deleteMs = 50,
       <p className="line">
         <span className="sr-only">{prefix + " " + words.join(", ")}</span>
         <span aria-hidden="true">
-          {prefix} <span className="word" data-testid="word">{visibleText(state, words)}</span>
+          {prefix}{" "}
+          <span className="word" data-testid="word">
+            {visibleText(state, words)}
+          </span>
           <span className={paused ? "caret still" : "caret"} />
         </span>
       </p>
-      <button type="button" aria-pressed={paused} onClick={() => setPaused(!paused)} data-testid="pause">
+      <button
+        type="button"
+        aria-pressed={paused}
+        onClick={() => setPaused(!paused)}
+        data-testid="pause"
+      >
         Pause animation
       </button>
     </div>
@@ -6306,28 +7980,115 @@ export const START = { index: 0, count: 0, deleting: false };
 
 export function plan(state, words, t) {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state, words) => words[state.index].slice(0, state.count);
+export const visibleText = (state, words) =>
+  words[state.index].slice(0, state.count);
 `,
-          "/styles.css": `body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 480px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-.line { min-height: 1.4em; margin: 0 0 20px; font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 700; }
-.word { color: #c084fc; }
-.caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 3px; vertical-align: -0.15em; background: #e9d5ff; animation: blink 1s steps(1) infinite; }
-.caret.still { animation: none; }
-@keyframes blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-button { padding: 8px 16px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-button[aria-pressed="true"] { background: #6b21a8; border-color: #c084fc; }
-button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.line {
+  min-height: 1.4em;
+  margin: 0 0 20px;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 700;
+}
+.word {
+  color: #c084fc;
+}
+.caret {
+  display: inline-block;
+  width: 3px;
+  height: 1.1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: #e9d5ff;
+  animation: blink 1s steps(1) infinite;
+}
+.caret.still {
+  animation: none;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+button[aria-pressed="true"] {
+  background: #6b21a8;
+  border-color: #c084fc;
+}
+button:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 `,
         },
       },
@@ -6358,8 +8119,10 @@ A prefix plus a looping animated word; configurable type, delete, hold and gap t
 ### The machine (no timers, no Vue)
 
 ~~~js
-// The typewriter as a pure state machine. Given where we are, return how long
-// to wait and what the next state is. No timers in here, so it is easy to test.
+// The typewriter as a pure state machine.
+// Given where we are, return how long
+// to wait and what the next state is. No
+// timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
 //   deleting -> one less character every deleteMs
@@ -6368,13 +8131,30 @@ export const START = { index: 0, count: 0, deleting: false };
 
 export function plan(state, words, t) {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return {
+      delay: t.typeMs,
+      next: { ...state, count: state.count + 1 },
+    };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return {
+      delay: t.deleteMs,
+      next: { ...state, count: state.count - 1 },
+    };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state, words) => words[state.index].slice(0, state.count);
+export const visibleText = (state, words) =>
+  words[state.index].slice(0, state.count);
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — one well-defined state at a time and one function that decides the next. <code>plan()</code> returns both the next state and how long to wait for it.
@@ -6401,13 +8181,31 @@ const state = ref(START);
 const paused = ref(false);
 const text = computed(() => visibleText(state.value, props.words));
 
-// Exactly one pending timeout: each step schedules the next, and onCleanup
+// Exactly one pending timeout: each step
+// schedules the next, and onCleanup
 // cancels it before the watcher re-runs or when the component unmounts.
 watch(
-  [state, paused, () => props.words, () => props.typeMs, () => props.deleteMs, () => props.holdMs, () => props.gapMs],
-  ([s, isPaused, words, typeMs, deleteMs, holdMs, gapMs], _old, onCleanup) => {
+  [
+    state,
+    paused,
+    () => props.words,
+    () => props.typeMs,
+    () => props.deleteMs,
+    () => props.holdMs,
+    () => props.gapMs,
+  ],
+  (
+    [s, isPaused, words, typeMs, deleteMs, holdMs, gapMs],
+    _old,
+    onCleanup,
+  ) => {
     if (isPaused) return;
-    const { delay, next } = plan(s, words, { typeMs, deleteMs, holdMs, gapMs });
+    const { delay, next } = plan(s, words, {
+      typeMs,
+      deleteMs,
+      holdMs,
+      gapMs,
+    });
     const id = setTimeout(() => (state.value = next), delay);
     onCleanup(() => clearTimeout(id));
   },
@@ -6421,21 +8219,75 @@ watch(
       <span class="sr-only">{{ prefix + " " + words.join(", ") }}</span>
       <span aria-hidden="true">{{ prefix }} <span class="word" data-testid="word">{{ text }}</span><span :class="['caret', { still: paused }]" /></span>
     </p>
-    <button type="button" :aria-pressed="paused" data-testid="pause" @click="paused = !paused">Pause animation</button>
+    <button
+      type="button"
+      :aria-pressed="paused"
+      data-testid="pause"
+      @click="paused = !paused"
+    >Pause animation</button>
   </div>
 </template>
 
 <style scoped>
-.line { min-height: 1.4em; margin: 0 0 20px; font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 700; }
-.word { color: #c084fc; }
-.caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 3px; vertical-align: -0.15em; background: #e9d5ff; animation: blink 1s steps(1) infinite; }
-.caret.still { animation: none; }
-@keyframes blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-button { padding: 8px 16px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-button[aria-pressed="true"] { background: #6b21a8; border-color: #c084fc; }
-button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+.line {
+  min-height: 1.4em;
+  margin: 0 0 20px;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 700;
+}
+.word {
+  color: #c084fc;
+}
+.caret {
+  display: inline-block;
+  width: 3px;
+  height: 1.1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: #e9d5ff;
+  animation: blink 1s steps(1) infinite;
+}
+.caret.still {
+  animation: none;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+button[aria-pressed="true"] {
+  background: #6b21a8;
+  border-color: #c084fc;
+}
+button:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 </style>
 ~~~
 
@@ -6575,16 +8427,50 @@ const words = ["React", "Vue", "Angular"];
   <main class="page">
     <section class="card">
       <h1 class="title">Typewriter Effect</h1>
-      <Typewriter prefix="I build with" :words="words" :type-ms="100" :delete-ms="50" :hold-ms="1000" :gap-ms="300" />
+      <Typewriter
+        prefix="I build with"
+        :words="words"
+        :type-ms="100"
+        :delete-ms="50"
+        :hold-ms="1000"
+        :gap-ms="300"
+      />
     </section>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: 100%; max-width: 480px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-.title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
+body {
+  margin: 0;
+  background: #0b1120;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 16px;
+  padding: 24px 16px;
+  box-sizing: border-box;
+  text-align: center;
+}
+.title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 </style>
 `,
           "/src/components/Typewriter.vue": `<script setup>
@@ -6607,7 +8493,15 @@ const text = computed(() => visibleText(state.value, props.words));
 // Exactly one pending timeout: each step schedules the next, and onCleanup
 // cancels it before the watcher re-runs or when the component unmounts.
 watch(
-  [state, paused, () => props.words, () => props.typeMs, () => props.deleteMs, () => props.holdMs, () => props.gapMs],
+  [
+    state,
+    paused,
+    () => props.words,
+    () => props.typeMs,
+    () => props.deleteMs,
+    () => props.holdMs,
+    () => props.gapMs,
+  ],
   ([s, isPaused, words, typeMs, deleteMs, holdMs, gapMs], _old, onCleanup) => {
     if (isPaused) return;
     const { delay, next } = plan(s, words, { typeMs, deleteMs, holdMs, gapMs });
@@ -6624,21 +8518,75 @@ watch(
       <span class="sr-only">{{ prefix + " " + words.join(", ") }}</span>
       <span aria-hidden="true">{{ prefix }} <span class="word" data-testid="word">{{ text }}</span><span :class="['caret', { still: paused }]" /></span>
     </p>
-    <button type="button" :aria-pressed="paused" data-testid="pause" @click="paused = !paused">Pause animation</button>
+    <button
+      type="button"
+      :aria-pressed="paused"
+      data-testid="pause"
+      @click="paused = !paused"
+    >Pause animation</button>
   </div>
 </template>
 
 <style scoped>
-.line { min-height: 1.4em; margin: 0 0 20px; font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 700; }
-.word { color: #c084fc; }
-.caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 3px; vertical-align: -0.15em; background: #e9d5ff; animation: blink 1s steps(1) infinite; }
-.caret.still { animation: none; }
-@keyframes blink { 50% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .caret { animation: none; } }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-button { padding: 8px 16px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
-button[aria-pressed="true"] { background: #6b21a8; border-color: #c084fc; }
-button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
+.line {
+  min-height: 1.4em;
+  margin: 0 0 20px;
+  font-size: clamp(1.4rem, 7vw, 2rem);
+  font-weight: 700;
+}
+.word {
+  color: #c084fc;
+}
+.caret {
+  display: inline-block;
+  width: 3px;
+  height: 1.1em;
+  margin-left: 3px;
+  vertical-align: -0.15em;
+  background: #e9d5ff;
+  animation: blink 1s steps(1) infinite;
+}
+.caret.still {
+  animation: none;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    animation: none;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+button {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #e2e8f0;
+  font: inherit;
+  cursor: pointer;
+}
+button[aria-pressed="true"] {
+  background: #6b21a8;
+  border-color: #c084fc;
+}
+button:focus-visible {
+  outline: 3px solid #fbbf24;
+  outline-offset: 2px;
+}
 </style>
 `,
           "/src/typewriterMachine.js": `// The typewriter as a pure state machine. Given where we are, return how long
@@ -6651,13 +8599,24 @@ export const START = { index: 0, count: 0, deleting: false };
 
 export function plan(state, words, t) {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state, words) => words[state.index].slice(0, state.count);
+export const visibleText = (state, words) =>
+  words[state.index].slice(0, state.count);
 `,
         },
       },
@@ -6690,26 +8649,58 @@ A prefix plus a looping word; configurable type, delete, hold and gap timings; a
 ### The machine (no timers, no Angular)
 
 ~~~ts
-// The typewriter as a pure state machine. Given where we are, return how long
-// to wait and what the next state is. No timers in here, so it is easy to test.
+// The typewriter as a pure state machine.
+// Given where we are, return how long
+// to wait and what the next state is. No
+// timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
 //   deleting -> one less character every deleteMs
 //   empty    -> wait gapMs, then type the next word (looping)
-export interface TypeState { index: number; count: number; deleting: boolean }
-export interface Timing { typeMs: number; deleteMs: number; holdMs: number; gapMs: number }
+export interface TypeState {
+  index: number;
+  count: number;
+  deleting: boolean;
+}
+export interface Timing {
+  typeMs: number;
+  deleteMs: number;
+  holdMs: number;
+  gapMs: number;
+}
 
 export const START: TypeState = { index: 0, count: 0, deleting: false };
 
-export function plan(state: TypeState, words: string[], t: Timing): { delay: number; next: TypeState } {
+export function plan(
+  state: TypeState,
+  words: string[],
+  t: Timing,
+): { delay: number; next: TypeState } {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return {
+      delay: t.typeMs,
+      next: { ...state, count: state.count + 1 },
+    };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return {
+      delay: t.deleteMs,
+      next: { ...state, count: state.count - 1 },
+    };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state: TypeState, words: string[]) => words[state.index].slice(0, state.count);
+export const visibleText = (state: TypeState, words: string[]) =>
+  words[state.index].slice(0, state.count);
 ~~~
 
 📌 **Interview term: Finite state machine (FSM)** — one state at a time and a pure <code>plan()</code> that returns the next state and the delay before it.
@@ -6722,25 +8713,49 @@ export const visibleText = (state: TypeState, words: string[]) => words[state.in
 // typewriter.component.ts (class)
 export class TypewriterComponent {
   @Input({ required: true }) prefix = "";
-  // Inputs feed signals, so the effect below re-runs if a parent changes them.
-  @Input({ required: true }) set wordList(v: string[]) { this.words.set(v); }
-  @Input() set typeMs(v: number) { this.timing.update((t) => ({ ...t, typeMs: v })); }
-  @Input() set deleteMs(v: number) { this.timing.update((t) => ({ ...t, deleteMs: v })); }
-  @Input() set holdMs(v: number) { this.timing.update((t) => ({ ...t, holdMs: v })); }
-  @Input() set gapMs(v: number) { this.timing.update((t) => ({ ...t, gapMs: v })); }
+  // Inputs feed signals, so the effect
+  // below re-runs if a parent changes them.
+  @Input({ required: true }) set wordList(v: string[]) {
+    this.words.set(v);
+  }
+  @Input() set typeMs(v: number) {
+    this.timing.update((t) => ({ ...t, typeMs: v }));
+  }
+  @Input() set deleteMs(v: number) {
+    this.timing.update((t) => ({ ...t, deleteMs: v }));
+  }
+  @Input() set holdMs(v: number) {
+    this.timing.update((t) => ({ ...t, holdMs: v }));
+  }
+  @Input() set gapMs(v: number) {
+    this.timing.update((t) => ({ ...t, gapMs: v }));
+  }
 
   readonly words = signal<string[]>([""]);
-  readonly timing = signal({ typeMs: 100, deleteMs: 50, holdMs: 1000, gapMs: 300 });
+  readonly timing = signal({
+    typeMs: 100,
+    deleteMs: 50,
+    holdMs: 1000,
+    gapMs: 300,
+  });
   readonly state = signal(START);
   readonly paused = signal(false);
-  readonly text = computed(() => visibleText(this.state(), this.words()));
+  readonly text = computed(() =>
+    visibleText(this.state(), this.words()),
+  );
 
   constructor() {
-    // Exactly one pending timeout: each step schedules the next, and onCleanup
-    // cancels it before the effect re-runs or when the component is destroyed.
+    // Exactly one pending timeout: each step
+    // schedules the next, and onCleanup
+    // cancels it before the effect re-runs
+    // or when the component is destroyed.
     effect((onCleanup) => {
       if (this.paused()) return;
-      const { delay, next } = plan(this.state(), this.words(), this.timing());
+      const { delay, next } = plan(
+        this.state(),
+        this.words(),
+        this.timing(),
+      );
       const id = setTimeout(() => this.state.set(next), delay);
       onCleanup(() => clearTimeout(id));
     });
@@ -6759,7 +8774,12 @@ The input is named <code>wordList</code> so it does not collide with the <code>w
   <span class="sr-only">{{ prefix + " " + words().join(", ") }}</span>
   <span aria-hidden="true">{{ prefix }} <span class="word" data-testid="word">{{ text() }}</span><span class="caret" [class.still]="paused()"></span></span>
 </p>
-<button type="button" [attr.aria-pressed]="paused()" data-testid="pause" (click)="paused.set(!paused())">Pause animation</button>
+<button
+  type="button"
+  [attr.aria-pressed]="paused()"
+  data-testid="pause"
+  (click)="paused.set(!paused())"
+>Pause animation</button>
 ~~~
 
 📌 **Interview term: Visually hidden text (sr-only)** — the full sentence is clipped to 1 px but stays readable to screen readers; the animated copy is <code>aria-hidden</code>, so nobody hears "R, Re, Rea".
@@ -6908,17 +8928,53 @@ import { TypewriterComponent } from "./typewriter.component";
     <main class="page">
       <section class="card">
         <h1 class="title">Typewriter Effect</h1>
-        <app-typewriter prefix="I build with" [wordList]="words" [typeMs]="100" [deleteMs]="50" [holdMs]="1000" [gapMs]="300" />
+        <app-typewriter
+          prefix="I build with"
+          [wordList]="words"
+          [typeMs]="100"
+          [deleteMs]="50"
+          [holdMs]="1000"
+          [gapMs]="300"
+        />
       </section>
     </main>
   \`,
   encapsulation: ViewEncapsulation.None, // page-level rules, global on purpose
-  styles: [\`
-    body { margin: 0; background: #0b1120; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-    .card { width: 100%; max-width: 480px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px 16px; box-sizing: border-box; text-align: center; }
-    .title { margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0b1120;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      .card {
+        width: 100%;
+        max-width: 480px;
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 16px;
+        padding: 24px 16px;
+        box-sizing: border-box;
+        text-align: center;
+      }
+      .title {
+        margin: 0 0 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #94a3b8;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly words = ["React", "Vue", "Angular"];
@@ -6930,20 +8986,44 @@ export class AppComponent {
 //   full     -> hold for holdMs, then start deleting
 //   deleting -> one less character every deleteMs
 //   empty    -> wait gapMs, then type the next word (looping)
-export interface TypeState { index: number; count: number; deleting: boolean }
-export interface Timing { typeMs: number; deleteMs: number; holdMs: number; gapMs: number }
+export interface TypeState {
+  index: number;
+  count: number;
+  deleting: boolean;
+}
+export interface Timing {
+  typeMs: number;
+  deleteMs: number;
+  holdMs: number;
+  gapMs: number;
+}
 
 export const START: TypeState = { index: 0, count: 0, deleting: false };
 
-export function plan(state: TypeState, words: string[], t: Timing): { delay: number; next: TypeState } {
+export function plan(
+  state: TypeState,
+  words: string[],
+  t: Timing,
+): { delay: number; next: TypeState } {
   const word = words[state.index];
-  if (!state.deleting && state.count < word.length) return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
-  if (!state.deleting) return { delay: t.holdMs, next: { ...state, deleting: true } };
-  if (state.count > 0) return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
-  return { delay: t.gapMs, next: { index: (state.index + 1) % words.length, count: 0, deleting: false } };
+  if (!state.deleting && state.count < word.length)
+    return { delay: t.typeMs, next: { ...state, count: state.count + 1 } };
+  if (!state.deleting)
+    return { delay: t.holdMs, next: { ...state, deleting: true } };
+  if (state.count > 0)
+    return { delay: t.deleteMs, next: { ...state, count: state.count - 1 } };
+  return {
+    delay: t.gapMs,
+    next: {
+      index: (state.index + 1) % words.length,
+      count: 0,
+      deleting: false,
+    },
+  };
 }
 
-export const visibleText = (state: TypeState, words: string[]) => words[state.index].slice(0, state.count);
+export const visibleText = (state: TypeState, words: string[]) =>
+  words[state.index].slice(0, state.count);
 `,
           "/src/app/typewriter.component.ts": `import { Component, Input, computed, effect, signal } from "@angular/core";
 import { START, plan, visibleText } from "./typewriter-machine";
@@ -6956,9 +9036,15 @@ import { START, plan, visibleText } from "./typewriter-machine";
       <span class="sr-only">{{ prefix + " " + words().join(", ") }}</span>
       <span aria-hidden="true">{{ prefix }} <span class="word" data-testid="word">{{ text() }}</span><span class="caret" [class.still]="paused()"></span></span>
     </p>
-    <button type="button" [attr.aria-pressed]="paused()" data-testid="pause" (click)="paused.set(!paused())">Pause animation</button>
+    <button
+      type="button"
+      [attr.aria-pressed]="paused()"
+      data-testid="pause"
+      (click)="paused.set(!paused())"
+    >Pause animation</button>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .line { min-height: 1.4em; margin: 0 0 20px; font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 700; }
     .word { color: #c084fc; }
     .caret { display: inline-block; width: 3px; height: 1.1em; margin-left: 3px; vertical-align: -0.15em; background: #e9d5ff; animation: blink 1s steps(1) infinite; }
@@ -6969,19 +9055,35 @@ import { START, plan, visibleText } from "./typewriter-machine";
     button { padding: 8px 16px; border-radius: 999px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font: inherit; cursor: pointer; }
     button[aria-pressed="true"] { background: #6b21a8; border-color: #c084fc; }
     button:focus-visible { outline: 3px solid #fbbf24; outline-offset: 2px; }
-  \`],
+  \`,
+  ],
 })
 export class TypewriterComponent {
   @Input({ required: true }) prefix = "";
   // Inputs feed signals, so the effect below re-runs if a parent changes them.
-  @Input({ required: true }) set wordList(v: string[]) { this.words.set(v); }
-  @Input() set typeMs(v: number) { this.timing.update((t) => ({ ...t, typeMs: v })); }
-  @Input() set deleteMs(v: number) { this.timing.update((t) => ({ ...t, deleteMs: v })); }
-  @Input() set holdMs(v: number) { this.timing.update((t) => ({ ...t, holdMs: v })); }
-  @Input() set gapMs(v: number) { this.timing.update((t) => ({ ...t, gapMs: v })); }
+  @Input({ required: true }) set wordList(v: string[]) {
+    this.words.set(v);
+  }
+  @Input() set typeMs(v: number) {
+    this.timing.update((t) => ({ ...t, typeMs: v }));
+  }
+  @Input() set deleteMs(v: number) {
+    this.timing.update((t) => ({ ...t, deleteMs: v }));
+  }
+  @Input() set holdMs(v: number) {
+    this.timing.update((t) => ({ ...t, holdMs: v }));
+  }
+  @Input() set gapMs(v: number) {
+    this.timing.update((t) => ({ ...t, gapMs: v }));
+  }
 
   readonly words = signal<string[]>([""]);
-  readonly timing = signal({ typeMs: 100, deleteMs: 50, holdMs: 1000, gapMs: 300 });
+  readonly timing = signal({
+    typeMs: 100,
+    deleteMs: 50,
+    holdMs: 1000,
+    gapMs: 300,
+  });
   readonly state = signal(START);
   readonly paused = signal(false);
   readonly text = computed(() => visibleText(this.state(), this.words()));

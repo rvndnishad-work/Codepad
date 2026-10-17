@@ -19,12 +19,18 @@ const LANGUAGE_NAMES: Record<string, string> = {
   json: "JSON",
   html: "HTML",
   css: "CSS",
+  vue: "Vue",
+  scss: "SCSS",
   go: "Go",
   java: "Java",
   text: "Output",
   txt: "Output",
   plaintext: "Output",
+  output: "Output",
+  console: "Output",
 };
+
+const OUTPUT_LANGUAGES = new Set(["text", "txt", "plaintext", "output", "console"]);
 
 /** A fenced code block in a long-form doc: language label, copy button, horizontal scroll. */
 export default function DocCodeBlock({ language, text, children }: { language: string; text: string; children: ReactNode }) {
@@ -42,7 +48,7 @@ export default function DocCodeBlock({ language, text, children }: { language: s
   }
 
   return (
-    <div className="doc-code not-prose">
+    <div className="doc-code not-prose" data-lang={OUTPUT_LANGUAGES.has(language.toLowerCase()) ? "output" : language.toLowerCase() || undefined}>
       <div className="doc-code-bar">
         <span>{name}</span>
         <button type="button" onClick={copy} aria-label={copied ? "Copied" : "Copy code"}>

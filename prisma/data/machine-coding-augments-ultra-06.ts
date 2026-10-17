@@ -137,7 +137,8 @@ The parent passes <code>disabled</code> and an <code>onComplete</code> callback 
 
 ~~~jsx
 export default function OtpInput({ length = 6, disabled = false, onComplete }) {
-  // State: one string per box. Refs: the DOM inputs, only needed to move focus.
+  // State: one string per box. Refs: the
+  // DOM inputs, only needed to move focus.
   const [values, setValues] = useState(() => Array(length).fill(""));
   const inputs = useRef([]);
 
@@ -196,11 +197,18 @@ Every change goes through <code>commit()</code>. It sets state and, when all six
 function handleChange(i, e) {
   const raw = e.target.value;
   const digits = onlyDigits(raw);
-  if (raw === "") return commit(values.map((v, j) => (j === i ? "" : v)));
-  if (digits === "") return; // a letter: ignore, React restores the old value
-  if (digits.length > 2) return fillFrom(i, digits); // SMS autofill drops the whole code in one box
-  // One new digit, possibly next to the old one ("37" or "73"): keep the new one.
-  const d = digits.length === 2 && values[i] && digits[0] !== values[i] ? digits[0] : digits.slice(-1);
+  if (raw === "")
+    return commit(values.map((v, j) => (j === i ? "" : v)));
+  // a letter: ignore, React restores the old value
+  if (digits === "") return;
+  // SMS autofill drops the whole code in one box
+  if (digits.length > 2) return fillFrom(i, digits);
+  // One new digit, possibly next to the old
+  // one ("37" or "73"): keep the new one.
+  const d =
+    digits.length === 2 && values[i] && digits[0] !== values[i]
+      ? digits[0]
+      : digits.slice(-1);
   commit(values.map((v, j) => (j === i ? d : v)));
   if (i < length - 1) focusBox(i + 1);
 }
@@ -256,15 +264,27 @@ function handlePaste(i, e) {
 async function handleComplete(code) {
   setStatus({ kind: "busy", text: "Verifying " + code + "..." });
   const ok = await verifyCode(code);
-  if (ok) setStatus({ kind: "ok", text: "Code accepted. You are signed in." });
+  if (ok)
+    setStatus({
+      kind: "ok",
+      text: "Code accepted. You are signed in.",
+    });
   else {
-    setStatus({ kind: "error", text: "That code is not right. Try again." });
+    setStatus({
+      kind: "error",
+      text: "That code is not right. Try again.",
+    });
     setAttempt((n) => n + 1);
   }
 }
 
 // in the JSX:
-<OtpInput key={attempt} length={6} disabled={status.kind === "busy" || status.kind === "ok"} onComplete={handleComplete} />
+<OtpInput
+  key={attempt}
+  length={6}
+  disabled={status.kind === "busy" || status.kind === "ok"}
+  onComplete={handleComplete}
+/>
 ~~~
 
 While the fake request runs, the parent passes <code>disabled</code>, so nobody can edit the code that is being checked; that removes a whole class of race conditions without any request IDs. On a wrong code it bumps <code>attempt</code>. Because <code>attempt</code> is the <code>key</code> of <code>OtpInput</code>, React throws the old instance away and mounts a fresh one: empty boxes, and the mount effect focuses box 0. No <code>reset()</code> method, no effect that copies props into state. See [resetting state with the key prop](/interview-question/how-can-the-key-prop-be-used-to-deliberately-reset-component-state).
@@ -277,7 +297,7 @@ The fake server lives in <code>/src/fakeApi.js</code>: <code>verifyCode(code)</c
 
 The solution was bundled with esbuild and mounted in jsdom exactly as the playground does (<code>createRoot</code> plus <code>StrictMode</code>), then driven by a script that types with real <code>input</code> events, presses keys with real <code>keydown</code> events, and pastes. jsdom cannot build a real <code>ClipboardEvent</code> with data, so the driver dispatches a <code>paste</code> event with a <code>clipboardData.getData</code> attached by hand. Each line shows the six boxes (<code>_</code> is empty), which box has focus, and the status text:
 
-~~~
+~~~text
 [react] RENDERED: Verify your phoneEnter the 6-digit code we sent to your phone.Start overDemo: the right code is 246810 (the server is simulated).
 [react] mounted                        boxes: ______ | focus: 0 | status: Enter the 6-digit code we sent to your phone.
 [react] typed 1, 2                     boxes: 12____ | focus: 2 
@@ -419,16 +439,21 @@ If the interviewer pushes on accessibility, mention the alternative design: a si
 import OtpInput from "./src/OtpInput";
 import { DEMO_CODE, verifyCode } from "./src/fakeApi";
 
-const IDLE = { kind: "idle", text: "Enter the 6-digit code we sent to your phone." };
+const IDLE = {
+  kind: "idle",
+  text: "Enter the 6-digit code we sent to your phone.",
+};
 
 export default function App() {
   const [status, setStatus] = useState(IDLE);
-  const [attempt, setAttempt] = useState(0); // changing the key remounts a fresh, empty OtpInput
+  // changing the key remounts a fresh, empty OtpInput
+  const [attempt, setAttempt] = useState(0);
 
   async function handleComplete(code) {
     setStatus({ kind: "busy", text: "Verifying " + code + "..." });
     const ok = await verifyCode(code);
-    if (ok) setStatus({ kind: "ok", text: "Code accepted. You are signed in." });
+    if (ok)
+      setStatus({ kind: "ok", text: "Code accepted. You are signed in." });
     else {
       setStatus({ kind: "error", text: "That code is not right. Try again." });
       setAttempt((n) => n + 1);
@@ -439,14 +464,32 @@ export default function App() {
     <main className="page">
       <section className="card">
         <h1>Verify your phone</h1>
-        <OtpInput key={attempt} length={6} disabled={status.kind === "busy" || status.kind === "ok"} onComplete={handleComplete} />
-        <p className={"status " + status.kind} data-testid="otp-status" role="status">
+        <OtpInput
+          key={attempt}
+          length={6}
+          disabled={status.kind === "busy" || status.kind === "ok"}
+          onComplete={handleComplete}
+        />
+        <p
+          className={"status " + status.kind}
+          data-testid="otp-status"
+          role="status"
+        >
           {status.text}
         </p>
-        <button type="button" className="link" onClick={() => { setStatus(IDLE); setAttempt((n) => n + 1); }}>
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            setStatus(IDLE);
+            setAttempt((n) => n + 1);
+          }}
+        >
           Start over
         </button>
-        <p className="demo">Demo: the right code is {DEMO_CODE} (the server is simulated).</p>
+        <p className="demo">
+          Demo: the right code is {DEMO_CODE} (the server is simulated).
+        </p>
       </section>
     </main>
   );
@@ -494,9 +537,14 @@ export default function OtpInput({ length = 6, disabled = false, onComplete }) {
     const digits = onlyDigits(raw);
     if (raw === "") return commit(values.map((v, j) => (j === i ? "" : v)));
     if (digits === "") return; // a letter: ignore, React restores the old value
-    if (digits.length > 2) return fillFrom(i, digits); // SMS autofill drops the whole code in one box
-    // One new digit, possibly next to the old one ("37" or "73"): keep the new one.
-    const d = digits.length === 2 && values[i] && digits[0] !== values[i] ? digits[0] : digits.slice(-1);
+    // SMS autofill drops the whole code in one box
+    if (digits.length > 2) return fillFrom(i, digits);
+    // One new digit, possibly next to the old
+    // one ("37" or "73"): keep the new one.
+    const d =
+      digits.length === 2 && values[i] && digits[0] !== values[i]
+        ? digits[0]
+        : digits.slice(-1);
     commit(values.map((v, j) => (j === i ? d : v)));
     if (i < length - 1) focusBox(i + 1);
   }
@@ -554,24 +602,91 @@ export default function OtpInput({ length = 6, disabled = false, onComplete }) {
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code) {
-  return new Promise((resolve) => setTimeout(() => resolve(code === DEMO_CODE), 400));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(code === DEMO_CODE), 400),
+  );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; text-align: center; }
-h1 { font-size: 1.25rem; margin: 0 0 16px; }
-.otp { display: flex; justify-content: center; gap: 8px; }
-.box { width: 44px; height: 52px; font-size: 1.5rem; text-align: center; border-radius: 8px;
-  border: 1px solid #3a4150; background: #0f1115; color: #fff; caret-color: #7aa2ff; }
-.box:focus { outline: 2px solid #7aa2ff; border-color: transparent; }
-.box:disabled { opacity: 0.6; }
-.status { min-height: 1.4em; margin: 14px 0 6px; color: #9aa3b2; }
-.status.ok { color: #69f0ae; }
-.status.error { color: #ff8a80; }
-.link { background: none; border: 0; color: #7aa2ff; cursor: pointer; text-decoration: underline; }
-.demo { font-size: 0.8rem; color: #6b7280; }
-@media (max-width: 380px) { .box { width: 38px; height: 46px; } .otp { gap: 6px; } }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 16px;
+}
+.otp {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.box {
+  width: 44px;
+  height: 52px;
+  font-size: 1.5rem;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  background: #0f1115;
+  color: #fff;
+  caret-color: #7aa2ff;
+}
+.box:focus {
+  outline: 2px solid #7aa2ff;
+  border-color: transparent;
+}
+.box:disabled {
+  opacity: 0.6;
+}
+.status {
+  min-height: 1.4em;
+  margin: 14px 0 6px;
+  color: #9aa3b2;
+}
+.status.ok {
+  color: #69f0ae;
+}
+.status.error {
+  color: #ff8a80;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.demo {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+@media (max-width: 380px) {
+  .box {
+    width: 38px;
+    height: 46px;
+  }
+  .otp {
+    gap: 6px;
+  }
+}
 `,
         },
       },
@@ -624,18 +739,12 @@ Props flow down, one event flows up. [Declaring emits](/interview-question/why-d
 ### 3.1 State, refs and props
 
 ~~~vue
-const props = defineProps({
-  length: { type: Number, default: 6 },
-  disabled: { type: Boolean, default: false },
-});
-const emit = defineEmits(["complete"]);
-
-// State: one string per box. The DOM inputs are collected by a function ref.
-const values = ref(Array(props.length).fill(""));
-const inputs = [];
-const onlyDigits = (s) => s.replace(/[^0-9]/g, "");
-
-onMounted(() => inputs[0]?.focus());
+const props = defineProps({ length: { type: Number, default: 6 },
+disabled: { type: Boolean, default: false }, }); const emit =
+defineEmits(["complete"]); // State: one string per box. The DOM inputs
+are collected by a function ref. const values =
+ref(Array(props.length).fill("")); const inputs = []; const onlyDigits =
+(s) => s.replace(/[^0-9]/g, ""); onMounted(() => inputs[0]?.focus());
 ~~~
 
 <code>inputs</code> is deliberately a plain array, not a <code>ref</code>: nothing renders from it. In the template, a function ref fills it:
@@ -649,21 +758,11 @@ onMounted(() => inputs[0]?.focus());
 ### 3.2 One commit that also reports completion
 
 ~~~vue
-function commit(next) {
-  values.value = next;
-  if (next.every((v) => v !== "")) emit("complete", next.join(""));
-}
-
-function fillFrom(start, digits) {
-  const next = [...values.value];
-  let i = start;
-  for (const d of digits) {
-    if (i >= props.length) break;
-    next[i++] = d;
-  }
-  commit(next);
-  focusBox(i);
-}
+function commit(next) { values.value = next; if (next.every((v) => v !==
+"")) emit("complete", next.join("")); } function fillFrom(start, digits)
+{ const next = [...values.value]; let i = start; for (const d of digits)
+{ if (i >= props.length) break; next[i++] = d; } commit(next);
+focusBox(i); }
 ~~~
 
 Every write goes through <code>commit</code>, which emits <code>complete</code> at the moment the last box is filled. A <code>watch(values, ...)</code> that emits when the array is full would also work, but it runs after the fact and is easy to trigger twice; the handler that filled the box already knows.
@@ -671,30 +770,24 @@ Every write goes through <code>commit</code>, which emits <code>complete</code> 
 ### 3.3 Typing, and the Vue-specific DOM write-back
 
 ~~~vue
-function onInput(i, e) {
-  const el = e.target;
-  const raw = el.value;
-  const digits = onlyDigits(raw);
-  const old = values.value[i];
-  if (raw === "") return commit(values.value.map((v, j) => (j === i ? "" : v)));
-  if (digits.length > 2) return fillFrom(i, digits); // SMS autofill drops the whole code in one box
-  const d = digits === "" ? old
-    : digits.length === 2 && old && digits[0] !== old ? digits[0]
-    : digits.slice(-1);
-  // Vue only patches the DOM when state changes. If d equals the old value
-  // (a letter, or the same digit typed again), write the box back by hand.
-  el.value = d;
-  if (digits === "") return; // a letter: stay on this box
-  if (d !== old) commit(values.value.map((v, j) => (j === i ? d : v)));
-  if (i < props.length - 1) focusBox(i + 1);
-}
+function onInput(i, e) { const el = e.target; const raw = el.value;
+const digits = onlyDigits(raw); const old = values.value[i]; if (raw ===
+"") return commit(values.value.map((v, j) => (j === i ? "" : v))); if
+(digits.length > 2) return fillFrom(i, digits); // SMS autofill drops
+the whole code in one box const d = digits === "" ? old : digits.length
+=== 2 && old && digits[0] !== old ? digits[0] : digits.slice(-1); // Vue
+only patches the DOM when state changes. If d equals the old value // (a
+letter, or the same digit typed again), write the box back by hand.
+el.value = d; if (digits === "") return; // a letter: stay on this box
+if (d !== old) commit(values.value.map((v, j) => (j === i ? d : v))); if
+(i < props.length - 1) focusBox(i + 1); }
 ~~~
 
 The rules: an empty box stores <code>""</code>; more than two digits is autofill and goes through <code>fillFrom</code>; when a box briefly holds two characters, keep the one that is not the old digit; letters are ignored.
 
 The line <code>el.value = d</code> is the part that differs from React. React restores a controlled input after every event. Vue does not: it patches <code>:value</code> only when the component re-renders, and if the state did not change there is no re-render. To prove it, the same driver was run on a copy with that one line commented out:
 
-~~~
+~~~text
 [vue] typed 1, 2                     boxes: 12____ | focus: 2 
 [vue] typed x into box 2             boxes: 12x___ | focus: 2 
 [vue] box 1: typed 7 after the 2     boxes: 17____ | focus: 2 
@@ -708,28 +801,15 @@ The letter <code>x</code> stayed in box 2, and typing 7 into a box that already 
 ### 3.4 Keyboard and paste
 
 ~~~vue
-function onKeydown(i, e) {
-  if (e.key === "Backspace") {
-    e.preventDefault();
-    if (values.value[i]) commit(values.value.map((v, j) => (j === i ? "" : v)));
-    else if (i > 0) {
-      commit(values.value.map((v, j) => (j === i - 1 ? "" : v)));
-      focusBox(i - 1);
-    }
-  } else if (e.key === "ArrowLeft") {
-    e.preventDefault();
-    focusBox(i - 1);
-  } else if (e.key === "ArrowRight") {
-    e.preventDefault();
-    focusBox(i + 1);
-  }
-}
-
-function onPaste(i, e) {
-  e.preventDefault();
-  const digits = onlyDigits(e.clipboardData.getData("text"));
-  if (digits) fillFrom(i, digits);
-}
+function onKeydown(i, e) { if (e.key === "Backspace") {
+e.preventDefault(); if (values.value[i]) commit(values.value.map((v, j)
+=> (j === i ? "" : v))); else if (i > 0) { commit(values.value.map((v,
+j) => (j === i - 1 ? "" : v))); focusBox(i - 1); } } else if (e.key ===
+"ArrowLeft") { e.preventDefault(); focusBox(i - 1); } else if (e.key ===
+"ArrowRight") { e.preventDefault(); focusBox(i + 1); } } function
+onPaste(i, e) { e.preventDefault(); const digits =
+onlyDigits(e.clipboardData.getData("text")); if (digits) fillFrom(i,
+digits); }
 ~~~
 
 Backspace lives in <code>keydown</code> because on an empty box no <code>input</code> event ever fires. <code>preventDefault()</code> stops the browser from also deleting, and on paste it stops the whole clipboard text from landing in one box.
@@ -737,18 +817,19 @@ Backspace lives in <code>keydown</code> because on an empty box no <code>input</
 ### 3.5 The parent: verify, disable, reset with :key
 
 ~~~vue
-async function onComplete(code) {
-  status.value = { kind: "busy", text: "Verifying " + code + "..." };
-  const ok = await verifyCode(code);
-  if (ok) status.value = { kind: "ok", text: "Code accepted. You are signed in." };
-  else {
-    status.value = { kind: "error", text: "That code is not right. Try again." };
-    attempt.value++;
-  }
-}
+async function onComplete(code) { status.value = { kind: "busy", text:
+"Verifying " + code + "..." }; const ok = await verifyCode(code); if
+(ok) status.value = { kind: "ok", text: "Code accepted. You are signed
+in." }; else { status.value = { kind: "error", text: "That code is not
+right. Try again." }; attempt.value++; } }
 
 <!-- in the template -->
-<OtpInput :key="attempt" :length="6" :disabled="status.kind === 'busy' || status.kind === 'ok'" @complete="onComplete" />
+<OtpInput
+  :key="attempt"
+  :length="6"
+  :disabled="status.kind === 'busy' || status.kind === 'ok'"
+  @complete="onComplete"
+/>
 ~~~
 
 Changing <code>:key</code> makes Vue unmount the old <code>OtpInput</code> and mount a new one, so the boxes are empty and <code>onMounted</code> focuses box 0 again. <code>verifyCode</code> is a simulated server: a Promise resolving after 400 ms, accepting only <code>246810</code>.
@@ -757,7 +838,7 @@ Changing <code>:key</code> makes Vue unmount the old <code>OtpInput</code> and m
 
 The SFCs were compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom. The driver typed with real <code>input</code> events, pressed keys with <code>keydown</code> events, and pasted with a <code>paste</code> event carrying a hand-made <code>clipboardData</code> (jsdom cannot construct one). Boxes are shown with <code>_</code> for empty:
 
-~~~
+~~~text
 [vue] RENDERED: Verify your phoneEnter the 6-digit code we sent to your phone.Start overDemo: the right code is 246810 (the server is simulated).
 [vue] mounted                        boxes: ______ | focus: 0 | status: Enter the 6-digit code we sent to your phone.
 [vue] typed 1, 2                     boxes: 12____ | focus: 2 
@@ -875,16 +956,23 @@ import { ref } from "vue";
 import OtpInput from "./components/OtpInput.vue";
 import { DEMO_CODE, verifyCode } from "./fakeApi.js";
 
-const IDLE = { kind: "idle", text: "Enter the 6-digit code we sent to your phone." };
+const IDLE = {
+  kind: "idle",
+  text: "Enter the 6-digit code we sent to your phone.",
+};
 const status = ref(IDLE);
 const attempt = ref(0); // changing the key remounts a fresh, empty OtpInput
 
 async function onComplete(code) {
   status.value = { kind: "busy", text: "Verifying " + code + "..." };
   const ok = await verifyCode(code);
-  if (ok) status.value = { kind: "ok", text: "Code accepted. You are signed in." };
+  if (ok)
+    status.value = { kind: "ok", text: "Code accepted. You are signed in." };
   else {
-    status.value = { kind: "error", text: "That code is not right. Try again." };
+    status.value = {
+      kind: "error",
+      text: "That code is not right. Try again.",
+    };
     attempt.value++;
   }
 }
@@ -899,8 +987,17 @@ function startOver() {
   <main class="page">
     <section class="card">
       <h1>Verify your phone</h1>
-      <OtpInput :key="attempt" :length="6" :disabled="status.kind === 'busy' || status.kind === 'ok'" @complete="onComplete" />
-      <p :class="['status', status.kind]" data-testid="otp-status" role="status">{{ status.text }}</p>
+      <OtpInput
+        :key="attempt"
+        :length="6"
+        :disabled="status.kind === 'busy' || status.kind === 'ok'"
+        @complete="onComplete"
+      />
+      <p
+        :class="['status', status.kind]"
+        data-testid="otp-status"
+        role="status"
+      >{{ status.text }}</p>
       <button type="button" class="link" @click="startOver">Start over</button>
       <p class="demo">Demo: the right code is {{ DEMO_CODE }} (the server is simulated).</p>
     </section>
@@ -908,18 +1005,57 @@ function startOver() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; text-align: center; }
-h1 { font-size: 1.25rem; margin: 0 0 16px; }
-.status { min-height: 1.4em; margin: 14px 0 6px; color: #9aa3b2; }
-.status.ok { color: #69f0ae; }
-.status.error { color: #ff8a80; }
-.link { background: none; border: 0; color: #7aa2ff; cursor: pointer; text-decoration: underline; }
-.demo { font-size: 0.8rem; color: #6b7280; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 16px;
+}
+.status {
+  min-height: 1.4em;
+  margin: 14px 0 6px;
+  color: #9aa3b2;
+}
+.status.ok {
+  color: #69f0ae;
+}
+.status.error {
+  color: #ff8a80;
+}
+.link {
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.demo {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
 </style>
 `,
           "/src/components/OtpInput.vue": `<script setup>
@@ -966,10 +1102,14 @@ function onInput(i, e) {
   const digits = onlyDigits(raw);
   const old = values.value[i];
   if (raw === "") return commit(values.value.map((v, j) => (j === i ? "" : v)));
-  if (digits.length > 2) return fillFrom(i, digits); // SMS autofill drops the whole code in one box
-  const d = digits === "" ? old
-    : digits.length === 2 && old && digits[0] !== old ? digits[0]
-    : digits.slice(-1);
+  // SMS autofill drops the whole code in one box
+  if (digits.length > 2) return fillFrom(i, digits);
+  const d =
+    digits === ""
+      ? old
+      : digits.length === 2 && old && digits[0] !== old
+        ? digits[0]
+        : digits.slice(-1);
   // Vue only patches the DOM when state changes. If d equals the old value
   // (a letter, or the same digit typed again), write the box back by hand.
   el.value = d;
@@ -1025,19 +1165,47 @@ function onPaste(i, e) {
 </template>
 
 <style scoped>
-.otp { display: flex; justify-content: center; gap: 8px; }
-.box { width: 44px; height: 52px; font-size: 1.5rem; text-align: center; border-radius: 8px;
-  border: 1px solid #3a4150; background: #0f1115; color: #fff; caret-color: #7aa2ff; }
-.box:focus { outline: 2px solid #7aa2ff; border-color: transparent; }
-.box:disabled { opacity: 0.6; }
-@media (max-width: 380px) { .box { width: 38px; height: 46px; } .otp { gap: 6px; } }
+.otp {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.box {
+  width: 44px;
+  height: 52px;
+  font-size: 1.5rem;
+  text-align: center;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  background: #0f1115;
+  color: #fff;
+  caret-color: #7aa2ff;
+}
+.box:focus {
+  outline: 2px solid #7aa2ff;
+  border-color: transparent;
+}
+.box:disabled {
+  opacity: 0.6;
+}
+@media (max-width: 380px) {
+  .box {
+    width: 38px;
+    height: 46px;
+  }
+  .otp {
+    gap: 6px;
+  }
+}
 </style>
 `,
           "/src/fakeApi.js": `// Simulated server: no network in the playground. Resolves after 400 ms.
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code) {
-  return new Promise((resolve) => setTimeout(() => resolve(code === DEMO_CODE), 400));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(code === DEMO_CODE), 400),
+  );
 }
 `,
         },
@@ -1079,12 +1247,14 @@ The playground compiles Angular at runtime, where signal-based <code>input()</co
 @Output() complete = new EventEmitter<string>();
 @ViewChildren("box") boxes!: QueryList<ElementRef<HTMLInputElement>>;
 
-// State: one string per box, in a signal so the zoneless app re-renders.
+// State: one string per box, in a signal
+// so the zoneless app re-renders.
 readonly values = signal<string[]>([]);
 private readonly injector = inject(Injector);
 
 ngOnInit(): void {
-  this.values.set(Array(this.length).fill("")); // @Input values exist from here on
+  // @Input values exist from here on
+  this.values.set(Array(this.length).fill(""));
 }
 ~~~
 
@@ -1125,12 +1295,18 @@ onInput(i: number, e: Event): void {
   const digits = onlyDigits(raw);
   const old = this.values()[i];
   if (raw === "") return this.commit(this.setBox(i, ""));
-  if (digits.length > 2) return this.fillFrom(i, digits); // SMS autofill drops the whole code in one box
-  const d = digits === "" ? old
-    : digits.length === 2 && old && digits[0] !== old ? digits[0]
-    : digits.slice(-1);
-  // [value] is only re-applied when the bound value changes, so the DOM can
-  // hold "x" or "77" while the signal still says "7". Write it back by hand.
+  // SMS autofill drops the whole code in one box
+  if (digits.length > 2) return this.fillFrom(i, digits);
+  const d =
+    digits === ""
+      ? old
+      : digits.length === 2 && old && digits[0] !== old
+        ? digits[0]
+        : digits.slice(-1);
+  // [value] is only re-applied when the
+  // bound value changes, so the DOM can
+  // hold "x" or "77" while the signal
+  // still says "7". Write it back by hand.
   el.value = d;
   if (digits === "") return; // a letter: stay on this box
   if (d !== old) this.commit(this.setBox(i, d));
@@ -1140,7 +1316,7 @@ onInput(i: number, e: Event): void {
 
 Angular checks a property binding like <code>[value]="v"</code> against the *last value it bound*, not against the DOM. If the user types <code>x</code>, the signal still says <code>""</code>, the binding did not change, and Angular never touches the input again. The same driver run on a copy with <code>el.value = d</code> commented out:
 
-~~~
+~~~text
 [angular:playground] typed 1, 2                     boxes: 12____ | focus: 2 
 [angular:playground] typed x into box 2             boxes: 12x___ | focus: 2 
 [angular:playground] box 1: typed 7 after the 2     boxes: 17x___ | focus: 2 
@@ -1194,7 +1370,7 @@ reset(): void {
 
 The parent sets the status to "error" (which re-enables the boxes) and calls <code>reset()</code> in the same tick. At that moment the inputs are still disabled in the DOM, and a disabled input cannot take focus. The first version called <code>focusBox(0)</code> directly:
 
-~~~
+~~~text
 [angular:app] after fake server              boxes: ______ | focus: 5 | status: That code is not right. Try again.
 ~~~
 
@@ -1206,7 +1382,7 @@ Focus stayed on box 5. <code>afterNextRender</code> runs the callback after Angu
 
 The component was compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and also booted through runtime JIT as in the playground (<code>angular:playground</code>), each with <code>bootstrapApplication(AppComponent)</code> and no providers, in jsdom. The driver typed with <code>input</code> events, pressed keys, and pasted with a <code>paste</code> event carrying a hand-made <code>clipboardData</code>. AOT output (the JIT run printed the same lines):
 
-~~~
+~~~text
 [angular:app] RENDERED: Verify your phoneEnter the 6-digit code we sent to your phone.Start overDemo: the right code is 246810 (the server is simulated).
 [angular:app] mounted                        boxes: ______ | focus: 0 | status: Enter the 6-digit code we sent to your phone.
 [angular:app] typed 1, 2                     boxes: 12____ | focus: 2 
@@ -1325,7 +1501,10 @@ import { OtpInputComponent } from "./otp-input.component";
 import { DEMO_CODE, verifyCode } from "./fake-api";
 
 type Status = { kind: "idle" | "busy" | "ok" | "error"; text: string };
-const IDLE: Status = { kind: "idle", text: "Enter the 6-digit code we sent to your phone." };
+const IDLE: Status = {
+  kind: "idle",
+  text: "Enter the 6-digit code we sent to your phone.",
+};
 
 @Component({
   selector: "app-root",
@@ -1334,14 +1513,27 @@ const IDLE: Status = { kind: "idle", text: "Enter the 6-digit code we sent to yo
     <main class="page">
       <section class="card">
         <h1>Verify your phone</h1>
-        <app-otp-input [length]="6" [disabled]="status().kind === 'busy' || status().kind === 'ok'" (complete)="onComplete($event)" />
-        <p [class]="'status ' + status().kind" data-testid="otp-status" role="status">{{ status().text }}</p>
-        <button type="button" class="link" (click)="startOver()">Start over</button>
+        <app-otp-input
+          [length]="6"
+          [disabled]="status().kind === 'busy' || status().kind === 'ok'"
+          (complete)="onComplete($event)"
+        />
+        <p
+          [class]="'status ' + status().kind"
+          data-testid="otp-status"
+          role="status"
+        >{{ status().text }}</p>
+        <button
+          type="button"
+          class="link"
+          (click)="startOver()"
+        >Start over</button>
         <p class="demo">Demo: the right code is {{ demoCode }} (the server is simulated).</p>
       </section>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
     .card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; text-align: center; }
@@ -1351,11 +1543,13 @@ const IDLE: Status = { kind: "idle", text: "Enter the 6-digit code we sent to yo
     .status.error { color: #ff8a80; }
     .link { background: none; border: 0; color: #7aa2ff; cursor: pointer; text-decoration: underline; }
     .demo { font-size: 0.8rem; color: #6b7280; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
@@ -1366,9 +1560,16 @@ export class AppComponent {
   async onComplete(code: string): Promise<void> {
     this.status.set({ kind: "busy", text: "Verifying " + code + "..." });
     const ok = await verifyCode(code);
-    if (ok) this.status.set({ kind: "ok", text: "Code accepted. You are signed in." });
+    if (ok)
+      this.status.set({
+        kind: "ok",
+        text: "Code accepted. You are signed in.",
+      });
     else {
-      this.status.set({ kind: "error", text: "That code is not right. Try again." });
+      this.status.set({
+        kind: "error",
+        text: "That code is not right. Try again.",
+      });
       this.otp.reset();
     }
   }
@@ -1383,12 +1584,25 @@ export class AppComponent {
 export const DEMO_CODE = "246810";
 
 export function verifyCode(code: string): Promise<boolean> {
-  return new Promise((resolve) => setTimeout(() => resolve(code === DEMO_CODE), 400));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(code === DEMO_CODE), 400),
+  );
 }
 `,
           "/src/app/otp-input.component.ts": `import {
-  AfterViewInit, Component, ElementRef, EventEmitter, Injector, Input, OnInit, Output, QueryList, ViewChildren,
-  afterNextRender, inject, signal,
+  AfterViewInit,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Injector,
+  Input,
+  OnInit,
+  Output,
+  QueryList,
+  ViewChildren,
+  afterNextRender,
+  inject,
+  signal,
 } from "@angular/core";
 
 const onlyDigits = (s: string) => s.replace(/[^0-9]/g, "");
@@ -1416,14 +1630,42 @@ const onlyDigits = (s: string) => s.replace(/[^0-9]/g, "");
       }
     </div>
   \`,
-  styles: [\`
-    .otp { display: flex; justify-content: center; gap: 8px; }
-    .box { width: 44px; height: 52px; font-size: 1.5rem; text-align: center; border-radius: 8px;
-      border: 1px solid #3a4150; background: #0f1115; color: #fff; caret-color: #7aa2ff; }
-    .box:focus { outline: 2px solid #7aa2ff; border-color: transparent; }
-    .box:disabled { opacity: 0.6; }
-    @media (max-width: 380px) { .box { width: 38px; height: 46px; } .otp { gap: 6px; } }
-  \`],
+  styles: [
+    \`
+      .otp {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+      }
+      .box {
+        width: 44px;
+        height: 52px;
+        font-size: 1.5rem;
+        text-align: center;
+        border-radius: 8px;
+        border: 1px solid #3a4150;
+        background: #0f1115;
+        color: #fff;
+        caret-color: #7aa2ff;
+      }
+      .box:focus {
+        outline: 2px solid #7aa2ff;
+        border-color: transparent;
+      }
+      .box:disabled {
+        opacity: 0.6;
+      }
+      @media (max-width: 380px) {
+        .box {
+          width: 38px;
+          height: 46px;
+        }
+        .otp {
+          gap: 6px;
+        }
+      }
+    \`,
+  ],
 })
 export class OtpInputComponent implements OnInit, AfterViewInit {
   @Input() length = 6;
@@ -1436,7 +1678,8 @@ export class OtpInputComponent implements OnInit, AfterViewInit {
   private readonly injector = inject(Injector);
 
   ngOnInit(): void {
-    this.values.set(Array(this.length).fill("")); // @Input values exist from here on
+    // @Input values exist from here on
+    this.values.set(Array(this.length).fill(""));
   }
 
   ngAfterViewInit(): void {
@@ -1453,7 +1696,9 @@ export class OtpInputComponent implements OnInit, AfterViewInit {
   }
 
   private focusBox(i: number): void {
-    const el = this.boxes.get(Math.max(0, Math.min(this.length - 1, i)))?.nativeElement;
+    const el = this.boxes.get(
+      Math.max(0, Math.min(this.length - 1, i)),
+    )?.nativeElement;
     el?.focus();
     el?.select();
   }
@@ -1474,7 +1719,8 @@ export class OtpInputComponent implements OnInit, AfterViewInit {
       if (i >= this.length) break;
       next[i++] = d;
     }
-    for (const [j, b] of this.boxes.toArray().entries()) b.nativeElement.value = next[j];
+    for (const [j, b] of this.boxes.toArray().entries())
+      b.nativeElement.value = next[j];
     this.commit(next);
     this.focusBox(i);
   }
@@ -1485,10 +1731,14 @@ export class OtpInputComponent implements OnInit, AfterViewInit {
     const digits = onlyDigits(raw);
     const old = this.values()[i];
     if (raw === "") return this.commit(this.setBox(i, ""));
-    if (digits.length > 2) return this.fillFrom(i, digits); // SMS autofill drops the whole code in one box
-    const d = digits === "" ? old
-      : digits.length === 2 && old && digits[0] !== old ? digits[0]
-      : digits.slice(-1);
+    // SMS autofill drops the whole code in one box
+    if (digits.length > 2) return this.fillFrom(i, digits);
+    const d =
+      digits === ""
+        ? old
+        : digits.length === 2 && old && digits[0] !== old
+          ? digits[0]
+          : digits.slice(-1);
     // [value] is only re-applied when the bound value changes, so the DOM can
     // hold "x" or "77" while the signal still says "7". Write it back by hand.
     el.value = d;
@@ -1620,11 +1870,17 @@ Hover never calls <code>onChange</code>. Only a click or a key commits. Leaving 
 
 ~~~jsx
 function Star({ fill }) {
-  // Two stacked glyphs: a grey base and a gold copy clipped to fill (0..1).
+  // Two stacked glyphs: a grey base and
+  // a gold copy clipped to fill (0..1).
   return (
     <span className="star" aria-hidden="true">
       <span className="base">★</span>
-      <span className="fill" style={{ width: Math.round(fill * 100) + "%" }}>★</span>
+      <span
+        className="fill"
+        style={{ width: Math.round(fill * 100) + "%" }}
+      >
+        ★
+      </span>
     </span>
   );
 }
@@ -1641,7 +1897,11 @@ Two identical glyphs are stacked: a grey one underneath and a gold one on top. T
 ~~~jsx
 if (readOnly) {
   return (
-    <span className="stars" role="img" aria-label={"Rated " + value + " out of " + max}>
+    <span
+      className="stars"
+      role="img"
+      aria-label={"Rated " + value + " out of " + max}
+    >
       {Array.from({ length: max }, (_, i) => (
         <Star key={i} fill={Math.max(0, Math.min(1, value - i))} />
       ))}
@@ -1655,7 +1915,12 @@ The read-only stars are one picture with one name: <code>role="img"</code> and <
 ### 4.3 Interactive mode: a radio group
 
 ~~~jsx
-<div className="stars" role="radiogroup" aria-label={label} onMouseLeave={() => setHover(0)}>
+<div
+  className="stars"
+  role="radiogroup"
+  aria-label={label}
+  onMouseLeave={() => setHover(0)}
+>
   {Array.from({ length: max }, (_, i) => {
     const n = i + 1;
     return (
@@ -1668,7 +1933,9 @@ The read-only stars are one picture with one name: <code>role="img"</code> and <
         className="hit"
         data-testid={"star-" + n}
         aria-checked={value === n}
-        aria-label={n + (n === 1 ? " star" : " stars") + ", " + LABELS[i]}
+        aria-label={
+          n + (n === 1 ? " star" : " stars") + ", " + LABELS[i]
+        }
         tabIndex={value === n || (value === 0 && n === 1) ? 0 : -1}
         onMouseEnter={() => setHover(n)}
         onClick={() => onChange(value === n ? 0 : n)}
@@ -1693,11 +1960,19 @@ Clicking the current value again calls <code>onChange(0)</code>, which is how a 
 function select(n) {
   const next = Math.max(1, Math.min(max, n));
   onChange(next);
-  radios.current[next - 1]?.focus(); // roving focus follows the selection
+  // roving focus follows the selection
+  radios.current[next - 1]?.focus();
 }
 
 function handleKeyDown(e) {
-  const moves = { ArrowRight: value + 1, ArrowUp: value + 1, ArrowLeft: value - 1, ArrowDown: value - 1, Home: 1, End: max };
+  const moves = {
+    ArrowRight: value + 1,
+    ArrowUp: value + 1,
+    ArrowLeft: value - 1,
+    ArrowDown: value - 1,
+    Home: 1,
+    End: max,
+  };
   if (!(e.key in moves)) return;
   e.preventDefault();
   select(moves[e.key]);
@@ -1709,7 +1984,8 @@ A lookup table maps keys to the next value; <code>select</code> clamps it into 1
 ### 4.5 The parent
 
 ~~~jsx
-const [rating, setRating] = useState(0); // the parent owns the value: a controlled component
+// the parent owns the value: a controlled component
+const [rating, setRating] = useState(0);
 
 return (
   <main className="page">
@@ -1728,7 +2004,7 @@ The same component renders the average (<code>readOnly</code>) and the user inpu
 
 Mounted in jsdom with <code>createRoot</code> inside <code>StrictMode</code>, then driven by a script. React builds <code>onMouseEnter</code> and <code>onMouseLeave</code> from <code>mouseover</code> and <code>mouseout</code> events, so the driver fires those (plus native <code>mouseenter</code> and <code>mouseleave</code>, which the Vue and Angular versions listen to). <code>lit</code> shows which stars are gold, <code>checked</code> is the star with <code>aria-checked="true"</code>, <code>tabbable</code> is the star with <code>tabIndex=0</code>, <code>focus</code> is the focused star (0 = none):
 
-~~~
+~~~text
 [react] RENDERED: Trail running shoes★★★★★★★★★★ 3.6 average from 128 reviewsYour rating★★★★★★★★★★Not rated yetClick a star, or Tab to the stars and use the arrow keys.
 [react] read-only: Rated 3.6 out of 5 | fills: 100% 100% 100% 60% 0%
 [react] mounted                  lit: ..... | checked: 0 | tabbable: 1 | focus: 0 | Not rated yet | Click a star, or Tab to the stars and use the arrow keys.
@@ -1854,19 +2130,23 @@ What it shows: hover lit three stars without changing <code>checked</code> or th
 import StarRating from "./src/StarRating";
 
 export default function App() {
-  const [rating, setRating] = useState(0); // the parent owns the value: a controlled component
+  // the parent owns the value: a controlled component
+  const [rating, setRating] = useState(0);
 
   return (
     <main className="page">
       <article className="card">
         <h1>Trail running shoes</h1>
         <p className="avg">
-          <StarRating value={3.6} readOnly /> <span data-testid="avg">3.6 average from 128 reviews</span>
+          <StarRating value={3.6} readOnly />{" "}
+          <span data-testid="avg">3.6 average from 128 reviews</span>
         </p>
         <h2>Your rating</h2>
         <StarRating value={rating} onChange={setRating} label="Your rating" />
         <p className="saved" data-testid="saved">
-          {rating ? "Saved: " + rating + " star" + (rating > 1 ? "s" : "") : "Click a star, or Tab to the stars and use the arrow keys."}
+          {rating
+            ? "Saved: " + rating + " star" + (rating > 1 ? "s" : "")
+            : "Click a star, or Tab to the stars and use the arrow keys."}
         </p>
       </article>
     </main>
@@ -1882,19 +2162,32 @@ function Star({ fill }) {
   return (
     <span className="star" aria-hidden="true">
       <span className="base">★</span>
-      <span className="fill" style={{ width: Math.round(fill * 100) + "%" }}>★</span>
+      <span className="fill" style={{ width: Math.round(fill * 100) + "%" }}>
+        ★
+      </span>
     </span>
   );
 }
 
-export default function StarRating({ value, onChange, max = 5, readOnly = false, label = "Rating" }) {
-  const [hover, setHover] = useState(0); // transient preview, never reported to the parent
+export default function StarRating({
+  value,
+  onChange,
+  max = 5,
+  readOnly = false,
+  label = "Rating",
+}) {
+  // transient preview, never reported to the parent
+  const [hover, setHover] = useState(0);
   const radios = useRef([]);
   const shown = hover || value;
 
   if (readOnly) {
     return (
-      <span className="stars" role="img" aria-label={"Rated " + value + " out of " + max}>
+      <span
+        className="stars"
+        role="img"
+        aria-label={"Rated " + value + " out of " + max}
+      >
         {Array.from({ length: max }, (_, i) => (
           <Star key={i} fill={Math.max(0, Math.min(1, value - i))} />
         ))}
@@ -1909,7 +2202,14 @@ export default function StarRating({ value, onChange, max = 5, readOnly = false,
   }
 
   function handleKeyDown(e) {
-    const moves = { ArrowRight: value + 1, ArrowUp: value + 1, ArrowLeft: value - 1, ArrowDown: value - 1, Home: 1, End: max };
+    const moves = {
+      ArrowRight: value + 1,
+      ArrowUp: value + 1,
+      ArrowLeft: value - 1,
+      ArrowDown: value - 1,
+      Home: 1,
+      End: max,
+    };
     if (!(e.key in moves)) return;
     e.preventDefault();
     select(moves[e.key]);
@@ -1917,7 +2217,12 @@ export default function StarRating({ value, onChange, max = 5, readOnly = false,
 
   return (
     <div className="rating">
-      <div className="stars" role="radiogroup" aria-label={label} onMouseLeave={() => setHover(0)}>
+      <div
+        className="stars"
+        role="radiogroup"
+        aria-label={label}
+        onMouseLeave={() => setHover(0)}
+      >
         {Array.from({ length: max }, (_, i) => {
           const n = i + 1;
           return (
@@ -1942,28 +2247,100 @@ export default function StarRating({ value, onChange, max = 5, readOnly = false,
         })}
       </div>
       <span className="caption" data-testid="caption">
-        {hover ? "Preview: " + LABELS[hover - 1] : value ? value + " of " + max + ", " + LABELS[value - 1] : "Not rated yet"}
+        {hover
+          ? "Preview: " + LABELS[hover - 1]
+          : value
+            ? value + " of " + max + ", " + LABELS[value - 1]
+            : "Not rated yet"}
       </span>
     </div>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 8px; }
-h2 { font-size: 1rem; margin: 20px 0 8px; color: #c5cbd6; }
-.avg { display: flex; align-items: center; gap: 8px; margin: 0; color: #9aa3b2; font-size: 0.9rem; }
-.rating { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.stars { display: inline-flex; gap: 2px; font-size: 1.4rem; line-height: 1; }
-.rating .stars { font-size: 2rem; }
-.star { position: relative; display: inline-block; }
-.base { color: #3a4150; }
-.fill { position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; color: #ffc107; }
-.hit { cursor: pointer; border-radius: 6px; padding: 2px; }
-.hit:focus-visible { outline: 2px solid #7aa2ff; }
-.caption { color: #c5cbd6; min-width: 9em; }
-.saved { color: #9aa3b2; font-size: 0.9rem; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 8px;
+}
+h2 {
+  font-size: 1rem;
+  margin: 20px 0 8px;
+  color: #c5cbd6;
+}
+.avg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.rating .stars {
+  font-size: 2rem;
+}
+.star {
+  position: relative;
+  display: inline-block;
+}
+.base {
+  color: #3a4150;
+}
+.fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: #ffc107;
+}
+.hit {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px;
+}
+.hit:focus-visible {
+  outline: 2px solid #7aa2ff;
+}
+.caption {
+  color: #c5cbd6;
+  min-width: 9em;
+}
+.saved {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
 `,
         },
       },
@@ -1996,17 +2373,12 @@ Five stars; hover previews; click commits; clicking the current rating clears it
 ### 3.1 Model, preview and derived fills
 
 ~~~vue
-const model = defineModel({ type: Number, default: 0 });
-
-const hover = ref(0); // transient preview, never emitted to the parent
-const shown = computed(() => hover.value || model.value);
-const radios = [];
-
-const fills = computed(() =>
-  Array.from({ length: props.max }, (_, i) =>
-    props.readOnly ? Math.max(0, Math.min(1, model.value - i)) : shown.value >= i + 1 ? 1 : 0,
-  ),
-);
+const model = defineModel({ type: Number, default: 0 }); const hover =
+ref(0); // transient preview, never emitted to the parent const shown =
+computed(() => hover.value || model.value); const radios = []; const
+fills = computed(() => Array.from({ length: props.max }, (_, i) =>
+props.readOnly ? Math.max(0, Math.min(1, model.value - i)) : shown.value
+>= i + 1 ? 1 : 0, ), );
 ~~~
 
 The <code>fills</code> array is the only thing the template needs: 1 or 0 per star in interactive mode, a fraction in read-only mode. Because it is a [computed](/interview-question/what-is-the-difference-between-computed-and-watch), it updates whenever <code>hover</code> or the model changes and is cached otherwise.
@@ -2014,9 +2386,22 @@ The <code>fills</code> array is the only thing the template needs: 1 or 0 per st
 ### 3.2 Two templates in one component
 
 ~~~vue
-<span v-if="readOnly" class="stars" role="img" :aria-label="'Rated ' + model + ' out of ' + max">
-  <span v-for="(f, i) in fills" :key="i" class="star" aria-hidden="true">
-    <span class="base">★</span><span class="fill" :style="{ width: Math.round(f * 100) + '%' }">★</span>
+<span
+  v-if="readOnly"
+  class="stars"
+  role="img"
+  :aria-label="'Rated ' + model + ' out of ' + max"
+>
+  <span
+    v-for="(f, i) in fills"
+    :key="i"
+    class="star"
+    aria-hidden="true"
+  >
+    <span class="base">★</span
+    ><span class="fill" :style="{ width: Math.round(f * 100) + '%' }"
+      >★</span
+    >
   </span>
 </span>
 ~~~
@@ -2053,19 +2438,13 @@ The interactive branch is a radio group:
 ### 3.3 Keyboard
 
 ~~~vue
-function select(n) {
-  const next = Math.max(1, Math.min(props.max, n));
-  model.value = next; // emits update:modelValue
-  radios[next - 1]?.focus(); // roving focus follows the selection
-}
-
-function onKeydown(e) {
-  const v = model.value;
-  const moves = { ArrowRight: v + 1, ArrowUp: v + 1, ArrowLeft: v - 1, ArrowDown: v - 1, Home: 1, End: props.max };
-  if (!(e.key in moves)) return;
-  e.preventDefault();
-  select(moves[e.key]);
-}
+function select(n) { const next = Math.max(1, Math.min(props.max, n));
+model.value = next; // emits update:modelValue radios[next -
+1]?.focus(); // roving focus follows the selection } function
+onKeydown(e) { const v = model.value; const moves = { ArrowRight: v + 1,
+ArrowUp: v + 1, ArrowLeft: v - 1, ArrowDown: v - 1, Home: 1, End:
+props.max }; if (!(e.key in moves)) return; e.preventDefault();
+select(moves[e.key]); }
 ~~~
 
 ### 3.4 The parent
@@ -2083,7 +2462,7 @@ The read-only instance passes <code>:model-value</code> without listening for up
 
 Compiled with <code>@vue/compiler-sfc</code>, mounted with <code>createApp(App).mount("#app")</code> in jsdom, and driven with real events: native <code>mouseenter</code> on a star and <code>mouseleave</code> on the group (the driver also fires <code>mouseover</code>/<code>mouseout</code> for the React version, which Vue ignores), clicks and keydowns. <code>lit</code> is which stars are gold, <code>checked</code> the <code>aria-checked</code> star, <code>tabbable</code> the star with tabindex 0, <code>focus</code> the focused star (0 = none):
 
-~~~
+~~~text
 [vue] RENDERED: Trail running shoes★★★★★★★★★★ 3.6 average from 128 reviewsYour rating★★★★★★★★★★Not rated yetClick a star, or Tab to the stars and use the arrow keys.
 [vue] read-only: Rated 3.6 out of 5 | fills: 100% 100% 100% 60% 0%
 [vue] mounted                  lit: ..... | checked: 0 | tabbable: 1 | focus: 0 | Not rated yet | Click a star, or Tab to the stars and use the arrow keys.
@@ -2206,7 +2585,10 @@ const rating = ref(0); // the parent owns the value; v-model keeps it in sync
     <article class="card">
       <h1>Trail running shoes</h1>
       <p class="avg">
-        <StarRating :model-value="3.6" read-only /> <span data-testid="avg">3.6 average from 128 reviews</span>
+        <StarRating
+          :model-value="3.6"
+          read-only
+        /> <span data-testid="avg">3.6 average from 128 reviews</span>
       </p>
       <h2>Your rating</h2>
       <StarRating v-model="rating" label="Your rating" />
@@ -2218,16 +2600,51 @@ const rating = ref(0); // the parent owns the value; v-model keeps it in sync
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 8px; }
-h2 { font-size: 1rem; margin: 20px 0 8px; color: #c5cbd6; }
-.avg { display: flex; align-items: center; gap: 8px; margin: 0; color: #9aa3b2; font-size: 0.9rem; }
-.saved { color: #9aa3b2; font-size: 0.9rem; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 8px;
+}
+h2 {
+  font-size: 1rem;
+  margin: 20px 0 8px;
+  color: #c5cbd6;
+}
+.avg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
+.saved {
+  color: #9aa3b2;
+  font-size: 0.9rem;
+}
 </style>
 `,
           "/src/components/StarRating.vue": `<script setup>
@@ -2240,7 +2657,8 @@ const props = defineProps({
   readOnly: { type: Boolean, default: false },
   label: { type: String, default: "Rating" },
 });
-// defineModel (Vue 3.4+) declares the modelValue prop and the update:modelValue event in one line.
+// defineModel (Vue 3.4+) declares the modelValue
+// prop and the update:modelValue event in one line.
 const model = defineModel({ type: Number, default: 0 });
 
 const hover = ref(0); // transient preview, never emitted to the parent
@@ -2249,14 +2667,20 @@ const radios = [];
 
 const fills = computed(() =>
   Array.from({ length: props.max }, (_, i) =>
-    props.readOnly ? Math.max(0, Math.min(1, model.value - i)) : shown.value >= i + 1 ? 1 : 0,
+    props.readOnly
+      ? Math.max(0, Math.min(1, model.value - i))
+      : shown.value >= i + 1
+        ? 1
+        : 0,
   ),
 );
 
 const caption = computed(() =>
-  hover.value ? "Preview: " + LABELS[hover.value - 1]
-  : model.value ? model.value + " of " + props.max + ", " + LABELS[model.value - 1]
-  : "Not rated yet",
+  hover.value
+    ? "Preview: " + LABELS[hover.value - 1]
+    : model.value
+      ? model.value + " of " + props.max + ", " + LABELS[model.value - 1]
+      : "Not rated yet",
 );
 
 function select(n) {
@@ -2267,7 +2691,14 @@ function select(n) {
 
 function onKeydown(e) {
   const v = model.value;
-  const moves = { ArrowRight: v + 1, ArrowUp: v + 1, ArrowLeft: v - 1, ArrowDown: v - 1, Home: 1, End: props.max };
+  const moves = {
+    ArrowRight: v + 1,
+    ArrowUp: v + 1,
+    ArrowLeft: v - 1,
+    ArrowDown: v - 1,
+    Home: 1,
+    End: props.max,
+  };
   if (!(e.key in moves)) return;
   e.preventDefault();
   select(moves[e.key]);
@@ -2275,14 +2706,25 @@ function onKeydown(e) {
 </script>
 
 <template>
-  <span v-if="readOnly" class="stars" role="img" :aria-label="'Rated ' + model + ' out of ' + max">
+  <span
+    v-if="readOnly"
+    class="stars"
+    role="img"
+    :aria-label="'Rated ' + model + ' out of ' + max"
+  >
     <span v-for="(f, i) in fills" :key="i" class="star" aria-hidden="true">
-      <span class="base">★</span><span class="fill" :style="{ width: Math.round(f * 100) + '%' }">★</span>
+      <span class="base">★</span
+      ><span class="fill" :style="{ width: Math.round(f * 100) + '%' }">★</span>
     </span>
   </span>
 
   <div v-else class="rating">
-    <div class="stars big" role="radiogroup" :aria-label="label" @mouseleave="hover = 0">
+    <div
+      class="stars big"
+      role="radiogroup"
+      :aria-label="label"
+      @mouseleave="hover = 0"
+    >
       <span
         v-for="(f, i) in fills"
         :key="i"
@@ -2298,7 +2740,10 @@ function onKeydown(e) {
         @keydown="onKeydown"
       >
         <span class="star" aria-hidden="true">
-          <span class="base">★</span><span class="fill" :style="{ width: Math.round(f * 100) + '%' }">★</span>
+          <span class="base">★</span
+          ><span class="fill" :style="{ width: Math.round(f * 100) + '%' }"
+            >★</span
+          >
         </span>
       </span>
     </div>
@@ -2307,15 +2752,48 @@ function onKeydown(e) {
 </template>
 
 <style scoped>
-.rating { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.stars { display: inline-flex; gap: 2px; font-size: 1.4rem; line-height: 1; }
-.stars.big { font-size: 2rem; }
-.star { position: relative; display: inline-block; }
-.base { color: #3a4150; }
-.fill { position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; color: #ffc107; }
-.hit { cursor: pointer; border-radius: 6px; padding: 2px; }
-.hit:focus-visible { outline: 2px solid #7aa2ff; }
-.caption { color: #c5cbd6; min-width: 9em; }
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.stars.big {
+  font-size: 2rem;
+}
+.star {
+  position: relative;
+  display: inline-block;
+}
+.base {
+  color: #3a4150;
+}
+.fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: #ffc107;
+}
+.hit {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px;
+}
+.hit:focus-visible {
+  outline: 2px solid #7aa2ff;
+}
+.caption {
+  color: #c5cbd6;
+  min-width: 9em;
+}
 </style>
 `,
         },
@@ -2350,8 +2828,11 @@ The playground runtime JIT does not register signal <code>input()</code> and <co
 ### 3.1 Input setter, output and derived state
 
 ~~~ts
-@Input() set value(v: number) { this.current.set(v); }
-@Output() valueChange = new EventEmitter<number>(); // value + valueChange enables [(value)]
+@Input() set value(v: number) {
+  this.current.set(v);
+}
+// value + valueChange enables [(value)]
+@Output() valueChange = new EventEmitter<number>();
 @Input() max = 5;
 @Input() readOnly = false;
 @Input() label = "Rating";
@@ -2364,7 +2845,14 @@ readonly hover = signal(0); // transient preview, never emitted
 readonly fills = computed(() => {
   const shown = this.hover() || this.current();
   return Array.from({ length: this.max }, (_, i) =>
-    Math.round(100 * (this.readOnly ? Math.max(0, Math.min(1, this.current() - i)) : shown >= i + 1 ? 1 : 0)),
+    Math.round(
+      100 *
+        (this.readOnly
+          ? Math.max(0, Math.min(1, this.current() - i))
+          : shown >= i + 1
+            ? 1
+            : 0),
+    ),
   );
 });
 ~~~
@@ -2401,18 +2889,27 @@ A plain <code>@Input() value = 0</code> would work in the template, but <code>co
 
 ~~~ts
 choose(n: number): void {
-  this.current.set(n); // update locally too, so it also works without a parent binding
+  // update locally too, so it also works without a parent binding
+  this.current.set(n);
   this.valueChange.emit(n);
 }
 
 onKeydown(e: KeyboardEvent): void {
   const v = this.current();
-  const moves: Record<string, number> = { ArrowRight: v + 1, ArrowUp: v + 1, ArrowLeft: v - 1, ArrowDown: v - 1, Home: 1, End: this.max };
+  const moves: Record<string, number> = {
+    ArrowRight: v + 1,
+    ArrowUp: v + 1,
+    ArrowLeft: v - 1,
+    ArrowDown: v - 1,
+    Home: 1,
+    End: this.max,
+  };
   if (!(e.key in moves)) return;
   e.preventDefault();
   const next = Math.max(1, Math.min(this.max, moves[e.key]));
   this.choose(next);
-  this.radios.get(next - 1)?.nativeElement.focus(); // roving focus follows the selection
+  // roving focus follows the selection
+  this.radios.get(next - 1)?.nativeElement.focus();
 }
 ~~~
 
@@ -2431,7 +2928,7 @@ onKeydown(e: KeyboardEvent): void {
 
 Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and also booted with runtime JIT (<code>angular:playground</code>), each via <code>bootstrapApplication(AppComponent)</code> in jsdom. The driver fired native <code>mouseenter</code> on a star and <code>mouseleave</code> on the group, clicks and keydowns. <code>lit</code> is which stars are gold, <code>checked</code> the <code>aria-checked</code> star, <code>tabbable</code> the tab stop, <code>focus</code> the focused star (0 = none). AOT output; the JIT run printed the same lines:
 
-~~~
+~~~text
 [angular:app] RENDERED: Trail running shoes★★★★★★★★★★3.6 average from 128 reviewsYour rating★★★★★★★★★★Not rated yet Click a star, or Tab to the stars and use the arrow keys.
 [angular:app] read-only: Rated 3.6 out of 5 | fills: 100% 100% 100% 60% 0%
 [angular:app] mounted                  lit: ..... | checked: 0 | tabbable: 1 | focus: 0 | Not rated yet | Click a star, or Tab to the stars and use the arrow keys.
@@ -2554,36 +3051,89 @@ import { StarRatingComponent } from "./star-rating.component";
       <article class="card">
         <h1>Trail running shoes</h1>
         <p class="avg">
-          <app-star-rating [value]="3.6" [readOnly]="true" /> <span data-testid="avg">3.6 average from 128 reviews</span>
+          <app-star-rating [value]="3.6" [readOnly]="true" />
+          <span data-testid="avg">3.6 average from 128 reviews</span>
         </p>
         <h2>Your rating</h2>
         <app-star-rating [(value)]="rating" label="Your rating" />
         <p class="saved" data-testid="saved">
-          {{ rating() ? "Saved: " + rating() + " star" + (rating() > 1 ? "s" : "") : "Click a star, or Tab to the stars and use the arrow keys." }}
+          {{
+            rating()
+              ? "Saved: " + rating() + " star" + (rating() > 1 ? "s" : "")
+              : "Click a star, or Tab to the stars and use the arrow keys."
+          }}
         </p>
       </article>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-    .card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-    h1 { font-size: 1.25rem; margin: 0 0 8px; }
-    h2 { font-size: 1rem; margin: 20px 0 8px; color: #c5cbd6; }
-    .avg { display: flex; align-items: center; gap: 8px; margin: 0; color: #9aa3b2; font-size: 0.9rem; }
-    .saved { color: #9aa3b2; font-size: 0.9rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      .card {
+        width: min(420px, 100%);
+        background: #181b22;
+        border: 1px solid #2a2f3a;
+        border-radius: 14px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 1rem;
+        margin: 20px 0 8px;
+        color: #c5cbd6;
+      }
+      .avg {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        color: #9aa3b2;
+        font-size: 0.9rem;
+      }
+      .saved {
+        color: #9aa3b2;
+        font-size: 0.9rem;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
   readonly rating = signal(0); // [(value)]="rating" two-way binds the signal
 }
 `,
-          "/src/app/star-rating.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, QueryList, ViewChildren, computed, signal } from "@angular/core";
+          "/src/app/star-rating.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  QueryList,
+  ViewChildren,
+  computed,
+  signal,
+} from "@angular/core";
 
 const LABELS = ["Terrible", "Bad", "OK", "Good", "Great"];
 
@@ -2591,14 +3141,26 @@ const LABELS = ["Terrible", "Bad", "OK", "Good", "Great"];
   selector: "app-star-rating",
   template: \`
     @if (readOnly) {
-      <span class="stars" role="img" [attr.aria-label]="'Rated ' + current() + ' out of ' + max">
+      <span
+        class="stars"
+        role="img"
+        [attr.aria-label]="'Rated ' + current() + ' out of ' + max"
+      >
         @for (f of fills(); track $index) {
-          <span class="star" aria-hidden="true"><span class="base">★</span><span class="fill" [style.width.%]="f">★</span></span>
+          <span class="star" aria-hidden="true"
+            ><span class="base">★</span
+            ><span class="fill" [style.width.%]="f">★</span></span
+          >
         }
       </span>
     } @else {
       <div class="rating">
-        <div class="stars big" role="radiogroup" [attr.aria-label]="label" (mouseleave)="hover.set(0)">
+        <div
+          class="stars big"
+          role="radiogroup"
+          [attr.aria-label]="label"
+          (mouseleave)="hover.set(0)"
+        >
           @for (f of fills(); track $index; let i = $index) {
             <span
               #radio
@@ -2606,13 +3168,20 @@ const LABELS = ["Terrible", "Bad", "OK", "Good", "Great"];
               class="hit"
               [attr.data-testid]="'star-' + (i + 1)"
               [attr.aria-checked]="current() === i + 1"
-              [attr.aria-label]="i + 1 + (i === 0 ? ' star' : ' stars') + ', ' + labels[i]"
-              [attr.tabindex]="current() === i + 1 || (current() === 0 && i === 0) ? 0 : -1"
+              [attr.aria-label]="
+                i + 1 + (i === 0 ? ' star' : ' stars') + ', ' + labels[i]
+              "
+              [attr.tabindex]="
+                current() === i + 1 || (current() === 0 && i === 0) ? 0 : -1
+              "
               (mouseenter)="hover.set(i + 1)"
               (click)="choose(current() === i + 1 ? 0 : i + 1)"
               (keydown)="onKeydown($event)"
             >
-              <span class="star" aria-hidden="true"><span class="base">★</span><span class="fill" [style.width.%]="f">★</span></span>
+              <span class="star" aria-hidden="true"
+                ><span class="base">★</span
+                ><span class="fill" [style.width.%]="f">★</span></span
+              >
             </span>
           }
         </div>
@@ -2620,22 +3189,61 @@ const LABELS = ["Terrible", "Bad", "OK", "Good", "Great"];
       </div>
     }
   \`,
-  styles: [\`
-    .rating { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .stars { display: inline-flex; gap: 2px; font-size: 1.4rem; line-height: 1; }
-    .stars.big { font-size: 2rem; }
-    .star { position: relative; display: inline-block; }
-    .base { color: #3a4150; }
-    .fill { position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; color: #ffc107; }
-    .hit { cursor: pointer; border-radius: 6px; padding: 2px; }
-    .hit:focus-visible { outline: 2px solid #7aa2ff; }
-    .caption { color: #c5cbd6; min-width: 9em; }
-  \`],
+  styles: [
+    \`
+      .rating {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .stars {
+        display: inline-flex;
+        gap: 2px;
+        font-size: 1.4rem;
+        line-height: 1;
+      }
+      .stars.big {
+        font-size: 2rem;
+      }
+      .star {
+        position: relative;
+        display: inline-block;
+      }
+      .base {
+        color: #3a4150;
+      }
+      .fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        color: #ffc107;
+      }
+      .hit {
+        cursor: pointer;
+        border-radius: 6px;
+        padding: 2px;
+      }
+      .hit:focus-visible {
+        outline: 2px solid #7aa2ff;
+      }
+      .caption {
+        color: #c5cbd6;
+        min-width: 9em;
+      }
+    \`,
+  ],
 })
 export class StarRatingComponent {
-  // An @Input setter feeds a signal, so computed() below can depend on the input.
-  @Input() set value(v: number) { this.current.set(v); }
-  @Output() valueChange = new EventEmitter<number>(); // value + valueChange enables [(value)]
+  // An @Input setter feeds a signal, so
+  // computed() below can depend on the input.
+  @Input() set value(v: number) {
+    this.current.set(v);
+  }
+  // value + valueChange enables [(value)]
+  @Output() valueChange = new EventEmitter<number>();
   @Input() max = 5;
   @Input() readOnly = false;
   @Input() label = "Rating";
@@ -2648,28 +3256,49 @@ export class StarRatingComponent {
   readonly fills = computed(() => {
     const shown = this.hover() || this.current();
     return Array.from({ length: this.max }, (_, i) =>
-      Math.round(100 * (this.readOnly ? Math.max(0, Math.min(1, this.current() - i)) : shown >= i + 1 ? 1 : 0)),
+      Math.round(
+        100 *
+          (this.readOnly
+            ? Math.max(0, Math.min(1, this.current() - i))
+            : shown >= i + 1
+              ? 1
+              : 0),
+      ),
     );
   });
 
   readonly caption = computed(() => {
-    const h = this.hover(), v = this.current();
-    return h ? "Preview: " + LABELS[h - 1] : v ? v + " of " + this.max + ", " + LABELS[v - 1] : "Not rated yet";
+    const h = this.hover(),
+      v = this.current();
+    return h
+      ? "Preview: " + LABELS[h - 1]
+      : v
+        ? v + " of " + this.max + ", " + LABELS[v - 1]
+        : "Not rated yet";
   });
 
   choose(n: number): void {
-    this.current.set(n); // update locally too, so it also works without a parent binding
+    // update locally too, so it also works without a parent binding
+    this.current.set(n);
     this.valueChange.emit(n);
   }
 
   onKeydown(e: KeyboardEvent): void {
     const v = this.current();
-    const moves: Record<string, number> = { ArrowRight: v + 1, ArrowUp: v + 1, ArrowLeft: v - 1, ArrowDown: v - 1, Home: 1, End: this.max };
+    const moves: Record<string, number> = {
+      ArrowRight: v + 1,
+      ArrowUp: v + 1,
+      ArrowLeft: v - 1,
+      ArrowDown: v - 1,
+      Home: 1,
+      End: this.max,
+    };
     if (!(e.key in moves)) return;
     e.preventDefault();
     const next = Math.max(1, Math.min(this.max, moves[e.key]));
     this.choose(next);
-    this.radios.get(next - 1)?.nativeElement.focus(); // roving focus follows the selection
+    // roving focus follows the selection
+    this.radios.get(next - 1)?.nativeElement.focus();
   }
 }
 `,
@@ -2787,15 +3416,23 @@ export function addParts(tags, parts, { max, maxLength }) {
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
-    else if (next.length >= max) problem = "You can add up to " + max + " tags";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
+    else if (next.length >= max)
+      problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [
+    added.length ? "Added " + added.join(", ") : "",
+    problem,
+  ]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 ~~~
@@ -2827,14 +3464,21 @@ You could catch the comma in <code>keydown</code>. That breaks in two common cas
 ~~~jsx
 function handleKeyDown(e) {
   if (e.key === "Enter") {
-    if (e.nativeEvent.isComposing) return; // Enter is confirming an IME candidate
+    // Enter is confirming an IME candidate
+    if (e.nativeEvent.isComposing) return;
     e.preventDefault(); // do not submit a surrounding form
     if (draft.trim() && add([draft])) setDraft("");
-  } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
+  } else if (
+    e.key === "Backspace" &&
+    draft === "" &&
+    value.length > 0
+  ) {
     if (armed) remove(value.length - 1);
     else {
       setArmed(true);
-      setMessage("Press Backspace again to remove " + value[value.length - 1]);
+      setMessage(
+        "Press Backspace again to remove " + value[value.length - 1],
+      );
     }
   } else if (e.key === "Escape") {
     setArmed(false);
@@ -2855,7 +3499,8 @@ function remove(index) {
   setMessage("Removed " + value[index]);
   onChange(value.filter((_, i) => i !== index));
   setArmed(false);
-  inputRef.current?.focus(); // the clicked button is gone; do not drop focus on the body
+  // the clicked button is gone; do not drop focus on the body
+  inputRef.current?.focus();
 }
 ~~~
 
@@ -2890,7 +3535,7 @@ The chips are a real list with a label; each remove button has an accessible nam
 
 The solution was bundled with esbuild and mounted in jsdom with <code>createRoot</code> in <code>StrictMode</code>. The driver typed with real <code>input</code> events (the value is set with the native setter, then <code>input</code> fires), pressed keys with <code>keydown</code>, and clicked. <code>chips</code> lists the chips (<code>(armed)</code> marks the highlighted one), <code>box</code> is the text box value and <code>said</code> is the live-region text:
 
-~~~
+~~~text
 [react] RENDERED: New postTopicsreact×1 of 5 tags. Backspace twice on an empty box removes the last one.["react"]
 [react] mounted                      chips: react | box: "" | said: ""
 [react] vue + Enter                  chips: react vue | box: "" | said: "Added vue"
@@ -3023,7 +3668,9 @@ export default function App() {
       <section className="card">
         <h1>New post</h1>
         <TagInput value={tags} onChange={setTags} max={5} label="Topics" />
-        <pre className="out" data-testid="tags-json">{JSON.stringify(tags)}</pre>
+        <pre className="out" data-testid="tags-json">
+          {JSON.stringify(tags)}
+        </pre>
       </section>
     </main>
   );
@@ -3032,9 +3679,16 @@ export default function App() {
           "/src/TagInput.js": `import { useRef, useState } from "react";
 import { addParts } from "./tags";
 
-export default function TagInput({ value, onChange, max = 5, maxLength = 20, label = "Tags" }) {
+export default function TagInput({
+  value,
+  onChange,
+  max = 5,
+  maxLength = 20,
+  label = "Tags",
+}) {
   const [draft, setDraft] = useState(""); // what is typed but not yet a tag
-  const [armed, setArmed] = useState(false); // first Backspace on an empty box arms the last chip
+  // first Backspace on an empty box arms the last chip
+  const [armed, setArmed] = useState(false);
   const [message, setMessage] = useState(""); // read out by the live region
   const inputRef = useRef(null);
 
@@ -3049,7 +3703,8 @@ export default function TagInput({ value, onChange, max = 5, maxLength = 20, lab
     setMessage("Removed " + value[index]);
     onChange(value.filter((_, i) => i !== index));
     setArmed(false);
-    inputRef.current?.focus(); // the clicked button is gone; do not drop focus on the body
+    // the clicked button is gone; do not drop focus on the body
+    inputRef.current?.focus();
   }
 
   function handleChange(e) {
@@ -3066,14 +3721,17 @@ export default function TagInput({ value, onChange, max = 5, maxLength = 20, lab
 
   function handleKeyDown(e) {
     if (e.key === "Enter") {
-      if (e.nativeEvent.isComposing) return; // Enter is confirming an IME candidate
+      // Enter is confirming an IME candidate
+      if (e.nativeEvent.isComposing) return;
       e.preventDefault(); // do not submit a surrounding form
       if (draft.trim() && add([draft])) setDraft("");
     } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
       if (armed) remove(value.length - 1);
       else {
         setArmed(true);
-        setMessage("Press Backspace again to remove " + value[value.length - 1]);
+        setMessage(
+          "Press Backspace again to remove " + value[value.length - 1],
+        );
       }
     } else if (e.key === "Escape") {
       setArmed(false);
@@ -3082,13 +3740,30 @@ export default function TagInput({ value, onChange, max = 5, maxLength = 20, lab
 
   return (
     <div className="tag-field">
-      <label className="label" htmlFor="tag-input">{label}</label>
+      <label className="label" htmlFor="tag-input">
+        {label}
+      </label>
       <div className="chips-box" onClick={() => inputRef.current?.focus()}>
         <ul className="chips" aria-label={label + " added"}>
           {value.map((tag, i) => (
-            <li key={tag} className={"chip" + (armed && i === value.length - 1 ? " armed" : "")} data-testid="chip">
+            <li
+              key={tag}
+              className={
+                "chip" + (armed && i === value.length - 1 ? " armed" : "")
+              }
+              data-testid="chip"
+            >
               <span>{tag}</span>
-              <button type="button" aria-label={"Remove " + tag} onClick={(e) => { e.stopPropagation(); remove(i); }}>×</button>
+              <button
+                type="button"
+                aria-label={"Remove " + tag}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  remove(i);
+                }}
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>
@@ -3097,14 +3772,28 @@ export default function TagInput({ value, onChange, max = 5, maxLength = 20, lab
           ref={inputRef}
           data-testid="tag-input"
           value={draft}
-          placeholder={value.length >= max ? "Limit reached" : "Type and press Enter or comma"}
+          placeholder={
+            value.length >= max
+              ? "Limit reached"
+              : "Type and press Enter or comma"
+          }
           aria-describedby="tag-help"
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
       </div>
-      <p id="tag-help" className="help">{value.length} of {max} tags. Backspace twice on an empty box removes the last one.</p>
-      <p className="message" role="status" aria-live="polite" data-testid="tag-message">{message}</p>
+      <p id="tag-help" className="help">
+        {value.length} of {max} tags. Backspace twice on an empty box removes
+        the last one.
+      </p>
+      <p
+        className="message"
+        role="status"
+        aria-live="polite"
+        data-testid="tag-message"
+      >
+        {message}
+      </p>
     </div>
   );
 }
@@ -3117,37 +3806,130 @@ export function addParts(tags, parts, { max, maxLength }) {
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
     else if (next.length >= max) problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [added.length ? "Added " + added.join(", ") : "", problem]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(460px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 14px; }
-.label { display: block; font-size: 0.9rem; color: #c5cbd6; margin-bottom: 6px; }
-.chips-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border: 1px solid #3a4150;
-  border-radius: 10px; background: #0f1115; cursor: text; }
-.chips-box:focus-within { border-color: #7aa2ff; }
-.chips { display: contents; list-style: none; margin: 0; padding: 0; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px;
-  background: #2d4373; color: #e6ecff; font-size: 0.9rem; }
-.chip.armed { background: #8c2f39; }
-.chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 1rem; line-height: 1;
-  width: 22px; height: 22px; border-radius: 50%; }
-.chip button:hover, .chip button:focus-visible { background: rgba(255, 255, 255, 0.15); outline: none; }
-.chips-box input { flex: 1 1 120px; min-width: 120px; border: 0; outline: 0; background: transparent; color: #fff; font-size: 0.95rem; padding: 4px; }
-.help { font-size: 0.8rem; color: #9aa3b2; margin: 6px 0 0; }
-.message { min-height: 1.2em; font-size: 0.85rem; color: #ffd180; margin: 4px 0 0; }
-.out { background: #0f1115; padding: 8px; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(460px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 14px;
+}
+.label {
+  display: block;
+  font-size: 0.9rem;
+  color: #c5cbd6;
+  margin-bottom: 6px;
+}
+.chips-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #3a4150;
+  border-radius: 10px;
+  background: #0f1115;
+  cursor: text;
+}
+.chips-box:focus-within {
+  border-color: #7aa2ff;
+}
+.chips {
+  display: contents;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  background: #2d4373;
+  color: #e6ecff;
+  font-size: 0.9rem;
+}
+.chip.armed {
+  background: #8c2f39;
+}
+.chip button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.chip button:hover,
+.chip button:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+.chips-box input {
+  flex: 1 1 120px;
+  min-width: 120px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  padding: 4px;
+}
+.help {
+  font-size: 0.8rem;
+  color: #9aa3b2;
+  margin: 6px 0 0;
+}
+.message {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #ffd180;
+  margin: 4px 0 0;
+}
+.out {
+  background: #0f1115;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
 `,
         },
       },
@@ -3188,15 +3970,23 @@ export function addParts(tags, parts, { max, maxLength }) {
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
-    else if (next.length >= max) problem = "You can add up to " + max + " tags";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
+    else if (next.length >= max)
+      problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [
+    added.length ? "Added " + added.join(", ") : "",
+    problem,
+  ]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 ~~~
@@ -3206,24 +3996,19 @@ Pure: it returns the next list, a message and whether all parts were accepted. T
 ### 3.2 Model, local state and adding
 
 ~~~vue
-const tags = defineModel({ type: Array, required: true });
-
-const draft = ref(""); // what is typed but not yet a tag
-const armed = ref(false); // first Backspace on an empty box arms the last chip
-const message = ref(""); // read out by the live region
-const inputEl = useTemplateRef("input"); // Vue 3.5+
-
-function add(parts) {
-  const { next, message: said, ok } = addParts(tags.value, parts, { max: props.max, maxLength: props.maxLength });
-  if (next.length !== tags.value.length) tags.value = next;
-  message.value = said;
-  return ok;
-}
+const tags = defineModel({ type: Array, required: true }); const draft =
+ref(""); // what is typed but not yet a tag const armed = ref(false); //
+first Backspace on an empty box arms the last chip const message =
+ref(""); // read out by the live region const inputEl =
+useTemplateRef("input"); // Vue 3.5+ function add(parts) { const { next,
+message: said, ok } = addParts(tags.value, parts, { max: props.max,
+maxLength: props.maxLength }); if (next.length !== tags.value.length)
+tags.value = next; message.value = said; return ok; }
 ~~~
 
 Always assign a **new** array to the model (<code>tags.value = next</code>). Pushing into <code>tags.value</code> mutates the parent array in place. A modified copy that did exactly that, with the parent counting <code>@update:model-value</code> events, printed:
 
-~~~
+~~~text
 [vue] after adding vue | ["react","vue"] | update events: 0
 ~~~
 
@@ -3232,28 +4017,20 @@ The parent list changed (the array is reactive), but no update event fired, so a
 ### 3.3 Commas in @input, and the DOM write-back
 
 ~~~vue
-function onInput(e) {
-  armed.value = false;
-  const el = e.target;
-  if (!el.value.includes(",")) {
-    draft.value = el.value;
-    return;
-  }
-  // Commas are handled here, not in keydown: this also covers paste and
-  // Android keyboards, whose keydown reports key "Unidentified".
-  const parts = el.value.split(",");
-  const rest = parts.pop();
-  add(parts);
-  draft.value = rest.trimStart();
-  el.value = draft.value; // a lone "," leaves draft unchanged, so Vue would not repaint the box
-}
+function onInput(e) { armed.value = false; const el = e.target; if
+(!el.value.includes(",")) { draft.value = el.value; return; } // Commas
+are handled here, not in keydown: this also covers paste and // Android
+keyboards, whose keydown reports key "Unidentified". const parts =
+el.value.split(","); const rest = parts.pop(); add(parts); draft.value =
+rest.trimStart(); el.value = draft.value; // a lone "," leaves draft
+unchanged, so Vue would not repaint the box }
 ~~~
 
 Splitting in the input handler (not in keydown) also covers paste, and Android virtual keyboards whose keydown reports <code>key</code> "Unidentified" with <code>keyCode</code> 229 ([Chromium code review](https://codereview.chromium.org/1811553002)).
 
 The last line writes the box back. A lone comma leaves <code>draft</code> at <code>""</code>, and if nothing else in the component changes, Vue does not re-render and the comma stays in the box. A driver typing two lone commas, first on a copy without that line, then on the shipped code:
 
-~~~
+~~~text
 [vue] first lone comma  | box: ","
 [vue] second lone comma | box: ","
 [vue] first lone comma  | box: ""
@@ -3267,21 +4044,14 @@ In the main run below the lone comma happened to clear anyway, because the messa
 ### 3.4 Keys and removal
 
 ~~~vue
-function onKeydown(e) {
-  if (e.key === "Enter") {
-    if (e.isComposing) return; // Enter is confirming an IME candidate
-    e.preventDefault();
-    if (draft.value.trim() && add([draft.value])) draft.value = "";
-  } else if (e.key === "Backspace" && draft.value === "" && tags.value.length > 0) {
-    if (armed.value) remove(tags.value.length - 1);
-    else {
-      armed.value = true;
-      message.value = "Press Backspace again to remove " + tags.value[tags.value.length - 1];
-    }
-  } else if (e.key === "Escape") {
-    armed.value = false;
-  }
-}
+function onKeydown(e) { if (e.key === "Enter") { if (e.isComposing)
+return; // Enter is confirming an IME candidate e.preventDefault(); if
+(draft.value.trim() && add([draft.value])) draft.value = ""; } else if
+(e.key === "Backspace" && draft.value === "" && tags.value.length > 0) {
+if (armed.value) remove(tags.value.length - 1); else { armed.value =
+true; message.value = "Press Backspace again to remove " +
+tags.value[tags.value.length - 1]; } } else if (e.key === "Escape") {
+armed.value = false; } }
 ~~~
 
 <code>e.isComposing</code> guards Enter while an IME (input method editor, used for Chinese or Japanese) is composing. Removal focuses the box because the clicked × button disappears; in the template the button uses <code>@click.stop</code> so the container click (which also focuses the box) does not fire too. Chips are rendered with <code>v-for="(tag, i) in tags" :key="tag"</code>: tags are unique, so the text is a stable key; see [keyed list diffing](/interview-question/how-does-vue-s-virtual-dom-diff-keyed-lists).
@@ -3290,7 +4060,7 @@ function onKeydown(e) {
 
 Compiled with <code>@vue/compiler-sfc</code> and mounted with <code>createApp(App).mount("#app")</code> in jsdom. The driver typed with <code>input</code> events, pressed keys and clicked. <code>chips</code> are the chips (<code>(armed)</code> marks the highlighted one), <code>box</code> is the text box and <code>said</code> the live region:
 
-~~~
+~~~text
 [vue] RENDERED: New postTopicsreact×1 of 5 tags. Backspace twice on an empty box removes the last one.["react"]
 [vue] mounted                      chips: react | box: "" | said: ""
 [vue] vue + Enter                  chips: react vue | box: "" | said: "Added vue"
@@ -3419,14 +4189,41 @@ const tags = ref(["react"]); // the parent owns the list
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(460px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 14px; }
-.out { background: #0f1115; padding: 8px; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(460px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 14px;
+}
+.out {
+  background: #0f1115;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  overflow-x: auto;
+}
 </style>
 `,
           "/src/components/TagInput.vue": `<script setup>
@@ -3447,7 +4244,14 @@ const message = ref(""); // read out by the live region
 const inputEl = useTemplateRef("input"); // Vue 3.5+
 
 function add(parts) {
-  const { next, message: said, ok } = addParts(tags.value, parts, { max: props.max, maxLength: props.maxLength });
+  const {
+    next,
+    message: said,
+    ok,
+  } = addParts(tags.value, parts, {
+    max: props.max,
+    maxLength: props.maxLength,
+  });
   if (next.length !== tags.value.length) tags.value = next;
   message.value = said;
   return ok;
@@ -3457,7 +4261,8 @@ function remove(index) {
   message.value = "Removed " + tags.value[index];
   tags.value = tags.value.filter((_, i) => i !== index);
   armed.value = false;
-  inputEl.value?.focus(); // the clicked button is gone; do not drop focus on the body
+  // the clicked button is gone; do not drop focus on the body
+  inputEl.value?.focus();
 }
 
 function onInput(e) {
@@ -3473,7 +4278,8 @@ function onInput(e) {
   const rest = parts.pop();
   add(parts);
   draft.value = rest.trimStart();
-  el.value = draft.value; // a lone "," leaves draft unchanged, so Vue would not repaint the box
+  // a lone "," leaves draft unchanged, so Vue would not repaint the box
+  el.value = draft.value;
 }
 
 function onKeydown(e) {
@@ -3481,11 +4287,16 @@ function onKeydown(e) {
     if (e.isComposing) return; // Enter is confirming an IME candidate
     e.preventDefault();
     if (draft.value.trim() && add([draft.value])) draft.value = "";
-  } else if (e.key === "Backspace" && draft.value === "" && tags.value.length > 0) {
+  } else if (
+    e.key === "Backspace" &&
+    draft.value === "" &&
+    tags.value.length > 0
+  ) {
     if (armed.value) remove(tags.value.length - 1);
     else {
       armed.value = true;
-      message.value = "Press Backspace again to remove " + tags.value[tags.value.length - 1];
+      message.value =
+        "Press Backspace again to remove " + tags.value[tags.value.length - 1];
     }
   } else if (e.key === "Escape") {
     armed.value = false;
@@ -3505,7 +4316,11 @@ function onKeydown(e) {
           data-testid="chip"
         >
           <span>{{ tag }}</span>
-          <button type="button" :aria-label="'Remove ' + tag" @click.stop="remove(i)">×</button>
+          <button
+            type="button"
+            :aria-label="'Remove ' + tag"
+            @click.stop="remove(i)"
+          >×</button>
         </li>
       </ul>
       <input
@@ -3519,26 +4334,96 @@ function onKeydown(e) {
         @keydown="onKeydown"
       />
     </div>
-    <p id="tag-help" class="help">{{ tags.length }} of {{ max }} tags. Backspace twice on an empty box removes the last one.</p>
-    <p class="message" role="status" aria-live="polite" data-testid="tag-message">{{ message }}</p>
+    <p
+      id="tag-help"
+      class="help"
+    >{{ tags.length }} of {{ max }} tags. Backspace twice on an empty box removes the last one.</p>
+    <p
+      class="message"
+      role="status"
+      aria-live="polite"
+      data-testid="tag-message"
+    >{{ message }}</p>
   </div>
 </template>
 
 <style scoped>
-.label { display: block; font-size: 0.9rem; color: #c5cbd6; margin-bottom: 6px; }
-.chips-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border: 1px solid #3a4150;
-  border-radius: 10px; background: #0f1115; cursor: text; }
-.chips-box:focus-within { border-color: #7aa2ff; }
-.chips { display: contents; list-style: none; margin: 0; padding: 0; }
-.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 4px 3px 10px; border-radius: 999px;
-  background: #2d4373; color: #e6ecff; font-size: 0.9rem; }
-.chip.armed { background: #8c2f39; }
-.chip button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 1rem; line-height: 1;
-  width: 22px; height: 22px; border-radius: 50%; }
-.chip button:hover, .chip button:focus-visible { background: rgba(255, 255, 255, 0.15); outline: none; }
-.chips-box input { flex: 1 1 120px; min-width: 120px; border: 0; outline: 0; background: transparent; color: #fff; font-size: 0.95rem; padding: 4px; }
-.help { font-size: 0.8rem; color: #9aa3b2; margin: 6px 0 0; }
-.message { min-height: 1.2em; font-size: 0.85rem; color: #ffd180; margin: 4px 0 0; }
+.label {
+  display: block;
+  font-size: 0.9rem;
+  color: #c5cbd6;
+  margin-bottom: 6px;
+}
+.chips-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #3a4150;
+  border-radius: 10px;
+  background: #0f1115;
+  cursor: text;
+}
+.chips-box:focus-within {
+  border-color: #7aa2ff;
+}
+.chips {
+  display: contents;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  background: #2d4373;
+  color: #e6ecff;
+  font-size: 0.9rem;
+}
+.chip.armed {
+  background: #8c2f39;
+}
+.chip button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+.chip button:hover,
+.chip button:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+.chips-box input {
+  flex: 1 1 120px;
+  min-width: 120px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  padding: 4px;
+}
+.help {
+  font-size: 0.8rem;
+  color: #9aa3b2;
+  margin: 6px 0 0;
+}
+.message {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: #ffd180;
+  margin: 4px 0 0;
+}
 </style>
 `,
           "/src/tags.js": `// Pure helper: try to add each part; returns the new list and what to announce.
@@ -3549,15 +4434,19 @@ export function addParts(tags, parts, { max, maxLength }) {
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
     else if (next.length >= max) problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [added.length ? "Added " + added.join(", ") : "", problem]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 `,
@@ -3593,22 +4482,34 @@ The playground runtime JIT does not register signal <code>input()</code>/<code>m
 ### 3.1 The rules
 
 ~~~ts
-export function addParts(tags: string[], parts: string[], { max, maxLength }: { max: number; maxLength: number }) {
+export function addParts(
+  tags: string[],
+  parts: string[],
+  { max, maxLength }: { max: number; maxLength: number },
+) {
   const next = [...tags];
   const added: string[] = [];
   let problem = "";
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
-    else if (next.length >= max) problem = "You can add up to " + max + " tags";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
+    else if (next.length >= max)
+      problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [
+    added.length ? "Added " + added.join(", ") : "",
+    problem,
+  ]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 ~~~
@@ -3616,16 +4517,20 @@ export function addParts(tags: string[], parts: string[], { max, maxLength }: { 
 ### 3.2 Inputs, outputs and state
 
 ~~~ts
-@Input() set tags(v: string[]) { this.list.set(v); }
+@Input() set tags(v: string[]) {
+  this.list.set(v);
+}
 @Output() tagsChange = new EventEmitter<string[]>();
 @Input() max = 5;
 @Input() maxLength = 20;
 @Input() label = "Tags";
-@ViewChild("input", { static: true }) input!: ElementRef<HTMLInputElement>;
+@ViewChild("input", { static: true })
+input!: ElementRef<HTMLInputElement>;
 
 readonly list = signal<string[]>([]);
 readonly draft = signal(""); // what is typed but not yet a tag
-readonly armed = signal(false); // first Backspace on an empty box arms the last chip
+// first Backspace on an empty box arms the last chip
+readonly armed = signal(false);
 readonly message = signal(""); // read out by the live region
 
 private setList(next: string[]): void {
@@ -3634,7 +4539,10 @@ private setList(next: string[]): void {
 }
 
 private add(parts: string[]): boolean {
-  const { next, message, ok } = addParts(this.list(), parts, { max: this.max, maxLength: this.maxLength });
+  const { next, message, ok } = addParts(this.list(), parts, {
+    max: this.max,
+    maxLength: this.maxLength,
+  });
   if (next.length !== this.list().length) this.setList(next);
   this.message.set(message);
   return ok;
@@ -3672,7 +4580,7 @@ private add(parts: string[]): boolean {
 
 The first draft wrote <code>input.nativeElement.focus()</code>, thinking of the component <code>@ViewChild</code> field also called <code>input</code>. In a template, a reference variable shadows a component member with the same name. The runtime JIT build gave no warning (it would only throw when the container was clicked), but the AOT build with <code>strictTemplates</code> refused it:
 
-~~~
+~~~text
 NGC FAILED:
 src/tag-input.component.ts:9:45 - error TS2339: Property 'nativeElement' does not exist on type 'HTMLInputElement'.
 ~~~
@@ -3695,13 +4603,14 @@ onInput(e: Event): void {
   const rest = parts.pop() ?? "";
   this.add(parts);
   this.draft.set(rest.trimStart());
-  el.value = this.draft(); // [value] only re-applies when the bound value changes
+  // [value] only re-applies when the bound value changes
+  el.value = this.draft();
 }
 ~~~
 
 Splitting in <code>(input)</code> covers paste and Android virtual keyboards that report keydown <code>key</code> as "Unidentified" with <code>keyCode</code> 229 ([Chromium code review](https://codereview.chromium.org/1811553002)). <code>[value]="draft()"</code> is only re-applied when <code>draft()</code> changes, so a lone comma (draft stays <code>""</code>) would stay on screen. Two lone commas, without the last line and then with it:
 
-~~~
+~~~text
 [angular:playground] first lone comma  | box: ","
 [angular:playground] second lone comma | box: ","
 [angular:playground] first lone comma  | box: ""
@@ -3720,11 +4629,17 @@ onKeydown(e: KeyboardEvent): void {
       this.draft.set("");
       this.input.nativeElement.value = "";
     }
-  } else if (e.key === "Backspace" && this.draft() === "" && list.length > 0) {
+  } else if (
+    e.key === "Backspace" &&
+    this.draft() === "" &&
+    list.length > 0
+  ) {
     if (this.armed()) this.remove(list.length - 1);
     else {
       this.armed.set(true);
-      this.message.set("Press Backspace again to remove " + list[list.length - 1]);
+      this.message.set(
+        "Press Backspace again to remove " + list[list.length - 1],
+      );
     }
   } else if (e.key === "Escape") {
     this.armed.set(false);
@@ -3738,7 +4653,7 @@ onKeydown(e: KeyboardEvent): void {
 
 Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and booted with runtime JIT (<code>angular:playground</code>), each with <code>bootstrapApplication(AppComponent)</code> in jsdom. <code>chips</code> are the chips, <code>box</code> the text box, <code>said</code> the live region. AOT output; the JIT run printed the same lines:
 
-~~~
+~~~text
 [angular:app] RENDERED: New postTopicsreact×1 of 5 tags. Backspace twice on an empty box removes the last one.["react"]
 [angular:app] mounted                      chips: react | box: "" | said: ""
 [angular:app] vue + Enter                  chips: react vue | box: "" | said: "Added vue"
@@ -3865,17 +4780,47 @@ import { TagInputComponent } from "./tag-input.component";
       </section>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-    .card { width: min(460px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-    h1 { font-size: 1.25rem; margin: 0 0 14px; }
-    .out { background: #0f1115; padding: 8px; border-radius: 8px; font-size: 0.85rem; overflow-x: auto; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      .card {
+        width: min(460px, 100%);
+        background: #181b22;
+        border: 1px solid #2a2f3a;
+        border-radius: 14px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 14px;
+      }
+      .out {
+        background: #0f1115;
+        padding: 8px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        overflow-x: auto;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
@@ -3883,7 +4828,15 @@ export class AppComponent {
   json = () => JSON.stringify(this.tags());
 }
 `,
-          "/src/app/tag-input.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, ViewChild, signal } from "@angular/core";
+          "/src/app/tag-input.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  signal,
+} from "@angular/core";
 import { addParts } from "./tags";
 
 @Component({
@@ -3896,7 +4849,11 @@ import { addParts } from "./tags";
           @for (tag of list(); track tag; let i = $index, last = $last) {
             <li class="chip" [class.armed]="armed() && last" data-testid="chip">
               <span>{{ tag }}</span>
-              <button type="button" [attr.aria-label]="'Remove ' + tag" (click)="$event.stopPropagation(); remove(i)">×</button>
+              <button
+                type="button"
+                [attr.aria-label]="'Remove ' + tag"
+                (click)="$event.stopPropagation(); remove(i)"
+              >×</button>
             </li>
           }
         </ul>
@@ -3911,11 +4868,20 @@ import { addParts } from "./tags";
           (keydown)="onKeydown($event)"
         />
       </div>
-      <p id="tag-help" class="help">{{ list().length }} of {{ max }} tags. Backspace twice on an empty box removes the last one.</p>
-      <p class="message" role="status" aria-live="polite" data-testid="tag-message">{{ message() }}</p>
+      <p
+        id="tag-help"
+        class="help"
+      >{{ list().length }} of {{ max }} tags. Backspace twice on an empty box removes the last one.</p>
+      <p
+        class="message"
+        role="status"
+        aria-live="polite"
+        data-testid="tag-message"
+      >{{ message() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .label { display: block; font-size: 0.9rem; color: #c5cbd6; margin-bottom: 6px; }
     .chips-box { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; border: 1px solid #3a4150;
       border-radius: 10px; background: #0f1115; cursor: text; }
@@ -3930,11 +4896,14 @@ import { addParts } from "./tags";
     .chips-box input { flex: 1 1 120px; min-width: 120px; border: 0; outline: 0; background: transparent; color: #fff; font-size: 0.95rem; padding: 4px; }
     .help { font-size: 0.8rem; color: #9aa3b2; margin: 6px 0 0; }
     .message { min-height: 1.2em; font-size: 0.85rem; color: #ffd180; margin: 4px 0 0; }
-  \`],
+  \`,
+  ],
 })
 export class TagInputComponent {
   // tags + tagsChange is the naming Angular needs for [(tags)] two-way binding.
-  @Input() set tags(v: string[]) { this.list.set(v); }
+  @Input() set tags(v: string[]) {
+    this.list.set(v);
+  }
   @Output() tagsChange = new EventEmitter<string[]>();
   @Input() max = 5;
   @Input() maxLength = 20;
@@ -3943,7 +4912,8 @@ export class TagInputComponent {
 
   readonly list = signal<string[]>([]);
   readonly draft = signal(""); // what is typed but not yet a tag
-  readonly armed = signal(false); // first Backspace on an empty box arms the last chip
+  // first Backspace on an empty box arms the last chip
+  readonly armed = signal(false);
   readonly message = signal(""); // read out by the live region
 
   private setList(next: string[]): void {
@@ -3952,7 +4922,10 @@ export class TagInputComponent {
   }
 
   private add(parts: string[]): boolean {
-    const { next, message, ok } = addParts(this.list(), parts, { max: this.max, maxLength: this.maxLength });
+    const { next, message, ok } = addParts(this.list(), parts, {
+      max: this.max,
+      maxLength: this.maxLength,
+    });
     if (next.length !== this.list().length) this.setList(next);
     this.message.set(message);
     return ok;
@@ -3962,7 +4935,8 @@ export class TagInputComponent {
     this.message.set("Removed " + this.list()[index]);
     this.setList(this.list().filter((_, i) => i !== index));
     this.armed.set(false);
-    this.input.nativeElement.focus(); // the clicked button is gone; do not drop focus on the body
+    // the clicked button is gone; do not drop focus on the body
+    this.input.nativeElement.focus();
   }
 
   onInput(e: Event): void {
@@ -3978,7 +4952,8 @@ export class TagInputComponent {
     const rest = parts.pop() ?? "";
     this.add(parts);
     this.draft.set(rest.trimStart());
-    el.value = this.draft(); // [value] only re-applies when the bound value changes
+    // [value] only re-applies when the bound value changes
+    el.value = this.draft();
   }
 
   onKeydown(e: KeyboardEvent): void {
@@ -3990,11 +4965,17 @@ export class TagInputComponent {
         this.draft.set("");
         this.input.nativeElement.value = "";
       }
-    } else if (e.key === "Backspace" && this.draft() === "" && list.length > 0) {
+    } else if (
+      e.key === "Backspace" &&
+      this.draft() === "" &&
+      list.length > 0
+    ) {
       if (this.armed()) this.remove(list.length - 1);
       else {
         this.armed.set(true);
-        this.message.set("Press Backspace again to remove " + list[list.length - 1]);
+        this.message.set(
+          "Press Backspace again to remove " + list[list.length - 1],
+        );
       }
     } else if (e.key === "Escape") {
       this.armed.set(false);
@@ -4003,22 +4984,30 @@ export class TagInputComponent {
 }
 `,
           "/src/app/tags.ts": `// Pure helper: try to add each part; returns the new list and what to announce.
-export function addParts(tags: string[], parts: string[], { max, maxLength }: { max: number; maxLength: number }) {
+export function addParts(
+  tags: string[],
+  parts: string[],
+  { max, maxLength }: { max: number; maxLength: number },
+) {
   const next = [...tags];
   const added: string[] = [];
   let problem = "";
   for (const part of parts) {
     const tag = part.trim().replace(/ +/g, " ");
     if (!tag) continue;
-    if (tag.length > maxLength) problem = "Tags can be at most " + maxLength + " characters";
-    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase())) problem = tag + " is already added";
+    if (tag.length > maxLength)
+      problem = "Tags can be at most " + maxLength + " characters";
+    else if (next.some((t) => t.toLowerCase() === tag.toLowerCase()))
+      problem = tag + " is already added";
     else if (next.length >= max) problem = "You can add up to " + max + " tags";
     else {
       next.push(tag);
       added.push(tag);
     }
   }
-  const message = [added.length ? "Added " + added.join(", ") : "", problem].filter(Boolean).join(". ");
+  const message = [added.length ? "Added " + added.join(", ") : "", problem]
+    .filter(Boolean)
+    .join(". ");
   return { next, message, ok: problem === "" };
 }
 `,
@@ -4135,7 +5124,8 @@ export function hslToRgb(h, s, l) {
   l /= 100;
   const k = (n) => (n + h / 30) % 12;
   const a = s * Math.min(l, 1 - l);
-  const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  const f = (n) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return [f(0), f(8), f(4)].map((v) => Math.round(v * 255));
 }
 ~~~
@@ -4153,16 +5143,22 @@ export function rgbToHsl(r, g, b) {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
-  // Keep full precision: rounding here would make hex -> hsl -> hex drift.
+  // Keep full precision: rounding here
+  // would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 ~~~
 
 The comment on the last line is the most important design decision in the whole widget, and it was measured, not guessed. A script converted **every** 24-bit colour, all 16,777,216 of them, from RGB to HSL and back:
 
-~~~
+~~~text
 colours tested: 16777216 | round trip mismatches with full-precision HSL: 0 | with HSL rounded to integers: 15001676 (89.4%) | 44920 ms
 #1e90ff -> hsl 209.600 100.000 55.882 -> rounded back: #1F8FFF
 hexToRgb: [170,187,204] [30,144,255] null null
@@ -4179,7 +5175,8 @@ With full-precision HSL every colour round-trips exactly. If you store HSL round
 export function hexToRgb(text) {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text.trim());
   if (!m) return null;
-  const hex = m[1].length === 3 ? [...m[1]].map((c) => c + c).join("") : m[1];
+  const hex =
+    m[1].length === 3 ? [...m[1]].map((c) => c + c).join("") : m[1];
   return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 ~~~
@@ -4203,7 +5200,8 @@ export function readableText(rgb) {
 
 ~~~jsx
 const [hsl, setHsl] = useState(() => fromHex(initial));
-const [draft, setDraft] = useState(initial); // the hex text box may hold an unfinished value
+// the hex text box may hold an unfinished value
+const [draft, setDraft] = useState(initial);
 const [copyMsg, setCopyMsg] = useState("");
 const timer = useRef(0);
 
@@ -4212,7 +5210,8 @@ const hex = rgbToHex(rgb);
 const text = readableText(rgb);
 const draftValid = hexToRgb(draft) !== null;
 
-useEffect(() => () => clearTimeout(timer.current), []); // no timer firing after unmount
+// no timer firing after unmount
+useEffect(() => () => clearTimeout(timer.current), []);
 ~~~
 
 Everything below the four hooks is derived during render. The timer for the "Copied" message lives in a ref, and the effect with an empty dependency list returns a cleanup that clears it, so a picker removed from the page never sets state after unmount. Under StrictMode the effect mounts, cleans up and mounts again in development; clearing a timer twice is harmless. See [the cleanup function in useEffect](/interview-question/what-is-the-purpose-of-the-cleanup-function-in-useeffect).
@@ -4267,21 +5266,27 @@ async function copy() {
 ### 4.6 Sliders and swatches in the markup
 
 ~~~jsx
-{SLIDERS.map((s) => (
-  <label key={s.key} className="slider">
-    <span>{s.label} <b>{Math.round(hsl[s.key])}</b></span>
-    <input
-      type="range"
-      min="0"
-      max={s.max}
-      step="1"
-      data-testid={"slider-" + s.key}
-      value={Math.round(hsl[s.key])}
-      aria-valuetext={Math.round(hsl[s.key]) + s.unit}
-      onChange={(e) => apply({ ...hsl, [s.key]: Number(e.target.value) })}
-    />
-  </label>
-))}
+{
+  SLIDERS.map((s) => (
+    <label key={s.key} className="slider">
+      <span>
+        {s.label} <b>{Math.round(hsl[s.key])}</b>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max={s.max}
+        step="1"
+        data-testid={"slider-" + s.key}
+        value={Math.round(hsl[s.key])}
+        aria-valuetext={Math.round(hsl[s.key]) + s.unit}
+        onChange={(e) =>
+          apply({ ...hsl, [s.key]: Number(e.target.value) })
+        }
+      />
+    </label>
+  ));
+}
 ~~~
 
 Native <code>&lt;input type="range"&gt;</code> gives arrow keys, Page Up and Page Down, Home and End, and the slider role for free. <code>aria-valuetext</code> makes a screen reader say "210 degrees" instead of a bare number. Swatches are buttons with <code>aria-pressed</code> set when they match the current colour, and an accessible name such as "Indigo #3F51B5", because a coloured circle has no text of its own.
@@ -4290,7 +5295,7 @@ Native <code>&lt;input type="range"&gt;</code> gives arrow keys, Page Up and Pag
 
 Mounted in jsdom with <code>createRoot</code> in <code>StrictMode</code> and driven with real <code>input</code>, <code>blur</code> and click events. jsdom has no <code>navigator.clipboard</code>, so the first Copy ran without it; then the driver installed a fake clipboard object that records what was written. Each line shows the derived hex and RGB, the slider values, the hex field, the text colour and contrast, which swatch is pressed, and what the parent received:
 
-~~~
+~~~text
 [react] RENDERED: Pick a brand colour#1E90FFrgb(30, 144, 255)text black, contrast 6.5:1Hue 210Saturation 100Lightness 56HexCopyParent received: #1E90FF
 [react] mounted                  #1E90FF | rgb(30, 144, 255) | hsl 210 100 56 | box: "#1E90FF" | text black, contrast 6.5:1 | pressed: Dodger blue #1E90FF | Parent received: #1E90FF
 [react] lightness -> 30          #004E99 | rgb(0, 78, 153) | hsl 210 100 30 | box: "#004E99" | text white, contrast 8.2:1 | pressed: none | Parent received: #004E99
@@ -4421,7 +5426,9 @@ export default function App() {
       <section className="card">
         <h1>Pick a brand colour</h1>
         <ColorPicker initial={color} onChange={setColor} />
-        <p className="chosen" data-testid="chosen">Parent received: {color}</p>
+        <p className="chosen" data-testid="chosen">
+          Parent received: {color}
+        </p>
       </section>
     </main>
   );
@@ -4431,9 +5438,14 @@ export default function App() {
 import { hexToRgb, hslToRgb, readableText, rgbToHex, rgbToHsl } from "./color";
 
 const SWATCHES = [
-  { name: "Tomato", hex: "#FF6347" }, { name: "Amber", hex: "#FFC107" }, { name: "Lime", hex: "#8BC34A" },
-  { name: "Teal", hex: "#009688" }, { name: "Dodger blue", hex: "#1E90FF" }, { name: "Indigo", hex: "#3F51B5" },
-  { name: "Orchid", hex: "#DA70D6" }, { name: "Slate", hex: "#708090" },
+  { name: "Tomato", hex: "#FF6347" },
+  { name: "Amber", hex: "#FFC107" },
+  { name: "Lime", hex: "#8BC34A" },
+  { name: "Teal", hex: "#009688" },
+  { name: "Dodger blue", hex: "#1E90FF" },
+  { name: "Indigo", hex: "#3F51B5" },
+  { name: "Orchid", hex: "#DA70D6" },
+  { name: "Slate", hex: "#708090" },
 ];
 const SLIDERS = [
   { key: "h", label: "Hue", max: 360, unit: " degrees" },
@@ -4443,9 +5455,11 @@ const SLIDERS = [
 const fromHex = (hex) => rgbToHsl(...hexToRgb(hex));
 
 export default function ColorPicker({ initial = "#1E90FF", onChange }) {
-  // Single source of truth: HSL with full precision. Hex, RGB and text colour are derived.
+  // Single source of truth: HSL with full precision.
+  // Hex, RGB and text colour are derived.
   const [hsl, setHsl] = useState(() => fromHex(initial));
-  const [draft, setDraft] = useState(initial); // the hex text box may hold an unfinished value
+  // the hex text box may hold an unfinished value
+  const [draft, setDraft] = useState(initial);
   const [copyMsg, setCopyMsg] = useState("");
   const timer = useRef(0);
 
@@ -4454,7 +5468,8 @@ export default function ColorPicker({ initial = "#1E90FF", onChange }) {
   const text = readableText(rgb);
   const draftValid = hexToRgb(draft) !== null;
 
-  useEffect(() => () => clearTimeout(timer.current), []); // no timer firing after unmount
+  // no timer firing after unmount
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   function apply(next) {
     setHsl(next);
@@ -4487,15 +5502,24 @@ export default function ColorPicker({ initial = "#1E90FF", onChange }) {
 
   return (
     <div className="picker">
-      <div className="preview" data-testid="preview" style={{ background: hex, color: text.color }}>
+      <div
+        className="preview"
+        data-testid="preview"
+        style={{ background: hex, color: text.color }}
+      >
         <strong data-testid="hex">{hex}</strong>
         <span data-testid="rgb">rgb({rgb.join(", ")})</span>
-        <span data-testid="contrast">text {text.color === "#000000" ? "black" : "white"}, contrast {text.ratio}:1</span>
+        <span data-testid="contrast">
+          text {text.color === "#000000" ? "black" : "white"}, contrast{" "}
+          {text.ratio}:1
+        </span>
       </div>
 
       {SLIDERS.map((s) => (
         <label key={s.key} className="slider">
-          <span>{s.label} <b>{Math.round(hsl[s.key])}</b></span>
+          <span>
+            {s.label} <b>{Math.round(hsl[s.key])}</b>
+          </span>
           <input
             type="range"
             min="0"
@@ -4521,9 +5545,13 @@ export default function ColorPicker({ initial = "#1E90FF", onChange }) {
             onBlur={() => setDraft(hex)}
           />
         </label>
-        <button type="button" data-testid="copy" onClick={copy}>Copy</button>
+        <button type="button" data-testid="copy" onClick={copy}>
+          Copy
+        </button>
       </div>
-      <p className="msg" role="status" data-testid="copy-msg">{copyMsg || (draftValid ? "" : "Use #RGB or #RRGGBB")}</p>
+      <p className="msg" role="status" data-testid="copy-msg">
+        {copyMsg || (draftValid ? "" : "Use #RGB or #RRGGBB")}
+      </p>
 
       <div className="swatches" role="group" aria-label="Preset colours">
         {SWATCHES.map((c) => (
@@ -4563,13 +5591,23 @@ export function rgbToHsl(r, g, b) {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
   // Keep full precision: rounding here would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 
-export const rgbToHex = (rgb) => "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+export const rgbToHex = (rgb) =>
+  "#" +
+  rgb
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 
 // Accepts "#RGB" or "#RRGGBB" (the # is optional). Returns null when invalid.
 export function hexToRgb(text) {
@@ -4596,24 +5634,113 @@ export function readableText(rgb) {
     : { color: "#FFFFFF", ratio: onWhite.toFixed(1) };
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 14px; }
-.preview { display: grid; gap: 4px; padding: 18px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; }
-.preview strong { font-size: 1.4rem; letter-spacing: 0.5px; }
-.slider { display: grid; gap: 4px; margin-bottom: 10px; font-size: 0.85rem; color: #c5cbd6; }
-.slider input { width: 100%; accent-color: #7aa2ff; }
-.row { display: flex; gap: 8px; align-items: end; }
-.hex-field { flex: 1; display: grid; gap: 4px; font-size: 0.85rem; color: #c5cbd6; }
-.hex-field input { padding: 8px; border-radius: 8px; border: 1px solid #3a4150; background: #0f1115; color: #fff; font-family: monospace; font-size: 1rem; }
-.hex-field input[aria-invalid="true"] { border-color: #ff8a80; }
-.row button { padding: 9px 16px; border: 0; border-radius: 8px; background: #4f7cff; color: #fff; cursor: pointer; }
-.msg { min-height: 1.2em; font-size: 0.8rem; color: #ffd180; margin: 6px 0; }
-.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-.swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #2a2f3a; cursor: pointer; }
-.swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px #7aa2ff; }
-.chosen { font-size: 0.85rem; color: #9aa3b2; margin-bottom: 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 14px;
+}
+.preview {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+.preview strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+}
+.slider {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: #c5cbd6;
+}
+.slider input {
+  width: 100%;
+  accent-color: #7aa2ff;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+.hex-field {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #c5cbd6;
+}
+.hex-field input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  background: #0f1115;
+  color: #fff;
+  font-family: monospace;
+  font-size: 1rem;
+}
+.hex-field input[aria-invalid="true"] {
+  border-color: #ff8a80;
+}
+.row button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+.msg {
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  color: #ffd180;
+  margin: 6px 0;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #2a2f3a;
+  cursor: pointer;
+}
+.swatch[aria-pressed="true"] {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
+.chosen {
+  font-size: 0.85rem;
+  color: #9aa3b2;
+  margin-bottom: 0;
+}
 `,
         },
       },
@@ -4658,16 +5785,22 @@ export function rgbToHsl(r, g, b) {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
-  // Keep full precision: rounding here would make hex -> hsl -> hex drift.
+  // Keep full precision: rounding here
+  // would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 ~~~
 
 A script converted all 16,777,216 RGB colours to HSL and back:
 
-~~~
+~~~text
 colours tested: 16777216 | round trip mismatches with full-precision HSL: 0 | with HSL rounded to integers: 15001676 (89.4%) | 44920 ms
 #1e90ff -> hsl 209.600 100.000 55.882 -> rounded back: #1F8FFF
 hexToRgb: [170,187,204] [30,144,255] null null
@@ -4681,27 +5814,22 @@ Full-precision HSL round-trips every colour; HSL rounded to integers changes 89.
 ### 3.2 State and computed values
 
 ~~~vue
-const hsl = ref(fromHex(props.initial));
-const draft = ref(props.initial); // the hex text box may hold an unfinished value
-const copyMsg = ref("");
-let timer = 0;
-
-const rgb = computed(() => hslToRgb(hsl.value.h, hsl.value.s, hsl.value.l));
-const hex = computed(() => rgbToHex(rgb.value));
-const text = computed(() => readableText(rgb.value));
-const draftValid = computed(() => hexToRgb(draft.value) !== null);
-
-onUnmounted(() => clearTimeout(timer)); // no timer firing after unmount
+const hsl = ref(fromHex(props.initial)); const draft =
+ref(props.initial); // the hex text box may hold an unfinished value
+const copyMsg = ref(""); let timer = 0; const rgb = computed(() =>
+hslToRgb(hsl.value.h, hsl.value.s, hsl.value.l)); const hex =
+computed(() => rgbToHex(rgb.value)); const text = computed(() =>
+readableText(rgb.value)); const draftValid = computed(() =>
+hexToRgb(draft.value) !== null); onUnmounted(() => clearTimeout(timer));
+// no timer firing after unmount
 ~~~
 
 ### 3.3 Applying changes
 
 ~~~vue
-function apply(next) {
-  hsl.value = next;
-  draft.value = hex.value; // computed values re-evaluate synchronously when read
-  emit("change", hex.value);
-}
+function apply(next) { hsl.value = next; draft.value = hex.value; //
+computed values re-evaluate synchronously when read emit("change",
+hex.value); }
 ~~~
 
 In <code>apply</code>, reading <code>hex.value</code> right after setting <code>hsl.value</code> already gives the new hex: a computed recalculates on read when its inputs are dirty, without waiting for a render. The hex field keeps its own draft: typing updates <code>draft</code>, the colour changes only when <code>hexToRgb</code> parses it, and <code>@blur="draft = hex"</code> normalises <code>#fc0</code> to <code>#FFCC00</code>.
@@ -4714,7 +5842,9 @@ Unlike some other inputs, the hex field does not need a manual DOM write-back: e
 
 ~~~vue
 <label v-for="s in SLIDERS" :key="s.key" class="slider">
-  <span>{{ s.label }} <b>{{ Math.round(hsl[s.key]) }}</b></span>
+  <span
+    >{{ s.label }} <b>{{ Math.round(hsl[s.key]) }}</b></span
+  >
   <input
     type="range"
     min="0"
@@ -4735,17 +5865,12 @@ Native range inputs bring keyboard support; <code>:aria-valuetext</code> makes t
 ### 3.5 Copy
 
 ~~~vue
-async function copy() {
-  clearTimeout(timer);
-  try {
-    if (!navigator.clipboard) throw new Error("no clipboard");
-    await navigator.clipboard.writeText(hex.value);
-    copyMsg.value = "Copied " + hex.value;
-  } catch {
-    copyMsg.value = "Copy failed: select the hex value and copy it by hand";
-  }
-  timer = setTimeout(() => (copyMsg.value = ""), 2000);
-}
+async function copy() { clearTimeout(timer); try { if
+(!navigator.clipboard) throw new Error("no clipboard"); await
+navigator.clipboard.writeText(hex.value); copyMsg.value = "Copied " +
+hex.value; } catch { copyMsg.value = "Copy failed: select the hex value
+and copy it by hand"; } timer = setTimeout(() => (copyMsg.value = ""),
+2000); }
 ~~~
 
 The Clipboard API exists only in secure contexts and may require a user gesture or permission, rejecting otherwise ([MDN, Clipboard API](https://developer.mozilla.org/en-us/docs/web/api/clipboard_api)), so the call is awaited inside <code>try</code> with a fallback message.
@@ -4754,7 +5879,7 @@ The Clipboard API exists only in secure contexts and may require a user gesture 
 
 Compiled with <code>@vue/compiler-sfc</code> and mounted in jsdom. The driver moved sliders with <code>input</code> events, typed hex values, blurred the field, clicked a swatch and Copy (first with no <code>navigator.clipboard</code>, then with a recording fake installed by the driver):
 
-~~~
+~~~text
 [vue] RENDERED: Pick a brand colour#1E90FFrgb(30, 144, 255)text black, contrast 6.5:1Hue 210Saturation 100Lightness 56HexCopyParent received: #1E90FF
 [vue] mounted                  #1E90FF | rgb(30, 144, 255) | hsl 210 100 56 | box: "#1E90FF" | text black, contrast 6.5:1 | pressed: Dodger blue #1E90FF | Parent received: #1E90FF
 [vue] lightness -> 30          #004E99 | rgb(0, 78, 153) | hsl 210 100 30 | box: "#004E99" | text white, contrast 8.2:1 | pressed: none | Parent received: #004E99
@@ -4883,14 +6008,39 @@ const color = ref("#1E90FF");
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 14px; }
-.chosen { font-size: 0.85rem; color: #9aa3b2; margin-bottom: 0; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(420px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 14px;
+}
+.chosen {
+  font-size: 0.85rem;
+  color: #9aa3b2;
+  margin-bottom: 0;
+}
 </style>
 `,
           "/src/color.js": `// Colour math, no dependencies. h in [0, 360), s and l in [0, 100].
@@ -4914,13 +6064,23 @@ export function rgbToHsl(r, g, b) {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
   // Keep full precision: rounding here would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 
-export const rgbToHex = (rgb) => "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+export const rgbToHex = (rgb) =>
+  "#" +
+  rgb
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 
 // Accepts "#RGB" or "#RRGGBB" (the # is optional). Returns null when invalid.
 export function hexToRgb(text) {
@@ -4949,12 +6109,23 @@ export function readableText(rgb) {
 `,
           "/src/components/ColorPicker.vue": `<script setup>
 import { computed, onUnmounted, ref } from "vue";
-import { hexToRgb, hslToRgb, readableText, rgbToHex, rgbToHsl } from "../color.js";
+import {
+  hexToRgb,
+  hslToRgb,
+  readableText,
+  rgbToHex,
+  rgbToHsl,
+} from "../color.js";
 
 const SWATCHES = [
-  { name: "Tomato", hex: "#FF6347" }, { name: "Amber", hex: "#FFC107" }, { name: "Lime", hex: "#8BC34A" },
-  { name: "Teal", hex: "#009688" }, { name: "Dodger blue", hex: "#1E90FF" }, { name: "Indigo", hex: "#3F51B5" },
-  { name: "Orchid", hex: "#DA70D6" }, { name: "Slate", hex: "#708090" },
+  { name: "Tomato", hex: "#FF6347" },
+  { name: "Amber", hex: "#FFC107" },
+  { name: "Lime", hex: "#8BC34A" },
+  { name: "Teal", hex: "#009688" },
+  { name: "Dodger blue", hex: "#1E90FF" },
+  { name: "Indigo", hex: "#3F51B5" },
+  { name: "Orchid", hex: "#DA70D6" },
+  { name: "Slate", hex: "#708090" },
 ];
 const SLIDERS = [
   { key: "h", label: "Hue", max: 360, unit: " degrees" },
@@ -4968,7 +6139,8 @@ const emit = defineEmits(["change"]);
 
 // Single source of truth: HSL with full precision. Everything else is computed.
 const hsl = ref(fromHex(props.initial));
-const draft = ref(props.initial); // the hex text box may hold an unfinished value
+// the hex text box may hold an unfinished value
+const draft = ref(props.initial);
 const copyMsg = ref("");
 let timer = 0;
 
@@ -4981,7 +6153,8 @@ onUnmounted(() => clearTimeout(timer)); // no timer firing after unmount
 
 function apply(next) {
   hsl.value = next;
-  draft.value = hex.value; // computed values re-evaluate synchronously when read
+  // computed values re-evaluate synchronously when read
+  draft.value = hex.value;
   emit("change", hex.value);
 }
 
@@ -5009,14 +6182,23 @@ async function copy() {
 
 <template>
   <div class="picker">
-    <div class="preview" data-testid="preview" :style="{ background: hex, color: text.color }">
+    <div
+      class="preview"
+      data-testid="preview"
+      :style="{ background: hex, color: text.color }"
+    >
       <strong data-testid="hex">{{ hex }}</strong>
       <span data-testid="rgb">rgb({{ rgb.join(", ") }})</span>
-      <span data-testid="contrast">text {{ text.color === "#000000" ? "black" : "white" }}, contrast {{ text.ratio }}:1</span>
+      <span data-testid="contrast"
+        >text {{ text.color === "#000000" ? "black" : "white" }}, contrast
+        {{ text.ratio }}:1</span
+      >
     </div>
 
     <label v-for="s in SLIDERS" :key="s.key" class="slider">
-      <span>{{ s.label }} <b>{{ Math.round(hsl[s.key]) }}</b></span>
+      <span
+        >{{ s.label }} <b>{{ Math.round(hsl[s.key]) }}</b></span
+      >
       <input
         type="range"
         min="0"
@@ -5043,7 +6225,9 @@ async function copy() {
       </label>
       <button type="button" data-testid="copy" @click="copy">Copy</button>
     </div>
-    <p class="msg" role="status" data-testid="copy-msg">{{ copyMsg || (draftValid ? "" : "Use #RGB or #RRGGBB") }}</p>
+    <p class="msg" role="status" data-testid="copy-msg">
+      {{ copyMsg || (draftValid ? "" : "Use #RGB or #RRGGBB") }}
+    </p>
 
     <div class="swatches" role="group" aria-label="Preset colours">
       <button
@@ -5061,19 +6245,83 @@ async function copy() {
 </template>
 
 <style scoped>
-.preview { display: grid; gap: 4px; padding: 18px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; }
-.preview strong { font-size: 1.4rem; letter-spacing: 0.5px; }
-.slider { display: grid; gap: 4px; margin-bottom: 10px; font-size: 0.85rem; color: #c5cbd6; }
-.slider input { width: 100%; accent-color: #7aa2ff; }
-.row { display: flex; gap: 8px; align-items: end; }
-.hex-field { flex: 1; display: grid; gap: 4px; font-size: 0.85rem; color: #c5cbd6; }
-.hex-field input { padding: 8px; border-radius: 8px; border: 1px solid #3a4150; background: #0f1115; color: #fff; font-family: monospace; font-size: 1rem; }
-.hex-field input[aria-invalid="true"] { border-color: #ff8a80; }
-.row button { padding: 9px 16px; border: 0; border-radius: 8px; background: #4f7cff; color: #fff; cursor: pointer; }
-.msg { min-height: 1.2em; font-size: 0.8rem; color: #ffd180; margin: 6px 0; }
-.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
-.swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #2a2f3a; cursor: pointer; }
-.swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px #7aa2ff; }
+.preview {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  font-size: 0.9rem;
+}
+.preview strong {
+  font-size: 1.4rem;
+  letter-spacing: 0.5px;
+}
+.slider {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: #c5cbd6;
+}
+.slider input {
+  width: 100%;
+  accent-color: #7aa2ff;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+}
+.hex-field {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #c5cbd6;
+}
+.hex-field input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  background: #0f1115;
+  color: #fff;
+  font-family: monospace;
+  font-size: 1rem;
+}
+.hex-field input[aria-invalid="true"] {
+  border-color: #ff8a80;
+}
+.row button {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #4f7cff;
+  color: #fff;
+  cursor: pointer;
+}
+.msg {
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  color: #ffd180;
+  margin: 6px 0;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #2a2f3a;
+  cursor: pointer;
+}
+.swatch[aria-pressed="true"] {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #7aa2ff;
+}
 </style>
 `,
         },
@@ -5119,16 +6367,22 @@ export function rgbToHsl(r: number, g: number, b: number): Hsl {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
-  // Keep full precision: rounding here would make hex -> hsl -> hex drift.
+  // Keep full precision: rounding here
+  // would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 ~~~
 
 A round-trip script over all 16,777,216 colours:
 
-~~~
+~~~text
 colours tested: 16777216 | round trip mismatches with full-precision HSL: 0 | with HSL rounded to integers: 15001676 (89.4%) | 44920 ms
 #1e90ff -> hsl 209.600 100.000 55.882 -> rounded back: #1F8FFF
 hexToRgb: [170,187,204] [30,144,255] null null
@@ -5143,16 +6397,20 @@ Rounded HSL changed 89.4 percent of colours (<code>#1e90ff</code> came back as <
 
 ~~~ts
 readonly hsl = signal<Hsl>({ h: 0, s: 0, l: 0 });
-readonly draft = signal(""); // the hex text box may hold an unfinished value
+// the hex text box may hold an unfinished value
+readonly draft = signal("");
 readonly copyMsg = signal("");
-readonly rgb = computed(() => hslToRgb(this.hsl().h, this.hsl().s, this.hsl().l));
+readonly rgb = computed(() =>
+  hslToRgb(this.hsl().h, this.hsl().s, this.hsl().l),
+);
 readonly hex = computed(() => rgbToHex(this.rgb()));
 readonly text = computed(() => readableText(this.rgb()));
 readonly draftValid = computed(() => hexToRgb(this.draft()) !== null);
 private timer: ReturnType<typeof setTimeout> | undefined;
 
 ngOnInit(): void {
-  this.hsl.set(fromHex(this.initial)); // @Input is set by now, not in the constructor
+  // @Input is set by now, not in the constructor
+  this.hsl.set(fromHex(this.initial));
   this.draft.set(this.initial);
 }
 ~~~
@@ -5195,7 +6453,7 @@ Sliders call <code>onSlider</code>, which builds the next HSL with a computed ke
 
 Native range inputs give keyboard support and the slider role; <code>[attr.aria-valuetext]</code> speaks "210 degrees". In the template, <code>min</code> is static and <code>[max]</code> is bound before <code>[value]</code>. Order matters, because a range input clamps its value to the max it has at that moment. Setting the two properties in each order in real Chromium:
 
-~~~
+~~~text
 [chromium] value set before max: 100 | max set before value: 210
 ~~~
 
@@ -5213,9 +6471,12 @@ async copy(): Promise<void> {
     await navigator.clipboard.writeText(this.hex());
     this.copyMsg.set("Copied " + this.hex());
   } catch {
-    this.copyMsg.set("Copy failed: select the hex value and copy it by hand");
+    this.copyMsg.set(
+      "Copy failed: select the hex value and copy it by hand",
+    );
   }
-  // A signal write, so the zoneless app re-renders when the timer fires.
+  // A signal write, so the zoneless app
+  // re-renders when the timer fires.
   this.timer = setTimeout(() => this.copyMsg.set(""), 2000);
 }
 ~~~
@@ -5226,7 +6487,7 @@ The Clipboard API is secure-context only and can reject without a user gesture o
 
 Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and run with runtime JIT (<code>angular:playground</code>) in jsdom. The driver moved sliders, typed hex values, blurred, clicked a swatch and Copy (first with no <code>navigator.clipboard</code>, then with a recording fake). AOT output; JIT printed the same lines:
 
-~~~
+~~~text
 [angular:app] RENDERED: Pick a brand colour#1E90FFrgb(30, 144, 255)text black, contrast 6.5:1Hue 210Saturation 100Lightness 56HexCopyParent received: #1E90FF
 [angular:app] mounted                  #1E90FF | rgb(30, 144, 255) | hsl 210 100 56 | box: "#1E90FF" | text black, contrast 6.5:1 | pressed: Dodger blue #1E90FF | Parent received: #1E90FF
 [angular:app] lightness -> 30          #004E99 | rgb(0, 78, 153) | hsl 210 100 30 | box: "#004E99" | text white, contrast 8.2:1 | pressed: none | Parent received: #004E99
@@ -5348,41 +6609,72 @@ import { ColorPickerComponent } from "./color-picker.component";
     <main class="page">
       <section class="card">
         <h1>Pick a brand colour</h1>
-        <app-color-picker [initial]="color()" (colorChange)="color.set($event)" />
-        <p class="chosen" data-testid="chosen">Parent received: {{ color() }}</p>
+        <app-color-picker
+          [initial]="color()"
+          (colorChange)="color.set($event)"
+        />
+        <p
+          class="chosen"
+          data-testid="chosen"
+        >Parent received: {{ color() }}</p>
       </section>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
     .card { width: min(420px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
     h1 { font-size: 1.25rem; margin: 0 0 14px; }
     .chosen { font-size: 0.85rem; color: #9aa3b2; margin-bottom: 0; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
   readonly color = signal("#1E90FF");
 }
 `,
-          "/src/app/color-picker.component.ts": `import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, computed, signal } from "@angular/core";
-import { Hsl, hexToRgb, hslToRgb, readableText, rgbToHex, rgbToHsl } from "./color";
+          "/src/app/color-picker.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
+import {
+  Hsl,
+  hexToRgb,
+  hslToRgb,
+  readableText,
+  rgbToHex,
+  rgbToHsl,
+} from "./color";
 
 const SWATCHES = [
-  { name: "Tomato", hex: "#FF6347" }, { name: "Amber", hex: "#FFC107" }, { name: "Lime", hex: "#8BC34A" },
-  { name: "Teal", hex: "#009688" }, { name: "Dodger blue", hex: "#1E90FF" }, { name: "Indigo", hex: "#3F51B5" },
-  { name: "Orchid", hex: "#DA70D6" }, { name: "Slate", hex: "#708090" },
+  { name: "Tomato", hex: "#FF6347" },
+  { name: "Amber", hex: "#FFC107" },
+  { name: "Lime", hex: "#8BC34A" },
+  { name: "Teal", hex: "#009688" },
+  { name: "Dodger blue", hex: "#1E90FF" },
+  { name: "Indigo", hex: "#3F51B5" },
+  { name: "Orchid", hex: "#DA70D6" },
+  { name: "Slate", hex: "#708090" },
 ];
-const SLIDERS: { key: keyof Hsl; label: string; max: number; unit: string }[] = [
-  { key: "h", label: "Hue", max: 360, unit: " degrees" },
-  { key: "s", label: "Saturation", max: 100, unit: "%" },
-  { key: "l", label: "Lightness", max: 100, unit: "%" },
-];
+const SLIDERS: { key: keyof Hsl; label: string; max: number; unit: string }[] =
+  [
+    { key: "h", label: "Hue", max: 360, unit: " degrees" },
+    { key: "s", label: "Saturation", max: 100, unit: "%" },
+    { key: "l", label: "Lightness", max: 100, unit: "%" },
+  ];
 const fromHex = (hex: string): Hsl => {
   const [r, g, b] = hexToRgb(hex) ?? [0, 0, 0];
   return rgbToHsl(r, g, b);
@@ -5391,7 +6683,12 @@ const fromHex = (hex: string): Hsl => {
 @Component({
   selector: "app-color-picker",
   template: \`
-    <div class="preview" data-testid="preview" [style.background]="hex()" [style.color]="text().color">
+    <div
+      class="preview"
+      data-testid="preview"
+      [style.background]="hex()"
+      [style.color]="text().color"
+    >
       <strong data-testid="hex">{{ hex() }}</strong>
       <span data-testid="rgb">rgb({{ rgb().join(", ") }})</span>
       <span data-testid="contrast">text {{ text().color === "#000000" ? "black" : "white" }}, contrast {{ text().ratio }}:1</span>
@@ -5427,7 +6724,11 @@ const fromHex = (hex: string): Hsl => {
       </label>
       <button type="button" data-testid="copy" (click)="copy()">Copy</button>
     </div>
-    <p class="msg" role="status" data-testid="copy-msg">{{ copyMsg() || (draftValid() ? "" : "Use #RGB or #RRGGBB") }}</p>
+    <p
+      class="msg"
+      role="status"
+      data-testid="copy-msg"
+    >{{ copyMsg() || (draftValid() ? "" : "Use #RGB or #RRGGBB") }}</p>
 
     <div class="swatches" role="group" aria-label="Preset colours">
       @for (c of swatches; track c.hex) {
@@ -5442,7 +6743,8 @@ const fromHex = (hex: string): Hsl => {
       }
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; }
     .preview { display: grid; gap: 4px; padding: 18px; border-radius: 12px; margin-bottom: 14px; font-size: 0.9rem; }
     .preview strong { font-size: 1.4rem; letter-spacing: 0.5px; }
@@ -5457,7 +6759,8 @@ const fromHex = (hex: string): Hsl => {
     .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
     .swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #2a2f3a; cursor: pointer; }
     .swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px #7aa2ff; }
-  \`],
+  \`,
+  ],
 })
 export class ColorPickerComponent implements OnInit, OnDestroy {
   @Input() initial = "#1E90FF";
@@ -5468,18 +6771,22 @@ export class ColorPickerComponent implements OnInit, OnDestroy {
   readonly fromHex = fromHex;
   readonly round = Math.round;
 
-  // Single source of truth: HSL with full precision. Everything else is computed().
+  // Single source of truth: HSL with full
+  // precision. Everything else is computed().
   readonly hsl = signal<Hsl>({ h: 0, s: 0, l: 0 });
   readonly draft = signal(""); // the hex text box may hold an unfinished value
   readonly copyMsg = signal("");
-  readonly rgb = computed(() => hslToRgb(this.hsl().h, this.hsl().s, this.hsl().l));
+  readonly rgb = computed(() =>
+    hslToRgb(this.hsl().h, this.hsl().s, this.hsl().l),
+  );
   readonly hex = computed(() => rgbToHex(this.rgb()));
   readonly text = computed(() => readableText(this.rgb()));
   readonly draftValid = computed(() => hexToRgb(this.draft()) !== null);
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   ngOnInit(): void {
-    this.hsl.set(fromHex(this.initial)); // @Input is set by now, not in the constructor
+    // @Input is set by now, not in the constructor
+    this.hsl.set(fromHex(this.initial));
     this.draft.set(this.initial);
   }
 
@@ -5494,7 +6801,10 @@ export class ColorPickerComponent implements OnInit, OnDestroy {
   }
 
   onSlider(key: keyof Hsl, e: Event): void {
-    this.apply({ ...this.hsl(), [key]: Number((e.target as HTMLInputElement).value) });
+    this.apply({
+      ...this.hsl(),
+      [key]: Number((e.target as HTMLInputElement).value),
+    });
   }
 
   onHexInput(e: Event): void {
@@ -5527,11 +6837,16 @@ export function hslToRgb(h: number, s: number, l: number): number[] {
   l /= 100;
   const k = (n: number) => (n + h / 30) % 12;
   const a = s * Math.min(l, 1 - l);
-  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
+  const f = (n: number) =>
+    l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1));
   return [f(0), f(8), f(4)].map((v) => Math.round(v * 255));
 }
 
-export interface Hsl { h: number; s: number; l: number; }
+export interface Hsl {
+  h: number;
+  s: number;
+  l: number;
+}
 
 export function rgbToHsl(r: number, g: number, b: number): Hsl {
   r /= 255;
@@ -5543,13 +6858,23 @@ export function rgbToHsl(r: number, g: number, b: number): Hsl {
   const d = max - min;
   if (d === 0) return { h: 0, s: 0, l: l * 100 };
   const s = d / (1 - Math.abs(2 * l - 1));
-  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  let h =
+    max === r
+      ? ((g - b) / d) % 6
+      : max === g
+        ? (b - r) / d + 2
+        : (r - g) / d + 4;
   h = (h * 60 + 360) % 360;
   // Keep full precision: rounding here would make hex -> hsl -> hex drift.
   return { h, s: s * 100, l: l * 100 };
 }
 
-export const rgbToHex = (rgb: number[]): string => "#" + rgb.map((v) => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+export const rgbToHex = (rgb: number[]): string =>
+  "#" +
+  rgb
+    .map((v) => v.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase();
 
 // Accepts "#RGB" or "#RRGGBB" (the # is optional). Returns null when invalid.
 export function hexToRgb(text: string): number[] | null {
@@ -5672,9 +6997,13 @@ All four layers share the same box. The inputs are transparent and ignore the po
 
 ~~~js
 export const snap = (v, { min, max, step }) =>
-  Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
+  Math.min(
+    max,
+    Math.max(min, Math.round((v - min) / step) * step + min),
+  );
 
-// Move one end of [lo, hi] without letting the handles cross (keeps minGap between them).
+// Move one end of [lo, hi] without letting the
+// handles cross (keeps minGap between them).
 export function moveLow([lo, hi], v, opts) {
   return [Math.min(snap(v, opts), hi - opts.minGap), hi];
 }
@@ -5682,7 +7011,8 @@ export function moveHigh([lo, hi], v, opts) {
   return [lo, Math.max(snap(v, opts), lo + opts.minGap)];
 }
 
-export const percent = (v, { min, max }) => ((v - min) / (max - min)) * 100;
+export const percent = (v, { min, max }) =>
+  ((v - min) / (max - min)) * 100;
 ~~~
 
 <code>snap</code> rounds to the nearest step and keeps the value inside the track. <code>moveLow</code> and <code>moveHigh</code> each move one end and clamp it against the other end minus or plus the gap. Every input path (dragging, keys, typing) calls these two functions, so the "never cross" rule lives in exactly one place.
@@ -5695,7 +7025,8 @@ export const percent = (v, { min, max }) => ((v - min) / (max - min)) * 100;
 export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, step = 10, minGap = 50 }) {
   const opts = { min, max, step, minGap };
   const [lo, hi] = value;
-  // When the low handle is in the right half, put it on top: if both handles
+  // When the low handle is in the right
+  // half, put it on top: if both handles
   // sit at the far right, the low one must stay grabbable.
   const lowOnTop = lo - min > (max - min) / 2;
 
@@ -5725,14 +7056,45 @@ The fill div is positioned with <code>left</code> and <code>right</code> percent
 The CSS that makes stacking work:
 
 ~~~css
-.thumb { position: absolute; left: 0; top: 0; width: 100%; height: 32px; margin: 0; background: none;
-  pointer-events: none; -webkit-appearance: none; appearance: none; }
-.thumb::-webkit-slider-runnable-track { background: none; height: 32px; }
-.thumb::-moz-range-track { background: none; }
-.thumb::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; margin-top: 5px;
-  border-radius: 50%; background: #fff; border: 3px solid #4f7cff; cursor: grab; }
-.thumb::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff;
-  border: 3px solid #4f7cff; cursor: grab; }
+.thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.thumb::-webkit-slider-runnable-track {
+  background: none;
+  height: 32px;
+}
+.thumb::-moz-range-track {
+  background: none;
+}
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
+.thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
 ~~~
 
 Each input covers the whole track but has <code>pointer-events: none</code>, so it does not swallow clicks meant for the other one; the thumb pseudo-elements turn <code>pointer-events</code> back on. The side effect is that clicking the empty track does nothing, which the Chromium test confirms; for a price filter that is usually acceptable, and the number boxes cover precise input.
@@ -5747,10 +7109,16 @@ When the user drags the low thumb past the high one, <code>moveLow</code> return
 
 ~~~jsx
 export default function PriceBox({ label, value, onCommit, testId }) {
-  const [draft, setDraft] = useState(null); // null = not editing, show the real value
+  // null = not editing, show the real value
+  const [draft, setDraft] = useState(null);
 
   function commit() {
-    if (draft !== null && draft.trim() !== "" && !Number.isNaN(Number(draft))) onCommit(Number(draft));
+    if (
+      draft !== null &&
+      draft.trim() !== "" &&
+      !Number.isNaN(Number(draft))
+    )
+      onCommit(Number(draft));
     setDraft(null);
   }
 
@@ -5758,7 +7126,8 @@ export default function PriceBox({ label, value, onCommit, testId }) {
     <label className="price-box">
       <span>{label}</span>
       <span className="money">
-        $<input
+        $
+        <input
           type="number"
           inputMode="numeric"
           data-testid={testId}
@@ -5780,8 +7149,11 @@ If the box were wired straight to the range, typing "150" would pass through "1"
 ### 4.5 The parent
 
 ~~~jsx
-const [range, setRange] = useState([100, 700]); // [min, max] owned by the parent
-const matches = PRODUCTS.filter((p) => p.price >= range[0] && p.price <= range[1]); // derived, not state
+// [min, max] owned by the parent
+const [range, setRange] = useState([100, 700]);
+const matches = PRODUCTS.filter(
+  (p) => p.price >= range[0] && p.price <= range[1],
+); // derived, not state
 
 return (
   <main className="page">
@@ -5798,7 +7170,7 @@ The product list is a constant in <code>/src/products.js</code> (no network); fi
 
 Bundled with esbuild and mounted with <code>createRoot</code> in <code>StrictMode</code>. jsdom has no layout, so it cannot drag; the driver sets each input value with the native setter and fires <code>input</code>, exactly the events a drag produces, and types into the boxes:
 
-~~~
+~~~text
 [react] RENDERED: Filter by priceMin$Max$17 of 24 products between $100 and $700
 [react] mounted                        low: 100 high: 700 | boxes: 100 700 | fill left/right: 10% 30% | low z: 3 | 17 of 24 products between $100 and $700
 [react] low -> 250                     low: 250 high: 700 | boxes: 250 700 | fill left/right: 25% 30% | low z: 3 | 12 of 24 products between $250 and $700
@@ -5818,7 +7190,7 @@ The low handle pushed to 900 stopped at 470 (high 520 minus the gap); the high h
 
 jsdom cannot press a thumb, so the solution was also bundled into a static page and opened in Chromium 141 through playwright-core at 360 px wide. The mouse was moved to each thumb position, pressed, moved in 12 steps and released; then the keyboard was used on the low thumb:
 
-~~~
+~~~text
 [chromium react] start                              100 | 700 | 17 of 24 products between $100 and $700
 [chromium react] drag low thumb 100 -> 300          300 | 700 | 11 of 24 products between $300 and $700
 [chromium react] drag high thumb 700 -> 500         300 | 500 | 6 of 24 products between $300 and $500
@@ -5836,7 +7208,7 @@ Dragging worked for both thumbs, crossing was blocked during a real drag, the st
 
 **Why the z-index rule.** With a gap of 50 on this track the thumbs never fully overlap, so the rule is defensive here. With <code>minGap</code> set to 0, both thumbs can sit on exactly the same pixel. Modified copies with <code>minGap={0}</code>, with and without the rule, in Chromium:
 
-~~~
+~~~text
 [chromium, minGap 0] with z-index swap     stacked at the right: 1000 | 1000 | after dragging the stack to 300: 300 | 1000
 [chromium, minGap 0] without z-index swap  stacked at the right: 1000 | 1000 | after dragging the stack to 300: 1000 | 1000
 ~~~
@@ -5951,16 +7323,27 @@ import DualRangeSlider from "./src/DualRangeSlider";
 import { PRODUCTS } from "./src/products";
 
 export default function App() {
-  const [range, setRange] = useState([100, 700]); // [min, max] owned by the parent
-  const matches = PRODUCTS.filter((p) => p.price >= range[0] && p.price <= range[1]); // derived, not state
+  // [min, max] owned by the parent
+  const [range, setRange] = useState([100, 700]);
+  const matches = PRODUCTS.filter(
+    (p) => p.price >= range[0] && p.price <= range[1],
+  ); // derived, not state
 
   return (
     <main className="page">
       <section className="card">
         <h1>Filter by price</h1>
-        <DualRangeSlider value={range} onChange={setRange} min={0} max={1000} step={10} minGap={50} />
+        <DualRangeSlider
+          value={range}
+          onChange={setRange}
+          min={0}
+          max={1000}
+          step={10}
+          minGap={50}
+        />
         <p className="summary" data-testid="summary" aria-live="polite">
-          {matches.length} of {PRODUCTS.length} products between \${range[0]} and \${range[1]}
+          {matches.length} of {PRODUCTS.length} products between \${range[0]} and
+          \${range[1]}
         </p>
       </section>
     </main>
@@ -5970,7 +7353,14 @@ export default function App() {
           "/src/DualRangeSlider.js": `import PriceBox from "./PriceBox";
 import { moveHigh, moveLow, percent } from "./range";
 
-export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, step = 10, minGap = 50 }) {
+export default function DualRangeSlider({
+  value,
+  onChange,
+  min = 0,
+  max = 1000,
+  step = 10,
+  minGap = 50,
+}) {
   const opts = { min, max, step, minGap };
   const [lo, hi] = value;
   // When the low handle is in the right half, put it on top: if both handles
@@ -5981,7 +7371,14 @@ export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, 
     <div className="dual">
       <div className="slider-wrap">
         <div className="track" />
-        <div className="fill" data-testid="fill" style={{ left: percent(lo, opts) + "%", right: 100 - percent(hi, opts) + "%" }} />
+        <div
+          className="fill"
+          data-testid="fill"
+          style={{
+            left: percent(lo, opts) + "%",
+            right: 100 - percent(hi, opts) + "%",
+          }}
+        />
         <input
           type="range"
           className="thumb"
@@ -5993,7 +7390,9 @@ export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, 
           aria-label="Minimum price"
           aria-valuetext={"$" + lo}
           style={{ zIndex: lowOnTop ? 4 : 3 }}
-          onChange={(e) => onChange(moveLow(value, Number(e.target.value), opts))}
+          onChange={(e) =>
+            onChange(moveLow(value, Number(e.target.value), opts))
+          }
         />
         <input
           type="range"
@@ -6006,12 +7405,24 @@ export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, 
           aria-label="Maximum price"
           aria-valuetext={"$" + hi}
           style={{ zIndex: 3 }}
-          onChange={(e) => onChange(moveHigh(value, Number(e.target.value), opts))}
+          onChange={(e) =>
+            onChange(moveHigh(value, Number(e.target.value), opts))
+          }
         />
       </div>
       <div className="boxes">
-        <PriceBox label="Min" testId="box-low" value={lo} onCommit={(v) => onChange(moveLow(value, v, opts))} />
-        <PriceBox label="Max" testId="box-high" value={hi} onCommit={(v) => onChange(moveHigh(value, v, opts))} />
+        <PriceBox
+          label="Min"
+          testId="box-low"
+          value={lo}
+          onCommit={(v) => onChange(moveLow(value, v, opts))}
+        />
+        <PriceBox
+          label="Max"
+          testId="box-high"
+          value={hi}
+          onCommit={(v) => onChange(moveHigh(value, v, opts))}
+        />
       </div>
     </div>
   );
@@ -6022,10 +7433,12 @@ export default function DualRangeSlider({ value, onChange, min = 0, max = 1000, 
 // A number box that only commits on Enter or blur, so typing "1" on the way
 // to "150" does not shove the other handle around.
 export default function PriceBox({ label, value, onCommit, testId }) {
-  const [draft, setDraft] = useState(null); // null = not editing, show the real value
+  // null = not editing, show the real value
+  const [draft, setDraft] = useState(null);
 
   function commit() {
-    if (draft !== null && draft.trim() !== "" && !Number.isNaN(Number(draft))) onCommit(Number(draft));
+    if (draft !== null && draft.trim() !== "" && !Number.isNaN(Number(draft)))
+      onCommit(Number(draft));
     setDraft(null);
   }
 
@@ -6033,7 +7446,8 @@ export default function PriceBox({ label, value, onCommit, testId }) {
     <label className="price-box">
       <span>{label}</span>
       <span className="money">
-        $<input
+        $
+        <input
           type="number"
           inputMode="numeric"
           data-testid={testId}
@@ -6049,15 +7463,16 @@ export default function PriceBox({ label, value, onCommit, testId }) {
 `,
           "/src/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS = [
-  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399,
-  420, 455, 499, 530, 575, 610, 640, 699, 750, 820, 899, 980,
+  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
+  575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
           "/src/range.js": `// Pure helpers shared by both handles and both number boxes.
 export const snap = (v, { min, max, step }) =>
   Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
 
-// Move one end of [lo, hi] without letting the handles cross (keeps minGap between them).
+// Move one end of [lo, hi] without letting the
+// handles cross (keeps minGap between them).
 export function moveLow([lo, hi], v, opts) {
   return [Math.min(snap(v, opts), hi - opts.minGap), hi];
 }
@@ -6067,31 +7482,131 @@ export function moveHigh([lo, hi], v, opts) {
 
 export const percent = (v, { min, max }) => ((v - min) / (max - min)) * 100;
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(440px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 18px; }
-.slider-wrap { position: relative; height: 32px; }
-.track, .fill { position: absolute; top: 13px; height: 6px; border-radius: 3px; }
-.track { left: 0; right: 0; background: #2f3542; }
-.fill { background: #4f7cff; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(440px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 18px;
+}
+.slider-wrap {
+  position: relative;
+  height: 32px;
+}
+.track,
+.fill {
+  position: absolute;
+  top: 13px;
+  height: 6px;
+  border-radius: 3px;
+}
+.track {
+  left: 0;
+  right: 0;
+  background: #2f3542;
+}
+.fill {
+  background: #4f7cff;
+}
 /* Two native ranges stacked on one track. The inputs ignore the pointer;
    only their thumbs take it, so each thumb can be dragged on its own. */
-.thumb { position: absolute; left: 0; top: 0; width: 100%; height: 32px; margin: 0; background: none;
-  pointer-events: none; -webkit-appearance: none; appearance: none; }
-.thumb::-webkit-slider-runnable-track { background: none; height: 32px; }
-.thumb::-moz-range-track { background: none; }
-.thumb::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; margin-top: 5px;
-  border-radius: 50%; background: #fff; border: 3px solid #4f7cff; cursor: grab; }
-.thumb::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff;
-  border: 3px solid #4f7cff; cursor: grab; }
-.thumb:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-.thumb:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-.boxes { display: flex; gap: 12px; margin-top: 14px; }
-.price-box { flex: 1; display: grid; gap: 4px; font-size: 0.8rem; color: #9aa3b2; }
-.money { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border: 1px solid #3a4150; border-radius: 8px; background: #0f1115; color: #c5cbd6; }
-.money input { width: 100%; border: 0; outline: 0; background: transparent; color: #fff; font-size: 1rem; }
-.summary { margin: 16px 0 0; color: #c5cbd6; }
+.thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.thumb::-webkit-slider-runnable-track {
+  background: none;
+  height: 32px;
+}
+.thumb::-moz-range-track {
+  background: none;
+}
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
+.thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
+.thumb:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+}
+.thumb:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+}
+.boxes {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+.price-box {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #9aa3b2;
+}
+.money {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  background: #0f1115;
+  color: #c5cbd6;
+}
+.money input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+}
+.summary {
+  margin: 16px 0 0;
+  color: #c5cbd6;
+}
 `,
         },
       },
@@ -6139,24 +7654,20 @@ export function moveLow([lo, hi], v, opts) {
 
 ~~~vue
 const range = defineModel({ type: Array, required: true }); // [lo, hi]
-
-const opts = computed(() => ({ min: props.min, max: props.max, step: props.step, minGap: props.minGap }));
-const lo = computed(() => range.value[0]);
-const hi = computed(() => range.value[1]);
-// When the low handle is in the right half, put it on top: if both handles
-// sit at the far right, the low one must stay grabbable.
-const lowOnTop = computed(() => lo.value - props.min > (props.max - props.min) / 2);
-
-// Always assign a NEW array, even when the clamp changed nothing: the re-render
-// is what pulls a thumb that was dragged past the other one back into place.
-function update(next) {
-  range.value = next;
-}
+const opts = computed(() => ({ min: props.min, max: props.max, step:
+props.step, minGap: props.minGap })); const lo = computed(() =>
+range.value[0]); const hi = computed(() => range.value[1]); // When the
+low handle is in the right half, put it on top: if both handles // sit
+at the far right, the low one must stay grabbable. const lowOnTop =
+computed(() => lo.value - props.min > (props.max - props.min) / 2); //
+Always assign a NEW array, even when the clamp changed nothing: the
+re-render // is what pulls a thumb that was dragged past the other one
+back into place. function update(next) { range.value = next; }
 ~~~
 
 The comment is the Vue-specific lesson of this widget. Suppose the user drags the high thumb down to 100 while the low end sits at 470. <code>moveHigh</code> clamps it back to 520, which is what <code>hi</code> already was. React would restore the input to its <code>value</code> prop on its own. Vue patches <code>:value</code> only when the component re-renders, and its <code>value</code> patch compares against the live DOM value, so a re-render fixes the thumb. Assigning a **new** array to the model always triggers that re-render, even when the numbers are equal. A copy with a tempting "optimisation" that skipped no-op updates printed:
 
-~~~
+~~~text
 [vue] low -> 900 (tries to cross)    low: 470 high: 520 | boxes: 470 520 | fill left/right: 47% 48% | low z: 3 | 1 of 24 products between $470 and $520
 [vue] high -> 100 (tries to cross)   low: 470 high: 100 | boxes: 470 520 | fill left/right: 47% 48% | low z: 3 | 1 of 24 products between $470 and $520
 ~~~
@@ -6168,7 +7679,11 @@ The high input was left at 100, visually crossed over the low one, while the mod
 ### 3.3 The template
 
 ~~~vue
-<div class="fill" data-testid="fill" :style="{ left: percent(lo, opts) + '%', right: 100 - percent(hi, opts) + '%' }" />
+<div
+  class="fill"
+  data-testid="fill"
+  :style="{ left: percent(lo, opts) + '%', right: 100 - percent(hi, opts) + '%' }"
+/>
 <input
   type="range"
   class="thumb"
@@ -6191,12 +7706,9 @@ The fill uses <code>left</code> and <code>right</code> percentages. The low inpu
 
 ~~~vue
 const draft = ref(null); // null = not editing, show the real value
-
-function commit() {
-  const d = draft.value;
-  if (d !== null && String(d).trim() !== "" && !Number.isNaN(Number(d))) emit("commit", Number(d));
-  draft.value = null;
-}
+function commit() { const d = draft.value; if (d !== null &&
+String(d).trim() !== "" && !Number.isNaN(Number(d))) emit("commit",
+Number(d)); draft.value = null; }
 ~~~
 
 The box shows <code>draft ?? value</code>. While typing, only the draft changes; Enter (<code>@keydown.enter</code>) or blur emits <code>commit</code>, and the slider snaps and clamps it.
@@ -6209,7 +7721,7 @@ The box shows <code>draft ?? value</code>. While typing, only the draft changes;
 
 Compiled with <code>@vue/compiler-sfc</code> and mounted in jsdom. jsdom has no layout, so the driver sets input values and fires <code>input</code> (what a drag produces) and types into the boxes:
 
-~~~
+~~~text
 [vue] RENDERED: Filter by priceMin $Max $17 of 24 products between $100 and $700
 [vue] mounted                        low: 100 high: 700 | boxes: 100 700 | fill left/right: 10% 30% | low z: 3 | 17 of 24 products between $100 and $700
 [vue] low -> 250                     low: 250 high: 700 | boxes: 250 700 | fill left/right: 25% 30% | low z: 3 | 12 of 24 products between $250 and $700
@@ -6229,7 +7741,7 @@ Crossing attempts were clamped to 470 and 520 and the DOM values matched; both t
 
 The same solution was bundled into a static page and driven in Chromium 141 with a real mouse (press, move in 12 steps, release) at 360 px wide:
 
-~~~
+~~~text
 [chromium vue] start                              100 | 700 | 17 of 24 products between $100 and $700
 [chromium vue] drag low thumb 100 -> 300          300 | 700 | 11 of 24 products between $300 and $700
 [chromium vue] drag high thumb 700 -> 500         300 | 500 | 6 of 24 products between $300 and $500
@@ -6245,7 +7757,7 @@ The same solution was bundled into a static page and driven in Chromium 141 with
 
 Both thumbs dragged, crossing was blocked mid-drag, the thumbs at the right end separated, the empty track ignored clicks (the inputs have <code>pointer-events: none</code>), and arrow and End keys respected the clamp. The z-index rule was tested on copies of the React version with a zero gap; the rule is the same code here:
 
-~~~
+~~~text
 [chromium, minGap 0] with z-index swap     stacked at the right: 1000 | 1000 | after dragging the stack to 300: 300 | 1000
 [chromium, minGap 0] without z-index swap  stacked at the right: 1000 | 1000 | after dragging the stack to 300: 1000 | 1000
 ~~~
@@ -6347,30 +7859,67 @@ import DualRangeSlider from "./components/DualRangeSlider.vue";
 import { PRODUCTS } from "./products.js";
 
 const range = ref([100, 700]); // [min, max] owned by the parent
-const matches = computed(() => PRODUCTS.filter((p) => p.price >= range.value[0] && p.price <= range.value[1]));
+const matches = computed(() =>
+  PRODUCTS.filter(
+    (p) => p.price >= range.value[0] && p.price <= range.value[1],
+  ),
+);
 </script>
 
 <template>
   <main class="page">
     <section class="card">
       <h1>Filter by price</h1>
-      <DualRangeSlider v-model="range" :min="0" :max="1000" :step="10" :min-gap="50" />
+      <DualRangeSlider
+        v-model="range"
+        :min="0"
+        :max="1000"
+        :step="10"
+        :min-gap="50"
+      />
       <p class="summary" data-testid="summary" aria-live="polite">
-        {{ matches.length }} of {{ PRODUCTS.length }} products between \${{ range[0] }} and \${{ range[1] }}
+        {{ matches.length }} of {{ PRODUCTS.length }} products between \${{
+          range[0]
+        }}
+        and \${{ range[1] }}
       </p>
     </section>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-.card { width: min(440px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-h1 { font-size: 1.25rem; margin: 0 0 18px; }
-.summary { margin: 16px 0 0; color: #c5cbd6; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.card {
+  width: min(440px, 100%);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 14px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 18px;
+}
+.summary {
+  margin: 16px 0 0;
+  color: #c5cbd6;
+}
 </style>
 `,
           "/src/components/DualRangeSlider.vue": `<script setup>
@@ -6386,12 +7935,19 @@ const props = defineProps({
 });
 const range = defineModel({ type: Array, required: true }); // [lo, hi]
 
-const opts = computed(() => ({ min: props.min, max: props.max, step: props.step, minGap: props.minGap }));
+const opts = computed(() => ({
+  min: props.min,
+  max: props.max,
+  step: props.step,
+  minGap: props.minGap,
+}));
 const lo = computed(() => range.value[0]);
 const hi = computed(() => range.value[1]);
 // When the low handle is in the right half, put it on top: if both handles
 // sit at the far right, the low one must stay grabbable.
-const lowOnTop = computed(() => lo.value - props.min > (props.max - props.min) / 2);
+const lowOnTop = computed(
+  () => lo.value - props.min > (props.max - props.min) / 2,
+);
 
 // Always assign a NEW array, even when the clamp changed nothing: the re-render
 // is what pulls a thumb that was dragged past the other one back into place.
@@ -6404,7 +7960,11 @@ function update(next) {
   <div class="dual">
     <div class="slider-wrap">
       <div class="track" />
-      <div class="fill" data-testid="fill" :style="{ left: percent(lo, opts) + '%', right: 100 - percent(hi, opts) + '%' }" />
+      <div
+        class="fill"
+        data-testid="fill"
+        :style="{ left: percent(lo, opts) + '%', right: 100 - percent(hi, opts) + '%' }"
+      />
       <input
         type="range"
         class="thumb"
@@ -6433,30 +7993,94 @@ function update(next) {
       />
     </div>
     <div class="boxes">
-      <PriceBox label="Min" test-id="box-low" :value="lo" @commit="update(moveLow(range, $event, opts))" />
-      <PriceBox label="Max" test-id="box-high" :value="hi" @commit="update(moveHigh(range, $event, opts))" />
+      <PriceBox
+        label="Min"
+        test-id="box-low"
+        :value="lo"
+        @commit="update(moveLow(range, $event, opts))"
+      />
+      <PriceBox
+        label="Max"
+        test-id="box-high"
+        :value="hi"
+        @commit="update(moveHigh(range, $event, opts))"
+      />
     </div>
   </div>
 </template>
 
 <style scoped>
-.slider-wrap { position: relative; height: 32px; }
-.track, .fill { position: absolute; top: 13px; height: 6px; border-radius: 3px; }
-.track { left: 0; right: 0; background: #2f3542; }
-.fill { background: #4f7cff; }
+.slider-wrap {
+  position: relative;
+  height: 32px;
+}
+.track,
+.fill {
+  position: absolute;
+  top: 13px;
+  height: 6px;
+  border-radius: 3px;
+}
+.track {
+  left: 0;
+  right: 0;
+  background: #2f3542;
+}
+.fill {
+  background: #4f7cff;
+}
 /* Two native ranges stacked on one track. The inputs ignore the pointer;
    only their thumbs take it, so each thumb can be dragged on its own. */
-.thumb { position: absolute; left: 0; top: 0; width: 100%; height: 32px; margin: 0; background: none;
-  pointer-events: none; -webkit-appearance: none; appearance: none; }
-.thumb::-webkit-slider-runnable-track { background: none; height: 32px; }
-.thumb::-moz-range-track { background: none; }
-.thumb::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; margin-top: 5px;
-  border-radius: 50%; background: #fff; border: 3px solid #4f7cff; cursor: grab; }
-.thumb::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff;
-  border: 3px solid #4f7cff; cursor: grab; }
-.thumb:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-.thumb:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-.boxes { display: flex; gap: 12px; margin-top: 14px; }
+.thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.thumb::-webkit-slider-runnable-track {
+  background: none;
+  height: 32px;
+}
+.thumb::-moz-range-track {
+  background: none;
+}
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
+.thumb::-moz-range-thumb {
+  pointer-events: auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #4f7cff;
+  cursor: grab;
+}
+.thumb:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+}
+.thumb:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+}
+.boxes {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
 </style>
 `,
           "/src/components/PriceBox.vue": `<script setup>
@@ -6470,7 +8094,8 @@ const draft = ref(null); // null = not editing, show the real value
 
 function commit() {
   const d = draft.value;
-  if (d !== null && String(d).trim() !== "" && !Number.isNaN(Number(d))) emit("commit", Number(d));
+  if (d !== null && String(d).trim() !== "" && !Number.isNaN(Number(d)))
+    emit("commit", Number(d));
   draft.value = null;
 }
 </script>
@@ -6493,22 +8118,45 @@ function commit() {
 </template>
 
 <style scoped>
-.price-box { flex: 1; display: grid; gap: 4px; font-size: 0.8rem; color: #9aa3b2; }
-.money { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border: 1px solid #3a4150; border-radius: 8px; background: #0f1115; color: #c5cbd6; }
-.money input { width: 100%; border: 0; outline: 0; background: transparent; color: #fff; font-size: 1rem; }
+.price-box {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #9aa3b2;
+}
+.money {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px solid #3a4150;
+  border-radius: 8px;
+  background: #0f1115;
+  color: #c5cbd6;
+}
+.money input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 1rem;
+}
 </style>
 `,
           "/src/products.js": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS = [
-  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399,
-  420, 455, 499, 530, 575, 610, 640, 699, 750, 820, 899, 980,
+  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
+  575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
           "/src/range.js": `// Pure helpers shared by both handles and both number boxes.
 export const snap = (v, { min, max, step }) =>
   Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
 
-// Move one end of [lo, hi] without letting the handles cross (keeps minGap between them).
+// Move one end of [lo, hi] without letting the
+// handles cross (keeps minGap between them).
 export function moveLow([lo, hi], v, opts) {
   return [Math.min(snap(v, opts), hi - opts.minGap), hi];
 }
@@ -6553,7 +8201,11 @@ Two native range inputs are stacked over a track div; they have <code>pointer-ev
 ### 3.1 Helpers
 
 ~~~ts
-export function moveLow([lo, hi]: Range, v: number, opts: RangeOpts): Range {
+export function moveLow(
+  [lo, hi]: Range,
+  v: number,
+  opts: RangeOpts,
+): Range {
   return [Math.min(snap(v, opts), hi - opts.minGap), hi];
 }
 ~~~
@@ -6564,8 +8216,10 @@ export function moveLow([lo, hi]: Range, v: number, opts: RangeOpts): Range {
 update(next: Range, el?: HTMLInputElement, end?: 0 | 1): void {
   this.range.set(next);
   this.valueChange.emit(next);
-  // [value] is only re-applied when the bound value changes. After a clamp
-  // that leaves lo() or hi() unchanged, the thumb would stay where it was
+  // [value] is only re-applied when the
+  // bound value changes. After a clamp
+  // that leaves lo() or hi() unchanged,
+  // the thumb would stay where it was
   // dragged, past the other one. Put it back by hand.
   if (el && end !== undefined) el.value = String(next[end]);
 }
@@ -6573,7 +8227,7 @@ update(next: Range, el?: HTMLInputElement, end?: 0 | 1): void {
 
 Angular re-applies <code>[value]="hi()"</code> only when <code>hi()</code> changes. Drag the high thumb down to 100 while the low end is at 470: <code>moveHigh</code> clamps to 520, which <code>hi()</code> already was, so the binding is unchanged and Angular leaves the DOM alone. A copy without the last line printed:
 
-~~~
+~~~text
 [angular:playground] low -> 900 (tries to cross)    low: 470 high: 520 | boxes: 470 520 | fill left/right: 47% 48% | low z: 3 | 1 of 24 products between $470 and $520
 [angular:playground] high -> 100 (tries to cross)   low: 470 high: 100 | boxes: 470 520 | fill left/right: 47% 48% | low z: 3 | 1 of 24 products between $470 and $520
 [angular:playground] both pushed to the right end   low: 950 high: 1000 | boxes: 950 1000 | fill left/right: 95% 0% | low z: 4 | 1 of 24 products between $950 and $1000
@@ -6584,7 +8238,12 @@ The high input stayed at 100, drawn on the wrong side of the low thumb, while th
 ### 3.3 The template
 
 ~~~ts
-<div class="fill" data-testid="fill" [style.left.%]="pct(lo())" [style.right.%]="100 - pct(hi())"></div>
+<div
+  class="fill"
+  data-testid="fill"
+  [style.left.%]="pct(lo())"
+  [style.right.%]="100 - pct(hi())"
+></div>
 <input
   #low
   type="range"
@@ -6608,13 +8267,16 @@ The high input stayed at 100, drawn on the wrong side of the low thumb, while th
 ### 3.4 Number boxes
 
 ~~~ts
-readonly draft = signal<string | null>(null); // null = not editing, show the real value
+// null = not editing, show the real value
+readonly draft = signal<string | null>(null);
 
 commit(box: HTMLInputElement): void {
   const d = this.draft();
-  if (d !== null && d.trim() !== "" && !Number.isNaN(Number(d))) this.committed.emit(Number(d));
+  if (d !== null && d.trim() !== "" && !Number.isNaN(Number(d)))
+    this.committed.emit(Number(d));
   this.draft.set(null);
-  box.value = String(this.value); // the binding may not change (e.g. a clamp back to the same value)
+  // the binding may not change (e.g. a clamp back to the same value)
+  box.value = String(this.value);
 }
 ~~~
 
@@ -6628,7 +8290,7 @@ The box shows <code>draft() ?? value</code>; <code>(keydown.enter)</code> and <c
 
 Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and with runtime JIT (<code>angular:playground</code>). jsdom has no layout, so the driver sets input values and fires <code>input</code>, the same events a drag produces. AOT output; JIT printed the same lines:
 
-~~~
+~~~text
 [angular:app] RENDERED: Filter by priceMin $Max $ 17 of 24 products between $100 and $700
 [angular:app] mounted                        low: 100 high: 700 | boxes: 100 700 | fill left/right: 10% 30% | low z: 3 | 17 of 24 products between $100 and $700
 [angular:app] low -> 250                     low: 250 high: 700 | boxes: 250 700 | fill left/right: 25% 30% | low z: 3 | 12 of 24 products between $250 and $700
@@ -6648,7 +8310,7 @@ Crossing attempts clamped to 470 and 520 with matching DOM values; both thumbs a
 
 Bundled into a static page (runtime JIT) and driven in Chromium 141 with a real mouse, at 360 px wide:
 
-~~~
+~~~text
 [chromium angular] start                              100 | 700 | 17 of 24 products between $100 and $700
 [chromium angular] drag low thumb 100 -> 300          300 | 700 | 11 of 24 products between $300 and $700
 [chromium angular] drag high thumb 700 -> 500         300 | 500 | 6 of 24 products between $300 and $500
@@ -6664,7 +8326,7 @@ Bundled into a static page (runtime JIT) and driven in Chromium 141 with a real 
 
 Dragging, the crossing guard, separating the stacked thumbs, the inert empty track and native keys all behaved as in React and Vue. One detail: reading the DOM in the same instant as a key press once showed the old count, because Angular schedules its render asynchronously after the event; the script waits 60 ms before reading, which is still far below what a person can notice. The z-index rule was checked on React copies with a zero gap; it is the same rule here:
 
-~~~
+~~~text
 [chromium, minGap 0] with z-index swap     stacked at the right: 1000 | 1000 | after dragging the stack to 300: 300 | 1000
 [chromium, minGap 0] without z-index swap  stacked at the right: 1000 | 1000 | after dragging the stack to 300: 1000 | 1000
 ~~~
@@ -6773,33 +8435,80 @@ import { Range } from "./range";
     <main class="page">
       <section class="card">
         <h1>Filter by price</h1>
-        <app-dual-range-slider [(value)]="range" [min]="0" [max]="1000" [step]="10" [minGap]="50" />
+        <app-dual-range-slider
+          [(value)]="range"
+          [min]="0"
+          [max]="1000"
+          [step]="10"
+          [minGap]="50"
+        />
         <p class="summary" data-testid="summary" aria-live="polite">
-          {{ matches().length }} of {{ total }} products between \\\${{ range()[0] }} and \\\${{ range()[1] }}
+          {{ matches().length }} of {{ total }} products between \\\${{
+            range()[0]
+          }}
+          and \\\${{ range()[1] }}
         </p>
       </section>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-    .page { min-height: 100vh; display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
-    .card { width: min(440px, 100%); background: #181b22; border: 1px solid #2a2f3a; border-radius: 14px; padding: 20px; box-sizing: border-box; }
-    h1 { font-size: 1.25rem; margin: 0 0 18px; }
-    .summary { margin: 16px 0 0; color: #c5cbd6; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        background: #0f1115;
+        color: #e6e6e6;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+      .card {
+        width: min(440px, 100%);
+        background: #181b22;
+        border: 1px solid #2a2f3a;
+        border-radius: 14px;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 18px;
+      }
+      .summary {
+        margin: 16px 0 0;
+        color: #c5cbd6;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
   readonly range = signal<Range>([100, 700]); // [min, max] owned by the parent
   readonly total = PRODUCTS.length;
-  readonly matches = computed(() => PRODUCTS.filter((p) => p.price >= this.range()[0] && p.price <= this.range()[1]));
+  readonly matches = computed(() =>
+    PRODUCTS.filter(
+      (p) => p.price >= this.range()[0] && p.price <= this.range()[1],
+    ),
+  );
 }
 `,
-          "/src/app/dual-range-slider.component.ts": `import { Component, EventEmitter, Input, Output, computed, signal } from "@angular/core";
+          "/src/app/dual-range-slider.component.ts": `import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  signal,
+} from "@angular/core";
 import { PriceBoxComponent } from "./price-box.component";
 import { Range, RangeOpts, moveHigh, moveLow, percent } from "./range";
 
@@ -6809,7 +8518,12 @@ import { Range, RangeOpts, moveHigh, moveLow, percent } from "./range";
   template: \`
     <div class="slider-wrap">
       <div class="track"></div>
-      <div class="fill" data-testid="fill" [style.left.%]="pct(lo())" [style.right.%]="100 - pct(hi())"></div>
+      <div
+        class="fill"
+        data-testid="fill"
+        [style.left.%]="pct(lo())"
+        [style.right.%]="100 - pct(hi())"
+      ></div>
       <input
         #low
         type="range"
@@ -6840,33 +8554,101 @@ import { Range, RangeOpts, moveHigh, moveLow, percent } from "./range";
       />
     </div>
     <div class="boxes">
-      <app-price-box label="Min" testId="box-low" [value]="lo()" (committed)="update(moveLow(range(), $event, opts))" />
-      <app-price-box label="Max" testId="box-high" [value]="hi()" (committed)="update(moveHigh(range(), $event, opts))" />
+      <app-price-box
+        label="Min"
+        testId="box-low"
+        [value]="lo()"
+        (committed)="update(moveLow(range(), $event, opts))"
+      />
+      <app-price-box
+        label="Max"
+        testId="box-high"
+        [value]="hi()"
+        (committed)="update(moveHigh(range(), $event, opts))"
+      />
     </div>
   \`,
-  styles: [\`
-    .slider-wrap { position: relative; height: 32px; }
-    .track, .fill { position: absolute; top: 13px; height: 6px; border-radius: 3px; }
-    .track { left: 0; right: 0; background: #2f3542; }
-    .fill { background: #4f7cff; }
-    /* Two native ranges stacked on one track. The inputs ignore the pointer;
+  styles: [
+    \`
+      .slider-wrap {
+        position: relative;
+        height: 32px;
+      }
+      .track,
+      .fill {
+        position: absolute;
+        top: 13px;
+        height: 6px;
+        border-radius: 3px;
+      }
+      .track {
+        left: 0;
+        right: 0;
+        background: #2f3542;
+      }
+      .fill {
+        background: #4f7cff;
+      }
+      /* Two native ranges stacked on one track. The inputs ignore the pointer;
        only their thumbs take it, so each thumb can be dragged on its own. */
-    .thumb { position: absolute; left: 0; top: 0; width: 100%; height: 32px; margin: 0; background: none;
-      pointer-events: none; -webkit-appearance: none; appearance: none; }
-    .thumb::-webkit-slider-runnable-track { background: none; height: 32px; }
-    .thumb::-moz-range-track { background: none; }
-    .thumb::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 22px; height: 22px; margin-top: 5px;
-      border-radius: 50%; background: #fff; border: 3px solid #4f7cff; cursor: grab; }
-    .thumb::-moz-range-thumb { pointer-events: auto; width: 16px; height: 16px; border-radius: 50%; background: #fff;
-      border: 3px solid #4f7cff; cursor: grab; }
-    .thumb:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-    .thumb:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5); }
-    .boxes { display: flex; gap: 12px; margin-top: 14px; }
-  \`],
+      .thumb {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 32px;
+        margin: 0;
+        background: none;
+        pointer-events: none;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      .thumb::-webkit-slider-runnable-track {
+        background: none;
+        height: 32px;
+      }
+      .thumb::-moz-range-track {
+        background: none;
+      }
+      .thumb::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        pointer-events: auto;
+        width: 22px;
+        height: 22px;
+        margin-top: 5px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #4f7cff;
+        cursor: grab;
+      }
+      .thumb::-moz-range-thumb {
+        pointer-events: auto;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #4f7cff;
+        cursor: grab;
+      }
+      .thumb:focus-visible::-webkit-slider-thumb {
+        box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+      }
+      .thumb:focus-visible::-moz-range-thumb {
+        box-shadow: 0 0 0 4px rgba(122, 162, 255, 0.5);
+      }
+      .boxes {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+      }
+    \`,
+  ],
 })
 export class DualRangeSliderComponent {
   // value + valueChange gives the parent [(value)] two-way binding.
-  @Input() set value(v: Range) { this.range.set(v); }
+  @Input() set value(v: Range) {
+    this.range.set(v);
+  }
   @Output() valueChange = new EventEmitter<Range>();
   @Input() min = 0;
   @Input() max = 1000;
@@ -6880,10 +8662,17 @@ export class DualRangeSliderComponent {
   readonly hi = computed(() => this.range()[1]);
   // When the low handle is in the right half, put it on top: if both handles
   // sit at the far right, the low one must stay grabbable.
-  readonly lowOnTop = computed(() => this.lo() - this.min > (this.max - this.min) / 2);
+  readonly lowOnTop = computed(
+    () => this.lo() - this.min > (this.max - this.min) / 2,
+  );
 
   get opts(): RangeOpts {
-    return { min: this.min, max: this.max, step: this.step, minGap: this.minGap };
+    return {
+      min: this.min,
+      max: this.max,
+      step: this.step,
+      minGap: this.minGap,
+    };
   }
   pct(v: number): number {
     return percent(v, this.opts);
@@ -6922,42 +8711,76 @@ export class DualRangeSliderComponent {
       </span>
     </label>
   \`,
-  styles: [\`
-    :host { flex: 1; }
-    .price-box { display: grid; gap: 4px; font-size: 0.8rem; color: #9aa3b2; }
-    .money { display: flex; align-items: center; gap: 4px; padding: 6px 8px; border: 1px solid #3a4150; border-radius: 8px; background: #0f1115; color: #c5cbd6; }
-    .money input { width: 100%; border: 0; outline: 0; background: transparent; color: #fff; font-size: 1rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        flex: 1;
+      }
+      .price-box {
+        display: grid;
+        gap: 4px;
+        font-size: 0.8rem;
+        color: #9aa3b2;
+      }
+      .money {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px 8px;
+        border: 1px solid #3a4150;
+        border-radius: 8px;
+        background: #0f1115;
+        color: #c5cbd6;
+      }
+      .money input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #fff;
+        font-size: 1rem;
+      }
+    \`,
+  ],
 })
 export class PriceBoxComponent {
   @Input() label = "";
   @Input() value = 0;
   @Input() testId = "";
   @Output() committed = new EventEmitter<number>();
-  readonly draft = signal<string | null>(null); // null = not editing, show the real value
+  // null = not editing, show the real value
+  readonly draft = signal<string | null>(null);
 
   commit(box: HTMLInputElement): void {
     const d = this.draft();
-    if (d !== null && d.trim() !== "" && !Number.isNaN(Number(d))) this.committed.emit(Number(d));
+    if (d !== null && d.trim() !== "" && !Number.isNaN(Number(d)))
+      this.committed.emit(Number(d));
     this.draft.set(null);
-    box.value = String(this.value); // the binding may not change (e.g. a clamp back to the same value)
+    // the binding may not change (e.g. a clamp back to the same value)
+    box.value = String(this.value);
   }
 }
 `,
           "/src/app/products.ts": `// A fixed in-memory catalogue (no network): 24 products with prices in dollars.
 export const PRODUCTS: { id: number; name: string; price: number }[] = [
-  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399,
-  420, 455, 499, 530, 575, 610, 640, 699, 750, 820, 899, 980,
+  35, 60, 89, 120, 145, 180, 210, 249, 275, 310, 340, 399, 420, 455, 499, 530,
+  575, 610, 640, 699, 750, 820, 899, 980,
 ].map((price, i) => ({ id: i + 1, name: "Product " + (i + 1), price }));
 `,
           "/src/app/range.ts": `// Pure helpers shared by both handles and both number boxes.
-export interface RangeOpts { min: number; max: number; step: number; minGap: number; }
+export interface RangeOpts {
+  min: number;
+  max: number;
+  step: number;
+  minGap: number;
+}
 export type Range = [number, number];
 
 export const snap = (v: number, { min, max, step }: RangeOpts): number =>
   Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
 
-// Move one end of [lo, hi] without letting the handles cross (keeps minGap between them).
+// Move one end of [lo, hi] without letting the
+// handles cross (keeps minGap between them).
 export function moveLow([lo, hi]: Range, v: number, opts: RangeOpts): Range {
   return [Math.min(snap(v, opts), hi - opts.minGap), hi];
 }
@@ -6965,7 +8788,8 @@ export function moveHigh([lo, hi]: Range, v: number, opts: RangeOpts): Range {
   return [lo, Math.max(snap(v, opts), lo + opts.minGap)];
 }
 
-export const percent = (v: number, { min, max }: RangeOpts): number => ((v - min) / (max - min)) * 100;
+export const percent = (v: number, { min, max }: RangeOpts): number =>
+  ((v - min) / (max - min)) * 100;
 `,
         },
       },
@@ -7085,18 +8909,26 @@ export function tokenize(expr) {
   let num = "";
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
-    const expectNumber = num === "" && (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
-    if ((ch >= "0" && ch <= "9") || ch === "." || (ch === "-" && expectNumber)) {
+    const expectNumber =
+      num === "" &&
+      (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
+    if (
+      (ch >= "0" && ch <= "9") ||
+      ch === "." ||
+      (ch === "-" && expectNumber)
+    ) {
       num += ch;
     } else if (OPS.includes(ch)) {
-      if (num === "" || num === "-") throw new Error("Malformed expression");
+      if (num === "" || num === "-")
+        throw new Error("Malformed expression");
       tokens.push(Number(num), ch);
       num = "";
     } else {
       throw new Error("Unexpected character " + ch);
     }
   }
-  if (num === "" || num === "-") throw new Error("Malformed expression");
+  if (num === "" || num === "-")
+    throw new Error("Malformed expression");
   tokens.push(Number(num));
   return tokens;
 }
@@ -7118,7 +8950,8 @@ export function evaluate(expr) {
     while (peek() === "*" || peek() === "/") {
       const op = next();
       const rhs = next();
-      if (op === "/" && rhs === 0) throw new Error("Cannot divide by zero");
+      if (op === "/" && rhs === 0)
+        throw new Error("Cannot divide by zero");
       value = op === "*" ? value * rhs : value / rhs;
     }
     return value;
@@ -7145,10 +8978,13 @@ The classic alternative is Dijkstra **shunting-yard** algorithm, which converts 
 ~~~js
 export function formatResult(n) {
   const rounded = Number(n.toPrecision(12));
-  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15) throw new Error("Number too large");
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15)
+    throw new Error("Number too large");
   let text = String(rounded);
-  // Tiny results print as "1e-7"; spell them out so the next key press still parses.
-  if (text.includes("e")) text = rounded.toFixed(12).replace(/[.]?0+$/, "");
+  // Tiny results print as "1e-7"; spell them
+  // out so the next key press still parses.
+  if (text.includes("e"))
+    text = rounded.toFixed(12).replace(/[.]?0+$/, "");
   return text === "-0" ? "0" : text;
 }
 ~~~
@@ -7157,7 +8993,7 @@ JavaScript numbers are binary floating point, so 0.1 and 0.2 cannot be stored ex
 
 These functions were run directly in Node, before any UI existed (the "raw JS" column is the unrounded value):
 
-~~~
+~~~text
 2+3*4                = 14    (raw JS: 14)
 12-4/2*3             = 6    (raw JS: 6)
 10/4                 = 2.5    (raw JS: 2.5)
@@ -7179,25 +9015,41 @@ These functions were run directly in Node, before any UI existed (the "raw JS" c
 ~~~js
 export function press(state, key) {
   if (key === "AC") return initialState;
-  if (state.error) state = initialState; // any key after an error starts over
+  // any key after an error starts over
+  if (state.error) state = initialState;
   const { expr, justEvaluated } = state;
   const last = expr.slice(-1);
 
   if (key >= "0" && key <= "9") {
     const base = justEvaluated ? "" : expr;
-    if (lastNumber(base) === "0") return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
-    if (lastNumber(base).replace(/[-.]/g, "").length >= 15) return state;
+    if (lastNumber(base) === "0")
+      return {
+        expr: base.slice(0, -1) + key,
+        justEvaluated: false,
+        error: "",
+      };
+    if (lastNumber(base).replace(/[-.]/g, "").length >= 15)
+      return state;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
   if (key === ".") {
     const base = justEvaluated ? "" : expr;
     if (lastNumber(base).includes(".")) return state;
     const needsZero = base === "" || OPS.includes(base.slice(-1));
-    return { expr: base + (needsZero ? "0." : "."), justEvaluated: false, error: "" };
+    return {
+      expr: base + (needsZero ? "0." : "."),
+      justEvaluated: false,
+      error: "",
+    };
   }
   if (OPS.includes(key)) {
-    if (expr === "" || expr === "-") return key === "-" ? { ...state, expr: "-", justEvaluated: false } : state;
-    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key }; // replace the operator
+    if (expr === "" || expr === "-")
+      return key === "-"
+        ? { ...state, expr: "-", justEvaluated: false }
+        : state;
+    if (OPS.includes(last))
+      // replace the operator
+      return { ...state, expr: expr.slice(0, -1) + key };
     const base = last === "." ? expr.slice(0, -1) : expr;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -7208,7 +9060,11 @@ export function press(state, key) {
   if (key === "=") {
     if (expr === "" || OPS.includes(last)) return state;
     try {
-      return { expr: formatResult(evaluate(expr)), justEvaluated: true, error: "" };
+      return {
+        expr: formatResult(evaluate(expr)),
+        justEvaluated: true,
+        error: "",
+      };
     } catch (e) {
       return { expr, justEvaluated: false, error: e.message };
     }
@@ -7226,7 +9082,7 @@ This is the input state machine, written as a pure function <code>(state, key) =
 
 The same reducer driven from Node, key by key:
 
-~~~
+~~~text
 1 2 + 3 * 4 =            -> {"expr":"24","justEvaluated":true,"error":""} | 24
 5 + * 2 =                -> {"expr":"10","justEvaluated":true,"error":""} | 10
 . 5 + . 5 =              -> {"expr":"1","justEvaluated":true,"error":""} | 1
@@ -7251,7 +9107,8 @@ useEffect(() => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const key = keyFromKeyboard(e.key);
     if (!key) return;
-    e.preventDefault(); // stops Enter from also clicking a focused button
+    // stops Enter from also clicking a focused button
+    e.preventDefault();
     dispatch(key);
   }
   window.addEventListener("keydown", onKeyDown);
@@ -7265,7 +9122,7 @@ const shown = state.error || pretty(state.expr) || "0";
 
 <code>e.preventDefault()</code> matters more than it looks. If the user clicks <code>3</code> with the mouse, that button keeps focus. Pressing Enter on a focused button "clicks" it. Without <code>preventDefault</code>, Enter would evaluate **and** then press <code>3</code> again. That cannot be seen in jsdom, which does not synthesize clicks from key presses, so it was tested in Chromium on the shipped code and on a copy with the line removed:
 
-~~~
+~~~text
 [chromium] with preventDefault      focused: 3 | display before Enter: 5 + 3 | after Enter: 8
 [chromium] without preventDefault   focused: 3 | display before Enter: 5 + 3 | after Enter: 3
 ~~~
@@ -7276,7 +9133,7 @@ Without it, Enter computed 8 and the button click then started a new number, 3.
 
 Mounted in jsdom with <code>createRoot</code> in <code>StrictMode</code>. The driver clicked the on-screen keys (by <code>data-key</code>), then pressed physical keys with <code>keydown</code> events on the page:
 
-~~~
+~~~text
 [react] RENDERED: 0AC⌫÷×789−456+123=0.Keyboard works too: digits, + - * /, Enter, Backspace, Esc.
 [react] 12 + 3 x 4 (before =)      -> 12 + 3 × 4
 [react] 12 + 3 x 4 =               -> 24
@@ -7408,13 +9265,20 @@ const KEYS = [
   { key: "⌫", label: "⌫", name: "Backspace", kind: "fn" },
   { key: "/", label: "÷", name: "Divide", kind: "op" },
   { key: "*", label: "×", name: "Multiply", kind: "op" },
-  { key: "7" }, { key: "8" }, { key: "9" },
+  { key: "7" },
+  { key: "8" },
+  { key: "9" },
   { key: "-", label: "−", name: "Minus", kind: "op" },
-  { key: "4" }, { key: "5" }, { key: "6" },
+  { key: "4" },
+  { key: "5" },
+  { key: "6" },
   { key: "+", label: "+", name: "Plus", kind: "op" },
-  { key: "1" }, { key: "2" }, { key: "3" },
+  { key: "1" },
+  { key: "2" },
+  { key: "3" },
   { key: "=", label: "=", name: "Equals", kind: "eq" },
-  { key: "0", wide: true }, { key: ".", label: ".", name: "Decimal point" },
+  { key: "0", wide: true },
+  { key: ".", label: ".", name: "Decimal point" },
 ];
 
 export default function App() {
@@ -7438,7 +9302,11 @@ export default function App() {
   return (
     <main className="page">
       <section className="calc" aria-label="Calculator">
-        <output className={"display" + (state.error ? " error" : "")} data-testid="display" aria-live="polite">
+        <output
+          className={"display" + (state.error ? " error" : "")}
+          data-testid="display"
+          aria-live="polite"
+        >
           {shown}
         </output>
         <div className="keys">
@@ -7456,7 +9324,9 @@ export default function App() {
           ))}
         </div>
       </section>
-      <p className="hint">Keyboard works too: digits, + - * /, Enter, Backspace, Esc.</p>
+      <p className="hint">
+        Keyboard works too: digits, + - * /, Enter, Backspace, Esc.
+      </p>
     </main>
   );
 }
@@ -7471,8 +9341,14 @@ export function tokenize(expr) {
   let num = "";
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
-    const expectNumber = num === "" && (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
-    if ((ch >= "0" && ch <= "9") || ch === "." || (ch === "-" && expectNumber)) {
+    const expectNumber =
+      num === "" &&
+      (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
+    if (
+      (ch >= "0" && ch <= "9") ||
+      ch === "." ||
+      (ch === "-" && expectNumber)
+    ) {
       num += ch;
     } else if (OPS.includes(ch)) {
       if (num === "" || num === "-") throw new Error("Malformed expression");
@@ -7519,18 +9395,25 @@ export function evaluate(expr) {
 }
 
 // 0.1 + 0.2 is 0.30000000000000004 in binary floating point. Rounding to 12
-// significant digits hides that representation error without losing real digits.
+// significant digits hides that representation
+// error without losing real digits.
 export function formatResult(n) {
   const rounded = Number(n.toPrecision(12));
-  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15) throw new Error("Number too large");
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15)
+    throw new Error("Number too large");
   let text = String(rounded);
-  // Tiny results print as "1e-7"; spell them out so the next key press still parses.
+  // Tiny results print as "1e-7"; spell them
+  // out so the next key press still parses.
   if (text.includes("e")) text = rounded.toFixed(12).replace(/[.]?0+$/, "");
   return text === "-0" ? "0" : text;
 }
 
 export function pretty(expr) {
-  return expr.replace(/[-+*/]/g, (op, i) => (op === "-" && (i === 0 || OPS.includes(expr[i - 1])) ? "−" : " " + PRETTY[op] + " "));
+  return expr.replace(/[-+*/]/g, (op, i) =>
+    op === "-" && (i === 0 || OPS.includes(expr[i - 1]))
+      ? "−"
+      : " " + PRETTY[op] + " ",
+  );
 }
 
 // The input state machine. state = { expr, justEvaluated, error }
@@ -7546,7 +9429,8 @@ export function press(state, key) {
 
   if (key >= "0" && key <= "9") {
     const base = justEvaluated ? "" : expr;
-    if (lastNumber(base) === "0") return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
+    if (lastNumber(base) === "0")
+      return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
     if (lastNumber(base).replace(/[-.]/g, "").length >= 15) return state;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -7554,11 +9438,19 @@ export function press(state, key) {
     const base = justEvaluated ? "" : expr;
     if (lastNumber(base).includes(".")) return state;
     const needsZero = base === "" || OPS.includes(base.slice(-1));
-    return { expr: base + (needsZero ? "0." : "."), justEvaluated: false, error: "" };
+    return {
+      expr: base + (needsZero ? "0." : "."),
+      justEvaluated: false,
+      error: "",
+    };
   }
   if (OPS.includes(key)) {
-    if (expr === "" || expr === "-") return key === "-" ? { ...state, expr: "-", justEvaluated: false } : state;
-    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key }; // replace the operator
+    if (expr === "" || expr === "-")
+      return key === "-"
+        ? { ...state, expr: "-", justEvaluated: false }
+        : state;
+    // replace the operator
+    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key };
     const base = last === "." ? expr.slice(0, -1) : expr;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -7569,7 +9461,11 @@ export function press(state, key) {
   if (key === "=") {
     if (expr === "" || OPS.includes(last)) return state;
     try {
-      return { expr: formatResult(evaluate(expr)), justEvaluated: true, error: "" };
+      return {
+        expr: formatResult(evaluate(expr)),
+        justEvaluated: true,
+        error: "",
+      };
     } catch (e) {
       return { expr, justEvaluated: false, error: e.message };
     }
@@ -7587,21 +9483,82 @@ export function keyFromKeyboard(k) {
   return null;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
-.page { min-height: 100vh; display: grid; place-content: center; gap: 12px; padding: 16px; }
-.calc { width: min(320px, 92vw); background: #181b22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 14px; }
-.display { display: block; min-height: 64px; padding: 8px 10px; margin-bottom: 12px; text-align: right;
-  font-size: 2rem; overflow-wrap: anywhere; background: #0f1115; border-radius: 10px; }
-.display.error { font-size: 1.1rem; color: #ff8a80; line-height: 48px; }
-.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.key { padding: 14px 0; font-size: 1.2rem; border: 0; border-radius: 10px; background: #262b36; color: #e6e6e6; cursor: pointer; }
-.key:hover { background: #303747; }
-.key:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.key.fn { background: #3a3f4b; }
-.key.op { background: #2d4373; }
-.key.eq { background: #4f7cff; grid-row: span 2; }
-.key.wide { grid-column: span 2; }
-.hint { margin: 0; text-align: center; font-size: 0.85rem; color: #9aa3b2; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+.calc {
+  width: min(320px, 92vw);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 16px;
+  padding: 14px;
+}
+.display {
+  display: block;
+  min-height: 64px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  text-align: right;
+  font-size: 2rem;
+  overflow-wrap: anywhere;
+  background: #0f1115;
+  border-radius: 10px;
+}
+.display.error {
+  font-size: 1.1rem;
+  color: #ff8a80;
+  line-height: 48px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.key {
+  padding: 14px 0;
+  font-size: 1.2rem;
+  border: 0;
+  border-radius: 10px;
+  background: #262b36;
+  color: #e6e6e6;
+  cursor: pointer;
+}
+.key:hover {
+  background: #303747;
+}
+.key:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.key.fn {
+  background: #3a3f4b;
+}
+.key.op {
+  background: #2d4373;
+}
+.key.eq {
+  background: #4f7cff;
+  grid-row: span 2;
+}
+.key.wide {
+  grid-column: span 2;
+}
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9aa3b2;
+}
 `,
         },
       },
@@ -7646,7 +9603,8 @@ export function evaluate(expr) {
     while (peek() === "*" || peek() === "/") {
       const op = next();
       const rhs = next();
-      if (op === "/" && rhs === 0) throw new Error("Cannot divide by zero");
+      if (op === "/" && rhs === 0)
+        throw new Error("Cannot divide by zero");
       value = op === "*" ? value * rhs : value / rhs;
     }
     return value;
@@ -7671,17 +9629,20 @@ export function evaluate(expr) {
 ~~~js
 export function formatResult(n) {
   const rounded = Number(n.toPrecision(12));
-  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15) throw new Error("Number too large");
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15)
+    throw new Error("Number too large");
   let text = String(rounded);
-  // Tiny results print as "1e-7"; spell them out so the next key press still parses.
-  if (text.includes("e")) text = rounded.toFixed(12).replace(/[.]?0+$/, "");
+  // Tiny results print as "1e-7"; spell them
+  // out so the next key press still parses.
+  if (text.includes("e"))
+    text = rounded.toFixed(12).replace(/[.]?0+$/, "");
   return text === "-0" ? "0" : text;
 }
 ~~~
 
 In binary floating point 0.1 + 0.2 is <code>0.30000000000000004</code> ([why](/interview-question/why-is-0-1-0-2-not-exactly-0-3)). Rounding to 12 significant digits removes that noise; results of 1e15 or more are reported as too large, and tiny results are spelled out because the tokenizer does not read exponent notation. Run in Node:
 
-~~~
+~~~text
 2+3*4                = 14    (raw JS: 14)
 12-4/2*3             = 6    (raw JS: 6)
 10/4                 = 2.5    (raw JS: 2.5)
@@ -7703,26 +9664,21 @@ In binary floating point 0.1 + 0.2 is <code>0.30000000000000004</code> ([why](/i
 <code>press(state, key)</code> in <code>calc.js</code> is the input state machine (operators replace operators, one dot per number, a lone 0 is replaced, after a result a digit starts fresh, any key after an error starts over). The component holds one <code>ref</code> and replaces it on every key:
 
 ~~~vue
-const state = ref(initialState);
-const tap = (key) => { state.value = press(state.value, key); };
-const shown = computed(() => state.value.error || pretty(state.value.expr) || "0");
-
-function onKeyDown(e) {
-  if (e.ctrlKey || e.metaKey || e.altKey) return;
-  const key = keyFromKeyboard(e.key);
-  if (!key) return;
-  e.preventDefault(); // stops Enter from also clicking a focused button
-  tap(key);
-}
-onMounted(() => window.addEventListener("keydown", onKeyDown));
-onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
+const state = ref(initialState); const tap = (key) => { state.value =
+press(state.value, key); }; const shown = computed(() =>
+state.value.error || pretty(state.value.expr) || "0"); function
+onKeyDown(e) { if (e.ctrlKey || e.metaKey || e.altKey) return; const key
+= keyFromKeyboard(e.key); if (!key) return; e.preventDefault(); // stops
+Enter from also clicking a focused button tap(key); } onMounted(() =>
+window.addEventListener("keydown", onKeyDown)); onUnmounted(() =>
+window.removeEventListener("keydown", onKeyDown));
 ~~~
 
 Replacing the whole object (instead of mutating fields) keeps <code>press</code> pure and testable in Node. The display is a [computed](/interview-question/what-is-the-difference-between-computed-and-watch). The listener is added in <code>onMounted</code> and removed in <code>onUnmounted</code>, so remounting never leaves two listeners.
 
 <code>e.preventDefault()</code> stops Enter from also activating a focused button: after clicking <code>3</code> with the mouse, that button keeps focus, and Enter on a focused button clicks it. Checked in Chromium on the React build of the same logic, with and without the line:
 
-~~~
+~~~text
 [chromium] with preventDefault      focused: 3 | display before Enter: 5 + 3 | after Enter: 8
 [chromium] without preventDefault   focused: 3 | display before Enter: 5 + 3 | after Enter: 3
 ~~~
@@ -7733,7 +9689,7 @@ Replacing the whole object (instead of mutating fields) keeps <code>press</code>
 
 Compiled with <code>@vue/compiler-sfc</code>, mounted in jsdom, driven by clicking the on-screen keys (<code>data-key</code>) and pressing physical keys with <code>keydown</code> events:
 
-~~~
+~~~text
 [vue] RENDERED: 0AC⌫÷×789−456+123=0.Keyboard works too: digits, + - * /, Enter, Backspace, Esc.
 [vue] 12 + 3 x 4 (before =)      -> 12 + 3 × 4
 [vue] 12 + 3 x 4 =               -> 24
@@ -7855,19 +9811,30 @@ const KEYS = [
   { key: "⌫", label: "⌫", name: "Backspace", kind: "fn" },
   { key: "/", label: "÷", name: "Divide", kind: "op" },
   { key: "*", label: "×", name: "Multiply", kind: "op" },
-  { key: "7" }, { key: "8" }, { key: "9" },
+  { key: "7" },
+  { key: "8" },
+  { key: "9" },
   { key: "-", label: "−", name: "Minus", kind: "op" },
-  { key: "4" }, { key: "5" }, { key: "6" },
+  { key: "4" },
+  { key: "5" },
+  { key: "6" },
   { key: "+", label: "+", name: "Plus", kind: "op" },
-  { key: "1" }, { key: "2" }, { key: "3" },
+  { key: "1" },
+  { key: "2" },
+  { key: "3" },
   { key: "=", label: "=", name: "Equals", kind: "eq" },
-  { key: "0", wide: true }, { key: ".", label: ".", name: "Decimal point" },
+  { key: "0", wide: true },
+  { key: ".", label: ".", name: "Decimal point" },
 ];
 
 // One immutable state object, replaced on every key press by the pure press().
 const state = ref(initialState);
-const tap = (key) => { state.value = press(state.value, key); };
-const shown = computed(() => state.value.error || pretty(state.value.expr) || "0");
+const tap = (key) => {
+  state.value = press(state.value, key);
+};
+const shown = computed(
+  () => state.value.error || pretty(state.value.expr) || "0",
+);
 
 function onKeyDown(e) {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -7883,7 +9850,11 @@ onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
 <template>
   <main class="page">
     <section class="calc" aria-label="Calculator">
-      <output :class="['display', { error: state.error }]" data-testid="display" aria-live="polite">{{ shown }}</output>
+      <output
+        :class="['display', { error: state.error }]"
+        data-testid="display"
+        aria-live="polite"
+      >{{ shown }}</output>
       <div class="keys">
         <button
           v-for="k in KEYS"
@@ -7901,24 +9872,85 @@ onUnmounted(() => window.removeEventListener("keydown", onKeyDown));
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e6e6;
+  font-family: system-ui, sans-serif;
+}
 </style>
 
 <style scoped>
-.page { min-height: 100vh; display: grid; place-content: center; gap: 12px; padding: 16px; }
-.calc { width: min(320px, 92vw); background: #181b22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 14px; }
-.display { display: block; min-height: 64px; padding: 8px 10px; margin-bottom: 12px; text-align: right;
-  font-size: 2rem; overflow-wrap: anywhere; background: #0f1115; border-radius: 10px; }
-.display.error { font-size: 1.1rem; color: #ff8a80; line-height: 48px; }
-.keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.key { padding: 14px 0; font-size: 1.2rem; border: 0; border-radius: 10px; background: #262b36; color: #e6e6e6; cursor: pointer; }
-.key:hover { background: #303747; }
-.key:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.key.fn { background: #3a3f4b; }
-.key.op { background: #2d4373; }
-.key.eq { background: #4f7cff; grid-row: span 2; }
-.key.wide { grid-column: span 2; }
-.hint { margin: 0; text-align: center; font-size: 0.85rem; color: #9aa3b2; }
+.page {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+.calc {
+  width: min(320px, 92vw);
+  background: #181b22;
+  border: 1px solid #2a2f3a;
+  border-radius: 16px;
+  padding: 14px;
+}
+.display {
+  display: block;
+  min-height: 64px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+  text-align: right;
+  font-size: 2rem;
+  overflow-wrap: anywhere;
+  background: #0f1115;
+  border-radius: 10px;
+}
+.display.error {
+  font-size: 1.1rem;
+  color: #ff8a80;
+  line-height: 48px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.key {
+  padding: 14px 0;
+  font-size: 1.2rem;
+  border: 0;
+  border-radius: 10px;
+  background: #262b36;
+  color: #e6e6e6;
+  cursor: pointer;
+}
+.key:hover {
+  background: #303747;
+}
+.key:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.key.fn {
+  background: #3a3f4b;
+}
+.key.op {
+  background: #2d4373;
+}
+.key.eq {
+  background: #4f7cff;
+  grid-row: span 2;
+}
+.key.wide {
+  grid-column: span 2;
+}
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9aa3b2;
+}
 </style>
 `,
           "/src/calc.js": `// Pure calculator logic: no React, no DOM, no eval.
@@ -7931,8 +9963,14 @@ export function tokenize(expr) {
   let num = "";
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
-    const expectNumber = num === "" && (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
-    if ((ch >= "0" && ch <= "9") || ch === "." || (ch === "-" && expectNumber)) {
+    const expectNumber =
+      num === "" &&
+      (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
+    if (
+      (ch >= "0" && ch <= "9") ||
+      ch === "." ||
+      (ch === "-" && expectNumber)
+    ) {
       num += ch;
     } else if (OPS.includes(ch)) {
       if (num === "" || num === "-") throw new Error("Malformed expression");
@@ -7979,18 +10017,25 @@ export function evaluate(expr) {
 }
 
 // 0.1 + 0.2 is 0.30000000000000004 in binary floating point. Rounding to 12
-// significant digits hides that representation error without losing real digits.
+// significant digits hides that representation
+// error without losing real digits.
 export function formatResult(n) {
   const rounded = Number(n.toPrecision(12));
-  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15) throw new Error("Number too large");
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15)
+    throw new Error("Number too large");
   let text = String(rounded);
-  // Tiny results print as "1e-7"; spell them out so the next key press still parses.
+  // Tiny results print as "1e-7"; spell them
+  // out so the next key press still parses.
   if (text.includes("e")) text = rounded.toFixed(12).replace(/[.]?0+$/, "");
   return text === "-0" ? "0" : text;
 }
 
 export function pretty(expr) {
-  return expr.replace(/[-+*/]/g, (op, i) => (op === "-" && (i === 0 || OPS.includes(expr[i - 1])) ? "−" : " " + PRETTY[op] + " "));
+  return expr.replace(/[-+*/]/g, (op, i) =>
+    op === "-" && (i === 0 || OPS.includes(expr[i - 1]))
+      ? "−"
+      : " " + PRETTY[op] + " ",
+  );
 }
 
 // The input state machine. state = { expr, justEvaluated, error }
@@ -8006,7 +10051,8 @@ export function press(state, key) {
 
   if (key >= "0" && key <= "9") {
     const base = justEvaluated ? "" : expr;
-    if (lastNumber(base) === "0") return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
+    if (lastNumber(base) === "0")
+      return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
     if (lastNumber(base).replace(/[-.]/g, "").length >= 15) return state;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -8014,11 +10060,19 @@ export function press(state, key) {
     const base = justEvaluated ? "" : expr;
     if (lastNumber(base).includes(".")) return state;
     const needsZero = base === "" || OPS.includes(base.slice(-1));
-    return { expr: base + (needsZero ? "0." : "."), justEvaluated: false, error: "" };
+    return {
+      expr: base + (needsZero ? "0." : "."),
+      justEvaluated: false,
+      error: "",
+    };
   }
   if (OPS.includes(key)) {
-    if (expr === "" || expr === "-") return key === "-" ? { ...state, expr: "-", justEvaluated: false } : state;
-    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key }; // replace the operator
+    if (expr === "" || expr === "-")
+      return key === "-"
+        ? { ...state, expr: "-", justEvaluated: false }
+        : state;
+    // replace the operator
+    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key };
     const base = last === "." ? expr.slice(0, -1) : expr;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -8029,7 +10083,11 @@ export function press(state, key) {
   if (key === "=") {
     if (expr === "" || OPS.includes(last)) return state;
     try {
-      return { expr: formatResult(evaluate(expr)), justEvaluated: true, error: "" };
+      return {
+        expr: formatResult(evaluate(expr)),
+        justEvaluated: true,
+        error: "",
+      };
     } catch (e) {
       return { expr, justEvaluated: false, error: e.message };
     }
@@ -8093,7 +10151,8 @@ export function evaluate(expr: string): number {
     while (peek() === "*" || peek() === "/") {
       const op = next();
       const rhs = num();
-      if (op === "/" && rhs === 0) throw new Error("Cannot divide by zero");
+      if (op === "/" && rhs === 0)
+        throw new Error("Cannot divide by zero");
       value = op === "*" ? value * rhs : value / rhs;
     }
     return value;
@@ -8113,7 +10172,7 @@ export function evaluate(expr: string): number {
 
 📌 **Interview term: Recursive descent parser** — one function per grammar rule: <code>expression</code> combines <code>term</code>s with + and −, <code>term</code> combines numbers with × and ÷, so precedence comes from which function calls which. The typed port adds a <code>Token</code> type (<code>number &#124; string</code>), so <code>OPS</code> is declared as <code>Token[]</code>; the first strict compile failed with <code>Argument of type 'Token' is not assignable to parameter of type 'string'</code> on <code>OPS.includes(tokens[tokens.length - 1])</code> until it was. The port was checked against the JavaScript version by running the same Node test table on both; the outputs were identical:
 
-~~~
+~~~text
 2+3*4                = 14    (raw JS: 14)
 12-4/2*3             = 6    (raw JS: 6)
 10/4                 = 2.5    (raw JS: 2.5)
@@ -8136,7 +10195,9 @@ export function evaluate(expr: string): number {
 
 ~~~ts
 readonly state = signal<CalcState>(initialState);
-readonly shown = computed(() => this.state().error || pretty(this.state().expr) || "0");
+readonly shown = computed(
+  () => this.state().error || pretty(this.state().expr) || "0",
+);
 
 tap(key: string): void {
   this.state.update((s) => press(s, key));
@@ -8158,7 +10219,7 @@ The template renders the keypad with <code>@for (k of keys; track k.key)</code> 
 
 <code>e.preventDefault()</code> keeps Enter from also activating a focused button (after a mouse click on <code>3</code>, that button keeps focus). Tested in Chromium on the React build of the same logic, with and without the line:
 
-~~~
+~~~text
 [chromium] with preventDefault      focused: 3 | display before Enter: 5 + 3 | after Enter: 8
 [chromium] without preventDefault   focused: 3 | display before Enter: 5 + 3 | after Enter: 3
 ~~~
@@ -8167,7 +10228,7 @@ The template renders the keypad with <code>@for (k of keys; track k.key)</code> 
 
 Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:app</code>) and with runtime JIT (<code>angular:playground</code>) in jsdom, driven by clicking keys (<code>data-key</code>) and dispatching <code>keydown</code> events. AOT output; JIT printed the same lines:
 
-~~~
+~~~text
 [angular:app] RENDERED: 0AC⌫÷×789−456+123=0.Keyboard works too: digits, + - * /, Enter, Backspace, Esc.
 [angular:app] 12 + 3 x 4 (before =)      -> 12 + 3 × 4
 [angular:app] 12 + 3 x 4 =               -> 24
@@ -8281,23 +10342,48 @@ Compiled with <code>ngc</code> and <code>strictTemplates</code> (<code>angular:a
 **Conclusion:** The Angular calculator is a signal of immutable state, replaced by a pure <code>press()</code> reducer on every click and every key from <code>@HostListener</code>. The typed parser gives precedence without <code>eval</code> and printed exactly the same results as the JavaScript version in Node; the app passed the same driver in AOT strict mode and in the playground JIT on Angular 22.2.3.`,
         files: {
           "/src/app/app.component.ts": `import { DOCUMENT } from "@angular/common";
-import { Component, HostListener, computed, signal, inject } from "@angular/core";
-import { CalcState, initialState, keyFromKeyboard, press, pretty } from "./calc";
+import {
+  Component,
+  HostListener,
+  computed,
+  signal,
+  inject,
+} from "@angular/core";
+import {
+  CalcState,
+  initialState,
+  keyFromKeyboard,
+  press,
+  pretty,
+} from "./calc";
 
-interface Key { key: string; label?: string; name?: string; kind?: string; wide?: boolean; }
+interface Key {
+  key: string;
+  label?: string;
+  name?: string;
+  kind?: string;
+  wide?: boolean;
+}
 
 const KEYS: Key[] = [
   { key: "AC", label: "AC", name: "All clear", kind: "fn" },
   { key: "⌫", label: "⌫", name: "Backspace", kind: "fn" },
   { key: "/", label: "÷", name: "Divide", kind: "op" },
   { key: "*", label: "×", name: "Multiply", kind: "op" },
-  { key: "7" }, { key: "8" }, { key: "9" },
+  { key: "7" },
+  { key: "8" },
+  { key: "9" },
   { key: "-", label: "−", name: "Minus", kind: "op" },
-  { key: "4" }, { key: "5" }, { key: "6" },
+  { key: "4" },
+  { key: "5" },
+  { key: "6" },
   { key: "+", label: "+", name: "Plus", kind: "op" },
-  { key: "1" }, { key: "2" }, { key: "3" },
+  { key: "1" },
+  { key: "2" },
+  { key: "3" },
   { key: "=", label: "=", name: "Equals", kind: "eq" },
-  { key: "0", wide: true }, { key: ".", label: ".", name: "Decimal point" },
+  { key: "0", wide: true },
+  { key: ".", label: ".", name: "Decimal point" },
 ];
 
 @Component({
@@ -8305,7 +10391,12 @@ const KEYS: Key[] = [
   template: \`
     <main class="page">
       <section class="calc" aria-label="Calculator">
-        <output class="display" [class.error]="!!state().error" data-testid="display" aria-live="polite">{{ shown() }}</output>
+        <output
+          class="display"
+          [class.error]="!!state().error"
+          data-testid="display"
+          aria-live="polite"
+        >{{ shown() }}</output>
         <div class="keys">
           @for (k of keys; track k.key) {
             <button
@@ -8321,7 +10412,8 @@ const KEYS: Key[] = [
       <p class="hint">Keyboard works too: digits, + - * /, Enter, Backspace, Esc.</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e6e6; font-family: system-ui, sans-serif; }
     .page { min-height: 100vh; display: grid; place-content: center; gap: 12px; padding: 16px; box-sizing: border-box; }
     .calc { width: min(320px, 92vw); background: #181b22; border: 1px solid #2a2f3a; border-radius: 16px; padding: 14px; }
@@ -8337,18 +10429,22 @@ const KEYS: Key[] = [
     .key.eq { background: #4f7cff; grid-row: span 2; }
     .key.wide { grid-column: span 2; }
     .hint { margin: 0; text-align: center; font-size: 0.85rem; color: #9aa3b2; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   constructor() {
-    // The playground page has a default white body margin; make the whole page dark.
+    // The playground page has a default white
+    // body margin; make the whole page dark.
     inject(DOCUMENT).body.style.cssText = "margin: 0; background: #0f1115;";
   }
 
   readonly keys = KEYS;
   // A signal holding one immutable state object; press() is a pure reducer.
   readonly state = signal<CalcState>(initialState);
-  readonly shown = computed(() => this.state().error || pretty(this.state().expr) || "0");
+  readonly shown = computed(
+    () => this.state().error || pretty(this.state().expr) || "0",
+  );
 
   tap(key: string): void {
     this.state.update((s) => press(s, key));
@@ -8366,10 +10462,19 @@ export class AppComponent {
 `,
           "/src/app/calc.ts": `// Pure calculator logic: no React, no DOM, no eval.
 export type Token = number | string;
-export interface CalcState { expr: string; justEvaluated: boolean; error: string; }
+export interface CalcState {
+  expr: string;
+  justEvaluated: boolean;
+  error: string;
+}
 
 export const OPS: Token[] = ["+", "-", "*", "/"];
-const PRETTY: Record<string, string> = { "*": "×", "/": "÷", "-": "−", "+": "+" };
+const PRETTY: Record<string, string> = {
+  "*": "×",
+  "/": "÷",
+  "-": "−",
+  "+": "+",
+};
 
 // "12+3*4" -> [12, "+", 3, "*", 4]. A "-" where a number is expected is a sign.
 export function tokenize(expr: string): Token[] {
@@ -8377,8 +10482,14 @@ export function tokenize(expr: string): Token[] {
   let num = "";
   for (let i = 0; i < expr.length; i++) {
     const ch = expr[i];
-    const expectNumber = num === "" && (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
-    if ((ch >= "0" && ch <= "9") || ch === "." || (ch === "-" && expectNumber)) {
+    const expectNumber =
+      num === "" &&
+      (tokens.length === 0 || OPS.includes(tokens[tokens.length - 1]));
+    if (
+      (ch >= "0" && ch <= "9") ||
+      ch === "." ||
+      (ch === "-" && expectNumber)
+    ) {
       num += ch;
     } else if (OPS.includes(ch)) {
       if (num === "" || num === "-") throw new Error("Malformed expression");
@@ -8426,22 +10537,33 @@ export function evaluate(expr: string): number {
 }
 
 // 0.1 + 0.2 is 0.30000000000000004 in binary floating point. Rounding to 12
-// significant digits hides that representation error without losing real digits.
+// significant digits hides that representation
+// error without losing real digits.
 export function formatResult(n: number): string {
   const rounded = Number(n.toPrecision(12));
-  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15) throw new Error("Number too large");
+  if (!Number.isFinite(rounded) || Math.abs(rounded) >= 1e15)
+    throw new Error("Number too large");
   let text = String(rounded);
-  // Tiny results print as "1e-7"; spell them out so the next key press still parses.
+  // Tiny results print as "1e-7"; spell them
+  // out so the next key press still parses.
   if (text.includes("e")) text = rounded.toFixed(12).replace(/[.]?0+$/, "");
   return text === "-0" ? "0" : text;
 }
 
 export function pretty(expr: string): string {
-  return expr.replace(/[-+*/]/g, (op, i) => (op === "-" && (i === 0 || OPS.includes(expr[i - 1])) ? "−" : " " + PRETTY[op] + " "));
+  return expr.replace(/[-+*/]/g, (op, i) =>
+    op === "-" && (i === 0 || OPS.includes(expr[i - 1]))
+      ? "−"
+      : " " + PRETTY[op] + " ",
+  );
 }
 
 // The input state machine. state = { expr, justEvaluated, error }
-export const initialState: CalcState = { expr: "", justEvaluated: false, error: "" };
+export const initialState: CalcState = {
+  expr: "",
+  justEvaluated: false,
+  error: "",
+};
 
 const lastNumber = (expr: string): string => expr.split(/[-+*/]/).pop() ?? "";
 
@@ -8453,7 +10575,8 @@ export function press(state: CalcState, key: string): CalcState {
 
   if (key >= "0" && key <= "9") {
     const base = justEvaluated ? "" : expr;
-    if (lastNumber(base) === "0") return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
+    if (lastNumber(base) === "0")
+      return { expr: base.slice(0, -1) + key, justEvaluated: false, error: "" };
     if (lastNumber(base).replace(/[-.]/g, "").length >= 15) return state;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -8461,11 +10584,19 @@ export function press(state: CalcState, key: string): CalcState {
     const base = justEvaluated ? "" : expr;
     if (lastNumber(base).includes(".")) return state;
     const needsZero = base === "" || OPS.includes(base.slice(-1));
-    return { expr: base + (needsZero ? "0." : "."), justEvaluated: false, error: "" };
+    return {
+      expr: base + (needsZero ? "0." : "."),
+      justEvaluated: false,
+      error: "",
+    };
   }
   if (OPS.includes(key)) {
-    if (expr === "" || expr === "-") return key === "-" ? { ...state, expr: "-", justEvaluated: false } : state;
-    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key }; // replace the operator
+    if (expr === "" || expr === "-")
+      return key === "-"
+        ? { ...state, expr: "-", justEvaluated: false }
+        : state;
+    // replace the operator
+    if (OPS.includes(last)) return { ...state, expr: expr.slice(0, -1) + key };
     const base = last === "." ? expr.slice(0, -1) : expr;
     return { expr: base + key, justEvaluated: false, error: "" };
   }
@@ -8476,7 +10607,11 @@ export function press(state: CalcState, key: string): CalcState {
   if (key === "=") {
     if (expr === "" || OPS.includes(last)) return state;
     try {
-      return { expr: formatResult(evaluate(expr)), justEvaluated: true, error: "" };
+      return {
+        expr: formatResult(evaluate(expr)),
+        justEvaluated: true,
+        error: "",
+      };
     } catch (e) {
       return { expr, justEvaluated: false, error: (e as Error).message };
     }

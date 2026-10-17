@@ -128,7 +128,8 @@ const [openIds, setOpenIds] = useState(defaultOpen);
 const baseId = useId();
 const headerRefs = useRef([]);
 
-// Derived, not stored: in single mode only the most recently opened panel counts.
+// Derived, not stored: in single mode only
+// the most recently opened panel counts.
 const visibleOpen = allowMultiple ? openIds : openIds.slice(-1);
 ~~~
 
@@ -148,35 +149,35 @@ function toggle(id) {
 ### Step 3: the header and panel markup
 
 ~~~jsx
-  <h3 className="acc-heading">
-    <button
-      ref={(el) => {
-        headerRefs.current[index] = el;
-      }}
-      id={headerId}
-      className="acc-trigger"
-      aria-expanded={open}
-      aria-controls={panelId}
-      onClick={() => toggle(item.id)}
-      onKeyDown={(e) => onHeaderKeyDown(e, index)}
-    >
-      <span>{item.title}</span>
-      <span className="acc-chevron" aria-hidden="true">
-        ▸
-      </span>
-    </button>
-  </h3>
-  <div
-    id={panelId}
-    role="region"
-    aria-labelledby={headerId}
-    className={open ? "acc-panel open" : "acc-panel"}
-    inert={!open}
+<h3 className="acc-heading">
+  <button
+    ref={(el) => {
+      headerRefs.current[index] = el;
+    }}
+    id={headerId}
+    className="acc-trigger"
+    aria-expanded={open}
+    aria-controls={panelId}
+    onClick={() => toggle(item.id)}
+    onKeyDown={(e) => onHeaderKeyDown(e, index)}
   >
-    <div className="acc-inner">
-      <p>{item.content}</p>
-    </div>
+    <span>{item.title}</span>
+    <span className="acc-chevron" aria-hidden="true">
+      ▸
+    </span>
+  </button>
+</h3>
+<div
+  id={panelId}
+  role="region"
+  aria-labelledby={headerId}
+  className={open ? "acc-panel open" : "acc-panel"}
+  inert={!open}
+>
+  <div className="acc-inner">
+    <p>{item.content}</p>
   </div>
+</div>
 </div>
 ~~~
 
@@ -202,7 +203,8 @@ function onHeaderKeyDown(e, index) {
     Home: 0,
     End: last,
   }[e.key];
-  if (target === undefined) return; // Enter and Space are handled by the native button
+  // Enter and Space are handled by the native button
+  if (target === undefined) return;
   e.preventDefault();
   headerRefs.current[target]?.focus();
 ~~~
@@ -212,9 +214,18 @@ A lookup object maps each key to the index to focus, with wrap-around at both en
 ### Step 5: animate height without measuring
 
 ~~~css
-.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; background: #12151b; }
-.acc-panel.open { grid-template-rows: 1fr; }
-.acc-inner { overflow: hidden; }
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease;
+  background: #12151b;
+}
+.acc-panel.open {
+  grid-template-rows: 1fr;
+}
+.acc-inner {
+  overflow: hidden;
+}
 ~~~
 
 The old way is to measure \`scrollHeight\` in JavaScript and animate a pixel \`height\`. The modern trick is to make the panel a one-row grid and animate the row from \`0fr\` (zero share of the space) to \`1fr\` (all of it), with the inner wrapper clipping its overflow. No measuring, no resize handling, and it works with any content height. A \`prefers-reduced-motion\` media query turns the transition off.
@@ -225,7 +236,7 @@ The old way is to measure \`scrollHeight\` in JavaScript and animate a pixel \`h
 
 The driver clicks headers, flips the mode checkbox and presses keys on the focused header. It prints each header's state and whether its panel carries \`inert\`. Output from React 19.3.1 in jsdom (the first RENDERED line is omitted):
 
-~~~
+~~~text
 [react] initial        : 1:open 2:shut(inert) 3:shut(inert) 4:shut(inert)
 [react] panel 1 wiring : role=region labelledby matches header id: true
 [react] click 2 (single): 1:shut(inert) 2:open 3:shut(inert) 4:shut(inert)
@@ -244,7 +255,7 @@ Read it top to bottom: panel 1 starts open because of \`defaultOpen\`; in single
 
 jsdom has no layout, so it cannot show the height animation or whether \`inert\` really blocks Tab. Those were checked in real Chromium 141 with playwright-core, loading the same files at a 360 px wide viewport:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] panel 1 height open: 100  panel 2 height shut: 0
 [chromium] page scrollWidth at a 360px viewport: 360
@@ -365,10 +376,30 @@ The open panel measures 100 px and the closed ones 0. 80 ms after a click, panel
 import Accordion from "./src/Accordion";
 
 const FAQ = [
-  { id: "shipping", title: "How long does shipping take?", content: "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days." },
-  { id: "returns", title: "Can I return an item?", content: "Yes. Send it back unused within 30 days and we refund the full price." },
-  { id: "warranty", title: "Is there a warranty?", content: "Every product has a two year warranty that covers manufacturing faults." },
-  { id: "support", title: "How do I contact support?", content: "Use the chat button or email help@example.com; we reply within one day." },
+  {
+    id: "shipping",
+    title: "How long does shipping take?",
+    content:
+      "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days.",
+  },
+  {
+    id: "returns",
+    title: "Can I return an item?",
+    content:
+      "Yes. Send it back unused within 30 days and we refund the full price.",
+  },
+  {
+    id: "warranty",
+    title: "Is there a warranty?",
+    content:
+      "Every product has a two year warranty that covers manufacturing faults.",
+  },
+  {
+    id: "support",
+    title: "How do I contact support?",
+    content:
+      "Use the chat button or email help@example.com; we reply within one day.",
+  },
 ];
 
 export default function App() {
@@ -384,20 +415,29 @@ export default function App() {
         />
         Allow several panels open at once
       </label>
-      <Accordion items={FAQ} allowMultiple={allowMultiple} defaultOpen={["shipping"]} />
+      <Accordion
+        items={FAQ}
+        allowMultiple={allowMultiple}
+        defaultOpen={["shipping"]}
+      />
     </main>
   );
 }
 `,
           "/src/Accordion.js": `import { useId, useRef, useState } from "react";
 
-export default function Accordion({ items, allowMultiple = false, defaultOpen = [] }) {
+export default function Accordion({
+  items,
+  allowMultiple = false,
+  defaultOpen = [],
+}) {
   // The ids of open panels, oldest first. The order matters for single mode.
   const [openIds, setOpenIds] = useState(defaultOpen);
   const baseId = useId();
   const headerRefs = useRef([]);
 
-  // Derived, not stored: in single mode only the most recently opened panel counts.
+  // Derived, not stored: in single mode only
+  // the most recently opened panel counts.
   const visibleOpen = allowMultiple ? openIds : openIds.slice(-1);
 
   function toggle(id) {
@@ -414,7 +454,8 @@ export default function Accordion({ items, allowMultiple = false, defaultOpen = 
       Home: 0,
       End: last,
     }[e.key];
-    if (target === undefined) return; // Enter and Space are handled by the native button
+    // Enter and Space are handled by the native button
+    if (target === undefined) return;
     e.preventDefault();
     headerRefs.current[target]?.focus();
   }
@@ -463,29 +504,91 @@ export default function Accordion({ items, allowMultiple = false, defaultOpen = 
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.mode { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; color: #b8bfcc; }
-.accordion { border: 1px solid #2a2f3a; border-radius: 10px; overflow: hidden; }
-.acc-item + .acc-item { border-top: 1px solid #2a2f3a; }
-.acc-heading { margin: 0; font-size: 1rem; }
-.acc-trigger {
-  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 14px 16px; background: #171a21; color: inherit; border: 0; font: inherit;
-  text-align: left; cursor: pointer;
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
 }
-.acc-trigger:hover { background: #1d212a; }
-.acc-trigger:focus-visible { outline: 2px solid #7aa2ff; outline-offset: -2px; }
-.acc-chevron { transition: transform 200ms ease; }
-.acc-trigger[aria-expanded="true"] .acc-chevron { transform: rotate(90deg); }
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.mode {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: #b8bfcc;
+}
+.accordion {
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.acc-item + .acc-item {
+  border-top: 1px solid #2a2f3a;
+}
+.acc-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+.acc-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #171a21;
+  color: inherit;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.acc-trigger:hover {
+  background: #1d212a;
+}
+.acc-trigger:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: -2px;
+}
+.acc-chevron {
+  transition: transform 200ms ease;
+}
+.acc-trigger[aria-expanded="true"] .acc-chevron {
+  transform: rotate(90deg);
+}
 /* Height animation without measuring: a grid row that goes from 0fr to 1fr. */
-.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; background: #12151b; }
-.acc-panel.open { grid-template-rows: 1fr; }
-.acc-inner { overflow: hidden; }
-.acc-inner p { margin: 0; padding: 12px 16px 16px; color: #c9cfdb; line-height: 1.5; }
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease;
+  background: #12151b;
+}
+.acc-panel.open {
+  grid-template-rows: 1fr;
+}
+.acc-inner {
+  overflow: hidden;
+}
+.acc-inner p {
+  margin: 0;
+  padding: 12px 16px 16px;
+  color: #c9cfdb;
+  line-height: 1.5;
+}
 @media (prefers-reduced-motion: reduce) {
-  .acc-panel, .acc-chevron { transition: none; }
+  .acc-panel,
+  .acc-chevron {
+    transition: none;
+  }
 }
 `,
         },
@@ -526,8 +629,11 @@ const openIds = ref([...props.defaultOpen]);
 const baseId = useId();
 const headers = [];
 
-// Derived, not stored: in single mode only the most recently opened panel counts.
-const visibleOpen = computed(() => (props.multiple ? openIds.value : openIds.value.slice(-1)));
+// Derived, not stored: in single mode only
+// the most recently opened panel counts.
+const visibleOpen = computed(() =>
+  props.multiple ? openIds.value : openIds.value.slice(-1),
+);
 
 function isOpen(id) {
   return visibleOpen.value.includes(id);
@@ -596,7 +702,8 @@ function onHeaderKeydown(e, index) {
     Home: 0,
     End: last,
   }[e.key];
-  if (target === undefined) return; // Enter and Space are handled by the native button
+  // Enter and Space are handled by the native button
+  if (target === undefined) return;
   e.preventDefault();
   headers[target]?.focus();
 ~~~
@@ -611,7 +718,7 @@ The panel is a one-row grid whose row animates from \`0fr\` to \`1fr\` while the
 
 The shared driver clicks headers, toggles the mode checkbox and presses keys. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted), after the \`inert\` fix:
 
-~~~
+~~~text
 [vue] initial        : 1:open 2:shut(inert) 3:shut(inert) 4:shut(inert)
 [vue] panel 1 wiring : role=region labelledby matches header id: true
 [vue] click 2 (single): 1:shut(inert) 2:open 3:shut(inert) 4:shut(inert)
@@ -726,10 +833,30 @@ import { ref } from "vue";
 import Accordion from "./components/Accordion.vue";
 
 const faq = [
-  { id: "shipping", title: "How long does shipping take?", content: "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days." },
-  { id: "returns", title: "Can I return an item?", content: "Yes. Send it back unused within 30 days and we refund the full price." },
-  { id: "warranty", title: "Is there a warranty?", content: "Every product has a two year warranty that covers manufacturing faults." },
-  { id: "support", title: "How do I contact support?", content: "Use the chat button or email help@example.com; we reply within one day." },
+  {
+    id: "shipping",
+    title: "How long does shipping take?",
+    content:
+      "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days.",
+  },
+  {
+    id: "returns",
+    title: "Can I return an item?",
+    content:
+      "Yes. Send it back unused within 30 days and we refund the full price.",
+  },
+  {
+    id: "warranty",
+    title: "Is there a warranty?",
+    content:
+      "Every product has a two year warranty that covers manufacturing faults.",
+  },
+  {
+    id: "support",
+    title: "How do I contact support?",
+    content:
+      "Use the chat button or email help@example.com; we reply within one day.",
+  },
 ];
 
 const allowMultiple = ref(false);
@@ -742,15 +869,37 @@ const allowMultiple = ref(false);
       <input type="checkbox" v-model="allowMultiple" />
       Allow several panels open at once
     </label>
-    <Accordion :items="faq" :multiple="allowMultiple" :default-open="['shipping']" />
+    <Accordion
+      :items="faq"
+      :multiple="allowMultiple"
+      :default-open="['shipping']"
+    />
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.mode { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; color: #b8bfcc; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.mode {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: #b8bfcc;
+}
 </style>
 `,
           "/src/components/Accordion.vue": `<script setup>
@@ -767,8 +916,11 @@ const openIds = ref([...props.defaultOpen]);
 const baseId = useId();
 const headers = [];
 
-// Derived, not stored: in single mode only the most recently opened panel counts.
-const visibleOpen = computed(() => (props.multiple ? openIds.value : openIds.value.slice(-1)));
+// Derived, not stored: in single mode only
+// the most recently opened panel counts.
+const visibleOpen = computed(() =>
+  props.multiple ? openIds.value : openIds.value.slice(-1),
+);
 
 function isOpen(id) {
   return visibleOpen.value.includes(id);
@@ -788,7 +940,8 @@ function onHeaderKeydown(e, index) {
     Home: 0,
     End: last,
   }[e.key];
-  if (target === undefined) return; // Enter and Space are handled by the native button
+  // Enter and Space are handled by the native button
+  if (target === undefined) return;
   e.preventDefault();
   headers[target]?.focus();
 }
@@ -827,25 +980,69 @@ function onHeaderKeydown(e, index) {
 </template>
 
 <style scoped>
-.accordion { border: 1px solid #2a2f3a; border-radius: 10px; overflow: hidden; }
-.acc-item + .acc-item { border-top: 1px solid #2a2f3a; }
-.acc-heading { margin: 0; font-size: 1rem; }
-.acc-trigger {
-  width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 14px 16px; background: #171a21; color: inherit; border: 0; font: inherit;
-  text-align: left; cursor: pointer;
+.accordion {
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  overflow: hidden;
 }
-.acc-trigger:hover { background: #1d212a; }
-.acc-trigger:focus-visible { outline: 2px solid #7aa2ff; outline-offset: -2px; }
-.acc-chevron { transition: transform 200ms ease; }
-.acc-trigger[aria-expanded="true"] .acc-chevron { transform: rotate(90deg); }
+.acc-item + .acc-item {
+  border-top: 1px solid #2a2f3a;
+}
+.acc-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+.acc-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #171a21;
+  color: inherit;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.acc-trigger:hover {
+  background: #1d212a;
+}
+.acc-trigger:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: -2px;
+}
+.acc-chevron {
+  transition: transform 200ms ease;
+}
+.acc-trigger[aria-expanded="true"] .acc-chevron {
+  transform: rotate(90deg);
+}
 /* Height animation without measuring: a grid row that goes from 0fr to 1fr. */
-.acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; background: #12151b; }
-.acc-panel.open { grid-template-rows: 1fr; }
-.acc-inner { overflow: hidden; }
-.acc-inner p { margin: 0; padding: 12px 16px 16px; color: #c9cfdb; line-height: 1.5; }
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease;
+  background: #12151b;
+}
+.acc-panel.open {
+  grid-template-rows: 1fr;
+}
+.acc-inner {
+  overflow: hidden;
+}
+.acc-inner p {
+  margin: 0;
+  padding: 12px 16px 16px;
+  color: #c9cfdb;
+  line-height: 1.5;
+}
 @media (prefers-reduced-motion: reduce) {
-  .acc-panel, .acc-chevron { transition: none; }
+  .acc-panel,
+  .acc-chevron {
+    transition: none;
+  }
 }
 </style>
 `,
@@ -912,19 +1109,26 @@ An **accordion** is that corridor: a list of headers, each opening its own panel
 ~~~ts
 @Input({ required: true }) items: AccordionItem[] = [];
 @Input() defaultOpen: string[] = [];
-// A setter copies the decorator input into a signal, so computed() can track it.
+// A setter copies the decorator input into
+// a signal, so computed() can track it.
 @Input() set multiple(value: boolean) {
   this.multipleMode.set(value);
 }
 
-@ViewChildren("trigger") triggers!: QueryList<ElementRef<HTMLButtonElement>>;
+@ViewChildren("trigger") triggers!: QueryList<
+  ElementRef<HTMLButtonElement>
+>;
 
 readonly baseId = "acc-" + nextAccordionId++;
 private multipleMode = signal(false);
-// The ids of open panels, oldest first. The order matters for single mode.
+// The ids of open panels, oldest first.
+// The order matters for single mode.
 private openIds = signal<string[]>([]);
-// Derived, not stored: in single mode only the most recently opened panel counts.
-private visibleOpen = computed(() => (this.multipleMode() ? this.openIds() : this.openIds().slice(-1)));
+// Derived, not stored: in single mode only
+// the most recently opened panel counts.
+private visibleOpen = computed(() =>
+  this.multipleMode() ? this.openIds() : this.openIds().slice(-1),
+);
 
 ngOnInit() {
   this.openIds.set([...this.defaultOpen]);
@@ -993,7 +1197,8 @@ onHeaderKeydown(e: KeyboardEvent, index: number) {
     End: last,
   };
   const target = moves[e.key];
-  if (target === undefined) return; // Enter and Space are handled by the native button
+  // Enter and Space are handled by the native button
+  if (target === undefined) return;
   e.preventDefault();
   this.triggers.get(target)?.nativeElement.focus();
 ~~~
@@ -1008,7 +1213,7 @@ The component \`styles\` hold the grid-row animation (\`grid-template-rows\` fro
 
 The same driver as React and Vue clicks headers, toggles the checkbox and presses keys. Output from the AOT build with strict templates (first lines omitted); the JIT playground run printed the same lines with the \`angular:playground\` tag:
 
-~~~
+~~~text
 [angular:app] initial        : 1:open 2:shut(inert) 3:shut(inert) 4:shut(inert)
 [angular:app] panel 1 wiring : role=region labelledby matches header id: true
 [angular:app] click 2 (single): 1:shut(inert) 2:open 3:shut(inert) 4:shut(inert)
@@ -1118,7 +1323,16 @@ Single mode, multi mode, the mode switch and wrap-around keys all behave as in t
 ---
 **Conclusion:** The Angular accordion keeps open ids in a signal, derives the single-open view with \`computed\`, feeds the \`multiple\` input into a signal through a setter so that derivation stays reactive, and renders real heading buttons with ARIA attributes and \`inert\` closed panels. It passed both the strict AOT build and the JIT playground on Angular 22.2.3 with output identical to React and Vue.`,
         files: {
-          "/src/app/accordion.component.ts": `import { Component, ElementRef, Input, OnInit, QueryList, ViewChildren, computed, signal } from "@angular/core";
+          "/src/app/accordion.component.ts": `import {
+  Component,
+  ElementRef,
+  Input,
+  OnInit,
+  QueryList,
+  ViewChildren,
+  computed,
+  signal,
+} from "@angular/core";
 
 export interface AccordionItem {
   id: string;
@@ -1165,33 +1379,80 @@ let nextAccordionId = 0;
       }
     </div>
   \`,
-  styles: [\`
-    .accordion { border: 1px solid #2a2f3a; border-radius: 10px; overflow: hidden; }
-    .acc-item + .acc-item { border-top: 1px solid #2a2f3a; }
-    .acc-heading { margin: 0; font-size: 1rem; }
-    .acc-trigger {
-      width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px;
-      padding: 14px 16px; background: #171a21; color: inherit; border: 0; font: inherit;
-      text-align: left; cursor: pointer;
-    }
-    .acc-trigger:hover { background: #1d212a; }
-    .acc-trigger:focus-visible { outline: 2px solid #7aa2ff; outline-offset: -2px; }
-    .acc-chevron { transition: transform 200ms ease; }
-    .acc-trigger[aria-expanded="true"] .acc-chevron { transform: rotate(90deg); }
-    /* Height animation without measuring: a grid row that goes from 0fr to 1fr. */
-    .acc-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease; background: #12151b; }
-    .acc-panel.open { grid-template-rows: 1fr; }
-    .acc-inner { overflow: hidden; }
-    .acc-inner p { margin: 0; padding: 12px 16px 16px; color: #c9cfdb; line-height: 1.5; }
-    @media (prefers-reduced-motion: reduce) {
-      .acc-panel, .acc-chevron { transition: none; }
-    }
-  \`],
+  styles: [
+    \`
+      .accordion {
+        border: 1px solid #2a2f3a;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .acc-item + .acc-item {
+        border-top: 1px solid #2a2f3a;
+      }
+      .acc-heading {
+        margin: 0;
+        font-size: 1rem;
+      }
+      .acc-trigger {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: #171a21;
+        color: inherit;
+        border: 0;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+      .acc-trigger:hover {
+        background: #1d212a;
+      }
+      .acc-trigger:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: -2px;
+      }
+      .acc-chevron {
+        transition: transform 200ms ease;
+      }
+      .acc-trigger[aria-expanded="true"] .acc-chevron {
+        transform: rotate(90deg);
+      }
+      /* Height animation without measuring: a grid row that goes from 0fr to 1fr. */
+      .acc-panel {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 200ms ease;
+        background: #12151b;
+      }
+      .acc-panel.open {
+        grid-template-rows: 1fr;
+      }
+      .acc-inner {
+        overflow: hidden;
+      }
+      .acc-inner p {
+        margin: 0;
+        padding: 12px 16px 16px;
+        color: #c9cfdb;
+        line-height: 1.5;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .acc-panel,
+        .acc-chevron {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class AccordionComponent implements OnInit {
   @Input({ required: true }) items: AccordionItem[] = [];
   @Input() defaultOpen: string[] = [];
-  // A setter copies the decorator input into a signal, so computed() can track it.
+  // A setter copies the decorator input into
+  // a signal, so computed() can track it.
   @Input() set multiple(value: boolean) {
     this.multipleMode.set(value);
   }
@@ -1202,8 +1463,11 @@ export class AccordionComponent implements OnInit {
   private multipleMode = signal(false);
   // The ids of open panels, oldest first. The order matters for single mode.
   private openIds = signal<string[]>([]);
-  // Derived, not stored: in single mode only the most recently opened panel counts.
-  private visibleOpen = computed(() => (this.multipleMode() ? this.openIds() : this.openIds().slice(-1)));
+  // Derived, not stored: in single mode only
+  // the most recently opened panel counts.
+  private visibleOpen = computed(() =>
+    this.multipleMode() ? this.openIds() : this.openIds().slice(-1),
+  );
 
   ngOnInit() {
     this.openIds.set([...this.defaultOpen]);
@@ -1228,7 +1492,8 @@ export class AccordionComponent implements OnInit {
       End: last,
     };
     const target = moves[e.key];
-    if (target === undefined) return; // Enter and Space are handled by the native button
+    // Enter and Space are handled by the native button
+    if (target === undefined) return;
     e.preventDefault();
     this.triggers.get(target)?.nativeElement.focus();
   }
@@ -1252,23 +1517,68 @@ import { AccordionComponent, AccordionItem } from "./accordion.component";
         />
         Allow several panels open at once
       </label>
-      <app-accordion [items]="faq" [multiple]="allowMultiple()" [defaultOpen]="['shipping']" />
+      <app-accordion
+        [items]="faq"
+        [multiple]="allowMultiple()"
+        [defaultOpen]="['shipping']"
+      />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 12px; }
-    .mode { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; color: #b8bfcc; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 12px;
+      }
+      .mode {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 16px;
+        color: #b8bfcc;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   allowMultiple = signal(false);
   faq: AccordionItem[] = [
-    { id: "shipping", title: "How long does shipping take?", content: "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days." },
-    { id: "returns", title: "Can I return an item?", content: "Yes. Send it back unused within 30 days and we refund the full price." },
-    { id: "warranty", title: "Is there a warranty?", content: "Every product has a two year warranty that covers manufacturing faults." },
-    { id: "support", title: "How do I contact support?", content: "Use the chat button or email help@example.com; we reply within one day." },
+    {
+      id: "shipping",
+      title: "How long does shipping take?",
+      content:
+        "Orders leave our warehouse within 24 hours and arrive in 2 to 4 working days.",
+    },
+    {
+      id: "returns",
+      title: "Can I return an item?",
+      content:
+        "Yes. Send it back unused within 30 days and we refund the full price.",
+    },
+    {
+      id: "warranty",
+      title: "Is there a warranty?",
+      content:
+        "Every product has a two year warranty that covers manufacturing faults.",
+    },
+    {
+      id: "support",
+      title: "How do I contact support?",
+      content:
+        "Use the chat button or email help@example.com; we reply within one day.",
+    },
   ];
 }
 `,
@@ -1378,7 +1688,8 @@ const activeIndex = tabs.findIndex((t) => t.id === activeId);
 
 function select(index) {
   setActiveId(tabs[index].id);
-  tabRefs.current[index]?.focus(); // automatic activation: focus and selection move together
+  // automatic activation: focus and selection move together
+  tabRefs.current[index]?.focus();
 ~~~
 
 \`select\` changes the state and moves focus in one place. Because clicking and keyboard both call it, they behave identically.
@@ -1406,7 +1717,12 @@ One handler on the \`tablist\` (events bubble up from the focused tab) maps keys
 ### Step 3: the tab buttons
 
 ~~~jsx
-<div role="tablist" aria-label={label} className="tablist" onKeyDown={onKeyDown}>
+<div
+  role="tablist"
+  aria-label={label}
+  className="tablist"
+  onKeyDown={onKeyDown}
+>
   {tabs.map((tab, index) => {
     const selected = tab.id === activeId;
     return (
@@ -1440,19 +1756,21 @@ The \`tablist\` gets an \`aria-label\` ("Account sections") because a list of ta
 ### Step 4: the panels
 
 ~~~jsx
-{tabs.map((tab) => (
-  <div
-    key={tab.id}
-    role="tabpanel"
-    id={baseId + "-panel-" + tab.id}
-    aria-labelledby={baseId + "-tab-" + tab.id}
-    tabIndex={0}
-    hidden={tab.id !== activeId}
-    className="panel"
-  >
-    {tab.content}
-  </div>
-))}
+{
+  tabs.map((tab) => (
+    <div
+      key={tab.id}
+      role="tabpanel"
+      id={baseId + "-panel-" + tab.id}
+      aria-labelledby={baseId + "-tab-" + tab.id}
+      tabIndex={0}
+      hidden={tab.id !== activeId}
+      className="panel"
+    >
+      {tab.content}
+    </div>
+  ));
+}
 ~~~
 
 Every panel is rendered; inactive ones get the \`hidden\` attribute. That is why text typed in the Notes textarea survives a trip to another tab: the DOM node, and any React state inside the panel, never goes away. \`tabIndex={0}\` on the panel makes the next Tab after the tab list land on the panel itself, so screen-reader users hear where they arrived.
@@ -1463,7 +1781,7 @@ Every panel is rendered; inactive ones get the \`hidden\` attribute. That is why
 
 The driver checks the wiring, clicks, presses keys on the focused tab, types into the Notes textarea and switches away and back. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] tablist label : Account sections
 [react] initial       : Profile[sel=true,tabindex=0] Notes[sel=false,tabindex=-1] Billing[sel=false,tabindex=-1] | visible panel: Ada Lovelace, ada@
 [react] wiring        : tab controls panel: true | panel labelledby tab: true | panels in DOM: 3
@@ -1481,7 +1799,7 @@ Each line confirms one requirement: the label and id wiring; selection, \`aria-s
 
 jsdom does not move focus on Tab, so the roving tabindex was checked in Chromium 141 through playwright-core:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] Tab from page start -> tab:Profile
 [chromium] ArrowRight          -> tab:Notes
@@ -1611,7 +1929,10 @@ const TABS = [
     content: (
       <label className="field">
         Private notes
-        <textarea rows={3} placeholder="Type something, switch tabs, come back" />
+        <textarea
+          rows={3}
+          placeholder="Type something, switch tabs, come back"
+        />
       </label>
     ),
   },
@@ -1642,7 +1963,8 @@ export default function Tabs({ tabs, defaultActive, label }) {
 
   function select(index) {
     setActiveId(tabs[index].id);
-    tabRefs.current[index]?.focus(); // automatic activation: focus and selection move together
+    // automatic activation: focus and selection move together
+    tabRefs.current[index]?.focus();
   }
 
   function onKeyDown(e) {
@@ -1660,7 +1982,12 @@ export default function Tabs({ tabs, defaultActive, label }) {
 
   return (
     <div className="tabs">
-      <div role="tablist" aria-label={label} className="tablist" onKeyDown={onKeyDown}>
+      <div
+        role="tablist"
+        aria-label={label}
+        className="tablist"
+        onKeyDown={onKeyDown}
+      >
         {tabs.map((tab, index) => {
           const selected = tab.id === activeId;
           return (
@@ -1700,21 +2027,70 @@ export default function Tabs({ tabs, defaultActive, label }) {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-.tab {
-  padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-  border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
 }
-.tab:hover { color: #e6e8ee; }
-.tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-.tab:focus-visible, .panel:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.panel { padding: 16px 4px; line-height: 1.5; }
-.panel p { margin: 0; color: #c9cfdb; }
-.field { display: grid; gap: 6px; color: #b8bfcc; }
-textarea { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.tablist {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #2a2f3a;
+  overflow-x: auto;
+}
+.tab {
+  padding: 10px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: #e6e8ee;
+}
+.tab[aria-selected="true"] {
+  color: #e6e8ee;
+  border-bottom-color: #7aa2ff;
+}
+.tab:focus-visible,
+.panel:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.panel {
+  padding: 16px 4px;
+  line-height: 1.5;
+}
+.panel p {
+  margin: 0;
+  color: #c9cfdb;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  color: #b8bfcc;
+}
+textarea {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
 `,
         },
       },
@@ -1753,13 +2129,16 @@ A TV remote has a row of channel buttons and one screen. Press a button and the 
 
 ~~~js
 const activeId = ref(props.defaultActive ?? props.tabs[0].id);
-const activeIndex = computed(() => props.tabs.findIndex((t) => t.id === activeId.value));
+const activeIndex = computed(() =>
+  props.tabs.findIndex((t) => t.id === activeId.value),
+);
 const baseId = useId();
 const tabEls = [];
 
 function select(index) {
   activeId.value = props.tabs[index].id;
-  tabEls[index]?.focus(); // automatic activation: focus and selection move together
+  // automatic activation: focus and selection move together
+  tabEls[index]?.focus();
   emit("change", activeId.value);
 }
 
@@ -1846,7 +2225,7 @@ The parent writes plain HTML for each panel. The Tabs component never needs to k
 
 Same driver as the React and Angular versions: wiring, clicks, keys on the focused tab, then typing in Notes and switching away and back. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] tablist label : Account sections
 [vue] initial       : Profile[sel=true,tabindex=0] Notes[sel=false,tabindex=-1] Billing[sel=false,tabindex=-1] | visible panel: Ada Lovelace, ada@
 [vue] wiring        : tab controls panel: true | panel labelledby tab: true | panels in DOM: 3
@@ -1974,7 +2353,10 @@ const tabs = [
       <template #notes>
         <label class="field">
           Private notes
-          <textarea rows="3" placeholder="Type something, switch tabs, come back"></textarea>
+          <textarea
+            rows="3"
+            placeholder="Type something, switch tabs, come back"
+          ></textarea>
         </label>
       </template>
       <template #billing>
@@ -1985,18 +2367,42 @@ const tabs = [
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.field { display: grid; gap: 6px; color: #b8bfcc; }
-textarea { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  color: #b8bfcc;
+}
+textarea {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
 </style>
 `,
           "/src/components/Tabs.vue": `<script setup>
 import { computed, ref, useId } from "vue";
 
 const props = defineProps({
-  tabs: { type: Array, required: true }, // [{ id, label }]; each id is also a slot name
+  // [{ id, label }]; each id is also a slot name
+  tabs: { type: Array, required: true },
   defaultActive: { type: String, default: undefined },
   label: { type: String, required: true },
 });
@@ -2004,20 +2410,28 @@ const emit = defineEmits(["change"]);
 
 // The one piece of state: which tab is selected. Everything else is derived.
 const activeId = ref(props.defaultActive ?? props.tabs[0].id);
-const activeIndex = computed(() => props.tabs.findIndex((t) => t.id === activeId.value));
+const activeIndex = computed(() =>
+  props.tabs.findIndex((t) => t.id === activeId.value),
+);
 const baseId = useId();
 const tabEls = [];
 
 function select(index) {
   activeId.value = props.tabs[index].id;
-  tabEls[index]?.focus(); // automatic activation: focus and selection move together
+  // automatic activation: focus and selection move together
+  tabEls[index]?.focus();
   emit("change", activeId.value);
 }
 
 function onKeydown(e) {
   const last = props.tabs.length - 1;
   const i = activeIndex.value;
-  const next = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last }[e.key];
+  const next = {
+    ArrowRight: i === last ? 0 : i + 1,
+    ArrowLeft: i === 0 ? last : i - 1,
+    Home: 0,
+    End: last,
+  }[e.key];
   if (next === undefined) return;
   e.preventDefault(); // stop Home/End from scrolling the page
   select(next);
@@ -2026,7 +2440,12 @@ function onKeydown(e) {
 
 <template>
   <div class="tabs">
-    <div role="tablist" :aria-label="label" class="tablist" @keydown="onKeydown">
+    <div
+      role="tablist"
+      :aria-label="label"
+      class="tablist"
+      @keydown="onKeydown"
+    >
       <button
         v-for="(tab, index) in tabs"
         :key="tab.id"
@@ -2060,16 +2479,42 @@ function onKeydown(e) {
 </template>
 
 <style scoped>
-.tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-.tab {
-  padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-  border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
+.tablist {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #2a2f3a;
+  overflow-x: auto;
 }
-.tab:hover { color: #e6e8ee; }
-.tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-.tab:focus-visible, .panel:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.panel { padding: 16px 4px; line-height: 1.5; }
-.panel :slotted(p) { margin: 0; color: #c9cfdb; }
+.tab {
+  padding: 10px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: #e6e8ee;
+}
+.tab[aria-selected="true"] {
+  color: #e6e8ee;
+  border-bottom-color: #7aa2ff;
+}
+.tab:focus-visible,
+.panel:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.panel {
+  padding: 16px 4px;
+  line-height: 1.5;
+}
+.panel :slotted(p) {
+  margin: 0;
+  color: #c9cfdb;
+}
 </style>
 `,
         },
@@ -2162,13 +2607,18 @@ export class TabComponent {
 
 ~~~ts
 @ContentChildren(TabComponent) panels!: QueryList<TabComponent>;
-@ViewChildren("tabButton") buttons!: QueryList<ElementRef<HTMLButtonElement>>;
+@ViewChildren("tabButton") buttons!: QueryList<
+  ElementRef<HTMLButtonElement>
+>;
 
 readonly baseId = "tabs-" + nextTabsId++;
-// The one piece of state: which tab is selected. Everything else is derived.
+// The one piece of state: which tab is
+// selected. Everything else is derived.
 readonly activeId = signal("");
 readonly tabList = signal<TabComponent[]>([]);
-private activeIndex = computed(() => this.tabList().findIndex((t) => t.tabId === this.activeId()));
+private activeIndex = computed(() =>
+  this.tabList().findIndex((t) => t.tabId === this.activeId()),
+);
 
 ngAfterContentInit() {
   const list = this.panels.toArray();
@@ -2184,7 +2634,8 @@ ngAfterContentInit() {
 select(index: number) {
   const tab = this.tabList()[index];
   this.activeId.set(tab.tabId);
-  this.buttons.get(index)?.nativeElement.focus(); // automatic activation
+  // automatic activation
+  this.buttons.get(index)?.nativeElement.focus();
   this.tabChange.emit(tab.tabId);
 }
 
@@ -2203,7 +2654,12 @@ Automatic activation: \`select\` changes the state, focuses the button and emits
 ### Step 4: the tab buttons
 
 ~~~html
-<div role="tablist" [attr.aria-label]="label" class="tablist" (keydown)="onKeydown($event)">
+<div
+  role="tablist"
+  [attr.aria-label]="label"
+  class="tablist"
+  (keydown)="onKeydown($event)"
+>
   @for (tab of tabList(); track tab.tabId; let index = $index) {
     <button
       #tabButton
@@ -2229,7 +2685,7 @@ Automatic activation: \`select\` changes the state, focuses the button and emits
 
 The shared driver checks the wiring, clicks, presses keys on the focused tab, types into Notes and switches away and back. AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines:
 
-~~~
+~~~text
 [angular:app] tablist label : Account sections
 [angular:app] initial       : Profile[sel=true,tabindex=0] Notes[sel=false,tabindex=-1] Billing[sel=false,tabindex=-1] | visible panel: Ada Lovelace, ada@
 [angular:app] wiring        : tab controls panel: true | panel labelledby tab: true | panels in DOM: 3
@@ -2354,7 +2810,10 @@ import { TabComponent, TabsComponent } from "./tabs.component";
         <app-tab tabId="notes" label="Notes">
           <label class="field">
             Private notes
-            <textarea rows="3" placeholder="Type something, switch tabs, come back"></textarea>
+            <textarea
+              rows="3"
+              placeholder="Type something, switch tabs, come back"
+            ></textarea>
           </label>
         </app-tab>
         <app-tab tabId="billing" label="Billing">
@@ -2363,20 +2822,60 @@ import { TabComponent, TabsComponent } from "./tabs.component";
       </app-tabs>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 12px; }
-    p { margin: 0; color: #c9cfdb; }
-    .field { display: grid; gap: 6px; color: #b8bfcc; }
-    textarea { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 12px;
+      }
+      p {
+        margin: 0;
+        color: #c9cfdb;
+      }
+      .field {
+        display: grid;
+        gap: 6px;
+        color: #b8bfcc;
+      }
+      textarea {
+        background: #171a21;
+        color: #e6e8ee;
+        border: 1px solid #2a2f3a;
+        border-radius: 8px;
+        padding: 8px;
+        font: inherit;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
           "/src/app/tabs.component.ts": `import {
-  AfterContentInit, Component, ContentChildren, ElementRef, EventEmitter, Input, Output,
-  QueryList, ViewChildren, computed, forwardRef, inject, signal,
+  AfterContentInit,
+  Component,
+  ContentChildren,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  QueryList,
+  ViewChildren,
+  computed,
+  forwardRef,
+  inject,
+  signal,
 } from "@angular/core";
 
 let nextTabsId = 0;
@@ -2393,26 +2892,46 @@ let nextTabsId = 0;
     "[attr.aria-labelledby]": "buttonId",
     "[hidden]": "!selected()",
   },
-  styles: [\`
-    :host { display: block; padding: 16px 4px; line-height: 1.5; }
-    :host([hidden]) { display: none; }
-    :host(:focus-visible) { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        padding: 16px 4px;
+        line-height: 1.5;
+      }
+      :host([hidden]) {
+        display: none;
+      }
+      :host(:focus-visible) {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+    \`,
+  ],
 })
 export class TabComponent {
   @Input({ required: true }) tabId = "";
   @Input({ required: true }) label = "";
   private tabs = inject(forwardRef(() => TabsComponent));
   readonly selected = computed(() => this.tabs.activeId() === this.tabId);
-  get panelId() { return this.tabs.baseId + "-panel-" + this.tabId; }
-  get buttonId() { return this.tabs.baseId + "-tab-" + this.tabId; }
+  get panelId() {
+    return this.tabs.baseId + "-panel-" + this.tabId;
+  }
+  get buttonId() {
+    return this.tabs.baseId + "-tab-" + this.tabId;
+  }
 }
 
 @Component({
   selector: "app-tabs",
   standalone: true,
   template: \`
-    <div role="tablist" [attr.aria-label]="label" class="tablist" (keydown)="onKeydown($event)">
+    <div
+      role="tablist"
+      [attr.aria-label]="label"
+      class="tablist"
+      (keydown)="onKeydown($event)"
+    >
       @for (tab of tabList(); track tab.tabId; let index = $index) {
         <button
           #tabButton
@@ -2431,16 +2950,37 @@ export class TabComponent {
     </div>
     <ng-content />
   \`,
-  styles: [\`
-    .tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-    .tab {
-      padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-      border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
-    }
-    .tab:hover { color: #e6e8ee; }
-    .tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-    .tab:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-  \`],
+  styles: [
+    \`
+      .tablist {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid #2a2f3a;
+        overflow-x: auto;
+      }
+      .tab {
+        padding: 10px 14px;
+        background: transparent;
+        color: #b8bfcc;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tab:hover {
+        color: #e6e8ee;
+      }
+      .tab[aria-selected="true"] {
+        color: #e6e8ee;
+        border-bottom-color: #7aa2ff;
+      }
+      .tab:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+    \`,
+  ],
 })
 export class TabsComponent implements AfterContentInit {
   @Input() defaultActive?: string;
@@ -2454,7 +2994,9 @@ export class TabsComponent implements AfterContentInit {
   // The one piece of state: which tab is selected. Everything else is derived.
   readonly activeId = signal("");
   readonly tabList = signal<TabComponent[]>([]);
-  private activeIndex = computed(() => this.tabList().findIndex((t) => t.tabId === this.activeId()));
+  private activeIndex = computed(() =>
+    this.tabList().findIndex((t) => t.tabId === this.activeId()),
+  );
 
   ngAfterContentInit() {
     const list = this.panels.toArray();
@@ -2472,7 +3014,12 @@ export class TabsComponent implements AfterContentInit {
   onKeydown(e: KeyboardEvent) {
     const last = this.tabList().length - 1;
     const i = this.activeIndex();
-    const moves: Record<string, number> = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last };
+    const moves: Record<string, number> = {
+      ArrowRight: i === last ? 0 : i + 1,
+      ArrowLeft: i === 0 ? last : i - 1,
+      Home: 0,
+      End: last,
+    };
     const next = moves[e.key];
     if (next === undefined) return;
     e.preventDefault(); // stop Home/End from scrolling the page
@@ -2592,9 +3139,11 @@ export function readParam(name) {
 
 export function writeParam(name, value, mode) {
   const url = new URL(window.location.href);
-  url.searchParams.set(name, value); // keeps every other query param and the hash
+  // keeps every other query param and the hash
+  url.searchParams.set(name, value);
   const next = url.pathname + url.search + url.hash;
-  if (mode === "replace") window.history.replaceState(window.history.state, "", next);
+  if (mode === "replace")
+    window.history.replaceState(window.history.state, "", next);
   else window.history.pushState(window.history.state, "", next);
 }
 ~~~
@@ -2653,7 +3202,8 @@ The lazy initializer reads and validates the URL once, on mount. \`mounted\` sta
 ### Step 3: correct a bad URL without a new entry
 
 ~~~js
-// A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+// A bad value such as ?tab=nope is rewritten
+// in place, without adding a history entry.
 useEffect(() => {
   const raw = readParam(param);
   if (raw !== null && raw !== state.active) {
@@ -2686,12 +3236,14 @@ On \`popstate\` the browser has already changed the URL; the handler only reads 
 ~~~js
 function select(id) {
   if (id === state.active) return;
-  writeParam(param, id, "push"); // one history entry per deliberate tab change
+  // one history entry per deliberate tab change
+  writeParam(param, id, "push");
   activate(id);
   onNavigate?.();
 }
 
-// Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+// Manual activation: arrows only move focus.
+// Enter or Space (a native button click) selects.
 function onKeyDown(e) {
   const last = tabs.length - 1;
   const i = tabRefs.current.indexOf(document.activeElement);
@@ -2731,7 +3283,8 @@ Every \`tabpanel\` wrapper exists from the start, so each tab's \`aria-controls\
 export function ActivityPanel() {
   const [items, setItems] = useState(null);
   useEffect(() => {
-    let ignore = false; // StrictMode runs this effect twice in development
+    // StrictMode runs this effect twice in development
+    let ignore = false;
     fetchActivity().then((rows) => {
       if (!ignore) setItems(rows);
     });
@@ -2747,7 +3300,7 @@ The fake API is an in-file \`setTimeout\` promise (there is no network in the de
 
 The driver clicks tabs, types into Settings, uses the demo's Back, Forward and Remount buttons (remounting re-runs the URL read, like a reload), plants \`?tab=nope&ref=mail\` and walks the keyboard. \`mounted=[...]\` lists panels whose content exists in the DOM. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] start            : selected=Overview url=(empty) shown="Three open pull requests, two " mounted=[overview] history.length=1
 [react] click Activity   : selected=Activity url=?tab=activity shown="Loading activity..." mounted=[overview,activity]
 [react] after 400 ms     : selected=Activity url=?tab=activity shown="Mia merged #42Leo opened #43Av" mounted=[overview,activity]
@@ -2776,7 +3329,7 @@ What it proves:
 
 jsdom does not turn Enter or Space on a button into a click, and it has no real reload or browser Back button. Those were checked in Chromium 141, with the page served over http on localhost:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] ArrowRight: focus Activity | selected Overview | url (empty)
 [chromium] Enter     : selected Activity | url ?tab=activity
@@ -2909,7 +3462,8 @@ const currentQuery = () => window.location.search || "(empty)";
 
 export default function App() {
   const [query, setQuery] = useState(currentQuery);
-  const [generation, setGeneration] = useState(0); // bump to remount the tabs, like a page reload
+  // bump to remount the tabs, like a page reload
+  const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
     const onPop = () => setQuery(currentQuery());
@@ -2921,9 +3475,15 @@ export default function App() {
     <main className="page">
       <h1>Project dashboard</h1>
       <div className="toolbar">
-        <button type="button" onClick={() => window.history.back()}>Back</button>
-        <button type="button" onClick={() => window.history.forward()}>Forward</button>
-        <button type="button" onClick={() => setGeneration((g) => g + 1)}>Remount tabs</button>
+        <button type="button" onClick={() => window.history.back()}>
+          Back
+        </button>
+        <button type="button" onClick={() => window.history.forward()}>
+          Forward
+        </button>
+        <button type="button" onClick={() => setGeneration((g) => g + 1)}>
+          Remount tabs
+        </button>
       </div>
       <p className="url">
         URL query: <code data-testid="query">{query}</code>
@@ -2945,11 +3505,19 @@ import { readParam, writeParam } from "./url";
 // active: the selected tab. mounted: every tab visited so far, in visit order.
 function reducer(state, id) {
   if (id === state.active) return state;
-  const mounted = state.mounted.includes(id) ? state.mounted : [...state.mounted, id];
+  const mounted = state.mounted.includes(id)
+    ? state.mounted
+    : [...state.mounted, id];
   return { active: id, mounted };
 }
 
-export default function UrlTabs({ tabs, defaultId, param = "tab", label, onNavigate }) {
+export default function UrlTabs({
+  tabs,
+  defaultId,
+  param = "tab",
+  label,
+  onNavigate,
+}) {
   const ids = tabs.map((t) => t.id);
   const resolve = (value) => (ids.includes(value) ? value : defaultId);
 
@@ -2960,7 +3528,8 @@ export default function UrlTabs({ tabs, defaultId, param = "tab", label, onNavig
   const tabRefs = useRef([]);
   const baseId = useId();
 
-  // A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+  // A bad value such as ?tab=nope is rewritten
+  // in place, without adding a history entry.
   useEffect(() => {
     const raw = readParam(param);
     if (raw !== null && raw !== state.active) {
@@ -2981,16 +3550,23 @@ export default function UrlTabs({ tabs, defaultId, param = "tab", label, onNavig
 
   function select(id) {
     if (id === state.active) return;
-    writeParam(param, id, "push"); // one history entry per deliberate tab change
+    // one history entry per deliberate tab change
+    writeParam(param, id, "push");
     activate(id);
     onNavigate?.();
   }
 
-  // Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+  // Manual activation: arrows only move focus.
+  // Enter or Space (a native button click) selects.
   function onKeyDown(e) {
     const last = tabs.length - 1;
     const i = tabRefs.current.indexOf(document.activeElement);
-    const next = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i <= 0 ? last : i - 1, Home: 0, End: last }[e.key];
+    const next = {
+      ArrowRight: i === last ? 0 : i + 1,
+      ArrowLeft: i <= 0 ? last : i - 1,
+      Home: 0,
+      End: last,
+    }[e.key];
     if (next === undefined) return;
     e.preventDefault();
     tabRefs.current[next]?.focus();
@@ -2998,7 +3574,12 @@ export default function UrlTabs({ tabs, defaultId, param = "tab", label, onNavig
 
   return (
     <div className="tabs">
-      <div role="tablist" aria-label={label} className="tablist" onKeyDown={onKeyDown}>
+      <div
+        role="tablist"
+        aria-label={label}
+        className="tablist"
+        onKeyDown={onKeyDown}
+      >
         {tabs.map((tab, index) => {
           const selected = tab.id === state.active;
           return (
@@ -3044,7 +3625,10 @@ export default function UrlTabs({ tabs, defaultId, param = "tab", label, onNavig
 // Simulated server: resolves after 300 ms. There is no network in this demo.
 function fetchActivity() {
   return new Promise((resolve) =>
-    setTimeout(() => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]), 300)
+    setTimeout(
+      () => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]),
+      300,
+    ),
   );
 }
 
@@ -3078,44 +3662,120 @@ export function SettingsPanel() {
   return (
     <label className="field">
       Display name
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Type, switch tabs, return" />
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Type, switch tabs, return"
+      />
     </label>
   );
 }
 `,
-          "/src/url.js": `// The URL is the source of truth for the selected tab. No router: just the History API.
+          "/src/url.js": `// The URL is the source of truth for the
+// selected tab. No router: just the History API.
 export function readParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
 export function writeParam(name, value, mode) {
   const url = new URL(window.location.href);
-  url.searchParams.set(name, value); // keeps every other query param and the hash
+  // keeps every other query param and the hash
+  url.searchParams.set(name, value);
   const next = url.pathname + url.search + url.hash;
-  if (mode === "replace") window.history.replaceState(window.history.state, "", next);
+  if (mode === "replace")
+    window.history.replaceState(window.history.state, "", next);
   else window.history.pushState(window.history.state, "", next);
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
-.toolbar button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.url { color: #b8bfcc; font-size: 0.9rem; }
-.url code { color: #9ecbff; }
-.tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-.tab {
-  padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-  border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
 }
-.tab:hover { color: #e6e8ee; }
-.tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-.tab:focus-visible, .panel:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.panel { padding: 16px 4px; line-height: 1.5; color: #c9cfdb; }
-.panel p { margin: 0; }
-.panel ul { margin: 0; padding-left: 20px; }
-.field { display: grid; gap: 6px; color: #b8bfcc; }
-.field input { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.toolbar button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.url {
+  color: #b8bfcc;
+  font-size: 0.9rem;
+}
+.url code {
+  color: #9ecbff;
+}
+.tablist {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #2a2f3a;
+  overflow-x: auto;
+}
+.tab {
+  padding: 10px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: #e6e8ee;
+}
+.tab[aria-selected="true"] {
+  color: #e6e8ee;
+  border-bottom-color: #7aa2ff;
+}
+.tab:focus-visible,
+.panel:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.panel {
+  padding: 16px 4px;
+  line-height: 1.5;
+  color: #c9cfdb;
+}
+.panel p {
+  margin: 0;
+}
+.panel ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.field {
+  display: grid;
+  gap: 6px;
+  color: #b8bfcc;
+}
+.field input {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
 `,
         },
       },
@@ -3157,17 +3817,21 @@ export function readParam(name) {
 
 export function writeParam(name, value, mode) {
   const url = new URL(window.location.href);
-  url.searchParams.set(name, value); // keeps every other query param and the hash
+  // keeps every other query param and the hash
+  url.searchParams.set(name, value);
   const next = url.pathname + url.search + url.hash;
-  if (mode === "replace") window.history.replaceState(window.history.state, "", next);
+  if (mode === "replace")
+    window.history.replaceState(window.history.state, "", next);
   else window.history.pushState(window.history.state, "", next);
 }
 ~~~
 
 ~~~js
-const resolve = (value) => (props.tabs.some((t) => t.id === value) ? value : props.defaultId);
+const resolve = (value) =>
+  props.tabs.some((t) => t.id === value) ? value : props.defaultId;
 
-// active: the selected tab. mounted: every tab visited so far, in visit order.
+// active: the selected tab. mounted: every
+// tab visited so far, in visit order.
 const active = ref(resolve(readParam(props.param)));
 const mounted = ref([active.value]);
 const baseId = useId();
@@ -3180,7 +3844,8 @@ function activate(id) {
 
 function select(id) {
   if (id === active.value) return;
-  writeParam(props.param, id, "push"); // one history entry per deliberate tab change
+  // one history entry per deliberate tab change
+  writeParam(props.param, id, "push");
   activate(id);
   emit("navigate", id);
 }
@@ -3195,7 +3860,8 @@ const onPop = () => activate(resolve(readParam(props.param)));
 
 onMounted(() => {
   window.addEventListener("popstate", onPop);
-  // A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+  // A bad value such as ?tab=nope is rewritten
+  // in place, without adding a history entry.
   const raw = readParam(props.param);
   if (raw !== null && raw !== active.value) {
     writeParam(props.param, active.value, "replace");
@@ -3230,7 +3896,8 @@ Two directives, two jobs. \`v-if="mounted.includes(tab.id)"\` keeps a panel out 
 ### Step 4: manual activation
 
 ~~~js
-// Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+// Manual activation: arrows only move focus.
+// Enter or Space (a native button click) selects.
 function onKeydown(e) {
   const last = props.tabs.length - 1;
   const i = tabEls.indexOf(document.activeElement);
@@ -3252,7 +3919,7 @@ Arrows only move focus, finding the current position from \`document.activeEleme
 
 Same driver as React and Angular: clicks, typing in Settings, the demo's Back, Forward and Remount buttons, a planted \`?tab=nope&ref=mail\`, and keyboard focus. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] start            : selected=Overview url=(empty) shown="Three open pull requests, two " mounted=[overview] history.length=1
 [vue] click Activity   : selected=Activity url=?tab=activity shown="Loading activity..." mounted=[overview,activity]
 [vue] after 400 ms     : selected=Activity url=?tab=activity shown="Mia merged #42Leo opened #43Av" mounted=[overview,activity]
@@ -3400,13 +4067,42 @@ onBeforeUnmount(() => window.removeEventListener("popstate", onPop));
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
-.toolbar button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.url { color: #b8bfcc; font-size: 0.9rem; }
-.url code { color: #9ecbff; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.toolbar button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.url {
+  color: #b8bfcc;
+  font-size: 0.9rem;
+}
+.url code {
+  color: #9ecbff;
+}
 </style>
 `,
           "/src/components/ActivityPanel.vue": `<script setup>
@@ -3415,7 +4111,10 @@ import { onMounted, ref } from "vue";
 // Simulated server: resolves after 300 ms. There is no network in this demo.
 function fetchActivity() {
   return new Promise((resolve) =>
-    setTimeout(() => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]), 300)
+    setTimeout(
+      () => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]),
+      300,
+    ),
   );
 }
 
@@ -3433,8 +4132,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.text { margin: 0; }
-.list { margin: 0; padding-left: 20px; }
+.text {
+  margin: 0;
+}
+.list {
+  margin: 0;
+  padding-left: 20px;
+}
 </style>
 `,
           "/src/components/OverviewPanel.vue": `<template>
@@ -3442,7 +4146,9 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.text { margin: 0; }
+.text {
+  margin: 0;
+}
 </style>
 `,
           "/src/components/SettingsPanel.vue": `<script setup>
@@ -3459,8 +4165,19 @@ const name = ref("");
 </template>
 
 <style scoped>
-.field { display: grid; gap: 6px; color: #b8bfcc; }
-.field input { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
+.field {
+  display: grid;
+  gap: 6px;
+  color: #b8bfcc;
+}
+.field input {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+}
 </style>
 `,
           "/src/components/UrlTabs.vue": `<script setup>
@@ -3475,7 +4192,8 @@ const props = defineProps({
 });
 const emit = defineEmits(["navigate"]);
 
-const resolve = (value) => (props.tabs.some((t) => t.id === value) ? value : props.defaultId);
+const resolve = (value) =>
+  props.tabs.some((t) => t.id === value) ? value : props.defaultId;
 
 // active: the selected tab. mounted: every tab visited so far, in visit order.
 const active = ref(resolve(readParam(props.param)));
@@ -3490,7 +4208,8 @@ function activate(id) {
 
 function select(id) {
   if (id === active.value) return;
-  writeParam(props.param, id, "push"); // one history entry per deliberate tab change
+  // one history entry per deliberate tab change
+  writeParam(props.param, id, "push");
   activate(id);
   emit("navigate", id);
 }
@@ -3500,7 +4219,8 @@ const onPop = () => activate(resolve(readParam(props.param)));
 
 onMounted(() => {
   window.addEventListener("popstate", onPop);
-  // A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+  // A bad value such as ?tab=nope is rewritten
+  // in place, without adding a history entry.
   const raw = readParam(props.param);
   if (raw !== null && raw !== active.value) {
     writeParam(props.param, active.value, "replace");
@@ -3509,11 +4229,17 @@ onMounted(() => {
 });
 onBeforeUnmount(() => window.removeEventListener("popstate", onPop));
 
-// Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+// Manual activation: arrows only move focus.
+// Enter or Space (a native button click) selects.
 function onKeydown(e) {
   const last = props.tabs.length - 1;
   const i = tabEls.indexOf(document.activeElement);
-  const next = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i <= 0 ? last : i - 1, Home: 0, End: last }[e.key];
+  const next = {
+    ArrowRight: i === last ? 0 : i + 1,
+    ArrowLeft: i <= 0 ? last : i - 1,
+    Home: 0,
+    End: last,
+  }[e.key];
   if (next === undefined) return;
   e.preventDefault();
   tabEls[next]?.focus();
@@ -3522,7 +4248,12 @@ function onKeydown(e) {
 
 <template>
   <div class="tabs">
-    <div role="tablist" :aria-label="label" class="tablist" @keydown="onKeydown">
+    <div
+      role="tablist"
+      :aria-label="label"
+      class="tablist"
+      @keydown="onKeydown"
+    >
       <button
         v-for="(tab, index) in tabs"
         :key="tab.id"
@@ -3556,27 +4287,54 @@ function onKeydown(e) {
 </template>
 
 <style scoped>
-.tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-.tab {
-  padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-  border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
+.tablist {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #2a2f3a;
+  overflow-x: auto;
 }
-.tab:hover { color: #e6e8ee; }
-.tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-.tab:focus-visible, .panel:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.panel { padding: 16px 4px; line-height: 1.5; color: #c9cfdb; }
+.tab {
+  padding: 10px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: #e6e8ee;
+}
+.tab[aria-selected="true"] {
+  color: #e6e8ee;
+  border-bottom-color: #7aa2ff;
+}
+.tab:focus-visible,
+.panel:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.panel {
+  padding: 16px 4px;
+  line-height: 1.5;
+  color: #c9cfdb;
+}
 </style>
 `,
-          "/src/url.js": `// The URL is the source of truth for the selected tab. No router: just the History API.
+          "/src/url.js": `// The URL is the source of truth for the
+// selected tab. No router: just the History API.
 export function readParam(name) {
   return new URLSearchParams(window.location.search).get(name);
 }
 
 export function writeParam(name, value, mode) {
   const url = new URL(window.location.href);
-  url.searchParams.set(name, value); // keeps every other query param and the hash
+  // keeps every other query param and the hash
+  url.searchParams.set(name, value);
   const next = url.pathname + url.search + url.hash;
-  if (mode === "replace") window.history.replaceState(window.history.state, "", next);
+  if (mode === "replace")
+    window.history.replaceState(window.history.state, "", next);
   else window.history.pushState(window.history.state, "", next);
 }
 `,
@@ -3645,7 +4403,8 @@ ngOnInit() {
   const first = this.resolve(readParam(this.param));
   this.active.set(first);
   this.mounted.set([first]);
-  // A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+  // A bad value such as ?tab=nope is rewritten
+  // in place, without adding a history entry.
   const raw = readParam(this.param);
   if (raw !== null && raw !== first) {
     writeParam(this.param, first, "replace");
@@ -3661,12 +4420,15 @@ The constructor would see empty inputs, so the URL is read in \`ngOnInit\`. A ba
 ~~~ts
 private activate(id: string) {
   this.active.set(id);
-  this.mounted.update((list) => (list.includes(id) ? list : [...list, id]));
+  this.mounted.update((list) =>
+    list.includes(id) ? list : [...list, id],
+  );
 }
 
 select(id: string) {
   if (id === this.active()) return;
-  writeParam(this.param, id, "push"); // one history entry per deliberate tab change
+  // one history entry per deliberate tab change
+  writeParam(this.param, id, "push");
   this.activate(id);
   this.navigate.emit(id);
 }
@@ -3707,7 +4469,8 @@ onPop() {
 ### Step 4: manual activation
 
 ~~~ts
-// Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+// Manual activation: arrows only move focus.
+// Enter or Space (a native button click) selects.
 onKeydown(e: KeyboardEvent) {
   const els = this.buttons.map((b) => b.nativeElement);
   const last = els.length - 1;
@@ -3738,7 +4501,7 @@ A first version used a one-item \`@for\` keyed on a counter. It worked, but Angu
 
 Same driver as React and Vue. AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines:
 
-~~~
+~~~text
 [angular:app] start            : selected=Overview url=(empty) shown="Three open pull requests, two " mounted=[overview] history.length=1
 [angular:app] click Activity   : selected=Activity url=?tab=activity shown="Loading activity..." mounted=[overview,activity]
 [angular:app] after 400 ms     : selected=Activity url=?tab=activity shown="Mia merged #42Leo opened #43Av" mounted=[overview,activity]
@@ -3842,7 +4605,11 @@ Activity mounts on first visit and loads once, Settings keeps \`input=Ada\` acro
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, signal } from "@angular/core";
 import { UrlTabsComponent, UrlTab } from "./url-tabs.component";
-import { ActivityPanelComponent, OverviewPanelComponent, SettingsPanelComponent } from "./panels";
+import {
+  ActivityPanelComponent,
+  OverviewPanelComponent,
+  SettingsPanelComponent,
+} from "./panels";
 
 const currentQuery = () => window.location.search || "(empty)";
 
@@ -3870,7 +4637,8 @@ const currentQuery = () => window.location.search || "(empty)";
       }
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
     .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 12px; }
@@ -3878,7 +4646,8 @@ const currentQuery = () => window.location.search || "(empty)";
     .toolbar button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
     .url { color: #b8bfcc; font-size: 0.9rem; }
     .url code { color: #9ecbff; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly tabs: UrlTab[] = [
@@ -3890,17 +4659,24 @@ export class AppComponent {
   readonly alive = signal(true);
   readonly readQuery = currentQuery;
 
-  // Like a page reload for the tabs: destroy them, then create them again from the URL.
+  // Like a page reload for the tabs: destroy
+  // them, then create them again from the URL.
   remount() {
     this.alive.set(false);
     setTimeout(() => this.alive.set(true));
   }
 
-  back() { window.history.back(); }
-  forward() { window.history.forward(); }
+  back() {
+    window.history.back();
+  }
+  forward() {
+    window.history.forward();
+  }
 
   @HostListener("window:popstate")
-  onPop() { this.query.set(currentQuery()); }
+  onPop() {
+    this.query.set(currentQuery());
+  }
 }
 `,
           "/src/app/panels.ts": `import { Component, OnInit, signal } from "@angular/core";
@@ -3908,7 +4684,10 @@ export class AppComponent {
 // Simulated server: resolves after 300 ms. There is no network in this demo.
 function fetchActivity(): Promise<string[]> {
   return new Promise((resolve) =>
-    setTimeout(() => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]), 300)
+    setTimeout(
+      () => resolve(["Mia merged #42", "Leo opened #43", "Ava closed #39"]),
+      300,
+    ),
   );
 }
 
@@ -3939,7 +4718,8 @@ export class OverviewPanelComponent {}
 export class ActivityPanelComponent implements OnInit {
   readonly items = signal<string[] | null>(null);
   ngOnInit() {
-    // Runs once, on the first visit only. A signal write re-renders without zone.js.
+    // Runs once, on the first visit only. A
+    // signal write re-renders without zone.js.
     fetchActivity().then((rows) => this.items.set(rows));
   }
 }
@@ -3950,19 +4730,37 @@ export class ActivityPanelComponent implements OnInit {
   template: \`
     <label class="field">
       Display name
-      <input [value]="name()" (input)="name.set($any($event.target).value)" placeholder="Type, switch tabs, return" />
+      <input
+        [value]="name()"
+        (input)="name.set($any($event.target).value)"
+        placeholder="Type, switch tabs, return"
+      />
     </label>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .field { display: grid; gap: 6px; color: #b8bfcc; }
     .field input { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px; font: inherit; }
-  \`],
+  \`,
+  ],
 })
 export class SettingsPanelComponent {
   readonly name = signal("");
 }
 `,
-          "/src/app/url-tabs.component.ts": `import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, QueryList, Type, ViewChildren, signal } from "@angular/core";
+          "/src/app/url-tabs.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnInit,
+  Output,
+  QueryList,
+  Type,
+  ViewChildren,
+  signal,
+} from "@angular/core";
 import { NgComponentOutlet } from "@angular/common";
 import { readParam, writeParam } from "./url";
 
@@ -3979,7 +4777,12 @@ let nextId = 0;
   standalone: true,
   imports: [NgComponentOutlet],
   template: \`
-    <div role="tablist" [attr.aria-label]="label" class="tablist" (keydown)="onKeydown($event)">
+    <div
+      role="tablist"
+      [attr.aria-label]="label"
+      class="tablist"
+      (keydown)="onKeydown($event)"
+    >
       @for (tab of tabs; track tab.id) {
         <button
           #tabButton
@@ -4012,18 +4815,46 @@ let nextId = 0;
       </div>
     }
   \`,
-  styles: [\`
-    .tablist { display: flex; gap: 4px; border-bottom: 1px solid #2a2f3a; overflow-x: auto; }
-    .tab {
-      padding: 10px 14px; background: transparent; color: #b8bfcc; border: 0;
-      border-bottom: 2px solid transparent; font: inherit; cursor: pointer; white-space: nowrap;
-    }
-    .tab:hover { color: #e6e8ee; }
-    .tab[aria-selected="true"] { color: #e6e8ee; border-bottom-color: #7aa2ff; }
-    .tab:focus-visible, .panel:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .panel { padding: 16px 4px; line-height: 1.5; color: #c9cfdb; }
-    .panel[hidden] { display: none; }
-  \`],
+  styles: [
+    \`
+      .tablist {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid #2a2f3a;
+        overflow-x: auto;
+      }
+      .tab {
+        padding: 10px 14px;
+        background: transparent;
+        color: #b8bfcc;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tab:hover {
+        color: #e6e8ee;
+      }
+      .tab[aria-selected="true"] {
+        color: #e6e8ee;
+        border-bottom-color: #7aa2ff;
+      }
+      .tab:focus-visible,
+      .panel:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .panel {
+        padding: 16px 4px;
+        line-height: 1.5;
+        color: #c9cfdb;
+      }
+      .panel[hidden] {
+        display: none;
+      }
+    \`,
+  ],
 })
 export class UrlTabsComponent implements OnInit {
   @Input({ required: true }) tabs: UrlTab[] = [];
@@ -4034,7 +4865,8 @@ export class UrlTabsComponent implements OnInit {
   @ViewChildren("tabButton") buttons!: QueryList<ElementRef<HTMLButtonElement>>;
 
   readonly baseId = "url-tabs-" + nextId++;
-  // active: the selected tab. mounted: every tab visited so far, in visit order.
+  // active: the selected tab. mounted: every
+  // tab visited so far, in visit order.
   readonly active = signal("");
   readonly mounted = signal<string[]>([]);
 
@@ -4043,7 +4875,8 @@ export class UrlTabsComponent implements OnInit {
     const first = this.resolve(readParam(this.param));
     this.active.set(first);
     this.mounted.set([first]);
-    // A bad value such as ?tab=nope is rewritten in place, without adding a history entry.
+    // A bad value such as ?tab=nope is rewritten
+    // in place, without adding a history entry.
     const raw = readParam(this.param);
     if (raw !== null && raw !== first) {
       writeParam(this.param, first, "replace");
@@ -4052,7 +4885,9 @@ export class UrlTabsComponent implements OnInit {
   }
 
   private resolve(value: string | null): string {
-    return this.tabs.some((t) => t.id === value) ? (value as string) : this.defaultId;
+    return this.tabs.some((t) => t.id === value)
+      ? (value as string)
+      : this.defaultId;
   }
 
   private activate(id: string) {
@@ -4062,7 +4897,8 @@ export class UrlTabsComponent implements OnInit {
 
   select(id: string) {
     if (id === this.active()) return;
-    writeParam(this.param, id, "push"); // one history entry per deliberate tab change
+    // one history entry per deliberate tab change
+    writeParam(this.param, id, "push");
     this.activate(id);
     this.navigate.emit(id);
   }
@@ -4073,12 +4909,18 @@ export class UrlTabsComponent implements OnInit {
     this.activate(this.resolve(readParam(this.param)));
   }
 
-  // Manual activation: arrows only move focus. Enter or Space (a native button click) selects.
+  // Manual activation: arrows only move focus.
+  // Enter or Space (a native button click) selects.
   onKeydown(e: KeyboardEvent) {
     const els = this.buttons.map((b) => b.nativeElement);
     const last = els.length - 1;
     const i = els.indexOf(document.activeElement as HTMLButtonElement);
-    const moves: Record<string, number> = { ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i <= 0 ? last : i - 1, Home: 0, End: last };
+    const moves: Record<string, number> = {
+      ArrowRight: i === last ? 0 : i + 1,
+      ArrowLeft: i <= 0 ? last : i - 1,
+      Home: 0,
+      End: last,
+    };
     const next = moves[e.key];
     if (next === undefined) return;
     e.preventDefault();
@@ -4086,16 +4928,23 @@ export class UrlTabsComponent implements OnInit {
   }
 }
 `,
-          "/src/app/url.ts": `// The URL is the source of truth for the selected tab. No router: just the History API.
+          "/src/app/url.ts": `// The URL is the source of truth for the
+// selected tab. No router: just the History API.
 export function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
-export function writeParam(name: string, value: string, mode: "push" | "replace"): void {
+export function writeParam(
+  name: string,
+  value: string,
+  mode: "push" | "replace",
+): void {
   const url = new URL(window.location.href);
-  url.searchParams.set(name, value); // keeps every other query param and the hash
+  // keeps every other query param and the hash
+  url.searchParams.set(name, value);
   const next = url.pathname + url.search + url.hash;
-  if (mode === "replace") window.history.replaceState(window.history.state, "", next);
+  if (mode === "replace")
+    window.history.replaceState(window.history.state, "", next);
   else window.history.pushState(window.history.state, "", next);
 }
 `,
@@ -4196,12 +5045,18 @@ The parent owns the path (an array of folder names) and builds \`{ label, href }
 ~~~jsx
 const collapse = !expanded && items.length > maxItems;
 const hiddenCount = items.length - itemsBefore - itemsAfter;
-// Derived each render: the entries to show, with one "ellipsis" marker in the middle.
+// Derived each render: the entries to show,
+// with one "ellipsis" marker in the middle.
 const visible = collapse
   ? [
-      ...items.slice(0, itemsBefore).map((item, i) => ({ item, index: i })),
+      ...items
+        .slice(0, itemsBefore)
+        .map((item, i) => ({ item, index: i })),
       { ellipsis: true },
-      ...items.slice(items.length - itemsAfter).map((item, i) => ({ item, index: items.length - itemsAfter + i })),
+      ...items.slice(items.length - itemsAfter).map((item, i) => ({
+        item,
+        index: items.length - itemsAfter + i,
+      })),
     ]
   : items.map((item, index) => ({ item, index }));
 ~~~
@@ -4236,9 +5091,12 @@ Each visible entry carries its original \`index\`, which the click handler needs
         ) : (
           <a
             href={entry.item.href}
-            ref={entry.index === itemsBefore ? firstRevealed : undefined}
+            ref={
+              entry.index === itemsBefore ? firstRevealed : undefined
+            }
             onClick={(e) => {
-              e.preventDefault(); // a real app would let the router handle this
+              // a real app would let the router handle this
+              e.preventDefault();
               onNavigate?.(entry.index);
             }}
           >
@@ -4262,7 +5120,8 @@ Each visible entry carries its original \`index\`, which the click handler needs
 ### Step 3: move focus after expanding
 
 ~~~jsx
-// After expanding, move focus to the first crumb that was hidden, so keyboard users are not lost.
+// After expanding, move focus to the first crumb
+// that was hidden, so keyboard users are not lost.
 useEffect(() => {
   if (expanded) firstRevealed.current?.focus();
 }, [expanded]);
@@ -4275,7 +5134,9 @@ When the user activates the ellipsis button, it disappears (the full trail repla
 ### Step 4: reset when the trail changes
 
 ~~~jsx
-{/* key: a new path is a new trail, so the expanded state resets to collapsed */}
+{
+  /* key: a new path is a new trail, so the expanded state resets to collapsed */
+}
 <Breadcrumbs
   key={path.join("/")}
   items={items}
@@ -4290,7 +5151,7 @@ Changing \`key\` makes React treat it as a new component, so \`expanded\` starts
 
 The driver checks the semantics, expands the trail, clicks a crumb, opens four subfolders and clicks Home. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] nav label     : Breadcrumb | list: ol | separators aria-hidden: true
 [react] initial       : Home(link) / …(button) / src(link) / components(current)
 [react] ellipsis label: Show 2 hidden levels
@@ -4306,7 +5167,7 @@ The 5-level trail collapses to Home, ellipsis, src, components; the button names
 
 Wrapping and keyboard activation need a real browser. In Chromium 141 at a 360 px viewport, with the 6-level trail expanded:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] 6-level trail expanded at 360px: list height 74 px, page scrollWidth 360 , focus on Projects
 [chromium] Enter on the focused link -> Home / Projects
@@ -4414,8 +5275,17 @@ import Breadcrumbs from "./src/Breadcrumbs";
 import { childrenOf } from "./src/tree";
 
 export default function App() {
-  const [path, setPath] = useState(["Home", "Projects", "Codepad", "src", "components"]);
-  const items = path.map((label, i) => ({ label, href: "#/" + path.slice(0, i + 1).join("/") }));
+  const [path, setPath] = useState([
+    "Home",
+    "Projects",
+    "Codepad",
+    "src",
+    "components",
+  ]);
+  const items = path.map((label, i) => ({
+    label,
+    href: "#/" + path.slice(0, i + 1).join("/"),
+  }));
   const folders = childrenOf(path);
 
   return (
@@ -4431,7 +5301,12 @@ export default function App() {
       <section className="folder" aria-label="Subfolders">
         {folders.length === 0 && <p className="empty">No subfolders here.</p>}
         {folders.map((name) => (
-          <button key={name} type="button" className="open" onClick={() => setPath([...path, name])}>
+          <button
+            key={name}
+            type="button"
+            className="open"
+            onClick={() => setPath([...path, name])}
+          >
             📁 {name}
           </button>
         ))}
@@ -4442,22 +5317,32 @@ export default function App() {
 `,
           "/src/Breadcrumbs.js": `import { useEffect, useRef, useState } from "react";
 
-export default function Breadcrumbs({ items, maxItems = 4, itemsBefore = 1, itemsAfter = 2, onNavigate }) {
+export default function Breadcrumbs({
+  items,
+  maxItems = 4,
+  itemsBefore = 1,
+  itemsAfter = 2,
+  onNavigate,
+}) {
   const [expanded, setExpanded] = useState(false);
   const firstRevealed = useRef(null);
 
   const collapse = !expanded && items.length > maxItems;
   const hiddenCount = items.length - itemsBefore - itemsAfter;
-  // Derived each render: the entries to show, with one "ellipsis" marker in the middle.
+  // Derived each render: the entries to show,
+  // with one "ellipsis" marker in the middle.
   const visible = collapse
     ? [
         ...items.slice(0, itemsBefore).map((item, i) => ({ item, index: i })),
         { ellipsis: true },
-        ...items.slice(items.length - itemsAfter).map((item, i) => ({ item, index: items.length - itemsAfter + i })),
+        ...items
+          .slice(items.length - itemsAfter)
+          .map((item, i) => ({ item, index: items.length - itemsAfter + i })),
       ]
     : items.map((item, index) => ({ item, index }));
 
-  // After expanding, move focus to the first crumb that was hidden, so keyboard users are not lost.
+  // After expanding, move focus to the first crumb
+  // that was hidden, so keyboard users are not lost.
   useEffect(() => {
     if (expanded) firstRevealed.current?.focus();
   }, [expanded]);
@@ -4490,7 +5375,8 @@ export default function Breadcrumbs({ items, maxItems = 4, itemsBefore = 1, item
                 href={entry.item.href}
                 ref={entry.index === itemsBefore ? firstRevealed : undefined}
                 onClick={(e) => {
-                  e.preventDefault(); // a real app would let the router handle this
+                  // a real app would let the router handle this
+                  e.preventDefault();
                   onNavigate?.(entry.index);
                 }}
               >
@@ -4504,7 +5390,8 @@ export default function Breadcrumbs({ items, maxItems = 4, itemsBefore = 1, item
   );
 }
 `,
-          "/src/tree.js": `// A fake folder tree for the demo. Each key is a folder; its value holds the subfolders.
+          "/src/tree.js": `// A fake folder tree for the demo. Each key is
+// a folder; its value holds the subfolders.
 export const TREE = {
   Home: {
     Projects: {
@@ -4524,20 +5411,90 @@ export function childrenOf(path) {
   return Object.keys(node);
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 10px 12px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; }
-.crumbs li { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.crumbs a { color: #9ecbff; text-decoration: none; border-radius: 4px; padding: 2px 4px; }
-.crumbs a:hover { text-decoration: underline; }
-.crumbs a:focus-visible, .ellipsis:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.sep { color: #5d6575; }
-.current { color: #e6e8ee; font-weight: 600; padding: 2px 4px; overflow-wrap: anywhere; }
-.ellipsis { background: #232836; color: #e6e8ee; border: 0; border-radius: 6px; padding: 0 8px; font: inherit; cursor: pointer; }
-.folder { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.open { background: #12151b; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; }
-.empty { color: #8a93a3; margin: 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.crumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+}
+.crumbs li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.crumbs a {
+  color: #9ecbff;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.crumbs a:hover {
+  text-decoration: underline;
+}
+.crumbs a:focus-visible,
+.ellipsis:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.sep {
+  color: #5d6575;
+}
+.current {
+  color: #e6e8ee;
+  font-weight: 600;
+  padding: 2px 4px;
+  overflow-wrap: anywhere;
+}
+.ellipsis {
+  background: #232836;
+  color: #e6e8ee;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 8px;
+  font: inherit;
+  cursor: pointer;
+}
+.folder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.open {
+  background: #12151b;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.empty {
+  color: #8a93a3;
+  margin: 0;
+}
 `,
         },
       },
@@ -4571,12 +5528,20 @@ In Vue the widget is mostly a \`computed\` over the items, an \`emit\` when a cr
 ### Step 1: derive the visible entries
 
 ~~~js
-const hiddenCount = computed(() => props.items.length - props.itemsBefore - props.itemsAfter);
-// Derived: the entries to show, with one "ellipsis" marker in the middle when collapsed.
+const hiddenCount = computed(
+  () => props.items.length - props.itemsBefore - props.itemsAfter,
+);
+// Derived: the entries to show, with one
+// "ellipsis" marker in the middle when collapsed.
 const visible = computed(() => {
   const all = props.items.map((item, index) => ({ item, index }));
-  if (expanded.value || props.items.length <= props.maxItems) return all;
-  return [...all.slice(0, props.itemsBefore), { ellipsis: true }, ...all.slice(all.length - props.itemsAfter)];
+  if (expanded.value || props.items.length <= props.maxItems)
+    return all;
+  return [
+    ...all.slice(0, props.itemsBefore),
+    { ellipsis: true },
+    ...all.slice(all.length - props.itemsAfter),
+  ];
 });
 ~~~
 
@@ -4587,7 +5552,10 @@ The \`computed\` recalculates whenever \`items\`, \`maxItems\` or \`expanded\` c
 ~~~vue
 <nav aria-label="Breadcrumb" class="crumbs">
   <ol>
-    <li v-for="(entry, pos) in visible" :key="entry.ellipsis ? 'ellipsis' : entry.item.href">
+    <li
+      v-for="(entry, pos) in visible"
+      :key="entry.ellipsis ? 'ellipsis' : entry.item.href"
+    >
       <span v-if="pos > 0" class="sep" aria-hidden="true">/</span>
       <button
         v-if="entry.ellipsis"
@@ -4598,13 +5566,21 @@ The \`computed\` recalculates whenever \`items\`, \`maxItems\` or \`expanded\` c
       >
         …
       </button>
-      <span v-else-if="entry.index === items.length - 1" aria-current="page" class="current">
+      <span
+        v-else-if="entry.index === items.length - 1"
+        aria-current="page"
+        class="current"
+      >
         {{ entry.item.label }}
       </span>
       <a
         v-else
         :href="entry.item.href"
-        :ref="(el) => { if (entry.index === itemsBefore) firstRevealed = el; }"
+        :ref="
+          (el) => {
+            if (entry.index === itemsBefore) firstRevealed = el;
+          }
+        "
         @click.prevent="emit('navigate', entry.index)"
       >
         {{ entry.item.label }}
@@ -4652,7 +5628,7 @@ A new path gives a new key, so Vue creates a fresh \`Breadcrumbs\` with \`expand
 
 Same driver as React and Angular. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] nav label     : Breadcrumb | list: ol | separators aria-hidden: true
 [vue] initial       : Home(link) / …(button) / src(link) / components(current)
 [vue] ellipsis label: Show 2 hidden levels
@@ -4755,7 +5731,10 @@ import { childrenOf } from "./tree";
 
 const path = ref(["Home", "Projects", "Codepad", "src", "components"]);
 const items = computed(() =>
-  path.value.map((label, i) => ({ label, href: "#/" + path.value.slice(0, i + 1).join("/") }))
+  path.value.map((label, i) => ({
+    label,
+    href: "#/" + path.value.slice(0, i + 1).join("/"),
+  })),
 );
 const folders = computed(() => childrenOf(path.value));
 </script>
@@ -4772,7 +5751,13 @@ const folders = computed(() => childrenOf(path.value));
     />
     <section class="folder" aria-label="Subfolders">
       <p v-if="folders.length === 0" class="empty">No subfolders here.</p>
-      <button v-for="name in folders" :key="name" type="button" class="open" @click="path = [...path, name]">
+      <button
+        v-for="name in folders"
+        :key="name"
+        type="button"
+        class="open"
+        @click="path = [...path, name]"
+      >
         📁 {{ name }}
       </button>
     </section>
@@ -4780,12 +5765,40 @@ const folders = computed(() => childrenOf(path.value));
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.folder { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.open { background: #12151b; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; }
-.empty { color: #8a93a3; margin: 0; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.folder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.open {
+  background: #12151b;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.empty {
+  color: #8a93a3;
+  margin: 0;
+}
 </style>
 `,
           "/src/components/Breadcrumbs.vue": `<script setup>
@@ -4802,12 +5815,19 @@ const emit = defineEmits(["navigate"]);
 const expanded = ref(false);
 let firstRevealed = null;
 
-const hiddenCount = computed(() => props.items.length - props.itemsBefore - props.itemsAfter);
-// Derived: the entries to show, with one "ellipsis" marker in the middle when collapsed.
+const hiddenCount = computed(
+  () => props.items.length - props.itemsBefore - props.itemsAfter,
+);
+// Derived: the entries to show, with one
+// "ellipsis" marker in the middle when collapsed.
 const visible = computed(() => {
   const all = props.items.map((item, index) => ({ item, index }));
   if (expanded.value || props.items.length <= props.maxItems) return all;
-  return [...all.slice(0, props.itemsBefore), { ellipsis: true }, ...all.slice(all.length - props.itemsAfter)];
+  return [
+    ...all.slice(0, props.itemsBefore),
+    { ellipsis: true },
+    ...all.slice(all.length - props.itemsAfter),
+  ];
 });
 
 async function expand() {
@@ -4820,7 +5840,10 @@ async function expand() {
 <template>
   <nav aria-label="Breadcrumb" class="crumbs">
     <ol>
-      <li v-for="(entry, pos) in visible" :key="entry.ellipsis ? 'ellipsis' : entry.item.href">
+      <li
+        v-for="(entry, pos) in visible"
+        :key="entry.ellipsis ? 'ellipsis' : entry.item.href"
+      >
         <span v-if="pos > 0" class="sep" aria-hidden="true">/</span>
         <button
           v-if="entry.ellipsis"
@@ -4831,13 +5854,21 @@ async function expand() {
         >
           …
         </button>
-        <span v-else-if="entry.index === items.length - 1" aria-current="page" class="current">
+        <span
+          v-else-if="entry.index === items.length - 1"
+          aria-current="page"
+          class="current"
+        >
           {{ entry.item.label }}
         </span>
         <a
           v-else
           :href="entry.item.href"
-          :ref="(el) => { if (entry.index === itemsBefore) firstRevealed = el; }"
+          :ref="
+            (el) => {
+              if (entry.index === itemsBefore) firstRevealed = el;
+            }
+          "
           @click.prevent="emit('navigate', entry.index)"
         >
           {{ entry.item.label }}
@@ -4848,17 +5879,60 @@ async function expand() {
 </template>
 
 <style scoped>
-.crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 10px 12px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; }
-.crumbs li { display: flex; align-items: center; gap: 4px; min-width: 0; }
-.crumbs a { color: #9ecbff; text-decoration: none; border-radius: 4px; padding: 2px 4px; }
-.crumbs a:hover { text-decoration: underline; }
-.crumbs a:focus-visible, .ellipsis:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-.sep { color: #5d6575; }
-.current { color: #e6e8ee; font-weight: 600; padding: 2px 4px; overflow-wrap: anywhere; }
-.ellipsis { background: #232836; color: #e6e8ee; border: 0; border-radius: 6px; padding: 0 8px; font: inherit; cursor: pointer; }
+.crumbs ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+}
+.crumbs li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.crumbs a {
+  color: #9ecbff;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.crumbs a:hover {
+  text-decoration: underline;
+}
+.crumbs a:focus-visible,
+.ellipsis:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+.sep {
+  color: #5d6575;
+}
+.current {
+  color: #e6e8ee;
+  font-weight: 600;
+  padding: 2px 4px;
+  overflow-wrap: anywhere;
+}
+.ellipsis {
+  background: #232836;
+  color: #e6e8ee;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 8px;
+  font: inherit;
+  cursor: pointer;
+}
 </style>
 `,
-          "/src/tree.js": `// A fake folder tree for the demo. Each key is a folder; its value holds the subfolders.
+          "/src/tree.js": `// A fake folder tree for the demo. Each key is
+// a folder; its value holds the subfolders.
 export const TREE = {
   Home: {
     Projects: {
@@ -4919,17 +5993,29 @@ Breadcrumbs are that log for a website. In Angular the interesting parts are how
 @Input() itemsBefore = 1;
 @Input() itemsAfter = 2;
 @Output() navigate = new EventEmitter<number>();
-@ViewChild("firstRevealed") firstRevealed?: ElementRef<HTMLAnchorElement>;
+@ViewChild("firstRevealed")
+firstRevealed?: ElementRef<HTMLAnchorElement>;
 
 private injector = inject(Injector);
 readonly trail = signal<Crumb[]>([]);
 readonly expanded = signal(false);
-readonly hiddenCount = computed(() => this.trail().length - this.itemsBefore - this.itemsAfter);
-// Derived: the entries to show, with one ellipsis marker in the middle when collapsed.
+readonly hiddenCount = computed(
+  () => this.trail().length - this.itemsBefore - this.itemsAfter,
+);
+// Derived: the entries to show, with one
+// ellipsis marker in the middle when collapsed.
 readonly visible = computed<Entry[]>(() => {
-  const all: Entry[] = this.trail().map((item, index) => ({ ellipsis: false, item, index }));
+  const all: Entry[] = this.trail().map((item, index) => ({
+    ellipsis: false,
+    item,
+    index,
+  }));
   if (this.expanded() || all.length <= this.maxItems) return all;
-  return [...all.slice(0, this.itemsBefore), { ellipsis: true }, ...all.slice(all.length - this.itemsAfter)];
+  return [
+    ...all.slice(0, this.itemsBefore),
+    { ellipsis: true },
+    ...all.slice(all.length - this.itemsAfter),
+  ];
 });
 ~~~
 
@@ -4946,13 +6032,28 @@ The \`Entry\` type is a union (\`{ ellipsis: true }\` or a real crumb), so stric
           <span class="sep" aria-hidden="true">/</span>
         }
         @if (entry.ellipsis) {
-          <button type="button" class="ellipsis" [attr.aria-label]="'Show ' + hiddenCount() + ' hidden levels'" (click)="expand()">…</button>
+          <button
+            type="button"
+            class="ellipsis"
+            [attr.aria-label]="'Show ' + hiddenCount() + ' hidden levels'"
+            (click)="expand()"
+          >…</button>
         } @else if (entry.index === trail().length - 1) {
-          <span aria-current="page" class="current">{{ entry.item.label }}</span>
+          <span
+            aria-current="page"
+            class="current"
+          >{{ entry.item.label }}</span>
         } @else if (entry.index === itemsBefore) {
-          <a #firstRevealed [href]="entry.item.href" (click)="go($event, entry.index)">{{ entry.item.label }}</a>
+          <a
+            #firstRevealed
+            [href]="entry.item.href"
+            (click)="go($event, entry.index)"
+          >{{ entry.item.label }}</a>
         } @else {
-          <a [href]="entry.item.href" (click)="go($event, entry.index)">{{ entry.item.label }}</a>
+          <a
+            [href]="entry.item.href"
+            (click)="go($event, entry.index)"
+          >{{ entry.item.label }}</a>
         }
       </li>
     }
@@ -4971,8 +6072,11 @@ The \`Entry\` type is a union (\`{ ellipsis: true }\` or a real crumb), so stric
 ~~~ts
 expand() {
   this.expanded.set(true);
-  // Wait for the hidden links to render, then move focus so keyboard users are not lost.
-  afterNextRender(() => this.firstRevealed?.nativeElement.focus(), { injector: this.injector });
+  // Wait for the hidden links to render, then
+  // move focus so keyboard users are not lost.
+  afterNextRender(() => this.firstRevealed?.nativeElement.focus(), {
+    injector: this.injector,
+  });
 }
 ~~~
 
@@ -4999,7 +6103,7 @@ The demo's subfolder buttons first used \`@for (name of folders(); track name)\`
 
 Same driver as React and Vue. AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines, and neither printed an NG0956 warning after the change above:
 
-~~~
+~~~text
 [angular:app] nav label     : Breadcrumb | list: ol | separators aria-hidden: true
 [angular:app] initial       : Home(link) / …(button) / src(link) / components(current)
 [angular:app] ellipsis label: Show 2 hidden levels
@@ -5106,46 +6210,80 @@ import { childrenOf } from "./tree";
   template: \`
     <main class="page">
       <h1>Files</h1>
-      <app-breadcrumbs [items]="items()" [maxItems]="4" (navigate)="goTo($event)" />
+      <app-breadcrumbs
+        [items]="items()"
+        [maxItems]="4"
+        (navigate)="goTo($event)"
+      />
       <section class="folder" aria-label="Subfolders">
         <!-- Stateless buttons whose names all change on navigation: reusing them by position is fine,
              and tracking by name would rebuild the whole list each time (dev warning NG0956). -->
         @for (name of folders(); track $index) {
-          <button type="button" class="open" (click)="open(name)">📁 {{ name }}</button>
+          <button
+            type="button"
+            class="open"
+            (click)="open(name)"
+          >📁 {{ name }}</button>
         } @empty {
           <p class="empty">No subfolders here.</p>
         }
       </section>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
     .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 12px; }
     .folder { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
     .open { background: #12151b; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 8px 12px; font: inherit; cursor: pointer; }
     .empty { color: #8a93a3; margin: 0; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly path = signal(["Home", "Projects", "Codepad", "src", "components"]);
   readonly items = computed<Crumb[]>(() =>
-    this.path().map((label, i) => ({ label, href: "#/" + this.path().slice(0, i + 1).join("/") }))
+    this.path().map((label, i) => ({
+      label,
+      href:
+        "#/" +
+        this.path()
+          .slice(0, i + 1)
+          .join("/"),
+    })),
   );
   readonly folders = computed(() => childrenOf(this.path()));
 
-  goTo(index: number) { this.path.update((p) => p.slice(0, index + 1)); }
-  open(name: string) { this.path.update((p) => [...p, name]); }
+  goTo(index: number) {
+    this.path.update((p) => p.slice(0, index + 1));
+  }
+  open(name: string) {
+    this.path.update((p) => [...p, name]);
+  }
 }
 `,
-          "/src/app/breadcrumbs.component.ts": `import { Component, ElementRef, EventEmitter, Injector, Input, Output, ViewChild, afterNextRender, computed, inject, signal } from "@angular/core";
+          "/src/app/breadcrumbs.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Injector,
+  Input,
+  Output,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
+} from "@angular/core";
 
 export interface Crumb {
   label: string;
   href: string;
 }
 
-type Entry = { ellipsis: true } | { ellipsis: false; item: Crumb; index: number };
+type Entry =
+  { ellipsis: true } | { ellipsis: false; item: Crumb; index: number };
 
 @Component({
   selector: "app-breadcrumbs",
@@ -5159,20 +6297,36 @@ type Entry = { ellipsis: true } | { ellipsis: false; item: Crumb; index: number 
               <span class="sep" aria-hidden="true">/</span>
             }
             @if (entry.ellipsis) {
-              <button type="button" class="ellipsis" [attr.aria-label]="'Show ' + hiddenCount() + ' hidden levels'" (click)="expand()">…</button>
+              <button
+                type="button"
+                class="ellipsis"
+                [attr.aria-label]="'Show ' + hiddenCount() + ' hidden levels'"
+                (click)="expand()"
+              >…</button>
             } @else if (entry.index === trail().length - 1) {
-              <span aria-current="page" class="current">{{ entry.item.label }}</span>
+              <span
+                aria-current="page"
+                class="current"
+              >{{ entry.item.label }}</span>
             } @else if (entry.index === itemsBefore) {
-              <a #firstRevealed [href]="entry.item.href" (click)="go($event, entry.index)">{{ entry.item.label }}</a>
+              <a
+                #firstRevealed
+                [href]="entry.item.href"
+                (click)="go($event, entry.index)"
+              >{{ entry.item.label }}</a>
             } @else {
-              <a [href]="entry.item.href" (click)="go($event, entry.index)">{{ entry.item.label }}</a>
+              <a
+                [href]="entry.item.href"
+                (click)="go($event, entry.index)"
+              >{{ entry.item.label }}</a>
             }
           </li>
         }
       </ol>
     </nav>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .crumbs ol { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 10px 12px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; }
     .crumbs li { display: flex; align-items: center; gap: 4px; min-width: 0; }
     .crumbs a { color: #9ecbff; text-decoration: none; border-radius: 4px; padding: 2px 4px; }
@@ -5181,7 +6335,8 @@ type Entry = { ellipsis: true } | { ellipsis: false; item: Crumb; index: number 
     .sep { color: #5d6575; }
     .current { color: #e6e8ee; font-weight: 600; padding: 2px 4px; overflow-wrap: anywhere; }
     .ellipsis { background: #232836; color: #e6e8ee; border: 0; border-radius: 6px; padding: 0 8px; font: inherit; cursor: pointer; }
-  \`],
+  \`,
+  ],
 })
 export class BreadcrumbsComponent {
   // A new trail is a new trail: the setter also collapses it again.
@@ -5198,18 +6353,32 @@ export class BreadcrumbsComponent {
   private injector = inject(Injector);
   readonly trail = signal<Crumb[]>([]);
   readonly expanded = signal(false);
-  readonly hiddenCount = computed(() => this.trail().length - this.itemsBefore - this.itemsAfter);
-  // Derived: the entries to show, with one ellipsis marker in the middle when collapsed.
+  readonly hiddenCount = computed(
+    () => this.trail().length - this.itemsBefore - this.itemsAfter,
+  );
+  // Derived: the entries to show, with one
+  // ellipsis marker in the middle when collapsed.
   readonly visible = computed<Entry[]>(() => {
-    const all: Entry[] = this.trail().map((item, index) => ({ ellipsis: false, item, index }));
+    const all: Entry[] = this.trail().map((item, index) => ({
+      ellipsis: false,
+      item,
+      index,
+    }));
     if (this.expanded() || all.length <= this.maxItems) return all;
-    return [...all.slice(0, this.itemsBefore), { ellipsis: true }, ...all.slice(all.length - this.itemsAfter)];
+    return [
+      ...all.slice(0, this.itemsBefore),
+      { ellipsis: true },
+      ...all.slice(all.length - this.itemsAfter),
+    ];
   });
 
   expand() {
     this.expanded.set(true);
-    // Wait for the hidden links to render, then move focus so keyboard users are not lost.
-    afterNextRender(() => this.firstRevealed?.nativeElement.focus(), { injector: this.injector });
+    // Wait for the hidden links to render, then
+    // move focus so keyboard users are not lost.
+    afterNextRender(() => this.firstRevealed?.nativeElement.focus(), {
+      injector: this.injector,
+    });
   }
 
   go(e: MouseEvent, index: number) {
@@ -5218,7 +6387,8 @@ export class BreadcrumbsComponent {
   }
 }
 `,
-          "/src/app/tree.ts": `// A fake folder tree for the demo. Each key is a folder; its value holds the subfolders.
+          "/src/app/tree.ts": `// A fake folder tree for the demo. Each key is
+// a folder; its value holds the subfolders.
 type Folder = { [name: string]: Folder };
 
 export const TREE: Folder = {
@@ -5342,7 +6512,8 @@ export default function SegmentedControl({ options, value, onChange, label }) {
 
   function choose(i) {
     onChange(options[i].value);
-    buttons.current[i]?.focus(); // radio pattern: focus and selection move together
+    // radio pattern: focus and selection move together
+    buttons.current[i]?.focus();
   }
 ~~~
 
@@ -5407,21 +6578,50 @@ The radio pattern treats Right and Down as "next" and Left and Up as "previous",
 
 ~~~css
 .segmented {
-  position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-  padding: 4px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; min-width: 0;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 4px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  min-width: 0;
 }
 .indicator {
-  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
   width: calc((100% - 8px) / var(--count));
-  background: #2f3a55; border-radius: 7px; transition: transform 200ms ease;
+  background: #2f3a55;
+  border-radius: 7px;
+  transition: transform 200ms ease;
 }
 .segment {
-  position: relative; z-index: 1; padding: 8px 14px; background: transparent; color: #b8bfcc;
-  border: 0; border-radius: 7px; font: inherit; cursor: pointer; white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  padding: 8px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.segment[aria-checked="true"] { color: #ffffff; }
-.segment:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .indicator { transition: none; } }
+.segment[aria-checked="true"] {
+  color: #ffffff;
+}
+.segment:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}
 ~~~
 
 The trick: the group is a grid of equal columns (\`grid-auto-columns: 1fr\`). The indicator is absolutely positioned with the width of one column, \`calc((100% - 8px) / var(--count))\`, where the 8 px is the group padding. Translating it by \`index * 100%\` of its own width moves it exactly one segment per step. Transforms animate smoothly because the browser does not have to redo layout for them. The indicator is \`aria-hidden\` because it is decoration; \`aria-checked\` carries the meaning.
@@ -5432,7 +6632,7 @@ The trick: the group is a grid of equal columns (\`grid-auto-columns: 1fr\`). Th
 
 The driver clicks, presses keys on the focused option, uses the parent Reset button and then changes the second control. \`*\` marks the checked option, the number in brackets is its \`tabindex\`. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] initial    : Calendar view: Day(-1) Week*(0) Month(-1) indicator=translateX(100%) | Row density: Compact(-1) Comfortable*(0) indicator=translateX(100%)
 [react] readout    : Showing the week view, comfortable rows.
 [react] click Month: Calendar view: Day(-1) Week(-1) Month*(0) indicator=translateX(200%) | Showing the month view, comfortable rows.
@@ -5448,7 +6648,7 @@ Clicking Month moves the indicator to \`translateX(200%)\` and updates the paren
 
 jsdom has no layout, so whether the indicator actually sits on the checked segment was measured in Chromium 141 at a 360 px viewport:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] Week  : indicator x=97.2 w=76.2 | checked segment x=97.2 w=76.2
 [chromium] Month : indicator x=173.4 w=76.2 | checked segment x=173.4 w=76.2
@@ -5577,13 +6777,23 @@ export default function App() {
     <main className="page">
       <h1>Calendar</h1>
       <div className="row">
-        <SegmentedControl label="Calendar view" options={VIEWS} value={view} onChange={setView} />
+        <SegmentedControl
+          label="Calendar view"
+          options={VIEWS}
+          value={view}
+          onChange={setView}
+        />
         <button type="button" className="reset" onClick={() => setView("week")}>
           Reset to Week
         </button>
       </div>
       <div className="row">
-        <SegmentedControl label="Row density" options={DENSITY} value={density} onChange={setDensity} />
+        <SegmentedControl
+          label="Row density"
+          options={DENSITY}
+          value={density}
+          onChange={setDensity}
+        />
       </div>
       <p className="readout" data-testid="readout">
         Showing the {view} view, {density} rows.
@@ -5596,11 +6806,15 @@ export default function App() {
 
 export default function SegmentedControl({ options, value, onChange, label }) {
   const buttons = useRef([]);
-  const index = Math.max(0, options.findIndex((o) => o.value === value));
+  const index = Math.max(
+    0,
+    options.findIndex((o) => o.value === value),
+  );
 
   function choose(i) {
     onChange(options[i].value);
-    buttons.current[i]?.focus(); // radio pattern: focus and selection move together
+    // radio pattern: focus and selection move together
+    buttons.current[i]?.focus();
   }
 
   function onKeyDown(e) {
@@ -5652,28 +6866,85 @@ export default function SegmentedControl({ options, value, onChange, label }) {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
-.reset { background: transparent; color: #9ecbff; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 10px; font: inherit; cursor: pointer; }
-.readout { color: #b8bfcc; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.reset {
+  background: transparent;
+  color: #9ecbff;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.readout {
+  color: #b8bfcc;
+}
 .segmented {
-  position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-  padding: 4px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; min-width: 0;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 4px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  min-width: 0;
 }
 .indicator {
-  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
   width: calc((100% - 8px) / var(--count));
-  background: #2f3a55; border-radius: 7px; transition: transform 200ms ease;
+  background: #2f3a55;
+  border-radius: 7px;
+  transition: transform 200ms ease;
 }
 .segment {
-  position: relative; z-index: 1; padding: 8px 14px; background: transparent; color: #b8bfcc;
-  border: 0; border-radius: 7px; font: inherit; cursor: pointer; white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  padding: 8px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.segment[aria-checked="true"] { color: #ffffff; }
-.segment:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .indicator { transition: none; } }
+.segment[aria-checked="true"] {
+  color: #ffffff;
+}
+.segment:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}
 `,
         },
       },
@@ -5708,15 +6979,23 @@ In Vue it is the perfect excuse to use \`v-model\` on your own component. The pa
 ### Step 1: the model and the derived index
 
 ~~~js
-// defineModel (Vue 3.4+) declares the modelValue prop and the update:modelValue event in one line.
+// defineModel (Vue 3.4+) declares the modelValue
+// prop and the update:modelValue event in one line.
 const model = defineModel({ type: String, required: true });
 
-const index = computed(() => Math.max(0, props.options.findIndex((o) => o.value === model.value)));
+const index = computed(() =>
+  Math.max(
+    0,
+    props.options.findIndex((o) => o.value === model.value),
+  ),
+);
 const buttons = [];
 
 function choose(i) {
-  model.value = props.options[i].value; // emits update:modelValue; the parent decides
-  buttons[i]?.focus(); // radio pattern: focus and selection move together
+  // emits update:modelValue; the parent decides
+  model.value = props.options[i].value;
+  // radio pattern: focus and selection move together
+  buttons[i]?.focus();
 }
 ~~~
 
@@ -5756,7 +7035,11 @@ Right and Down mean next, Left and Up previous, wrapping; Home and End jump to t
   @keydown="onKeydown"
 >
   <!-- One indicator, moved with a transform: no measuring, because every segment is equally wide -->
-  <span class="indicator" aria-hidden="true" :style="{ transform: 'translateX(' + index * 100 + '%)' }"></span>
+  <span
+    class="indicator"
+    aria-hidden="true"
+    :style="{ transform: 'translateX(' + index * 100 + '%)' }"
+  ></span>
   <button
     v-for="(option, i) in options"
     :key="option.value"
@@ -5791,7 +7074,7 @@ Two instances, two refs, no shared state.
 
 Same driver as React and Angular: click, keys on the focused option, the parent Reset, then the second control. \`*\` marks the checked option and the bracket shows its \`tabindex\`. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] initial    : Calendar view: Day(-1) Week*(0) Month(-1) indicator=translateX(100%) | Row density: Compact(-1) Comfortable*(0) indicator=translateX(100%)
 [vue] readout    : Showing the week view, comfortable rows.
 [vue] click Month: Calendar view: Day(-1) Week(-1) Month*(0) indicator=translateX(200%) | Showing the month view, comfortable rows.
@@ -5910,22 +7193,61 @@ const density = ref("comfortable");
     <h1>Calendar</h1>
     <div class="row">
       <SegmentedControl v-model="view" label="Calendar view" :options="views" />
-      <button type="button" class="reset" @click="view = 'week'">Reset to Week</button>
+      <button
+        type="button"
+        class="reset"
+        @click="view = 'week'"
+      >Reset to Week</button>
     </div>
     <div class="row">
-      <SegmentedControl v-model="density" label="Row density" :options="densities" />
+      <SegmentedControl
+        v-model="density"
+        label="Row density"
+        :options="densities"
+      />
     </div>
-    <p class="readout" data-testid="readout">Showing the {{ view }} view, {{ density }} rows.</p>
+    <p
+      class="readout"
+      data-testid="readout"
+    >Showing the {{ view }} view, {{ density }} rows.</p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
-.reset { background: transparent; color: #9ecbff; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 10px; font: inherit; cursor: pointer; }
-.readout { color: #b8bfcc; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.reset {
+  background: transparent;
+  color: #9ecbff;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+.readout {
+  color: #b8bfcc;
+}
 </style>
 `,
           "/src/components/SegmentedControl.vue": `<script setup>
@@ -5935,14 +7257,21 @@ const props = defineProps({
   options: { type: Array, required: true }, // [{ value, label }]
   label: { type: String, required: true },
 });
-// defineModel (Vue 3.4+) declares the modelValue prop and the update:modelValue event in one line.
+// defineModel (Vue 3.4+) declares the modelValue
+// prop and the update:modelValue event in one line.
 const model = defineModel({ type: String, required: true });
 
-const index = computed(() => Math.max(0, props.options.findIndex((o) => o.value === model.value)));
+const index = computed(() =>
+  Math.max(
+    0,
+    props.options.findIndex((o) => o.value === model.value),
+  ),
+);
 const buttons = [];
 
 function choose(i) {
-  model.value = props.options[i].value; // emits update:modelValue; the parent decides
+  // emits update:modelValue; the parent decides
+  model.value = props.options[i].value;
   buttons[i]?.focus(); // radio pattern: focus and selection move together
 }
 
@@ -5972,7 +7301,11 @@ function onKeydown(e) {
     @keydown="onKeydown"
   >
     <!-- One indicator, moved with a transform: no measuring, because every segment is equally wide -->
-    <span class="indicator" aria-hidden="true" :style="{ transform: 'translateX(' + index * 100 + '%)' }"></span>
+    <span
+      class="indicator"
+      aria-hidden="true"
+      :style="{ transform: 'translateX(' + index * 100 + '%)' }"
+    ></span>
     <button
       v-for="(option, i) in options"
       :key="option.value"
@@ -5991,21 +7324,50 @@ function onKeydown(e) {
 
 <style scoped>
 .segmented {
-  position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-  padding: 4px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; min-width: 0;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 4px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  min-width: 0;
 }
 .indicator {
-  position: absolute; top: 4px; bottom: 4px; left: 4px;
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
   width: calc((100% - 8px) / var(--count));
-  background: #2f3a55; border-radius: 7px; transition: transform 200ms ease;
+  background: #2f3a55;
+  border-radius: 7px;
+  transition: transform 200ms ease;
 }
 .segment {
-  position: relative; z-index: 1; padding: 8px 14px; background: transparent; color: #b8bfcc;
-  border: 0; border-radius: 7px; font: inherit; cursor: pointer; white-space: nowrap;
+  position: relative;
+  z-index: 1;
+  padding: 8px 14px;
+  background: transparent;
+  color: #b8bfcc;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.segment[aria-checked="true"] { color: #ffffff; }
-.segment:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-@media (prefers-reduced-motion: reduce) { .indicator { transition: none; } }
+.segment[aria-checked="true"] {
+  color: #ffffff;
+}
+.segment:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}
 </style>
 `,
         },
@@ -6043,15 +7405,27 @@ In Angular the idiomatic contract is the "banana in a box" two-way binding: the 
 
 ~~~ts
 @Input({ required: true }) label = "";
-// Setters copy the decorator inputs into signals, so computed() below can track them.
-@Input({ required: true }) set options(list: SegmentOption[]) { this.optionList.set(list); }
-@Input({ required: true }) set value(v: string) { this.current.set(v); }
+// Setters copy the decorator inputs into
+// signals, so computed() below can track them.
+@Input({ required: true }) set options(list: SegmentOption[]) {
+  this.optionList.set(list);
+}
+@Input({ required: true }) set value(v: string) {
+  this.current.set(v);
+}
 @Output() valueChange = new EventEmitter<string>();
-@ViewChildren("segment") segments!: QueryList<ElementRef<HTMLButtonElement>>;
+@ViewChildren("segment") segments!: QueryList<
+  ElementRef<HTMLButtonElement>
+>;
 
 readonly optionList = signal<SegmentOption[]>([]);
 private current = signal("");
-readonly index = computed(() => Math.max(0, this.optionList().findIndex((o) => o.value === this.current())));
+readonly index = computed(() =>
+  Math.max(
+    0,
+    this.optionList().findIndex((o) => o.value === this.current()),
+  ),
+);
 ~~~
 
 A \`computed\` over plain \`@Input\` fields would never recompute; the setters copy each new value into a signal. Signal \`input()\` would be neater, but it does not register under the playground's runtime JIT ([signal inputs](/interview-question/signal-inputs-input-vs-input-what-changes-in-angular-17-1)).
@@ -6060,8 +7434,10 @@ A \`computed\` over plain \`@Input\` fields would never recompute; the setters c
 
 ~~~ts
 choose(i: number) {
-  this.valueChange.emit(this.optionList()[i].value); // the parent decides; its new value flows back in
-  this.segments.get(i)?.nativeElement.focus(); // radio pattern: focus and selection move together
+  // the parent decides; its new value flows back in
+  this.valueChange.emit(this.optionList()[i].value);
+  // radio pattern: focus and selection move together
+  this.segments.get(i)?.nativeElement.focus();
 }
 ~~~
 
@@ -6100,7 +7476,11 @@ onKeydown(e: KeyboardEvent) {
   (keydown)="onKeydown($event)"
 >
   <!-- One indicator, moved with a transform: no measuring, because every segment is equally wide -->
-  <span class="indicator" aria-hidden="true" [style.transform]="'translateX(' + index() * 100 + '%)'"></span>
+  <span
+    class="indicator"
+    aria-hidden="true"
+    [style.transform]="'translateX(' + index() * 100 + '%)'"
+  ></span>
   @for (option of optionList(); track option.value; let i = $index) {
     <button
       #segment
@@ -6134,7 +7514,7 @@ onKeydown(e: KeyboardEvent) {
 
 Same driver as React and Vue. AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines:
 
-~~~
+~~~text
 [angular:app] initial    : Calendar view: Day(-1) Week*(0) Month(-1) indicator=translateX(100%) | Row density: Compact(-1) Comfortable*(0) indicator=translateX(100%)
 [angular:app] readout    : Showing the week view, comfortable rows.
 [angular:app] click Month: Calendar view: Day(-1) Week(-1) Month*(0) indicator=translateX(200%) | Showing the month view, comfortable rows.
@@ -6230,7 +7610,10 @@ The indicator follows the index, keys wrap, the parent reset is reflected (provi
 **Conclusion:** The Angular segmented control is a controlled component with the \`value\` / \`valueChange\` pair for \`[(value)]\`, input setters feeding signals so a \`computed\` index stays reactive, the radio group roles with a roving tabindex, and a percentage-transform indicator. Both the strict AOT build and the playground JIT on Angular 22.2.3 printed the same output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { SegmentedControlComponent, SegmentOption } from "./segmented-control.component";
+import {
+  SegmentedControlComponent,
+  SegmentOption,
+} from "./segmented-control.component";
 
 @Component({
   selector: "app-root",
@@ -6241,23 +7624,40 @@ import { SegmentedControlComponent, SegmentOption } from "./segmented-control.co
       <h1>Calendar</h1>
       <div class="row">
         <!-- [(value)] is shorthand for [value]="view()" (valueChange)="view.set($event)" -->
-        <app-segmented-control label="Calendar view" [options]="views" [(value)]="view" />
-        <button type="button" class="reset" (click)="view.set('week')">Reset to Week</button>
+        <app-segmented-control
+          label="Calendar view"
+          [options]="views"
+          [(value)]="view"
+        />
+        <button
+          type="button"
+          class="reset"
+          (click)="view.set('week')"
+        >Reset to Week</button>
       </div>
       <div class="row">
-        <app-segmented-control label="Row density" [options]="densities" [(value)]="density" />
+        <app-segmented-control
+          label="Row density"
+          [options]="densities"
+          [(value)]="density"
+        />
       </div>
-      <p class="readout" data-testid="readout">Showing the {{ view() }} view, {{ density() }} rows.</p>
+      <p
+        class="readout"
+        data-testid="readout"
+      >Showing the {{ view() }} view, {{ density() }} rows.</p>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
     .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 12px; }
     .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; }
     .reset { background: transparent; color: #9ecbff; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 10px; font: inherit; cursor: pointer; }
     .readout { color: #b8bfcc; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly views: SegmentOption[] = [
@@ -6274,7 +7674,17 @@ export class AppComponent {
   readonly density = signal("comfortable");
 }
 `,
-          "/src/app/segmented-control.component.ts": `import { Component, ElementRef, EventEmitter, Input, Output, QueryList, ViewChildren, computed, signal } from "@angular/core";
+          "/src/app/segmented-control.component.ts": `import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  Output,
+  QueryList,
+  ViewChildren,
+  computed,
+  signal,
+} from "@angular/core";
 
 export interface SegmentOption {
   value: string;
@@ -6293,7 +7703,11 @@ export interface SegmentOption {
       (keydown)="onKeydown($event)"
     >
       <!-- One indicator, moved with a transform: no measuring, because every segment is equally wide -->
-      <span class="indicator" aria-hidden="true" [style.transform]="'translateX(' + index() * 100 + '%)'"></span>
+      <span
+        class="indicator"
+        aria-hidden="true"
+        [style.transform]="'translateX(' + index() * 100 + '%)'"
+      ></span>
       @for (option of optionList(); track option.value; let i = $index) {
         <button
           #segment
@@ -6309,41 +7723,87 @@ export interface SegmentOption {
       }
     </div>
   \`,
-  styles: [\`
-    :host { display: block; min-width: 0; }
-    .segmented {
-      position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
-      padding: 4px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 10px; min-width: 0;
-    }
-    .indicator {
-      position: absolute; top: 4px; bottom: 4px; left: 4px;
-      width: calc((100% - 8px) / var(--count));
-      background: #2f3a55; border-radius: 7px; transition: transform 200ms ease;
-    }
-    .segment {
-      position: relative; z-index: 1; padding: 8px 14px; background: transparent; color: #b8bfcc;
-      border: 0; border-radius: 7px; font: inherit; cursor: pointer; white-space: nowrap;
-    }
-    .segment[aria-checked="true"] { color: #ffffff; }
-    .segment:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 1px; }
-    @media (prefers-reduced-motion: reduce) { .indicator { transition: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-width: 0;
+      }
+      .segmented {
+        position: relative;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        padding: 4px;
+        background: #171a21;
+        border: 1px solid #2a2f3a;
+        border-radius: 10px;
+        min-width: 0;
+      }
+      .indicator {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 4px;
+        width: calc((100% - 8px) / var(--count));
+        background: #2f3a55;
+        border-radius: 7px;
+        transition: transform 200ms ease;
+      }
+      .segment {
+        position: relative;
+        z-index: 1;
+        padding: 8px 14px;
+        background: transparent;
+        color: #b8bfcc;
+        border: 0;
+        border-radius: 7px;
+        font: inherit;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .segment[aria-checked="true"] {
+        color: #ffffff;
+      }
+      .segment:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 1px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .indicator {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class SegmentedControlComponent {
   @Input({ required: true }) label = "";
-  // Setters copy the decorator inputs into signals, so computed() below can track them.
-  @Input({ required: true }) set options(list: SegmentOption[]) { this.optionList.set(list); }
-  @Input({ required: true }) set value(v: string) { this.current.set(v); }
+  // Setters copy the decorator inputs into
+  // signals, so computed() below can track them.
+  @Input({ required: true }) set options(list: SegmentOption[]) {
+    this.optionList.set(list);
+  }
+  @Input({ required: true }) set value(v: string) {
+    this.current.set(v);
+  }
   @Output() valueChange = new EventEmitter<string>();
   @ViewChildren("segment") segments!: QueryList<ElementRef<HTMLButtonElement>>;
 
   readonly optionList = signal<SegmentOption[]>([]);
   private current = signal("");
-  readonly index = computed(() => Math.max(0, this.optionList().findIndex((o) => o.value === this.current())));
+  readonly index = computed(() =>
+    Math.max(
+      0,
+      this.optionList().findIndex((o) => o.value === this.current()),
+    ),
+  );
 
   choose(i: number) {
-    this.valueChange.emit(this.optionList()[i].value); // the parent decides; its new value flows back in
-    this.segments.get(i)?.nativeElement.focus(); // radio pattern: focus and selection move together
+    // the parent decides; its new value flows back in
+    this.valueChange.emit(this.optionList()[i].value);
+    // radio pattern: focus and selection move together
+    this.segments.get(i)?.nativeElement.focus();
   }
 
   onKeydown(e: KeyboardEvent) {
@@ -6472,7 +7932,9 @@ export function clampPercent(value) {
 <div className="progress">
   <div className="progress-head">
     <span>{label}</span>
-    <span className="progress-value">{indeterminate ? "..." : Math.round(percent) + "%"}</span>
+    <span className="progress-value">
+      {indeterminate ? "..." : Math.round(percent) + "%"}
+    </span>
   </div>
   <div
     role="progressbar"
@@ -6483,7 +7945,14 @@ export function clampPercent(value) {
     className={indeterminate ? "track indeterminate" : "track"}
   >
     {/* scaleX is animated on the compositor; width would re-run layout every frame */}
-    <div className="fill" style={indeterminate ? undefined : { transform: "scaleX(" + percent / 100 + ")" }} />
+    <div
+      className="fill"
+      style={
+        indeterminate
+          ? undefined
+          : { transform: "scaleX(" + percent / 100 + ")" }
+      }
+    />
   </div>
 </div>
 ~~~
@@ -6497,10 +7966,34 @@ React drops an attribute whose value is \`undefined\`, so \`aria-valuenow={indet
 ### Step 3: animate with \`transform\`
 
 ~~~css
-.track { position: relative; height: 10px; background: #232836; border-radius: 999px; overflow: hidden; }
-.fill { height: 100%; width: 100%; background: #7aa2ff; transform-origin: left; transform: scaleX(0); transition: transform 250ms ease; }
-.indeterminate .fill { width: 40%; transform: none; animation: slide 1.2s ease-in-out infinite; }
-@keyframes slide { from { margin-left: -40%; } to { margin-left: 100%; } }
+.track {
+  position: relative;
+  height: 10px;
+  background: #232836;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  width: 100%;
+  background: #7aa2ff;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 250ms ease;
+}
+.indeterminate .fill {
+  width: 40%;
+  transform: none;
+  animation: slide 1.2s ease-in-out infinite;
+}
+@keyframes slide {
+  from {
+    margin-left: -40%;
+  }
+  to {
+    margin-left: 100%;
+  }
+}
 ~~~
 
 The fill is always full width and is scaled horizontally from the left (\`transform-origin: left\`). Changing \`transform\` lets the browser animate on the compositor without recalculating layout each frame, which changing \`width\` would force. The indeterminate variant is a 40% chunk sliding across in a loop. Both are switched off under \`prefers-reduced-motion\`.
@@ -6513,11 +8006,16 @@ The fill is always full width and is scaled horizontally from the left (\`transf
 // Derived, not stored: the upload is running until it reaches 100.
 const running = started && upload < 100;
 
-// A simulated upload: +20 every 100 ms. The interval only exists while running.
+// A simulated upload: +20 every 100 ms.
+// The interval only exists while running.
 useEffect(() => {
   if (!running) return;
-  const id = setInterval(() => setUpload((v) => Math.min(v + 20, 100)), 100);
-  return () => clearInterval(id); // runs at 100, on unmount and in the StrictMode re-run
+  const id = setInterval(
+    () => setUpload((v) => Math.min(v + 20, 100)),
+    100,
+  );
+  // runs at 100, on unmount and in the StrictMode re-run
+  return () => clearInterval(id);
 }, [running]);
 ~~~
 
@@ -6529,7 +8027,7 @@ There is no \`setRunning(false)\` anywhere. \`running\` is derived, so the rende
 
 The driver starts the upload, waits, nudges the manual bar past both ends and reads the ARIA values and the \`transform\` of each fill. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] aria         : aria-valuemin=0 aria-valuemax=100
 [react] initial      : Upload=0[scaleX(0)] Manual=50[scaleX(0.5)] Bad input (140)=100[scaleX(1)] Waiting for server=none[no transform]
 [react] start        : Uploading... | button disabled: true
@@ -6545,7 +8043,7 @@ The out-of-range bar shows 100, the unknown bar has no \`aria-valuenow\` and no 
 
 jsdom does not animate. In Chromium 141, with the fill measured as a share of the track:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] Manual fill at rest: 50.0%
 [chromium] 100ms after +30: 70.5%
@@ -6668,16 +8166,19 @@ import ProgressBar from "./src/ProgressBar";
 export default function App() {
   const [upload, setUpload] = useState(0);
   const [started, setStarted] = useState(false);
-  const [manual, setManual] = useState(50); // raw value: the buttons may push it out of range
+  // raw value: the buttons may push it out of range
+  const [manual, setManual] = useState(50);
 
   // Derived, not stored: the upload is running until it reaches 100.
   const running = started && upload < 100;
 
-  // A simulated upload: +20 every 100 ms. The interval only exists while running.
+  // A simulated upload: +20 every 100 ms.
+  // The interval only exists while running.
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => setUpload((v) => Math.min(v + 20, 100)), 100);
-    return () => clearInterval(id); // runs at 100, on unmount and in the StrictMode re-run
+    // runs at 100, on unmount and in the StrictMode re-run
+    return () => clearInterval(id);
   }, [running]);
 
   return (
@@ -6686,17 +8187,32 @@ export default function App() {
 
       <ProgressBar label="Upload" value={upload} />
       <div className="controls">
-        <button type="button" onClick={() => { setUpload(0); setStarted(true); }} disabled={running}>
+        <button
+          type="button"
+          onClick={() => {
+            setUpload(0);
+            setStarted(true);
+          }}
+          disabled={running}
+        >
           {upload === 100 ? "Upload again" : "Start upload"}
         </button>
-        <span className="note" data-testid="upload-status">{running ? "Uploading..." : upload === 100 ? "Done" : "Idle"}</span>
+        <span className="note" data-testid="upload-status">
+          {running ? "Uploading..." : upload === 100 ? "Done" : "Idle"}
+        </span>
       </div>
 
       <ProgressBar label="Manual" value={manual} />
       <div className="controls">
-        <button type="button" onClick={() => setManual((v) => v - 30)}>-30</button>
-        <button type="button" onClick={() => setManual((v) => v + 30)}>+30</button>
-        <span className="note" data-testid="manual-raw">raw value: {manual}</span>
+        <button type="button" onClick={() => setManual((v) => v - 30)}>
+          -30
+        </button>
+        <button type="button" onClick={() => setManual((v) => v + 30)}>
+          +30
+        </button>
+        <span className="note" data-testid="manual-raw">
+          raw value: {manual}
+        </span>
       </div>
 
       <ProgressBar label="Bad input (140)" value={140} />
@@ -6720,7 +8236,9 @@ export default function ProgressBar({ value, label }) {
     <div className="progress">
       <div className="progress-head">
         <span>{label}</span>
-        <span className="progress-value">{indeterminate ? "..." : Math.round(percent) + "%"}</span>
+        <span className="progress-value">
+          {indeterminate ? "..." : Math.round(percent) + "%"}
+        </span>
       </div>
       <div
         role="progressbar"
@@ -6731,29 +8249,107 @@ export default function ProgressBar({ value, label }) {
         className={indeterminate ? "track indeterminate" : "track"}
       >
         {/* scaleX is animated on the compositor; width would re-run layout every frame */}
-        <div className="fill" style={indeterminate ? undefined : { transform: "scaleX(" + percent / 100 + ")" }} />
+        <div
+          className="fill"
+          style={
+            indeterminate
+              ? undefined
+              : { transform: "scaleX(" + percent / 100 + ")" }
+          }
+        />
       </div>
     </div>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.progress { margin: 14px 0 6px; }
-.progress-head { display: flex; justify-content: space-between; font-size: 0.9rem; color: #b8bfcc; margin-bottom: 6px; }
-.progress-value { font-variant-numeric: tabular-nums; color: #e6e8ee; }
-.track { position: relative; height: 10px; background: #232836; border-radius: 999px; overflow: hidden; }
-.fill { height: 100%; width: 100%; background: #7aa2ff; transform-origin: left; transform: scaleX(0); transition: transform 250ms ease; }
-.indeterminate .fill { width: 40%; transform: none; animation: slide 1.2s ease-in-out infinite; }
-@keyframes slide { from { margin-left: -40%; } to { margin-left: 100%; } }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.controls button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.controls button:disabled { opacity: 0.5; cursor: default; }
-.note { color: #8a93a3; font-size: 0.85rem; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.progress {
+  margin: 14px 0 6px;
+}
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #b8bfcc;
+  margin-bottom: 6px;
+}
+.progress-value {
+  font-variant-numeric: tabular-nums;
+  color: #e6e8ee;
+}
+.track {
+  position: relative;
+  height: 10px;
+  background: #232836;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  width: 100%;
+  background: #7aa2ff;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 250ms ease;
+}
+.indeterminate .fill {
+  width: 40%;
+  transform: none;
+  animation: slide 1.2s ease-in-out infinite;
+}
+@keyframes slide {
+  from {
+    margin-left: -40%;
+  }
+  to {
+    margin-left: 100%;
+  }
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.controls button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.note {
+  color: #8a93a3;
+  font-size: 0.85rem;
+}
 @media (prefers-reduced-motion: reduce) {
-  .fill { transition: none; }
-  .indeterminate .fill { animation: none; margin-left: 30%; }
+  .fill {
+    transition: none;
+  }
+  .indeterminate .fill {
+    animation: none;
+    margin-left: 30%;
+  }
 }
 `,
         },
@@ -6810,7 +8406,9 @@ The prop type \`[Number, null]\` tells Vue's runtime validation that \`null\` is
 <div class="progress">
   <div class="progress-head">
     <span>{{ label }}</span>
-    <span class="progress-value">{{ percent === null ? "..." : Math.round(percent) + "%" }}</span>
+    <span class="progress-value">{{
+      percent === null ? "..." : Math.round(percent) + "%"
+    }}</span>
   </div>
   <div
     role="progressbar"
@@ -6821,7 +8419,14 @@ The prop type \`[Number, null]\` tells Vue's runtime validation that \`null\` is
     :class="['track', { indeterminate: percent === null }]"
   >
     <!-- scaleX is animated on the compositor; width would re-run layout every frame -->
-    <div class="fill" :style="percent === null ? undefined : { transform: 'scaleX(' + percent / 100 + ')' }"></div>
+    <div
+      class="fill"
+      :style="
+        percent === null
+          ? undefined
+          : { transform: 'scaleX(' + percent / 100 + ')' }
+      "
+    ></div>
   </div>
 </div>
 ~~~
@@ -6836,11 +8441,16 @@ Binding \`:aria-valuenow\` to \`undefined\` makes Vue remove the attribute, whic
 // Derived, not stored: the upload is running until it reaches 100.
 const running = computed(() => started.value && upload.value < 100);
 
-// A simulated upload: +20 every 100 ms. The interval only exists while running.
+// A simulated upload: +20 every 100 ms.
+// The interval only exists while running.
 let timer = null;
 watch(running, (isRunning) => {
   clearInterval(timer);
-  if (isRunning) timer = setInterval(() => (upload.value = Math.min(upload.value + 20, 100)), 100);
+  if (isRunning)
+    timer = setInterval(
+      () => (upload.value = Math.min(upload.value + 20, 100)),
+      100,
+    );
 });
 onBeforeUnmount(() => clearInterval(timer));
 ~~~
@@ -6853,7 +8463,7 @@ onBeforeUnmount(() => clearInterval(timer));
 
 Same driver as React and Angular. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] aria         : aria-valuemin=0 aria-valuemax=100
 [vue] initial      : Upload=0[scaleX(0)] Manual=50[scaleX(0.5)] Bad input (140)=100[scaleX(1)] Waiting for server=none[no transform]
 [vue] start        : Uploading... | button disabled: true
@@ -6963,7 +8573,11 @@ const running = computed(() => started.value && upload.value < 100);
 let timer = null;
 watch(running, (isRunning) => {
   clearInterval(timer);
-  if (isRunning) timer = setInterval(() => (upload.value = Math.min(upload.value + 20, 100)), 100);
+  if (isRunning)
+    timer = setInterval(
+      () => (upload.value = Math.min(upload.value + 20, 100)),
+      100,
+    );
 });
 onBeforeUnmount(() => clearInterval(timer));
 
@@ -6982,7 +8596,9 @@ function start() {
       <button type="button" :disabled="running" @click="start">
         {{ upload === 100 ? "Upload again" : "Start upload" }}
       </button>
-      <span class="note" data-testid="upload-status">{{ running ? "Uploading..." : upload === 100 ? "Done" : "Idle" }}</span>
+      <span class="note" data-testid="upload-status">{{
+        running ? "Uploading..." : upload === 100 ? "Done" : "Idle"
+      }}</span>
     </div>
 
     <ProgressBar label="Manual" :value="manual" />
@@ -6998,13 +8614,44 @@ function start() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.controls button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.controls button:disabled { opacity: 0.5; cursor: default; }
-.note { color: #8a93a3; font-size: 0.85rem; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.controls button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.controls button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.note {
+  color: #8a93a3;
+  font-size: 0.85rem;
+}
 </style>
 `,
           "/src/components/ProgressBar.vue": `<script setup>
@@ -7029,7 +8676,9 @@ const percent = computed(() => {
   <div class="progress">
     <div class="progress-head">
       <span>{{ label }}</span>
-      <span class="progress-value">{{ percent === null ? "..." : Math.round(percent) + "%" }}</span>
+      <span class="progress-value">{{
+        percent === null ? "..." : Math.round(percent) + "%"
+      }}</span>
     </div>
     <div
       role="progressbar"
@@ -7040,22 +8689,69 @@ const percent = computed(() => {
       :class="['track', { indeterminate: percent === null }]"
     >
       <!-- scaleX is animated on the compositor; width would re-run layout every frame -->
-      <div class="fill" :style="percent === null ? undefined : { transform: 'scaleX(' + percent / 100 + ')' }"></div>
+      <div
+        class="fill"
+        :style="
+          percent === null
+            ? undefined
+            : { transform: 'scaleX(' + percent / 100 + ')' }
+        "
+      ></div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.progress { margin: 14px 0 6px; }
-.progress-head { display: flex; justify-content: space-between; font-size: 0.9rem; color: #b8bfcc; margin-bottom: 6px; }
-.progress-value { font-variant-numeric: tabular-nums; color: #e6e8ee; }
-.track { position: relative; height: 10px; background: #232836; border-radius: 999px; overflow: hidden; }
-.fill { height: 100%; width: 100%; background: #7aa2ff; transform-origin: left; transform: scaleX(0); transition: transform 250ms ease; }
-.indeterminate .fill { width: 40%; transform: none; animation: slide 1.2s ease-in-out infinite; }
-@keyframes slide { from { margin-left: -40%; } to { margin-left: 100%; } }
+.progress {
+  margin: 14px 0 6px;
+}
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #b8bfcc;
+  margin-bottom: 6px;
+}
+.progress-value {
+  font-variant-numeric: tabular-nums;
+  color: #e6e8ee;
+}
+.track {
+  position: relative;
+  height: 10px;
+  background: #232836;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.fill {
+  height: 100%;
+  width: 100%;
+  background: #7aa2ff;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 250ms ease;
+}
+.indeterminate .fill {
+  width: 40%;
+  transform: none;
+  animation: slide 1.2s ease-in-out infinite;
+}
+@keyframes slide {
+  from {
+    margin-left: -40%;
+  }
+  to {
+    margin-left: 100%;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .fill { transition: none; }
-  .indeterminate .fill { animation: none; margin-left: 30%; }
+  .fill {
+    transition: none;
+  }
+  .indeterminate .fill {
+    animation: none;
+    margin-left: 30%;
+  }
 }
 </style>
 `,
@@ -7099,11 +8795,16 @@ export function clampPercent(value: number | null): number | null {
 ~~~
 
 ~~~ts
-@Input({ required: true }) set value(v: number | null) { this.raw.set(v); }
+@Input({ required: true }) set value(v: number | null) {
+  this.raw.set(v);
+}
 
 private raw = signal<number | null>(null);
 readonly percent = computed(() => clampPercent(this.raw()));
-readonly rounded = computed(() => { const p = this.percent(); return p === null ? null : Math.round(p); });
+readonly rounded = computed(() => {
+  const p = this.percent();
+  return p === null ? null : Math.round(p);
+});
 ~~~
 
 A \`computed\` reading a plain \`@Input\` field would never update, so the setter copies the value into a signal ([signals](/interview-question/what-are-angular-signals)).
@@ -7121,7 +8822,12 @@ A \`computed\` reading a plain \`@Input\` field would never update, so the sette
   [class.indeterminate]="percent() === null"
 >
   <!-- scaleX is animated on the compositor; width would re-run layout every frame -->
-  <div class="fill" [style.transform]="percent() === null ? null : 'scaleX(' + percent()! / 100 + ')'"></div>
+  <div
+    class="fill"
+    [style.transform]="
+      percent() === null ? null : 'scaleX(' + percent()! / 100 + ')'
+    "
+  ></div>
 </div>
 ~~~
 
@@ -7133,14 +8839,21 @@ A \`computed\` reading a plain \`@Input\` field would never update, so the sette
 
 ~~~ts
 // Derived, not stored: the upload is running until it reaches 100.
-readonly running = computed(() => this.started() && this.upload() < 100);
+readonly running = computed(
+  () => this.started() && this.upload() < 100,
+);
 
 constructor() {
-  // A simulated upload: +20 every 100 ms. The interval only exists while running.
+  // A simulated upload: +20 every 100 ms.
+  // The interval only exists while running.
   effect((onCleanup) => {
     if (!this.running()) return;
-    const id = setInterval(() => this.upload.update((v) => Math.min(v + 20, 100)), 100);
-    onCleanup(() => clearInterval(id)); // runs at 100 and when the component is destroyed
+    const id = setInterval(
+      () => this.upload.update((v) => Math.min(v + 20, 100)),
+      100,
+    );
+    // runs at 100 and when the component is destroyed
+    onCleanup(() => clearInterval(id));
   });
 }
 ~~~
@@ -7153,7 +8866,7 @@ The \`effect\` re-runs whenever \`running()\` changes. Before each re-run, and w
 
 Same driver as React and Vue. AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines:
 
-~~~
+~~~text
 [angular:app] aria         : aria-valuemin=0 aria-valuemax=100
 [angular:app] initial      : Upload=0[scaleX(0)] Manual=50[scaleX(0.5)] Bad input (140)=100[scaleX(1)] Waiting for server=none[no transform]
 [angular:app] start        : Uploading... | button disabled: true
@@ -7264,43 +8977,87 @@ import { ProgressBarComponent } from "./progress-bar.component";
         <button type="button" [disabled]="running()" (click)="start()">
           {{ upload() === 100 ? "Upload again" : "Start upload" }}
         </button>
-        <span class="note" data-testid="upload-status">{{ running() ? "Uploading..." : upload() === 100 ? "Done" : "Idle" }}</span>
+        <span class="note" data-testid="upload-status">{{
+          running() ? "Uploading..." : upload() === 100 ? "Done" : "Idle"
+        }}</span>
       </div>
 
       <app-progress-bar label="Manual" [value]="manual()" />
       <div class="controls">
         <button type="button" (click)="manual.set(manual() - 30)">-30</button>
         <button type="button" (click)="manual.set(manual() + 30)">+30</button>
-        <span class="note" data-testid="manual-raw">raw value: {{ manual() }}</span>
+        <span class="note" data-testid="manual-raw"
+          >raw value: {{ manual() }}</span
+        >
       </div>
 
       <app-progress-bar label="Bad input (140)" [value]="140" />
       <app-progress-bar label="Waiting for server" [value]="null" />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-    h1 { font-size: 1.4rem; margin: 0 0 12px; }
-    .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .controls button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-    .controls button:disabled { opacity: 0.5; cursor: default; }
-    .note { color: #8a93a3; font-size: 0.85rem; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .page {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 12px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .controls button {
+        background: #171a21;
+        color: #e6e8ee;
+        border: 1px solid #2a2f3a;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .controls button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .note {
+        color: #8a93a3;
+        font-size: 0.85rem;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly upload = signal(0);
   readonly started = signal(false);
-  readonly manual = signal(50); // raw value: the buttons may push it out of range
+  // raw value: the buttons may push it out of range
+  readonly manual = signal(50);
   // Derived, not stored: the upload is running until it reaches 100.
   readonly running = computed(() => this.started() && this.upload() < 100);
 
   constructor() {
-    // A simulated upload: +20 every 100 ms. The interval only exists while running.
+    // A simulated upload: +20 every 100 ms.
+    // The interval only exists while running.
     effect((onCleanup) => {
       if (!this.running()) return;
-      const id = setInterval(() => this.upload.update((v) => Math.min(v + 20, 100)), 100);
-      onCleanup(() => clearInterval(id)); // runs at 100 and when the component is destroyed
+      const id = setInterval(
+        () => this.upload.update((v) => Math.min(v + 20, 100)),
+        100,
+      );
+      // runs at 100 and when the component is destroyed
+      onCleanup(() => clearInterval(id));
     });
   }
 
@@ -7327,7 +9084,9 @@ export function clampPercent(value: number | null): number | null {
     <div class="progress">
       <div class="progress-head">
         <span>{{ label }}</span>
-        <span class="progress-value">{{ percent() === null ? "..." : rounded() + "%" }}</span>
+        <span class="progress-value">{{
+          percent() === null ? "..." : rounded() + "%"
+        }}</span>
       </div>
       <div
         role="progressbar"
@@ -7339,32 +9098,85 @@ export function clampPercent(value: number | null): number | null {
         [class.indeterminate]="percent() === null"
       >
         <!-- scaleX is animated on the compositor; width would re-run layout every frame -->
-        <div class="fill" [style.transform]="percent() === null ? null : 'scaleX(' + percent()! / 100 + ')'"></div>
+        <div
+          class="fill"
+          [style.transform]="
+            percent() === null ? null : 'scaleX(' + percent()! / 100 + ')'
+          "
+        ></div>
       </div>
     </div>
   \`,
-  styles: [\`
-    .progress { margin: 14px 0 6px; }
-    .progress-head { display: flex; justify-content: space-between; font-size: 0.9rem; color: #b8bfcc; margin-bottom: 6px; }
-    .progress-value { font-variant-numeric: tabular-nums; color: #e6e8ee; }
-    .track { position: relative; height: 10px; background: #232836; border-radius: 999px; overflow: hidden; }
-    .fill { height: 100%; width: 100%; background: #7aa2ff; transform-origin: left; transform: scaleX(0); transition: transform 250ms ease; }
-    .indeterminate .fill { width: 40%; transform: none; animation: slide 1.2s ease-in-out infinite; }
-    @keyframes slide { from { margin-left: -40%; } to { margin-left: 100%; } }
-    @media (prefers-reduced-motion: reduce) {
-      .fill { transition: none; }
-      .indeterminate .fill { animation: none; margin-left: 30%; }
-    }
-  \`],
+  styles: [
+    \`
+      .progress {
+        margin: 14px 0 6px;
+      }
+      .progress-head {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.9rem;
+        color: #b8bfcc;
+        margin-bottom: 6px;
+      }
+      .progress-value {
+        font-variant-numeric: tabular-nums;
+        color: #e6e8ee;
+      }
+      .track {
+        position: relative;
+        height: 10px;
+        background: #232836;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .fill {
+        height: 100%;
+        width: 100%;
+        background: #7aa2ff;
+        transform-origin: left;
+        transform: scaleX(0);
+        transition: transform 250ms ease;
+      }
+      .indeterminate .fill {
+        width: 40%;
+        transform: none;
+        animation: slide 1.2s ease-in-out infinite;
+      }
+      @keyframes slide {
+        from {
+          margin-left: -40%;
+        }
+        to {
+          margin-left: 100%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .fill {
+          transition: none;
+        }
+        .indeterminate .fill {
+          animation: none;
+          margin-left: 30%;
+        }
+      }
+    \`,
+  ],
 })
 export class ProgressBarComponent {
   @Input({ required: true }) label = "";
-  // The setter feeds a signal, so percent() and rounded() recompute only when the value changes.
-  @Input({ required: true }) set value(v: number | null) { this.raw.set(v); }
+  // The setter feeds a signal, so percent() and
+  // rounded() recompute only when the value changes.
+  @Input({ required: true }) set value(v: number | null) {
+    this.raw.set(v);
+  }
 
   private raw = signal<number | null>(null);
   readonly percent = computed(() => clampPercent(this.raw()));
-  readonly rounded = computed(() => { const p = this.percent(); return p === null ? null : Math.round(p); });
+  readonly rounded = computed(() => {
+    const p = this.percent();
+    return p === null ? null : Math.round(p);
+  });
 }
 `,
         },
@@ -7463,20 +9275,49 @@ A **skeleton loader** is that tape for a web page. Instead of a spinner followed
 
 ~~~jsx
 export default function Skeleton({ variant = "text", width, height }) {
-  return <span className={"skeleton skeleton-" + variant} style={{ width, height }} aria-hidden="true" />;
+  return (
+    <span
+      className={"skeleton skeleton-" + variant}
+      style={{ width, height }}
+      aria-hidden="true"
+    />
+  );
 }
 ~~~
 
 ~~~css
 .skeleton {
-  display: block; flex: none; border-radius: 6px;
-  background: linear-gradient(90deg, #232836 25%, #2e3445 37%, #232836 63%);
-  background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
+  display: block;
+  flex: none;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #232836 25%,
+    #2e3445 37%,
+    #232836 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
 }
-.skeleton-text { height: 18px; }
-.skeleton-circle { border-radius: 50%; }
-@keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.skeleton-text {
+  height: 18px;
+}
+.skeleton-circle {
+  border-radius: 50%;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
 ~~~
 
 One \`span\` with a variant class. React turns numeric \`width\` and \`height\` into pixels automatically. The shimmer is a wide gradient whose \`background-position\` slides; under reduced motion it stops and the shapes stay plain grey. \`aria-hidden="true"\` keeps every shape out of the accessibility tree.
@@ -7507,18 +9348,28 @@ The skeleton uses the same \`.card\` and \`.card-body\` classes as the real card
 ### Step 3: the fetch effect, safe against stale responses
 
 ~~~jsx
-// One state object, three shapes: loading, success (with data) or error (with a message).
+// One state object, three shapes: loading,
+// success (with data) or error (with a message).
 const [state, setState] = useState({ status: "loading" });
 const [failNext, setFailNext] = useState(false);
-// Each request carries its own options; a new object (re)runs the effect.
+// Each request carries its own options;
+// a new object (re)runs the effect.
 const [request, setRequest] = useState({ id: 0, fail: false });
 
 useEffect(() => {
-  let current = true; // only the latest request may write state (also absorbs the StrictMode re-run)
+  // only the latest request may write state
+  // (also absorbs the StrictMode re-run)
+  let current = true;
   setState({ status: "loading" });
   fetchProfiles({ fail: request.fail })
-    .then((profiles) => current && setState({ status: "success", profiles }))
-    .catch((err) => current && setState({ status: "error", message: err.message }));
+    .then(
+      (profiles) =>
+        current && setState({ status: "success", profiles }),
+    )
+    .catch(
+      (err) =>
+        current && setState({ status: "error", message: err.message }),
+    );
   return () => {
     current = false;
   };
@@ -7534,13 +9385,18 @@ Each Reload or Retry stores a new \`request\` object, which re-runs the effect. 
 ~~~jsx
 <section aria-busy={loading} aria-label="Team members" className="list">
   {/* Screen readers hear this instead of a pile of empty grey boxes */}
-  <p role="status" className="sr-only">{loading ? "Loading team members" : ""}</p>
+  <p role="status" className="sr-only">
+    {loading ? "Loading team members" : ""}
+  </p>
   {loading && [0, 1, 2].map((i) => <ProfileCardSkeleton key={i} />)}
-  {state.status === "success" && state.profiles.map((p) => <ProfileCard key={p.id} profile={p} />)}
+  {state.status === "success" &&
+    state.profiles.map((p) => <ProfileCard key={p.id} profile={p} />)}
   {state.status === "error" && (
     <div className="error" role="alert">
       Could not load the team ({state.message}).{" "}
-      <button type="button" onClick={retry}>Retry</button>
+      <button type="button" onClick={retry}>
+        Retry
+      </button>
     </div>
   )}
 </section>
@@ -7556,7 +9412,7 @@ Each Reload or Retry stores a new \`request\` object, which re-runs the effect. 
 
 The driver reads the region at t = 0, waits 700 ms, makes the next request fail, reloads, waits, retries and waits again. Output from React 19.3.1 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [react] t=0          : aria-busy=true status="Loading team members" skeleton cards=3 cards=0 shapes(first card)=circle,text,text,rect all aria-hidden=true
 [react] first skeleton sizes: 48px by 48px, 45% by 20px, 30% by 18px, 100% by 36px
 [react] t=700ms      : aria-busy=false status="" skeleton cards=0 cards=3
@@ -7571,7 +9427,7 @@ Three skeleton cards (circle, text, text, rect, all \`aria-hidden\`) and \`aria-
 
 jsdom cannot measure layout, so the "no shift" claim was measured in Chromium 141 at a 360 px viewport:
 
-~~~
+~~~text
 [chromium] 141.0.7390.37
 [chromium] skeleton card heights: 116.0,116.0,116.0 | list height: 372.0
 [chromium] real card heights    : 116.0,116.0,116.0 | list height: 372.0
@@ -7681,18 +9537,23 @@ import { fetchProfiles } from "./src/api";
 import { ProfileCard, ProfileCardSkeleton } from "./src/ProfileCard";
 
 export default function App() {
-  // One state object, three shapes: loading, success (with data) or error (with a message).
+  // One state object, three shapes: loading,
+  // success (with data) or error (with a message).
   const [state, setState] = useState({ status: "loading" });
   const [failNext, setFailNext] = useState(false);
   // Each request carries its own options; a new object (re)runs the effect.
   const [request, setRequest] = useState({ id: 0, fail: false });
 
   useEffect(() => {
-    let current = true; // only the latest request may write state (also absorbs the StrictMode re-run)
+    // only the latest request may write state
+    // (also absorbs the StrictMode re-run)
+    let current = true;
     setState({ status: "loading" });
     fetchProfiles({ fail: request.fail })
       .then((profiles) => current && setState({ status: "success", profiles }))
-      .catch((err) => current && setState({ status: "error", message: err.message }));
+      .catch(
+        (err) => current && setState({ status: "error", message: err.message }),
+      );
     return () => {
       current = false;
     };
@@ -7712,21 +9573,32 @@ export default function App() {
     <main className="page">
       <h1>Team</h1>
       <div className="toolbar">
-        <button type="button" onClick={reload} disabled={loading}>Reload</button>
+        <button type="button" onClick={reload} disabled={loading}>
+          Reload
+        </button>
         <label>
-          <input type="checkbox" checked={failNext} onChange={(e) => setFailNext(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={failNext}
+            onChange={(e) => setFailNext(e.target.checked)}
+          />
           Make the next request fail
         </label>
       </div>
       <section aria-busy={loading} aria-label="Team members" className="list">
         {/* Screen readers hear this instead of a pile of empty grey boxes */}
-        <p role="status" className="sr-only">{loading ? "Loading team members" : ""}</p>
+        <p role="status" className="sr-only">
+          {loading ? "Loading team members" : ""}
+        </p>
         {loading && [0, 1, 2].map((i) => <ProfileCardSkeleton key={i} />)}
-        {state.status === "success" && state.profiles.map((p) => <ProfileCard key={p.id} profile={p} />)}
+        {state.status === "success" &&
+          state.profiles.map((p) => <ProfileCard key={p.id} profile={p} />)}
         {state.status === "error" && (
           <div className="error" role="alert">
             Could not load the team ({state.message}).{" "}
-            <button type="button" onClick={retry}>Retry</button>
+            <button type="button" onClick={retry}>
+              Retry
+            </button>
           </div>
         )}
       </section>
@@ -7739,7 +9611,9 @@ export default function App() {
 export function ProfileCard({ profile }) {
   return (
     <article className="card">
-      <div className="avatar" aria-hidden="true">{profile.name[0]}</div>
+      <div className="avatar" aria-hidden="true">
+        {profile.name[0]}
+      </div>
       <div className="card-body">
         <h2 className="name">{profile.name}</h2>
         <p className="role">{profile.role}</p>
@@ -7749,7 +9623,8 @@ export function ProfileCard({ profile }) {
   );
 }
 
-// Same box sizes as ProfileCard, so nothing jumps when the real content arrives.
+// Same box sizes as ProfileCard, so nothing
+// jumps when the real content arrives.
 export function ProfileCardSkeleton() {
   return (
     <div className="card" data-testid="skeleton-card">
@@ -7763,49 +9638,183 @@ export function ProfileCardSkeleton() {
   );
 }
 `,
-          "/src/Skeleton.js": `// One primitive, three shapes. Purely decorative, so it is hidden from screen readers.
+          "/src/Skeleton.js": `// One primitive, three shapes. Purely decorative,
+// so it is hidden from screen readers.
 export default function Skeleton({ variant = "text", width, height }) {
-  return <span className={"skeleton skeleton-" + variant} style={{ width, height }} aria-hidden="true" />;
+  return (
+    <span
+      className={"skeleton skeleton-" + variant}
+      style={{ width, height }}
+      aria-hidden="true"
+    />
+  );
 }
 `,
-          "/src/api.js": `// Simulated server: there is no network in this demo. Resolves (or rejects) after 600 ms.
+          "/src/api.js": `// Simulated server: there is no network in this
+// demo. Resolves (or rejects) after 600 ms.
 const PROFILES = [
-  { id: 1, name: "Ada Lovelace", role: "Analyst", bio: "Wrote the first published algorithm for a machine." },
-  { id: 2, name: "Alan Turing", role: "Mathematician", bio: "Asked whether machines can think, then built one." },
-  { id: 3, name: "Grace Hopper", role: "Rear admiral", bio: "Made the first compiler and found a real bug." },
+  {
+    id: 1,
+    name: "Ada Lovelace",
+    role: "Analyst",
+    bio: "Wrote the first published algorithm for a machine.",
+  },
+  {
+    id: 2,
+    name: "Alan Turing",
+    role: "Mathematician",
+    bio: "Asked whether machines can think, then built one.",
+  },
+  {
+    id: 3,
+    name: "Grace Hopper",
+    role: "Rear admiral",
+    bio: "Made the first compiler and found a real bug.",
+  },
 ];
 
 export function fetchProfiles({ fail = false } = {}) {
   return new Promise((resolve, reject) =>
-    setTimeout(() => (fail ? reject(new Error("Server returned 503")) : resolve(PROFILES)), 600)
+    setTimeout(
+      () =>
+        fail ? reject(new Error("Server returned 503")) : resolve(PROFILES),
+      600,
+    ),
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; color: #b8bfcc; }
-.toolbar button, .error button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.toolbar button:disabled { opacity: 0.5; cursor: default; }
-.list { display: grid; gap: 12px; }
-.card { display: flex; gap: 14px; padding: 14px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 12px; min-height: 104px; box-sizing: border-box; }
-.avatar { flex: none; width: 48px; height: 48px; border-radius: 50%; background: #2f3a55; display: grid; place-items: center; font-weight: 700; }
-.card-body { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: start; }
-.name { margin: 0; font-size: 1rem; line-height: 20px; }
-.role { margin: 0; color: #8a93a3; font-size: 0.85rem; line-height: 18px; }
-.bio { margin: 0; color: #c9cfdb; font-size: 0.9rem; line-height: 18px; min-height: 36px; }
-.error { padding: 14px; border: 1px solid #6b2b2b; background: #2a1414; border-radius: 12px; color: #ffb4b4; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: #b8bfcc;
+}
+.toolbar button,
+.error button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.list {
+  display: grid;
+  gap: 12px;
+}
+.card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 12px;
+  min-height: 104px;
+  box-sizing: border-box;
+}
+.avatar {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #2f3a55;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.name {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 20px;
+}
+.role {
+  margin: 0;
+  color: #8a93a3;
+  font-size: 0.85rem;
+  line-height: 18px;
+}
+.bio {
+  margin: 0;
+  color: #c9cfdb;
+  font-size: 0.9rem;
+  line-height: 18px;
+  min-height: 36px;
+}
+.error {
+  padding: 14px;
+  border: 1px solid #6b2b2b;
+  background: #2a1414;
+  border-radius: 12px;
+  color: #ffb4b4;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 /* The primitives */
 .skeleton {
-  display: block; flex: none; border-radius: 6px;
+  display: block;
+  flex: none;
+  border-radius: 6px;
   background: linear-gradient(90deg, #232836 25%, #2e3445 37%, #232836 63%);
-  background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
 }
-.skeleton-text { height: 18px; }
-.skeleton-circle { border-radius: 50%; }
-@keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.skeleton-text {
+  height: 18px;
+}
+.skeleton-circle {
+  border-radius: 50%;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
 `,
         },
       },
@@ -7841,14 +9850,19 @@ A **skeleton loader** lays the table for data: grey shapes in the final layout w
 
 ~~~js
 const props = defineProps({
-  variant: { type: String, default: "text" }, // "text" | "circle" | "rect"
+  // "text" | "circle" | "rect"
+  variant: { type: String, default: "text" },
   width: { type: [Number, String], default: undefined },
   height: { type: [Number, String], default: undefined },
 });
 
-// Unlike React, Vue does not add "px" to bare numbers in style bindings.
+// Unlike React, Vue does not add "px"
+// to bare numbers in style bindings.
 const px = (v) => (typeof v === "number" ? v + "px" : v);
-const style = computed(() => ({ width: px(props.width), height: px(props.height) }));
+const style = computed(() => ({
+  width: px(props.width),
+  height: px(props.height),
+}));
 ~~~
 
 React adds \`px\` to numeric style values; Vue does not, so \`:width="48"\` would produce an invalid \`width: 48\`. The \`px\` helper converts numbers and passes strings such as \`"45%"\` through. The template renders one \`aria-hidden\` span with a variant class, and the scoped CSS runs a shimmer that stops for \`prefers-reduced-motion\`.
@@ -7885,10 +9899,17 @@ watch(
     onCleanup(() => (current = false));
     state.value = { status: "loading" };
     fetchProfiles({ fail: req.fail })
-      .then((profiles) => current && (state.value = { status: "success", profiles }))
-      .catch((err) => current && (state.value = { status: "error", message: err.message }));
+      .then(
+        (profiles) =>
+          current && (state.value = { status: "success", profiles }),
+      )
+      .catch(
+        (err) =>
+          current &&
+          (state.value = { status: "error", message: err.message }),
+      );
   },
-  { immediate: true }
+  { immediate: true },
 );
 ~~~
 
@@ -7899,7 +9920,11 @@ watch(
 ### Step 4: rendering by status
 
 ~~~vue
-<section :aria-busy="state.status === 'loading'" aria-label="Team members" class="list">
+<section
+  :aria-busy="state.status === 'loading'"
+  aria-label="Team members"
+  class="list"
+>
   <!-- Screen readers hear this instead of a pile of empty grey boxes -->
   <p role="status" class="sr-only">{{ state.status === "loading" ? "Loading team members" : "" }}</p>
   <template v-if="state.status === 'loading'">
@@ -7921,7 +9946,7 @@ watch(
 
 Same driver as React and Angular. Output on Vue 3.5.44 in jsdom (first RENDERED line omitted):
 
-~~~
+~~~text
 [vue] t=0          : aria-busy=true status="Loading team members" skeleton cards=3 cards=0 shapes(first card)=circle,text,text,rect all aria-hidden=true
 [vue] first skeleton sizes: 48px by 48px, 45% by 20px, 30% by 18px, 100% by 36px
 [vue] t=700ms      : aria-busy=false status="" skeleton cards=0 cards=3
@@ -8022,7 +10047,8 @@ import { fetchProfiles } from "./api";
 import ProfileCard from "./components/ProfileCard.vue";
 import ProfileCardSkeleton from "./components/ProfileCardSkeleton.vue";
 
-// One state object, three shapes: loading, success (with data) or error (with a message).
+// One state object, three shapes: loading,
+// success (with data) or error (with a message).
 const state = ref({ status: "loading" });
 const failNext = ref(false);
 // Each request carries its own options; a new object re-runs the watcher.
@@ -8035,10 +10061,16 @@ watch(
     onCleanup(() => (current = false));
     state.value = { status: "loading" };
     fetchProfiles({ fail: req.fail })
-      .then((profiles) => current && (state.value = { status: "success", profiles }))
-      .catch((err) => current && (state.value = { status: "error", message: err.message }));
+      .then(
+        (profiles) =>
+          current && (state.value = { status: "success", profiles }),
+      )
+      .catch(
+        (err) =>
+          current && (state.value = { status: "error", message: err.message }),
+      );
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 function reload() {
@@ -8055,12 +10087,23 @@ function retry() {
   <main class="page">
     <h1>Team</h1>
     <div class="toolbar">
-      <button type="button" :disabled="state.status === 'loading'" @click="reload">Reload</button>
+      <button
+        type="button"
+        :disabled="state.status === 'loading'"
+        @click="reload"
+      >Reload</button>
       <label><input v-model="failNext" type="checkbox" /> Make the next request fail</label>
     </div>
-    <section :aria-busy="state.status === 'loading'" aria-label="Team members" class="list">
+    <section
+      :aria-busy="state.status === 'loading'"
+      aria-label="Team members"
+      class="list"
+    >
       <!-- Screen readers hear this instead of a pile of empty grey boxes -->
-      <p role="status" class="sr-only">{{ state.status === "loading" ? "Loading team members" : "" }}</p>
+      <p
+        role="status"
+        class="sr-only"
+      >{{ state.status === "loading" ? "Loading team members" : "" }}</p>
       <template v-if="state.status === 'loading'">
         <ProfileCardSkeleton v-for="i in 3" :key="i" />
       </template>
@@ -8076,34 +10119,143 @@ function retry() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 12px; }
-.toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 14px; color: #b8bfcc; }
-.toolbar button, .error button { background: #171a21; color: #e6e8ee; border: 1px solid #2a2f3a; border-radius: 8px; padding: 6px 12px; font: inherit; cursor: pointer; }
-.toolbar button:disabled { opacity: 0.5; cursor: default; }
-.list { display: grid; gap: 12px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+  color: #b8bfcc;
+}
+.toolbar button,
+.error button {
+  background: #171a21;
+  color: #e6e8ee;
+  border: 1px solid #2a2f3a;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.list {
+  display: grid;
+  gap: 12px;
+}
 /* Shared by ProfileCard and ProfileCardSkeleton, so their boxes are identical */
-.card { display: flex; gap: 14px; padding: 14px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 12px; min-height: 104px; box-sizing: border-box; }
-.avatar { flex: none; width: 48px; height: 48px; border-radius: 50%; background: #2f3a55; display: grid; place-items: center; font-weight: 700; }
-.card-body { flex: 1; min-width: 0; display: grid; gap: 6px; align-content: start; }
-.name { margin: 0; font-size: 1rem; line-height: 20px; }
-.role { margin: 0; color: #8a93a3; font-size: 0.85rem; line-height: 18px; }
-.bio { margin: 0; color: #c9cfdb; font-size: 0.9rem; line-height: 18px; min-height: 36px; }
-.error { padding: 14px; border: 1px solid #6b2b2b; background: #2a1414; border-radius: 12px; color: #ffb4b4; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.card {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 12px;
+  min-height: 104px;
+  box-sizing: border-box;
+}
+.avatar {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #2f3a55;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.name {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 20px;
+}
+.role {
+  margin: 0;
+  color: #8a93a3;
+  font-size: 0.85rem;
+  line-height: 18px;
+}
+.bio {
+  margin: 0;
+  color: #c9cfdb;
+  font-size: 0.9rem;
+  line-height: 18px;
+  min-height: 36px;
+}
+.error {
+  padding: 14px;
+  border: 1px solid #6b2b2b;
+  background: #2a1414;
+  border-radius: 12px;
+  color: #ffb4b4;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 </style>
 `,
-          "/src/api.js": `// Simulated server: there is no network in this demo. Resolves (or rejects) after 600 ms.
+          "/src/api.js": `// Simulated server: there is no network in this
+// demo. Resolves (or rejects) after 600 ms.
 const PROFILES = [
-  { id: 1, name: "Ada Lovelace", role: "Analyst", bio: "Wrote the first published algorithm for a machine." },
-  { id: 2, name: "Alan Turing", role: "Mathematician", bio: "Asked whether machines can think, then built one." },
-  { id: 3, name: "Grace Hopper", role: "Rear admiral", bio: "Made the first compiler and found a real bug." },
+  {
+    id: 1,
+    name: "Ada Lovelace",
+    role: "Analyst",
+    bio: "Wrote the first published algorithm for a machine.",
+  },
+  {
+    id: 2,
+    name: "Alan Turing",
+    role: "Mathematician",
+    bio: "Asked whether machines can think, then built one.",
+  },
+  {
+    id: 3,
+    name: "Grace Hopper",
+    role: "Rear admiral",
+    bio: "Made the first compiler and found a real bug.",
+  },
 ];
 
 export function fetchProfiles({ fail = false } = {}) {
   return new Promise((resolve, reject) =>
-    setTimeout(() => (fail ? reject(new Error("Server returned 503")) : resolve(PROFILES)), 600)
+    setTimeout(
+      () =>
+        fail ? reject(new Error("Server returned 503")) : resolve(PROFILES),
+      600,
+    ),
   );
 }
 `,
@@ -8149,24 +10301,49 @@ const props = defineProps({
 
 // Unlike React, Vue does not add "px" to bare numbers in style bindings.
 const px = (v) => (typeof v === "number" ? v + "px" : v);
-const style = computed(() => ({ width: px(props.width), height: px(props.height) }));
+const style = computed(() => ({
+  width: px(props.width),
+  height: px(props.height),
+}));
 </script>
 
 <template>
   <!-- One primitive, three shapes. Purely decorative, so it is hidden from screen readers. -->
-  <span :class="['skeleton', 'skeleton-' + variant]" :style="style" aria-hidden="true"></span>
+  <span
+    :class="['skeleton', 'skeleton-' + variant]"
+    :style="style"
+    aria-hidden="true"
+  ></span>
 </template>
 
 <style scoped>
 .skeleton {
-  display: block; flex: none; border-radius: 6px;
+  display: block;
+  flex: none;
+  border-radius: 6px;
   background: linear-gradient(90deg, #232836 25%, #2e3445 37%, #232836 63%);
-  background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
 }
-.skeleton-text { height: 18px; }
-.skeleton-circle { border-radius: 50%; }
-@keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
-@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.skeleton-text {
+  height: 18px;
+}
+.skeleton-circle {
+  border-radius: 50%;
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
 </style>
 `,
         },
@@ -8234,7 +10411,8 @@ The template is empty: the \`app-skeleton\` element itself is the shape. \`host\
 ### Step 2: shared card styles
 
 ~~~ts
-// Shared by the real card and its skeleton, so their boxes are identical.
+// Shared by the real card and its
+// skeleton, so their boxes are identical.
 const CARD_STYLES = \`
   :host { display: block; }
   .card { display: flex; gap: 14px; padding: 14px; background: #171a21; border: 1px solid #2a2f3a; border-radius: 12px; min-height: 104px; box-sizing: border-box; }
@@ -8258,8 +10436,13 @@ constructor() {
     onCleanup(() => (current = false));
     this.state.set({ status: "loading" });
     fetchProfiles({ fail: req.fail })
-      .then((profiles) => { if (current) this.state.set({ status: "success", profiles }); })
-      .catch((err: Error) => { if (current) this.state.set({ status: "error", message: err.message }); });
+      .then((profiles) => {
+        if (current) this.state.set({ status: "success", profiles });
+      })
+      .catch((err: Error) => {
+        if (current)
+          this.state.set({ status: "error", message: err.message });
+      });
   });
 }
 ~~~
@@ -8271,9 +10454,16 @@ Reading \`this.request()\` makes the effect depend on it; each Reload or Retry s
 ### Step 4: \`@switch\` over the status
 
 ~~~html
-<section [attr.aria-busy]="loading()" aria-label="Team members" class="list">
+<section
+  [attr.aria-busy]="loading()"
+  aria-label="Team members"
+  class="list"
+>
   <!-- Screen readers hear this instead of a pile of empty grey boxes -->
-  <p role="status" class="sr-only">{{ loading() ? "Loading team members" : "" }}</p>
+  <p
+    role="status"
+    class="sr-only"
+  >{{ loading() ? "Loading team members" : "" }}</p>
   @switch (state().status) {
     @case ("loading") {
       @for (i of placeholders; track i) {
@@ -8301,7 +10491,7 @@ Reading \`this.request()\` makes the effect depend on it; each Reload or Retry s
 
 Same driver as React and Vue (it finds the shapes by their \`skeleton\` class, which the host binding sets). AOT output with strict templates (first lines omitted); the JIT playground run printed the same lines:
 
-~~~
+~~~text
 [angular:app] t=0          : aria-busy=true status="Loading team members" skeleton cards=3 cards=0 shapes(first card)=circle,text,text,rect all aria-hidden=true
 [angular:app] first skeleton sizes: 48px by 48px, 45% by 20px, 30% by 18px, 100% by 36px
 [angular:app] t=700ms      : aria-busy=false status="" skeleton cards=0 cards=3
@@ -8396,7 +10586,8 @@ Loading with three \`aria-hidden\` skeleton cards, success, the failing reload w
 ---
 **Conclusion:** The Angular skeleton loader is a host-only \`app-skeleton\` primitive, card components that share one style constant so their boxes match, a \`LoadState\` union in a signal, and an \`effect\` whose \`onCleanup\` drops stale responses, rendered with \`@switch\` and announced with \`aria-busy\` and a status message. The strict AOT build and the playground JIT on Angular 22.2.3 printed the same output as React and Vue.`,
         files: {
-          "/src/app/api.ts": `// Simulated server: there is no network in this demo. Resolves (or rejects) after 600 ms.
+          "/src/app/api.ts": `// Simulated server: there is no network in this
+// demo. Resolves (or rejects) after 600 ms.
 export interface Profile {
   id: number;
   name: string;
@@ -8405,22 +10596,47 @@ export interface Profile {
 }
 
 const PROFILES: Profile[] = [
-  { id: 1, name: "Ada Lovelace", role: "Analyst", bio: "Wrote the first published algorithm for a machine." },
-  { id: 2, name: "Alan Turing", role: "Mathematician", bio: "Asked whether machines can think, then built one." },
-  { id: 3, name: "Grace Hopper", role: "Rear admiral", bio: "Made the first compiler and found a real bug." },
+  {
+    id: 1,
+    name: "Ada Lovelace",
+    role: "Analyst",
+    bio: "Wrote the first published algorithm for a machine.",
+  },
+  {
+    id: 2,
+    name: "Alan Turing",
+    role: "Mathematician",
+    bio: "Asked whether machines can think, then built one.",
+  },
+  {
+    id: 3,
+    name: "Grace Hopper",
+    role: "Rear admiral",
+    bio: "Made the first compiler and found a real bug.",
+  },
 ];
 
-export function fetchProfiles({ fail = false }: { fail?: boolean } = {}): Promise<Profile[]> {
+export function fetchProfiles({
+  fail = false,
+}: { fail?: boolean } = {}): Promise<Profile[]> {
   return new Promise((resolve, reject) =>
-    setTimeout(() => (fail ? reject(new Error("Server returned 503")) : resolve(PROFILES)), 600)
+    setTimeout(
+      () =>
+        fail ? reject(new Error("Server returned 503")) : resolve(PROFILES),
+      600,
+    ),
   );
 }
 `,
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
 import { Profile, fetchProfiles } from "./api";
-import { ProfileCardComponent, ProfileCardSkeletonComponent } from "./profile-card.component";
+import {
+  ProfileCardComponent,
+  ProfileCardSkeletonComponent,
+} from "./profile-card.component";
 
-// One state object, three shapes: loading, success (with data) or error (with a message).
+// One state object, three shapes: loading,
+// success (with data) or error (with a message).
 type LoadState =
   | { status: "loading" }
   | { status: "success"; profiles: Profile[] }
@@ -8434,15 +10650,30 @@ type LoadState =
     <main class="page">
       <h1>Team</h1>
       <div class="toolbar">
-        <button type="button" [disabled]="loading()" (click)="reload()">Reload</button>
+        <button
+          type="button"
+          [disabled]="loading()"
+          (click)="reload()"
+        >Reload</button>
         <label>
-          <input type="checkbox" [checked]="failNext()" (change)="failNext.set($any($event.target).checked)" />
+          <input
+            type="checkbox"
+            [checked]="failNext()"
+            (change)="failNext.set($any($event.target).checked)"
+          />
           Make the next request fail
         </label>
       </div>
-      <section [attr.aria-busy]="loading()" aria-label="Team members" class="list">
+      <section
+        [attr.aria-busy]="loading()"
+        aria-label="Team members"
+        class="list"
+      >
         <!-- Screen readers hear this instead of a pile of empty grey boxes -->
-        <p role="status" class="sr-only">{{ loading() ? "Loading team members" : "" }}</p>
+        <p
+          role="status"
+          class="sr-only"
+        >{{ loading() ? "Loading team members" : "" }}</p>
         @switch (state().status) {
           @case ("loading") {
             @for (i of placeholders; track i) {
@@ -8464,7 +10695,8 @@ type LoadState =
       </section>
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
     .page { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
     h1 { font-size: 1.4rem; margin: 0 0 12px; }
@@ -8474,7 +10706,8 @@ type LoadState =
     .list { display: grid; gap: 12px; }
     .error { padding: 14px; border: 1px solid #6b2b2b; background: #2a1414; border-radius: 12px; color: #ffb4b4; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {
   readonly placeholders = [0, 1, 2];
@@ -8484,8 +10717,14 @@ export class AppComponent {
   readonly request = signal({ id: 0, fail: false });
 
   readonly loading = computed(() => this.state().status === "loading");
-  readonly profiles = computed(() => { const s = this.state(); return s.status === "success" ? s.profiles : []; });
-  readonly errorMessage = computed(() => { const s = this.state(); return s.status === "error" ? s.message : ""; });
+  readonly profiles = computed(() => {
+    const s = this.state();
+    return s.status === "success" ? s.profiles : [];
+  });
+  readonly errorMessage = computed(() => {
+    const s = this.state();
+    return s.status === "error" ? s.message : "";
+  });
 
   constructor() {
     effect((onCleanup) => {
@@ -8494,8 +10733,13 @@ export class AppComponent {
       onCleanup(() => (current = false));
       this.state.set({ status: "loading" });
       fetchProfiles({ fail: req.fail })
-        .then((profiles) => { if (current) this.state.set({ status: "success", profiles }); })
-        .catch((err: Error) => { if (current) this.state.set({ status: "error", message: err.message }); });
+        .then((profiles) => {
+          if (current) this.state.set({ status: "success", profiles });
+        })
+        .catch((err: Error) => {
+          if (current)
+            this.state.set({ status: "error", message: err.message });
+        });
     });
   }
 
@@ -8575,17 +10819,42 @@ export class ProfileCardSkeletonComponent {}
     "[style.width]": "size(width)",
     "[style.height]": "size(height)",
   },
-  styles: [\`
-    :host {
-      display: block; flex: none; border-radius: 6px;
-      background: linear-gradient(90deg, #232836 25%, #2e3445 37%, #232836 63%);
-      background-size: 400% 100%; animation: shimmer 1.4s ease infinite;
-    }
-    :host(.skeleton-text) { height: 18px; }
-    :host(.skeleton-circle) { border-radius: 50%; }
-    @keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
-    @media (prefers-reduced-motion: reduce) { :host { animation: none; } }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        flex: none;
+        border-radius: 6px;
+        background: linear-gradient(
+          90deg,
+          #232836 25%,
+          #2e3445 37%,
+          #232836 63%
+        );
+        background-size: 400% 100%;
+        animation: shimmer 1.4s ease infinite;
+      }
+      :host(.skeleton-text) {
+        height: 18px;
+      }
+      :host(.skeleton-circle) {
+        border-radius: 50%;
+      }
+      @keyframes shimmer {
+        from {
+          background-position: 100% 50%;
+        }
+        to {
+          background-position: 0 50%;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        :host {
+          animation: none;
+        }
+      }
+    \`,
+  ],
 })
 export class SkeletonComponent {
   @Input() variant: "text" | "circle" | "rect" = "text";

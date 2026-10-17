@@ -157,7 +157,11 @@ const [stepText, setStepText] = useState("1");
 const step = parseStep(stepText);
 const atMin = count <= min;
 const atMax = count >= max;
-const status = atMax ? "Maximum reached" : atMin ? "Minimum reached" : "";
+const status = atMax
+  ? "Maximum reached"
+  : atMin
+    ? "Minimum reached"
+    : "";
 ~~~
 
 Notice there is no <code>useEffect</code> anywhere. A common beginner move is to store <code>atMax</code> in state and update it from an effect after <code>count</code> changes; that causes an extra render and a moment where the two disagree.
@@ -165,7 +169,8 @@ Notice there is no <code>useEffect</code> anywhere. A common beginner move is to
 ### Step 4: functional updates
 
 ~~~jsx
-// Functional update: each click works from the latest count, never a stale copy.
+// Functional update: each click works from
+// the latest count, never a stale copy.
 const change = (delta) => setCount((c) => clamp(c + delta, min, max));
 ~~~
 
@@ -368,7 +373,9 @@ export default function App() {
   return (
     <main className="page">
       <h1>Counter</h1>
-      <p className="hint">Counts from 0 to 10. Change the step to jump faster.</p>
+      <p className="hint">
+        Counts from 0 to 10. Change the step to jump faster.
+      </p>
       <Counter initial={0} min={0} max={10} />
     </main>
   );
@@ -379,13 +386,18 @@ export default function App() {
 // Keep a number inside [min, max].
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
-// The step box holds raw text; anything that is not a whole number >= 1 counts as 1.
+// The step box holds raw text; anything that
+// is not a whole number >= 1 counts as 1.
 function parseStep(text) {
   const n = Number(text);
   return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
-export default function Counter({ initial = 0, min = -Infinity, max = Infinity }) {
+export default function Counter({
+  initial = 0,
+  min = -Infinity,
+  max = Infinity,
+}) {
   const start = clamp(initial, min, max);
   const [count, setCount] = useState(start);
   const [stepText, setStepText] = useState("1");
@@ -396,12 +408,15 @@ export default function Counter({ initial = 0, min = -Infinity, max = Infinity }
   const atMax = count >= max;
   const status = atMax ? "Maximum reached" : atMin ? "Minimum reached" : "";
 
-  // Functional update: each click works from the latest count, never a stale copy.
+  // Functional update: each click works from
+  // the latest count, never a stale copy.
   const change = (delta) => setCount((c) => clamp(c + delta, min, max));
 
   return (
     <section className="counter" aria-labelledby="counter-title">
-      <h2 id="counter-title" className="sr-only">Counter</h2>
+      <h2 id="counter-title" className="sr-only">
+        Counter
+      </h2>
       <p className="value" aria-live="polite">
         Count: <span data-testid="count">{count}</span>
       </p>
@@ -440,27 +455,100 @@ export default function Counter({ initial = 0, min = -Infinity, max = Infinity }
           onChange={(e) => setStepText(e.target.value)}
         />
       </label>
-      <p className="status" data-testid="status" role="status">{status}</p>
+      <p className="status" data-testid="status" role="status">
+        {status}
+      </p>
     </section>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
-.counter { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-.value { font-size: 1.1rem; margin: 0 0 16px; }
-.value span { font-size: 2.4rem; font-weight: 700; color: #38bdf8; margin-left: 8px; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; }
-button { min-width: 48px; min-height: 44px; padding: 0 16px; font-size: 1.1rem; border-radius: 8px;
-  border: 1px solid #475569; background: #334155; color: #f8fafc; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
-.step { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.step input { width: 72px; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
-.status { min-height: 1.2em; color: #fbbf24; margin: 12px 0 0; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+.counter {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+}
+.value {
+  font-size: 1.1rem;
+  margin: 0 0 16px;
+}
+.value span {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-left: 8px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+button {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.step input {
+  width: 72px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.status {
+  min-height: 1.2em;
+  color: #fbbf24;
+  margin: 12px 0 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -495,18 +583,12 @@ The state model, in Vue terms:
 ### Step 1: props with defaults, and one clamp
 
 ~~~vue
-const props = defineProps({
-  initial: { type: Number, default: 0 },
-  min: { type: Number, default: -Infinity },
-  max: { type: Number, default: Infinity },
-});
-
-// Keep a number inside [min, max].
-const clamp = (n) => Math.min(props.max, Math.max(props.min, n));
-
-const start = clamp(props.initial);
-const count = ref(start);
-// v-model on a type="number" input hands us a number, or "" when the box is empty.
+const props = defineProps({ initial: { type: Number, default: 0 }, min:
+{ type: Number, default: -Infinity }, max: { type: Number, default:
+Infinity }, }); // Keep a number inside [min, max]. const clamp = (n) =>
+Math.min(props.max, Math.max(props.min, n)); const start =
+clamp(props.initial); const count = ref(start); // v-model on a
+type="number" input hands us a number, or "" when the box is empty.
 const stepText = ref(1);
 ~~~
 
@@ -517,8 +599,8 @@ const stepText = ref(1);
 ### Step 2: the step box and v-model on a number input
 
 ~~~vue
-// v-model on a type="number" input hands us a number, or "" when the box is empty.
-const stepText = ref(1);
+// v-model on a type="number" input hands us a number, or "" when the
+box is empty. const stepText = ref(1);
 ~~~
 
 ~~~vue
@@ -532,19 +614,12 @@ A detail worth knowing: on an <code>&lt;input type="number"&gt;</code>, <code>v-
 ### Step 3: derived values with computed
 
 ~~~vue
-const step = computed(() => {
-  const n = Number(stepText.value);
-  return Number.isInteger(n) && n >= 1 ? n : 1;
-});
-const atMin = computed(() => count.value <= props.min);
-const atMax = computed(() => count.value >= props.max);
-const status = computed(() =>
-  atMax.value ? "Maximum reached" : atMin.value ? "Minimum reached" : ""
-);
-
-function change(delta) {
-  count.value = clamp(count.value + delta);
-}
+const step = computed(() => { const n = Number(stepText.value); return
+Number.isInteger(n) && n >= 1 ? n : 1; }); const atMin = computed(() =>
+count.value <= props.min); const atMax = computed(() => count.value >=
+props.max); const status = computed(() => atMax.value ? "Maximum
+reached" : atMin.value ? "Minimum reached" : "" ); function
+change(delta) { count.value = clamp(count.value + delta); }
 ~~~
 
 No <code>watch</code> is needed. Writing <code>watch(count, c => atMax.value = c >= props.max)</code> would work, but it is a second copy of the truth that updates one tick later. A <code>computed</code> is always consistent with <code>count</code>.
@@ -556,9 +631,23 @@ No <code>watch</code> is needed. Writing <code>watch(count, c => atMax.value = c
   Count: <span data-testid="count">{{ count }}</span>
 </p>
 <div class="row">
-  <button type="button" aria-label="Decrease" :aria-disabled="atMin" @click="!atMin && change(-step)">−</button>
-  <button type="button" aria-label="Increase" :aria-disabled="atMax" @click="!atMax && change(step)">+</button>
-  <button type="button" :aria-disabled="count === start" @click="count = start">Reset</button>
+  <button
+    type="button"
+    aria-label="Decrease"
+    :aria-disabled="atMin"
+    @click="!atMin && change(-step)"
+  >−</button>
+  <button
+    type="button"
+    aria-label="Increase"
+    :aria-disabled="atMax"
+    @click="!atMax && change(step)"
+  >+</button>
+  <button
+    type="button"
+    :aria-disabled="count === start"
+    @click="count = start"
+  >Reset</button>
 </div>
 ~~~
 
@@ -696,10 +785,25 @@ import Counter from "./components/Counter.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/components/Counter.vue": `<script setup>
@@ -716,10 +820,12 @@ const clamp = (n) => Math.min(props.max, Math.max(props.min, n));
 
 const start = clamp(props.initial);
 const count = ref(start);
-// v-model on a type="number" input hands us a number, or "" when the box is empty.
+// v-model on a type="number" input hands us
+// a number, or "" when the box is empty.
 const stepText = ref(1);
 
-// Derived values: cached by computed, recalculated only when what they read changes.
+// Derived values: cached by computed,
+// recalculated only when what they read changes.
 const step = computed(() => {
   const n = Number(stepText.value);
   return Number.isInteger(n) && n >= 1 ? n : 1;
@@ -727,7 +833,7 @@ const step = computed(() => {
 const atMin = computed(() => count.value <= props.min);
 const atMax = computed(() => count.value >= props.max);
 const status = computed(() =>
-  atMax.value ? "Maximum reached" : atMin.value ? "Minimum reached" : ""
+  atMax.value ? "Maximum reached" : atMin.value ? "Minimum reached" : "",
 );
 
 function change(delta) {
@@ -742,9 +848,23 @@ function change(delta) {
       Count: <span data-testid="count">{{ count }}</span>
     </p>
     <div class="row">
-      <button type="button" aria-label="Decrease" :aria-disabled="atMin" @click="!atMin && change(-step)">−</button>
-      <button type="button" aria-label="Increase" :aria-disabled="atMax" @click="!atMax && change(step)">+</button>
-      <button type="button" :aria-disabled="count === start" @click="count = start">Reset</button>
+      <button
+        type="button"
+        aria-label="Decrease"
+        :aria-disabled="atMin"
+        @click="!atMin && change(-step)"
+      >−</button>
+      <button
+        type="button"
+        aria-label="Increase"
+        :aria-disabled="atMax"
+        @click="!atMax && change(step)"
+      >+</button>
+      <button
+        type="button"
+        :aria-disabled="count === start"
+        @click="count = start"
+      >Reset</button>
     </div>
     <label class="step">
       Step
@@ -755,18 +875,74 @@ function change(delta) {
 </template>
 
 <style scoped>
-.counter { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-.value { font-size: 1.1rem; margin: 0 0 16px; }
-.value span { font-size: 2.4rem; font-weight: 700; color: #38bdf8; margin-left: 8px; }
-.row { display: flex; gap: 8px; flex-wrap: wrap; }
-button { min-width: 48px; min-height: 44px; padding: 0 16px; font-size: 1.1rem; border-radius: 8px;
-  border: 1px solid #475569; background: #334155; color: #f8fafc; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-button[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
-.step { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
-.step input { width: 72px; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
-.status { min-height: 1.2em; color: #fbbf24; margin: 12px 0 0; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.counter {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+}
+.value {
+  font-size: 1.1rem;
+  margin: 0 0 16px;
+}
+.value span {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #38bdf8;
+  margin-left: 8px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+button {
+  min-width: 48px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.step input {
+  width: 72px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.status {
+  min-height: 1.2em;
+  color: #fbbf24;
+  margin: 12px 0 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
         },
@@ -806,7 +982,8 @@ The playground compiles components at runtime, where the newer signal-based <cod
 @Input() min = -Infinity;
 @Input() max = Infinity;
 
-// Inputs are not set yet in the constructor, so the start value is fixed in ngOnInit.
+// Inputs are not set yet in the constructor,
+// so the start value is fixed in ngOnInit.
 start = 0;
 count = signal(0);
 stepText = signal("1");
@@ -816,7 +993,7 @@ stepText = signal("1");
 ngOnInit() {
   this.start = this.clamp(this.initial);
   this.count.set(this.start);
-}}
+}
 ~~~
 
 📌 **Interview term: ngOnInit** — a lifecycle hook that runs once, after Angular has set the component's inputs for the first time. In the constructor <code>this.initial</code> would still be the default 0, so the start value is computed here. See [Angular lifecycle hooks](/interview-question/what-are-angular-lifecycle-hooks).
@@ -830,7 +1007,13 @@ step = computed(() => {
 });
 atMin = computed(() => this.count() <= this.min);
 atMax = computed(() => this.count() >= this.max);
-status = computed(() => (this.atMax() ? "Maximum reached" : this.atMin() ? "Minimum reached" : ""));
+status = computed(() =>
+  this.atMax()
+    ? "Maximum reached"
+    : this.atMin()
+      ? "Minimum reached"
+      : "",
+);
 ~~~
 
 None of these is ever set by hand, so they can never disagree with <code>count</code>. The template calls <code>atMax()</code> as often as it likes; the value is cached until <code>count</code> changes.
@@ -844,7 +1027,7 @@ change(delta: number) {
 
 private clamp(n: number) {
   return Math.min(this.max, Math.max(this.min, n));
-}}
+}
 ~~~
 
 <code>update</code> receives the current value, so every click builds on the latest count, and <code>clamp</code> is the single place the range is enforced: a step of 4 at 9 lands on 10.
@@ -856,13 +1039,40 @@ private clamp(n: number) {
   Count: <span data-testid="count">{{ count() }}</span>
 </p>
 <div class="row">
-  <button type="button" aria-label="Decrease" [attr.aria-disabled]="atMin()" (click)="!atMin() && change(-step())">−</button>
-  <button type="button" aria-label="Increase" [attr.aria-disabled]="atMax()" (click)="!atMax() && change(step())">+</button>
-  <button type="button" [attr.aria-disabled]="count() === start" (click)="count.set(start)">Reset</button>
+  <button
+    type="button"
+    aria-label="Decrease"
+    [attr.aria-disabled]="atMin()"
+    (click)="!atMin() && change(-step())"
+  >
+    −
+  </button>
+  <button
+    type="button"
+    aria-label="Increase"
+    [attr.aria-disabled]="atMax()"
+    (click)="!atMax() && change(step())"
+  >
+    +
+  </button>
+  <button
+    type="button"
+    [attr.aria-disabled]="count() === start"
+    (click)="count.set(start)"
+  >
+    Reset
+  </button>
 </div>
 <label class="step">
   Step
-  <input #stepBox type="number" min="1" inputmode="numeric" [value]="stepText()" (input)="stepText.set(stepBox.value)" />
+  <input
+    #stepBox
+    type="number"
+    min="1"
+    inputmode="numeric"
+    [value]="stepText()"
+    (input)="stepText.set(stepBox.value)"
+  />
 </label>
 <p class="status" data-testid="status" role="status">{{ status() }}</p>
 ~~~
@@ -993,7 +1203,8 @@ import { CounterComponent } from "./counter.component";
 
 @Component({
   selector: "app-root",
-  // None: lets the body rule below reach the page; the other selectors are scoped by hand with app-root.
+  // None: lets the body rule below reach the page; the
+  // other selectors are scoped by hand with app-root.
   encapsulation: ViewEncapsulation.None,
   imports: [CounterComponent],
   template: \`
@@ -1003,12 +1214,29 @@ import { CounterComponent } from "./counter.component";
       <app-counter [initial]="0" [min]="0" [max]="10" />
     </main>
   \`,
-  styles: [\`
-    body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    app-root .page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-    app-root h1 { font-size: 1.4rem; margin: 0 0 4px; }
-    app-root .hint { color: #94a3b8; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      app-root .page {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      app-root h1 {
+        font-size: 1.4rem;
+        margin: 0 0 4px;
+      }
+      app-root .hint {
+        color: #94a3b8;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -1023,18 +1251,40 @@ export class AppComponent {}
         Count: <span data-testid="count">{{ count() }}</span>
       </p>
       <div class="row">
-        <button type="button" aria-label="Decrease" [attr.aria-disabled]="atMin()" (click)="!atMin() && change(-step())">−</button>
-        <button type="button" aria-label="Increase" [attr.aria-disabled]="atMax()" (click)="!atMax() && change(step())">+</button>
-        <button type="button" [attr.aria-disabled]="count() === start" (click)="count.set(start)">Reset</button>
+        <button
+          type="button"
+          aria-label="Decrease"
+          [attr.aria-disabled]="atMin()"
+          (click)="!atMin() && change(-step())"
+        >−</button>
+        <button
+          type="button"
+          aria-label="Increase"
+          [attr.aria-disabled]="atMax()"
+          (click)="!atMax() && change(step())"
+        >+</button>
+        <button
+          type="button"
+          [attr.aria-disabled]="count() === start"
+          (click)="count.set(start)"
+        >Reset</button>
       </div>
       <label class="step">
         Step
-        <input #stepBox type="number" min="1" inputmode="numeric" [value]="stepText()" (input)="stepText.set(stepBox.value)" />
+        <input
+          #stepBox
+          type="number"
+          min="1"
+          inputmode="numeric"
+          [value]="stepText()"
+          (input)="stepText.set(stepBox.value)"
+        />
       </label>
       <p class="status" data-testid="status" role="status">{{ status() }}</p>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .counter { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
     .value { font-size: 1.1rem; margin: 0 0 16px; }
     .value span { font-size: 2.4rem; font-weight: 700; color: #38bdf8; margin-left: 8px; }
@@ -1047,14 +1297,16 @@ export class AppComponent {}
     .step input { width: 72px; padding: 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
     .status { min-height: 1.2em; color: #fbbf24; margin: 12px 0 0; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class CounterComponent implements OnInit {
   @Input() initial = 0;
   @Input() min = -Infinity;
   @Input() max = Infinity;
 
-  // Inputs are not set yet in the constructor, so the start value is fixed in ngOnInit.
+  // Inputs are not set yet in the constructor,
+  // so the start value is fixed in ngOnInit.
   start = 0;
   count = signal(0);
   stepText = signal("1");
@@ -1066,7 +1318,9 @@ export class CounterComponent implements OnInit {
   });
   atMin = computed(() => this.count() <= this.min);
   atMax = computed(() => this.count() >= this.max);
-  status = computed(() => (this.atMax() ? "Maximum reached" : this.atMin() ? "Minimum reached" : ""));
+  status = computed(() =>
+    this.atMax() ? "Maximum reached" : this.atMin() ? "Minimum reached" : "",
+  );
 
   ngOnInit() {
     this.start = this.clamp(this.initial);
@@ -1209,7 +1463,11 @@ Because <code>shouldFail</code> is a parameter, the failure is deterministic: ti
 ### Step 2: inject the save function
 
 ~~~jsx
-<LikeButton initialLiked={false} initialCount={41} save={(liked) => saveLike(liked, fail)} />
+<LikeButton
+  initialLiked={false}
+  initialCount={41}
+  save={(liked) => saveLike(liked, fail)}
+/>
 ~~~
 
 The button does not import the API. It receives <code>save</code> as a prop, so a test can pass <code>() => Promise.reject()</code>, and a real app can pass a function that calls <code>fetch</code>. This is dependency injection in its simplest form.
@@ -1220,7 +1478,8 @@ The button does not import the API. It receives <code>save</code> as a prop, so 
 const [liked, setLiked] = useState(initialLiked);
 const [count, setCount] = useState(initialCount);
 const [status, setStatus] = useState("");
-// A ref, not state: it must be readable synchronously and never needs to render.
+// A ref, not state: it must be readable
+// synchronously and never needs to render.
 const inFlight = useRef(false);
 ~~~
 
@@ -1245,7 +1504,8 @@ async function toggle() {
     await save(nextLiked);
     setStatus("Saved");
   } catch {
-    setLiked(prev.liked); // roll back to exactly what the user saw before
+    // roll back to exactly what the user saw before
+    setLiked(prev.liked);
     setCount(prev.count);
     setStatus("Could not save your like. Try again.");
   } finally {
@@ -1279,10 +1539,17 @@ Walk through it:
   aria-busy={status === "Saving…"}
   onClick={toggle}
 >
-  <span className="heart" aria-hidden="true">{liked ? "♥" : "♡"}</span> Like
+  <span className="heart" aria-hidden="true">
+    {liked ? "♥" : "♡"}
+  </span>{" "}
+  Like
 </button>
-<span data-testid="like-count" className="count">{label(count)}</span>
-<p role="status" data-testid="like-status" className="status">{status}</p>
+<span data-testid="like-count" className="count">
+  {label(count)}
+</span>
+<p role="status" data-testid="like-status" className="status">
+  {status}
+</p>
 ~~~
 
 📌 **Interview term: aria-pressed** — turns a button into a toggle button for assistive technology: <code>true</code> is announced as "pressed". The visible label stays "Like" in both states; changing it to "Liked" as well would make a screen reader say "Liked, pressed", a double signal that confuses.
@@ -1427,10 +1694,18 @@ export default function App() {
       <h1>Like Button</h1>
       <article className="post">
         <p>Shipped the new onboarding flow today. Feedback welcome!</p>
-        <LikeButton initialLiked={false} initialCount={41} save={(liked) => saveLike(liked, fail)} />
+        <LikeButton
+          initialLiked={false}
+          initialCount={41}
+          save={(liked) => saveLike(liked, fail)}
+        />
       </article>
       <label className="sim">
-        <input type="checkbox" checked={fail} onChange={(e) => setFail(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={fail}
+          onChange={(e) => setFail(e.target.checked)}
+        />
         Simulate server failure
       </label>
     </main>
@@ -1441,11 +1716,16 @@ export default function App() {
 
 const label = (n) => \`\${n} \${n === 1 ? "like" : "likes"}\`;
 
-export default function LikeButton({ initialLiked = false, initialCount = 0, save }) {
+export default function LikeButton({
+  initialLiked = false,
+  initialCount = 0,
+  save,
+}) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialCount);
   const [status, setStatus] = useState("");
-  // A ref, not state: it must be readable synchronously and never needs to render.
+  // A ref, not state: it must be readable
+  // synchronously and never needs to render.
   const inFlight = useRef(false);
 
   async function toggle() {
@@ -1479,15 +1759,23 @@ export default function LikeButton({ initialLiked = false, initialCount = 0, sav
         aria-busy={status === "Saving…"}
         onClick={toggle}
       >
-        <span className="heart" aria-hidden="true">{liked ? "♥" : "♡"}</span> Like
+        <span className="heart" aria-hidden="true">
+          {liked ? "♥" : "♡"}
+        </span>{" "}
+        Like
       </button>
-      <span data-testid="like-count" className="count">{label(count)}</span>
-      <p role="status" data-testid="like-status" className="status">{status}</p>
+      <span data-testid="like-count" className="count">
+        {label(count)}
+      </span>
+      <p role="status" data-testid="like-status" className="status">
+        {status}
+      </p>
     </div>
   );
 }
 `,
-          "/src/api.js": `// A simulated server: no network. Resolves after 600 ms, or rejects when shouldFail is true.
+          "/src/api.js": `// A simulated server: no network. Resolves after
+// 600 ms, or rejects when shouldFail is true.
 export function saveLike(liked, shouldFail) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -1497,23 +1785,100 @@ export function saveLike(liked, shouldFail) {
   });
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.post { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-.post p { margin: 0 0 14px; line-height: 1.5; }
-.like { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; font-size: 1rem;
-  border-radius: 999px; border: 1px solid #475569; background: #334155; color: #f8fafc; cursor: pointer; }
-.like-btn:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.like-btn.liked { background: #4c0519; border-color: #f43f5e; color: #fecdd3; }
-.heart { font-size: 1.2rem; display: inline-block; }
-.liked .heart { color: #f43f5e; animation: pop 300ms ease-out; }
-@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.45); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .liked .heart { animation: none; } }
-.count { color: #cbd5e1; }
-.status { flex-basis: 100%; min-height: 1.2em; margin: 4px 0 0; color: #fbbf24; font-size: 0.9rem; }
-.sim { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: #94a3b8; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.post {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.post p {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.like {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 1rem;
+  border-radius: 999px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.like-btn:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.like-btn.liked {
+  background: #4c0519;
+  border-color: #f43f5e;
+  color: #fecdd3;
+}
+.heart {
+  font-size: 1.2rem;
+  display: inline-block;
+}
+.liked .heart {
+  color: #f43f5e;
+  animation: pop 300ms ease-out;
+}
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.45);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liked .heart {
+    animation: none;
+  }
+}
+.count {
+  color: #cbd5e1;
+}
+.status {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 4px 0 0;
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
+.sim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: #94a3b8;
+}
 `,
         },
       },
@@ -1559,8 +1924,8 @@ export function saveLike(liked, shouldFail) {
 ~~~
 
 ~~~vue
-const fail = ref(false);
-const save = (liked) => saveLike(liked, fail.value);
+const fail = ref(false); const save = (liked) => saveLike(liked,
+fail.value);
 ~~~
 
 The arrow function reads <code>fail.value</code> at call time, so ticking the checkbox affects the next save. Passing <code>save</code> as a prop means the button never imports the API, and a test can hand it a rejecting function.
@@ -1570,21 +1935,13 @@ The arrow function reads <code>fail.value</code> at call time, so ticking the ch
 ### Step 2: state and the guard
 
 ~~~vue
-const props = defineProps({
-  initialLiked: { type: Boolean, default: false },
-  initialCount: { type: Number, default: 0 },
-  save: { type: Function, required: true },
-});
-
-const liked = ref(props.initialLiked);
-const count = ref(props.initialCount);
-const status = ref("");
-// A plain variable, not a ref: it guards requests and never needs to render.
-let inFlight = false;
-
-const countLabel = computed(() => \`\${count.value} \${count.value === 1 ? "like" : "likes"}\`);
-
-async function toggle() {
+const props = defineProps({ initialLiked: { type: Boolean, default:
+false }, initialCount: { type: Number, default: 0 }, save: { type:
+Function, required: true }, }); const liked = ref(props.initialLiked);
+const count = ref(props.initialCount); const status = ref(""); // A
+plain variable, not a ref: it guards requests and never needs to render.
+let inFlight = false; const countLabel = computed(() => \`\${count.value}
+\${count.value === 1 ? "like" : "likes"}\`); async function toggle() {
 ~~~
 
 The guard is a plain variable on purpose. A <code>ref</code> would work, but making it reactive would only cost tracking for a value no template reads. It is still per-instance, because <code>&lt;script setup&gt;</code> runs once for each component instance.
@@ -1784,15 +2141,42 @@ const save = (liked) => saveLike(liked, fail.value);
 </template>
 
 <style>
-body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.post { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-.post p { margin: 0 0 14px; line-height: 1.5; }
-.sim { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: #94a3b8; }
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.post {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.post p {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.sim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: #94a3b8;
+}
 </style>
 `,
-          "/src/api.js": `// A simulated server: no network. Resolves after 600 ms, or rejects when shouldFail is true.
+          "/src/api.js": `// A simulated server: no network. Resolves after
+// 600 ms, or rejects when shouldFail is true.
 export function saveLike(liked, shouldFail) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -1817,13 +2201,16 @@ const status = ref("");
 // A plain variable, not a ref: it guards requests and never needs to render.
 let inFlight = false;
 
-const countLabel = computed(() => \`\${count.value} \${count.value === 1 ? "like" : "likes"}\`);
+const countLabel = computed(
+  () => \`\${count.value} \${count.value === 1 ? "like" : "likes"}\`,
+);
 
 async function toggle() {
   if (inFlight) return; // one request at a time
   inFlight = true;
 
-  const prev = { liked: liked.value, count: count.value }; // snapshot for rollback
+  // snapshot for rollback
+  const prev = { liked: liked.value, count: count.value };
   liked.value = !liked.value; // optimistic: update the screen first
   count.value += liked.value ? 1 : -1;
   status.value = "Saving…";
@@ -1859,17 +2246,68 @@ async function toggle() {
 </template>
 
 <style scoped>
-.like { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; font-size: 1rem;
-  border-radius: 999px; border: 1px solid #475569; background: #334155; color: #f8fafc; cursor: pointer; }
-.like-btn:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.like-btn.liked { background: #4c0519; border-color: #f43f5e; color: #fecdd3; }
-.heart { font-size: 1.2rem; display: inline-block; }
-.liked .heart { color: #f43f5e; animation: pop 300ms ease-out; }
-@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.45); } 100% { transform: scale(1); } }
-@media (prefers-reduced-motion: reduce) { .liked .heart { animation: none; } }
-.count { color: #cbd5e1; }
-.status { flex-basis: 100%; min-height: 1.2em; margin: 4px 0 0; color: #fbbf24; font-size: 0.9rem; }
+.like {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 1rem;
+  border-radius: 999px;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #f8fafc;
+  cursor: pointer;
+}
+.like-btn:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.like-btn.liked {
+  background: #4c0519;
+  border-color: #f43f5e;
+  color: #fecdd3;
+}
+.heart {
+  font-size: 1.2rem;
+  display: inline-block;
+}
+.liked .heart {
+  color: #f43f5e;
+  animation: pop 300ms ease-out;
+}
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.45);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liked .heart {
+    animation: none;
+  }
+}
+.count {
+  color: #cbd5e1;
+}
+.status {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 4px 0 0;
+  color: #fbbf24;
+  font-size: 0.9rem;
+}
 </style>
 `,
         },
@@ -1899,7 +2337,10 @@ A barista starts your coffee before the card reader approves the payment. Nearly
 ### Step 1: the fake server and an arrow-function input
 
 ~~~ts
-export function saveLike(liked: boolean, shouldFail: boolean): Promise<{ liked: boolean }> {
+export function saveLike(
+  liked: boolean,
+  shouldFail: boolean,
+): Promise<{ liked: boolean }> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) reject(new Error("Network error"));
@@ -1929,8 +2370,11 @@ Passing <code>save</code> in rather than injecting a service keeps the example s
 liked = signal(false);
 count = signal(0);
 status = signal("");
-countLabel = computed(() => \`\${this.count()} \${this.count() === 1 ? "like" : "likes"}\`);
-// A plain field, not a signal: it guards requests and never needs to render.
+countLabel = computed(
+  () => \`\${this.count()} \${this.count() === 1 ? "like" : "likes"}\`,
+);
+// A plain field, not a signal: it guards
+// requests and never needs to render.
 private inFlight = false;
 
 ngOnInit() {
@@ -1946,27 +2390,29 @@ The initial values are copied into signals in <code>ngOnInit</code>, because inp
 ### Step 3: the optimistic toggle with rollback
 
 ~~~ts
-  async toggle() {
-    if (this.inFlight) return; // one request at a time
-    this.inFlight = true;
+async toggle() {
+  if (this.inFlight) return; // one request at a time
+  this.inFlight = true;
 
-    const prev = { liked: this.liked(), count: this.count() }; // snapshot for rollback
-    const next = !prev.liked;
-    this.liked.set(next); // optimistic: update the screen first
-    this.count.set(prev.count + (next ? 1 : -1));
-    this.status.set("Saving…");
+  // snapshot for rollback
+  const prev = { liked: this.liked(), count: this.count() };
+  const next = !prev.liked;
+  this.liked.set(next); // optimistic: update the screen first
+  this.count.set(prev.count + (next ? 1 : -1));
+  this.status.set("Saving…");
 
-    try {
-      await this.save(next);
-      this.status.set("Saved");
-    } catch {
-      this.liked.set(prev.liked); // roll back to exactly what the user saw before
-      this.count.set(prev.count);
-      this.status.set("Could not save your like. Try again.");
-    } finally {
-      this.inFlight = false;
-    }
+  try {
+    await this.save(next);
+    this.status.set("Saved");
+  } catch {
+    // roll back to exactly what the user saw before
+    this.liked.set(prev.liked);
+    this.count.set(prev.count);
+    this.status.set("Could not save your like. Try again.");
+  } finally {
+    this.inFlight = false;
   }
+}
 }}
 ~~~
 
@@ -1977,20 +2423,25 @@ Guard, **snapshot**, set the new values, await, and on failure restore the snaps
 ### Step 4: the template
 
 ~~~ts
-  <div class="like">
-    <button
-      type="button"
-      class="like-btn"
-      [class.liked]="liked()"
-      [attr.aria-pressed]="liked()"
-      [attr.aria-busy]="status() === 'Saving…'"
-      (click)="toggle()"
-    >
-      <span class="heart" aria-hidden="true">{{ liked() ? "♥" : "♡" }}</span> Like
-    </button>
-    <span data-testid="like-count" class="count">{{ countLabel() }}</span>
-    <p role="status" data-testid="like-status" class="status">{{ status() }}</p>
-  </div>
+<div class="like">
+  <button
+    type="button"
+    class="like-btn"
+    [class.liked]="liked()"
+    [attr.aria-pressed]="liked()"
+    [attr.aria-busy]="status() === 'Saving…'"
+    (click)="toggle()"
+  >
+    <span class="heart" aria-hidden="true">{{
+      liked() ? "♥" : "♡"
+    }}</span>
+    Like
+  </button>
+  <span data-testid="like-count" class="count">{{ countLabel() }}</span>
+  <p role="status" data-testid="like-status" class="status">
+    {{ status() }}
+  </p>
+</div>
 \`,
 ~~~
 
@@ -2127,7 +2578,8 @@ import { saveLike } from "./like-api";
 
 @Component({
   selector: "app-root",
-  // None: lets the body rule below reach the page; the other selectors are scoped by hand with app-root.
+  // None: lets the body rule below reach the page; the
+  // other selectors are scoped by hand with app-root.
   encapsulation: ViewEncapsulation.None,
   imports: [LikeButtonComponent],
   template: \`
@@ -2135,22 +2587,59 @@ import { saveLike } from "./like-api";
       <h1>Like Button</h1>
       <article class="post">
         <p>Shipped the new onboarding flow today. Feedback welcome!</p>
-        <app-like-button [initialLiked]="false" [initialCount]="41" [save]="save" />
+        <app-like-button
+          [initialLiked]="false"
+          [initialCount]="41"
+          [save]="save"
+        />
       </article>
       <label class="sim">
-        <input type="checkbox" [checked]="fail()" (change)="fail.set(failBox.checked)" #failBox />
+        <input
+          type="checkbox"
+          [checked]="fail()"
+          (change)="fail.set(failBox.checked)"
+          #failBox
+        />
         Simulate server failure
       </label>
     </main>
   \`,
-  styles: [\`
-    body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    app-root .page { max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-    app-root h1 { font-size: 1.4rem; margin: 0 0 16px; }
-    app-root .post { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-    app-root .post p { margin: 0 0 14px; line-height: 1.5; }
-    app-root .sim { display: flex; align-items: center; gap: 8px; margin-top: 16px; color: #94a3b8; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      app-root .page {
+        max-width: 460px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      app-root h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+      app-root .post {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 16px 20px;
+      }
+      app-root .post p {
+        margin: 0 0 14px;
+        line-height: 1.5;
+      }
+      app-root .sim {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        color: #94a3b8;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   fail = signal(false);
@@ -2158,8 +2647,12 @@ export class AppComponent {
   save = (liked: boolean) => saveLike(liked, this.fail());
 }
 `,
-          "/src/app/like-api.ts": `// A simulated server: no network. Resolves after 600 ms, or rejects when shouldFail is true.
-export function saveLike(liked: boolean, shouldFail: boolean): Promise<{ liked: boolean }> {
+          "/src/app/like-api.ts": `// A simulated server: no network. Resolves after
+// 600 ms, or rejects when shouldFail is true.
+export function saveLike(
+  liked: boolean,
+  shouldFail: boolean,
+): Promise<{ liked: boolean }> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldFail) reject(new Error("Network error"));
@@ -2182,13 +2675,21 @@ export function saveLike(liked: boolean, shouldFail: boolean): Promise<{ liked: 
         [attr.aria-busy]="status() === 'Saving…'"
         (click)="toggle()"
       >
-        <span class="heart" aria-hidden="true">{{ liked() ? "♥" : "♡" }}</span> Like
+        <span
+          class="heart"
+          aria-hidden="true"
+        >{{ liked() ? "♥" : "♡" }}</span> Like
       </button>
       <span data-testid="like-count" class="count">{{ countLabel() }}</span>
-      <p role="status" data-testid="like-status" class="status">{{ status() }}</p>
+      <p
+        role="status"
+        data-testid="like-status"
+        class="status"
+      >{{ status() }}</p>
     </div>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .like { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .like-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; font-size: 1rem;
       border-radius: 999px; border: 1px solid #475569; background: #334155; color: #f8fafc; cursor: pointer; }
@@ -2200,7 +2701,8 @@ export function saveLike(liked: boolean, shouldFail: boolean): Promise<{ liked: 
     @media (prefers-reduced-motion: reduce) { .liked .heart { animation: none; } }
     .count { color: #cbd5e1; }
     .status { flex-basis: 100%; min-height: 1.2em; margin: 4px 0 0; color: #fbbf24; font-size: 0.9rem; }
-  \`],
+  \`,
+  ],
 })
 export class LikeButtonComponent implements OnInit {
   @Input() initialLiked = false;
@@ -2210,7 +2712,9 @@ export class LikeButtonComponent implements OnInit {
   liked = signal(false);
   count = signal(0);
   status = signal("");
-  countLabel = computed(() => \`\${this.count()} \${this.count() === 1 ? "like" : "likes"}\`);
+  countLabel = computed(
+    () => \`\${this.count()} \${this.count() === 1 ? "like" : "likes"}\`,
+  );
   // A plain field, not a signal: it guards requests and never needs to render.
   private inFlight = false;
 
@@ -2223,7 +2727,8 @@ export class LikeButtonComponent implements OnInit {
     if (this.inFlight) return; // one request at a time
     this.inFlight = true;
 
-    const prev = { liked: this.liked(), count: this.count() }; // snapshot for rollback
+    // snapshot for rollback
+    const prev = { liked: this.liked(), count: this.count() };
     const next = !prev.liked;
     this.liked.set(next); // optimistic: update the screen first
     this.count.set(prev.count + (next ? 1 : -1));
@@ -2233,7 +2738,8 @@ export class LikeButtonComponent implements OnInit {
       await this.save(next);
       this.status.set("Saved");
     } catch {
-      this.liked.set(prev.liked); // roll back to exactly what the user saw before
+      // roll back to exactly what the user saw before
+      this.liked.set(prev.liked);
       this.count.set(prev.count);
       this.status.set("Could not save your like. Try again.");
     } finally {
@@ -2332,11 +2838,21 @@ Data goes down as props, the request to change goes up as a callback, and only t
 ### Step 1: the switch markup
 
 ~~~jsx
-export default function Switch({ label, checked, onChange, disabled = false }) {
+export default function Switch({
+  label,
+  checked,
+  onChange,
+  disabled = false,
+}) {
   const id = useId();
   return (
     <div className="switch-row">
-      <label htmlFor={id} className={disabled ? "switch-label is-disabled" : "switch-label"}>
+      <label
+        htmlFor={id}
+        className={
+          disabled ? "switch-label is-disabled" : "switch-label"
+        }
+      >
         {label}
       </label>
       <button
@@ -2378,7 +2894,8 @@ const [notifications, setNotifications] = useState(true);
 const [digest, setDigest] = useState(false);
 const [sound, setSound] = useState(false);
 
-// The parent owns the rule: turning notifications off also turns the digest off.
+// The parent owns the rule: turning
+// notifications off also turns the digest off.
 function changeNotifications(next) {
   setNotifications(next);
   if (!next) setDigest(false);
@@ -2386,8 +2903,17 @@ function changeNotifications(next) {
 ~~~
 
 ~~~jsx
-<Switch label="Notifications" checked={notifications} onChange={changeNotifications} />
-<Switch label="Email digest" checked={digest} onChange={setDigest} disabled={!notifications} />
+<Switch
+  label="Notifications"
+  checked={notifications}
+  onChange={changeNotifications}
+/>
+<Switch
+  label="Email digest"
+  checked={digest}
+  onChange={setDigest}
+  disabled={!notifications}
+/>
 <Switch label="Sound" checked={sound} onChange={setSound} />
 ~~~
 
@@ -2396,9 +2922,19 @@ This is the payoff of a controlled component: the switch cannot know that the di
 ### Step 4: CSS for the knob
 
 ~~~css
-.switch[aria-checked="true"] { background: #22c55e; border-color: #16a34a; }
-.switch[aria-checked="true"] .knob { transform: translateX(22px); }
-@media (prefers-reduced-motion: reduce) { .switch, .knob { transition: none; } }
+.switch[aria-checked="true"] {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+.switch[aria-checked="true"] .knob {
+  transform: translateX(22px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .knob {
+    transition: none;
+  }
+}
 ~~~
 
 The styles key off <code>aria-checked</code>, the same attribute screen readers use, so the visual state and the announced state can never disagree. <code>transform</code> animates on the compositor without re-layout.
@@ -2549,7 +3085,8 @@ export default function App() {
   const [digest, setDigest] = useState(false);
   const [sound, setSound] = useState(false);
 
-  // The parent owns the rule: turning notifications off also turns the digest off.
+  // The parent owns the rule: turning
+  // notifications off also turns the digest off.
   function changeNotifications(next) {
     setNotifications(next);
     if (!next) setDigest(false);
@@ -2559,12 +3096,22 @@ export default function App() {
     <main className="page">
       <h1>Settings</h1>
       <div className="panel">
-        <Switch label="Notifications" checked={notifications} onChange={changeNotifications} />
-        <Switch label="Email digest" checked={digest} onChange={setDigest} disabled={!notifications} />
+        <Switch
+          label="Notifications"
+          checked={notifications}
+          onChange={changeNotifications}
+        />
+        <Switch
+          label="Email digest"
+          checked={digest}
+          onChange={setDigest}
+          disabled={!notifications}
+        />
         <Switch label="Sound" checked={sound} onChange={setSound} />
       </div>
       <p className="summary" data-testid="summary">
-        Notifications {onOff(notifications)} · Email digest {onOff(digest)} · Sound {onOff(sound)}
+        Notifications {onOff(notifications)} · Email digest {onOff(digest)} ·
+        Sound {onOff(sound)}
       </p>
     </main>
   );
@@ -2572,12 +3119,16 @@ export default function App() {
 `,
           "/src/Switch.js": `import { useId } from "react";
 
-// A controlled switch: it owns no state. The parent passes checked and decides what onChange does.
+// A controlled switch: it owns no state. The parent
+// passes checked and decides what onChange does.
 export default function Switch({ label, checked, onChange, disabled = false }) {
   const id = useId();
   return (
     <div className="switch-row">
-      <label htmlFor={id} className={disabled ? "switch-label is-disabled" : "switch-label"}>
+      <label
+        htmlFor={id}
+        className={disabled ? "switch-label is-disabled" : "switch-label"}
+      >
         {label}
       </label>
       <button
@@ -2595,24 +3146,91 @@ export default function Switch({ label, checked, onChange, disabled = false }) {
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 4px 16px; }
-.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
-.switch-row + .switch-row { border-top: 1px solid #334155; }
-.switch-label { cursor: pointer; }
-.switch-label.is-disabled { color: #64748b; cursor: not-allowed; }
-.switch { position: relative; flex-shrink: 0; width: 52px; height: 30px; padding: 0; border-radius: 999px;
-  border: 1px solid #475569; background: #475569; cursor: pointer; transition: background 150ms; }
-.switch[aria-checked="true"] { background: #22c55e; border-color: #16a34a; }
-.switch:disabled { opacity: 0.4; cursor: not-allowed; }
-.switch:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #f8fafc;
-  transition: transform 150ms ease; }
-.switch[aria-checked="true"] .knob { transform: translateX(22px); }
-@media (prefers-reduced-motion: reduce) { .switch, .knob { transition: none; } }
-.summary { color: #94a3b8; margin-top: 16px; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 4px 16px;
+}
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+.switch-row + .switch-row {
+  border-top: 1px solid #334155;
+}
+.switch-label {
+  cursor: pointer;
+}
+.switch-label.is-disabled {
+  color: #64748b;
+  cursor: not-allowed;
+}
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #475569;
+  background: #475569;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.switch[aria-checked="true"] {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+.switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.switch:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f8fafc;
+  transition: transform 150ms ease;
+}
+.switch[aria-checked="true"] .knob {
+  transform: translateX(22px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .knob {
+    transition: none;
+  }
+}
+.summary {
+  color: #94a3b8;
+  margin-top: 16px;
+}
 `,
         },
       },
@@ -2686,19 +3304,19 @@ The <code>&lt;label :for="id"&gt;</code> becomes the button's accessible name an
 ### Step 3: the parent owns the rule
 
 ~~~vue
-const notifications = ref(true);
-const digest = ref(false);
-const sound = ref(false);
-
-// The parent owns the rule: turning notifications off also turns the digest off.
-watch(notifications, (on) => {
-  if (!on) digest.value = false;
-});
+const notifications = ref(true); const digest = ref(false); const sound
+= ref(false); // The parent owns the rule: turning notifications off
+also turns the digest off. watch(notifications, (on) => { if (!on)
+digest.value = false; });
 ~~~
 
 ~~~vue
 <ToggleSwitch v-model="notifications" label="Notifications" />
-<ToggleSwitch v-model="digest" label="Email digest" :disabled="!notifications" />
+<ToggleSwitch
+  v-model="digest"
+  label="Email digest"
+  :disabled="!notifications"
+/>
 <ToggleSwitch v-model="sound" label="Sound" />
 ~~~
 
@@ -2707,8 +3325,13 @@ The rule lives in a <code>watch</code>: whenever <code>notifications</code> beco
 ## 4. Styling From the ARIA State
 
 ~~~css
-.switch[aria-checked="true"] { background: #22c55e; border-color: #16a34a; }
-.switch[aria-checked="true"] .knob { transform: translateX(22px); }
+.switch[aria-checked="true"] {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+.switch[aria-checked="true"] .knob {
+  transform: translateX(22px);
+}
 ~~~
 
 Vue 3 renders <code>:aria-checked="false"</code> as the string <code>"false"</code>, so the selector works for both states, and the picture always matches what a screen reader hears. <code>&lt;style scoped&gt;</code> keeps these rules from leaking into the rest of the app ([scoped styles](/interview-question/what-are-scoped-styles-in-vue)).
@@ -2845,7 +3468,8 @@ const notifications = ref(true);
 const digest = ref(false);
 const sound = ref(false);
 
-// The parent owns the rule: turning notifications off also turns the digest off.
+// The parent owns the rule: turning
+// notifications off also turns the digest off.
 watch(notifications, (on) => {
   if (!on) digest.value = false;
 });
@@ -2858,27 +3482,53 @@ const onOff = (v) => (v ? "on" : "off");
     <h1>Settings</h1>
     <div class="panel">
       <ToggleSwitch v-model="notifications" label="Notifications" />
-      <ToggleSwitch v-model="digest" label="Email digest" :disabled="!notifications" />
+      <ToggleSwitch
+        v-model="digest"
+        label="Email digest"
+        :disabled="!notifications"
+      />
       <ToggleSwitch v-model="sound" label="Sound" />
     </div>
     <p class="summary" data-testid="summary">
-      Notifications {{ onOff(notifications) }} · Email digest {{ onOff(digest) }} · Sound {{ onOff(sound) }}
+      Notifications {{ onOff(notifications) }} · Email digest
+      {{ onOff(digest) }} · Sound {{ onOff(sound) }}
     </p>
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 16px; }
-.panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 4px 16px; }
-.summary { color: #94a3b8; margin-top: 16px; }
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 16px;
+}
+.panel {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 4px 16px;
+}
+.summary {
+  color: #94a3b8;
+  margin-top: 16px;
+}
 </style>
 `,
           "/src/components/ToggleSwitch.vue": `<script setup>
 import { useId } from "vue";
 
-// defineModel turns the parent v-model into a prop plus an update:modelValue event.
+// defineModel turns the parent v-model into
+// a prop plus an update:modelValue event.
 const checked = defineModel({ type: Boolean, default: false });
 const props = defineProps({
   label: { type: String, required: true },
@@ -2886,7 +3536,8 @@ const props = defineProps({
 });
 const id = useId();
 
-// Guard in the handler too: the disabled attribute alone is not a contract for every click source.
+// Guard in the handler too: the disabled attribute
+// alone is not a contract for every click source.
 function toggle() {
   if (!props.disabled) checked.value = !checked.value;
 }
@@ -2894,7 +3545,12 @@ function toggle() {
 
 <template>
   <div class="switch-row">
-    <label :for="id" class="switch-label" :class="{ 'is-disabled': disabled }">{{ label }}</label>
+    <label
+      :for="id"
+      class="switch-label"
+      :class="{ 'is-disabled': disabled }"
+      >{{ label }}</label
+    >
     <button
       :id="id"
       type="button"
@@ -2910,19 +3566,66 @@ function toggle() {
 </template>
 
 <style scoped>
-.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
-.switch-row + .switch-row { border-top: 1px solid #334155; }
-.switch-label { cursor: pointer; }
-.switch-label.is-disabled { color: #64748b; cursor: not-allowed; }
-.switch { position: relative; flex-shrink: 0; width: 52px; height: 30px; padding: 0; border-radius: 999px;
-  border: 1px solid #475569; background: #475569; cursor: pointer; transition: background 150ms; }
-.switch[aria-checked="true"] { background: #22c55e; border-color: #16a34a; }
-.switch:disabled { opacity: 0.4; cursor: not-allowed; }
-.switch:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-.knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #f8fafc;
-  transition: transform 150ms ease; }
-.switch[aria-checked="true"] .knob { transform: translateX(22px); }
-@media (prefers-reduced-motion: reduce) { .switch, .knob { transition: none; } }
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+.switch-row + .switch-row {
+  border-top: 1px solid #334155;
+}
+.switch-label {
+  cursor: pointer;
+}
+.switch-label.is-disabled {
+  color: #64748b;
+  cursor: not-allowed;
+}
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid #475569;
+  background: #475569;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.switch[aria-checked="true"] {
+  background: #22c55e;
+  border-color: #16a34a;
+}
+.switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.switch:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 2px;
+}
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f8fafc;
+  transition: transform 150ms ease;
+}
+.switch[aria-checked="true"] .knob {
+  transform: translateX(22px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .knob {
+    transition: none;
+  }
+}
 </style>
 `,
         },
@@ -2959,7 +3662,8 @@ export class ToggleSwitchComponent {
 
   readonly id = \`switch-\${nextId++}\`;
 
-  // Guard in the handler too: the disabled attribute alone is not a contract for every click source.
+  // Guard in the handler too: the disabled attribute
+  // alone is not a contract for every click source.
   toggle() {
     if (!this.disabled) this.checkedChange.emit(!this.checked);
   }
@@ -2971,20 +3675,25 @@ The id comes from a module-level counter, so each instance gets <code>switch-0</
 ### Step 2: the template
 
 ~~~ts
-  <div class="switch-row">
-    <label [for]="id" class="switch-label" [class.is-disabled]="disabled">{{ label }}</label>
-    <button
-      [id]="id"
-      type="button"
-      role="switch"
-      [attr.aria-checked]="checked"
-      [disabled]="disabled"
-      class="switch"
-      (click)="toggle()"
-    >
-      <span class="knob" aria-hidden="true"></span>
-    </button>
-  </div>
+<div class="switch-row">
+  <label
+    [for]="id"
+    class="switch-label"
+    [class.is-disabled]="disabled"
+    >{{ label }}</label
+  >
+  <button
+    [id]="id"
+    type="button"
+    role="switch"
+    [attr.aria-checked]="checked"
+    [disabled]="disabled"
+    class="switch"
+    (click)="toggle()"
+  >
+    <span class="knob" aria-hidden="true"></span>
+  </button>
+</div>
 \`,
 ~~~
 
@@ -2995,8 +3704,16 @@ The id comes from a module-level counter, so each instance gets <code>switch-0</
 ### Step 3: the parent owns the rule
 
 ~~~ts
-<app-toggle-switch label="Notifications" [checked]="notifications()" (checkedChange)="changeNotifications($event)" />
-<app-toggle-switch label="Email digest" [(checked)]="digest" [disabled]="!notifications()" />
+<app-toggle-switch
+  label="Notifications"
+  [checked]="notifications()"
+  (checkedChange)="changeNotifications($event)"
+/>
+<app-toggle-switch
+  label="Email digest"
+  [(checked)]="digest"
+  [disabled]="!notifications()"
+/>
 <app-toggle-switch label="Sound" [(checked)]="sound" />
 ~~~
 
@@ -3004,7 +3721,7 @@ The id comes from a module-level counter, so each instance gets <code>switch-0</
 changeNotifications(on: boolean) {
   this.notifications.set(on);
   if (!on) this.digest.set(false);
-}}
+}
 ~~~
 
 Notifications uses the long form because its change has a side effect; the other two use <code>[(checked)]</code> with a signal. Because the switch is controlled, the parent can set two signals in one handler, and the disabled state is derived right in the template.
@@ -3142,36 +3859,69 @@ import { ToggleSwitchComponent } from "./toggle-switch.component";
 
 @Component({
   selector: "app-root",
-  // None: lets the body rule below reach the page; the other selectors are scoped by hand with app-root.
+  // None: lets the body rule below reach the page; the
+  // other selectors are scoped by hand with app-root.
   encapsulation: ViewEncapsulation.None,
   imports: [ToggleSwitchComponent],
   template: \`
     <main class="page">
       <h1>Settings</h1>
       <div class="panel">
-        <app-toggle-switch label="Notifications" [checked]="notifications()" (checkedChange)="changeNotifications($event)" />
-        <app-toggle-switch label="Email digest" [(checked)]="digest" [disabled]="!notifications()" />
+        <app-toggle-switch
+          label="Notifications"
+          [checked]="notifications()"
+          (checkedChange)="changeNotifications($event)"
+        />
+        <app-toggle-switch
+          label="Email digest"
+          [(checked)]="digest"
+          [disabled]="!notifications()"
+        />
         <app-toggle-switch label="Sound" [(checked)]="sound" />
       </div>
       <p class="summary" data-testid="summary">
-        Notifications {{ onOff(notifications()) }} · Email digest {{ onOff(digest()) }} · Sound {{ onOff(sound()) }}
+        Notifications {{ onOff(notifications()) }} · Email digest
+        {{ onOff(digest()) }} · Sound {{ onOff(sound()) }}
       </p>
     </main>
   \`,
-  styles: [\`
-    body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    app-root .page { max-width: 420px; margin: 0 auto; padding: 24px 16px; }
-    app-root h1 { font-size: 1.4rem; margin: 0 0 16px; }
-    app-root .panel { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 4px 16px; }
-    app-root .summary { color: #94a3b8; margin-top: 16px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      app-root .page {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      app-root h1 {
+        font-size: 1.4rem;
+        margin: 0 0 16px;
+      }
+      app-root .panel {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 4px 16px;
+      }
+      app-root .summary {
+        color: #94a3b8;
+        margin-top: 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   notifications = signal(true);
   digest = signal(false);
   sound = signal(false);
 
-  // The parent owns the rule: turning notifications off also turns the digest off.
+  // The parent owns the rule: turning
+  // notifications off also turns the digest off.
   changeNotifications(on: boolean) {
     this.notifications.set(on);
     if (!on) this.digest.set(false);
@@ -3186,12 +3936,15 @@ export class AppComponent {
 
 let nextId = 0;
 
-// A controlled switch: [checked] in, (checkedChange) out, so a parent can write [(checked)]="value".
+// A controlled switch: [checked] in, (checkedChange)
+// out, so a parent can write [(checked)]="value".
 @Component({
   selector: "app-toggle-switch",
   template: \`
     <div class="switch-row">
-      <label [for]="id" class="switch-label" [class.is-disabled]="disabled">{{ label }}</label>
+      <label [for]="id" class="switch-label" [class.is-disabled]="disabled">{{
+        label
+      }}</label>
       <button
         [id]="id"
         type="button"
@@ -3205,21 +3958,70 @@ let nextId = 0;
       </button>
     </div>
   \`,
-  styles: [\`
-    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }
-    :host + :host .switch-row { border-top: 1px solid #334155; }
-    .switch-label { cursor: pointer; }
-    .switch-label.is-disabled { color: #64748b; cursor: not-allowed; }
-    .switch { position: relative; flex-shrink: 0; width: 52px; height: 30px; padding: 0; border-radius: 999px;
-      border: 1px solid #475569; background: #475569; cursor: pointer; transition: background 150ms; }
-    .switch[aria-checked="true"] { background: #22c55e; border-color: #16a34a; }
-    .switch:disabled { opacity: 0.4; cursor: not-allowed; }
-    .switch:focus-visible { outline: 3px solid #38bdf8; outline-offset: 2px; }
-    .knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #f8fafc;
-      transition: transform 150ms ease; }
-    .switch[aria-checked="true"] .knob { transform: translateX(22px); }
-    @media (prefers-reduced-motion: reduce) { .switch, .knob { transition: none; } }
-  \`],
+  styles: [
+    \`
+      .switch-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+      }
+      :host + :host .switch-row {
+        border-top: 1px solid #334155;
+      }
+      .switch-label {
+        cursor: pointer;
+      }
+      .switch-label.is-disabled {
+        color: #64748b;
+        cursor: not-allowed;
+      }
+      .switch {
+        position: relative;
+        flex-shrink: 0;
+        width: 52px;
+        height: 30px;
+        padding: 0;
+        border-radius: 999px;
+        border: 1px solid #475569;
+        background: #475569;
+        cursor: pointer;
+        transition: background 150ms;
+      }
+      .switch[aria-checked="true"] {
+        background: #22c55e;
+        border-color: #16a34a;
+      }
+      .switch:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .switch:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: 2px;
+      }
+      .knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #f8fafc;
+        transition: transform 150ms ease;
+      }
+      .switch[aria-checked="true"] .knob {
+        transform: translateX(22px);
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .switch,
+        .knob {
+          transition: none;
+        }
+      }
+    \`,
+  ],
 })
 export class ToggleSwitchComponent {
   @Input({ required: true }) label = "";
@@ -3229,7 +4031,8 @@ export class ToggleSwitchComponent {
 
   readonly id = \`switch-\${nextId++}\`;
 
-  // Guard in the handler too: the disabled attribute alone is not a contract for every click source.
+  // Guard in the handler too: the disabled attribute
+  // alone is not a contract for every click source.
   toggle() {
     if (!this.disabled) this.checkedChange.emit(!this.checked);
   }
@@ -3340,19 +4143,25 @@ Two inputs, one derived output. The framework-free version of this logic is its 
 const KEY = "theme";
 const QUERY = "(prefers-color-scheme: dark)";
 
-// matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-const getMql = () => (typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null);
+// matchMedia is missing in some environments
+// (old browsers, jsdom), so guard it.
+const getMql = () =>
+  typeof window.matchMedia === "function"
+    ? window.matchMedia(QUERY)
+    : null;
 
 function readChoice() {
   try {
     const saved = localStorage.getItem(KEY);
     return saved === "light" || saved === "dark" ? saved : "system";
   } catch {
-    return "system"; // storage can throw in private modes or sandboxed iframes
+    // storage can throw in private modes or sandboxed iframes
+    return "system";
   }
 }
 
-// The OS preference is an external store: subscribe to its change event, read its current value.
+// The OS preference is an external store: subscribe
+// to its change event, read its current value.
 function subscribe(onChange) {
 ~~~
 
@@ -3363,7 +4172,8 @@ Validating the saved value (<code>"light"</code> or <code>"dark"</code>, otherwi
 ### Step 2: the OS preference as an external store
 
 ~~~jsx
-// The OS preference is an external store: subscribe to its change event, read its current value.
+// The OS preference is an external store: subscribe
+// to its change event, read its current value.
 function subscribe(onChange) {
   const mql = getMql();
   if (!mql) return () => {};
@@ -3381,16 +4191,23 @@ The classic alternative is <code>useState</code> plus a <code>useEffect</code> t
 
 ~~~jsx
 export function useTheme() {
-  const [choice, setChoice] = useState(readChoice); // "light" | "dark" | "system"
-  const systemDark = useSyncExternalStore(subscribe, getSystemDark, () => false);
+  // "light" | "dark" | "system"
+  const [choice, setChoice] = useState(readChoice);
+  const systemDark = useSyncExternalStore(
+    subscribe,
+    getSystemDark,
+    () => false,
+  );
 
   // Derived, never stored: the theme actually on screen.
-  const theme = choice === "system" ? (systemDark ? "dark" : "light") : choice;
+  const theme =
+    choice === "system" ? (systemDark ? "dark" : "light") : choice;
 
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
-    root.style.colorScheme = theme; // native form controls and scrollbars follow too
+    // native form controls and scrollbars follow too
+    root.style.colorScheme = theme;
   }, [theme]);
 
   useEffect(() => {
@@ -3428,8 +4245,22 @@ The toggle sets the **opposite of what is on screen**, not the opposite of <code
 ### Step 5: CSS custom properties
 
 ~~~css
-:root { --bg: #f8fafc; --fg: #0f172a; --card: #ffffff; --border: #cbd5e1; --muted: #475569; --accent: #2563eb; }
-:root[data-theme="dark"] { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; --accent: #38bdf8; }
+:root {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --border: #cbd5e1;
+  --muted: #475569;
+  --accent: #2563eb;
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --fg: #e2e8f0;
+  --card: #1e293b;
+  --border: #334155;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+}
 ~~~
 
 📌 **Interview term: CSS custom properties** — variables like <code>--bg</code> that cascade like any CSS property. Components use <code>var(--bg)</code>; switching one attribute on <code>&lt;html&gt;</code> re-colours the whole page with no React re-render of each component.
@@ -3631,9 +4462,16 @@ export default function App() {
       <section className="card">
         <p data-testid="theme-status" aria-live="polite">
           Theme: <strong>{theme}</strong>{" "}
-          {choice === "system" ? "(following your system)" : "(your choice, saved)"}
+          {choice === "system"
+            ? "(following your system)"
+            : "(your choice, saved)"}
         </p>
-        <button type="button" className="link" disabled={choice === "system"} onClick={() => setChoice("system")}>
+        <button
+          type="button"
+          className="link"
+          disabled={choice === "system"}
+          onClick={() => setChoice("system")}
+        >
           Use system setting
         </button>
       </section>
@@ -3646,8 +4484,10 @@ export default function App() {
 const KEY = "theme";
 const QUERY = "(prefers-color-scheme: dark)";
 
-// matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-const getMql = () => (typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null);
+// matchMedia is missing in some environments
+// (old browsers, jsdom), so guard it.
+const getMql = () =>
+  typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null;
 
 function readChoice() {
   try {
@@ -3658,7 +4498,8 @@ function readChoice() {
   }
 }
 
-// The OS preference is an external store: subscribe to its change event, read its current value.
+// The OS preference is an external store: subscribe
+// to its change event, read its current value.
 function subscribe(onChange) {
   const mql = getMql();
   if (!mql) return () => {};
@@ -3668,8 +4509,13 @@ function subscribe(onChange) {
 const getSystemDark = () => getMql()?.matches ?? false;
 
 export function useTheme() {
-  const [choice, setChoice] = useState(readChoice); // "light" | "dark" | "system"
-  const systemDark = useSyncExternalStore(subscribe, getSystemDark, () => false);
+  // "light" | "dark" | "system"
+  const [choice, setChoice] = useState(readChoice);
+  const systemDark = useSyncExternalStore(
+    subscribe,
+    getSystemDark,
+    () => false,
+  );
 
   // Derived, never stored: the theme actually on screen.
   const theme = choice === "system" ? (systemDark ? "dark" : "light") : choice;
@@ -3677,7 +4523,8 @@ export function useTheme() {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme;
-    root.style.colorScheme = theme; // native form controls and scrollbars follow too
+    // native form controls and scrollbars follow too
+    root.style.colorScheme = theme;
   }, [theme]);
 
   useEffect(() => {
@@ -3690,20 +4537,89 @@ export function useTheme() {
   return { theme, choice, setChoice };
 }
 `,
-          "/styles.css": `:root { --bg: #f8fafc; --fg: #0f172a; --card: #ffffff; --border: #cbd5e1; --muted: #475569; --accent: #2563eb; }
-:root[data-theme="dark"] { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; --accent: #38bdf8; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; transition: background 200ms, color 200ms; }
-@media (prefers-reduced-motion: reduce) { body { transition: none; } }
-.page { max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-h1 { font-size: 1.4rem; margin: 0; }
-.theme-switch { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border); background: var(--card);
-  font-size: 1.3rem; cursor: pointer; }
-.theme-switch:focus-visible, .link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.card { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-.card p { margin: 0 0 12px; }
-.link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
-.link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+          "/styles.css": `:root {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --border: #cbd5e1;
+  --muted: #475569;
+  --accent: #2563eb;
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --fg: #e2e8f0;
+  --card: #1e293b;
+  --border: #334155;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+  transition:
+    background 200ms,
+    color 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}
+.page {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+.theme-switch {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.theme-switch:focus-visible,
+.link:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.card {
+  margin-top: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.card p {
+  margin: 0 0 12px;
+}
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.link:disabled {
+  color: var(--muted);
+  text-decoration: none;
+  cursor: default;
+}
 `,
         },
       },
@@ -3738,15 +4654,20 @@ The framework-free version of this logic is its own question: [a theme toggle th
 ### Step 1: guarded browser APIs
 
 ~~~js
-// matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-const getMql = () => (typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null);
+// matchMedia is missing in some environments
+// (old browsers, jsdom), so guard it.
+const getMql = () =>
+  typeof window.matchMedia === "function"
+    ? window.matchMedia(QUERY)
+    : null;
 
 function readChoice() {
   try {
     const saved = localStorage.getItem(KEY);
     return saved === "light" || saved === "dark" ? saved : "system";
   } catch {
-    return "system"; // storage can throw in private modes or sandboxed iframes
+    // storage can throw in private modes or sandboxed iframes
+    return "system";
   }
 }
 
@@ -3774,26 +4695,30 @@ Forgetting <code>onUnmounted</code> would leave a listener writing to a dead com
 ### Step 3: derive, apply, persist
 
 ~~~js
-  // Derived, never stored: the theme actually on screen.
-  const theme = computed(() =>
-    choice.value === "system" ? (systemDark.value ? "dark" : "light") : choice.value
-  );
+// Derived, never stored: the theme actually on screen.
+const theme = computed(() =>
+  choice.value === "system"
+    ? systemDark.value
+      ? "dark"
+      : "light"
+    : choice.value,
+);
 
-  watchEffect(() => {
-    const root = document.documentElement;
-    root.dataset.theme = theme.value;
-    root.style.colorScheme = theme.value; // native form controls and scrollbars follow too
-  });
+watchEffect(() => {
+  const root = document.documentElement;
+  root.dataset.theme = theme.value;
+  // native form controls and scrollbars follow too
+  root.style.colorScheme = theme.value;
+});
 
-  watch(choice, (value) => {
-    try {
-      if (value === "system") localStorage.removeItem(KEY);
-      else localStorage.setItem(KEY, value);
-    } catch {}
-  });
+watch(choice, (value) => {
+  try {
+    if (value === "system") localStorage.removeItem(KEY);
+    else localStorage.setItem(KEY, value);
+  } catch {}
+});
 
-  return { theme, choice };
-}
+return { theme, choice };
 ~~~
 
 📌 **Interview term: watchEffect** — runs a function immediately and again whenever any reactive value it read changes. It suits "keep the DOM in sync with <code>theme</code>", because it runs once on setup without extra options. See [watch vs watchEffect](/interview-question/what-is-the-difference-between-watch-and-watcheffect).
@@ -4001,9 +4926,18 @@ const dark = computed(() => theme.value === "dark");
     <section class="card">
       <p data-testid="theme-status" aria-live="polite">
         Theme: <strong>{{ theme }}</strong>
-        {{ choice === "system" ? "(following your system)" : "(your choice, saved)" }}
+        {{
+          choice === "system"
+            ? "(following your system)"
+            : "(your choice, saved)"
+        }}
       </p>
-      <button type="button" class="link" :disabled="choice === 'system'" @click="choice = 'system'">
+      <button
+        type="button"
+        class="link"
+        :disabled="choice === 'system'"
+        @click="choice = 'system'"
+      >
         Use system setting
       </button>
     </section>
@@ -4011,23 +4945,92 @@ const dark = computed(() => theme.value === "dark");
 </template>
 
 <style>
-:root { --bg: #f8fafc; --fg: #0f172a; --card: #ffffff; --border: #cbd5e1; --muted: #475569; --accent: #2563eb; }
-:root[data-theme="dark"] { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; --accent: #38bdf8; }
-body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; transition: background 200ms, color 200ms; }
-@media (prefers-reduced-motion: reduce) { body { transition: none; } }
+:root {
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card: #ffffff;
+  --border: #cbd5e1;
+  --muted: #475569;
+  --accent: #2563eb;
+}
+:root[data-theme="dark"] {
+  --bg: #0f172a;
+  --fg: #e2e8f0;
+  --card: #1e293b;
+  --border: #334155;
+  --muted: #94a3b8;
+  --accent: #38bdf8;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, sans-serif;
+  transition:
+    background 200ms,
+    color 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  body {
+    transition: none;
+  }
+}
 </style>
 
 <style scoped>
-.page { max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-h1 { font-size: 1.4rem; margin: 0; }
-.theme-switch { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border); background: var(--card);
-  font-size: 1.3rem; cursor: pointer; }
-.theme-switch:focus-visible, .link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.card { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-.card p { margin: 0 0 12px; }
-.link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
-.link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+.page {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+.theme-switch {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+.theme-switch:focus-visible,
+.link:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.card {
+  margin-top: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.card p {
+  margin: 0 0 12px;
+}
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+.link:disabled {
+  color: var(--muted);
+  text-decoration: none;
+  cursor: default;
+}
 </style>
 `,
           "/src/useTheme.js": `import { computed, onMounted, onUnmounted, ref, watch, watchEffect } from "vue";
@@ -4035,8 +5038,10 @@ h1 { font-size: 1.4rem; margin: 0; }
 const KEY = "theme";
 const QUERY = "(prefers-color-scheme: dark)";
 
-// matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-const getMql = () => (typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null);
+// matchMedia is missing in some environments
+// (old browsers, jsdom), so guard it.
+const getMql = () =>
+  typeof window.matchMedia === "function" ? window.matchMedia(QUERY) : null;
 
 function readChoice() {
   try {
@@ -4058,13 +5063,18 @@ export function useTheme() {
 
   // Derived, never stored: the theme actually on screen.
   const theme = computed(() =>
-    choice.value === "system" ? (systemDark.value ? "dark" : "light") : choice.value
+    choice.value === "system"
+      ? systemDark.value
+        ? "dark"
+        : "light"
+      : choice.value,
   );
 
   watchEffect(() => {
     const root = document.documentElement;
     root.dataset.theme = theme.value;
-    root.style.colorScheme = theme.value; // native form controls and scrollbars follow too
+    // native form controls and scrollbars follow too
+    root.style.colorScheme = theme.value;
   });
 
   watch(choice, (value) => {
@@ -4112,8 +5122,12 @@ The framework-free version of this logic is its own question: [a theme toggle th
 ~~~ts
 private doc = inject(DOCUMENT);
 private win = this.doc.defaultView;
-// matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-private mql = typeof this.win?.matchMedia === "function" ? this.win.matchMedia(QUERY) : null;
+// matchMedia is missing in some environments
+// (old browsers, jsdom), so guard it.
+private mql =
+  typeof this.win?.matchMedia === "function"
+    ? this.win.matchMedia(QUERY)
+    : null;
 private systemDark = signal(this.mql?.matches ?? false);
 
 readonly choice = signal<Choice>(this.readChoice());
@@ -4132,9 +5146,13 @@ The <code>typeof ... === "function"</code> check means a missing <code>matchMedi
 
 ~~~ts
 constructor() {
-  const onChange = (e: MediaQueryListEvent) => this.systemDark.set(e.matches);
+  const onChange = (e: MediaQueryListEvent) =>
+    this.systemDark.set(e.matches);
   this.mql?.addEventListener("change", onChange);
-  inject(DestroyRef).onDestroy(() => this.mql?.removeEventListener("change", onChange));}
+  inject(DestroyRef).onDestroy(() =>
+    this.mql?.removeEventListener("change", onChange),
+  );
+}
 ~~~
 
 📌 **Interview term: DestroyRef** — an injectable handle whose <code>onDestroy</code> callback runs when the owning injector is destroyed. For a root service that is when the app is torn down (<code>appRef.destroy()</code>); for a component, when the component is. It replaces <code>ngOnDestroy</code> for cleanup registered next to the setup.
@@ -4142,19 +5160,20 @@ constructor() {
 ### Step 3: apply and persist with effect()
 
 ~~~ts
-  effect(() => {
-    const root = this.doc.documentElement;
-    root.dataset["theme"] = this.theme();
-    root.style.colorScheme = this.theme(); // native form controls and scrollbars follow too
-  });
+effect(() => {
+  const root = this.doc.documentElement;
+  root.dataset["theme"] = this.theme();
+  // native form controls and scrollbars follow too
+  root.style.colorScheme = this.theme();
+});
 
-  effect(() => {
-    const c = this.choice();
-    try {
-      if (c === "system") this.win?.localStorage.removeItem(KEY);
-      else this.win?.localStorage.setItem(KEY, c);
-    } catch {}
-  });
+effect(() => {
+  const c = this.choice();
+  try {
+    if (c === "system") this.win?.localStorage.removeItem(KEY);
+    else this.win?.localStorage.setItem(KEY, c);
+  } catch {}
+});
 }}
 ~~~
 
@@ -4189,7 +5208,10 @@ The service runs after the page has painted, so a dark-preferring device shows o
 <script>
   try {
     var t = localStorage.getItem("theme");
-    if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    if (t !== "light" && t !== "dark")
+      t = matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
     document.documentElement.dataset.theme = t;
     document.documentElement.style.colorScheme = t;
   } catch (e) {}
@@ -4334,7 +5356,8 @@ import { ThemeService } from "./theme.service";
 
 @Component({
   selector: "app-root",
-  // None: the :root[data-theme] variables below must reach the whole document, not just this view.
+  // None: the :root[data-theme] variables below must
+  // reach the whole document, not just this view.
   encapsulation: ViewEncapsulation.None,
   template: \`
     <main class="page">
@@ -4354,37 +5377,125 @@ import { ThemeService } from "./theme.service";
       <section class="card">
         <p data-testid="theme-status" aria-live="polite">
           Theme: <strong>{{ theme.theme() }}</strong>
-          {{ theme.choice() === "system" ? "(following your system)" : "(your choice, saved)" }}
+          {{
+            theme.choice() === "system"
+              ? "(following your system)"
+              : "(your choice, saved)"
+          }}
         </p>
-        <button type="button" class="link" [disabled]="theme.choice() === 'system'" (click)="theme.choice.set('system')">
+        <button
+          type="button"
+          class="link"
+          [disabled]="theme.choice() === 'system'"
+          (click)="theme.choice.set('system')"
+        >
           Use system setting
         </button>
       </section>
     </main>
   \`,
-  styles: [\`
-    :root { --bg: #f8fafc; --fg: #0f172a; --card: #ffffff; --border: #cbd5e1; --muted: #475569; --accent: #2563eb; }
-    :root[data-theme="dark"] { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; --accent: #38bdf8; }
-    body { margin: 0; background: var(--bg); color: var(--fg); font-family: system-ui, sans-serif; transition: background 200ms, color 200ms; }
-    @media (prefers-reduced-motion: reduce) { body { transition: none; } }
-    app-root .page { display: block; max-width: 460px; margin: 0 auto; padding: 24px 16px; }
-    app-root .bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    app-root h1 { font-size: 1.4rem; margin: 0; }
-    app-root .theme-switch { width: 48px; height: 48px; border-radius: 50%; border: 1px solid var(--border); background: var(--card);
-      font-size: 1.3rem; cursor: pointer; }
-    app-root .theme-switch:focus-visible, app-root .link:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-    app-root .card { margin-top: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; }
-    app-root .card p { margin: 0 0 12px; }
-    app-root .link { background: none; border: none; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
-    app-root .link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
-  \`],
+  styles: [
+    \`
+      :root {
+        --bg: #f8fafc;
+        --fg: #0f172a;
+        --card: #ffffff;
+        --border: #cbd5e1;
+        --muted: #475569;
+        --accent: #2563eb;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0f172a;
+        --fg: #e2e8f0;
+        --card: #1e293b;
+        --border: #334155;
+        --muted: #94a3b8;
+        --accent: #38bdf8;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: system-ui, sans-serif;
+        transition:
+          background 200ms,
+          color 200ms;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body {
+          transition: none;
+        }
+      }
+      app-root .page {
+        display: block;
+        max-width: 460px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      app-root .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      app-root h1 {
+        font-size: 1.4rem;
+        margin: 0;
+      }
+      app-root .theme-switch {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--card);
+        font-size: 1.3rem;
+        cursor: pointer;
+      }
+      app-root .theme-switch:focus-visible,
+      app-root .link:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      app-root .card {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px 20px;
+      }
+      app-root .card p {
+        margin: 0 0 12px;
+      }
+      app-root .link {
+        background: none;
+        border: none;
+        padding: 0;
+        color: var(--accent);
+        text-decoration: underline;
+        cursor: pointer;
+        font: inherit;
+      }
+      app-root .link:disabled {
+        color: var(--muted);
+        text-decoration: none;
+        cursor: default;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   protected theme = inject(ThemeService);
   protected dark = computed(() => this.theme.theme() === "dark");
 }
 `,
-          "/src/app/theme.service.ts": `import { DestroyRef, Injectable, computed, effect, inject, signal } from "@angular/core";
+          "/src/app/theme.service.ts": `import {
+  DestroyRef,
+  Injectable,
+  computed,
+  effect,
+  inject,
+  signal,
+} from "@angular/core";
 import { DOCUMENT } from "@angular/common";
 
 export type Choice = "light" | "dark" | "system";
@@ -4395,8 +5506,12 @@ const QUERY = "(prefers-color-scheme: dark)";
 export class ThemeService {
   private doc = inject(DOCUMENT);
   private win = this.doc.defaultView;
-  // matchMedia is missing in some environments (old browsers, jsdom), so guard it.
-  private mql = typeof this.win?.matchMedia === "function" ? this.win.matchMedia(QUERY) : null;
+  // matchMedia is missing in some environments
+  // (old browsers, jsdom), so guard it.
+  private mql =
+    typeof this.win?.matchMedia === "function"
+      ? this.win.matchMedia(QUERY)
+      : null;
   private systemDark = signal(this.mql?.matches ?? false);
 
   readonly choice = signal<Choice>(this.readChoice());
@@ -4409,12 +5524,15 @@ export class ThemeService {
   constructor() {
     const onChange = (e: MediaQueryListEvent) => this.systemDark.set(e.matches);
     this.mql?.addEventListener("change", onChange);
-    inject(DestroyRef).onDestroy(() => this.mql?.removeEventListener("change", onChange));
+    inject(DestroyRef).onDestroy(() =>
+      this.mql?.removeEventListener("change", onChange),
+    );
 
     effect(() => {
       const root = this.doc.documentElement;
       root.dataset["theme"] = this.theme();
-      root.style.colorScheme = this.theme(); // native form controls and scrollbars follow too
+      // native form controls and scrollbars follow too
+      root.style.colorScheme = this.theme();
     });
 
     effect(() => {
@@ -4431,7 +5549,8 @@ export class ThemeService {
       const saved = this.win?.localStorage.getItem(KEY);
       return saved === "light" || saved === "dark" ? saved : "system";
     } catch {
-      return "system"; // storage can throw in private modes or sandboxed iframes
+      // storage can throw in private modes or sandboxed iframes
+      return "system";
     }
   }
 }
@@ -4530,15 +5649,19 @@ export const cToF = (c) => (c * 9) / 5 + 32;
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
-// Returns { value: number | null, invalid: boolean } for whatever is in a box.
+// Returns { value: number | null, invalid:
+// boolean } for whatever is in a box.
 export function parse(text) {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -4561,7 +5684,8 @@ Three details:
 ### Step 2: the one piece of state
 
 ~~~jsx
-// One source of truth: which box the user last typed in, and exactly what they typed.
+// One source of truth: which box the user
+// last typed in, and exactly what they typed.
 const [source, setSource] = useState({ scale: "c", text: "" });
 ~~~
 
@@ -4570,7 +5694,25 @@ The scale and the text change together, so they live in one object and are repla
 ### Step 3: derive both boxes
 
 ~~~jsx
-{{snip:react/src/TemperatureConverter.js:const { value, invalid }:8}}
+const { value, invalid } = parse(source.text);
+const celsius =
+  source.scale === "c" ? value : value === null ? null : fToC(value);
+
+// The other box is derived on every render,
+// so the two can never disagree or loop.
+const cText =
+  source.scale === "c"
+    ? source.text
+    : celsius === null
+      ? ""
+      : format(celsius);
+const fText =
+  source.scale === "f"
+    ? source.text
+    : celsius === null
+      ? ""
+      : format(cToF(celsius));
+const belowZero = celsius !== null && celsius < ABSOLUTE_ZERO_C;
 ~~~
 
 The box the user is typing in shows <code>source.text</code> untouched, so "37." stays "37." while they type the next digit. The other box shows the converted, formatted number, or nothing if there is no number yet. Celsius is the internal unit, so a third scale (Kelvin) would be one more line.
@@ -4578,16 +5720,16 @@ The box the user is typing in shows <code>source.text</code> untouched, so "37."
 ### Step 4: controlled inputs
 
 ~~~jsx
-  <label htmlFor="celsius">Celsius (°C)</label>
-  <input
-    id="celsius"
-    inputMode="decimal"
-    autoComplete="off"
-    value={cText}
-    aria-invalid={invalid && source.scale === "c"}
-    aria-describedby="temp-message"
-    onChange={(e) => setSource({ scale: "c", text: e.target.value })}
-  />
+<label htmlFor="celsius">Celsius (°C)</label>
+<input
+  id="celsius"
+  inputMode="decimal"
+  autoComplete="off"
+  value={cText}
+  aria-invalid={invalid && source.scale === "c"}
+  aria-describedby="temp-message"
+  onChange={(e) => setSource({ scale: "c", text: e.target.value })}
+/>
 </div>
 ~~~
 
@@ -4601,7 +5743,11 @@ Why not <code>type="number"</code>? Its <code>value</code> must be a valid float
 
 ~~~jsx
 <p id="temp-message" className="message" role="status">
-  {invalid ? "Enter a number, for example 21.5" : belowZero ? "Below absolute zero (-273.15 °C)" : ""}
+  {invalid
+    ? "Enter a number, for example 21.5"
+    : belowZero
+      ? "Below absolute zero (-273.15 °C)"
+      : ""}
 </p>
 ~~~
 
@@ -4734,7 +5880,9 @@ export default function App() {
   return (
     <main className="page">
       <h1>Temperature Converter</h1>
-      <p className="hint">Type in either box. The other one updates as you type.</p>
+      <p className="hint">
+        Type in either box. The other one updates as you type.
+      </p>
       <TemperatureConverter />
     </main>
   );
@@ -4744,15 +5892,28 @@ export default function App() {
 import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "./convert";
 
 export default function TemperatureConverter() {
-  // One source of truth: which box the user last typed in, and exactly what they typed.
+  // One source of truth: which box the user
+  // last typed in, and exactly what they typed.
   const [source, setSource] = useState({ scale: "c", text: "" });
 
   const { value, invalid } = parse(source.text);
-  const celsius = source.scale === "c" ? value : value === null ? null : fToC(value);
+  const celsius =
+    source.scale === "c" ? value : value === null ? null : fToC(value);
 
-  // The other box is derived on every render, so the two can never disagree or loop.
-  const cText = source.scale === "c" ? source.text : celsius === null ? "" : format(celsius);
-  const fText = source.scale === "f" ? source.text : celsius === null ? "" : format(cToF(celsius));
+  // The other box is derived on every render,
+  // so the two can never disagree or loop.
+  const cText =
+    source.scale === "c"
+      ? source.text
+      : celsius === null
+        ? ""
+        : format(celsius);
+  const fText =
+    source.scale === "f"
+      ? source.text
+      : celsius === null
+        ? ""
+        : format(cToF(celsius));
   const belowZero = celsius !== null && celsius < ABSOLUTE_ZERO_C;
 
   return (
@@ -4769,7 +5930,9 @@ export default function TemperatureConverter() {
           onChange={(e) => setSource({ scale: "c", text: e.target.value })}
         />
       </div>
-      <span className="equals" aria-hidden="true">=</span>
+      <span className="equals" aria-hidden="true">
+        =
+      </span>
       <div className="field">
         <label htmlFor="fahrenheit">Fahrenheit (°F)</label>
         <input
@@ -4783,7 +5946,11 @@ export default function TemperatureConverter() {
         />
       </div>
       <p id="temp-message" className="message" role="status">
-        {invalid ? "Enter a number, for example 21.5" : belowZero ? "Below absolute zero (-273.15 °C)" : ""}
+        {invalid
+          ? "Enter a number, for example 21.5"
+          : belowZero
+            ? "Below absolute zero (-273.15 °C)"
+            : ""}
       </p>
     </form>
   );
@@ -4793,7 +5960,8 @@ export default function TemperatureConverter() {
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
 // Returns { value: number | null, invalid: boolean } for whatever is in a box.
@@ -4801,7 +5969,9 @@ export function parse(text) {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -4810,18 +5980,67 @@ export function format(n) {
   return String(Object.is(r, -0) ? 0 : r);
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
-.converter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: #1e293b;
-  border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-.field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 140px; }
-.field input { font-size: 1.3rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
-.field input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-.field input[aria-invalid="true"] { border-color: #f87171; }
-.equals { font-size: 1.5rem; color: #64748b; padding-bottom: 10px; }
-.message { flex-basis: 100%; min-height: 1.2em; margin: 0; color: #fbbf24; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+.converter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 140px;
+}
+.field input {
+  font-size: 1.3rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.field input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 1px;
+}
+.field input[aria-invalid="true"] {
+  border-color: #f87171;
+}
+.equals {
+  font-size: 1.5rem;
+  color: #64748b;
+  padding-bottom: 10px;
+}
+.message {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 0;
+  color: #fbbf24;
+}
 `,
         },
       },
@@ -4853,15 +6072,19 @@ export const cToF = (c) => (c * 9) / 5 + 32;
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
-// Returns { value: number | null, invalid: boolean } for whatever is in a box.
+// Returns { value: number | null, invalid:
+// boolean } for whatever is in a box.
 export function parse(text) {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -4878,25 +6101,19 @@ export function format(n) {
 ### Step 2: one ref, two writable computeds
 
 ~~~vue
-// One source of truth: which box the user last typed in, and exactly what they typed.
-const source = ref({ scale: "c", text: "" });
-
-const parsed = computed(() => parse(source.value.text));
-const celsius = computed(() => {
-  const { value } = parsed.value;
-  if (value === null) return null;
-  return source.value.scale === "c" ? value : fToC(value);
-});
-
-// Writable computed: v-model reads the derived text and writes back into the single source.
-const cText = computed({
-  get: () => (source.value.scale === "c" ? source.value.text : celsius.value === null ? "" : format(celsius.value)),
-  set: (text) => (source.value = { scale: "c", text }),
-});
-const fText = computed({
-  get: () => (source.value.scale === "f" ? source.value.text : celsius.value === null ? "" : format(cToF(celsius.value))),
-  set: (text) => (source.value = { scale: "f", text }),
-});
+// One source of truth: which box the user last typed in, and exactly
+what they typed. const source = ref({ scale: "c", text: "" }); const
+parsed = computed(() => parse(source.value.text)); const celsius =
+computed(() => { const { value } = parsed.value; if (value === null)
+return null; return source.value.scale === "c" ? value : fToC(value);
+}); // Writable computed: v-model reads the derived text and writes back
+into the single source. const cText = computed({ get: () =>
+(source.value.scale === "c" ? source.value.text : celsius.value === null
+? "" : format(celsius.value)), set: (text) => (source.value = { scale:
+"c", text }), }); const fText = computed({ get: () =>
+(source.value.scale === "f" ? source.value.text : celsius.value === null
+? "" : format(cToF(celsius.value))), set: (text) => (source.value = {
+scale: "f", text }), });
 ~~~
 
 Each box's getter returns the raw text when it is the box being edited, otherwise the converted, formatted number. Each setter replaces the whole <code>source</code>. Neither computed ever writes to the other, so there is nothing to loop.
@@ -4925,10 +6142,9 @@ The inputs are text inputs with <code>inputmode="decimal"</code>, not <code>type
 ### Step 4: the message
 
 ~~~vue
-const message = computed(() => {
-  if (parsed.value.invalid) return "Enter a number, for example 21.5";
-  if (celsius.value !== null && celsius.value < ABSOLUTE_ZERO_C) return "Below absolute zero (-273.15 °C)";
-  return "";
+const message = computed(() => { if (parsed.value.invalid) return "Enter
+a number, for example 21.5"; if (celsius.value !== null && celsius.value
+< ABSOLUTE_ZERO_C) return "Below absolute zero (-273.15 °C)"; return "";
 });
 ~~~
 
@@ -5061,17 +6277,33 @@ import TemperatureConverter from "./components/TemperatureConverter.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/components/TemperatureConverter.vue": `<script setup>
 import { computed, ref } from "vue";
 import { ABSOLUTE_ZERO_C, cToF, fToC, format, parse } from "../convert.js";
 
-// One source of truth: which box the user last typed in, and exactly what they typed.
+// One source of truth: which box the user
+// last typed in, and exactly what they typed.
 const source = ref({ scale: "c", text: "" });
 
 const parsed = computed(() => parse(source.value.text));
@@ -5081,19 +6313,31 @@ const celsius = computed(() => {
   return source.value.scale === "c" ? value : fToC(value);
 });
 
-// Writable computed: v-model reads the derived text and writes back into the single source.
+// Writable computed: v-model reads the derived
+// text and writes back into the single source.
 const cText = computed({
-  get: () => (source.value.scale === "c" ? source.value.text : celsius.value === null ? "" : format(celsius.value)),
+  get: () =>
+    source.value.scale === "c"
+      ? source.value.text
+      : celsius.value === null
+        ? ""
+        : format(celsius.value),
   set: (text) => (source.value = { scale: "c", text }),
 });
 const fText = computed({
-  get: () => (source.value.scale === "f" ? source.value.text : celsius.value === null ? "" : format(cToF(celsius.value))),
+  get: () =>
+    source.value.scale === "f"
+      ? source.value.text
+      : celsius.value === null
+        ? ""
+        : format(cToF(celsius.value)),
   set: (text) => (source.value = { scale: "f", text }),
 });
 
 const message = computed(() => {
   if (parsed.value.invalid) return "Enter a number, for example 21.5";
-  if (celsius.value !== null && celsius.value < ABSOLUTE_ZERO_C) return "Below absolute zero (-273.15 °C)";
+  if (celsius.value !== null && celsius.value < ABSOLUTE_ZERO_C)
+    return "Below absolute zero (-273.15 °C)";
   return "";
 });
 </script>
@@ -5128,21 +6372,56 @@ const message = computed(() => {
 </template>
 
 <style scoped>
-.converter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: #1e293b;
-  border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-.field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 140px; }
-.field input { font-size: 1.3rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
-.field input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-.field input[aria-invalid="true"] { border-color: #f87171; }
-.equals { font-size: 1.5rem; color: #64748b; padding-bottom: 10px; }
-.message { flex-basis: 100%; min-height: 1.2em; margin: 0; color: #fbbf24; }
+.converter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 140px;
+}
+.field input {
+  font-size: 1.3rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.field input:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 1px;
+}
+.field input[aria-invalid="true"] {
+  border-color: #f87171;
+}
+.equals {
+  font-size: 1.5rem;
+  color: #64748b;
+  padding-bottom: 10px;
+}
+.message {
+  flex-basis: 100%;
+  min-height: 1.2em;
+  margin: 0;
+  color: #fbbf24;
+}
 </style>
 `,
           "/src/convert.js": `export const cToF = (c) => (c * 9) / 5 + 32;
 export const fToC = (f) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
 // Returns { value: number | null, invalid: boolean } for whatever is in a box.
@@ -5150,7 +6429,9 @@ export function parse(text) {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -5189,15 +6470,22 @@ export const cToF = (c: number) => (c * 9) / 5 + 32;
 export const fToC = (f: number) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
-// Returns { value: number | null, invalid: boolean } for whatever is in a box.
-export function parse(text: string): { value: number | null; invalid: boolean } {
+// Returns { value: number | null, invalid:
+// boolean } for whatever is in a box.
+export function parse(text: string): {
+  value: number | null;
+  invalid: boolean;
+} {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -5212,35 +6500,40 @@ export function format(n: number): string {
 ### Step 2: one signal, many computeds
 
 ~~~ts
-  // One source of truth: which box the user last typed in, and exactly what they typed.
-  source = signal<{ scale: Scale; text: string }>({ scale: "c", text: "" });
+// One source of truth: which box the user
+// last typed in, and exactly what they typed.
+source = signal<{ scale: Scale; text: string }>({
+  scale: "c",
+  text: "",
+});
 
-  parsed = computed(() => parse(this.source().text));
-  celsius = computed(() => {
-    const { value } = this.parsed();
-    if (value === null) return null;
-    return this.source().scale === "c" ? value : fToC(value);
-  });
+parsed = computed(() => parse(this.source().text));
+celsius = computed(() => {
+  const { value } = this.parsed();
+  if (value === null) return null;
+  return this.source().scale === "c" ? value : fToC(value);
+});
 
-  // The other box is derived, so the two can never disagree or loop.
-  cText = computed(() => this.textFor("c", (c) => c));
-  fText = computed(() => this.textFor("f", cToF));
+// The other box is derived, so the two can never disagree or loop.
+cText = computed(() => this.textFor("c", (c) => c));
+fText = computed(() => this.textFor("f", cToF));
 
-  message = computed(() => {
-    if (this.parsed().invalid) return "Enter a number, for example 21.5";
-    const c = this.celsius();
-    return c !== null && c < ABSOLUTE_ZERO_C ? "Below absolute zero (-273.15 °C)" : "";
-  });
+message = computed(() => {
+  if (this.parsed().invalid) return "Enter a number, for example 21.5";
+  const c = this.celsius();
+  return c !== null && c < ABSOLUTE_ZERO_C
+    ? "Below absolute zero (-273.15 °C)"
+    : "";
+});
 
-  type(scale: Scale, text: string) {
-    this.source.set({ scale, text });
-  }
+type(scale: Scale, text: string) {
+  this.source.set({ scale, text });
+}
 
-  private textFor(scale: Scale, fromC: (c: number) => number) {
-    if (this.source().scale === scale) return this.source().text;
-    const c = this.celsius();
-    return c === null ? "" : format(fromC(c));
-  }
+private textFor(scale: Scale, fromC: (c: number) => number) {
+  if (this.source().scale === scale) return this.source().text;
+  const c = this.celsius();
+  return c === null ? "" : format(fromC(c));
 }
 ~~~
 
@@ -5391,7 +6684,8 @@ import { TemperatureConverterComponent } from "./temperature-converter.component
 
 @Component({
   selector: "app-root",
-  // None: lets the body rule below reach the page; the other selectors are scoped by hand with app-root.
+  // None: lets the body rule below reach the page; the
+  // other selectors are scoped by hand with app-root.
   encapsulation: ViewEncapsulation.None,
   imports: [TemperatureConverterComponent],
   template: \`
@@ -5401,12 +6695,29 @@ import { TemperatureConverterComponent } from "./temperature-converter.component
       <app-temperature-converter />
     </main>
   \`,
-  styles: [\`
-    body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-    app-root .page { max-width: 520px; margin: 0 auto; padding: 24px 16px; }
-    app-root h1 { font-size: 1.4rem; margin: 0 0 4px; }
-    app-root .hint { color: #94a3b8; margin: 0 0 16px; }
-  \`],
+  styles: [
+    \`
+      body {
+        margin: 0;
+        background: #0f172a;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+      }
+      app-root .page {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      app-root h1 {
+        font-size: 1.4rem;
+        margin: 0 0 4px;
+      }
+      app-root .hint {
+        color: #94a3b8;
+        margin: 0 0 16px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -5414,15 +6725,21 @@ export class AppComponent {}
 export const fToC = (f: number) => ((f - 32) * 5) / 9;
 export const ABSOLUTE_ZERO_C = -273.15;
 
-// "" and half-typed input such as "-" or "." are not errors yet: the user is still typing.
+// "" and half-typed input such as "-" or "."
+// are not errors yet: the user is still typing.
 const IN_PROGRESS = ["", "-", ".", "-."];
 
 // Returns { value: number | null, invalid: boolean } for whatever is in a box.
-export function parse(text: string): { value: number | null; invalid: boolean } {
+export function parse(text: string): {
+  value: number | null;
+  invalid: boolean;
+} {
   const t = text.trim();
   if (IN_PROGRESS.includes(t)) return { value: null, invalid: false };
   const n = Number(t);
-  return Number.isFinite(n) ? { value: n, invalid: false } : { value: null, invalid: true };
+  return Number.isFinite(n)
+    ? { value: n, invalid: false }
+    : { value: null, invalid: true };
 }
 
 // At most two decimals, no trailing zeros, and never "-0".
@@ -5470,19 +6787,56 @@ type Scale = "c" | "f";
       <p id="temp-message" class="message" role="status">{{ message() }}</p>
     </form>
   \`,
-  styles: [\`
-    .converter { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: #1e293b;
-      border: 1px solid #334155; border-radius: 12px; padding: 20px; }
-    .field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 140px; }
-    .field input { font-size: 1.3rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; }
-    .field input:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-    .field input[aria-invalid="true"] { border-color: #f87171; }
-    .equals { font-size: 1.5rem; color: #64748b; padding-bottom: 10px; }
-    .message { flex-basis: 100%; min-height: 1.2em; margin: 0; color: #fbbf24; }
-  \`],
+  styles: [
+    \`
+      .converter {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 20px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1 1 140px;
+      }
+      .field input {
+        font-size: 1.3rem;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #475569;
+        background: #0f172a;
+        color: #f8fafc;
+      }
+      .field input:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: 1px;
+      }
+      .field input[aria-invalid="true"] {
+        border-color: #f87171;
+      }
+      .equals {
+        font-size: 1.5rem;
+        color: #64748b;
+        padding-bottom: 10px;
+      }
+      .message {
+        flex-basis: 100%;
+        min-height: 1.2em;
+        margin: 0;
+        color: #fbbf24;
+      }
+    \`,
+  ],
 })
 export class TemperatureConverterComponent {
-  // One source of truth: which box the user last typed in, and exactly what they typed.
+  // One source of truth: which box the user
+  // last typed in, and exactly what they typed.
   source = signal<{ scale: Scale; text: string }>({ scale: "c", text: "" });
 
   parsed = computed(() => parse(this.source().text));
@@ -5499,7 +6853,9 @@ export class TemperatureConverterComponent {
   message = computed(() => {
     if (this.parsed().invalid) return "Enter a number, for example 21.5";
     const c = this.celsius();
-    return c !== null && c < ABSOLUTE_ZERO_C ? "Below absolute zero (-273.15 °C)" : "";
+    return c !== null && c < ABSOLUTE_ZERO_C
+      ? "Below absolute zero (-273.15 °C)"
+      : "";
   });
 
   type(scale: Scale, text: string) {
@@ -5625,9 +6981,11 @@ let lastPayment = paymentCents;
 for (let month = 1; month <= n; month++) {
   const interest = Math.round(balance * r);
   if (month === 1) firstInterest = interest;
-  if (month === n) lastPayment = balance + interest; // settle whatever is left
+  // settle whatever is left
+  if (month === n) lastPayment = balance + interest;
   interestCents += interest;
-  balance = balance + interest - (month === n ? lastPayment : paymentCents);
+  balance =
+    balance + interest - (month === n ? lastPayment : paymentCents);
 }
 ~~~
 
@@ -5658,7 +7016,10 @@ return {
 ### Step 4: formatting and validation
 
 ~~~jsx
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 export const money = (n) => usd.format(n);
 
 // Each rule returns an error message, or "" when the value is fine.
@@ -5668,7 +7029,9 @@ export function amountError(text) {
 }
 export function rateError(text) {
   const n = Number(text);
-  return text === "" || !(n >= 0 && n <= 100) ? "Enter a rate from 0 to 100." : "";
+  return text === "" || !(n >= 0 && n <= 100)
+    ? "Enter a rate from 0 to 100."
+    : "";
 }
 ~~~
 
@@ -5679,15 +7042,19 @@ Validation functions take the **raw string** and return a message or <code>""</c
 ### Step 5: the component, with everything derived
 
 ~~~jsx
-// Inputs are kept as the raw strings the user typed; numbers are derived below.
+// Inputs are kept as the raw strings the
+// user typed; numbers are derived below.
 const [amount, setAmount] = useState("300000");
 const [rate, setRate] = useState("6.5");
 const [years, setYears] = useState("30");
 
 const errors = { amount: amountError(amount), rate: rateError(rate) };
 const valid = !errors.amount && !errors.rate;
-// Derived on every render: no useEffect, no "result" state to keep in sync.
-const result = valid ? calcMortgage(Number(amount), Number(rate), Number(years)) : null;
+// Derived on every render: no useEffect,
+// no "result" state to keep in sync.
+const result = valid
+  ? calcMortgage(Number(amount), Number(rate), Number(years))
+  : null;
 const show = (n) => (result ? money(n) : "—");
 ~~~
 
@@ -5699,9 +7066,17 @@ The inputs are <code>type="number"</code> here: a mortgage form does not need ha
 
 ~~~jsx
 <label htmlFor="amount">Loan amount ($)</label>
-<input id="amount" type="number" min="0" step="1000" inputMode="decimal" value={amount}
-  aria-invalid={Boolean(errors.amount)} aria-describedby="amount-error"
-  onChange={(e) => setAmount(e.target.value)} />
+<input
+  id="amount"
+  type="number"
+  min="0"
+  step="1000"
+  inputMode="decimal"
+  value={amount}
+  aria-invalid={Boolean(errors.amount)}
+  aria-describedby="amount-error"
+  onChange={(e) => setAmount(e.target.value)}
+/>
 ~~~
 
 📌 **Interview term: aria-describedby** — links a field to the element that explains it, here its error message, so a screen reader reads the message after the label. <code>aria-invalid</code> flags the field.
@@ -5843,7 +7218,9 @@ export default function App() {
   return (
     <main className="page">
       <h1>Mortgage Calculator</h1>
-      <p className="hint">Fixed-rate loan, paid monthly. Results update as you type.</p>
+      <p className="hint">
+        Fixed-rate loan, paid monthly. Results update as you type.
+      </p>
       <MortgageCalculator />
     </main>
   );
@@ -5855,7 +7232,8 @@ import { amountError, calcMortgage, money, rateError } from "./mortgage";
 const TERMS = [15, 20, 30];
 
 export default function MortgageCalculator() {
-  // Inputs are kept as the raw strings the user typed; numbers are derived below.
+  // Inputs are kept as the raw strings the
+  // user typed; numbers are derived below.
   const [amount, setAmount] = useState("300000");
   const [rate, setRate] = useState("6.5");
   const [years, setYears] = useState("30");
@@ -5863,54 +7241,96 @@ export default function MortgageCalculator() {
   const errors = { amount: amountError(amount), rate: rateError(rate) };
   const valid = !errors.amount && !errors.rate;
   // Derived on every render: no useEffect, no "result" state to keep in sync.
-  const result = valid ? calcMortgage(Number(amount), Number(rate), Number(years)) : null;
+  const result = valid
+    ? calcMortgage(Number(amount), Number(rate), Number(years))
+    : null;
   const show = (n) => (result ? money(n) : "—");
 
   return (
     <div className="calc">
       <form className="inputs" onSubmit={(e) => e.preventDefault()}>
         <label htmlFor="amount">Loan amount ($)</label>
-        <input id="amount" type="number" min="0" step="1000" inputMode="decimal" value={amount}
-          aria-invalid={Boolean(errors.amount)} aria-describedby="amount-error"
-          onChange={(e) => setAmount(e.target.value)} />
-        <p id="amount-error" className="error">{errors.amount}</p>
+        <input
+          id="amount"
+          type="number"
+          min="0"
+          step="1000"
+          inputMode="decimal"
+          value={amount}
+          aria-invalid={Boolean(errors.amount)}
+          aria-describedby="amount-error"
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <p id="amount-error" className="error">
+          {errors.amount}
+        </p>
 
         <label htmlFor="rate">Interest rate (% per year)</label>
-        <input id="rate" type="number" min="0" max="100" step="0.05" inputMode="decimal" value={rate}
-          aria-invalid={Boolean(errors.rate)} aria-describedby="rate-error"
-          onChange={(e) => setRate(e.target.value)} />
-        <p id="rate-error" className="error">{errors.rate}</p>
+        <input
+          id="rate"
+          type="number"
+          min="0"
+          max="100"
+          step="0.05"
+          inputMode="decimal"
+          value={rate}
+          aria-invalid={Boolean(errors.rate)}
+          aria-describedby="rate-error"
+          onChange={(e) => setRate(e.target.value)}
+        />
+        <p id="rate-error" className="error">
+          {errors.rate}
+        </p>
 
         <label htmlFor="years">Term</label>
-        <select id="years" value={years} onChange={(e) => setYears(e.target.value)}>
+        <select
+          id="years"
+          value={years}
+          onChange={(e) => setYears(e.target.value)}
+        >
           {TERMS.map((t) => (
-            <option key={t} value={t}>{t} years</option>
+            <option key={t} value={t}>
+              {t} years
+            </option>
           ))}
         </select>
       </form>
 
       <section className="results" aria-live="polite" aria-label="Results">
         <p className="monthly">
-          Monthly payment <strong data-testid="monthly">{show(result?.monthly)}</strong>
+          Monthly payment{" "}
+          <strong data-testid="monthly">{show(result?.monthly)}</strong>
         </p>
         <dl>
-          <dt>Total of {Number(years) * 12} payments</dt><dd data-testid="total">{show(result?.total)}</dd>
-          <dt>Final payment</dt><dd data-testid="last">{show(result?.lastPayment)}</dd>
-          <dt>Total interest</dt><dd data-testid="interest">{show(result?.interest)}</dd>
+          <dt>Total of {Number(years) * 12} payments</dt>
+          <dd data-testid="total">{show(result?.total)}</dd>
+          <dt>Final payment</dt>
+          <dd data-testid="last">{show(result?.lastPayment)}</dd>
+          <dt>Total interest</dt>
+          <dd data-testid="interest">{show(result?.interest)}</dd>
           <dt>First month: interest / principal</dt>
-          <dd data-testid="first">{result ? \`\${money(result.firstInterest)} / \${money(result.firstPrincipal)}\` : "—"}</dd>
+          <dd data-testid="first">
+            {result
+              ? \`\${money(result.firstInterest)} / \${money(result.firstPrincipal)}\`
+              : "—"}
+          </dd>
         </dl>
       </section>
     </div>
   );
 }
 `,
-          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n / ((1 + r)^n - 1), with r the monthly rate.
-// Money is tracked in whole cents, like a lender, and the last payment absorbs the rounding.
+          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+// / ((1 + r)^n - 1), with r the monthly rate.
+// Money is tracked in whole cents, like a lender,
+// and the last payment absorbs the rounding.
 export function calcMortgage(principal, annualRatePct, years) {
   const n = years * 12;
   const r = annualRatePct / 100 / 12;
-  const exact = r === 0 ? principal / n : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
+  const exact =
+    r === 0
+      ? principal / n
+      : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
   const paymentCents = Math.round(exact * 100);
 
   const principalCents = Math.round(principal * 100);
@@ -5921,7 +7341,8 @@ export function calcMortgage(principal, annualRatePct, years) {
   for (let month = 1; month <= n; month++) {
     const interest = Math.round(balance * r);
     if (month === 1) firstInterest = interest;
-    if (month === n) lastPayment = balance + interest; // settle whatever is left
+    // settle whatever is left
+    if (month === n) lastPayment = balance + interest;
     interestCents += interest;
     balance = balance + interest - (month === n ? lastPayment : paymentCents);
   }
@@ -5936,7 +7357,10 @@ export function calcMortgage(principal, annualRatePct, years) {
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 export const money = (n) => usd.format(n);
 
 // Each rule returns an error message, or "" when the value is fine.
@@ -5946,26 +7370,95 @@ export function amountError(text) {
 }
 export function rateError(text) {
   const n = Number(text);
-  return text === "" || !(n >= 0 && n <= 100) ? "Enter a rate from 0 to 100." : "";
+  return text === "" || !(n >= 0 && n <= 100)
+    ? "Enter a rate from 0 to 100."
+    : "";
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
-.calc { display: grid; gap: 16px; }
-.inputs, .results { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-.inputs { display: flex; flex-direction: column; gap: 6px; }
-.inputs input, .inputs select { font-size: 1.1rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569;
-  background: #0f172a; color: #f8fafc; }
-.inputs input:focus-visible, .inputs select:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-.inputs input[aria-invalid="true"] { border-color: #f87171; }
-.error { min-height: 1.1em; margin: 0 0 6px; color: #fca5a5; font-size: 0.9rem; }
-.monthly { margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.monthly strong { font-size: 1.8rem; color: #38bdf8; }
-dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0; }
-dt { color: #94a3b8; }
-dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
+.calc {
+  display: grid;
+  gap: 16px;
+}
+.inputs,
+.results {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inputs input,
+.inputs select {
+  font-size: 1.1rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.inputs input:focus-visible,
+.inputs select:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 1px;
+}
+.inputs input[aria-invalid="true"] {
+  border-color: #f87171;
+}
+.error {
+  min-height: 1.1em;
+  margin: 0 0 6px;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+.monthly {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.monthly strong {
+  font-size: 1.8rem;
+  color: #38bdf8;
+}
+dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin: 0;
+}
+dt {
+  color: #94a3b8;
+}
+dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 `,
         },
       },
@@ -5996,7 +7489,10 @@ A mortgage is a promise to pay the same amount every month until the loan reache
 export function calcMortgage(principal, annualRatePct, years) {
   const n = years * 12;
   const r = annualRatePct / 100 / 12;
-  const exact = r === 0 ? principal / n : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
+  const exact =
+    r === 0
+      ? principal / n
+      : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
   const paymentCents = Math.round(exact * 100);
 
   const principalCents = Math.round(principal * 100);
@@ -6007,9 +7503,11 @@ export function calcMortgage(principal, annualRatePct, years) {
   for (let month = 1; month <= n; month++) {
     const interest = Math.round(balance * r);
     if (month === 1) firstInterest = interest;
-    if (month === n) lastPayment = balance + interest; // settle whatever is left
+    // settle whatever is left
+    if (month === n) lastPayment = balance + interest;
     interestCents += interest;
-    balance = balance + interest - (month === n ? lastPayment : paymentCents);
+    balance =
+      balance + interest - (month === n ? lastPayment : paymentCents);
   }
 
   return {
@@ -6022,7 +7520,10 @@ export function calcMortgage(principal, annualRatePct, years) {
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 ~~~
 
 📌 **Interview term: Integer cents** — money arithmetic in whole cents, rounding each month's interest to a cent like a lender, so totals are exact. The rounded payment (1896.204… becomes 1896.20) leaves a small remainder that the final payment settles.
@@ -6038,10 +7539,9 @@ A first draft computed <code>total = monthly × n</code>; the verifier showed th
 ### Step 2: number inputs and v-model
 
 ~~~vue
-// v-model on type="number" inputs gives numbers, or "" while a box is empty.
-const amount = ref(300000);
-const rate = ref(6.5);
-const years = ref(30);
+// v-model on type="number" inputs gives numbers, or "" while a box is
+empty. const amount = ref(300000); const rate = ref(6.5); const years =
+ref(30);
 ~~~
 
 On <code>&lt;input type="number"&gt;</code>, Vue's <code>v-model</code> casts the value to a number automatically and leaves an empty box as <code>""</code> (the 3.5.44 runtime's <code>vModelText</code> checks <code>vnode.props.type === "number"</code>). The <code>&lt;select&gt;</code> needs <code>v-model.number</code> because option values are strings. See [v-model modifiers](/interview-question/what-are-v-model-modifiers).
@@ -6069,8 +7569,16 @@ The validators take strings, so the refs are passed through <code>String()</code
 
 ~~~vue
 <label for="amount">Loan amount ($)</label>
-<input id="amount" v-model="amount" type="number" min="0" step="1000" inputmode="decimal"
-  :aria-invalid="Boolean(errors.amount)" aria-describedby="amount-error" />
+<input
+  id="amount"
+  v-model="amount"
+  type="number"
+  min="0"
+  step="1000"
+  inputmode="decimal"
+  :aria-invalid="Boolean(errors.amount)"
+  aria-describedby="amount-error"
+/>
 <p id="amount-error" class="error">{{ errors.amount }}</p>
 ~~~
 
@@ -6220,10 +7728,25 @@ import MortgageCalculator from "./components/MortgageCalculator.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
-.page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
-h1 { font-size: 1.4rem; margin: 0 0 4px; }
-.hint { color: #94a3b8; margin: 0 0 16px; }
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+}
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 4px;
+}
+.hint {
+  color: #94a3b8;
+  margin: 0 0 16px;
+}
 </style>
 `,
           "/src/components/MortgageCalculator.vue": `<script setup>
@@ -6243,7 +7766,9 @@ const errors = computed(() => ({
 }));
 // Derived and cached: recalculated only when amount, rate or years change.
 const result = computed(() =>
-  errors.value.amount || errors.value.rate ? null : calcMortgage(amount.value, rate.value, years.value)
+  errors.value.amount || errors.value.rate
+    ? null
+    : calcMortgage(amount.value, rate.value, years.value),
 );
 const show = (n) => (result.value ? money(n) : "—");
 </script>
@@ -6252,13 +7777,30 @@ const show = (n) => (result.value ? money(n) : "—");
   <div class="calc">
     <form class="inputs" @submit.prevent>
       <label for="amount">Loan amount ($)</label>
-      <input id="amount" v-model="amount" type="number" min="0" step="1000" inputmode="decimal"
-        :aria-invalid="Boolean(errors.amount)" aria-describedby="amount-error" />
+      <input
+        id="amount"
+        v-model="amount"
+        type="number"
+        min="0"
+        step="1000"
+        inputmode="decimal"
+        :aria-invalid="Boolean(errors.amount)"
+        aria-describedby="amount-error"
+      />
       <p id="amount-error" class="error">{{ errors.amount }}</p>
 
       <label for="rate">Interest rate (% per year)</label>
-      <input id="rate" v-model="rate" type="number" min="0" max="100" step="0.05" inputmode="decimal"
-        :aria-invalid="Boolean(errors.rate)" aria-describedby="rate-error" />
+      <input
+        id="rate"
+        v-model="rate"
+        type="number"
+        min="0"
+        max="100"
+        step="0.05"
+        inputmode="decimal"
+        :aria-invalid="Boolean(errors.rate)"
+        aria-describedby="rate-error"
+      />
       <p id="rate-error" class="error">{{ errors.rate }}</p>
 
       <label for="years">Term</label>
@@ -6269,41 +7811,108 @@ const show = (n) => (result.value ? money(n) : "—");
 
     <section class="results" aria-live="polite" aria-label="Results">
       <p class="monthly">
-        Monthly payment <strong data-testid="monthly">{{ show(result?.monthly) }}</strong>
+        Monthly payment
+        <strong data-testid="monthly">{{ show(result?.monthly) }}</strong>
       </p>
       <dl>
-        <dt>Total of {{ years * 12 }} payments</dt><dd data-testid="total">{{ show(result?.total) }}</dd>
-        <dt>Final payment</dt><dd data-testid="last">{{ show(result?.lastPayment) }}</dd>
-        <dt>Total interest</dt><dd data-testid="interest">{{ show(result?.interest) }}</dd>
+        <dt>Total of {{ years * 12 }} payments</dt>
+        <dd data-testid="total">{{ show(result?.total) }}</dd>
+        <dt>Final payment</dt>
+        <dd data-testid="last">{{ show(result?.lastPayment) }}</dd>
+        <dt>Total interest</dt>
+        <dd data-testid="interest">{{ show(result?.interest) }}</dd>
         <dt>First month: interest / principal</dt>
-        <dd data-testid="first">{{ result ? \`\${money(result.firstInterest)} / \${money(result.firstPrincipal)}\` : "—" }}</dd>
+        <dd data-testid="first">
+          {{
+            result
+              ? \`\${money(result.firstInterest)} / \${money(result.firstPrincipal)}\`
+              : "—"
+          }}
+        </dd>
       </dl>
     </section>
   </div>
 </template>
 
 <style scoped>
-.calc { display: grid; gap: 16px; }
-.inputs, .results { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-.inputs { display: flex; flex-direction: column; gap: 6px; }
-.inputs input, .inputs select { font-size: 1.1rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569;
-  background: #0f172a; color: #f8fafc; }
-.inputs input:focus-visible, .inputs select:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-.inputs input[aria-invalid="true"] { border-color: #f87171; }
-.error { min-height: 1.1em; margin: 0 0 6px; color: #fca5a5; font-size: 0.9rem; }
-.monthly { margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.monthly strong { font-size: 1.8rem; color: #38bdf8; }
-dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0; }
-dt { color: #94a3b8; }
-dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.calc {
+  display: grid;
+  gap: 16px;
+}
+.inputs,
+.results {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inputs input,
+.inputs select {
+  font-size: 1.1rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+  background: #0f172a;
+  color: #f8fafc;
+}
+.inputs input:focus-visible,
+.inputs select:focus-visible {
+  outline: 3px solid #38bdf8;
+  outline-offset: 1px;
+}
+.inputs input[aria-invalid="true"] {
+  border-color: #f87171;
+}
+.error {
+  min-height: 1.1em;
+  margin: 0 0 6px;
+  color: #fca5a5;
+  font-size: 0.9rem;
+}
+.monthly {
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.monthly strong {
+  font-size: 1.8rem;
+  color: #38bdf8;
+}
+dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  margin: 0;
+}
+dt {
+  color: #94a3b8;
+}
+dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 </style>
 `,
-          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n / ((1 + r)^n - 1), with r the monthly rate.
-// Money is tracked in whole cents, like a lender, and the last payment absorbs the rounding.
+          "/src/mortgage.js": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+// / ((1 + r)^n - 1), with r the monthly rate.
+// Money is tracked in whole cents, like a lender,
+// and the last payment absorbs the rounding.
 export function calcMortgage(principal, annualRatePct, years) {
   const n = years * 12;
   const r = annualRatePct / 100 / 12;
-  const exact = r === 0 ? principal / n : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
+  const exact =
+    r === 0
+      ? principal / n
+      : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
   const paymentCents = Math.round(exact * 100);
 
   const principalCents = Math.round(principal * 100);
@@ -6314,7 +7923,8 @@ export function calcMortgage(principal, annualRatePct, years) {
   for (let month = 1; month <= n; month++) {
     const interest = Math.round(balance * r);
     if (month === 1) firstInterest = interest;
-    if (month === n) lastPayment = balance + interest; // settle whatever is left
+    // settle whatever is left
+    if (month === n) lastPayment = balance + interest;
     interestCents += interest;
     balance = balance + interest - (month === n ? lastPayment : paymentCents);
   }
@@ -6329,7 +7939,10 @@ export function calcMortgage(principal, annualRatePct, years) {
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 export const money = (n) => usd.format(n);
 
 // Each rule returns an error message, or "" when the value is fine.
@@ -6339,7 +7952,9 @@ export function amountError(text) {
 }
 export function rateError(text) {
   const n = Number(text);
-  return text === "" || !(n >= 0 && n <= 100) ? "Enter a rate from 0 to 100." : "";
+  return text === "" || !(n >= 0 && n <= 100)
+    ? "Enter a rate from 0 to 100."
+    : "";
 }
 `,
         },
@@ -6366,10 +7981,17 @@ A mortgage is a promise to pay one fixed amount every month until the balance re
 ### Step 1: cent-accurate maths
 
 ~~~ts
-export function calcMortgage(principal: number, annualRatePct: number, years: number) {
+export function calcMortgage(
+  principal: number,
+  annualRatePct: number,
+  years: number,
+) {
   const n = years * 12;
   const r = annualRatePct / 100 / 12;
-  const exact = r === 0 ? principal / n : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
+  const exact =
+    r === 0
+      ? principal / n
+      : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
   const paymentCents = Math.round(exact * 100);
 
   const principalCents = Math.round(principal * 100);
@@ -6380,9 +8002,11 @@ export function calcMortgage(principal: number, annualRatePct: number, years: nu
   for (let month = 1; month <= n; month++) {
     const interest = Math.round(balance * r);
     if (month === 1) firstInterest = interest;
-    if (month === n) lastPayment = balance + interest; // settle whatever is left
+    // settle whatever is left
+    if (month === n) lastPayment = balance + interest;
     interestCents += interest;
-    balance = balance + interest - (month === n ? lastPayment : paymentCents);
+    balance =
+      balance + interest - (month === n ? lastPayment : paymentCents);
   }
 
   return {
@@ -6395,7 +8019,10 @@ export function calcMortgage(principal: number, annualRatePct: number, years: nu
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 ~~~
 
 📌 **Interview term: Integer cents** — money kept as whole cents, with each month's interest rounded like a lender's statement, so totals are exact and the last payment settles the rounding. A first draft that used <code>total = monthly × n</code> printed <code>total=$300,000.60 interest=$0.60</code> for a 0% loan in the verifier; walking the schedule fixed it.
@@ -6403,9 +8030,18 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" 
 ### Step 2: ngModel into signals
 
 ~~~ts
-<input id="amount" name="amount" type="number" min="0" step="1000" inputmode="decimal"
-  [ngModel]="amount()" (ngModelChange)="amount.set($event)"
-  [attr.aria-invalid]="!!errors().amount" aria-describedby="amount-error" />
+<input
+  id="amount"
+  name="amount"
+  type="number"
+  min="0"
+  step="1000"
+  inputmode="decimal"
+  [ngModel]="amount()"
+  (ngModelChange)="amount.set($event)"
+  [attr.aria-invalid]="!!errors().amount"
+  aria-describedby="amount-error"
+/>
 ~~~
 
 📌 **Interview term: ngModel** — the template-driven forms directive from <code>FormsModule</code> (imported in the component's <code>imports</code>). Split into <code>[ngModel]</code> and <code>(ngModelChange)</code>, it reads from a signal and writes back with <code>set</code>. On <code>type="number"</code>, Angular's number value accessor delivers a <code>number</code>, or <code>null</code> when the box is empty. See [reactive vs template-driven forms](/interview-question/what-is-the-difference-between-reactive-and-template-driven-forms).
@@ -6413,7 +8049,12 @@ const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" 
 Inside a <code>&lt;form&gt;</code>, every <code>ngModel</code> needs a <code>name</code> attribute (it registers with the parent <code>NgForm</code>); forgetting it throws at runtime.
 
 ~~~ts
-<select id="years" name="years" [ngModel]="years()" (ngModelChange)="years.set($event)">
+<select
+  id="years"
+  name="years"
+  [ngModel]="years()"
+  (ngModelChange)="years.set($event)"
+>
   @for (t of terms; track t) {
     <option [ngValue]="t">{{ t }} years</option>
   }
@@ -6425,29 +8066,36 @@ Inside a <code>&lt;form&gt;</code>, every <code>ngModel</code> needs a <code>nam
 ### Step 3: signals and computeds
 
 ~~~ts
-  readonly terms = [15, 20, 30];
-  // ngModel on type="number" hands us a number, or null while a box is empty.
-  amount = signal<number | null>(300000);
-  rate = signal<number | null>(6.5);
-  years = signal(30);
+readonly terms = [15, 20, 30];
+// ngModel on type="number" hands us a
+// number, or null while a box is empty.
+amount = signal<number | null>(300000);
+rate = signal<number | null>(6.5);
+years = signal(30);
 
-  errors = computed(() => ({
-    amount: amountError(this.amount() === null ? "" : String(this.amount())),
-    rate: rateError(this.rate() === null ? "" : String(this.rate())),
-  }));
-  // Derived and cached: recalculated only when amount, rate or years change.
-  result = computed(() => {
-    const e = this.errors();
-    return e.amount || e.rate ? null : calcMortgage(this.amount()!, this.rate()!, this.years());
-  });
-  firstMonth = computed(() => {
-    const r = this.result();
-    return r ? \`\${money(r.firstInterest)} / \${money(r.firstPrincipal)}\` : "—";
-  });
+errors = computed(() => ({
+  amount: amountError(
+    this.amount() === null ? "" : String(this.amount()),
+  ),
+  rate: rateError(this.rate() === null ? "" : String(this.rate())),
+}));
+// Derived and cached: recalculated only
+// when amount, rate or years change.
+result = computed(() => {
+  const e = this.errors();
+  return e.amount || e.rate
+    ? null
+    : calcMortgage(this.amount()!, this.rate()!, this.years());
+});
+firstMonth = computed(() => {
+  const r = this.result();
+  return r
+    ? \`\${money(r.firstInterest)} / \${money(r.firstPrincipal)}\`
+    : "—";
+});
 
-  show(n: number | undefined) {
-    return n === undefined ? "—" : money(n);
-  }
+show(n: number | undefined) {
+  return n === undefined ? "—" : money(n);
 }
 ~~~
 
@@ -6456,18 +8104,22 @@ The validators take strings, so <code>null</code> becomes <code>""</code> first.
 ### Step 4: results
 
 ~~~ts
-  <section class="results" aria-live="polite" aria-label="Results">
-    <p class="monthly">
-      Monthly payment <strong data-testid="monthly">{{ show(result()?.monthly) }}</strong>
-    </p>
-    <dl>
-      <dt>Total of {{ years() * 12 }} payments</dt><dd data-testid="total">{{ show(result()?.total) }}</dd>
-      <dt>Final payment</dt><dd data-testid="last">{{ show(result()?.lastPayment) }}</dd>
-      <dt>Total interest</dt><dd data-testid="interest">{{ show(result()?.interest) }}</dd>
-      <dt>First month: interest / principal</dt>
-      <dd data-testid="first">{{ firstMonth() }}</dd>
-    </dl>
-  </section>
+<section class="results" aria-live="polite" aria-label="Results">
+  <p class="monthly">
+    Monthly payment
+    <strong data-testid="monthly">{{ show(result()?.monthly) }}</strong>
+  </p>
+  <dl>
+    <dt>Total of {{ years() * 12 }} payments</dt>
+    <dd data-testid="total">{{ show(result()?.total) }}</dd>
+    <dt>Final payment</dt>
+    <dd data-testid="last">{{ show(result()?.lastPayment) }}</dd>
+    <dt>Total interest</dt>
+    <dd data-testid="interest">{{ show(result()?.interest) }}</dd>
+    <dt>First month: interest / principal</dt>
+    <dd data-testid="first">{{ firstMonth() }}</dd>
+  </dl>
+</section>
 </div>
 ~~~
 
@@ -6587,7 +8239,8 @@ import { MortgageCalculatorComponent } from "./mortgage-calculator.component";
 
 @Component({
   selector: "app-root",
-  // None: lets the body rule below reach the page; the other selectors are scoped by hand with app-root.
+  // None: lets the body rule below reach the page; the
+  // other selectors are scoped by hand with app-root.
   encapsulation: ViewEncapsulation.None,
   imports: [MortgageCalculatorComponent],
   template: \`
@@ -6597,12 +8250,14 @@ import { MortgageCalculatorComponent } from "./mortgage-calculator.component";
       <app-mortgage-calculator />
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     body { margin: 0; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
     app-root .page { max-width: 560px; margin: 0 auto; padding: 24px 16px; }
     app-root h1 { font-size: 1.4rem; margin: 0 0 4px; }
     app-root .hint { color: #94a3b8; margin: 0 0 16px; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent {}
 `,
@@ -6617,19 +8272,43 @@ import { amountError, calcMortgage, money, rateError } from "./mortgage";
     <div class="calc">
       <form class="inputs" (submit)="$event.preventDefault()">
         <label for="amount">Loan amount ($)</label>
-        <input id="amount" name="amount" type="number" min="0" step="1000" inputmode="decimal"
-          [ngModel]="amount()" (ngModelChange)="amount.set($event)"
-          [attr.aria-invalid]="!!errors().amount" aria-describedby="amount-error" />
+        <input
+          id="amount"
+          name="amount"
+          type="number"
+          min="0"
+          step="1000"
+          inputmode="decimal"
+          [ngModel]="amount()"
+          (ngModelChange)="amount.set($event)"
+          [attr.aria-invalid]="!!errors().amount"
+          aria-describedby="amount-error"
+        />
         <p id="amount-error" class="error">{{ errors().amount }}</p>
 
         <label for="rate">Interest rate (% per year)</label>
-        <input id="rate" name="rate" type="number" min="0" max="100" step="0.05" inputmode="decimal"
-          [ngModel]="rate()" (ngModelChange)="rate.set($event)"
-          [attr.aria-invalid]="!!errors().rate" aria-describedby="rate-error" />
+        <input
+          id="rate"
+          name="rate"
+          type="number"
+          min="0"
+          max="100"
+          step="0.05"
+          inputmode="decimal"
+          [ngModel]="rate()"
+          (ngModelChange)="rate.set($event)"
+          [attr.aria-invalid]="!!errors().rate"
+          aria-describedby="rate-error"
+        />
         <p id="rate-error" class="error">{{ errors().rate }}</p>
 
         <label for="years">Term</label>
-        <select id="years" name="years" [ngModel]="years()" (ngModelChange)="years.set($event)">
+        <select
+          id="years"
+          name="years"
+          [ngModel]="years()"
+          (ngModelChange)="years.set($event)"
+        >
           @for (t of terms; track t) {
             <option [ngValue]="t">{{ t }} years</option>
           }
@@ -6638,33 +8317,91 @@ import { amountError, calcMortgage, money, rateError } from "./mortgage";
 
       <section class="results" aria-live="polite" aria-label="Results">
         <p class="monthly">
-          Monthly payment <strong data-testid="monthly">{{ show(result()?.monthly) }}</strong>
+          Monthly payment
+          <strong data-testid="monthly">{{ show(result()?.monthly) }}</strong>
         </p>
         <dl>
-          <dt>Total of {{ years() * 12 }} payments</dt><dd data-testid="total">{{ show(result()?.total) }}</dd>
-          <dt>Final payment</dt><dd data-testid="last">{{ show(result()?.lastPayment) }}</dd>
-          <dt>Total interest</dt><dd data-testid="interest">{{ show(result()?.interest) }}</dd>
+          <dt>Total of {{ years() * 12 }} payments</dt>
+          <dd data-testid="total">{{ show(result()?.total) }}</dd>
+          <dt>Final payment</dt>
+          <dd data-testid="last">{{ show(result()?.lastPayment) }}</dd>
+          <dt>Total interest</dt>
+          <dd data-testid="interest">{{ show(result()?.interest) }}</dd>
           <dt>First month: interest / principal</dt>
           <dd data-testid="first">{{ firstMonth() }}</dd>
         </dl>
       </section>
     </div>
   \`,
-  styles: [\`
-    .calc { display: grid; gap: 16px; }
-    .inputs, .results { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; }
-    .inputs { display: flex; flex-direction: column; gap: 6px; }
-    .inputs input, .inputs select { font-size: 1.1rem; padding: 10px 12px; border-radius: 8px; border: 1px solid #475569;
-      background: #0f172a; color: #f8fafc; }
-    .inputs input:focus-visible, .inputs select:focus-visible { outline: 3px solid #38bdf8; outline-offset: 1px; }
-    .inputs input[aria-invalid="true"] { border-color: #f87171; }
-    .error { min-height: 1.1em; margin: 0 0 6px; color: #fca5a5; font-size: 0.9rem; }
-    .monthly { margin: 0 0 12px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-    .monthly strong { font-size: 1.8rem; color: #38bdf8; }
-    dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0; }
-    dt { color: #94a3b8; }
-    dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-  \`],
+  styles: [
+    \`
+      .calc {
+        display: grid;
+        gap: 16px;
+      }
+      .inputs,
+      .results {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 16px 20px;
+      }
+      .inputs {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .inputs input,
+      .inputs select {
+        font-size: 1.1rem;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #475569;
+        background: #0f172a;
+        color: #f8fafc;
+      }
+      .inputs input:focus-visible,
+      .inputs select:focus-visible {
+        outline: 3px solid #38bdf8;
+        outline-offset: 1px;
+      }
+      .inputs input[aria-invalid="true"] {
+        border-color: #f87171;
+      }
+      .error {
+        min-height: 1.1em;
+        margin: 0 0 6px;
+        color: #fca5a5;
+        font-size: 0.9rem;
+      }
+      .monthly {
+        margin: 0 0 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .monthly strong {
+        font-size: 1.8rem;
+        color: #38bdf8;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 16px;
+        margin: 0;
+      }
+      dt {
+        color: #94a3b8;
+      }
+      dd {
+        margin: 0;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+    \`,
+  ],
 })
 export class MortgageCalculatorComponent {
   readonly terms = [15, 20, 30];
@@ -6680,7 +8417,9 @@ export class MortgageCalculatorComponent {
   // Derived and cached: recalculated only when amount, rate or years change.
   result = computed(() => {
     const e = this.errors();
-    return e.amount || e.rate ? null : calcMortgage(this.amount()!, this.rate()!, this.years());
+    return e.amount || e.rate
+      ? null
+      : calcMortgage(this.amount()!, this.rate()!, this.years());
   });
   firstMonth = computed(() => {
     const r = this.result();
@@ -6692,12 +8431,21 @@ export class MortgageCalculatorComponent {
   }
 }
 `,
-          "/src/app/mortgage.ts": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n / ((1 + r)^n - 1), with r the monthly rate.
-// Money is tracked in whole cents, like a lender, and the last payment absorbs the rounding.
-export function calcMortgage(principal: number, annualRatePct: number, years: number) {
+          "/src/app/mortgage.ts": `// Fixed-rate amortised loan: M = P * r * (1 + r)^n
+// / ((1 + r)^n - 1), with r the monthly rate.
+// Money is tracked in whole cents, like a lender,
+// and the last payment absorbs the rounding.
+export function calcMortgage(
+  principal: number,
+  annualRatePct: number,
+  years: number,
+) {
   const n = years * 12;
   const r = annualRatePct / 100 / 12;
-  const exact = r === 0 ? principal / n : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
+  const exact =
+    r === 0
+      ? principal / n
+      : (principal * r * (1 + r) ** n) / ((1 + r) ** n - 1);
   const paymentCents = Math.round(exact * 100);
 
   const principalCents = Math.round(principal * 100);
@@ -6708,7 +8456,8 @@ export function calcMortgage(principal: number, annualRatePct: number, years: nu
   for (let month = 1; month <= n; month++) {
     const interest = Math.round(balance * r);
     if (month === 1) firstInterest = interest;
-    if (month === n) lastPayment = balance + interest; // settle whatever is left
+    // settle whatever is left
+    if (month === n) lastPayment = balance + interest;
     interestCents += interest;
     balance = balance + interest - (month === n ? lastPayment : paymentCents);
   }
@@ -6723,7 +8472,10 @@ export function calcMortgage(principal: number, annualRatePct: number, years: nu
   };
 }
 
-const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
+const usd = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 export const money = (n: number) => usd.format(n);
 
 // Each rule returns an error message, or "" when the value is fine.
@@ -6733,7 +8485,9 @@ export function amountError(text: string) {
 }
 export function rateError(text: string) {
   const n = Number(text);
-  return text === "" || !(n >= 0 && n <= 100) ? "Enter a rate from 0 to 100." : "";
+  return text === "" || !(n >= 0 && n <= 100)
+    ? "Enter a rate from 0 to 100."
+    : "";
 }
 `,
         },

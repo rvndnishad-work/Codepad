@@ -141,11 +141,20 @@ You could store raw <code>scrollTop</code> instead, but then every pixel of scro
 📌 **Interview term: Windowing (virtualization)** — rendering only the slice of a long list that intersects the visible area, while a spacer keeps the scroll height of the full list.
 
 ~~~jsx
-export function getRange(scrollTop, viewportHeight, rowHeight, count, overscan) {
+export function getRange(
+  scrollTop,
+  viewportHeight,
+  rowHeight,
+  count,
+  overscan,
+) {
   const maxTop = Math.max(0, count * rowHeight - viewportHeight);
   const top = Math.min(Math.max(0, scrollTop), maxTop);
   const first = Math.floor(top / rowHeight);
-  const last = Math.min(count - 1, Math.floor((top + viewportHeight - 1) / rowHeight));
+  const last = Math.min(
+    count - 1,
+    Math.floor((top + viewportHeight - 1) / rowHeight),
+  );
   return {
     first,
     last,
@@ -165,14 +174,24 @@ Keeping this a pure function means you can unit test the edge cases (top, bottom
 
 ~~~jsx
 const [range, setRange] = useState(() =>
-  getRange(0, height, rowHeight, items.length, overscan)
+  getRange(0, height, rowHeight, items.length, overscan),
 );
 
 function handleScroll(e) {
-  const next = getRange(e.currentTarget.scrollTop, height, rowHeight, items.length, overscan);
+  const next = getRange(
+    e.currentTarget.scrollTop,
+    height,
+    rowHeight,
+    items.length,
+    overscan,
+  );
   // Bail out unless the window moved by at least one row.
   setRange((prev) =>
-    prev.start === next.start && prev.end === next.end && prev.first === next.first ? prev : next
+    prev.start === next.start &&
+    prev.end === next.end &&
+    prev.first === next.first
+      ? prev
+      : next,
   );
 }
 ~~~
@@ -201,15 +220,24 @@ for (let i = range.start; i <= range.end; i++) {
     >
       <span className="vl-name">{item.name}</span>
       <span className="vl-meta">{item.team}</span>
-    </div>
+    </div>,
   );
 }
 ~~~
 
 ~~~jsx
-<div className="vl-viewport" role="list" aria-label="Contacts" tabIndex={0}
-  style={{ height }} onScroll={handleScroll}>
-  <div className="vl-spacer" style={{ height: items.length * rowHeight }}>
+<div
+  className="vl-viewport"
+  role="list"
+  aria-label="Contacts"
+  tabIndex={0}
+  style={{ height }}
+  onScroll={handleScroll}
+>
+  <div
+    className="vl-spacer"
+    style={{ height: items.length * rowHeight }}
+  >
     {rows}
   </div>
 </div>
@@ -381,11 +409,20 @@ export default function App() {
           "/src/VirtualList.js": `import { useState } from "react";
 
 // Pure windowing maths: which rows does the viewport need right now?
-export function getRange(scrollTop, viewportHeight, rowHeight, count, overscan) {
+export function getRange(
+  scrollTop,
+  viewportHeight,
+  rowHeight,
+  count,
+  overscan,
+) {
   const maxTop = Math.max(0, count * rowHeight - viewportHeight);
   const top = Math.min(Math.max(0, scrollTop), maxTop);
   const first = Math.floor(top / rowHeight);
-  const last = Math.min(count - 1, Math.floor((top + viewportHeight - 1) / rowHeight));
+  const last = Math.min(
+    count - 1,
+    Math.floor((top + viewportHeight - 1) / rowHeight),
+  );
   return {
     first,
     last,
@@ -394,16 +431,31 @@ export function getRange(scrollTop, viewportHeight, rowHeight, count, overscan) 
   };
 }
 
-export default function VirtualList({ items, rowHeight, height, overscan = 3 }) {
+export default function VirtualList({
+  items,
+  rowHeight,
+  height,
+  overscan = 3,
+}) {
   const [range, setRange] = useState(() =>
-    getRange(0, height, rowHeight, items.length, overscan)
+    getRange(0, height, rowHeight, items.length, overscan),
   );
 
   function handleScroll(e) {
-    const next = getRange(e.currentTarget.scrollTop, height, rowHeight, items.length, overscan);
+    const next = getRange(
+      e.currentTarget.scrollTop,
+      height,
+      rowHeight,
+      items.length,
+      overscan,
+    );
     // Bail out unless the window moved by at least one row.
     setRange((prev) =>
-      prev.start === next.start && prev.end === next.end && prev.first === next.first ? prev : next
+      prev.start === next.start &&
+      prev.end === next.end &&
+      prev.first === next.first
+        ? prev
+        : next,
     );
   }
 
@@ -422,7 +474,7 @@ export default function VirtualList({ items, rowHeight, height, overscan = 3 }) 
       >
         <span className="vl-name">{item.name}</span>
         <span className="vl-meta">{item.team}</span>
-      </div>
+      </div>,
     );
   }
 
@@ -442,26 +494,65 @@ export default function VirtualList({ items, rowHeight, height, overscan = 3 }) 
         </div>
       </div>
       <p className="vl-status" data-testid="status">
-        Showing {range.first + 1}-{range.last + 1} of {items.length.toLocaleString("en-US")} ·{" "}
-        {rows.length} rows in the DOM
+        Showing {range.first + 1}-{range.last + 1} of{" "}
+        {items.length.toLocaleString("en-US")} · {rows.length} rows in the DOM
       </p>
     </div>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.vl-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.vl-app h1 { font-size: 1.2rem; margin: 0 0 12px; }
-.vl-viewport { position: relative; overflow-y: auto; border: 1px solid #2a2f3a;
-  border-radius: 10px; background: #161a22; }
-.vl-viewport:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.vl-spacer { position: relative; }
-.vl-row { position: absolute; left: 0; right: 0; box-sizing: border-box; display: flex;
-  align-items: center; justify-content: space-between; padding: 0 14px;
-  border-bottom: 1px solid #222734; }
-.vl-name { font-variant-numeric: tabular-nums; }
-.vl-meta { color: #9aa3b5; font-size: 0.85rem; }
-.vl-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.vl-app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.vl-app h1 {
+  font-size: 1.2rem;
+  margin: 0 0 12px;
+}
+.vl-viewport {
+  position: relative;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.vl-viewport:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.vl-spacer {
+  position: relative;
+}
+.vl-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid #222734;
+}
+.vl-name {
+  font-variant-numeric: tabular-nums;
+}
+.vl-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.vl-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 `,
         },
       },
@@ -500,15 +591,25 @@ The template has three layers: a viewport <code>div</code> with <code>overflow-y
 const scrollTop = ref(0);
 
 const clampedTop = computed(() => {
-  const maxTop = Math.max(0, props.items.length * props.rowHeight - props.height);
+  const maxTop = Math.max(
+    0,
+    props.items.length * props.rowHeight - props.height,
+  );
   return Math.min(Math.max(0, scrollTop.value), maxTop);
 });
-const first = computed(() => Math.floor(clampedTop.value / props.rowHeight));
+const first = computed(() =>
+  Math.floor(clampedTop.value / props.rowHeight),
+);
 const last = computed(() =>
-  Math.min(props.items.length - 1, Math.floor((clampedTop.value + props.height - 1) / props.rowHeight))
+  Math.min(
+    props.items.length - 1,
+    Math.floor((clampedTop.value + props.height - 1) / props.rowHeight),
+  ),
 );
 const start = computed(() => Math.max(0, first.value - props.overscan));
-const end = computed(() => Math.min(props.items.length - 1, last.value + props.overscan));
+const end = computed(() =>
+  Math.min(props.items.length - 1, last.value + props.overscan),
+);
 ~~~
 
 📌 **Interview term: Windowing (virtualization)** — rendering only the rows that intersect the visible area and faking the rest of the height with a spacer.
@@ -688,7 +789,7 @@ const items = markRaw(
     id: i + 1,
     name: "Contact #" + String(i + 1).padStart(5, "0"),
     team: TEAMS[i % TEAMS.length],
-  }))
+  })),
 );
 </script>
 
@@ -700,9 +801,21 @@ const items = markRaw(
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.vl-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.vl-app h1 { font-size: 1.2rem; margin: 0 0 12px; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.vl-app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.vl-app h1 {
+  font-size: 1.2rem;
+  margin: 0 0 12px;
+}
 </style>
 `,
           "/src/components/VirtualList.vue": `<script setup>
@@ -721,15 +834,23 @@ const scrollTop = ref(0);
 // Everything else is derived from it. Each computed returns a plain number,
 // so dependents only re-run when that number actually changes.
 const clampedTop = computed(() => {
-  const maxTop = Math.max(0, props.items.length * props.rowHeight - props.height);
+  const maxTop = Math.max(
+    0,
+    props.items.length * props.rowHeight - props.height,
+  );
   return Math.min(Math.max(0, scrollTop.value), maxTop);
 });
 const first = computed(() => Math.floor(clampedTop.value / props.rowHeight));
 const last = computed(() =>
-  Math.min(props.items.length - 1, Math.floor((clampedTop.value + props.height - 1) / props.rowHeight))
+  Math.min(
+    props.items.length - 1,
+    Math.floor((clampedTop.value + props.height - 1) / props.rowHeight),
+  ),
 );
 const start = computed(() => Math.max(0, first.value - props.overscan));
-const end = computed(() => Math.min(props.items.length - 1, last.value + props.overscan));
+const end = computed(() =>
+  Math.min(props.items.length - 1, last.value + props.overscan),
+);
 
 const visibleRows = computed(() => {
   const rows = [];
@@ -781,16 +902,43 @@ function onScroll(e) {
 </template>
 
 <style scoped>
-.vl-viewport { position: relative; overflow-y: auto; border: 1px solid #2a2f3a;
-  border-radius: 10px; background: #161a22; }
-.vl-viewport:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.vl-spacer { position: relative; }
-.vl-row { position: absolute; left: 0; right: 0; box-sizing: border-box; display: flex;
-  align-items: center; justify-content: space-between; padding: 0 14px;
-  border-bottom: 1px solid #222734; }
-.vl-name { font-variant-numeric: tabular-nums; }
-.vl-meta { color: #9aa3b5; font-size: 0.85rem; }
-.vl-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+.vl-viewport {
+  position: relative;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.vl-viewport:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.vl-spacer {
+  position: relative;
+}
+.vl-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid #222734;
+}
+.vl-name {
+  font-variant-numeric: tabular-nums;
+}
+.vl-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.vl-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 </style>
 `,
         },
@@ -835,10 +983,18 @@ readonly items = signal<Contact[]>([]);
 readonly rowHeight = signal(40);
 readonly height = signal(400);
 readonly overscan = signal(3);
-@Input({ required: true }) set data(v: Contact[]) { this.items.set(v); }
-@Input() set itemHeight(v: number) { this.rowHeight.set(v); }
-@Input() set viewportHeight(v: number) { this.height.set(v); }
-@Input() set overscanCount(v: number) { this.overscan.set(v); }
+@Input({ required: true }) set data(v: Contact[]) {
+  this.items.set(v);
+}
+@Input() set itemHeight(v: number) {
+  this.rowHeight.set(v);
+}
+@Input() set viewportHeight(v: number) {
+  this.height.set(v);
+}
+@Input() set overscanCount(v: number) {
+  this.overscan.set(v);
+}
 ~~~
 
 A plain <code>@Input() items</code> field read inside a <code>computed</code> would not be tracked, so a parent swapping the array would leave the list stale.
@@ -851,15 +1007,29 @@ A plain <code>@Input() items</code> field read inside a <code>computed</code> wo
 private readonly scrollTop = signal(0);
 
 private readonly clampedTop = computed(() => {
-  const maxTop = Math.max(0, this.items().length * this.rowHeight() - this.height());
+  const maxTop = Math.max(
+    0,
+    this.items().length * this.rowHeight() - this.height(),
+  );
   return Math.min(Math.max(0, this.scrollTop()), maxTop);
 });
-readonly first = computed(() => Math.floor(this.clampedTop() / this.rowHeight()));
-readonly last = computed(() =>
-  Math.min(this.items().length - 1, Math.floor((this.clampedTop() + this.height() - 1) / this.rowHeight()))
+readonly first = computed(() =>
+  Math.floor(this.clampedTop() / this.rowHeight()),
 );
-private readonly start = computed(() => Math.max(0, this.first() - this.overscan()));
-private readonly end = computed(() => Math.min(this.items().length - 1, this.last() + this.overscan()));
+readonly last = computed(() =>
+  Math.min(
+    this.items().length - 1,
+    Math.floor(
+      (this.clampedTop() + this.height() - 1) / this.rowHeight(),
+    ),
+  ),
+);
+private readonly start = computed(() =>
+  Math.max(0, this.first() - this.overscan()),
+);
+private readonly end = computed(() =>
+  Math.min(this.items().length - 1, this.last() + this.overscan()),
+);
 ~~~
 
 📌 **Interview term: Overscan** — spare rows outside the viewport that hide blank flashes during fast scrolls.
@@ -867,12 +1037,24 @@ private readonly end = computed(() => Math.min(this.items().length - 1, this.las
 ### Step 3: the template with @for
 
 ~~~html
-<div class="vl-viewport" role="list" aria-label="Contacts" tabindex="0"
-  [style.height.px]="height()" (scroll)="onScroll($event)">
+<div
+  class="vl-viewport"
+  role="list"
+  aria-label="Contacts"
+  tabindex="0"
+  [style.height.px]="height()"
+  (scroll)="onScroll($event)"
+>
   <div class="vl-spacer" [style.height.px]="totalHeight()">
     @for (row of visibleRows(); track row.item.id) {
-      <div role="listitem" [attr.aria-setsize]="items().length" [attr.aria-posinset]="row.index + 1"
-        class="vl-row" [style.top.px]="row.index * rowHeight()" [style.height.px]="rowHeight()">
+      <div
+        role="listitem"
+        [attr.aria-setsize]="items().length"
+        [attr.aria-posinset]="row.index + 1"
+        class="vl-row"
+        [style.top.px]="row.index * rowHeight()"
+        [style.height.px]="rowHeight()"
+      >
         <span class="vl-name">{{ row.item.name }}</span>
         <span class="vl-meta">{{ row.item.team }}</span>
       </div>
@@ -1023,15 +1205,34 @@ const TEAMS = ["Design", "Platform", "Growth", "Support", "Data"];
   template: \`
     <main class="vl-app">
       <h1>Virtualized list: 10,000 contacts</h1>
-      <app-virtual-list [data]="contacts" [itemHeight]="40" [viewportHeight]="400" [overscanCount]="3" />
+      <app-virtual-list
+        [data]="contacts"
+        [itemHeight]="40"
+        [viewportHeight]="400"
+        [overscanCount]="3"
+      />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee;
-      font-family: system-ui, sans-serif; }
-    .vl-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 1.2rem; margin: 0 0 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .vl-app {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 1.2rem;
+        margin: 0 0 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   // 10,000 fake contacts, built once.
@@ -1085,18 +1286,47 @@ export interface Contact {
       {{ visibleRows().length }} rows in the DOM
     </p>
   \`,
-  styles: [\`
-    .vl-viewport { position: relative; overflow-y: auto; border: 1px solid #2a2f3a;
-      border-radius: 10px; background: #161a22; }
-    .vl-viewport:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .vl-spacer { position: relative; }
-    .vl-row { position: absolute; left: 0; right: 0; box-sizing: border-box; display: flex;
-      align-items: center; justify-content: space-between; padding: 0 14px;
-      border-bottom: 1px solid #222734; }
-    .vl-name { font-variant-numeric: tabular-nums; }
-    .vl-meta { color: #9aa3b5; font-size: 0.85rem; }
-    .vl-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-  \`],
+  styles: [
+    \`
+      .vl-viewport {
+        position: relative;
+        overflow-y: auto;
+        border: 1px solid #2a2f3a;
+        border-radius: 10px;
+        background: #161a22;
+      }
+      .vl-viewport:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .vl-spacer {
+        position: relative;
+      }
+      .vl-row {
+        position: absolute;
+        left: 0;
+        right: 0;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        border-bottom: 1px solid #222734;
+      }
+      .vl-name {
+        font-variant-numeric: tabular-nums;
+      }
+      .vl-meta {
+        color: #9aa3b5;
+        font-size: 0.85rem;
+      }
+      .vl-status {
+        color: #9aa3b5;
+        font-size: 0.85rem;
+        margin: 10px 0 0;
+      }
+    \`,
+  ],
 })
 export class VirtualListComponent {
   // Inputs are copied into signals so every computed below tracks them.
@@ -1104,24 +1334,44 @@ export class VirtualListComponent {
   readonly rowHeight = signal(40);
   readonly height = signal(400);
   readonly overscan = signal(3);
-  @Input({ required: true }) set data(v: Contact[]) { this.items.set(v); }
-  @Input() set itemHeight(v: number) { this.rowHeight.set(v); }
-  @Input() set viewportHeight(v: number) { this.height.set(v); }
-  @Input() set overscanCount(v: number) { this.overscan.set(v); }
+  @Input({ required: true }) set data(v: Contact[]) {
+    this.items.set(v);
+  }
+  @Input() set itemHeight(v: number) {
+    this.rowHeight.set(v);
+  }
+  @Input() set viewportHeight(v: number) {
+    this.height.set(v);
+  }
+  @Input() set overscanCount(v: number) {
+    this.overscan.set(v);
+  }
 
   // The only state the list owns: how far the viewport is scrolled.
   private readonly scrollTop = signal(0);
 
   private readonly clampedTop = computed(() => {
-    const maxTop = Math.max(0, this.items().length * this.rowHeight() - this.height());
+    const maxTop = Math.max(
+      0,
+      this.items().length * this.rowHeight() - this.height(),
+    );
     return Math.min(Math.max(0, this.scrollTop()), maxTop);
   });
-  readonly first = computed(() => Math.floor(this.clampedTop() / this.rowHeight()));
-  readonly last = computed(() =>
-    Math.min(this.items().length - 1, Math.floor((this.clampedTop() + this.height() - 1) / this.rowHeight()))
+  readonly first = computed(() =>
+    Math.floor(this.clampedTop() / this.rowHeight()),
   );
-  private readonly start = computed(() => Math.max(0, this.first() - this.overscan()));
-  private readonly end = computed(() => Math.min(this.items().length - 1, this.last() + this.overscan()));
+  readonly last = computed(() =>
+    Math.min(
+      this.items().length - 1,
+      Math.floor((this.clampedTop() + this.height() - 1) / this.rowHeight()),
+    ),
+  );
+  private readonly start = computed(() =>
+    Math.max(0, this.first() - this.overscan()),
+  );
+  private readonly end = computed(() =>
+    Math.min(this.items().length - 1, this.last() + this.overscan()),
+  );
 
   readonly visibleRows = computed(() => {
     const rows: { index: number; item: Contact }[] = [];
@@ -1131,7 +1381,9 @@ export class VirtualListComponent {
     return rows;
   });
   readonly totalHeight = computed(() => this.items().length * this.rowHeight());
-  readonly countLabel = computed(() => this.items().length.toLocaleString("en-US"));
+  readonly countLabel = computed(() =>
+    this.items().length.toLocaleString("en-US"),
+  );
 
   onScroll(event: Event) {
     this.scrollTop.set((event.target as HTMLElement).scrollTop);
@@ -1269,7 +1521,13 @@ The remaining props (<code>className</code>, <code>role</code>, <code>aria-*</co
 function styleFor(index) {
   let s = styleCache.current.get(index);
   if (!s) {
-    s = { position: "absolute", left: 0, width: "100%", top: index * itemSize, height: itemSize };
+    s = {
+      position: "absolute",
+      left: 0,
+      width: "100%",
+      top: index * itemSize,
+      height: itemSize,
+    };
     styleCache.current.set(index, s);
   }
   return s;
@@ -1277,7 +1535,9 @@ function styleFor(index) {
 
 const rows = [];
 for (let i = start; i <= stop; i++) {
-  rows.push(<Row key={i} index={i} style={styleFor(i)} data={itemData} />);
+  rows.push(
+    <Row key={i} index={i} style={styleFor(i)} data={itemData} />,
+  );
 }
 ~~~
 
@@ -1287,21 +1547,32 @@ Why cache? The consumer wraps its row in <code>memo</code>. <code>memo</code> sk
 
 ~~~jsx
 const select = useCallback((index) => setActive(index), []);
-const itemData = useMemo(() => ({ items, active, select }), [items, active, select]);
+const itemData = useMemo(
+  () => ({ items, active, select }),
+  [items, active, select],
+);
 ~~~
 
 ### Step 3: scrollToItem and its alignment rules
 
 ~~~jsx
-export function offsetForIndex(index, align, current, { itemCount, itemSize, height }) {
+export function offsetForIndex(
+  index,
+  align,
+  current,
+  { itemCount, itemSize, height },
+) {
   const maxOffset = Math.max(0, itemCount * itemSize - height);
   const itemTop = index * itemSize;
-  const lowest = Math.max(0, itemTop - height + itemSize); // item sits at the bottom edge
+  // item sits at the bottom edge
+  const lowest = Math.max(0, itemTop - height + itemSize);
   let next;
   if (align === "start") next = itemTop;
   else if (align === "end") next = lowest;
-  else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
-  else if (current >= lowest && current <= itemTop) next = current; // already fully visible
+  else if (align === "center")
+    next = Math.round(lowest + (itemTop - lowest) / 2);
+  else if (current >= lowest && current <= itemTop)
+    next = current; // already fully visible
   else next = current < lowest ? lowest : itemTop;
   return Math.min(Math.max(0, next), maxOffset);
 }
@@ -1321,7 +1592,13 @@ useImperativeHandle(ref, () => ({
   scrollTo,
   scrollToItem(index, align = "auto") {
     const i = Math.min(Math.max(0, index), itemCount - 1);
-    scrollTo(offsetForIndex(i, align, outerRef.current.scrollTop, { itemCount, itemSize, height }));
+    scrollTo(
+      offsetForIndex(i, align, outerRef.current.scrollTop, {
+        itemCount,
+        itemSize,
+        height,
+      }),
+    );
   },
 }));
 ~~~
@@ -1335,8 +1612,10 @@ Setting <code>scrollTop</code> in a real browser fires a <code>scroll</code> eve
 ~~~jsx
 useEffect(() => {
   onItemsRendered?.({
-    overscanStartIndex: start, overscanStopIndex: stop,
-    visibleStartIndex: first, visibleStopIndex: last,
+    overscanStartIndex: start,
+    overscanStopIndex: stop,
+    visibleStartIndex: first,
+    visibleStopIndex: last,
   });
 }, [start, stop, first, last, onItemsRendered]);
 ~~~
@@ -1347,7 +1626,9 @@ The effect fires only when an index changes, and the App passes <code>setRange</
 
 ~~~jsx
 function onKeyDown(e) {
-  const step = { ArrowDown: 1, ArrowUp: -1, PageDown: 8, PageUp: -8 }[e.key];
+  const step = { ArrowDown: 1, ArrowUp: -1, PageDown: 8, PageUp: -8 }[
+    e.key
+  ];
   if (step) moveTo(active + step);
   else if (e.key === "Home") moveTo(0);
   else if (e.key === "End") moveTo(COUNT - 1);
@@ -1357,7 +1638,9 @@ function onKeyDown(e) {
 
 // Only point at the active row while it is actually in the DOM.
 const activeMounted =
-  range !== null && active >= range.overscanStartIndex && active <= range.overscanStopIndex;
+  range !== null &&
+  active >= range.overscanStartIndex &&
+  active <= range.overscanStopIndex;
 ~~~
 
 📌 **Interview term: aria-activedescendant** — on a focused container (here <code>role="listbox"</code>), names the id of the child that is "active", so a screen reader announces that option while real focus stays on the container. In a virtualized list focus must stay on the container: moving real focus into a row would be lost the moment that row unmounts.
@@ -1372,10 +1655,17 @@ Static snippets of the two majors (both were installed privately and run in Chro
 // react-window 1.8.11
 import { FixedSizeList } from "react-window";
 
-<FixedSizeList ref={listRef} height={400} width="100%" itemCount={100000}
-  itemSize={48} overscanCount={5} itemData={itemData}>
+<FixedSizeList
+  ref={listRef}
+  height={400}
+  width="100%"
+  itemCount={100000}
+  itemSize={48}
+  overscanCount={5}
+  itemData={itemData}
+>
   {Row /* ({ index, style, data }) => ... */}
-</FixedSizeList>;
+</FixedSizeList>
 listRef.current.scrollToItem(50000, "start");
 ~~~
 
@@ -1384,8 +1674,15 @@ listRef.current.scrollToItem(50000, "start");
 import { List, useListRef } from "react-window";
 
 const listRef = useListRef(null);
-<List listRef={listRef} rowComponent={Row} rowCount={100000} rowHeight={48}
-  rowProps={{ items }} overscanCount={5} style={{ height: 400 }} />;
+<List
+  listRef={listRef}
+  rowComponent={Row}
+  rowCount={100000}
+  rowHeight={48}
+  rowProps={{ items }}
+  overscanCount={5}
+  style={{ height: 400 }}
+/>
 listRef.current.scrollToRow({ index: 50000, align: "start" });
 // Row receives { index, style, ariaAttributes, ...rowProps }
 ~~~
@@ -1537,8 +1834,26 @@ The labels between the blocks were added here; the lines are as printed. All thr
 import { FixedSizeList } from "./src/FixedSizeList";
 
 const COUNT = 100000;
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 
 function makeContacts() {
   return Array.from({ length: COUNT }, (_, i) => ({
@@ -1577,11 +1892,16 @@ export default function App() {
   const [jump, setJump] = useState("");
 
   const select = useCallback((index) => setActive(index), []);
-  const itemData = useMemo(() => ({ items, active, select }), [items, active, select]);
+  const itemData = useMemo(
+    () => ({ items, active, select }),
+    [items, active, select],
+  );
 
   // Only point at the active row while it is actually in the DOM.
   const activeMounted =
-    range !== null && active >= range.overscanStartIndex && active <= range.overscanStopIndex;
+    range !== null &&
+    active >= range.overscanStartIndex &&
+    active <= range.overscanStopIndex;
 
   function moveTo(index, align = "auto") {
     const i = Math.min(Math.max(0, index), COUNT - 1);
@@ -1609,9 +1929,18 @@ export default function App() {
       <h1>100,000 contacts, fixed 48px rows</h1>
       <form className="rw-jump" onSubmit={onJump}>
         <label htmlFor="jump">Jump to #</label>
-        <input id="jump" data-testid="jump" type="number" min="1" max={COUNT}
-          value={jump} onChange={(e) => setJump(e.target.value)} />
-        <button data-testid="go" type="submit">Go</button>
+        <input
+          id="jump"
+          data-testid="jump"
+          type="number"
+          min="1"
+          max={COUNT}
+          value={jump}
+          onChange={(e) => setJump(e.target.value)}
+        />
+        <button data-testid="go" type="submit">
+          Go
+        </button>
       </form>
       <FixedSizeList
         ref={listRef}
@@ -1632,8 +1961,12 @@ export default function App() {
         {Row}
       </FixedSizeList>
       <p className="rw-status" data-testid="status">
-        {range && <>Visible {range.visibleStartIndex}-{range.visibleStopIndex}, rendered{" "}
-          {range.overscanStartIndex}-{range.overscanStopIndex} · </>}
+        {range && (
+          <>
+            Visible {range.visibleStartIndex}-{range.visibleStopIndex}, rendered{" "}
+            {range.overscanStartIndex}-{range.overscanStopIndex} ·{" "}
+          </>
+        )}
         active #{items[active].id} {items[active].name}
       </p>
     </main>
@@ -1644,15 +1977,23 @@ export default function App() {
 
 // Where should the viewport scroll so that \`index\` is placed per \`align\`?
 // Same rules as react-window: "auto" scrolls only as far as needed.
-export function offsetForIndex(index, align, current, { itemCount, itemSize, height }) {
+export function offsetForIndex(
+  index,
+  align,
+  current,
+  { itemCount, itemSize, height },
+) {
   const maxOffset = Math.max(0, itemCount * itemSize - height);
   const itemTop = index * itemSize;
-  const lowest = Math.max(0, itemTop - height + itemSize); // item sits at the bottom edge
+  // item sits at the bottom edge
+  const lowest = Math.max(0, itemTop - height + itemSize);
   let next;
   if (align === "start") next = itemTop;
   else if (align === "end") next = lowest;
-  else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
-  else if (current >= lowest && current <= itemTop) next = current; // already fully visible
+  else if (align === "center")
+    next = Math.round(lowest + (itemTop - lowest) / 2);
+  else if (current >= lowest && current <= itemTop)
+    next = current; // already fully visible
   else next = current < lowest ? lowest : itemTop;
   return Math.min(Math.max(0, next), maxOffset);
 }
@@ -1675,7 +2016,10 @@ export function FixedSizeList({
   const styleCache = useRef(new Map());
 
   const first = Math.min(itemCount - 1, Math.floor(scrollOffset / itemSize));
-  const last = Math.min(itemCount - 1, Math.floor((scrollOffset + height - 1) / itemSize));
+  const last = Math.min(
+    itemCount - 1,
+    Math.floor((scrollOffset + height - 1) / itemSize),
+  );
   const start = Math.max(0, first - overscanCount);
   const stop = Math.min(itemCount - 1, last + overscanCount);
 
@@ -1690,7 +2034,13 @@ export function FixedSizeList({
     scrollTo,
     scrollToItem(index, align = "auto") {
       const i = Math.min(Math.max(0, index), itemCount - 1);
-      scrollTo(offsetForIndex(i, align, outerRef.current.scrollTop, { itemCount, itemSize, height }));
+      scrollTo(
+        offsetForIndex(i, align, outerRef.current.scrollTop, {
+          itemCount,
+          itemSize,
+          height,
+        }),
+      );
     },
   }));
 
@@ -1707,7 +2057,13 @@ export function FixedSizeList({
   function styleFor(index) {
     let s = styleCache.current.get(index);
     if (!s) {
-      s = { position: "absolute", left: 0, width: "100%", top: index * itemSize, height: itemSize };
+      s = {
+        position: "absolute",
+        left: 0,
+        width: "100%",
+        top: index * itemSize,
+        height: itemSize,
+      };
       styleCache.current.set(index, s);
     }
     return s;
@@ -1722,30 +2078,102 @@ export function FixedSizeList({
     <div
       {...outerProps}
       ref={outerRef}
-      style={{ position: "relative", height, width, overflow: "auto", willChange: "transform" }}
+      style={{
+        position: "relative",
+        height,
+        width,
+        overflow: "auto",
+        willChange: "transform",
+      }}
       onScroll={(e) => setScrollOffset(e.currentTarget.scrollTop)}
     >
-      <div style={{ height: itemCount * itemSize, width: "100%", position: "relative" }}>{rows}</div>
+      <div
+        style={{
+          height: itemCount * itemSize,
+          width: "100%",
+          position: "relative",
+        }}
+      >
+        {rows}
+      </div>
     </div>
   );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.rw-app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.rw-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.rw-jump { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-.rw-jump input { width: 110px; padding: 6px 8px; border-radius: 6px; border: 1px solid #2a2f3a;
-  background: #161a22; color: inherit; }
-.rw-jump button { padding: 6px 14px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.rw-list { border: 1px solid #2a2f3a; border-radius: 10px; background: #161a22; }
-.rw-list:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.rw-row { box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 14px;
-  border-bottom: 1px solid #222734; cursor: pointer; }
-.rw-active { background: #24345c; }
-.rw-num { width: 64px; color: #9aa3b5; font-variant-numeric: tabular-nums; }
-.rw-name { flex: 1; }
-.rw-phone { color: #9aa3b5; font-size: 0.85rem; }
-.rw-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.rw-app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.rw-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.rw-jump {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.rw-jump input {
+  width: 110px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #161a22;
+  color: inherit;
+}
+.rw-jump button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.rw-list {
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.rw-list:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.rw-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid #222734;
+  cursor: pointer;
+}
+.rw-active {
+  background: #24345c;
+}
+.rw-num {
+  width: 64px;
+  color: #9aa3b5;
+  font-variant-numeric: tabular-nums;
+}
+.rw-name {
+  flex: 1;
+}
+.rw-phone {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.rw-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 `,
         },
       },
@@ -1787,12 +2215,26 @@ const emit = defineEmits(["items-rendered"]);
 
 const outer = ref(null);
 const scrollOffset = ref(0);
-const first = computed(() => Math.min(props.itemCount - 1, Math.floor(scrollOffset.value / props.itemSize)));
-const last = computed(() =>
-  Math.min(props.itemCount - 1, Math.floor((scrollOffset.value + props.height - 1) / props.itemSize))
+const first = computed(() =>
+  Math.min(
+    props.itemCount - 1,
+    Math.floor(scrollOffset.value / props.itemSize),
+  ),
 );
-const start = computed(() => Math.max(0, first.value - props.overscanCount));
-const stop = computed(() => Math.min(props.itemCount - 1, last.value + props.overscanCount));
+const last = computed(() =>
+  Math.min(
+    props.itemCount - 1,
+    Math.floor(
+      (scrollOffset.value + props.height - 1) / props.itemSize,
+    ),
+  ),
+);
+const start = computed(() =>
+  Math.max(0, first.value - props.overscanCount),
+);
+const stop = computed(() =>
+  Math.min(props.itemCount - 1, last.value + props.overscanCount),
+);
 ~~~
 
 Props in kebab case (<code>:item-count</code>) map to camelCase automatically ([defineProps and defineEmits](/interview-question/how-do-defineprops-and-defineemits-work-in-script-setup)).
@@ -1805,7 +2247,12 @@ Props in kebab case (<code>:item-count</code>) map to camelCase automatically ([
 <div ref="outer" :style="{ position: 'relative', height: height + 'px', overflow: 'auto', willChange: 'transform' }"
   @scroll.passive="scrollOffset = $event.target.scrollTop">
   <div :style="{ height: itemCount * itemSize + 'px', width: '100%', position: 'relative' }">
-    <slot v-for="i in indexes" :key="i" :index="i" :style="rowStyle(i)" />
+    <slot
+      v-for="i in indexes"
+      :key="i"
+      :index="i"
+      :style="rowStyle(i)"
+    />
   </div>
 </div>
 ~~~
@@ -1818,7 +2265,10 @@ This is react-window's <code>({ index, style })</code> row contract in Vue form:
 
 ~~~js
 function scrollTo(offset) {
-  const max = Math.max(0, props.itemCount * props.itemSize - props.height);
+  const max = Math.max(
+    0,
+    props.itemCount * props.itemSize - props.height,
+  );
   const top = Math.min(Math.max(0, offset), max);
   outer.value.scrollTop = top;
   scrollOffset.value = top; // do not wait for the async scroll event
@@ -1832,7 +2282,8 @@ function scrollToItem(index, align = "auto") {
   let next;
   if (align === "start") next = itemTop;
   else if (align === "end") next = lowest;
-  else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
+  else if (align === "center")
+    next = Math.round(lowest + (itemTop - lowest) / 2);
   else if (current >= lowest && current <= itemTop) next = current;
   else next = current < lowest ? lowest : itemTop;
   scrollTo(next);
@@ -1848,10 +2299,17 @@ defineExpose({ scrollTo, scrollToItem });
 ### Step 4: the range event
 
 ~~~js
-watch([start, stop, first, last], () => emit("items-rendered", {
-  overscanStartIndex: start.value, overscanStopIndex: stop.value,
-  visibleStartIndex: first.value, visibleStopIndex: last.value,
-}), { immediate: true });
+watch(
+  [start, stop, first, last],
+  () =>
+    emit("items-rendered", {
+      overscanStartIndex: start.value,
+      overscanStopIndex: stop.value,
+      visibleStartIndex: first.value,
+      visibleStopIndex: last.value,
+    }),
+  { immediate: true },
+);
 ~~~
 
 Because each index is a number computed, the watcher fires only when the window actually moves ([watch vs watchEffect](/interview-question/what-is-the-difference-between-watch-and-watcheffect)).
@@ -1860,9 +2318,11 @@ Because each index is a number computed, the watcher fires only when the window 
 
 ~~~js
 const activeId = computed(() =>
-  range.value && active.value >= range.value.overscanStartIndex && active.value <= range.value.overscanStopIndex
+  range.value &&
+  active.value >= range.value.overscanStartIndex &&
+  active.value <= range.value.overscanStopIndex
     ? "contact-" + active.value
-    : undefined
+    : undefined,
 );
 
 function moveTo(index, align = "auto") {
@@ -1885,8 +2345,14 @@ import "vue-virtual-scroller/dist/vue-virtual-scroller.css";
 </script>
 
 <template>
-  <RecycleScroller ref="scroller" class="list" :items="contacts" :item-size="48" key-field="id"
-    v-slot="{ item, index, active }">
+  <RecycleScroller
+    ref="scroller"
+    class="list"
+    :items="contacts"
+    :item-size="48"
+    key-field="id"
+    v-slot="{ item, index, active }"
+  >
     <div class="row">#{{ index + 1 }} {{ item.name }}</div>
   </RecycleScroller>
 </template>
@@ -2015,8 +2481,26 @@ import { computed, markRaw, ref } from "vue";
 import FixedSizeList from "./components/FixedSizeList.vue";
 
 const COUNT = 100000;
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 
 // 100,000 rows that never change: markRaw skips 100,000 reactive proxies.
 const items = markRaw(
@@ -2024,7 +2508,7 @@ const items = markRaw(
     id: i + 1,
     name: FIRST[i % 8] + " " + LAST[(i * 3) % 8],
     phone: "+1 555 " + String(1000 + (i % 9000)),
-  }))
+  })),
 );
 
 const list = ref(null);
@@ -2034,9 +2518,11 @@ const jump = ref("");
 
 // Only point at the active row while it is actually in the DOM.
 const activeId = computed(() =>
-  range.value && active.value >= range.value.overscanStartIndex && active.value <= range.value.overscanStopIndex
+  range.value &&
+  active.value >= range.value.overscanStartIndex &&
+  active.value <= range.value.overscanStopIndex
     ? "contact-" + active.value
-    : undefined
+    : undefined,
 );
 
 function moveTo(index, align = "auto") {
@@ -2065,7 +2551,14 @@ function onJump() {
     <h1>100,000 contacts, fixed 48px rows</h1>
     <form class="rw-jump" @submit.prevent="onJump">
       <label for="jump">Jump to #</label>
-      <input id="jump" v-model="jump" data-testid="jump" type="number" min="1" :max="COUNT" />
+      <input
+        id="jump"
+        v-model="jump"
+        data-testid="jump"
+        type="number"
+        min="1"
+        :max="COUNT"
+      />
       <button data-testid="go" type="submit">Go</button>
     </form>
     <FixedSizeList
@@ -2101,8 +2594,8 @@ function onJump() {
     </FixedSizeList>
     <p class="rw-status" data-testid="status">
       <template v-if="range">
-        Visible {{ range.visibleStartIndex }}-{{ range.visibleStopIndex }}, rendered
-        {{ range.overscanStartIndex }}-{{ range.overscanStopIndex }} ·
+        Visible {{ range.visibleStartIndex }}-{{ range.visibleStopIndex }},
+        rendered {{ range.overscanStartIndex }}-{{ range.overscanStopIndex }} ·
       </template>
       active #{{ items[active].id }} {{ items[active].name }}
     </p>
@@ -2110,22 +2603,80 @@ function onJump() {
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.rw-app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.rw-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.rw-jump { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-.rw-jump input { width: 110px; padding: 6px 8px; border-radius: 6px; border: 1px solid #2a2f3a;
-  background: #161a22; color: inherit; }
-.rw-jump button { padding: 6px 14px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.rw-list { border: 1px solid #2a2f3a; border-radius: 10px; background: #161a22; }
-.rw-list:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-.rw-row { box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 14px;
-  border-bottom: 1px solid #222734; cursor: pointer; }
-.rw-active { background: #24345c; }
-.rw-num { width: 64px; color: #9aa3b5; font-variant-numeric: tabular-nums; }
-.rw-name { flex: 1; }
-.rw-phone { color: #9aa3b5; font-size: 0.85rem; }
-.rw-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.rw-app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.rw-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.rw-jump {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.rw-jump input {
+  width: 110px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #161a22;
+  color: inherit;
+}
+.rw-jump button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.rw-list {
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.rw-list:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: 2px;
+}
+.rw-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid #222734;
+  cursor: pointer;
+}
+.rw-active {
+  background: #24345c;
+}
+.rw-num {
+  width: 64px;
+  color: #9aa3b5;
+  font-variant-numeric: tabular-nums;
+}
+.rw-name {
+  flex: 1;
+}
+.rw-phone {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.rw-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 </style>
 `,
           "/src/components/FixedSizeList.vue": `<script setup>
@@ -2143,12 +2694,22 @@ const emit = defineEmits(["items-rendered"]);
 const outer = ref(null);
 const scrollOffset = ref(0);
 
-const first = computed(() => Math.min(props.itemCount - 1, Math.floor(scrollOffset.value / props.itemSize)));
+const first = computed(() =>
+  Math.min(
+    props.itemCount - 1,
+    Math.floor(scrollOffset.value / props.itemSize),
+  ),
+);
 const last = computed(() =>
-  Math.min(props.itemCount - 1, Math.floor((scrollOffset.value + props.height - 1) / props.itemSize))
+  Math.min(
+    props.itemCount - 1,
+    Math.floor((scrollOffset.value + props.height - 1) / props.itemSize),
+  ),
 );
 const start = computed(() => Math.max(0, first.value - props.overscanCount));
-const stop = computed(() => Math.min(props.itemCount - 1, last.value + props.overscanCount));
+const stop = computed(() =>
+  Math.min(props.itemCount - 1, last.value + props.overscanCount),
+);
 
 const indexes = computed(() => {
   const out = [];
@@ -2165,11 +2726,17 @@ watch(
       visibleStartIndex: first.value,
       visibleStopIndex: last.value,
     }),
-  { immediate: true }
+  { immediate: true },
 );
 
 function rowStyle(index) {
-  return { position: "absolute", left: 0, width: "100%", top: index * props.itemSize + "px", height: props.itemSize + "px" };
+  return {
+    position: "absolute",
+    left: 0,
+    width: "100%",
+    top: index * props.itemSize + "px",
+    height: props.itemSize + "px",
+  };
 }
 
 function scrollTo(offset) {
@@ -2188,7 +2755,8 @@ function scrollToItem(index, align = "auto") {
   let next;
   if (align === "start") next = itemTop;
   else if (align === "end") next = lowest;
-  else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
+  else if (align === "center")
+    next = Math.round(lowest + (itemTop - lowest) / 2);
   else if (current >= lowest && current <= itemTop) next = current;
   else next = current < lowest ? lowest : itemTop;
   scrollTo(next);
@@ -2268,18 +2836,38 @@ A <code>FixedSizeListComponent</code> with react-window style inputs (viewport h
 @ContentChild(TemplateRef) row!: TemplateRef<RowContext>;
 
 styleFor(i: number): Record<string, string> {
-  return { position: "absolute", left: "0", width: "100%", top: i * this.itemSize() + "px", height: this.itemSize() + "px" };
+  return {
+    position: "absolute",
+    left: "0",
+    width: "100%",
+    top: i * this.itemSize() + "px",
+    height: this.itemSize() + "px",
+  };
 }
 ~~~
 
 ~~~html
-<app-fixed-size-list [viewportHeight]="400" [count]="count" [size]="48" [overscanCount]="5"
-  role="listbox" aria-label="Contacts" tabindex="0"
-  [attr.aria-activedescendant]="activeId()" (keydown)="onKeyDown($event)"
-  (itemsRendered)="range.set($event)">
+<app-fixed-size-list
+  [viewportHeight]="400"
+  [count]="count"
+  [size]="48"
+  [overscanCount]="5"
+  role="listbox"
+  aria-label="Contacts"
+  tabindex="0"
+  [attr.aria-activedescendant]="activeId()"
+  (keydown)="onKeyDown($event)"
+  (itemsRendered)="range.set($event)"
+>
   <ng-template let-index let-style="style">
-    <div [style]="style" [id]="'contact-' + index" role="option"
-      [attr.aria-selected]="index === active()" class="rw-row" [class.rw-active]="index === active()">
+    <div
+      [style]="style"
+      [id]="'contact-' + index"
+      role="option"
+      [attr.aria-selected]="index === active()"
+      class="rw-row"
+      [class.rw-active]="index === active()"
+    >
       ...
     </div>
   </ng-template>
@@ -2293,24 +2881,42 @@ styleFor(i: number): Record<string, string> {
 ~~~ts
 private readonly scrollOffset = signal(0);
 private readonly first = computed(() =>
-  Math.min(this.itemCount() - 1, Math.floor(this.scrollOffset() / this.itemSize())));
+  Math.min(
+    this.itemCount() - 1,
+    Math.floor(this.scrollOffset() / this.itemSize()),
+  ),
+);
 private readonly last = computed(() =>
-  Math.min(this.itemCount() - 1, Math.floor((this.scrollOffset() + this.height() - 1) / this.itemSize())));
-private readonly start = computed(() => Math.max(0, this.first() - this.overscan()));
-private readonly stop = computed(() => Math.min(this.itemCount() - 1, this.last() + this.overscan()));
+  Math.min(
+    this.itemCount() - 1,
+    Math.floor(
+      (this.scrollOffset() + this.height() - 1) / this.itemSize(),
+    ),
+  ),
+);
+private readonly start = computed(() =>
+  Math.max(0, this.first() - this.overscan()),
+);
+private readonly stop = computed(() =>
+  Math.min(this.itemCount() - 1, this.last() + this.overscan()),
+);
 
 constructor() {
   effect(() => {
     const info: ItemsRendered = {
-      overscanStartIndex: this.start(), overscanStopIndex: this.stop(),
-      visibleStartIndex: this.first(), visibleStopIndex: this.last(),
+      overscanStartIndex: this.start(),
+      overscanStopIndex: this.stop(),
+      visibleStartIndex: this.first(),
+      visibleStopIndex: this.last(),
     };
     untracked(() => this.itemsRendered.emit(info));
   });
 }
 
 @HostListener("scroll")
-onScroll() { this.scrollOffset.set(this.host.scrollTop); }
+onScroll() {
+  this.scrollOffset.set(this.host.scrollTop);
+}
 ~~~
 
 📌 **Interview term: effect with untracked** — an <code>effect</code> re-runs when the signals it reads change. Wrapping the emit in <code>untracked</code> means whatever the parent reads while handling the event does not become a dependency of this effect ([when not to use effect](/interview-question/what-is-the-effect-function-in-angular-signals-and-when-should-you-not-use-it)). Because the four indexes are number computeds, the effect fires only when the window moves.
@@ -2321,13 +2927,19 @@ onScroll() { this.scrollOffset.set(this.host.scrollTop); }
 
 ~~~ts
 scrollTo(offset: number) {
-  const max = Math.max(0, this.itemCount() * this.itemSize() - this.height());
+  const max = Math.max(
+    0,
+    this.itemCount() * this.itemSize() - this.height(),
+  );
   const top = Math.min(Math.max(0, offset), max);
   this.host.scrollTop = top;
   this.scrollOffset.set(top); // do not wait for the async scroll event
 }
 
-scrollToItem(index: number, align: "auto" | "start" | "center" | "end" = "auto") {
+scrollToItem(
+  index: number,
+  align: "auto" | "start" | "center" | "end" = "auto",
+) {
   const i = Math.min(Math.max(0, index), this.itemCount() - 1);
   const current = this.host.scrollTop;
   const itemTop = i * this.itemSize();
@@ -2335,7 +2947,8 @@ scrollToItem(index: number, align: "auto" | "start" | "center" | "end" = "auto")
   let next: number;
   if (align === "start") next = itemTop;
   else if (align === "end") next = lowest;
-  else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
+  else if (align === "center")
+    next = Math.round(lowest + (itemTop - lowest) / 2);
   else if (current >= lowest && current <= itemTop) next = current;
   else next = current < lowest ? lowest : itemTop;
   this.scrollTo(next);
@@ -2352,23 +2965,37 @@ The production equivalent is the CDK virtual scroll viewport. Static snippet, no
 
 ~~~ts
 import { Component, ViewChild } from "@angular/core";
-import { CdkVirtualScrollViewport, ScrollingModule } from "@angular/cdk/scrolling";
+import {
+  CdkVirtualScrollViewport,
+  ScrollingModule,
+} from "@angular/cdk/scrolling";
 
 @Component({
   selector: "app-contacts",
   standalone: true,
   imports: [ScrollingModule],
   template: \`
-    <cdk-virtual-scroll-viewport itemSize="48" minBufferPx="240" maxBufferPx="480" style="height: 400px">
-      <div *cdkVirtualFor="let c of contacts; trackBy: trackById" class="row">{{ c.name }}</div>
+    <cdk-virtual-scroll-viewport
+      itemSize="48"
+      minBufferPx="240"
+      maxBufferPx="480"
+      style="height: 400px"
+    >
+      <div
+        *cdkVirtualFor="let c of contacts; trackBy: trackById"
+        class="row"
+      >{{ c.name }}</div>
     </cdk-virtual-scroll-viewport>
   \`,
 })
 export class ContactsComponent {
-  @ViewChild(CdkVirtualScrollViewport) viewport!: CdkVirtualScrollViewport;
+  @ViewChild(CdkVirtualScrollViewport)
+  viewport!: CdkVirtualScrollViewport;
   contacts = [/* ... */];
   trackById = (_: number, c: { id: number }) => c.id;
-  jump(i: number) { this.viewport.scrollToIndex(i); }
+  jump(i: number) {
+    this.viewport.scrollToIndex(i);
+  }
 }
 ~~~
 
@@ -2489,13 +3116,38 @@ Shared driver (sets <code>scrollTop</code> and dispatches <code>scroll</code>, s
         files: {
           "/src/app/app.component.ts": `import { Component, ViewChild, computed, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { FixedSizeListComponent, ItemsRendered } from "./fixed-size-list.component";
+import {
+  FixedSizeListComponent,
+  ItemsRendered,
+} from "./fixed-size-list.component";
 
 const COUNT = 100000;
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 
-interface Contact { id: number; name: string; phone: string; }
+interface Contact {
+  id: number;
+  name: string;
+  phone: string;
+}
 
 @Component({
   selector: "app-root",
@@ -2506,21 +3158,43 @@ interface Contact { id: number; name: string; phone: string; }
       <h1>100,000 contacts, fixed 48px rows</h1>
       <form class="rw-jump" (ngSubmit)="onJump()">
         <label for="jump">Jump to #</label>
-        <input id="jump" name="jump" data-testid="jump" type="number" min="1" [max]="count"
-          [ngModel]="jump()" (ngModelChange)="jump.set($event)" />
+        <input
+          id="jump"
+          name="jump"
+          data-testid="jump"
+          type="number"
+          min="1"
+          [max]="count"
+          [ngModel]="jump()"
+          (ngModelChange)="jump.set($event)"
+        />
         <button data-testid="go" type="submit">Go</button>
       </form>
       <app-fixed-size-list
-        [viewportHeight]="400" [count]="count" [size]="48" [overscanCount]="5"
-        class="rw-list" data-testid="viewport" role="listbox" aria-label="Contacts" tabindex="0"
+        [viewportHeight]="400"
+        [count]="count"
+        [size]="48"
+        [overscanCount]="5"
+        class="rw-list"
+        data-testid="viewport"
+        role="listbox"
+        aria-label="Contacts"
+        tabindex="0"
         [attr.aria-activedescendant]="activeId()"
         (keydown)="onKeyDown($event)"
         (itemsRendered)="range.set($event)"
       >
         <ng-template let-index let-style="style">
-          <div [style]="style" [id]="'contact-' + index" role="option"
-            [attr.aria-selected]="index === active()" data-testid="row"
-            class="rw-row" [class.rw-active]="index === active()" (click)="active.set(index)">
+          <div
+            [style]="style"
+            [id]="'contact-' + index"
+            role="option"
+            [attr.aria-selected]="index === active()"
+            data-testid="row"
+            class="rw-row"
+            [class.rw-active]="index === active()"
+            (click)="active.set(index)"
+          >
             <span class="rw-num">#{{ items[index].id }}</span>
             <span class="rw-name">{{ items[index].name }}</span>
             <span class="rw-phone">{{ items[index].phone }}</span>
@@ -2536,24 +3210,85 @@ interface Contact { id: number; name: string; phone: string; }
       </p>
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .rw-app { max-width: 560px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 1.15rem; margin: 0 0 12px; }
-    .rw-jump { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-    .rw-jump input { width: 110px; padding: 6px 8px; border-radius: 6px; border: 1px solid #2a2f3a;
-      background: #161a22; color: inherit; }
-    .rw-jump button { padding: 6px 14px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-    .rw-list { border: 1px solid #2a2f3a; border-radius: 10px; background: #161a22; }
-    .rw-list:focus-visible { outline: 2px solid #7aa2ff; outline-offset: 2px; }
-    .rw-row { box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 14px;
-      border-bottom: 1px solid #222734; cursor: pointer; }
-    .rw-active { background: #24345c; }
-    .rw-num { width: 64px; color: #9aa3b5; font-variant-numeric: tabular-nums; }
-    .rw-name { flex: 1; }
-    .rw-phone { color: #9aa3b5; font-size: 0.85rem; }
-    .rw-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .rw-app {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+      }
+      .rw-jump {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .rw-jump input {
+        width: 110px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid #2a2f3a;
+        background: #161a22;
+        color: inherit;
+      }
+      .rw-jump button {
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 0;
+        background: #3b5bdb;
+        color: #fff;
+      }
+      .rw-list {
+        border: 1px solid #2a2f3a;
+        border-radius: 10px;
+        background: #161a22;
+      }
+      .rw-list:focus-visible {
+        outline: 2px solid #7aa2ff;
+        outline-offset: 2px;
+      }
+      .rw-row {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 14px;
+        border-bottom: 1px solid #222734;
+        cursor: pointer;
+      }
+      .rw-active {
+        background: #24345c;
+      }
+      .rw-num {
+        width: 64px;
+        color: #9aa3b5;
+        font-variant-numeric: tabular-nums;
+      }
+      .rw-name {
+        flex: 1;
+      }
+      .rw-phone {
+        color: #9aa3b5;
+        font-size: 0.85rem;
+      }
+      .rw-status {
+        color: #9aa3b5;
+        font-size: 0.85rem;
+        margin: 10px 0 0;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   @ViewChild(FixedSizeListComponent) list!: FixedSizeListComponent;
@@ -2571,7 +3306,9 @@ export class AppComponent {
   readonly activeId = computed(() => {
     const r = this.range();
     const a = this.active();
-    return r && a >= r.overscanStartIndex && a <= r.overscanStopIndex ? "contact-" + a : null;
+    return r && a >= r.overscanStartIndex && a <= r.overscanStopIndex
+      ? "contact-" + a
+      : null;
   });
 
   moveTo(index: number, align: "auto" | "start" = "auto") {
@@ -2581,7 +3318,12 @@ export class AppComponent {
   }
 
   onKeyDown(e: KeyboardEvent) {
-    const steps: Record<string, number> = { ArrowDown: 1, ArrowUp: -1, PageDown: 8, PageUp: -8 };
+    const steps: Record<string, number> = {
+      ArrowDown: 1,
+      ArrowUp: -1,
+      PageDown: 8,
+      PageUp: -8,
+    };
     if (steps[e.key]) this.moveTo(this.active() + steps[e.key]);
     else if (e.key === "Home") this.moveTo(0);
     else if (e.key === "End") this.moveTo(COUNT - 1);
@@ -2591,13 +3333,25 @@ export class AppComponent {
 
   onJump() {
     const n = Number(this.jump());
-    if (Number.isInteger(n) && n >= 1 && n <= COUNT) this.moveTo(n - 1, "start");
+    if (Number.isInteger(n) && n >= 1 && n <= COUNT)
+      this.moveTo(n - 1, "start");
   }
 }
 `,
           "/src/app/fixed-size-list.component.ts": `import {
-  Component, ContentChild, ElementRef, EventEmitter, HostListener, Input, Output, TemplateRef,
-  computed, effect, inject, signal, untracked,
+  Component,
+  ContentChild,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  Output,
+  TemplateRef,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
 } from "@angular/core";
 import { NgTemplateOutlet } from "@angular/common";
 
@@ -2613,19 +3367,26 @@ export interface RowContext {
 }
 
 // Same prop names as react-window FixedSizeList. The host element IS the
-// scrolling viewport, so role, aria-* and (keydown) set by the parent land on it.
+// scrolling viewport, so role, aria-* and
+// (keydown) set by the parent land on it.
 @Component({
   selector: "app-fixed-size-list",
   standalone: true,
   imports: [NgTemplateOutlet],
   host: {
-    style: "display: block; position: relative; overflow: auto; will-change: transform",
+    style:
+      "display: block; position: relative; overflow: auto; will-change: transform",
     "[style.height.px]": "height()",
   },
   template: \`
-    <div [style.height.px]="itemCount() * itemSize()" style="position: relative; width: 100%">
+    <div
+      [style.height.px]="itemCount() * itemSize()"
+      style="position: relative; width: 100%"
+    >
       @for (i of indexes(); track i) {
-        <ng-container *ngTemplateOutlet="row; context: { $implicit: i, style: styleFor(i) }" />
+        <ng-container
+          *ngTemplateOutlet="row; context: { $implicit: i, style: styleFor(i) }"
+        />
       }
     </div>
   \`,
@@ -2635,22 +3396,43 @@ export class FixedSizeListComponent {
   readonly itemCount = signal(0);
   readonly itemSize = signal(48);
   readonly overscan = signal(2);
-  @Input({ required: true }) set viewportHeight(v: number) { this.height.set(v); }
-  @Input({ required: true }) set count(v: number) { this.itemCount.set(v); }
-  @Input({ required: true }) set size(v: number) { this.itemSize.set(v); }
-  @Input() set overscanCount(v: number) { this.overscan.set(v); }
+  @Input({ required: true }) set viewportHeight(v: number) {
+    this.height.set(v);
+  }
+  @Input({ required: true }) set count(v: number) {
+    this.itemCount.set(v);
+  }
+  @Input({ required: true }) set size(v: number) {
+    this.itemSize.set(v);
+  }
+  @Input() set overscanCount(v: number) {
+    this.overscan.set(v);
+  }
   @Output() itemsRendered = new EventEmitter<ItemsRendered>();
   @ContentChild(TemplateRef) row!: TemplateRef<RowContext>;
 
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly host =
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly scrollOffset = signal(0);
 
   private readonly first = computed(() =>
-    Math.min(this.itemCount() - 1, Math.floor(this.scrollOffset() / this.itemSize())));
+    Math.min(
+      this.itemCount() - 1,
+      Math.floor(this.scrollOffset() / this.itemSize()),
+    ),
+  );
   private readonly last = computed(() =>
-    Math.min(this.itemCount() - 1, Math.floor((this.scrollOffset() + this.height() - 1) / this.itemSize())));
-  private readonly start = computed(() => Math.max(0, this.first() - this.overscan()));
-  private readonly stop = computed(() => Math.min(this.itemCount() - 1, this.last() + this.overscan()));
+    Math.min(
+      this.itemCount() - 1,
+      Math.floor((this.scrollOffset() + this.height() - 1) / this.itemSize()),
+    ),
+  );
+  private readonly start = computed(() =>
+    Math.max(0, this.first() - this.overscan()),
+  );
+  private readonly stop = computed(() =>
+    Math.min(this.itemCount() - 1, this.last() + this.overscan()),
+  );
 
   readonly indexes = computed(() => {
     const out: number[] = [];
@@ -2676,7 +3458,13 @@ export class FixedSizeListComponent {
   }
 
   styleFor(i: number): Record<string, string> {
-    return { position: "absolute", left: "0", width: "100%", top: i * this.itemSize() + "px", height: this.itemSize() + "px" };
+    return {
+      position: "absolute",
+      left: "0",
+      width: "100%",
+      top: i * this.itemSize() + "px",
+      height: this.itemSize() + "px",
+    };
   }
 
   scrollTo(offset: number) {
@@ -2687,7 +3475,10 @@ export class FixedSizeListComponent {
   }
 
   // react-window alignment rules: "auto" scrolls only as far as needed.
-  scrollToItem(index: number, align: "auto" | "start" | "center" | "end" = "auto") {
+  scrollToItem(
+    index: number,
+    align: "auto" | "start" | "center" | "end" = "auto",
+  ) {
     const i = Math.min(Math.max(0, index), this.itemCount() - 1);
     const current = this.host.scrollTop;
     const itemTop = i * this.itemSize();
@@ -2695,7 +3486,8 @@ export class FixedSizeListComponent {
     let next: number;
     if (align === "start") next = itemTop;
     else if (align === "end") next = lowest;
-    else if (align === "center") next = Math.round(lowest + (itemTop - lowest) / 2);
+    else if (align === "center")
+      next = Math.round(lowest + (itemTop - lowest) / 2);
     else if (current >= lowest && current <= itemTop) next = current;
     else next = current < lowest ? lowest : itemTop;
     this.scrollTo(next);
@@ -2819,7 +3611,8 @@ Each offset is the previous offset plus the previous height, measured or estimat
 
 ~~~jsx
 const sizes = useRef(new Map()); // post id -> measured px height
-const [version, setVersion] = useState(0); // bumped when a measurement changes
+// bumped when a measurement changes
+const [version, setVersion] = useState(0);
 
 const offsets = useMemo(() => {
   const out = new Float64Array(posts.length + 1);
@@ -2850,10 +3643,14 @@ export function findIndex(offsets, y) {
   return lo;
 }
 
-const top = Math.min(Math.max(0, scrollTop), Math.max(0, total - height));
+const top = Math.min(
+  Math.max(0, scrollTop),
+  Math.max(0, total - height),
+);
 const first = findIndex(offsets, top);
 let last = first;
-while (last < posts.length - 1 && offsets[last + 1] < top + height) last++;
+while (last < posts.length - 1 && offsets[last + 1] < top + height)
+  last++;
 ~~~
 
 📌 **Interview term: Binary search** — halving a sorted range until one element is left. Offsets only grow, so the array is sorted, and finding the row under <code>scrollTop</code> takes log2(10,000), about 14, steps. The last visible row is found by walking forward from <code>first</code>, which only visits the handful of rows on screen.
@@ -2861,19 +3658,32 @@ while (last < posts.length - 1 && offsets[last + 1] < top + height) last++;
 ### Step 3: a row that measures itself
 
 ~~~jsx
-const FeedRow = memo(function FeedRow({ post, index, count, top, expanded, onToggle, measure }) {
+const FeedRow = memo(function FeedRow({
+  post,
+  index,
+  count,
+  top,
+  expanded,
+  onToggle,
+  measure,
+}) {
   const ref = useRef(null);
   useLayoutEffect(() => {
     if (typeof ResizeObserver === "undefined") return undefined;
     const el = ref.current;
     const ro = new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize && entry.borderBoxSize[0];
-      measure(post.id, index, box ? box.blockSize : el.getBoundingClientRect().height);
+      measure(
+        post.id,
+        index,
+        box ? box.blockSize : el.getBoundingClientRect().height,
+      );
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, [post.id, index, measure]);
-  // ...article markup with style={{ transform: "translateY(" + top + "px)" }}
+  // ...article markup with style={{
+  // transform: "translateY(" + top + "px)" }}
 });
 ~~~
 
@@ -2884,15 +3694,19 @@ Three details: use <code>borderBoxSize</code> (padding and border included) beca
 ### Step 4: recording a measurement and the anchor delta
 
 ~~~jsx
-const measure = useCallback((id, index, h) => {
-  if (h <= 0 || sizes.current.get(id) === h) return;
-  const before = sizes.current.get(id) ?? estimate;
-  sizes.current.set(id, h);
-  // A row above the first visible one changed: shift scrollTop by the same
-  // amount so the post the reader is looking at does not jump.
-  if (index < firstRef.current) anchorDelta.current += h - before;
-  setVersion((v) => v + 1);
-}, [estimate]);
+const measure = useCallback(
+  (id, index, h) => {
+    if (h <= 0 || sizes.current.get(id) === h) return;
+    const before = sizes.current.get(id) ?? estimate;
+    sizes.current.set(id, h);
+    // A row above the first visible one
+    // changed: shift scrollTop by the same
+    // amount so the post the reader is looking at does not jump.
+    if (index < firstRef.current) anchorDelta.current += h - before;
+    setVersion((v) => v + 1);
+  },
+  [estimate],
+);
 ~~~
 
 📌 **Interview term: Scroll anchoring** — keeping the content the user is looking at in the same place on screen when content above it changes size. Browsers do this natively for normal-flow content (CSS <code>overflow-anchor</code>), but our rows are absolutely positioned inside a spacer, so we do it by hand and switch the native one off with <code>overflow-anchor: none</code> to avoid a double correction.
@@ -3073,7 +3887,9 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     fetchFeed(10000).then((data) => alive && setPosts(data));
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const toggle = useCallback((id) => {
@@ -3089,16 +3905,31 @@ export default function App() {
     <main className="feed-app">
       <h1>Variable-height feed</h1>
       {posts === null ? (
-        <p className="feed-status" role="status" data-testid="loading">Loading feed...</p>
+        <p className="feed-status" role="status" data-testid="loading">
+          Loading feed...
+        </p>
       ) : (
-        <VirtualFeed posts={posts} height={600} estimate={120} overscan={3}
-          expanded={expanded} onToggle={toggle} />
+        <VirtualFeed
+          posts={posts}
+          height={600}
+          estimate={120}
+          overscan={3}
+          expanded={expanded}
+          onToggle={toggle}
+        />
       )}
     </main>
   );
 }
 `,
-          "/src/VirtualFeed.js": `import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+          "/src/VirtualFeed.js": `import {
+  memo,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const PREVIEW = 160; // characters shown before "Show more"
 
@@ -3114,7 +3945,15 @@ export function findIndex(offsets, y) {
   return lo;
 }
 
-const FeedRow = memo(function FeedRow({ post, index, count, top, expanded, onToggle, measure }) {
+const FeedRow = memo(function FeedRow({
+  post,
+  index,
+  count,
+  top,
+  expanded,
+  onToggle,
+  measure,
+}) {
   const ref = useRef(null);
 
   // ResizeObserver reports the first size right after observe(), and again
@@ -3124,14 +3963,19 @@ const FeedRow = memo(function FeedRow({ post, index, count, top, expanded, onTog
     const el = ref.current;
     const ro = new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize && entry.borderBoxSize[0];
-      measure(post.id, index, box ? box.blockSize : el.getBoundingClientRect().height);
+      measure(
+        post.id,
+        index,
+        box ? box.blockSize : el.getBoundingClientRect().height,
+      );
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, [post.id, index, measure]);
 
   const long = post.text.length > PREVIEW;
-  const text = long && !expanded ? post.text.slice(0, PREVIEW) + "..." : post.text;
+  const text =
+    long && !expanded ? post.text.slice(0, PREVIEW) + "..." : post.text;
   return (
     <article
       ref={ref}
@@ -3145,11 +3989,24 @@ const FeedRow = memo(function FeedRow({ post, index, count, top, expanded, onTog
       style={{ transform: "translateY(" + top + "px)" }}
     >
       <div className="feed-card">
-        <h2 id={"post-" + post.id} className="feed-author">{post.author} · post {post.id}</h2>
+        <h2 id={"post-" + post.id} className="feed-author">
+          {post.author} · post {post.id}
+        </h2>
         <p className="post-text">{text}</p>
-        {post.hasImage && <div className="post-image" role="img" aria-label="Photo placeholder" />}
+        {post.hasImage && (
+          <div
+            className="post-image"
+            role="img"
+            aria-label="Photo placeholder"
+          />
+        )}
         {long && (
-          <button type="button" className="feed-more" aria-expanded={expanded} onClick={() => onToggle(post.id)}>
+          <button
+            type="button"
+            className="feed-more"
+            aria-expanded={expanded}
+            onClick={() => onToggle(post.id)}
+          >
             {expanded ? "Show less" : "Show more"}
           </button>
         )}
@@ -3158,12 +4015,21 @@ const FeedRow = memo(function FeedRow({ post, index, count, top, expanded, onTog
   );
 });
 
-export default function VirtualFeed({ posts, height, estimate = 120, overscan = 3, expanded, onToggle }) {
+export default function VirtualFeed({
+  posts,
+  height,
+  estimate = 120,
+  overscan = 3,
+  expanded,
+  onToggle,
+}) {
   const viewportRef = useRef(null);
   const sizes = useRef(new Map()); // post id -> measured px height
-  const anchorDelta = useRef(0); // height change above the viewport, still to correct
+  // height change above the viewport, still to correct
+  const anchorDelta = useRef(0);
   const firstRef = useRef(0);
-  const [version, setVersion] = useState(0); // bumped when a measurement changes
+  // bumped when a measurement changes
+  const [version, setVersion] = useState(0);
   const [scrollTop, setScrollTop] = useState(0);
 
   const offsets = useMemo(() => {
@@ -3183,15 +4049,18 @@ export default function VirtualFeed({ posts, height, estimate = 120, overscan = 
   const start = Math.max(0, first - overscan);
   const end = Math.min(posts.length - 1, last + overscan);
 
-  const measure = useCallback((id, index, h) => {
-    if (h <= 0 || sizes.current.get(id) === h) return;
-    const before = sizes.current.get(id) ?? estimate;
-    sizes.current.set(id, h);
-    // A row above the first visible one changed: shift scrollTop by the same
-    // amount so the post the reader is looking at does not jump.
-    if (index < firstRef.current) anchorDelta.current += h - before;
-    setVersion((v) => v + 1);
-  }, [estimate]);
+  const measure = useCallback(
+    (id, index, h) => {
+      if (h <= 0 || sizes.current.get(id) === h) return;
+      const before = sizes.current.get(id) ?? estimate;
+      sizes.current.set(id, h);
+      // A row above the first visible one changed: shift scrollTop by the same
+      // amount so the post the reader is looking at does not jump.
+      if (index < firstRef.current) anchorDelta.current += h - before;
+      setVersion((v) => v + 1);
+    },
+    [estimate],
+  );
 
   useLayoutEffect(() => {
     firstRef.current = first;
@@ -3207,8 +4076,16 @@ export default function VirtualFeed({ posts, height, estimate = 120, overscan = 
   for (let i = start; i <= end; i++) {
     const post = posts[i];
     rows.push(
-      <FeedRow key={post.id} post={post} index={i} count={posts.length} top={offsets[i]}
-        expanded={expanded.has(post.id)} onToggle={onToggle} measure={measure} />
+      <FeedRow
+        key={post.id}
+        post={post}
+        index={i}
+        count={posts.length}
+        top={offsets[i]}
+        expanded={expanded.has(post.id)}
+        onToggle={onToggle}
+        measure={measure}
+      />,
     );
   }
 
@@ -3223,11 +4100,18 @@ export default function VirtualFeed({ posts, height, estimate = 120, overscan = 
         style={{ height }}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
-        <div className="feed-spacer" data-testid="spacer" style={{ height: total }}>{rows}</div>
+        <div
+          className="feed-spacer"
+          data-testid="spacer"
+          style={{ height: total }}
+        >
+          {rows}
+        </div>
       </div>
       <p className="feed-status" data-testid="status">
         {rows.length} posts in the DOM · measured {sizes.current.size} of{" "}
-        {posts.length.toLocaleString("en-US")} · content height {Math.round(total).toLocaleString("en-US")}px
+        {posts.length.toLocaleString("en-US")} · content height{" "}
+        {Math.round(total).toLocaleString("en-US")}px
       </p>
     </>
   );
@@ -3235,8 +4119,10 @@ export default function VirtualFeed({ posts, height, estimate = 120, overscan = 
 `,
           "/src/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
-const WORDS = ("virtual lists keep the page fast by mounting only the rows you can see while " +
-  "a spacer element keeps the scrollbar honest about the full height of the content").split(" ");
+const WORDS = (
+  "virtual lists keep the page fast by mounting only the rows you can see while " +
+  "a spacer element keeps the scrollbar honest about the full height of the content"
+).split(" ");
 
 export function makePosts(count) {
   let seed = 7;
@@ -3245,7 +4131,8 @@ export function makePosts(count) {
   for (let i = 0; i < count; i++) {
     const words = 8 + Math.floor(rand() * 70);
     const parts = [];
-    for (let w = 0; w < words; w++) parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
+    for (let w = 0; w < words; w++)
+      parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
     posts.push({
       id: i + 1,
       author: AUTHORS[i % AUTHORS.length],
@@ -3257,24 +4144,83 @@ export function makePosts(count) {
 }
 
 export function fetchFeed(count = 10000) {
-  return new Promise((resolve) => setTimeout(() => resolve(makePosts(count)), 300));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(makePosts(count)), 300),
+  );
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.feed-app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.feed-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.feed-viewport { position: relative; overflow-y: auto; overflow-anchor: none;
-  border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.feed-spacer { position: relative; }
-.feed-row { position: absolute; top: 0; left: 0; right: 0; box-sizing: border-box; padding: 8px 10px; }
-.feed-row:focus-visible { outline: 2px solid #7aa2ff; outline-offset: -2px; }
-.feed-card { background: #1a1f2a; border: 1px solid #262c39; border-radius: 10px; padding: 12px 14px; }
-.feed-author { font-size: 0.9rem; margin: 0 0 6px; color: #b9c3ff; }
-.post-text { margin: 0; line-height: 1.45; }
-.post-image { height: 160px; margin-top: 10px; border-radius: 8px;
-  background: linear-gradient(135deg, #2b3550, #1d2436); }
-.feed-more { margin-top: 8px; background: none; border: 0; color: #7aa2ff; padding: 4px 0; cursor: pointer; }
-.feed-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.feed-app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.feed-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.feed-viewport {
+  position: relative;
+  overflow-y: auto;
+  overflow-anchor: none;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.feed-spacer {
+  position: relative;
+}
+.feed-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+}
+.feed-row:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: -2px;
+}
+.feed-card {
+  background: #1a1f2a;
+  border: 1px solid #262c39;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.feed-author {
+  font-size: 0.9rem;
+  margin: 0 0 6px;
+  color: #b9c3ff;
+}
+.post-text {
+  margin: 0;
+  line-height: 1.45;
+}
+.post-image {
+  height: 160px;
+  margin-top: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2b3550, #1d2436);
+}
+.feed-more {
+  margin-top: 8px;
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.feed-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 `,
         },
       },
@@ -3308,14 +4254,16 @@ A train of carriages of different lengths pulls past a platform. If you want to 
 ### Step 1: a non-reactive cache and a version counter
 
 ~~~js
-const sizes = new Map(); // post id -> measured px height (plain, not reactive)
+// post id -> measured px height (plain, not reactive)
+const sizes = new Map();
 const version = ref(0); // bumped when a measurement changes
 
 const offsets = computed(() => {
   version.value; // depend on the measurement counter
   const out = new Float64Array(props.posts.length + 1);
   for (let i = 0; i < props.posts.length; i++) {
-    out[i + 1] = out[i] + (sizes.get(props.posts[i].id) ?? props.estimate);
+    out[i + 1] =
+      out[i] + (sizes.get(props.posts[i].id) ?? props.estimate);
   }
   return out;
 });
@@ -3350,7 +4298,12 @@ onMounted(() => {
   if (typeof ResizeObserver === "undefined") return;
   ro = new ResizeObserver(([entry]) => {
     const box = entry.borderBoxSize && entry.borderBoxSize[0];
-    emit("measure", props.post.id, props.index, box ? box.blockSize : el.value.getBoundingClientRect().height);
+    emit(
+      "measure",
+      props.post.id,
+      props.index,
+      box ? box.blockSize : el.value.getBoundingClientRect().height,
+    );
   });
   ro.observe(el.value);
 });
@@ -3364,8 +4317,10 @@ onBeforeUnmount(() => ro && ro.disconnect());
 ### Step 4: recording measurements and the anchor
 
 ~~~js
-let anchorDelta = 0; // height change above the viewport, still to correct
-let shownFirst = 0; // first visible index as last painted (not recomputed mid-batch)
+// height change above the viewport, still to correct
+let anchorDelta = 0;
+// first visible index as last painted (not recomputed mid-batch)
+let shownFirst = 0;
 
 function measure(id, index, h) {
   if (h <= 0 || sizes.get(id) === h) return;
@@ -3383,14 +4338,24 @@ The <code>shownFirst</code> snapshot is a real bug fix, found while verifying. T
 ### Step 5: correcting after Vue patched the DOM
 
 ~~~js
-watch(() => range.value.first, (f) => { shownFirst = f; }, { flush: "post" });
-watch(version, () => {
-  if (anchorDelta === 0) return;
-  const el = viewport.value;
-  el.scrollTop = el.scrollTop + anchorDelta;
-  anchorDelta = 0;
-  scrollTop.value = el.scrollTop;
-}, { flush: "post" });
+watch(
+  () => range.value.first,
+  (f) => {
+    shownFirst = f;
+  },
+  { flush: "post" },
+);
+watch(
+  version,
+  () => {
+    if (anchorDelta === 0) return;
+    const el = viewport.value;
+    el.scrollTop = el.scrollTop + anchorDelta;
+    anchorDelta = 0;
+    scrollTop.value = el.scrollTop;
+  },
+  { flush: "post" },
+);
 ~~~
 
 📌 **Interview term: flush: "post"** — a watcher option that runs the callback after Vue has updated the DOM for the current tick, the Vue counterpart of a layout effect. Measurements arrive in a ResizeObserver callback; Vue's update and these post-flush callbacks run as microtasks right after it, before the browser paints ([watch flush timing](/interview-question/watch-vs-watcheffect-flush-timing-and-the-new-watch-options-in-3-5)).
@@ -3432,7 +4397,12 @@ The correction was already applied on the first painted frame, and scrolling up 
 vue-virtual-scroller 3.0.5 ships <code>DynamicScroller</code> for this case; its typings require <code>minItemSize</code> and mark <code>size-dependencies</code> as a legacy fallback. Static snippet, not run here:
 
 ~~~vue
-<DynamicScroller :items="posts" :min-item-size="120" key-field="id" class="feed">
+<DynamicScroller
+  :items="posts"
+  :min-item-size="120"
+  key-field="id"
+  class="feed"
+>
   <template #default="{ item, index, active }">
     <DynamicScrollerItem :item="item" :active="active" :data-index="index">
       <PostCard :post="item" />
@@ -3541,7 +4511,9 @@ const expanded = ref(new Set());
 let alive = true;
 
 onMounted(() => fetchFeed(10000).then((data) => alive && (posts.value = data)));
-onUnmounted(() => { alive = false; });
+onUnmounted(() => {
+  alive = false;
+});
 
 function toggle(id) {
   const next = new Set(expanded.value);
@@ -3554,23 +4526,46 @@ function toggle(id) {
 <template>
   <main class="feed-app">
     <h1>Variable-height feed</h1>
-    <p v-if="posts === null" class="feed-status" role="status" data-testid="loading">Loading feed...</p>
+    <p
+      v-if="posts === null"
+      class="feed-status"
+      role="status"
+      data-testid="loading"
+    >Loading feed...</p>
     <VirtualFeed v-else :posts="posts" :height="600" :estimate="120" :overscan="3"
       :expanded="expanded" @toggle="toggle" />
   </main>
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.feed-app { max-width: 560px; margin: 0 auto; padding: 16px; }
-.feed-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.feed-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.feed-app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.feed-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.feed-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 </style>
 `,
           "/src/api.js": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
-const WORDS = ("virtual lists keep the page fast by mounting only the rows you can see while " +
-  "a spacer element keeps the scrollbar honest about the full height of the content").split(" ");
+const WORDS = (
+  "virtual lists keep the page fast by mounting only the rows you can see while " +
+  "a spacer element keeps the scrollbar honest about the full height of the content"
+).split(" ");
 
 export function makePosts(count) {
   let seed = 7;
@@ -3579,7 +4574,8 @@ export function makePosts(count) {
   for (let i = 0; i < count; i++) {
     const words = 8 + Math.floor(rand() * 70);
     const parts = [];
-    for (let w = 0; w < words; w++) parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
+    for (let w = 0; w < words; w++)
+      parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
     posts.push({
       id: i + 1,
       author: AUTHORS[i % AUTHORS.length],
@@ -3591,7 +4587,9 @@ export function makePosts(count) {
 }
 
 export function fetchFeed(count = 10000) {
-  return new Promise((resolve) => setTimeout(() => resolve(makePosts(count)), 300));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(makePosts(count)), 300),
+  );
 }
 `,
           "/src/components/FeedRow.vue": `<script setup>
@@ -3617,7 +4615,12 @@ onMounted(() => {
   if (typeof ResizeObserver === "undefined") return;
   ro = new ResizeObserver(([entry]) => {
     const box = entry.borderBoxSize && entry.borderBoxSize[0];
-    emit("measure", props.post.id, props.index, box ? box.blockSize : el.value.getBoundingClientRect().height);
+    emit(
+      "measure",
+      props.post.id,
+      props.index,
+      box ? box.blockSize : el.value.getBoundingClientRect().height,
+    );
   });
   ro.observe(el.value);
 });
@@ -3625,7 +4628,9 @@ onBeforeUnmount(() => ro && ro.disconnect());
 
 const long = computed(() => props.post.text.length > PREVIEW);
 const text = computed(() =>
-  long.value && !props.expanded ? props.post.text.slice(0, PREVIEW) + "..." : props.post.text
+  long.value && !props.expanded
+    ? props.post.text.slice(0, PREVIEW) + "..."
+    : props.post.text,
 );
 </script>
 
@@ -3642,10 +4647,23 @@ const text = computed(() =>
     :style="{ transform: 'translateY(' + top + 'px)' }"
   >
     <div class="feed-card">
-      <h2 :id="'post-' + post.id" class="feed-author">{{ post.author }} · post {{ post.id }}</h2>
+      <h2 :id="'post-' + post.id" class="feed-author">
+        {{ post.author }} · post {{ post.id }}
+      </h2>
       <p class="post-text">{{ text }}</p>
-      <div v-if="post.hasImage" class="post-image" role="img" aria-label="Photo placeholder"></div>
-      <button v-if="long" type="button" class="feed-more" :aria-expanded="expanded" @click="emit('toggle', post.id)">
+      <div
+        v-if="post.hasImage"
+        class="post-image"
+        role="img"
+        aria-label="Photo placeholder"
+      ></div>
+      <button
+        v-if="long"
+        type="button"
+        class="feed-more"
+        :aria-expanded="expanded"
+        @click="emit('toggle', post.id)"
+      >
         {{ expanded ? "Show less" : "Show more" }}
       </button>
     </div>
@@ -3653,14 +4671,47 @@ const text = computed(() =>
 </template>
 
 <style scoped>
-.feed-row { position: absolute; top: 0; left: 0; right: 0; box-sizing: border-box; padding: 8px 10px; }
-.feed-row:focus-visible { outline: 2px solid #7aa2ff; outline-offset: -2px; }
-.feed-card { background: #1a1f2a; border: 1px solid #262c39; border-radius: 10px; padding: 12px 14px; }
-.feed-author { font-size: 0.9rem; margin: 0 0 6px; color: #b9c3ff; }
-.post-text { margin: 0; line-height: 1.45; }
-.post-image { height: 160px; margin-top: 10px; border-radius: 8px;
-  background: linear-gradient(135deg, #2b3550, #1d2436); }
-.feed-more { margin-top: 8px; background: none; border: 0; color: #7aa2ff; padding: 4px 0; cursor: pointer; }
+.feed-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  box-sizing: border-box;
+  padding: 8px 10px;
+}
+.feed-row:focus-visible {
+  outline: 2px solid #7aa2ff;
+  outline-offset: -2px;
+}
+.feed-card {
+  background: #1a1f2a;
+  border: 1px solid #262c39;
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.feed-author {
+  font-size: 0.9rem;
+  margin: 0 0 6px;
+  color: #b9c3ff;
+}
+.post-text {
+  margin: 0;
+  line-height: 1.45;
+}
+.post-image {
+  height: 160px;
+  margin-top: 10px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2b3550, #1d2436);
+}
+.feed-more {
+  margin-top: 8px;
+  background: none;
+  border: 0;
+  color: #7aa2ff;
+  padding: 4px 0;
+  cursor: pointer;
+}
 </style>
 `,
           "/src/components/VirtualFeed.vue": `<script setup>
@@ -3681,7 +4732,8 @@ const sizes = new Map(); // post id -> measured px height (plain, not reactive)
 const version = ref(0); // bumped when a measurement changes
 const scrollTop = ref(0);
 let anchorDelta = 0; // height change above the viewport, still to correct
-let shownFirst = 0; // first visible index as last painted (not recomputed mid-batch)
+// first visible index as last painted (not recomputed mid-batch)
+let shownFirst = 0;
 
 const offsets = computed(() => {
   version.value; // depend on the measurement counter
@@ -3707,10 +4759,14 @@ function findIndex(o, y) {
 
 const range = computed(() => {
   const o = offsets.value;
-  const top = Math.min(Math.max(0, scrollTop.value), Math.max(0, total.value - props.height));
+  const top = Math.min(
+    Math.max(0, scrollTop.value),
+    Math.max(0, total.value - props.height),
+  );
   const first = findIndex(o, top);
   let last = first;
-  while (last < props.posts.length - 1 && o[last + 1] < top + props.height) last++;
+  while (last < props.posts.length - 1 && o[last + 1] < top + props.height)
+    last++;
   return {
     first,
     start: Math.max(0, first - props.overscan),
@@ -3720,7 +4776,8 @@ const range = computed(() => {
 
 const rows = computed(() => {
   const out = [];
-  for (let i = range.value.start; i <= range.value.end; i++) out.push({ index: i, post: props.posts[i] });
+  for (let i = range.value.start; i <= range.value.end; i++)
+    out.push({ index: i, post: props.posts[i] });
   return out;
 });
 
@@ -3735,14 +4792,24 @@ function measure(id, index, h) {
 }
 
 // flush: "post" runs after Vue has patched the DOM with the new offsets.
-watch(() => range.value.first, (f) => { shownFirst = f; }, { flush: "post" });
-watch(version, () => {
-  if (anchorDelta === 0) return;
-  const el = viewport.value;
-  el.scrollTop = el.scrollTop + anchorDelta;
-  anchorDelta = 0;
-  scrollTop.value = el.scrollTop;
-}, { flush: "post" });
+watch(
+  () => range.value.first,
+  (f) => {
+    shownFirst = f;
+  },
+  { flush: "post" },
+);
+watch(
+  version,
+  () => {
+    if (anchorDelta === 0) return;
+    const el = viewport.value;
+    el.scrollTop = el.scrollTop + anchorDelta;
+    anchorDelta = 0;
+    scrollTop.value = el.scrollTop;
+  },
+  { flush: "post" },
+);
 </script>
 
 <template>
@@ -3755,7 +4822,11 @@ watch(version, () => {
     :style="{ height: height + 'px' }"
     @scroll.passive="scrollTop = $event.target.scrollTop"
   >
-    <div class="feed-spacer" data-testid="spacer" :style="{ height: total + 'px' }">
+    <div
+      class="feed-spacer"
+      data-testid="spacer"
+      :style="{ height: total + 'px' }"
+    >
       <FeedRow
         v-for="row in rows"
         :key="row.post.id"
@@ -3771,15 +4842,28 @@ watch(version, () => {
   </div>
   <p class="feed-status" data-testid="status">
     {{ rows.length }} posts in the DOM · measured {{ (version, sizes.size) }} of
-    {{ posts.length.toLocaleString("en-US") }} · content height {{ Math.round(total).toLocaleString("en-US") }}px
+    {{ posts.length.toLocaleString("en-US") }} · content height
+    {{ Math.round(total).toLocaleString("en-US") }}px
   </p>
 </template>
 
 <style scoped>
-.feed-viewport { position: relative; overflow-y: auto; overflow-anchor: none;
-  border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.feed-spacer { position: relative; }
-.feed-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+.feed-viewport {
+  position: relative;
+  overflow-y: auto;
+  overflow-anchor: none;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.feed-spacer {
+  position: relative;
+}
+.feed-status {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 </style>
 `,
         },
@@ -3814,15 +4898,18 @@ A conveyor belt carries parcels of every size past a window. To know which parce
 ### Step 1: offsets from a cache and a version signal
 
 ~~~ts
-private readonly sizes = new Map<number, number>(); // post id -> measured px height
-private readonly version = signal(0); // bumped when a measurement changes
+// post id -> measured px height
+private readonly sizes = new Map<number, number>();
+// bumped when a measurement changes
+private readonly version = signal(0);
 
 readonly offsets = computed(() => {
   this.version();
   const posts = this.posts();
   const out = new Float64Array(posts.length + 1);
   for (let i = 0; i < posts.length; i++) {
-    out[i + 1] = out[i] + (this.sizes.get(posts[i].id) ?? this.estimate());
+    out[i + 1] =
+      out[i] + (this.sizes.get(posts[i].id) ?? this.estimate());
   }
   return out;
 });
@@ -3840,20 +4927,29 @@ export class MeasureDirective implements OnInit, OnDestroy {
   @Input({ required: true }) appMeasure!: number; // post id
   @Input({ required: true }) measureIndex!: number;
   @Output() measured = new EventEmitter<Measurement>();
-  private readonly el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly el =
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private ro: ResizeObserver | null = null;
 
   ngOnInit() {
     if (typeof ResizeObserver === "undefined") return;
     this.ro = new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize && entry.borderBoxSize[0];
-      const height = box ? box.blockSize : this.el.getBoundingClientRect().height;
-      this.measured.emit({ id: this.appMeasure, index: this.measureIndex, height });
+      const height = box
+        ? box.blockSize
+        : this.el.getBoundingClientRect().height;
+      this.measured.emit({
+        id: this.appMeasure,
+        index: this.measureIndex,
+        height,
+      });
     });
     this.ro.observe(this.el);
   }
 
-  ngOnDestroy() { this.ro?.disconnect(); }
+  ngOnDestroy() {
+    this.ro?.disconnect();
+  }
 }
 ~~~
 
@@ -3863,9 +4959,15 @@ In the template each article carries the directive inside the <code>@for</code>:
 
 ~~~html
 @for (row of rows(); track row.post.id) {
-  <article class="feed-row" [appMeasure]="row.post.id" [measureIndex]="row.index"
-    (measured)="measure($event)" [attr.aria-posinset]="row.index + 1"
-    [attr.aria-setsize]="posts().length" [style.transform]="'translateY(' + offsets()[row.index] + 'px)'">
+  <article
+    class="feed-row"
+    [appMeasure]="row.post.id"
+    [measureIndex]="row.index"
+    (measured)="measure($event)"
+    [attr.aria-posinset]="row.index + 1"
+    [attr.aria-setsize]="posts().length"
+    [style.transform]="'translateY(' + offsets()[row.index] + 'px)'"
+  >
     ...
   </article>
 }
@@ -3884,16 +4986,19 @@ measure({ id, index, height }: Measurement) {
   this.version.update((v) => v + 1);
   if (this.correcting) return;
   this.correcting = true;
-  afterNextRender(() => {
-    this.correcting = false;
-    if (this.anchorDelta !== 0) {
-      const el = this.viewport.nativeElement;
-      el.scrollTop = el.scrollTop + this.anchorDelta;
-      this.anchorDelta = 0;
-      this.scrollTop.set(el.scrollTop);
-    }
-    this.shownFirst = this.range().first;
-  }, { injector: this.injector });
+  afterNextRender(
+    () => {
+      this.correcting = false;
+      if (this.anchorDelta !== 0) {
+        const el = this.viewport.nativeElement;
+        el.scrollTop = el.scrollTop + this.anchorDelta;
+        this.anchorDelta = 0;
+        this.scrollTop.set(el.scrollTop);
+      }
+      this.shownFirst = this.range().first;
+    },
+    { injector: this.injector },
+  );
 }
 ~~~
 
@@ -3945,8 +5050,10 @@ The stable CDK ships only a fixed-size strategy (<code>itemSize</code>). Variabl
 import { ScrollingModule } from "@angular/cdk/scrolling";
 import { ScrollingModule as ExperimentalScrollingModule } from "@angular/cdk-experimental/scrolling";
 // template:
-// <cdk-virtual-scroll-viewport autosize minBufferPx="600" maxBufferPx="1200" style="height: 600px">
-//   <article *cdkVirtualFor="let post of posts; trackBy: trackById">...</article>
+// <cdk-virtual-scroll-viewport autosize minBufferPx="600"
+// maxBufferPx="1200" style="height: 600px">
+// <article *cdkVirtualFor="let post of
+// posts; trackBy: trackById">...</article>
 // </cdk-virtual-scroll-viewport>
 ~~~
 
@@ -4041,10 +5148,17 @@ import { ScrollingModule as ExperimentalScrollingModule } from "@angular/cdk-exp
         files: {
           "/src/app/api.ts": `// Simulated feed API: no network, a Promise that resolves after 300 ms.
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Radia"];
-const WORDS = ("virtual lists keep the page fast by mounting only the rows you can see while " +
-  "a spacer element keeps the scrollbar honest about the full height of the content").split(" ");
+const WORDS = (
+  "virtual lists keep the page fast by mounting only the rows you can see while " +
+  "a spacer element keeps the scrollbar honest about the full height of the content"
+).split(" ");
 
-export interface Post { id: number; author: string; text: string; hasImage: boolean; }
+export interface Post {
+  id: number;
+  author: string;
+  text: string;
+  hasImage: boolean;
+}
 
 export function makePosts(count: number): Post[] {
   let seed = 7;
@@ -4053,7 +5167,8 @@ export function makePosts(count: number): Post[] {
   for (let i = 0; i < count; i++) {
     const words = 8 + Math.floor(rand() * 70);
     const parts = [];
-    for (let w = 0; w < words; w++) parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
+    for (let w = 0; w < words; w++)
+      parts.push(WORDS[Math.floor(rand() * WORDS.length)]);
     posts.push({
       id: i + 1,
       author: AUTHORS[i % AUTHORS.length],
@@ -4065,7 +5180,9 @@ export function makePosts(count: number): Post[] {
 }
 
 export function fetchFeed(count = 10000): Promise<Post[]> {
-  return new Promise((resolve) => setTimeout(() => resolve(makePosts(count)), 300));
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(makePosts(count)), 300),
+  );
 }
 `,
           "/src/app/app.component.ts": `import { Component, OnDestroy, OnInit, signal } from "@angular/core";
@@ -4083,16 +5200,22 @@ import { VirtualFeedComponent } from "./virtual-feed.component";
         <app-virtual-feed [items]="list" [viewportHeight]="600" [estimatedHeight]="120" [overscanCount]="3"
           [expanded]="expanded()" (toggle)="toggle($event)" />
       } @else {
-        <p class="feed-status" role="status" data-testid="loading">Loading feed...</p>
+        <p
+          class="feed-status"
+          role="status"
+          data-testid="loading"
+        >Loading feed...</p>
       }
     </main>
   \`,
-  styles: [\`
+  styles: [
+    \`
     :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
     .feed-app { max-width: 560px; margin: 0 auto; padding: 16px; }
     h1 { font-size: 1.15rem; margin: 0 0 12px; }
     .feed-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-  \`],
+  \`,
+  ],
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly posts = signal<Post[] | null>(null);
@@ -4100,9 +5223,13 @@ export class AppComponent implements OnInit, OnDestroy {
   private alive = true;
 
   ngOnInit() {
-    fetchFeed(10000).then((data) => { if (this.alive) this.posts.set(data); });
+    fetchFeed(10000).then((data) => {
+      if (this.alive) this.posts.set(data);
+    });
   }
-  ngOnDestroy() { this.alive = false; }
+  ngOnDestroy() {
+    this.alive = false;
+  }
 
   toggle(id: number) {
     const next = new Set(this.expanded());
@@ -4112,9 +5239,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/measure.directive.ts": `import { Directive, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, inject } from "@angular/core";
+          "/src/app/measure.directive.ts": `import {
+  Directive,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+  inject,
+} from "@angular/core";
 
-export interface Measurement { id: number; index: number; height: number; }
+export interface Measurement {
+  id: number;
+  index: number;
+  height: number;
+}
 
 // Reports the host element's border-box height: once right after observe(),
 // then whenever it changes (Show more, an image loading, a font swap).
@@ -4123,15 +5263,22 @@ export class MeasureDirective implements OnInit, OnDestroy {
   @Input({ required: true }) appMeasure!: number; // post id
   @Input({ required: true }) measureIndex!: number;
   @Output() measured = new EventEmitter<Measurement>();
-  private readonly el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly el =
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private ro: ResizeObserver | null = null;
 
   ngOnInit() {
     if (typeof ResizeObserver === "undefined") return;
     this.ro = new ResizeObserver(([entry]) => {
       const box = entry.borderBoxSize && entry.borderBoxSize[0];
-      const height = box ? box.blockSize : this.el.getBoundingClientRect().height;
-      this.measured.emit({ id: this.appMeasure, index: this.measureIndex, height });
+      const height = box
+        ? box.blockSize
+        : this.el.getBoundingClientRect().height;
+      this.measured.emit({
+        id: this.appMeasure,
+        index: this.measureIndex,
+        height,
+      });
     });
     this.ro.observe(this.el);
   }
@@ -4142,7 +5289,17 @@ export class MeasureDirective implements OnInit, OnDestroy {
 }
 `,
           "/src/app/virtual-feed.component.ts": `import {
-  Component, ElementRef, EventEmitter, Injector, Input, Output, ViewChild, afterNextRender, computed, inject, signal,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Injector,
+  Input,
+  Output,
+  ViewChild,
+  afterNextRender,
+  computed,
+  inject,
+  signal,
 } from "@angular/core";
 import { Post } from "./api";
 import { MeasureDirective, Measurement } from "./measure.directive";
@@ -4176,10 +5333,17 @@ function findIndex(o: Float64Array, y: number): number {
             [attr.aria-labelledby]="'post-' + row.post.id" tabindex="0"
             [style.transform]="'translateY(' + offsets()[row.index] + 'px)'">
             <div class="feed-card">
-              <h2 [id]="'post-' + row.post.id" class="feed-author">{{ row.post.author }} · post {{ row.post.id }}</h2>
+              <h2
+                [id]="'post-' + row.post.id"
+                class="feed-author"
+              >{{ row.post.author }} · post {{ row.post.id }}</h2>
               <p class="post-text">{{ textOf(row.post) }}</p>
               @if (row.post.hasImage) {
-                <div class="post-image" role="img" aria-label="Photo placeholder"></div>
+                <div
+                  class="post-image"
+                  role="img"
+                  aria-label="Photo placeholder"
+                ></div>
               }
               @if (row.post.text.length > preview) {
                 <button type="button" class="feed-more" [attr.aria-expanded]="expanded.has(row.post.id)"
@@ -4197,7 +5361,8 @@ function findIndex(o: Float64Array, y: number): number {
       content height {{ totalLabel() }}px
     </p>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .feed-viewport { position: relative; overflow-y: auto; overflow-anchor: none;
       border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
     .feed-spacer { position: relative; }
@@ -4210,24 +5375,34 @@ function findIndex(o: Float64Array, y: number): number {
       background: linear-gradient(135deg, #2b3550, #1d2436); }
     .feed-more { margin-top: 8px; background: none; border: 0; color: #7aa2ff; padding: 4px 0; cursor: pointer; }
     .feed-status { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-  \`],
+  \`,
+  ],
 })
 export class VirtualFeedComponent {
   readonly posts = signal<Post[]>([]);
   readonly height = signal(600);
   readonly estimate = signal(120);
   readonly overscan = signal(3);
-  @Input({ required: true }) set items(v: Post[]) { this.posts.set(v); }
-  @Input() set viewportHeight(v: number) { this.height.set(v); }
-  @Input() set estimatedHeight(v: number) { this.estimate.set(v); }
-  @Input() set overscanCount(v: number) { this.overscan.set(v); }
+  @Input({ required: true }) set items(v: Post[]) {
+    this.posts.set(v);
+  }
+  @Input() set viewportHeight(v: number) {
+    this.height.set(v);
+  }
+  @Input() set estimatedHeight(v: number) {
+    this.estimate.set(v);
+  }
+  @Input() set overscanCount(v: number) {
+    this.overscan.set(v);
+  }
   @Input() expanded: ReadonlySet<number> = new Set();
   @Output() toggle = new EventEmitter<number>();
   @ViewChild("viewport", { static: true }) viewport!: ElementRef<HTMLElement>;
 
   readonly preview = PREVIEW;
   private readonly injector = inject(Injector);
-  private readonly sizes = new Map<number, number>(); // post id -> measured px height
+  // post id -> measured px height
+  private readonly sizes = new Map<number, number>();
   private readonly version = signal(0); // bumped when a measurement changes
   private readonly scrollTop = signal(0);
   private anchorDelta = 0; // height change above the viewport, still to correct
@@ -4247,24 +5422,38 @@ export class VirtualFeedComponent {
   private readonly range = computed(() => {
     const o = this.offsets();
     const n = this.posts().length;
-    const top = Math.min(Math.max(0, this.scrollTop()), Math.max(0, this.total() - this.height()));
+    const top = Math.min(
+      Math.max(0, this.scrollTop()),
+      Math.max(0, this.total() - this.height()),
+    );
     const first = findIndex(o, top);
     let last = first;
     while (last < n - 1 && o[last + 1] < top + this.height()) last++;
-    return { first, start: Math.max(0, first - this.overscan()), end: Math.min(n - 1, last + this.overscan()) };
+    return {
+      first,
+      start: Math.max(0, first - this.overscan()),
+      end: Math.min(n - 1, last + this.overscan()),
+    };
   });
   readonly rows = computed(() => {
     const { start, end } = this.range();
     const out: { index: number; post: Post }[] = [];
-    for (let i = start; i <= end; i++) out.push({ index: i, post: this.posts()[i] });
+    for (let i = start; i <= end; i++)
+      out.push({ index: i, post: this.posts()[i] });
     return out;
   });
   readonly measuredCount = computed(() => (this.version(), this.sizes.size));
-  readonly countLabel = computed(() => this.posts().length.toLocaleString("en-US"));
-  readonly totalLabel = computed(() => Math.round(this.total()).toLocaleString("en-US"));
+  readonly countLabel = computed(() =>
+    this.posts().length.toLocaleString("en-US"),
+  );
+  readonly totalLabel = computed(() =>
+    Math.round(this.total()).toLocaleString("en-US"),
+  );
 
   textOf(post: Post): string {
-    return post.text.length > PREVIEW && !this.expanded.has(post.id) ? post.text.slice(0, PREVIEW) + "..." : post.text;
+    return post.text.length > PREVIEW && !this.expanded.has(post.id)
+      ? post.text.slice(0, PREVIEW) + "..."
+      : post.text;
   }
 
   onScroll() {
@@ -4283,16 +5472,19 @@ export class VirtualFeedComponent {
     if (this.correcting) return;
     this.correcting = true;
     // After Angular has written the new offsets to the DOM, correct once.
-    afterNextRender(() => {
-      this.correcting = false;
-      if (this.anchorDelta !== 0) {
-        const el = this.viewport.nativeElement;
-        el.scrollTop = el.scrollTop + this.anchorDelta;
-        this.anchorDelta = 0;
-        this.scrollTop.set(el.scrollTop);
-      }
-      this.shownFirst = this.range().first;
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        this.correcting = false;
+        if (this.anchorDelta !== 0) {
+          const el = this.viewport.nativeElement;
+          el.scrollTop = el.scrollTop + this.anchorDelta;
+          this.anchorDelta = 0;
+          this.scrollTop.set(el.scrollTop);
+        }
+        this.shownFirst = this.range().first;
+      },
+      { injector: this.injector },
+    );
   }
 }
 `,
@@ -4403,8 +5595,11 @@ Each stage is recomputed only when its own inputs change: typing in the search r
 ~~~jsx
 export function filterRows(rows, { query, role, status }) {
   const q = query.trim().toLowerCase();
-  return rows.filter((r) =>
-    (!q || r.lower.includes(q)) && (!role || r.role === role) && (!status || r.status === status)
+  return rows.filter(
+    (r) =>
+      (!q || r.lower.includes(q)) &&
+      (!role || r.role === role) &&
+      (!status || r.status === status),
   );
 }
 
@@ -4413,7 +5608,14 @@ export function sortRows(rows, sort) {
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age"
+        ? a.age - b.age
+        : a[k] < b[k]
+          ? -1
+          : a[k] > b[k]
+            ? 1
+            : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
@@ -4439,7 +5641,10 @@ Details that interviewers notice:
 ### Step 2: memoised pipeline
 
 ~~~jsx
-const filtered = useMemo(() => filterRows(rows, { query, role, status }), [rows, query, role, status]);
+const filtered = useMemo(
+  () => filterRows(rows, { query, role, status }),
+  [rows, query, role, status],
+);
 const view = useMemo(() => sortRows(filtered, sort), [filtered, sort]);
 ~~~
 
@@ -4463,7 +5668,10 @@ const bodyHeight = HEIGHT - HEADER;
 const maxTop = Math.max(0, view.length * ROW - bodyHeight);
 const top = Math.min(scrollTop, maxTop);
 const first = Math.floor(top / ROW);
-const last = Math.min(view.length - 1, Math.floor((top + bodyHeight - 1) / ROW));
+const last = Math.min(
+  view.length - 1,
+  Math.floor((top + bodyHeight - 1) / ROW),
+);
 const start = Math.max(0, first - OVERSCAN);
 const end = Math.min(view.length - 1, last + OVERSCAN);
 ~~~
@@ -4476,9 +5684,18 @@ The body rowgroup is <code>view.length × 40</code> tall and each row is absolut
 
 ~~~jsx
 <div role="columnheader" aria-sort={ariaSort(c.key)}>
-  <button type="button" onClick={() => setSort((s) => nextSort(s, c.key))}>
+  <button
+    type="button"
+    onClick={() => setSort((s) => nextSort(s, c.key))}
+  >
     {c.label}
-    <span aria-hidden="true">{sort && sort.key === c.key ? (sort.dir === "asc" ? " ▲" : " ▼") : ""}</span>
+    <span aria-hidden="true">
+      {sort && sort.key === c.key
+        ? sort.dir === "asc"
+          ? " ▲"
+          : " ▼"
+        : ""}
+    </span>
   </button>
 </div>
 ~~~
@@ -4655,7 +5872,14 @@ export default function App() {
 }
 `,
           "/src/DataTable.js": `import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { COLUMNS, ROLES, STATUSES, filterRows, nextSort, sortRows } from "./data";
+import {
+  COLUMNS,
+  ROLES,
+  STATUSES,
+  filterRows,
+  nextSort,
+  sortRows,
+} from "./data";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -4670,8 +5894,12 @@ export default function DataTable({ rows }) {
   const [scrollTop, setScrollTop] = useState(0);
   const viewportRef = useRef(null);
 
-  // Derived, never stored: filter first (shrinks the list), then sort the survivors.
-  const filtered = useMemo(() => filterRows(rows, { query, role, status }), [rows, query, role, status]);
+  // Derived, never stored: filter first (shrinks
+  // the list), then sort the survivors.
+  const filtered = useMemo(
+    () => filterRows(rows, { query, role, status }),
+    [rows, query, role, status],
+  );
   const view = useMemo(() => sortRows(filtered, sort), [filtered, sort]);
 
   // A new filter or sort means a new list: start again from the top.
@@ -4684,75 +5912,163 @@ export default function DataTable({ rows }) {
   const maxTop = Math.max(0, view.length * ROW - bodyHeight);
   const top = Math.min(scrollTop, maxTop);
   const first = Math.floor(top / ROW);
-  const last = Math.min(view.length - 1, Math.floor((top + bodyHeight - 1) / ROW));
+  const last = Math.min(
+    view.length - 1,
+    Math.floor((top + bodyHeight - 1) / ROW),
+  );
   const start = Math.max(0, first - OVERSCAN);
   const end = Math.min(view.length - 1, last + OVERSCAN);
 
   const ariaSort = (key) =>
-    sort && sort.key === key ? (sort.dir === "asc" ? "ascending" : "descending") : "none";
+    sort && sort.key === key
+      ? sort.dir === "asc"
+        ? "ascending"
+        : "descending"
+      : "none";
 
   const body = [];
   for (let i = start; i <= end; i++) {
     const r = view[i];
     body.push(
-      <div key={r.id} role="row" aria-rowindex={i + 2} className="dt-row" data-testid="row"
-        style={{ transform: "translateY(" + i * ROW + "px)" }}>
-        <div role="cell" className="dt-name">{r.name}</div>
-        <div role="cell" className="dt-num">{r.age}</div>
+      <div
+        key={r.id}
+        role="row"
+        aria-rowindex={i + 2}
+        className="dt-row"
+        data-testid="row"
+        style={{ transform: "translateY(" + i * ROW + "px)" }}
+      >
+        <div role="cell" className="dt-name">
+          {r.name}
+        </div>
+        <div role="cell" className="dt-num">
+          {r.age}
+        </div>
         <div role="cell">{r.role}</div>
-        <div role="cell"><span className={"dt-pill dt-" + r.status.toLowerCase()}>{r.status}</span></div>
-        <div role="cell" className="dt-num">{r.joined}</div>
-      </div>
+        <div role="cell">
+          <span className={"dt-pill dt-" + r.status.toLowerCase()}>
+            {r.status}
+          </span>
+        </div>
+        <div role="cell" className="dt-num">
+          {r.joined}
+        </div>
+      </div>,
     );
   }
 
   return (
     <section>
       <div className="dt-filters">
-        <input type="search" placeholder="Search name" aria-label="Search by name" data-testid="search"
-          value={query} onChange={(e) => setQuery(e.target.value)} />
-        <select aria-label="Filter by role" data-testid="role" value={role} onChange={(e) => setRole(e.target.value)}>
+        <input
+          type="search"
+          placeholder="Search name"
+          aria-label="Search by name"
+          data-testid="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select
+          aria-label="Filter by role"
+          data-testid="role"
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        >
           <option value="">All roles</option>
-          {ROLES.map((r) => <option key={r}>{r}</option>)}
+          {ROLES.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
         </select>
-        <select aria-label="Filter by status" data-testid="status-filter" value={status}
-          onChange={(e) => setStatus(e.target.value)}>
+        <select
+          aria-label="Filter by status"
+          data-testid="status-filter"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
           <option value="">All statuses</option>
-          {STATUSES.map((s) => <option key={s}>{s}</option>)}
+          {STATUSES.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
         </select>
       </div>
       <p className="dt-count" role="status" data-testid="count">
-        {view.length.toLocaleString("en-US")} of {rows.length.toLocaleString("en-US")} employees
+        {view.length.toLocaleString("en-US")} of{" "}
+        {rows.length.toLocaleString("en-US")} employees
       </p>
-      <div ref={viewportRef} className="dt-viewport" data-testid="viewport" style={{ height: HEIGHT }}
+      <div
+        ref={viewportRef}
+        className="dt-viewport"
+        data-testid="viewport"
+        style={{ height: HEIGHT }}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        role="table" aria-label="Employees" aria-rowcount={view.length + 1}>
+        role="table"
+        aria-label="Employees"
+        aria-rowcount={view.length + 1}
+      >
         <div role="rowgroup" className="dt-head">
           <div role="row" aria-rowindex={1} className="dt-row dt-header">
             {COLUMNS.map((c) => (
-              <div key={c.key} role="columnheader" aria-sort={ariaSort(c.key)} data-testid={"col-" + c.key}>
-                <button type="button" onClick={() => setSort((s) => nextSort(s, c.key))}>
+              <div
+                key={c.key}
+                role="columnheader"
+                aria-sort={ariaSort(c.key)}
+                data-testid={"col-" + c.key}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSort((s) => nextSort(s, c.key))}
+                >
                   {c.label}
                   <span aria-hidden="true">
-                    {sort && sort.key === c.key ? (sort.dir === "asc" ? " ▲" : " ▼") : ""}
+                    {sort && sort.key === c.key
+                      ? sort.dir === "asc"
+                        ? " ▲"
+                        : " ▼"
+                      : ""}
                   </span>
                 </button>
               </div>
             ))}
           </div>
         </div>
-        <div role="rowgroup" className="dt-body" style={{ height: view.length * ROW }}>
+        <div
+          role="rowgroup"
+          className="dt-body"
+          style={{ height: view.length * ROW }}
+        >
           {body}
         </div>
-        {view.length === 0 && <p className="dt-empty" data-testid="empty">No employees match these filters.</p>}
+        {view.length === 0 && (
+          <p className="dt-empty" data-testid="empty">
+            No employees match these filters.
+          </p>
+        )}
       </div>
     </section>
   );
 }
 `,
           "/src/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 export const ROLES = ["Engineer", "Designer", "Manager", "Analyst", "Support"];
 export const STATUSES = ["Active", "Invited", "Suspended"];
 
@@ -4762,7 +6078,8 @@ export function makeEmployees(count) {
   const start = Date.UTC(2015, 0, 1);
   const rows = [];
   for (let i = 0; i < count; i++) {
-    const name = FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
+    const name =
+      FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
     rows.push({
       id: i + 1,
       name,
@@ -4770,7 +6087,9 @@ export function makeEmployees(count) {
       age: 21 + Math.floor(rand() * 44),
       role: ROLES[Math.floor(rand() * ROLES.length)],
       status: STATUSES[Math.floor(rand() * STATUSES.length)],
-      joined: new Date(start + Math.floor(rand() * 3650) * 86400000).toISOString().slice(0, 10),
+      joined: new Date(start + Math.floor(rand() * 3650) * 86400000)
+        .toISOString()
+        .slice(0, 10),
     });
   }
   return rows;
@@ -4787,8 +6106,11 @@ export const COLUMNS = [
 // Filter, then sort a copy. Ties fall back to id so the order is deterministic.
 export function filterRows(rows, { query, role, status }) {
   const q = query.trim().toLowerCase();
-  return rows.filter((r) =>
-    (!q || r.lower.includes(q)) && (!role || r.role === role) && (!status || r.status === status)
+  return rows.filter(
+    (r) =>
+      (!q || r.lower.includes(q)) &&
+      (!role || r.role === role) &&
+      (!status || r.status === status),
   );
 }
 
@@ -4797,7 +6119,8 @@ export function sortRows(rows, sort) {
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
@@ -4809,31 +6132,119 @@ export function nextSort(sort, key) {
   return null;
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.dt-app { max-width: 760px; margin: 0 auto; padding: 16px; }
-.dt-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.dt-filters { display: flex; flex-wrap: wrap; gap: 8px; }
-.dt-filters input, .dt-filters select { padding: 7px 9px; border-radius: 6px; border: 1px solid #2a2f3a;
-  background: #161a22; color: inherit; font: inherit; }
-.dt-filters input { flex: 1 1 160px; }
-.dt-count { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0; }
-.dt-viewport { position: relative; overflow: auto; border: 1px solid #2a2f3a; border-radius: 10px;
-  background: #161a22; }
-.dt-row { display: grid; grid-template-columns: minmax(130px, 2fr) 56px minmax(90px, 1fr) 100px 104px;
-  align-items: center; height: 40px; min-width: 520px; box-sizing: border-box; padding: 0 12px;
-  gap: 8px; border-bottom: 1px solid #222734; font-size: 0.9rem; }
-.dt-head { position: sticky; top: 0; z-index: 1; }
-.dt-header { background: #1d2230; font-weight: 600; }
-.dt-header button { background: none; border: 0; color: inherit; font: inherit; padding: 4px 0; cursor: pointer; }
-.dt-header button:focus-visible { outline: 2px solid #7aa2ff; }
-.dt-body { position: relative; }
-.dt-body .dt-row { position: absolute; top: 0; left: 0; right: 0; }
-.dt-num { font-variant-numeric: tabular-nums; }
-.dt-pill { padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; }
-.dt-active { background: #18392b; color: #7ee2a8; }
-.dt-invited { background: #3a3218; color: #f3cf6b; }
-.dt-suspended { background: #3d1d22; color: #ff9aa8; }
-.dt-empty { position: absolute; top: 56px; left: 0; right: 0; text-align: center; color: #9aa3b5; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.dt-app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.dt-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.dt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dt-filters input,
+.dt-filters select {
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #161a22;
+  color: inherit;
+  font: inherit;
+}
+.dt-filters input {
+  flex: 1 1 160px;
+}
+.dt-count {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0;
+}
+.dt-viewport {
+  position: relative;
+  overflow: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.dt-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 2fr) 56px minmax(90px, 1fr) 100px 104px;
+  align-items: center;
+  height: 40px;
+  min-width: 520px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  gap: 8px;
+  border-bottom: 1px solid #222734;
+  font-size: 0.9rem;
+}
+.dt-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.dt-header {
+  background: #1d2230;
+  font-weight: 600;
+}
+.dt-header button {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.dt-header button:focus-visible {
+  outline: 2px solid #7aa2ff;
+}
+.dt-body {
+  position: relative;
+}
+.dt-body .dt-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+.dt-num {
+  font-variant-numeric: tabular-nums;
+}
+.dt-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+.dt-active {
+  background: #18392b;
+  color: #7ee2a8;
+}
+.dt-invited {
+  background: #3a3218;
+  color: #f3cf6b;
+}
+.dt-suspended {
+  background: #3d1d22;
+  color: #ff9aa8;
+}
+.dt-empty {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #9aa3b5;
+}
 `,
         },
       },
@@ -4875,7 +6286,14 @@ export function sortRows(rows, sort) {
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age"
+        ? a.age - b.age
+        : a[k] < b[k]
+          ? -1
+          : a[k] > b[k]
+            ? 1
+            : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
@@ -4887,7 +6305,11 @@ export function sortRows(rows, sort) {
 
 ~~~js
 const filtered = computed(() =>
-  filterRows(props.rows, { query: query.value, role: role.value, status: status.value })
+  filterRows(props.rows, {
+    query: query.value,
+    role: role.value,
+    status: status.value,
+  }),
 );
 const view = computed(() => sortRows(filtered.value, sort.value));
 ~~~
@@ -4899,7 +6321,9 @@ Filter first, then sort the survivors. <code>sortRows</code> copies with <code>[
 ~~~js
 watch([query, role, status, sort], () => {
   scrollTop.value = 0;
-  nextTick(() => { if (viewport.value) viewport.value.scrollTop = 0; });
+  nextTick(() => {
+    if (viewport.value) viewport.value.scrollTop = 0;
+  });
 });
 ~~~
 
@@ -4911,10 +6335,19 @@ watch([query, role, status, sort], () => {
 const bodyHeight = HEIGHT - HEADER;
 const range = computed(() => {
   const n = view.value.length;
-  const top = Math.min(scrollTop.value, Math.max(0, n * ROW - bodyHeight));
+  const top = Math.min(
+    scrollTop.value,
+    Math.max(0, n * ROW - bodyHeight),
+  );
   const first = Math.floor(top / ROW);
-  const last = Math.min(n - 1, Math.floor((top + bodyHeight - 1) / ROW));
-  return { start: Math.max(0, first - OVERSCAN), end: Math.min(n - 1, last + OVERSCAN) };
+  const last = Math.min(
+    n - 1,
+    Math.floor((top + bodyHeight - 1) / ROW),
+  );
+  return {
+    start: Math.max(0, first - OVERSCAN),
+    end: Math.min(n - 1, last + OVERSCAN),
+  };
 });
 ~~~
 
@@ -4923,15 +6356,30 @@ const range = computed(() => {
 ### Step 5: the template
 
 ~~~vue
-<div v-for="c in COLUMNS" :key="c.key" role="columnheader" :aria-sort="ariaSort(c.key)">
+<div
+  v-for="c in COLUMNS"
+  :key="c.key"
+  role="columnheader"
+  :aria-sort="ariaSort(c.key)"
+>
   <button type="button" @click="sort = nextSort(sort, c.key)">
     {{ c.label }}<span aria-hidden="true">{{ arrow(c.key) }}</span>
   </button>
 </div>
 
-<div role="rowgroup" class="dt-body" :style="{ height: view.length * ROW + 'px' }">
-  <div v-for="{ i, r } in visible" :key="r.id" role="row" :aria-rowindex="i + 2"
-    class="dt-row" :style="{ transform: 'translateY(' + i * ROW + 'px)' }">
+<div
+  role="rowgroup"
+  class="dt-body"
+  :style="{ height: view.length * ROW + 'px' }"
+>
+  <div
+    v-for="{ i, r } in visible"
+    :key="r.id"
+    role="row"
+    :aria-rowindex="i + 2"
+    class="dt-row"
+    :style="{ transform: 'translateY(' + i * ROW + 'px)' }"
+  >
     ...
   </div>
 </div>
@@ -5089,36 +6537,131 @@ const rows = markRaw(makeEmployees(20000));
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.dt-app { max-width: 760px; margin: 0 auto; padding: 16px; }
-.dt-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.dt-filters { display: flex; flex-wrap: wrap; gap: 8px; }
-.dt-filters input, .dt-filters select { padding: 7px 9px; border-radius: 6px; border: 1px solid #2a2f3a;
-  background: #161a22; color: inherit; font: inherit; }
-.dt-filters input { flex: 1 1 160px; }
-.dt-count { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0; }
-.dt-viewport { position: relative; overflow: auto; border: 1px solid #2a2f3a; border-radius: 10px;
-  background: #161a22; }
-.dt-row { display: grid; grid-template-columns: minmax(130px, 2fr) 56px minmax(90px, 1fr) 100px 104px;
-  align-items: center; height: 40px; min-width: 520px; box-sizing: border-box; padding: 0 12px;
-  gap: 8px; border-bottom: 1px solid #222734; font-size: 0.9rem; }
-.dt-head { position: sticky; top: 0; z-index: 1; }
-.dt-header { background: #1d2230; font-weight: 600; }
-.dt-header button { background: none; border: 0; color: inherit; font: inherit; padding: 4px 0; cursor: pointer; }
-.dt-header button:focus-visible { outline: 2px solid #7aa2ff; }
-.dt-body { position: relative; }
-.dt-body .dt-row { position: absolute; top: 0; left: 0; right: 0; }
-.dt-num { font-variant-numeric: tabular-nums; }
-.dt-pill { padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; }
-.dt-active { background: #18392b; color: #7ee2a8; }
-.dt-invited { background: #3a3218; color: #f3cf6b; }
-.dt-suspended { background: #3d1d22; color: #ff9aa8; }
-.dt-empty { position: absolute; top: 56px; left: 0; right: 0; text-align: center; color: #9aa3b5; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.dt-app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.dt-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.dt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dt-filters input,
+.dt-filters select {
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #161a22;
+  color: inherit;
+  font: inherit;
+}
+.dt-filters input {
+  flex: 1 1 160px;
+}
+.dt-count {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0;
+}
+.dt-viewport {
+  position: relative;
+  overflow: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #161a22;
+}
+.dt-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 2fr) 56px minmax(90px, 1fr) 100px 104px;
+  align-items: center;
+  height: 40px;
+  min-width: 520px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  gap: 8px;
+  border-bottom: 1px solid #222734;
+  font-size: 0.9rem;
+}
+.dt-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.dt-header {
+  background: #1d2230;
+  font-weight: 600;
+}
+.dt-header button {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.dt-header button:focus-visible {
+  outline: 2px solid #7aa2ff;
+}
+.dt-body {
+  position: relative;
+}
+.dt-body .dt-row {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+.dt-num {
+  font-variant-numeric: tabular-nums;
+}
+.dt-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+.dt-active {
+  background: #18392b;
+  color: #7ee2a8;
+}
+.dt-invited {
+  background: #3a3218;
+  color: #f3cf6b;
+}
+.dt-suspended {
+  background: #3d1d22;
+  color: #ff9aa8;
+}
+.dt-empty {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #9aa3b5;
+}
 </style>
 `,
           "/src/components/DataTable.vue": `<script setup>
 import { computed, nextTick, ref, useTemplateRef, watch } from "vue";
-import { COLUMNS, ROLES, STATUSES, filterRows, nextSort, sortRows } from "../data.js";
+import {
+  COLUMNS,
+  ROLES,
+  STATUSES,
+  filterRows,
+  nextSort,
+  sortRows,
+} from "../data.js";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -5134,16 +6677,23 @@ const sort = ref(null);
 const scrollTop = ref(0);
 const viewport = useTemplateRef("viewport");
 
-// Derived, never stored: filter first (shrinks the list), then sort the survivors.
+// Derived, never stored: filter first (shrinks
+// the list), then sort the survivors.
 const filtered = computed(() =>
-  filterRows(props.rows, { query: query.value, role: role.value, status: status.value })
+  filterRows(props.rows, {
+    query: query.value,
+    role: role.value,
+    status: status.value,
+  }),
 );
 const view = computed(() => sortRows(filtered.value, sort.value));
 
 // A new filter or sort means a new list: start again from the top.
 watch([query, role, status, sort], () => {
   scrollTop.value = 0;
-  nextTick(() => { if (viewport.value) viewport.value.scrollTop = 0; });
+  nextTick(() => {
+    if (viewport.value) viewport.value.scrollTop = 0;
+  });
 });
 
 const bodyHeight = HEIGHT - HEADER;
@@ -5152,31 +6702,53 @@ const range = computed(() => {
   const top = Math.min(scrollTop.value, Math.max(0, n * ROW - bodyHeight));
   const first = Math.floor(top / ROW);
   const last = Math.min(n - 1, Math.floor((top + bodyHeight - 1) / ROW));
-  return { start: Math.max(0, first - OVERSCAN), end: Math.min(n - 1, last + OVERSCAN) };
+  return {
+    start: Math.max(0, first - OVERSCAN),
+    end: Math.min(n - 1, last + OVERSCAN),
+  };
 });
 const visible = computed(() => {
   const out = [];
-  for (let i = range.value.start; i <= range.value.end; i++) out.push({ i, r: view.value[i] });
+  for (let i = range.value.start; i <= range.value.end; i++)
+    out.push({ i, r: view.value[i] });
   return out;
 });
 
 function ariaSort(key) {
-  return sort.value && sort.value.key === key ? (sort.value.dir === "asc" ? "ascending" : "descending") : "none";
+  return sort.value && sort.value.key === key
+    ? sort.value.dir === "asc"
+      ? "ascending"
+      : "descending"
+    : "none";
 }
 function arrow(key) {
-  return sort.value && sort.value.key === key ? (sort.value.dir === "asc" ? " ▲" : " ▼") : "";
+  return sort.value && sort.value.key === key
+    ? sort.value.dir === "asc"
+      ? " ▲"
+      : " ▼"
+    : "";
 }
 </script>
 
 <template>
   <section>
     <div class="dt-filters">
-      <input v-model="query" type="search" placeholder="Search name" aria-label="Search by name" data-testid="search" />
+      <input
+        v-model="query"
+        type="search"
+        placeholder="Search name"
+        aria-label="Search by name"
+        data-testid="search"
+      />
       <select v-model="role" aria-label="Filter by role" data-testid="role">
         <option value="">All roles</option>
         <option v-for="r in ROLES" :key="r">{{ r }}</option>
       </select>
-      <select v-model="status" aria-label="Filter by status" data-testid="status-filter">
+      <select
+        v-model="status"
+        aria-label="Filter by status"
+        data-testid="status-filter"
+      >
         <option value="">All statuses</option>
         <option v-for="s in STATUSES" :key="s">{{ s }}</option>
       </select>
@@ -5197,7 +6769,11 @@ function arrow(key) {
           </div>
         </div>
       </div>
-      <div role="rowgroup" class="dt-body" :style="{ height: view.length * ROW + 'px' }">
+      <div
+        role="rowgroup"
+        class="dt-body"
+        :style="{ height: view.length * ROW + 'px' }"
+      >
         <div v-for="{ i, r } in visible" :key="r.id" role="row" :aria-rowindex="i + 2" class="dt-row"
           data-testid="row" :style="{ transform: 'translateY(' + i * ROW + 'px)' }">
           <div role="cell" class="dt-name">{{ r.name }}</div>
@@ -5207,14 +6783,36 @@ function arrow(key) {
           <div role="cell" class="dt-num">{{ r.joined }}</div>
         </div>
       </div>
-      <p v-if="view.length === 0" class="dt-empty" data-testid="empty">No employees match these filters.</p>
+      <p
+        v-if="view.length === 0"
+        class="dt-empty"
+        data-testid="empty"
+      >No employees match these filters.</p>
     </div>
   </section>
 </template>
 `,
           "/src/data.js": `// 20,000 fake employees, deterministic (seeded), generated in memory.
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 export const ROLES = ["Engineer", "Designer", "Manager", "Analyst", "Support"];
 export const STATUSES = ["Active", "Invited", "Suspended"];
 
@@ -5224,7 +6822,8 @@ export function makeEmployees(count) {
   const start = Date.UTC(2015, 0, 1);
   const rows = [];
   for (let i = 0; i < count; i++) {
-    const name = FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
+    const name =
+      FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
     rows.push({
       id: i + 1,
       name,
@@ -5232,7 +6831,9 @@ export function makeEmployees(count) {
       age: 21 + Math.floor(rand() * 44),
       role: ROLES[Math.floor(rand() * ROLES.length)],
       status: STATUSES[Math.floor(rand() * STATUSES.length)],
-      joined: new Date(start + Math.floor(rand() * 3650) * 86400000).toISOString().slice(0, 10),
+      joined: new Date(start + Math.floor(rand() * 3650) * 86400000)
+        .toISOString()
+        .slice(0, 10),
     });
   }
   return rows;
@@ -5249,8 +6850,11 @@ export const COLUMNS = [
 // Filter, then sort a copy. Ties fall back to id so the order is deterministic.
 export function filterRows(rows, { query, role, status }) {
   const q = query.trim().toLowerCase();
-  return rows.filter((r) =>
-    (!q || r.lower.includes(q)) && (!role || r.role === role) && (!status || r.status === status)
+  return rows.filter(
+    (r) =>
+      (!q || r.lower.includes(q)) &&
+      (!role || r.role === role) &&
+      (!status || r.status === status),
   );
 }
 
@@ -5259,7 +6863,8 @@ export function sortRows(rows, sort) {
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
@@ -5304,17 +6909,30 @@ A newsroom wire screen receives 20,000 stories a day. Editors filter by desk and
 <code>data.ts</code> exports <code>Employee</code>, <code>ColumnKey</code> and <code>Sort</code> types plus <code>filterRows</code>, <code>sortRows</code> and <code>nextSort</code>:
 
 ~~~ts
-export function sortRows(rows: Employee[], sort: Sort | null): Employee[] {
+export function sortRows(
+  rows: Employee[],
+  sort: Sort | null,
+): Employee[] {
   if (!sort) return rows;
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age"
+        ? a.age - b.age
+        : a[k] < b[k]
+          ? -1
+          : a[k] > b[k]
+            ? 1
+            : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
 
-export function nextSort(sort: Sort | null, key: ColumnKey): Sort | null {
+export function nextSort(
+  sort: Sort | null,
+  key: ColumnKey,
+): Sort | null {
   if (!sort || sort.key !== key) return { key, dir: "asc" };
   if (sort.dir === "asc") return { key, dir: "desc" };
   return null;
@@ -5327,7 +6945,12 @@ export function nextSort(sort: Sort | null, key: ColumnKey): Sort | null {
 
 ~~~ts
 private readonly filtered = computed(() =>
-  filterRows(this.all(), { query: this.query(), role: this.role(), status: this.status() }));
+  filterRows(this.all(), {
+    query: this.query(),
+    role: this.role(),
+    status: this.status(),
+  }),
+);
 readonly view = computed(() => sortRows(this.filtered(), this.sort()));
 
 private readonly range = computed(() => {
@@ -5336,7 +6959,10 @@ private readonly range = computed(() => {
   const top = Math.min(this.scrollTop(), Math.max(0, n * ROW - body));
   const first = Math.floor(top / ROW);
   const last = Math.min(n - 1, Math.floor((top + body - 1) / ROW));
-  return { start: Math.max(0, first - OVERSCAN), end: Math.min(n - 1, last + OVERSCAN) };
+  return {
+    start: Math.max(0, first - OVERSCAN),
+    end: Math.min(n - 1, last + OVERSCAN),
+  };
 });
 ~~~
 
@@ -5345,10 +6971,17 @@ private readonly range = computed(() => {
 ### Step 3: inputs without FormsModule
 
 ~~~html
-<input type="search" aria-label="Search by name" [value]="query()" (input)="setQuery($event)" />
+<input
+  type="search"
+  aria-label="Search by name"
+  [value]="query()"
+  (input)="setQuery($event)"
+/>
 <select aria-label="Filter by role" (change)="setRole($event)">
   <option value="" [selected]="role() === ''">All roles</option>
-  @for (r of roles; track r) { <option [value]="r" [selected]="role() === r">{{ r }}</option> }
+  @for (r of roles; track r) {
+    <option [value]="r" [selected]="role() === r">{{ r }}</option>
+  }
 </select>
 ~~~
 
@@ -5357,8 +6990,14 @@ private resetScroll() {
   this.viewport.nativeElement.scrollTop = 0;
   this.scrollTop.set(0);
 }
-setQuery(e: Event) { this.query.set((e.target as HTMLInputElement).value); this.resetScroll(); }
-toggleSort(key: ColumnKey) { this.sort.set(nextSort(this.sort(), key)); this.resetScroll(); }
+setQuery(e: Event) {
+  this.query.set((e.target as HTMLInputElement).value);
+  this.resetScroll();
+}
+toggleSort(key: ColumnKey) {
+  this.sort.set(nextSort(this.sort(), key));
+  this.resetScroll();
+}
 ~~~
 
 Plain property and event bindings write straight into signals; no forms module is needed for three controls. Resetting scroll happens in the same handler that changes the filter, so the next render already starts at row 0.
@@ -5372,12 +7011,19 @@ Plain property and event bindings write straight into signals; no forms module i
     <div role="row" aria-rowindex="1" class="dt-row dt-header">
       @for (c of columns; track c.key) {
         <div role="columnheader" [attr.aria-sort]="ariaSort(c.key)">
-          <button type="button" (click)="toggleSort(c.key)">{{ c.label }}<span aria-hidden="true">{{ arrow(c.key) }}</span></button>
+          <button
+            type="button"
+            (click)="toggleSort(c.key)"
+          >{{ c.label }}<span aria-hidden="true">{{ arrow(c.key) }}</span></button>
         </div>
       }
     </div>
   </div>
-  <div role="rowgroup" class="dt-body" [style.height.px]="view().length * rowHeight">
+  <div
+    role="rowgroup"
+    class="dt-body"
+    [style.height.px]="view().length * rowHeight"
+  >
     @for (row of visible(); track row.r.id) {
       <div role="row" [attr.aria-rowindex]="row.i + 2" class="dt-row"
         [style.transform]="'translateY(' + row.i * rowHeight + 'px)'">...</div>
@@ -5535,18 +7181,50 @@ import { Employee, makeEmployees } from "./data";
       <app-data-table [rows]="rows" />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .dt-app { max-width: 760px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 1.15rem; margin: 0 0 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .dt-app {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {
   readonly rows: Employee[] = makeEmployees(20000);
 }
 `,
-          "/src/app/data-table.component.ts": `import { Component, ElementRef, Input, ViewChild, computed, signal } from "@angular/core";
-import { COLUMNS, ColumnKey, Employee, ROLES, STATUSES, Sort, filterRows, nextSort, sortRows } from "./data";
+          "/src/app/data-table.component.ts": `import {
+  Component,
+  ElementRef,
+  Input,
+  ViewChild,
+  computed,
+  signal,
+} from "@angular/core";
+import {
+  COLUMNS,
+  ColumnKey,
+  Employee,
+  ROLES,
+  STATUSES,
+  Sort,
+  filterRows,
+  nextSort,
+  sortRows,
+} from "./data";
 
 const ROW = 40; // px, every body row
 const HEADER = 40; // px, sticky header row
@@ -5561,11 +7239,19 @@ const OVERSCAN = 4;
       <div class="dt-filters">
         <input type="search" placeholder="Search name" aria-label="Search by name" data-testid="search"
           [value]="query()" (input)="setQuery($event)" />
-        <select aria-label="Filter by role" data-testid="role" (change)="setRole($event)">
+        <select
+          aria-label="Filter by role"
+          data-testid="role"
+          (change)="setRole($event)"
+        >
           <option value="" [selected]="role() === ''">All roles</option>
           @for (r of roles; track r) { <option [value]="r" [selected]="role() === r">{{ r }}</option> }
         </select>
-        <select aria-label="Filter by status" data-testid="status-filter" (change)="setStatus($event)">
+        <select
+          aria-label="Filter by status"
+          data-testid="status-filter"
+          (change)="setStatus($event)"
+        >
           <option value="" [selected]="status() === ''">All statuses</option>
           @for (s of statuses; track s) { <option [value]="s" [selected]="status() === s">{{ s }}</option> }
         </select>
@@ -5578,7 +7264,11 @@ const OVERSCAN = 4;
         <div role="rowgroup" class="dt-head">
           <div role="row" aria-rowindex="1" class="dt-row dt-header">
             @for (c of columns; track c.key) {
-              <div role="columnheader" [attr.aria-sort]="ariaSort(c.key)" [attr.data-testid]="'col-' + c.key">
+              <div
+                role="columnheader"
+                [attr.aria-sort]="ariaSort(c.key)"
+                [attr.data-testid]="'col-' + c.key"
+              >
                 <button type="button" (click)="toggleSort(c.key)">
                   {{ c.label }}<span aria-hidden="true">{{ arrow(c.key) }}</span>
                 </button>
@@ -5586,7 +7276,11 @@ const OVERSCAN = 4;
             }
           </div>
         </div>
-        <div role="rowgroup" class="dt-body" [style.height.px]="view().length * rowHeight">
+        <div
+          role="rowgroup"
+          class="dt-body"
+          [style.height.px]="view().length * rowHeight"
+        >
           @for (row of visible(); track row.r.id) {
             <div role="row" [attr.aria-rowindex]="row.i + 2" class="dt-row" data-testid="row"
               [style.transform]="'translateY(' + row.i * rowHeight + 'px)'">
@@ -5599,12 +7293,16 @@ const OVERSCAN = 4;
           }
         </div>
         @if (view().length === 0) {
-          <p class="dt-empty" data-testid="empty">No employees match these filters.</p>
+          <p
+            class="dt-empty"
+            data-testid="empty"
+          >No employees match these filters.</p>
         }
       </div>
     </section>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .dt-filters { display: flex; flex-wrap: wrap; gap: 8px; }
     .dt-filters input, .dt-filters select { padding: 7px 9px; border-radius: 6px; border: 1px solid #2a2f3a;
       background: #161a22; color: inherit; font: inherit; }
@@ -5627,11 +7325,14 @@ const OVERSCAN = 4;
     .dt-invited { background: #3a3218; color: #f3cf6b; }
     .dt-suspended { background: #3d1d22; color: #ff9aa8; }
     .dt-empty { position: absolute; top: 56px; left: 0; right: 0; text-align: center; color: #9aa3b5; }
-  \`],
+  \`,
+  ],
 })
 export class DataTableComponent {
   readonly all = signal<Employee[]>([]);
-  @Input({ required: true }) set rows(v: Employee[]) { this.all.set(v); }
+  @Input({ required: true }) set rows(v: Employee[]) {
+    this.all.set(v);
+  }
   @ViewChild("viewport", { static: true }) viewport!: ElementRef<HTMLElement>;
 
   readonly columns = COLUMNS;
@@ -5646,9 +7347,15 @@ export class DataTableComponent {
   readonly sort = signal<Sort | null>(null);
   private readonly scrollTop = signal(0);
 
-  // Derived, never stored: filter first (shrinks the list), then sort the survivors.
+  // Derived, never stored: filter first (shrinks
+  // the list), then sort the survivors.
   private readonly filtered = computed(() =>
-    filterRows(this.all(), { query: this.query(), role: this.role(), status: this.status() }));
+    filterRows(this.all(), {
+      query: this.query(),
+      role: this.role(),
+      status: this.status(),
+    }),
+  );
   readonly view = computed(() => sortRows(this.filtered(), this.sort()));
 
   private readonly range = computed(() => {
@@ -5657,7 +7364,10 @@ export class DataTableComponent {
     const top = Math.min(this.scrollTop(), Math.max(0, n * ROW - body));
     const first = Math.floor(top / ROW);
     const last = Math.min(n - 1, Math.floor((top + body - 1) / ROW));
-    return { start: Math.max(0, first - OVERSCAN), end: Math.min(n - 1, last + OVERSCAN) };
+    return {
+      start: Math.max(0, first - OVERSCAN),
+      end: Math.min(n - 1, last + OVERSCAN),
+    };
   });
   readonly visible = computed(() => {
     const { start, end } = this.range();
@@ -5666,40 +7376,91 @@ export class DataTableComponent {
     return out;
   });
 
-  fmt(n: number) { return n.toLocaleString("en-US"); }
+  fmt(n: number) {
+    return n.toLocaleString("en-US");
+  }
   ariaSort(key: ColumnKey) {
     const s = this.sort();
-    return s && s.key === key ? (s.dir === "asc" ? "ascending" : "descending") : "none";
+    return s && s.key === key
+      ? s.dir === "asc"
+        ? "ascending"
+        : "descending"
+      : "none";
   }
   arrow(key: ColumnKey) {
     const s = this.sort();
     return s && s.key === key ? (s.dir === "asc" ? " ▲" : " ▼") : "";
   }
 
-  onScroll() { this.scrollTop.set(this.viewport.nativeElement.scrollTop); }
+  onScroll() {
+    this.scrollTop.set(this.viewport.nativeElement.scrollTop);
+  }
   // A new filter or sort means a new list: start again from the top.
   private resetScroll() {
     this.viewport.nativeElement.scrollTop = 0;
     this.scrollTop.set(0);
   }
-  setQuery(e: Event) { this.query.set((e.target as HTMLInputElement).value); this.resetScroll(); }
-  setRole(e: Event) { this.role.set((e.target as HTMLSelectElement).value); this.resetScroll(); }
-  setStatus(e: Event) { this.status.set((e.target as HTMLSelectElement).value); this.resetScroll(); }
-  toggleSort(key: ColumnKey) { this.sort.set(nextSort(this.sort(), key)); this.resetScroll(); }
+  setQuery(e: Event) {
+    this.query.set((e.target as HTMLInputElement).value);
+    this.resetScroll();
+  }
+  setRole(e: Event) {
+    this.role.set((e.target as HTMLSelectElement).value);
+    this.resetScroll();
+  }
+  setStatus(e: Event) {
+    this.status.set((e.target as HTMLSelectElement).value);
+    this.resetScroll();
+  }
+  toggleSort(key: ColumnKey) {
+    this.sort.set(nextSort(this.sort(), key));
+    this.resetScroll();
+  }
 }
 `,
           "/src/app/data.ts": `// 20,000 fake employees, deterministic (seeded), generated in memory.
-const FIRST = ["Ada", "Grace", "Linus", "Margaret", "Alan", "Barbara", "Ken", "Radia"];
-const LAST = ["Lovelace", "Hopper", "Torvalds", "Hamilton", "Turing", "Liskov", "Thompson", "Perlman"];
+const FIRST = [
+  "Ada",
+  "Grace",
+  "Linus",
+  "Margaret",
+  "Alan",
+  "Barbara",
+  "Ken",
+  "Radia",
+];
+const LAST = [
+  "Lovelace",
+  "Hopper",
+  "Torvalds",
+  "Hamilton",
+  "Turing",
+  "Liskov",
+  "Thompson",
+  "Perlman",
+];
 export const ROLES = ["Engineer", "Designer", "Manager", "Analyst", "Support"];
 export const STATUSES = ["Active", "Invited", "Suspended"];
 
 export interface Employee {
-  id: number; name: string; lower: string; age: number; role: string; status: string; joined: string;
+  id: number;
+  name: string;
+  lower: string;
+  age: number;
+  role: string;
+  status: string;
+  joined: string;
 }
 export type ColumnKey = "name" | "age" | "role" | "status" | "joined";
-export interface Sort { key: ColumnKey; dir: "asc" | "desc"; }
-export interface Filters { query: string; role: string; status: string; }
+export interface Sort {
+  key: ColumnKey;
+  dir: "asc" | "desc";
+}
+export interface Filters {
+  query: string;
+  role: string;
+  status: string;
+}
 
 export function makeEmployees(count: number): Employee[] {
   let seed = 42;
@@ -5707,7 +7468,8 @@ export function makeEmployees(count: number): Employee[] {
   const start = Date.UTC(2015, 0, 1);
   const rows: Employee[] = [];
   for (let i = 0; i < count; i++) {
-    const name = FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
+    const name =
+      FIRST[Math.floor(rand() * 8)] + " " + LAST[Math.floor(rand() * 8)];
     rows.push({
       id: i + 1,
       name,
@@ -5715,7 +7477,9 @@ export function makeEmployees(count: number): Employee[] {
       age: 21 + Math.floor(rand() * 44),
       role: ROLES[Math.floor(rand() * ROLES.length)],
       status: STATUSES[Math.floor(rand() * STATUSES.length)],
-      joined: new Date(start + Math.floor(rand() * 3650) * 86400000).toISOString().slice(0, 10),
+      joined: new Date(start + Math.floor(rand() * 3650) * 86400000)
+        .toISOString()
+        .slice(0, 10),
     });
   }
   return rows;
@@ -5730,10 +7494,16 @@ export const COLUMNS: { key: ColumnKey; label: string }[] = [
 ];
 
 // Filter, then sort a copy. Ties fall back to id so the order is deterministic.
-export function filterRows(rows: Employee[], { query, role, status }: Filters): Employee[] {
+export function filterRows(
+  rows: Employee[],
+  { query, role, status }: Filters,
+): Employee[] {
   const q = query.trim().toLowerCase();
-  return rows.filter((r) =>
-    (!q || r.lower.includes(q)) && (!role || r.role === role) && (!status || r.status === status)
+  return rows.filter(
+    (r) =>
+      (!q || r.lower.includes(q)) &&
+      (!role || r.role === role) &&
+      (!status || r.status === status),
   );
 }
 
@@ -5742,7 +7512,8 @@ export function sortRows(rows: Employee[], sort: Sort | null): Employee[] {
   const dir = sort.dir === "asc" ? 1 : -1;
   const k = sort.key;
   return [...rows].sort((a, b) => {
-    const c = k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
+    const c =
+      k === "age" ? a.age - b.age : a[k] < b[k] ? -1 : a[k] > b[k] ? 1 : 0;
     return c !== 0 ? c * dir : a.id - b.id;
   });
 }
@@ -5867,7 +7638,10 @@ export function fetchPage(page) {
       }
       const from = (page - 1) * PAGE_SIZE;
       // ...build up to 20 items...
-      resolve({ items, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
+      resolve({
+        items,
+        nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null,
+      });
     }, 400);
   });
 }
@@ -5907,7 +7681,9 @@ const loadMore = useCallback(async () => {
 useEffect(() => {
   mountedRef.current = true;
   loadMore();
-  return () => { mountedRef.current = false; };
+  return () => {
+    mountedRef.current = false;
+  };
 }, []);
 ~~~
 
@@ -5936,7 +7712,13 @@ React attaches <code>onScroll</code> to the element; scroll events do not bubble
 
 ~~~jsx
 useLayoutEffect(() => {
-  if (status === "idle" && items.length > 0 && nextPage !== null && nearBottom()) loadMore();
+  if (
+    status === "idle" &&
+    items.length > 0 &&
+    nextPage !== null &&
+    nearBottom()
+  )
+    loadMore();
 }, [items, status, nextPage, loadMore]);
 ~~~
 
@@ -5945,14 +7727,28 @@ On a tall monitor, 20 items at 72px (1,488px with the footer) may not fill the c
 ### Step 6: footer states and ARIA
 
 ~~~jsx
-<div ref={viewportRef} className="is-viewport" onScroll={onScroll} aria-busy={status === "loading"}>
-  <ul className="is-list" aria-label="Articles">...</ul>
+<div
+  ref={viewportRef}
+  className="is-viewport"
+  onScroll={onScroll}
+  aria-busy={status === "loading"}
+>
+  <ul className="is-list" aria-label="Articles">
+    ...
+  </ul>
   <div className="is-footer">
     {status === "loading" && <p role="status">Loading more...</p>}
     {status === "error" && (
-      <p role="alert">Could not load more articles. <button type="button" onClick={loadMore}>Retry</button></p>
+      <p role="alert">
+        Could not load more articles.{" "}
+        <button type="button" onClick={loadMore}>
+          Retry
+        </button>
+      </p>
     )}
-    {status === "idle" && nextPage === null && <p>You have reached the end · {items.length} articles</p>}
+    {status === "idle" && nextPage === null && (
+      <p>You have reached the end · {items.length} articles</p>
+    )}
   </div>
 </div>
 ~~~
@@ -6101,7 +7897,13 @@ export default function App() {
   );
 }
 `,
-          "/src/InfiniteList.js": `import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+          "/src/InfiniteList.js": `import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { fetchPage } from "./api";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
@@ -6138,7 +7940,9 @@ export default function InfiniteList() {
   useEffect(() => {
     mountedRef.current = true;
     loadMore();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -6154,13 +7958,24 @@ export default function InfiniteList() {
   // After a page lands: if the list still does not fill the viewport, the
   // user cannot scroll, so no scroll event would ever ask for more.
   useLayoutEffect(() => {
-    if (status === "idle" && items.length > 0 && nextPage !== null && nearBottom()) loadMore();
+    if (
+      status === "idle" &&
+      items.length > 0 &&
+      nextPage !== null &&
+      nearBottom()
+    )
+      loadMore();
   }, [items, status, nextPage, loadMore]);
 
   return (
     <>
-      <div ref={viewportRef} className="is-viewport" data-testid="viewport" onScroll={onScroll}
-        aria-busy={status === "loading"}>
+      <div
+        ref={viewportRef}
+        className="is-viewport"
+        data-testid="viewport"
+        onScroll={onScroll}
+        aria-busy={status === "loading"}
+      >
         <ul className="is-list" aria-label="Articles">
           {items.map((it) => (
             <li key={it.id} className="is-item" data-testid="item">
@@ -6174,13 +7989,19 @@ export default function InfiniteList() {
           {status === "error" && (
             <p role="alert">
               Could not load more articles.{" "}
-              <button type="button" data-testid="retry" onClick={loadMore}>Retry</button>
+              <button type="button" data-testid="retry" onClick={loadMore}>
+                Retry
+              </button>
             </p>
           )}
-          {status === "idle" && nextPage === null && <p>You have reached the end · {items.length} articles</p>}
+          {status === "idle" && nextPage === null && (
+            <p>You have reached the end · {items.length} articles</p>
+          )}
         </div>
       </div>
-      <p className="is-meta" data-testid="meta">{items.length} loaded · {requests} requests</p>
+      <p className="is-meta" data-testid="meta">
+        {items.length} loaded · {requests} requests
+      </p>
     </>
   );
 }
@@ -6203,25 +8024,81 @@ export function fetchPage(page) {
       const from = (page - 1) * PAGE_SIZE;
       const items = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        items.push({ id: i + 1, title: "Article " + (i + 1), topic: TOPICS[i % TOPICS.length] });
+        items.push({
+          id: i + 1,
+          title: "Article " + (i + 1),
+          topic: TOPICS[i % TOPICS.length],
+        });
       }
       resolve({ items, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 400);
   });
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.is-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.is-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.is-viewport { height: 420px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.is-list { list-style: none; margin: 0; padding: 0; }
-.is-item { height: 72px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; border-bottom: 1px solid #222734; }
-.is-topic { color: #9aa3b5; font-size: 0.85rem; }
-.is-footer { min-height: 48px; display: flex; align-items: center; justify-content: center; color: #9aa3b5; font-size: 0.9rem; }
-.is-footer p { margin: 0; }
-.is-footer button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.is-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.is-app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.is-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.is-viewport {
+  height: 420px;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.is-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.is-item {
+  height: 72px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #222734;
+}
+.is-topic {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.is-footer {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa3b5;
+  font-size: 0.9rem;
+}
+.is-footer p {
+  margin: 0;
+}
+.is-footer button {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.is-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 `,
         },
       },
@@ -6307,8 +8184,13 @@ function onScroll() {
   if (status.value === "idle" && nearBottom()) loadMore();
 }
 
-onMounted(() => { mounted = true; loadMore(); });
-onUnmounted(() => { mounted = false; });
+onMounted(() => {
+  mounted = true;
+  loadMore();
+});
+onUnmounted(() => {
+  mounted = false;
+});
 ~~~
 
 📌 **Interview term: Scroll threshold** — the distance from the bottom (here 200px) at which the next page is requested. <code>scrollHeight - scrollTop - clientHeight</code> is how far is left to scroll. Comparing against zero is fragile, because zoomed and high-DPI screens produce fractional scroll positions.
@@ -6318,7 +8200,12 @@ onUnmounted(() => { mounted = false; });
 ### Step 4: template, footer states and ARIA
 
 ~~~vue
-<div ref="viewport" class="is-viewport" :aria-busy="status === 'loading'" @scroll.passive="onScroll">
+<div
+  ref="viewport"
+  class="is-viewport"
+  :aria-busy="status === 'loading'"
+  @scroll.passive="onScroll"
+>
   <ul class="is-list" aria-label="Articles">
     <li v-for="it in items" :key="it.id" class="is-item">...</li>
   </ul>
@@ -6481,18 +8368,70 @@ import InfiniteList from "./components/InfiniteList.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.is-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.is-app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.is-viewport { height: 420px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.is-list { list-style: none; margin: 0; padding: 0; }
-.is-item { height: 72px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; border-bottom: 1px solid #222734; }
-.is-topic { color: #9aa3b5; font-size: 0.85rem; }
-.is-footer { min-height: 48px; display: flex; align-items: center; justify-content: center; color: #9aa3b5; font-size: 0.9rem; }
-.is-footer p { margin: 0; }
-.is-footer button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.is-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.is-app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.is-app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.is-viewport {
+  height: 420px;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.is-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.is-item {
+  height: 72px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid #222734;
+}
+.is-topic {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+}
+.is-footer {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9aa3b5;
+  font-size: 0.9rem;
+}
+.is-footer p {
+  margin: 0;
+}
+.is-footer button {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.is-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
 </style>
 `,
           "/src/api.js": `// Simulated paginated API: no network. 95 articles, 20 per page, 400 ms per
@@ -6513,7 +8452,11 @@ export function fetchPage(page) {
       const from = (page - 1) * PAGE_SIZE;
       const items = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        items.push({ id: i + 1, title: "Article " + (i + 1), topic: TOPICS[i % TOPICS.length] });
+        items.push({
+          id: i + 1,
+          title: "Article " + (i + 1),
+          topic: TOPICS[i % TOPICS.length],
+        });
       }
       resolve({ items, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 400);
@@ -6521,7 +8464,14 @@ export function fetchPage(page) {
 }
 `,
           "/src/components/InfiniteList.vue": `<script setup>
-import { nextTick, onMounted, onUnmounted, ref, shallowRef, useTemplateRef } from "vue";
+import {
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+} from "vue";
 import { fetchPage } from "../api.js";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
@@ -6569,8 +8519,13 @@ function onScroll() {
   if (status.value === "idle" && nearBottom()) loadMore();
 }
 
-onMounted(() => { mounted = true; loadMore(); });
-onUnmounted(() => { mounted = false; });
+onMounted(() => {
+  mounted = true;
+  loadMore();
+});
+onUnmounted(() => {
+  mounted = false;
+});
 </script>
 
 <template>
@@ -6586,12 +8541,19 @@ onUnmounted(() => { mounted = false; });
       <p v-if="status === 'loading'" role="status">Loading more...</p>
       <p v-else-if="status === 'error'" role="alert">
         Could not load more articles.
-        <button type="button" data-testid="retry" @click="loadMore">Retry</button>
+        <button
+          type="button"
+          data-testid="retry"
+          @click="loadMore"
+        >Retry</button>
       </p>
       <p v-else-if="nextPage === null">You have reached the end · {{ items.length }} articles</p>
     </div>
   </div>
-  <p class="is-meta" data-testid="meta">{{ items.length }} loaded · {{ requests }} requests</p>
+  <p
+    class="is-meta"
+    data-testid="meta"
+  >{{ items.length }} loaded · {{ requests }} requests</p>
 </template>
 `,
         },
@@ -6628,9 +8590,18 @@ The decorator <code>@ViewChild</code> is used rather than the signal <code>viewC
 ### Step 1: the typed API
 
 ~~~ts
-export interface Article { id: number; title: string; topic: string; }
-export interface Page { items: Article[]; nextPage: number | null; }
-export function fetchPage(page: number): Promise<Page> { /* 400ms timer, fails once on page 3 */ }
+export interface Article {
+  id: number;
+  title: string;
+  topic: string;
+}
+export interface Page {
+  items: Article[];
+  nextPage: number | null;
+}
+export function fetchPage(page: number): Promise<Page> {
+  /* 400ms timer, fails once on page 3 */
+}
 ~~~
 
 The server returns the next cursor with the data, so the client never has to guess whether there is more.
@@ -6650,9 +8621,13 @@ async loadMore() {
     this.items.update((prev) => [...prev, ...res.items]);
     this.nextPage.set(res.nextPage);
     this.status.set("idle");
-    afterNextRender(() => {
-      if (this.alive && this.nextPage() !== null && this.nearBottom()) this.loadMore();
-    }, { injector: this.injector });
+    afterNextRender(
+      () => {
+        if (this.alive && this.nextPage() !== null && this.nearBottom())
+          this.loadMore();
+      },
+      { injector: this.injector },
+    );
   } catch {
     if (this.alive) this.status.set("error");
   } finally {
@@ -6679,8 +8654,12 @@ onScroll() {
   if (this.status() === "idle" && this.nearBottom()) this.loadMore();
 }
 
-ngOnInit() { this.loadMore(); }
-ngOnDestroy() { this.alive = false; }
+ngOnInit() {
+  this.loadMore();
+}
+ngOnDestroy() {
+  this.alive = false;
+}
 ~~~
 
 📌 **Interview term: Scroll threshold** — the remaining distance (here 200px) at which the next page is requested. <code>scrollHeight - scrollTop - clientHeight</code> is that distance; comparing to exactly zero is fragile on zoomed and high-DPI screens.
@@ -6690,7 +8669,12 @@ The template binds <code>(scroll)="onScroll()"</code> on the container. Scroll e
 ### Step 4: template, footer states and ARIA
 
 ~~~html
-<div #viewport class="is-viewport" [attr.aria-busy]="status() === 'loading'" (scroll)="onScroll()">
+<div
+  #viewport
+  class="is-viewport"
+  [attr.aria-busy]="status() === 'loading'"
+  (scroll)="onScroll()"
+>
   <ul class="is-list" aria-label="Articles">
     @for (it of items(); track it.id) { <li class="is-item">...</li> }
   </ul>
@@ -6851,8 +8835,15 @@ const PAGE_SIZE = 20;
 const TOPICS = ["layout", "events", "caching", "testing", "a11y", "rendering"];
 let failedOnce = false;
 
-export interface Article { id: number; title: string; topic: string; }
-export interface Page { items: Article[]; nextPage: number | null; }
+export interface Article {
+  id: number;
+  title: string;
+  topic: string;
+}
+export interface Page {
+  items: Article[];
+  nextPage: number | null;
+}
 
 export function fetchPage(page: number): Promise<Page> {
   return new Promise<Page>((resolve, reject) => {
@@ -6865,7 +8856,11 @@ export function fetchPage(page: number): Promise<Page> {
       const from = (page - 1) * PAGE_SIZE;
       const items: Article[] = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        items.push({ id: i + 1, title: "Article " + (i + 1), topic: TOPICS[i % TOPICS.length] });
+        items.push({
+          id: i + 1,
+          title: "Article " + (i + 1),
+          topic: TOPICS[i % TOPICS.length],
+        });
       }
       resolve({ items, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 400);
@@ -6885,15 +8880,40 @@ import { InfiniteListComponent } from "./infinite-list.component";
       <app-infinite-list />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .is-app { max-width: 520px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 1.15rem; margin: 0 0 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .is-app {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/infinite-list.component.ts": `import { Component, ElementRef, Injector, OnDestroy, OnInit, ViewChild, afterNextRender, inject, signal } from "@angular/core";
+          "/src/app/infinite-list.component.ts": `import {
+  Component,
+  ElementRef,
+  Injector,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  afterNextRender,
+  inject,
+  signal,
+} from "@angular/core";
 import { Article, fetchPage } from "./api";
 
 const THRESHOLD = 200; // px from the bottom that triggers the next page
@@ -6918,7 +8938,11 @@ const THRESHOLD = 200; // px from the bottom that triggers the next page
           @case ("error") {
             <p role="alert">
               Could not load more articles.
-              <button type="button" data-testid="retry" (click)="loadMore()">Retry</button>
+              <button
+                type="button"
+                data-testid="retry"
+                (click)="loadMore()"
+              >Retry</button>
             </p>
           }
           @default {
@@ -6927,9 +8951,13 @@ const THRESHOLD = 200; // px from the bottom that triggers the next page
         }
       </div>
     </div>
-    <p class="is-meta" data-testid="meta">{{ items().length }} loaded · {{ requests() }} requests</p>
+    <p
+      class="is-meta"
+      data-testid="meta"
+    >{{ items().length }} loaded · {{ requests() }} requests</p>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .is-viewport { height: 420px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
     .is-list { list-style: none; margin: 0; padding: 0; }
     .is-item { height: 72px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between;
@@ -6939,7 +8967,8 @@ const THRESHOLD = 200; // px from the bottom that triggers the next page
     .is-footer p { margin: 0; }
     .is-footer button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
     .is-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-  \`],
+  \`,
+  ],
 })
 export class InfiniteListComponent implements OnInit, OnDestroy {
   @ViewChild("viewport", { static: true }) viewport!: ElementRef<HTMLElement>;
@@ -6951,8 +8980,12 @@ export class InfiniteListComponent implements OnInit, OnDestroy {
   private loading = false; // synchronous in-flight guard
   private alive = true;
 
-  ngOnInit() { this.loadMore(); }
-  ngOnDestroy() { this.alive = false; }
+  ngOnInit() {
+    this.loadMore();
+  }
+  ngOnDestroy() {
+    this.alive = false;
+  }
 
   private nearBottom(): boolean {
     const el = this.viewport.nativeElement;
@@ -6976,10 +9009,15 @@ export class InfiniteListComponent implements OnInit, OnDestroy {
       this.nextPage.set(res.nextPage);
       this.status.set("idle");
       // After Angular renders the new rows: if the list still does not fill the
-      // viewport, the user cannot scroll, so no scroll event would ask for more.
-      afterNextRender(() => {
-        if (this.alive && this.nextPage() !== null && this.nearBottom()) this.loadMore();
-      }, { injector: this.injector });
+      // viewport, the user cannot scroll, so
+      // no scroll event would ask for more.
+      afterNextRender(
+        () => {
+          if (this.alive && this.nextPage() !== null && this.nearBottom())
+            this.loadMore();
+        },
+        { injector: this.injector },
+      );
     } catch {
       if (this.alive) this.status.set("error");
     } finally {
@@ -7120,7 +9158,15 @@ const loadMore = useCallback(async () => {
 ~~~jsx
 const showSentinel = status === "idle" && nextPage !== null;
 
-{showSentinel && <div ref={sentinelRef} className="sentinel" data-testid="sentinel" />}
+{
+  showSentinel && (
+    <div
+      ref={sentinelRef}
+      className="sentinel"
+      data-testid="sentinel"
+    />
+  );
+}
 ~~~
 
 While loading, after an error, and at the end, the sentinel is not in the DOM, so nothing can trigger a request. That is simpler than checking the status inside the callback, and it means a failed page waits for the Retry button instead of retrying every time the sentinel is in view.
@@ -7131,8 +9177,10 @@ While loading, after an error, and at the end, the sentinel is not in the DOM, s
 useEffect(() => {
   if (!showSentinel) return undefined;
   const io = new IntersectionObserver(
-    (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
-    { root: viewportRef.current, rootMargin: "0px 0px 300px 0px" }
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) loadMore();
+    },
+    { root: viewportRef.current, rootMargin: "0px 0px 300px 0px" },
   );
   io.observe(sentinelRef.current);
   return () => io.disconnect();
@@ -7163,22 +9211,51 @@ Every time a page lands, the sentinel re-mounts, the effect creates a new observ
 ~~~jsx
 function SkeletonCard() {
   return (
-    <li className="card skeleton" aria-hidden="true" data-testid="skeleton">
+    <li
+      className="card skeleton"
+      aria-hidden="true"
+      data-testid="skeleton"
+    >
       <span className="sk-avatar" />
-      <span className="sk-lines"><span className="sk-line" /><span className="sk-line short" /></span>
+      <span className="sk-lines">
+        <span className="sk-line" />
+        <span className="sk-line short" />
+      </span>
     </li>
   );
 }
 
-{status === "loading" &&
-  Array.from({ length: firstLoad ? 4 : 2 }, (_, i) => <SkeletonCard key={"sk" + i} />)}
+{
+  status === "loading" &&
+    Array.from({ length: firstLoad ? 4 : 2 }, (_, i) => (
+      <SkeletonCard key={"sk" + i} />
+    ));
+}
 ~~~
 
 ~~~css
-.card { height: 96px; box-sizing: border-box; margin-bottom: 8px; /* ... */ }
-.sk-avatar, .sk-line { background: linear-gradient(90deg, #232938 25%, #2f3647 50%, #232938 75%);
-  background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
-@media (prefers-reduced-motion: reduce) { .sk-avatar, .sk-line { animation: none; } }
+.card {
+  height: 96px;
+  box-sizing: border-box;
+  margin-bottom: 8px; /* ... */
+}
+.sk-avatar,
+.sk-line {
+  background: linear-gradient(
+    90deg,
+    #232938 25%,
+    #2f3647 50%,
+    #232938 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-avatar,
+  .sk-line {
+    animation: none;
+  }
+}
 ~~~
 
 📌 **Interview term: Skeleton screen** — a placeholder shaped like the content that is loading. Because it reuses the <code>.card</code> class, it has the same height and margin as a post, which Chromium measured at 96px for both.
@@ -7352,7 +9429,10 @@ function SkeletonCard() {
   return (
     <li className="card skeleton" aria-hidden="true" data-testid="skeleton">
       <span className="sk-avatar" />
-      <span className="sk-lines"><span className="sk-line" /><span className="sk-line short" /></span>
+      <span className="sk-lines">
+        <span className="sk-line" />
+        <span className="sk-line short" />
+      </span>
     </li>
   );
 }
@@ -7393,7 +9473,9 @@ export default function Feed() {
   useEffect(() => {
     mountedRef.current = true;
     loadMore();
-    return () => { mountedRef.current = false; };
+    return () => {
+      mountedRef.current = false;
+    };
   }, [loadMore]);
 
   // The sentinel exists only while idle with more pages to fetch. Each time it
@@ -7403,8 +9485,10 @@ export default function Feed() {
   useEffect(() => {
     if (!showSentinel) return undefined;
     const io = new IntersectionObserver(
-      (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
-      { root: viewportRef.current, rootMargin: "0px 0px 300px 0px" }
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root: viewportRef.current, rootMargin: "0px 0px 300px 0px" },
     );
     io.observe(sentinelRef.current);
     return () => io.disconnect();
@@ -7413,30 +9497,52 @@ export default function Feed() {
   const firstLoad = posts.length === 0 && status === "loading";
   return (
     <>
-      <div ref={viewportRef} className="feed" data-testid="viewport" aria-busy={status === "loading"}>
+      <div
+        ref={viewportRef}
+        className="feed"
+        data-testid="viewport"
+        aria-busy={status === "loading"}
+      >
         <ul className="cards" aria-label="Posts">
           {posts.map((p) => (
             <li key={p.id} className="card" data-testid="post">
-              <span className="avatar" aria-hidden="true">{p.author[0]}</span>
-              <span className="body"><strong>{p.author}</strong><span>{p.body}</span></span>
+              <span className="avatar" aria-hidden="true">
+                {p.author[0]}
+              </span>
+              <span className="body">
+                <strong>{p.author}</strong>
+                <span>{p.body}</span>
+              </span>
             </li>
           ))}
           {status === "loading" &&
-            Array.from({ length: firstLoad ? 4 : 2 }, (_, i) => <SkeletonCard key={"sk" + i} />)}
+            Array.from({ length: firstLoad ? 4 : 2 }, (_, i) => (
+              <SkeletonCard key={"sk" + i} />
+            ))}
         </ul>
-        {showSentinel && <div ref={sentinelRef} className="sentinel" data-testid="sentinel" />}
+        {showSentinel && (
+          <div ref={sentinelRef} className="sentinel" data-testid="sentinel" />
+        )}
         {status === "error" && (
           <p className="feed-note" role="alert">
             Could not load more posts.{" "}
-            <button type="button" data-testid="retry" onClick={loadMore}>Retry</button>
+            <button type="button" data-testid="retry" onClick={loadMore}>
+              Retry
+            </button>
           </p>
         )}
-        {status === "idle" && nextPage === null && <p className="feed-note">No more posts · {posts.length} total</p>}
+        {status === "idle" && nextPage === null && (
+          <p className="feed-note">No more posts · {posts.length} total</p>
+        )}
       </div>
       <p className="sr-only" role="status" data-testid="live">
-        {status === "loading" ? "Loading posts" : posts.length + " posts loaded"}
+        {status === "loading"
+          ? "Loading posts"
+          : posts.length + " posts loaded"}
       </p>
-      <p className="feed-meta" data-testid="meta">{posts.length} posts · {requests} requests</p>
+      <p className="feed-meta" data-testid="meta">
+        {posts.length} posts · {requests} requests
+      </p>
     </>
   );
 }
@@ -7459,37 +9565,146 @@ export function fetchFeedPage(page) {
       const from = (page - 1) * PAGE_SIZE;
       const posts = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        posts.push({ id: i + 1, author: AUTHORS[i % AUTHORS.length], body: "Post " + (i + 1) + ": shipping notes for week " + (i % 52 + 1) });
+        posts.push({
+          id: i + 1,
+          author: AUTHORS[i % AUTHORS.length],
+          body:
+            "Post " + (i + 1) + ": shipping notes for week " + ((i % 52) + 1),
+        });
       }
       resolve({ posts, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 600);
   });
 }
 `,
-          "/styles.css": `body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.feed { height: 460px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.cards { list-style: none; margin: 0; padding: 8px; }
-.card { height: 96px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px;
-  margin-bottom: 8px; border-radius: 10px; background: #1a1f2a; border: 1px solid #262c39; }
-.avatar { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center;
-  background: #2b3a66; color: #cfd8ff; font-weight: 700; }
-.body { display: flex; flex-direction: column; gap: 4px; }
-.body span { color: #b8c0d0; font-size: 0.9rem; }
-.skeleton .sk-avatar { width: 44px; height: 44px; flex: none; border-radius: 50%; }
-.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.sk-line { display: block; height: 12px; border-radius: 6px; }
-.sk-line.short { width: 60%; }
-.sk-avatar, .sk-line { background: linear-gradient(90deg, #232938 25%, #2f3647 50%, #232938 75%);
-  background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .sk-avatar, .sk-line { animation: none; } }
-.sentinel { height: 1px; }
-.feed-note { text-align: center; color: #9aa3b5; margin: 8px 0 16px; }
-.feed-note button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.feed-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+          "/styles.css": `body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.feed {
+  height: 460px;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+.card {
+  height: 96px;
+  box-sizing: border-box;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: #1a1f2a;
+  border: 1px solid #262c39;
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #2b3a66;
+  color: #cfd8ff;
+  font-weight: 700;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.body span {
+  color: #b8c0d0;
+  font-size: 0.9rem;
+}
+.skeleton .sk-avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+}
+.sk-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sk-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+}
+.sk-line.short {
+  width: 60%;
+}
+.sk-avatar,
+.sk-line {
+  background: linear-gradient(90deg, #232938 25%, #2f3647 50%, #232938 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-avatar,
+  .sk-line {
+    animation: none;
+  }
+}
+.sentinel {
+  height: 1px;
+}
+.feed-note {
+  text-align: center;
+  color: #9aa3b5;
+  margin: 8px 0 16px;
+}
+.feed-note button {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.feed-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 `,
         },
       },
@@ -7546,23 +9761,42 @@ async function loadMore() {
 ### Step 2: observe whichever sentinel is mounted
 
 ~~~js
-const showSentinel = computed(() => status.value === "idle" && nextPage.value !== null);
+const showSentinel = computed(
+  () => status.value === "idle" && nextPage.value !== null,
+);
 
-watch(sentinel, (el) => {
-  if (io) { io.disconnect(); io = null; }
-  if (!el) return;
-  io = new IntersectionObserver(
-    (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
-    { root: viewport.value, rootMargin: "0px 0px 300px 0px" }
-  );
-  io.observe(el);
-}, { flush: "post" });
+watch(
+  sentinel,
+  (el) => {
+    if (io) {
+      io.disconnect();
+      io = null;
+    }
+    if (!el) return;
+    io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root: viewport.value, rootMargin: "0px 0px 300px 0px" },
+    );
+    io.observe(el);
+  },
+  { flush: "post" },
+);
 
-onUnmounted(() => { mounted = false; if (io) io.disconnect(); });
+onUnmounted(() => {
+  mounted = false;
+  if (io) io.disconnect();
+});
 ~~~
 
 ~~~vue
-<div v-if="showSentinel" ref="sentinel" class="sentinel" data-testid="sentinel"></div>
+<div
+  v-if="showSentinel"
+  ref="sentinel"
+  class="sentinel"
+  data-testid="sentinel"
+></div>
 ~~~
 
 📌 **Interview term: Sentinel** — an empty 1px element after the last card whose only job is to be observed. It is rendered only while a load is allowed, so loading, error and end states cannot trigger requests, and a failed page waits for the Retry button.
@@ -7580,7 +9814,9 @@ Because <code>observe()</code> always delivers one first callback with the curre
 <template>
   <li class="card skeleton" aria-hidden="true" data-testid="skeleton">
     <span class="sk-avatar"></span>
-    <span class="sk-lines"><span class="sk-line"></span><span class="sk-line short"></span></span>
+    <span class="sk-lines"
+      ><span class="sk-line"></span><span class="sk-line short"></span
+    ></span>
   </li>
 </template>
 ~~~
@@ -7732,30 +9968,134 @@ import FeedList from "./components/FeedList.vue";
 </template>
 
 <style>
-body { margin: 0; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-.app { max-width: 520px; margin: 0 auto; padding: 16px; }
-.app h1 { font-size: 1.15rem; margin: 0 0 12px; }
-.feed { height: 460px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
-.cards { list-style: none; margin: 0; padding: 8px; }
-.card { height: 96px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px;
-  margin-bottom: 8px; border-radius: 10px; background: #1a1f2a; border: 1px solid #262c39; }
-.avatar { width: 44px; height: 44px; flex: none; border-radius: 50%; display: grid; place-items: center;
-  background: #2b3a66; color: #cfd8ff; font-weight: 700; }
-.body { display: flex; flex-direction: column; gap: 4px; }
-.body span { color: #b8c0d0; font-size: 0.9rem; }
-.skeleton .sk-avatar { width: 44px; height: 44px; flex: none; border-radius: 50%; }
-.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.sk-line { display: block; height: 12px; border-radius: 6px; }
-.sk-line.short { width: 60%; }
-.sk-avatar, .sk-line { background: linear-gradient(90deg, #232938 25%, #2f3647 50%, #232938 75%);
-  background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-@media (prefers-reduced-motion: reduce) { .sk-avatar, .sk-line { animation: none; } }
-.sentinel { height: 1px; }
-.feed-note { text-align: center; color: #9aa3b5; margin: 8px 0 16px; }
-.feed-note button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
-.feed-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #e6e8ee;
+  font-family: system-ui, sans-serif;
+}
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.app h1 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.feed {
+  height: 460px;
+  overflow-y: auto;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  background: #12151c;
+}
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+.card {
+  height: 96px;
+  box-sizing: border-box;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: #1a1f2a;
+  border: 1px solid #262c39;
+}
+.avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #2b3a66;
+  color: #cfd8ff;
+  font-weight: 700;
+}
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.body span {
+  color: #b8c0d0;
+  font-size: 0.9rem;
+}
+.skeleton .sk-avatar {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+}
+.sk-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sk-line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+}
+.sk-line.short {
+  width: 60%;
+}
+.sk-avatar,
+.sk-line {
+  background: linear-gradient(90deg, #232938 25%, #2f3647 50%, #232938 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk-avatar,
+  .sk-line {
+    animation: none;
+  }
+}
+.sentinel {
+  height: 1px;
+}
+.feed-note {
+  text-align: center;
+  color: #9aa3b5;
+  margin: 8px 0 16px;
+}
+.feed-note button {
+  margin-left: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 0;
+  background: #3b5bdb;
+  color: #fff;
+}
+.feed-meta {
+  color: #9aa3b5;
+  font-size: 0.85rem;
+  margin: 10px 0 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
 `,
           "/src/api.js": `// Simulated feed API: no network. 50 posts, 10 per page, 600 ms per request.
@@ -7776,7 +10116,12 @@ export function fetchFeedPage(page) {
       const from = (page - 1) * PAGE_SIZE;
       const posts = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        posts.push({ id: i + 1, author: AUTHORS[i % AUTHORS.length], body: "Post " + (i + 1) + ": shipping notes for week " + (i % 52 + 1) });
+        posts.push({
+          id: i + 1,
+          author: AUTHORS[i % AUTHORS.length],
+          body:
+            "Post " + (i + 1) + ": shipping notes for week " + ((i % 52) + 1),
+        });
       }
       resolve({ posts, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 600);
@@ -7784,7 +10129,15 @@ export function fetchFeedPage(page) {
 }
 `,
           "/src/components/FeedList.vue": `<script setup>
-import { computed, onMounted, onUnmounted, ref, shallowRef, useTemplateRef, watch } from "vue";
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  useTemplateRef,
+  watch,
+} from "vue";
 import { fetchFeedPage } from "../api.js";
 import SkeletonCard from "./SkeletonCard.vue";
 
@@ -7819,25 +10172,49 @@ async function loadMore() {
 // The sentinel exists only while idle with more pages to fetch. Each time it
 // mounts, observe() reports its current visibility once, so a sentinel that
 // is still on screen after a page lands asks for the next page by itself.
-const showSentinel = computed(() => status.value === "idle" && nextPage.value !== null);
-watch(sentinel, (el) => {
-  if (io) { io.disconnect(); io = null; }
-  if (!el) return;
-  io = new IntersectionObserver(
-    (entries) => { if (entries.some((e) => e.isIntersecting)) loadMore(); },
-    { root: viewport.value, rootMargin: "0px 0px 300px 0px" }
-  );
-  io.observe(el);
-}, { flush: "post" });
+const showSentinel = computed(
+  () => status.value === "idle" && nextPage.value !== null,
+);
+watch(
+  sentinel,
+  (el) => {
+    if (io) {
+      io.disconnect();
+      io = null;
+    }
+    if (!el) return;
+    io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMore();
+      },
+      { root: viewport.value, rootMargin: "0px 0px 300px 0px" },
+    );
+    io.observe(el);
+  },
+  { flush: "post" },
+);
 
-onMounted(() => { mounted = true; loadMore(); });
-onUnmounted(() => { mounted = false; if (io) io.disconnect(); });
+onMounted(() => {
+  mounted = true;
+  loadMore();
+});
+onUnmounted(() => {
+  mounted = false;
+  if (io) io.disconnect();
+});
 
-const firstLoad = computed(() => posts.value.length === 0 && status.value === "loading");
+const firstLoad = computed(
+  () => posts.value.length === 0 && status.value === "loading",
+);
 </script>
 
 <template>
-  <div ref="viewport" class="feed" data-testid="viewport" :aria-busy="status === 'loading'">
+  <div
+    ref="viewport"
+    class="feed"
+    data-testid="viewport"
+    :aria-busy="status === 'loading'"
+  >
     <ul class="cards" aria-label="Posts">
       <li v-for="p in posts" :key="p.id" class="card" data-testid="post">
         <span class="avatar" aria-hidden="true">{{ p.author[0] }}</span>
@@ -7847,24 +10224,37 @@ const firstLoad = computed(() => posts.value.length === 0 && status.value === "l
         <SkeletonCard v-for="i in firstLoad ? 4 : 2" :key="'sk' + i" />
       </template>
     </ul>
-    <div v-if="showSentinel" ref="sentinel" class="sentinel" data-testid="sentinel"></div>
+    <div
+      v-if="showSentinel"
+      ref="sentinel"
+      class="sentinel"
+      data-testid="sentinel"
+    ></div>
     <p v-if="status === 'error'" class="feed-note" role="alert">
       Could not load more posts.
       <button type="button" data-testid="retry" @click="loadMore">Retry</button>
     </p>
-    <p v-if="status === 'idle' && nextPage === null" class="feed-note">No more posts · {{ posts.length }} total</p>
+    <p
+      v-if="status === 'idle' && nextPage === null"
+      class="feed-note"
+    >No more posts · {{ posts.length }} total</p>
   </div>
   <p class="sr-only" role="status" data-testid="live">
     {{ status === "loading" ? "Loading posts" : posts.length + " posts loaded" }}
   </p>
-  <p class="feed-meta" data-testid="meta">{{ posts.length }} posts · {{ requests }} requests</p>
+  <p
+    class="feed-meta"
+    data-testid="meta"
+  >{{ posts.length }} posts · {{ requests }} requests</p>
 </template>
 `,
           "/src/components/SkeletonCard.vue": `<template>
   <!-- Same box as a real card, so nothing jumps when the post arrives. -->
   <li class="card skeleton" aria-hidden="true" data-testid="skeleton">
     <span class="sk-avatar"></span>
-    <span class="sk-lines"><span class="sk-line"></span><span class="sk-line short"></span></span>
+    <span class="sk-lines"
+      ><span class="sk-line"></span><span class="sk-line short"></span
+    ></span>
   </li>
 </template>
 `,
@@ -7926,20 +10316,32 @@ async loadMore() {
 ### Step 2: a setter query that owns the observer
 
 ~~~ts
-readonly showSentinel = computed(() => this.status() === "idle" && this.nextPage() !== null);
+readonly showSentinel = computed(
+  () => this.status() === "idle" && this.nextPage() !== null,
+);
 
-@ViewChild("sentinel") set sentinel(ref: ElementRef<HTMLElement> | undefined) {
+@ViewChild("sentinel") set sentinel(
+  ref: ElementRef<HTMLElement> | undefined,
+) {
   this.io?.disconnect();
   this.io = null;
   if (!ref) return;
   this.io = new IntersectionObserver(
-    (entries) => { if (entries.some((e) => e.isIntersecting)) this.loadMore(); },
-    { root: this.viewport.nativeElement, rootMargin: "0px 0px 300px 0px" }
+    (entries) => {
+      if (entries.some((e) => e.isIntersecting)) this.loadMore();
+    },
+    {
+      root: this.viewport.nativeElement,
+      rootMargin: "0px 0px 300px 0px",
+    },
   );
   this.io.observe(ref.nativeElement);
 }
 
-ngOnDestroy() { this.alive = false; this.io?.disconnect(); }
+ngOnDestroy() {
+  this.alive = false;
+  this.io?.disconnect();
+}
 ~~~
 
 ~~~html
@@ -7962,10 +10364,16 @@ Because <code>observe()</code> delivers one first callback with the current stat
 @Component({
   selector: "li[appSkeletonCard]",
   standalone: true,
-  host: { class: "card skeleton", "aria-hidden": "true", "data-testid": "skeleton" },
+  host: {
+    class: "card skeleton",
+    "aria-hidden": "true",
+    "data-testid": "skeleton",
+  },
   template: \`
     <span class="sk-avatar"></span>
-    <span class="sk-lines"><span class="sk-line"></span><span class="sk-line short"></span></span>
+    <span class="sk-lines"
+      ><span class="sk-line"></span><span class="sk-line short"></span
+    ></span>
   \`,
 })
 export class SkeletonCardComponent {}
@@ -7973,7 +10381,9 @@ export class SkeletonCardComponent {}
 
 ~~~html
 @if (status() === "loading") {
-  @for (i of skeletons(); track i) { <li appSkeletonCard></li> }
+  @for (i of skeletons(); track i) {
+    <li appSkeletonCard></li>
+  }
 }
 ~~~
 
@@ -8113,8 +10523,15 @@ const PAGE_SIZE = 10;
 const AUTHORS = ["Ada", "Grace", "Linus", "Margaret", "Alan"];
 let failedOnce = false;
 
-export interface FeedPost { id: number; author: string; body: string; }
-export interface FeedPage { posts: FeedPost[]; nextPage: number | null; }
+export interface FeedPost {
+  id: number;
+  author: string;
+  body: string;
+}
+export interface FeedPage {
+  posts: FeedPost[];
+  nextPage: number | null;
+}
 
 export function fetchFeedPage(page: number): Promise<FeedPage> {
   return new Promise<FeedPage>((resolve, reject) => {
@@ -8127,7 +10544,12 @@ export function fetchFeedPage(page: number): Promise<FeedPage> {
       const from = (page - 1) * PAGE_SIZE;
       const posts: FeedPost[] = [];
       for (let i = from; i < Math.min(from + PAGE_SIZE, TOTAL); i++) {
-        posts.push({ id: i + 1, author: AUTHORS[i % AUTHORS.length], body: "Post " + (i + 1) + ": shipping notes for week " + (i % 52 + 1) });
+        posts.push({
+          id: i + 1,
+          author: AUTHORS[i % AUTHORS.length],
+          body:
+            "Post " + (i + 1) + ": shipping notes for week " + ((i % 52) + 1),
+        });
       }
       resolve({ posts, nextPage: from + PAGE_SIZE < TOTAL ? page + 1 : null });
     }, 600);
@@ -8147,15 +10569,38 @@ import { FeedComponent } from "./feed.component";
       <app-feed />
     </main>
   \`,
-  styles: [\`
-    :host { display: block; min-height: 100vh; background: #0f1115; color: #e6e8ee; font-family: system-ui, sans-serif; }
-    .app { max-width: 520px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 1.15rem; margin: 0 0 12px; }
-  \`],
+  styles: [
+    \`
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: #0f1115;
+        color: #e6e8ee;
+        font-family: system-ui, sans-serif;
+      }
+      .app {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      h1 {
+        font-size: 1.15rem;
+        margin: 0 0 12px;
+      }
+    \`,
+  ],
 })
 export class AppComponent {}
 `,
-          "/src/app/feed.component.ts": `import { Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, signal } from "@angular/core";
+          "/src/app/feed.component.ts": `import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  signal,
+} from "@angular/core";
 import { FeedPost, fetchFeedPage } from "./api";
 import { SkeletonCardComponent } from "./skeleton-card.component";
 
@@ -8164,7 +10609,12 @@ import { SkeletonCardComponent } from "./skeleton-card.component";
   standalone: true,
   imports: [SkeletonCardComponent],
   template: \`
-    <div #viewport class="feed" data-testid="viewport" [attr.aria-busy]="status() === 'loading'">
+    <div
+      #viewport
+      class="feed"
+      data-testid="viewport"
+      [attr.aria-busy]="status() === 'loading'"
+    >
       <ul class="cards" aria-label="Posts">
         @for (p of posts(); track p.id) {
           <li class="card" data-testid="post">
@@ -8182,7 +10632,11 @@ import { SkeletonCardComponent } from "./skeleton-card.component";
       @if (status() === "error") {
         <p class="feed-note" role="alert">
           Could not load more posts.
-          <button type="button" data-testid="retry" (click)="loadMore()">Retry</button>
+          <button
+            type="button"
+            data-testid="retry"
+            (click)="loadMore()"
+          >Retry</button>
         </p>
       }
       @if (status() === "idle" && nextPage() === null) {
@@ -8192,9 +10646,13 @@ import { SkeletonCardComponent } from "./skeleton-card.component";
     <p class="sr-only" role="status" data-testid="live">
       {{ status() === "loading" ? "Loading posts" : posts().length + " posts loaded" }}
     </p>
-    <p class="feed-meta" data-testid="meta">{{ posts().length }} posts · {{ requests() }} requests</p>
+    <p
+      class="feed-meta"
+      data-testid="meta"
+    >{{ posts().length }} posts · {{ requests() }} requests</p>
   \`,
-  styles: [\`
+  styles: [
+    \`
     .feed { height: 460px; overflow-y: auto; border: 1px solid #2a2f3a; border-radius: 10px; background: #12151c; }
     .cards { list-style: none; margin: 0; padding: 8px; }
     .card { height: 96px; box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px;
@@ -8216,7 +10674,8 @@ import { SkeletonCardComponent } from "./skeleton-card.component";
     .feed-note button { margin-left: 6px; padding: 4px 12px; border-radius: 6px; border: 0; background: #3b5bdb; color: #fff; }
     .feed-meta { color: #9aa3b5; font-size: 0.85rem; margin: 10px 0 0; }
     .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  \`],
+  \`,
+  ],
 })
 export class FeedComponent implements OnInit, OnDestroy {
   @ViewChild("viewport", { static: true }) viewport!: ElementRef<HTMLElement>;
@@ -8224,13 +10683,17 @@ export class FeedComponent implements OnInit, OnDestroy {
   // A setter query runs whenever the @if adds or removes the sentinel.
   // Each time it mounts, observe() reports its current visibility once, so a
   // sentinel still on screen after a page lands asks for the next page itself.
-  @ViewChild("sentinel") set sentinel(ref: ElementRef<HTMLElement> | undefined) {
+  @ViewChild("sentinel") set sentinel(
+    ref: ElementRef<HTMLElement> | undefined,
+  ) {
     this.io?.disconnect();
     this.io = null;
     if (!ref) return;
     this.io = new IntersectionObserver(
-      (entries) => { if (entries.some((e) => e.isIntersecting)) this.loadMore(); },
-      { root: this.viewport.nativeElement, rootMargin: "0px 0px 300px 0px" }
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) this.loadMore();
+      },
+      { root: this.viewport.nativeElement, rootMargin: "0px 0px 300px 0px" },
     );
     this.io.observe(ref.nativeElement);
   }
@@ -8239,14 +10702,23 @@ export class FeedComponent implements OnInit, OnDestroy {
   readonly nextPage = signal<number | null>(1); // null = no more pages
   readonly status = signal<"loading" | "idle" | "error">("loading");
   readonly requests = signal(0);
-  readonly showSentinel = computed(() => this.status() === "idle" && this.nextPage() !== null);
-  readonly skeletons = computed(() => (this.posts().length === 0 ? [0, 1, 2, 3] : [0, 1]));
+  readonly showSentinel = computed(
+    () => this.status() === "idle" && this.nextPage() !== null,
+  );
+  readonly skeletons = computed(() =>
+    this.posts().length === 0 ? [0, 1, 2, 3] : [0, 1],
+  );
   private io: IntersectionObserver | null = null;
   private loading = false; // synchronous in-flight guard
   private alive = true;
 
-  ngOnInit() { this.loadMore(); }
-  ngOnDestroy() { this.alive = false; this.io?.disconnect(); }
+  ngOnInit() {
+    this.loadMore();
+  }
+  ngOnDestroy() {
+    this.alive = false;
+    this.io?.disconnect();
+  }
 
   async loadMore() {
     const page = this.nextPage();
@@ -8275,10 +10747,16 @@ export class FeedComponent implements OnInit, OnDestroy {
 @Component({
   selector: "li[appSkeletonCard]",
   standalone: true,
-  host: { class: "card skeleton", "aria-hidden": "true", "data-testid": "skeleton" },
+  host: {
+    class: "card skeleton",
+    "aria-hidden": "true",
+    "data-testid": "skeleton",
+  },
   template: \`
     <span class="sk-avatar"></span>
-    <span class="sk-lines"><span class="sk-line"></span><span class="sk-line short"></span></span>
+    <span class="sk-lines"
+      ><span class="sk-line"></span><span class="sk-line short"></span
+    ></span>
   \`,
 })
 export class SkeletonCardComponent {}

@@ -8,8 +8,10 @@ export type FrameworkBundle = {
   answer: string;
   /**
    * Multi-file solution = a path -> source map. Paths must match the framework's
-   * Sandpack template entry (react: /App.js + /src/*, vue: /src/App.vue +
-   * /src/components/*, angular: /src/app/app.component.ts). Backtick-free.
+   * Sandpack template entry (react: /App.js, vue: /src/App.vue, angular:
+   * /src/app/app.component.ts); every other file sits in a conventional folder
+   * (components, hooks/composables, services, directives, api, data, utils),
+   * as scripts/restructure-mc-files.ts lays them out. Backtick-free.
    */
   files: Record<string, string>;
 };

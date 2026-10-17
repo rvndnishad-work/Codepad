@@ -436,7 +436,7 @@ One honest gap: jsdom does not perform implicit form submission when Enter is pr
 **Conclusion:** A todo list is small, but it exercises the core of React: one array of objects as the source of truth, everything else derived from it, controlled inputs inside a real form, immutable <code>map</code> and <code>filter</code> updates, and stable id keys. The verified run shows add, validation, toggle, filters, inline edit with focus, Escape and delete all behaving, under StrictMode, with no extra counters to keep in sync. Say those ideas out loud while you build and the easy question becomes a strong signal; when the interviewer adds a server, pagination and failure handling, you are ready for the [Todo App with optimistic updates](/interview-question/build-a-todo-app-with-pagination-filters-optimistic-updates).`,
         files: {
           "/App.js": `import { useRef, useState } from "react";
-import TodoItem from "./src/TodoItem";
+import TodoItem from "./src/components/TodoItem";
 
 const FILTERS = {
   all: () => true,
@@ -653,7 +653,7 @@ export default function App() {
   font-size: 0.9rem;
 }
 `,
-          "/src/TodoItem.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/TodoItem.js": `import { useEffect, useRef, useState } from "react";
 
 export default function TodoItem({
   todo,
@@ -1632,7 +1632,7 @@ Trimming, blank and duplicate rejection with <code>aria-invalid</code>, the deri
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { TodoItemComponent, Todo } from "./todo-item.component";
+import { TodoItemComponent, Todo } from "./components/todo-item.component";
 
 type Filter = "all" | "active" | "completed";
 const FILTERS: Record<Filter, (todo: Todo) => boolean> = {
@@ -1805,7 +1805,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/todo-item.component.ts": `import {
+          "/src/app/components/todo-item.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -1959,7 +1959,7 @@ export class TodoItemComponent {
         answer: `**Target Audience:** Developers who can already build a local todo list (see [Build a Todo List](/interview-question/build-a-todo-list)) and now need to talk to a slow, unreliable server. Assumes <code>useState</code>, <code>useEffect</code> and keys.
 **Difficulty:** Medium
 
-> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts with the vocabulary interviewers listen for. Every code excerpt is copied from the runnable solution, and the Verified section quotes what it printed on React 19.3.1 while a script clicked through it. The server is **simulated** in <code>/src/api.js</code> with <code>setTimeout</code>; nothing touches the network.
+> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts with the vocabulary interviewers listen for. Every code excerpt is copied from the runnable solution, and the Verified section quotes what it printed on React 19.3.1 while a script clicked through it. The server is **simulated** in <code>/src/api/api.js</code> with <code>setTimeout</code>; nothing touches the network.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -2446,8 +2446,8 @@ The rollback is automatic: when the failing transition finishes, the optimistic 
 **Conclusion:** The jump from a local todo list to this one is all about time and failure: server pagination with stale-response protection, a debounced search, writes that update the UI instantly, rollbacks that undo only what failed, temporary ids for creates, a refetch to reconcile, and the view encoded in the URL. The verified run on React 19.3.1 shows every one of those paths, including failures that leave other changes untouched. Explain the state split first, then build fetch, optimistic toggle, add and delete, and finish with URL sync and the pager.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import { listTodos, createTodo, updateTodo, deleteTodo } from "./src/api";
-import Pager from "./src/Pager";
+import { listTodos, createTodo, updateTodo, deleteTodo } from "./src/api/api";
+import Pager from "./src/components/Pager";
 
 const PAGE_SIZE = 5;
 const FILTERS = ["all", "active", "completed"];
@@ -2834,7 +2834,7 @@ export default function App() {
   color: #6b7280;
 }
 `,
-          "/src/api.js": `// A SIMULATED server: no network. Every call is
+          "/src/api/api.js": `// A SIMULATED server: no network. Every call is
 // a Promise that settles after a setTimeout,
 // and any write can be told to fail so the
 // UI has to roll its optimistic change back.
@@ -2892,7 +2892,7 @@ export const deleteTodo = (id, { fail = false } = {}) =>
     db = db.filter((t) => t.id !== id);
   });
 `,
-          "/src/Pager.js": `// First page, last page, and the current page with one neighbour each side.
+          "/src/components/Pager.js": `// First page, last page, and the current page with one neighbour each side.
 // A gap of exactly one page shows that page instead of an ellipsis.
 export function pageWindow(current, total) {
   const wanted = [1, current - 1, current, current + 1, total];
@@ -2955,7 +2955,7 @@ export default function Pager({ page, totalPages, onChange }) {
         answer: `**Target Audience:** Vue developers who can build a local todo list (see [Build a Todo List](/interview-question/build-a-todo-list)) and now need a slow, unreliable server behind it. Assumes <code>ref</code>, <code>computed</code> and <code>v-for</code>.
 **Difficulty:** Medium
 
-> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts are copied from the runnable solution, and the Verified section quotes its output on Vue 3.5.44. The server is **simulated** in <code>src/api.js</code> with <code>setTimeout</code>; there is no network.
+> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts are copied from the runnable solution, and the Verified section quotes its output on Vue 3.5.44. The server is **simulated** in <code>src/api/api.js</code> with <code>setTimeout</code>; there is no network.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -3268,7 +3268,7 @@ Toggle shows "saving" at once and sticks after success. The forced failure ticks
 ---
 **Conclusion:** In Vue this app is a handful of refs, one fetch watcher with <code>onWatcherCleanup</code> to drop stale responses, a debounced search, deep-reactive optimistic patches with per-row rollbacks, temporary ids for creates, a reload counter for reconciliation and a URL watcher. The verified run on Vue 3.5.44 matches the React and Angular versions line for line. Lead with the state split, then fetching, then the optimistic paths and their failures.`,
         files: {
-          "/src/api.js": `// A SIMULATED server: no network. Every call is
+          "/src/api/api.js": `// A SIMULATED server: no network. Every call is
 // a Promise that settles after a setTimeout,
 // and any write can be told to fail so the
 // UI has to roll its optimistic change back.
@@ -3413,7 +3413,7 @@ export const deleteTodo = (id, { fail = false } = {}) =>
 
 <script setup>
 import { computed, onWatcherCleanup, ref, watch } from "vue";
-import { listTodos, createTodo, updateTodo, deleteTodo } from "./api.js";
+import { listTodos, createTodo, updateTodo, deleteTodo } from "./api/api.js";
 import Pager from "./components/Pager.vue";
 
 const PAGE_SIZE = 5;
@@ -3686,7 +3686,7 @@ body {
 }
 </style>
 `,
-          "/src/pageWindow.js": `// First page, last page, and the current page with one neighbour each side.
+          "/src/utils/pageWindow.js": `// First page, last page, and the current page with one neighbour each side.
 // A gap of exactly one page shows that page instead of an ellipsis.
 export function pageWindow(current, total) {
   const wanted = [1, current - 1, current, current + 1, total];
@@ -3738,7 +3738,7 @@ export function pageWindow(current, total) {
 
 <script setup>
 import { computed } from "vue";
-import { pageWindow } from "../pageWindow.js";
+import { pageWindow } from "../utils/pageWindow.js";
 
 const props = defineProps({ page: Number, totalPages: Number });
 const emit = defineEmits(["change"]);
@@ -4087,8 +4087,8 @@ The toggle is instant and sticks after success; the forced failure ticks and the
   signal,
   untracked,
 } from "@angular/core";
-import { Filter, Page, Todo, TodoApi } from "./todo-api";
-import { PagerComponent } from "./pager.component";
+import { Filter, Page, Todo, TodoApi } from "./services/todo-api";
+import { PagerComponent } from "./components/pager.component";
 
 const PAGE_SIZE = 5;
 const FILTERS: Filter[] = ["all", "active", "completed"];
@@ -4383,7 +4383,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/pager.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+          "/src/app/components/pager.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 // First page, last page, and the current page with one neighbour each side.
 // A gap of exactly one page shows that page instead of an ellipsis.
@@ -4461,7 +4461,7 @@ export class PagerComponent {
   }
 }
 `,
-          "/src/app/todo-api.ts": `import { Injectable } from "@angular/core";
+          "/src/app/services/todo-api.ts": `import { Injectable } from "@angular/core";
 
 export interface Todo {
   id: number | string;
@@ -4965,7 +4965,7 @@ What jsdom cannot show: the actual pixel width of the control. The constant item
 **Conclusion:** A good pagination control is a pure window function plus a thin controlled component. Keeping one fixed run of pages on the side without a gap gives a constant seven slots; requiring every gap to hide at least two pages makes both ends behave as mirror images. The verified run walked all 20 pages on React 19.3.1 without the width changing, and the property check passed 3,660 cases on all three shipped copies. Say the edge pages out loud before you code, and the interviewer will see that you test the corners, not just the middle. The [Todo App with pagination](/interview-question/build-a-todo-app-with-pagination-filters-optimistic-updates) uses a simpler pager inside a full server-backed list.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Pagination from "./src/Pagination";
+import Pagination from "./src/components/Pagination";
 
 const ITEMS = Array.from({ length: 194 }, (_, i) => "Result " + (i + 1));
 const SIZES = [10, 25, 50];
@@ -5105,7 +5105,7 @@ select {
   color: #6b7280;
 }
 `,
-          "/src/pageItems.js": `export const GAP = "gap";
+          "/src/utils/pageItems.js": `export const GAP = "gap";
 
 const range = (from, to) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -5133,7 +5133,7 @@ export function pageItems(current, total, siblings = 1) {
   return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
 }
 `,
-          "/src/Pagination.js": `import { pageItems } from "./pageItems";
+          "/src/components/Pagination.js": `import { pageItems } from "../utils/pageItems";
 
 export default function Pagination({
   page,
@@ -5582,7 +5582,7 @@ select {
 }
 </style>
 `,
-          "/src/pageItems.js": `export const GAP = "gap";
+          "/src/utils/pageItems.js": `export const GAP = "gap";
 
 const range = (from, to) =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i);
@@ -5650,7 +5650,7 @@ export function pageItems(current, total, siblings = 1) {
 
 <script setup>
 import { computed } from "vue";
-import { pageItems } from "../pageItems.js";
+import { pageItems } from "../utils/pageItems.js";
 
 // v-model:page on the parent. defineModel declares
 // the prop and its update event in one line.
@@ -5938,7 +5938,7 @@ Seven slots on every page, page 4 mirrors page 17, Prev and Next are inert at th
 **Conclusion:** In Angular the pager is a framework-free <code>pageItems</code> function and a small component with <code>page</code> in and <code>pageChange</code> out, so the parent binds it with <code>[(page)]</code>. A fixed run of five on the side without a gap keeps seven slots, and gaps that hide two or more pages keep both ends symmetric. The AOT and JIT runs on Angular 22.2.3 and the 3,660-case property check all pass, matching the React and Vue versions.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { PaginationComponent } from "./pagination.component";
+import { PaginationComponent } from "./components/pagination.component";
 
 const ITEMS = Array.from({ length: 194 }, (_, i) => "Result " + (i + 1));
 
@@ -6010,7 +6010,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/page-items.ts": `export const GAP = "gap";
+          "/src/app/utils/page-items.ts": `export const GAP = "gap";
 export type PageItem = number | string;
 
 const range = (from: number, to: number) =>
@@ -6043,8 +6043,8 @@ export function pageItems(
   return [1, GAP + "-left", ...range(left, right), GAP + "-right", total];
 }
 `,
-          "/src/app/pagination.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { PageItem, pageItems } from "./page-items";
+          "/src/app/components/pagination.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { PageItem, pageItems } from "../utils/page-items";
 
 @Component({
   selector: "app-pagination",
@@ -6515,8 +6515,8 @@ Not checked in jsdom: the horizontal scroll container on narrow screens and the 
 ---
 **Conclusion:** A sortable, filterable table is a derived pipeline over data you never mutate: filter, then a stable, type-aware sort on a copy, then a page slice, with only the inputs held in state. The verified run on React 19.3.1 shows the three-state cycle, locale-aware names, stable ties, empty cells last in both directions, combined filters and page resets. Explain the pipeline before you write a line, put the logic in plain functions, and finish with <code>aria-sort</code> and keyboard-friendly headers.`,
         files: {
-          "/App.js": `import DataTable from "./src/DataTable";
-import { COLUMNS, PEOPLE } from "./src/data";
+          "/App.js": `import DataTable from "./src/components/DataTable";
+import { COLUMNS, PEOPLE } from "./src/data/data";
 
 export default function App() {
   return (
@@ -6632,7 +6632,7 @@ tbody tr:hover {
   cursor: default;
 }
 `,
-          "/src/data.js": `export const COLUMNS = [
+          "/src/data/data.js": `export const COLUMNS = [
   { key: "name", label: "Name", type: "string" },
   { key: "role", label: "Role", type: "string" },
   { key: "age", label: "Age", type: "number" },
@@ -6752,8 +6752,8 @@ export const PEOPLE = [
   },
 ];
 `,
-          "/src/DataTable.js": `import { useMemo, useState } from "react";
-import { filterRows, formatCell, nextSort, sortRows } from "./table";
+          "/src/components/DataTable.js": `import { useMemo, useState } from "react";
+import { filterRows, formatCell, nextSort, sortRows } from "../utils/table";
 
 const PAGE_SIZE = 5;
 const ARIA_SORT = { asc: "ascending", desc: "descending" };
@@ -6910,7 +6910,7 @@ export default function DataTable({ columns, rows }) {
   );
 }
 `,
-          "/src/table.js": `// Framework-free table logic: one comparator per
+          "/src/utils/table.js": `// Framework-free table logic: one comparator per
 // column type, then filter -> sort -> paginate.
 const collator = new Intl.Collator("en", {
   sensitivity: "base",
@@ -7266,7 +7266,7 @@ The third click on Name restores the original order and removes <code>aria-sort<
 
 <script setup>
 import DataTable from "./components/DataTable.vue";
-import { COLUMNS, PEOPLE } from "./data.js";
+import { COLUMNS, PEOPLE } from "./data/data.js";
 </script>
 
 <style>
@@ -7376,7 +7376,7 @@ tbody tr:hover {
 }
 </style>
 `,
-          "/src/data.js": `export const COLUMNS = [
+          "/src/data/data.js": `export const COLUMNS = [
   { key: "name", label: "Name", type: "string" },
   { key: "role", label: "Role", type: "string" },
   { key: "age", label: "Age", type: "number" },
@@ -7496,7 +7496,7 @@ export const PEOPLE = [
   },
 ];
 `,
-          "/src/table.js": `// Framework-free table logic: one comparator per
+          "/src/utils/table.js": `// Framework-free table logic: one comparator per
 // column type, then filter -> sort -> paginate.
 const collator = new Intl.Collator("en", {
   sensitivity: "base",
@@ -7634,7 +7634,7 @@ export function formatCell(column, value) {
 
 <script setup>
 import { computed, ref, watch } from "vue";
-import { filterRows, formatCell, nextSort, sortRows } from "../table.js";
+import { filterRows, formatCell, nextSort, sortRows } from "../utils/table.js";
 
 const props = defineProps({
   columns: { type: Array, required: true },
@@ -7966,8 +7966,8 @@ The third Name click restores source order and removes <code>aria-sort</code>; "
 **Conclusion:** In Angular the table is signals for the inputs, an input setter that feeds the rows into a signal, a <code>computed</code> chain for filter, sort and page, and typed, framework-free comparators that sort a copy stably with empty values last. The AOT and JIT runs on Angular 22.2.3 match the React and Vue versions line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { DataTableComponent } from "./data-table.component";
-import { COLUMNS, PEOPLE } from "./data";
+import { DataTableComponent } from "./components/data-table.component";
+import { COLUMNS, PEOPLE } from "./data/data";
 
 @Component({
   selector: "app-root",
@@ -8005,8 +8005,8 @@ export class AppComponent {
   readonly people = PEOPLE;
 }
 `,
-          "/src/app/data-table.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
-import { Column, Person } from "./data";
+          "/src/app/components/data-table.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
+import { Column, Person } from "../data/data";
 import {
   Direction,
   SortState,
@@ -8014,7 +8014,7 @@ import {
   formatCell,
   nextSort,
   sortRows,
-} from "./table";
+} from "../utils/table";
 
 const PAGE_SIZE = 5;
 const ARIA_SORT: Record<Direction, string | null> = {
@@ -8190,7 +8190,7 @@ export class DataTableComponent {
   }
 }
 `,
-          "/src/app/data.ts": `export type ColumnType = "string" | "number" | "date" | "boolean";
+          "/src/app/data/data.ts": `export type ColumnType = "string" | "number" | "date" | "boolean";
 export interface Column {
   key: keyof Person;
   label: string;
@@ -8326,9 +8326,9 @@ export const PEOPLE: Person[] = [
   },
 ];
 `,
-          "/src/app/table.ts": `// Framework-free table logic: one comparator per
+          "/src/app/utils/table.ts": `// Framework-free table logic: one comparator per
 // column type, then filter -> sort -> paginate.
-import { Column, ColumnType, Person } from "./data";
+import { Column, ColumnType, Person } from "../data/data";
 
 export type Direction = "none" | "asc" | "desc";
 export interface SortState {
@@ -8860,8 +8860,8 @@ The hostile link loses the unknown category, the impossible rating, the unknown 
 **Conclusion:** A product filter grid is a design exercise in derived state: one filter object, one predicate per facet combined with AND, a stable sort, facet counts computed with each facet's own predicate skipped, chips and the URL as further derivations, and validation that never throws away what the shopper typed. The verified run on React 19.3.1 shows the counts behaving like honest aisle signs, the invalid price range handled gracefully, chips removing filters, and Clear all keeping the sort. Lead with the state shape and the counting rule; the cards are the easy part.`,
         files: {
           "/App.js": `import { useEffect, useMemo, useState } from "react";
-import FilterPanel, { RATINGS } from "./src/FilterPanel";
-import { CATEGORIES, PRODUCTS } from "./src/products";
+import FilterPanel, { RATINGS } from "./src/components/FilterPanel";
+import { CATEGORIES, PRODUCTS } from "./src/data/products";
 import {
   EMPTY,
   SORTS,
@@ -8872,7 +8872,7 @@ import {
   priceError,
   removeChip,
   toQuery,
-} from "./src/filtering";
+} from "./src/utils/filtering";
 
 export default function App() {
   // One object holds every filter, read from the URL once on load.
@@ -9151,7 +9151,7 @@ select {
   cursor: pointer;
 }
 `,
-          "/src/filtering.js": `// Framework-free filter logic: one predicate
+          "/src/utils/filtering.js": `// Framework-free filter logic: one predicate
 // per facet, composed with AND across facets
 // and OR inside the category facet.
 export const SORTS = {
@@ -9290,7 +9290,7 @@ export function fromQuery(search, categories) {
   };
 }
 `,
-          "/src/FilterPanel.js": `import { CATEGORIES } from "./products";
+          "/src/components/FilterPanel.js": `import { CATEGORIES } from "../data/products";
 
 const RATINGS = [4, 3, 0];
 
@@ -9394,7 +9394,7 @@ export default function FilterPanel({ filters, counts, error, onChange }) {
 
 export { RATINGS };
 `,
-          "/src/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
+          "/src/data/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
 
 export const PRODUCTS = [
   {
@@ -9945,7 +9945,7 @@ Ticking Cameras keeps every category count meaningful (5 + 4 = 9). Stock and rat
 <script setup>
 import { computed, ref, watch } from "vue";
 import FilterPanel from "./components/FilterPanel.vue";
-import { CATEGORIES, PRODUCTS } from "./products.js";
+import { CATEGORIES, PRODUCTS } from "./data/products.js";
 import {
   EMPTY,
   SORTS,
@@ -9956,7 +9956,7 @@ import {
   priceError,
   removeChip,
   toQuery,
-} from "./filtering.js";
+} from "./utils/filtering.js";
 
 // One object holds every filter, read from the URL
 // once on load. It is always replaced, never mutated.
@@ -10141,7 +10141,7 @@ select {
 }
 </style>
 `,
-          "/src/filtering.js": `// Framework-free filter logic: one predicate
+          "/src/utils/filtering.js": `// Framework-free filter logic: one predicate
 // per facet, composed with AND across facets
 // and OR inside the category facet.
 export const SORTS = {
@@ -10280,7 +10280,7 @@ export function fromQuery(search, categories) {
   };
 }
 `,
-          "/src/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
+          "/src/data/products.js": `export const CATEGORIES = ["Audio", "Wearables", "Cameras", "Accessories"];
 
 export const PRODUCTS = [
   {
@@ -10533,7 +10533,7 @@ export const PRODUCTS = [
 </template>
 
 <script setup>
-import { CATEGORIES } from "../products.js";
+import { CATEGORIES } from "../data/products.js";
 
 const RATINGS = [4, 3, 0];
 const props = defineProps({
@@ -10877,8 +10877,8 @@ Counts stay meaningful as categories are ticked; stock and rating reshape the ot
 **Conclusion:** In Angular the filter grid is one typed filter signal, computeds for results, counts, chips and validation, an effect that mirrors the URL, and a stateless panel bound with <code>[(filters)]</code>. Predicates per facet make the pipeline composable and disjunctive counts keep the options honest. The AOT and JIT runs on Angular 22.2.3 match the React and Vue versions line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { FilterPanelComponent } from "./filter-panel.component";
-import { CATEGORIES, PRODUCTS } from "./products";
+import { FilterPanelComponent } from "./components/filter-panel.component";
+import { CATEGORIES, PRODUCTS } from "./data/products";
 import {
   EMPTY,
   Filters,
@@ -10891,7 +10891,7 @@ import {
   priceError,
   removeChip,
   toQuery,
-} from "./filtering";
+} from "./utils/filtering";
 
 @Component({
   selector: "app-root",
@@ -11036,9 +11036,9 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/filter-panel.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { CATEGORIES } from "./products";
-import { Counts, Filters } from "./filtering";
+          "/src/app/components/filter-panel.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { CATEGORIES } from "../data/products";
+import { Counts, Filters } from "../utils/filtering";
 
 @Component({
   selector: "app-filter-panel",
@@ -11143,10 +11143,10 @@ export class FilterPanelComponent {
   }
 }
 `,
-          "/src/app/filtering.ts": `// Framework-free filter logic: one predicate
+          "/src/app/utils/filtering.ts": `// Framework-free filter logic: one predicate
 // per facet, composed with AND across facets
 // and OR inside the category facet.
-import { Product } from "./products";
+import { Product } from "../data/products";
 
 export type SortKey = "popular" | "price-asc" | "price-desc" | "rating";
 export interface Filters {
@@ -11313,7 +11313,7 @@ export function fromQuery(search: string, categories: string[]): Filters {
   };
 }
 `,
-          "/src/app/products.ts": `export interface Product {
+          "/src/app/data/products.ts": `export interface Product {
   id: number;
   name: string;
   category: string;
@@ -11528,7 +11528,7 @@ export const PRODUCTS: Product[] = [
         answer: `**Target Audience:** Developers preparing for a frontend machine coding round who know <code>useState</code> and <code>useEffect</code> and want to handle a two-step paginated fetch with loading, errors and retries properly.
 **Difficulty:** Medium
 
-> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts are copied from the runnable solution, and the Verified section quotes what it printed on React 19.3.1. The Hacker News API is **simulated** in <code>/src/hnApi.js</code> with <code>setTimeout</code>; the solution makes no network requests.
+> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts are copied from the runnable solution, and the Verified section quotes what it printed on React 19.3.1. The Hacker News API is **simulated** in <code>/src/api/hnApi.js</code> with <code>setTimeout</code>; the solution makes no network requests.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -11858,8 +11858,8 @@ The fake times are at 12:00 UTC so the shown dates are the same in any time zone
 **Conclusion:** A paginated job board is a small exercise in request orchestration: fetch the ids once, fetch each page's details in parallel with <code>Promise.all</code> so order is preserved for free, model loading, idle and error explicitly, guard against double loads with a ref and a disabled button, clean up for the StrictMode double mount, and retry exactly what failed. The verified run on React 19.3.1, against an in-file simulation of the Hacker News endpoints, shows all of those paths. Draw the two-step flow first, then build page one, Load more, and the error path.`,
         files: {
           "/App.js": `import { useEffect, useRef, useState } from "react";
-import { fetchJob, fetchJobIds } from "./src/hnApi";
-import JobCard from "./src/JobCard";
+import { fetchJob, fetchJobIds } from "./src/api/hnApi";
+import JobCard from "./src/components/JobCard";
 
 const PAGE_SIZE = 6;
 
@@ -12063,7 +12063,7 @@ export default function App() {
   margin-top: 16px;
 }
 `,
-          "/src/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
+          "/src/api/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
 // https://hacker-news.firebaseio.com/v0/jobstories.json
 // -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
@@ -12131,7 +12131,7 @@ export async function fetchJob(id, { fail = false } = {}) {
   return { ...job };
 }
 `,
-          "/src/JobCard.js": `const dateFormat = new Intl.DateTimeFormat("en-US", {
+          "/src/components/JobCard.js": `const dateFormat = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "short",
   day: "numeric",
@@ -12165,7 +12165,7 @@ export default function JobCard({ job }) {
         answer: `**Target Audience:** Vue developers preparing for a machine coding round who know <code>ref</code>, <code>computed</code> and lifecycle hooks, and want to handle a two-step paginated fetch with loading, errors and retries.
 **Difficulty:** Medium
 
-> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts come from the runnable solution, and the Verified section quotes its output on Vue 3.5.44. The Hacker News API is **simulated** in <code>src/hnApi.js</code>; the solution makes no network requests.
+> **How to read this doc:** Plain language first, then <code>📌 Interview term:</code> callouts. Code excerpts come from the runnable solution, and the Verified section quotes its output on Vue 3.5.44. The Hacker News API is **simulated** in <code>src/api/hnApi.js</code>; the solution makes no network requests.
 
 ## 1. Why This Even Matters — A Story First
 
@@ -12456,7 +12456,7 @@ Six cards after the first load; linked and plain titles; a second click on the d
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, shallowRef } from "vue";
-import { fetchJob, fetchJobIds } from "./hnApi.js";
+import { fetchJob, fetchJobIds } from "./api/hnApi.js";
 import JobCard from "./components/JobCard.vue";
 
 const PAGE_SIZE = 6;
@@ -12604,7 +12604,7 @@ body {
 }
 </style>
 `,
-          "/src/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
+          "/src/api/hnApi.js": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
 // https://hacker-news.firebaseio.com/v0/jobstories.json
 // -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
@@ -12926,8 +12926,8 @@ Six cards after the first load; linked and plain titles; a second click on the d
 **Conclusion:** In Angular the job board is a handful of signals and one computed, a synchronous guard, a <code>DestroyRef</code> teardown, ids fetched once from the constructor and each page fetched in parallel with <code>Promise.all</code>, rendered with <code>@for</code> and <code>@if</code>. The AOT and JIT runs on Angular 22.2.3, against an in-file simulation of the Hacker News endpoints, match the React and Vue versions line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { Job, fetchJob, fetchJobIds } from "./hn-api";
-import { JobCardComponent } from "./job-card.component";
+import { Job, fetchJob, fetchJobIds } from "./api/hn-api";
+import { JobCardComponent } from "./components/job-card.component";
 
 const PAGE_SIZE = 6;
 type Status = "loading" | "idle" | "error";
@@ -13069,7 +13069,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/hn-api.ts": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
+          "/src/app/api/hn-api.ts": `// A SIMULATED Hacker News API: no network. It mimics the two real endpoints,
 // https://hacker-news.firebaseio.com/v0/jobstories.json
 // -> array of job ids, newest first
 //   https://hacker-news.firebaseio.com/v0/item/<id>.json   -> one job item
@@ -13150,8 +13150,8 @@ export async function fetchJob(
   return { ...job };
 }
 `,
-          "/src/app/job-card.component.ts": `import { Component, Input } from "@angular/core";
-import { Job } from "./hn-api";
+          "/src/app/components/job-card.component.ts": `import { Component, Input } from "@angular/core";
+import { Job } from "../api/hn-api";
 
 const dateFormat = new Intl.DateTimeFormat("en-US", {
   year: "numeric",

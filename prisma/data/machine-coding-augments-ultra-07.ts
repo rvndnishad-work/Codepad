@@ -419,7 +419,7 @@ Real Enter on the focused trigger opened the menu on "Edit", and Tab inside the 
 **Conclusion:** A dropdown is two pieces of state and a set of rules about focus. Keep \`open\` and \`active\` as the only state, derive the ARIA attributes and tab indexes from them, move DOM focus in an effect after the menu renders, and add the outside-press listener only while open with a proper cleanup. The verified run shows each rule holding: arrows wrap, Escape and selection return focus to the trigger, Tab moves on to the next control, and a press outside closes the menu without stealing focus.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Dropdown from "./src/Dropdown";
+import Dropdown from "./src/components/Dropdown";
 
 const ITEMS = [
   { id: "edit", label: "Edit" },
@@ -456,7 +456,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Dropdown.js": `import { useEffect, useId, useRef, useState } from "react";
+          "/src/components/Dropdown.js": `import { useEffect, useId, useRef, useState } from "react";
 
 export default function Dropdown({ label, items, onSelect }) {
   const [open, setOpen] = useState(false);
@@ -1432,7 +1432,7 @@ In real Chromium 141 (runtime JIT, styles applied), real Enter opened the menu, 
 **Conclusion:** In Angular the dropdown is two signals, an \`afterRenderEffect\` that moves focus after each render, and a document \`@HostListener\` with a \`contains()\` check. Zoneless rendering adds one real-world wrinkle, found in Chromium and fixed with \`detectChanges()\`: when the browser's default Tab action depends on the new DOM, render synchronously first. Both the AOT and the JIT builds printed the same verified sequence as the React and Vue versions.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, signal } from "@angular/core";
-import { DropdownComponent, MenuItem } from "./dropdown.component";
+import { DropdownComponent, MenuItem } from "./components/dropdown.component";
 
 @Component({
   selector: "app-root",
@@ -1482,7 +1482,7 @@ export class AppComponent {
   last = signal("none");
 }
 `,
-          "/src/app/dropdown.component.ts": `import {
+          "/src/app/components/dropdown.component.ts": `import {
   ChangeDetectorRef,
   Component,
   ElementRef,
@@ -2039,7 +2039,7 @@ The backdrop covers the whole viewport and the panel is centred at 400,300. A re
 **Conclusion:** A solid basic modal is a controlled component portalled into \`body\`, with three careful ways to close (Escape on the document while open, overlay clicks that really started and ended on the overlay, and explicit buttons) and a close reason for the parent. The verified runs show each rule and also show, honestly, the one thing this version does not do: Shift+Tab can still leave the dialog. That gap is the bridge to the accessible modal follow-up.`,
         files: {
           "/App.js": `import { useRef, useState } from "react";
-import Modal from "./src/Modal";
+import Modal from "./src/components/Modal";
 
 const REASONS = {
   escape: "Escape key",
@@ -2110,7 +2110,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Modal.js": `import { useEffect, useEffectEvent, useId, useRef } from "react";
+          "/src/components/Modal.js": `import { useEffect, useEffectEvent, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 
 export default function Modal({ open, title, description, onClose, children }) {
@@ -3006,7 +3006,7 @@ The overlay covers the viewport and the panel is centred. The second Shift+Tab r
   ViewEncapsulation,
   signal,
 } from "@angular/core";
-import { ModalComponent } from "./modal.component";
+import { ModalComponent } from "./components/modal.component";
 
 const REASONS: Record<string, string> = {
   escape: "Escape key",
@@ -3087,7 +3087,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/modal.component.ts": `import {
+          "/src/app/components/modal.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -3676,7 +3676,7 @@ The same checks against a plain \`<dialog>\` opened with \`showModal()\` in the 
 **Conclusion:** An accessible modal is an ordered set of side effects and their exact reverse: remember focus, push a layer, inert the rest of \`body\`, lock scrolling with a counter and scrollbar padding, focus inside; then undo it all with inert removed before focus is restored. Keeping that in a framework-free helper makes the React part a single effect. The jsdom run shows the state at every step, the Chromium run shows real Tab wrapping, real inertness and a page that neither scrolls nor shifts, and the native \`dialog\` comparison shows what the platform now does for you and the scroll lock it still leaves to you.`,
         files: {
           "/App.js": `import { useState } from "react";
-import AccessibleModal from "./src/AccessibleModal";
+import AccessibleModal from "./src/components/AccessibleModal";
 
 const PARAGRAPHS = Array.from(
   { length: 30 },
@@ -3803,9 +3803,9 @@ export default function App() {
   );
 }
 `,
-          "/src/AccessibleModal.js": `import { useEffect, useEffectEvent, useId, useRef } from "react";
+          "/src/components/AccessibleModal.js": `import { useEffect, useEffectEvent, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { activateModal } from "./modalA11y";
+import { activateModal } from "../utils/modalA11y";
 
 export default function AccessibleModal({
   open,
@@ -3861,7 +3861,7 @@ export default function AccessibleModal({
   );
 }
 `,
-          "/src/modalA11y.js": `// Framework-free helpers for a modal layer:
+          "/src/utils/modalA11y.js": `// Framework-free helpers for a modal layer:
 // focus trap, focus restore, inert background,
 // ref-counted scroll lock and a stack so
 // only the top-most modal reacts to keys.
@@ -4528,7 +4528,7 @@ input:focus-visible {
 `,
           "/src/components/AccessibleModal.vue": `<script setup>
 import { watch, onWatcherCleanup, useId, useTemplateRef } from "vue";
-import { activateModal } from "./modalA11y.js";
+import { activateModal } from "../utils/modalA11y.js";
 
 const props = defineProps({
   open: { type: Boolean, required: true },
@@ -4612,7 +4612,7 @@ watch(
 }
 </style>
 `,
-          "/src/components/modalA11y.js": `// Framework-free helpers for a modal layer:
+          "/src/utils/modalA11y.js": `// Framework-free helpers for a modal layer:
 // focus trap, focus restore, inert background,
 // ref-counted scroll lock and a stack so
 // only the top-most modal reacts to keys.
@@ -5008,7 +5008,7 @@ The scrollbar was replaced by 15 px of padding with no layout shift, the wheel d
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { AccessibleModalComponent } from "./accessible-modal.component";
+import { AccessibleModalComponent } from "./components/accessible-modal.component";
 
 @Component({
   selector: "app-root",
@@ -5130,7 +5130,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/accessible-modal.component.ts": `import {
+          "/src/app/components/accessible-modal.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -5143,7 +5143,7 @@ export class AppComponent {
   afterNextRender,
   inject,
 } from "@angular/core";
-import { activateModal } from "./modal-a11y";
+import { activateModal } from "../utils/modal-a11y";
 
 let nextId = 0;
 
@@ -5246,7 +5246,7 @@ export class AccessibleModalComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/modal-a11y.ts": `// Framework-free helpers for a modal layer:
+          "/src/app/utils/modal-a11y.ts": `// Framework-free helpers for a modal layer:
 // focus trap, focus restore, inert background,
 // ref-counted scroll lock and a stack so
 // only the top-most modal reacts to keys.
@@ -5782,7 +5782,7 @@ Every placement kept the 8 px gap and stayed inside the viewport, the top-edge b
 ---
 **Conclusion:** A tooltip is a pure geometry function plus careful timing. Choose the side, compute the main axis, clamp the cross axis; measure before paint, follow scroll in the capture phase, and give keyboard users the same tooltip through focus and \`aria-describedby\`. The fake-layout jsdom run lets you check every coordinate by hand, and the Chromium run shows the same rules holding with real layout, real hover and a 360 px phone width.`,
         files: {
-          "/App.js": `import Tooltip from "./src/Tooltip";
+          "/App.js": `import Tooltip from "./src/components/Tooltip";
 
 const SIDES = ["top", "right", "bottom", "left"];
 
@@ -5827,9 +5827,9 @@ export default function App() {
   );
 }
 `,
-          "/src/Tooltip.js": `import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+          "/src/components/Tooltip.js": `import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { computePosition, viewportSize } from "./position";
+import { computePosition, viewportSize } from "../utils/position";
 
 const SHOW_DELAY = 300; // hover only; keyboard focus shows at once
 // time to move the pointer from the trigger onto the tooltip
@@ -5923,7 +5923,7 @@ export default function Tooltip({ content, placement = "top", children }) {
   );
 }
 `,
-          "/src/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
+          "/src/utils/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
 // anchor = the trigger's getBoundingClientRect(),
 // tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
@@ -6454,7 +6454,7 @@ import {
   useId,
   useTemplateRef,
 } from "vue";
-import { computePosition, viewportSize } from "./position.js";
+import { computePosition, viewportSize } from "../utils/position.js";
 
 const props = defineProps({
   content: { type: String, required: true },
@@ -6572,7 +6572,7 @@ const trigger = {
 }
 </style>
 `,
-          "/src/components/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
+          "/src/utils/position.js": `// Pure positioning maths: no DOM access, so it is easy to test.
 // anchor = the trigger's getBoundingClientRect(),
 // tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
@@ -6925,7 +6925,7 @@ The tooltip is measured while still \`visibility: hidden\` (it has a size), plac
 **Conclusion:** In Angular the tooltip is an attribute directive that owns one hand-made element under \`body\`: host listeners for hover and focus with one timer, a pure positioning function for flip and shift, synchronous measure-then-show, and complete cleanup on destroy. The fake-layout and Chromium runs print the same placements as React and Vue, and two real bugs found along the way (an empty description before the first hover, and a squeezed measurement after resize) are fixed in the shipped code.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { TooltipDirective } from "./tooltip.directive";
+import { TooltipDirective } from "./directives/tooltip.directive";
 
 @Component({
   selector: "app-root",
@@ -6984,7 +6984,7 @@ export class AppComponent {
   readonly sides = ["top", "right", "bottom", "left"] as const;
 }
 `,
-          "/src/app/position.ts": `// Pure positioning maths: no DOM access, so it is easy to test.
+          "/src/app/utils/position.ts": `// Pure positioning maths: no DOM access, so it is easy to test.
 // anchor = the trigger's getBoundingClientRect(),
 // tip = { width, height } of the tooltip,
 // viewport = { width, height }. Returns viewport (position: fixed) coordinates.
@@ -7058,7 +7058,7 @@ export function viewportSize(): Size {
   };
 }
 `,
-          "/src/app/tooltip.directive.ts": `import {
+          "/src/app/directives/tooltip.directive.ts": `import {
   Directive,
   ElementRef,
   HostListener,
@@ -7067,7 +7067,7 @@ export function viewportSize(): Size {
   OnDestroy,
   inject,
 } from "@angular/core";
-import { Placement, computePosition, viewportSize } from "./position";
+import { Placement, computePosition, viewportSize } from "../utils/position";
 
 const SHOW_DELAY = 300; // hover only; keyboard focus shows at once
 // time to move the pointer from the trigger onto the tooltip
@@ -7500,7 +7500,7 @@ At 60 ms after the click the nearest action is mostly visible and the farthest h
 **Conclusion:** The speed dial is one boolean of state with everything else derived from it: per-item delays that reverse direction on close, \`inert\` that keeps the always-mounted actions unreachable while closed, and a column whose DOM order equals its visual and Tab order. The jsdom run verifies the state, delays and focus rules, and Chromium shows the real cascade, inert content that cannot be tabbed to or clicked, and reduced motion switching the animation off.`,
         files: {
           "/App.js": `import { useState } from "react";
-import SpeedDial from "./src/SpeedDial";
+import SpeedDial from "./src/components/SpeedDial";
 
 const ACTIONS = [
   { id: "share", label: "Share", icon: "↗", done: "Link shared" },
@@ -7526,7 +7526,7 @@ export default function App() {
   );
 }
 `,
-          "/src/SpeedDial.js": `import { useEffect, useId, useRef, useState } from "react";
+          "/src/components/SpeedDial.js": `import { useEffect, useId, useRef, useState } from "react";
 
 const STAGGER = 40; // ms between neighbouring actions
 
@@ -8410,7 +8410,7 @@ A visible cascade at 60 ms, a column stacking upward, Tab reaching actions only 
 **Conclusion:** The Angular speed dial is one signal reflected onto the host as a class, an always-rendered action list made \`inert\` with an attribute binding while closed, per-item delays derived from the signal, and host listeners for keys and outside presses. The jsdom and Chromium runs print the same sequence as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, signal } from "@angular/core";
-import { DialAction, SpeedDialComponent } from "./speed-dial.component";
+import { DialAction, SpeedDialComponent } from "./components/speed-dial.component";
 
 @Component({
   selector: "app-root",
@@ -8446,7 +8446,7 @@ export class AppComponent {
   readonly status = signal("Pick an action");
 }
 `,
-          "/src/app/speed-dial.component.ts": `import {
+          "/src/app/components/speed-dial.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -9015,8 +9015,8 @@ Widths include the 1 px border: 221 px expanded, 61 px collapsed, 129 px mid-tra
 **Conclusion:** A collapsible sidebar is three pieces of state, \`collapsed\`, a set of open groups and the active id from the parent, and a lot of derived rendering: groups expanded only when open and not collapsed, an accent on the group hiding the active page, visually hidden labels in the rail. Read storage once, write it on change, guard both. The jsdom run shows every state transition and storage write, and Chromium confirms the widths, the accessible names in the rail, the reload and the keyboard path.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Sidebar from "./src/Sidebar";
-import { NAV, findLabel } from "./src/nav";
+import Sidebar from "./src/components/Sidebar";
+import { NAV, findLabel } from "./src/utils/nav";
 
 export default function App() {
   const [active, setActive] = useState("dashboard");
@@ -9033,8 +9033,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Sidebar.js": `import { useEffect, useId, useState } from "react";
-import { readCollapsed, writeCollapsed } from "./nav";
+          "/src/components/Sidebar.js": `import { useEffect, useId, useState } from "react";
+import { readCollapsed, writeCollapsed } from "../utils/nav";
 
 export default function Sidebar({ items, active, onNavigate }) {
   // Lazy initialiser: read storage once, on the first render only.
@@ -9149,7 +9149,7 @@ export default function Sidebar({ items, active, onNavigate }) {
   );
 }
 `,
-          "/src/nav.js": `export const NAV = [
+          "/src/utils/nav.js": `export const NAV = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   {
     id: "projects",
@@ -9591,7 +9591,7 @@ The hidden label is 1 x 1 px, yet role queries still find "Dashboard", "Team" an
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import CollapsibleSidebar from "./components/CollapsibleSidebar.vue";
-import { NAV, findLabel } from "./components/nav.js";
+import { NAV, findLabel } from "./utils/nav.js";
 
 const active = ref("dashboard");
 </script>
@@ -9633,7 +9633,7 @@ body {
 `,
           "/src/components/CollapsibleSidebar.vue": `<script setup>
 import { ref, watch, useId } from "vue";
-import { readCollapsed, writeCollapsed } from "./nav.js";
+import { readCollapsed, writeCollapsed } from "../utils/nav.js";
 
 const props = defineProps({ items: { type: Array, required: true } });
 // v-model:active — the parent owns the current page.
@@ -9840,7 +9840,7 @@ const holdsActive = (item) => item.children.some((c) => c.id === active.value);
 }
 </style>
 `,
-          "/src/components/nav.js": `export const NAV = [
+          "/src/utils/nav.js": `export const NAV = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   {
     id: "projects",
@@ -10149,8 +10149,8 @@ The labels are 1 x 1 px in the rail but role queries still find each link and bu
 **Conclusion:** The Angular sidebar is three pieces of state, a \`collapsed\` signal synced to storage by an \`effect\`, an \`openGroups\` signal whose Set is always replaced, and an \`active\` input, rendered with built-in control flow and one shared link template. The verified jsdom and Chromium runs print the same transitions, storage writes, widths, names and reload behaviour as the React and Vue versions.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation, computed, signal } from "@angular/core";
-import { SidebarComponent } from "./sidebar.component";
-import { NAV, findLabel } from "./nav";
+import { SidebarComponent } from "./components/sidebar.component";
+import { NAV, findLabel } from "./utils/nav";
 
 @Component({
   selector: "app-root",
@@ -10188,7 +10188,7 @@ export class AppComponent {
   readonly title = computed(() => findLabel(this.active()));
 }
 `,
-          "/src/app/nav.ts": `export interface NavLeaf {
+          "/src/app/utils/nav.ts": `export interface NavLeaf {
   id: string;
   label: string;
   icon?: string;
@@ -10248,7 +10248,7 @@ export function findLabel(id: string): string {
   return id;
 }
 `,
-          "/src/app/sidebar.component.ts": `import {
+          "/src/app/components/sidebar.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -10258,7 +10258,7 @@ export function findLabel(id: string): string {
   signal,
 } from "@angular/core";
 import { NgTemplateOutlet } from "@angular/common";
-import { NavItem, NavLeaf, readCollapsed, writeCollapsed } from "./nav";
+import { NavItem, NavLeaf, readCollapsed, writeCollapsed } from "../utils/nav";
 
 let nextId = 0;
 

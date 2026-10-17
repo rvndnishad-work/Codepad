@@ -473,7 +473,7 @@ export default function JsPlayground({
             )}
           </div>
 
-          <div className="qa-code-scroll max-h-72 overflow-auto bg-[#0b0d12] px-4 py-3 font-mono text-[13px] leading-relaxed">
+          <div className="qa-code-scroll max-h-72 overflow-auto bg-[#f6f8fa] px-4 py-3 font-mono text-[13px] leading-relaxed text-[#1f2328] dark:bg-[#0b0d12] dark:text-[#c9d1d9]">
             {running && logs.length === 0 && testResults.every((r) => r.passed === undefined) ? (
               <div className="flex items-center gap-2 text-subtle"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Running…</div>
             ) : activeTab === "tests" && testCases.length > 0 ? (

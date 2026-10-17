@@ -210,8 +210,8 @@ Notice the closure trick: <code>id</code> is a variable in the effect scope that
 
 ~~~jsx
 import { useState } from "react";
-import { useNow } from "./useNow";
-import { formatClock } from "./formatClock";
+import { useNow } from "../hooks/useNow";
+import { formatClock } from "../utils/formatClock";
 
 export default function DigitalClock() {
   const now = useNow();
@@ -404,7 +404,7 @@ Two surprises worth knowing. Chromium's <code>setInterval</code> keeps a fixed s
 
 **Conclusion:** A good digital clock is a loop that reads the system clock, renders, and re-aims at the next second, plus a cleanup that stops it. Keep formatting in a pure function, keep only <code>now</code> and the format flag as state, and the rest is presentation. The same ideas carry straight into the [Analog Clock](/interview-question/build-an-analog-clock), where the time becomes angles, and into the [Stopwatch](/interview-question/build-a-stopwatch) and [Countdown Timer](/interview-question/build-a-countdown-timer), where the clock you read becomes the start time or the deadline.`,
         files: {
-          "/App.js": `import DigitalClock from "./src/DigitalClock";
+          "/App.js": `import DigitalClock from "./src/components/DigitalClock";
 
 export default function App() {
   return (
@@ -414,9 +414,9 @@ export default function App() {
   );
 }
 `,
-          "/src/DigitalClock.js": `import { useState } from "react";
-import { useNow } from "./useNow";
-import { formatClock } from "./formatClock";
+          "/src/components/DigitalClock.js": `import { useState } from "react";
+import { useNow } from "../hooks/useNow";
+import { formatClock } from "../utils/formatClock";
 
 export default function DigitalClock() {
   const now = useNow();
@@ -448,7 +448,7 @@ export default function DigitalClock() {
   );
 }
 `,
-          "/src/formatClock.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/formatClock.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // Pure function: Date + format flag in, display strings out. Easy to test.
 export function formatClock(date, hour12) {
@@ -470,7 +470,7 @@ export function formatClock(date, hour12) {
   };
 }
 `,
-          "/src/useNow.js": `import { useEffect, useState } from "react";
+          "/src/hooks/useNow.js": `import { useEffect, useState } from "react";
 
 // Returns the current Date and re-renders on every new wall-clock second.
 // Each tick reads the real time and schedules itself for the NEXT second
@@ -652,7 +652,7 @@ The timer starts in <code>onMounted</code> and stops in <code>onUnmounted</code>
 <script setup>
 import { computed, ref } from "vue";
 import { useNow } from "../composables/useNow";
-import { formatClock } from "../formatClock";
+import { formatClock } from "../utils/formatClock";
 
 const now = useNow();
 const hour12 = ref(false);
@@ -883,7 +883,7 @@ body {
           "/src/components/DigitalClock.vue": `<script setup>
 import { computed, ref } from "vue";
 import { useNow } from "../composables/useNow";
-import { formatClock } from "../formatClock";
+import { formatClock } from "../utils/formatClock";
 
 const now = useNow();
 const hour12 = ref(false);
@@ -982,7 +982,7 @@ export function useNow() {
   return now;
 }
 `,
-          "/src/formatClock.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/formatClock.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // Pure function: Date + format flag in, display strings out. Easy to test.
 export function formatClock(date, hour12) {
@@ -1079,7 +1079,7 @@ import {
   inject,
   signal,
 } from "@angular/core";
-import { formatClock } from "./format-clock";
+import { formatClock } from "../utils/format-clock";
 
 @Component({
   selector: "app-digital-clock",
@@ -1288,7 +1288,7 @@ timers after unmount: 9 timeout(s) + 0 interval(s) created, 1 cleared, 0 still p
 **Conclusion:** In Angular the digital clock is two signals, one <code>computed</code>, a timeout chain that reads the clock and aims at the next second, and a <code>DestroyRef</code> cleanup. Zoneless rendering makes the signal essential rather than optional. The [Analog Clock](/interview-question/build-an-analog-clock) builds on the same loop with an <code>effect()</code> that can switch between per-second and per-frame updates.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { DigitalClockComponent } from "./digital-clock.component";
+import { DigitalClockComponent } from "./components/digital-clock.component";
 
 @Component({
   selector: "app-root",
@@ -1317,8 +1317,8 @@ import { DigitalClockComponent } from "./digital-clock.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/digital-clock.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { formatClock } from "./format-clock";
+          "/src/app/components/digital-clock.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
+import { formatClock } from "../utils/format-clock";
 
 @Component({
   selector: "app-digital-clock",
@@ -1373,7 +1373,7 @@ export class DigitalClockComponent {
   }
 }
 `,
-          "/src/app/format-clock.ts": `export interface ClockView {
+          "/src/app/utils/format-clock.ts": `export interface ClockView {
   time: string;
   period: string;
   iso: string;
@@ -1751,7 +1751,7 @@ What jsdom cannot show: real paint timing and how smooth the sweep looks. That n
 
 **Conclusion:** An analog clock is a pure angle function plus a loop that keeps asking the clock what time it is. Get the fractional units right, rotate around the centre, pick <code>requestAnimationFrame</code> for the sweep and a boundary-aimed timeout for ticks, and cancel whichever loop is running whenever the mode changes. The same "read the time, never accumulate" rule drives the [Stopwatch](/interview-question/build-a-stopwatch) and the [Countdown Timer](/interview-question/build-a-countdown-timer).`,
         files: {
-          "/App.js": `import AnalogClock from "./src/AnalogClock";
+          "/App.js": `import AnalogClock from "./src/components/AnalogClock";
 
 export default function App() {
   return (
@@ -1761,9 +1761,9 @@ export default function App() {
   );
 }
 `,
-          "/src/AnalogClock.js": `import { useState } from "react";
-import { useClockTime } from "./useClockTime";
-import { handAngles, spokenTime, TICKS, NUMBERS } from "./clockMath";
+          "/src/components/AnalogClock.js": `import { useState } from "react";
+import { useClockTime } from "../hooks/useClockTime";
+import { handAngles, spokenTime, TICKS, NUMBERS } from "../utils/clockMath";
 
 const rotate = (deg) => "rotate(" + deg.toFixed(2) + " 100 100)";
 
@@ -1848,7 +1848,7 @@ export default function AnalogClock() {
   );
 }
 `,
-          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
+          "/src/utils/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
 // minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
@@ -1900,7 +1900,7 @@ export const NUMBERS = Array.from({ length: 12 }, (_, i) => {
   };
 });
 `,
-          "/src/useClockTime.js": `import { useEffect, useState } from "react";
+          "/src/hooks/useClockTime.js": `import { useEffect, useState } from "react";
 
 // smooth = true : re-read the time on every animation frame (sweeping hand).
 // smooth = false: re-read it once per
@@ -2303,7 +2303,7 @@ body {
 }
 </style>
 `,
-          "/src/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
+          "/src/utils/clockMath.js": `// Degrees per unit: second hand 6 deg/s,
 // minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
@@ -2358,7 +2358,7 @@ export const NUMBERS = Array.from({ length: 12 }, (_, i) => {
           "/src/components/AnalogClock.vue": `<script setup>
 import { computed, ref } from "vue";
 import { useClockTime } from "../composables/useClockTime";
-import { handAngles, spokenTime, TICKS, NUMBERS } from "../clockMath";
+import { handAngles, spokenTime, TICKS, NUMBERS } from "../utils/clockMath";
 
 const smooth = ref(true);
 const now = useClockTime(smooth);
@@ -2807,8 +2807,8 @@ jsdom cannot show visual smoothness or paint timing.
 
 **Conclusion:** In Angular the analog clock is a pure angle function, two signals, two computeds and one effect whose <code>onCleanup</code> switches cleanly between a per-frame and a per-second loop. The [Stopwatch](/interview-question/build-a-stopwatch) uses the same "compute from the clock" idea for elapsed time.`,
         files: {
-          "/src/app/analog-clock.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { handAngles, spokenTime, TICKS, NUMBERS } from "./clock-math";
+          "/src/app/components/analog-clock.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
+import { handAngles, spokenTime, TICKS, NUMBERS } from "../utils/clock-math";
 
 @Component({
   selector: "app-analog-clock",
@@ -2950,7 +2950,7 @@ export class AnalogClockComponent {
 }
 `,
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { AnalogClockComponent } from "./analog-clock.component";
+import { AnalogClockComponent } from "./components/analog-clock.component";
 
 @Component({
   selector: "app-root",
@@ -2979,7 +2979,7 @@ import { AnalogClockComponent } from "./analog-clock.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/clock-math.ts": `// Degrees per unit: second hand 6 deg/s,
+          "/src/app/utils/clock-math.ts": `// Degrees per unit: second hand 6 deg/s,
 // minute hand 6 deg/min, hour hand 30 deg/h.
 // Each hand also moves by the fraction of the smaller unit, so 10:30 puts the
 // hour hand halfway between 10 and 11.
@@ -3395,7 +3395,7 @@ timers after unmount: 0 timeout(s) + 3 interval(s) created, 3 cleared, 0 still p
 
 **Conclusion:** A stopwatch is subtraction, not counting. Keep the banked time, the start timestamp from a monotonic clock and the lap totals; derive everything on screen; let a cleaned-up interval do nothing but repaint. Its sibling, the [Countdown Timer](/interview-question/build-a-countdown-timer), applies the same idea to a deadline and adds input validation and a completion announcement.`,
         files: {
-          "/App.js": `import Stopwatch from "./src/Stopwatch";
+          "/App.js": `import Stopwatch from "./src/components/Stopwatch";
 
 export default function App() {
   return (
@@ -3405,8 +3405,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Stopwatch.js": `import { useEffect, useState } from "react";
-import { formatElapsed } from "./formatElapsed";
+          "/src/components/Stopwatch.js": `import { useEffect, useState } from "react";
+import { formatElapsed } from "../utils/formatElapsed";
 
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
@@ -3506,7 +3506,7 @@ export default function Stopwatch() {
   );
 }
 `,
-          "/src/formatElapsed.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/formatElapsed.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
@@ -3684,7 +3684,7 @@ const rows = computed(() =>
 ~~~js
 <script setup>
 import { computed, onUnmounted, ref } from "vue";
-import { formatElapsed } from "../formatElapsed";
+import { formatElapsed } from "../utils/formatElapsed";
 
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
@@ -3915,7 +3915,7 @@ body {
 `,
           "/src/components/Stopwatch.vue": `<script setup>
 import { computed, onUnmounted, ref } from "vue";
-import { formatElapsed } from "../formatElapsed";
+import { formatElapsed } from "../utils/formatElapsed";
 
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
@@ -4082,7 +4082,7 @@ onUnmounted(() => clearInterval(timer));
 }
 </style>
 `,
-          "/src/formatElapsed.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/formatElapsed.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms) {
@@ -4413,7 +4413,7 @@ timers after unmount: 0 timeout(s) + 3 interval(s) created, 3 cleared, 0 still p
 **Conclusion:** The Angular stopwatch is four signals of facts about time, computeds for everything shown, action methods that own a single repaint interval, and a <code>DestroyRef</code> safety net. The [Countdown Timer](/interview-question/build-a-countdown-timer) turns the same model towards a deadline.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { StopwatchComponent } from "./stopwatch.component";
+import { StopwatchComponent } from "./components/stopwatch.component";
 
 @Component({
   selector: "app-root",
@@ -4442,7 +4442,7 @@ import { StopwatchComponent } from "./stopwatch.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/format-elapsed.ts": `const pad = (n: number) => String(n).padStart(2, "0");
+          "/src/app/utils/format-elapsed.ts": `const pad = (n: number) => String(n).padStart(2, "0");
 
 // 83456 ms -> "01:23.45" (minutes : seconds . centiseconds)
 export function formatElapsed(ms: number): string {
@@ -4456,8 +4456,8 @@ export function formatElapsed(ms: number): string {
   );
 }
 `,
-          "/src/app/stopwatch.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { formatElapsed } from "./format-elapsed";
+          "/src/app/components/stopwatch.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
+import { formatElapsed } from "../utils/format-elapsed";
 
 const TICK_MS = 25; // how often we REDRAW; accuracy never depends on it
 
@@ -4941,7 +4941,7 @@ Not checkable in jsdom: what a real screen reader says, and background-tab throt
 
 **Conclusion:** A countdown is a deadline plus a state machine. Validate the inputs, store when it ends, derive what is left, round up for display, wake only when the digits change, and finish in exactly one place with an alert screen readers will hear. Compare it with the [Stopwatch](/interview-question/build-a-stopwatch), which counts up from a timestamp, and the [Traffic Light](/interview-question/build-a-traffic-light), which chains several timed states.`,
         files: {
-          "/App.js": `import CountdownTimer from "./src/CountdownTimer";
+          "/App.js": `import CountdownTimer from "./src/components/CountdownTimer";
 
 export default function App() {
   return (
@@ -4951,8 +4951,8 @@ export default function App() {
   );
 }
 `,
-          "/src/CountdownTimer.js": `import { useEffect, useState } from "react";
-import { clamp, formatRemaining } from "./time";
+          "/src/components/CountdownTimer.js": `import { useEffect, useState } from "react";
+import { clamp, formatRemaining } from "../utils/time";
 
 export default function CountdownTimer() {
   const [minutes, setMinutes] = useState(0);
@@ -5078,7 +5078,7 @@ export default function CountdownTimer() {
   );
 }
 `,
-          "/src/time.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/time.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // Round UP: with 2.3 s left the display says 00:03, and 00:00 appears
 // only when the time is really over.
@@ -5475,7 +5475,7 @@ body {
 `,
           "/src/components/CountdownTimer.vue": `<script setup>
 import { computed, ref, watch } from "vue";
-import { clamp, formatRemaining } from "../time";
+import { clamp, formatRemaining } from "../utils/time";
 
 const minutes = ref(0);
 const seconds = ref(10);
@@ -5699,7 +5699,7 @@ input:focus-visible {
 }
 </style>
 `,
-          "/src/time.js": `const pad = (n) => String(n).padStart(2, "0");
+          "/src/utils/time.js": `const pad = (n) => String(n).padStart(2, "0");
 
 // Round UP: with 2.3 s left the display says 00:03, and 00:00 appears
 // only when the time is really over.
@@ -5981,7 +5981,7 @@ timers after unmount: 8 timeout(s) + 0 interval(s) created, 1 cleared, 0 still p
 **Conclusion:** The Angular countdown is a typed status signal, a deadline, computeds for the display and one effect whose cleanup owns the single timeout. Clamp inputs, round up, and finish in one place. The [Traffic Light](/interview-question/build-a-traffic-light) chains the same timed-state idea into a loop.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { CountdownTimerComponent } from "./countdown-timer.component";
+import { CountdownTimerComponent } from "./components/countdown-timer.component";
 
 @Component({
   selector: "app-root",
@@ -6010,8 +6010,8 @@ import { CountdownTimerComponent } from "./countdown-timer.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/countdown-timer.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { clamp, formatRemaining } from "./time";
+          "/src/app/components/countdown-timer.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
+import { clamp, formatRemaining } from "../utils/time";
 
 type Status = "idle" | "running" | "paused" | "done";
 
@@ -6171,7 +6171,7 @@ export class CountdownTimerComponent {
   }
 }
 `,
-          "/src/app/time.ts": `const pad = (n: number) => String(n).padStart(2, "0");
+          "/src/app/utils/time.ts": `const pad = (n: number) => String(n).padStart(2, "0");
 
 // Round UP: with 2.3 s left the display says 00:03, and 00:00 appears
 // only when the time is really over.
@@ -6509,7 +6509,7 @@ timers after unmount: 11 timeout(s) + 0 interval(s) created, 7 cleared, 0 still 
 
 **Conclusion:** A traffic light is a transition table plus a tiny engine: one timeout per state, re-armed on every change and always cleaned up, with Pause banking the remaining time and Next jumping along the table. The same "timed states" engine powers the [Typewriter Effect](/interview-question/build-a-typewriter-effect), whose states are typing, holding and deleting.`,
         files: {
-          "/App.js": `import TrafficLight from "./src/TrafficLight";
+          "/App.js": `import TrafficLight from "./src/components/TrafficLight";
 
 export default function App() {
   return (
@@ -6519,8 +6519,8 @@ export default function App() {
   );
 }
 `,
-          "/src/TrafficLight.js": `import { useEffect, useRef, useState } from "react";
-import { LIGHTS, ORDER } from "./lights";
+          "/src/components/TrafficLight.js": `import { useEffect, useRef, useState } from "react";
+import { LIGHTS, ORDER } from "../data/lights";
 
 export default function TrafficLight() {
   const [light, setLight] = useState("red");
@@ -6582,7 +6582,7 @@ export default function TrafficLight() {
   );
 }
 `,
-          "/src/lights.js": `// The whole traffic light as data: a finite state machine.
+          "/src/data/lights.js": `// The whole traffic light as data: a finite state machine.
 // Each state knows how long it lasts and which state comes next.
 export const LIGHTS = {
   red: { ms: 3000, next: "green", label: "Red: stop" },
@@ -6950,7 +6950,7 @@ body {
 `,
           "/src/components/TrafficLight.vue": `<script setup>
 import { ref, watch } from "vue";
-import { LIGHTS, ORDER } from "../lights";
+import { LIGHTS, ORDER } from "../data/lights";
 
 const light = ref("red");
 const running = ref(true);
@@ -7098,7 +7098,7 @@ function next() {
 }
 </style>
 `,
-          "/src/lights.js": `// The whole traffic light as data: a finite state machine.
+          "/src/data/lights.js": `// The whole traffic light as data: a finite state machine.
 // Each state knows how long it lasts and which state comes next.
 export const LIGHTS = {
   red: { ms: 3000, next: "green", label: "Red: stop" },
@@ -7360,7 +7360,7 @@ timers after unmount: 10 timeout(s) + 0 interval(s) created, 6 cleared, 0 still 
 **Conclusion:** In Angular the traffic light is a typed transition table, three signals and one effect that arms a single timeout and cleans it up on every change. Pause banks the time left and Next walks the table. The [Typewriter Effect](/interview-question/build-a-typewriter-effect) uses the same one-timeout engine with typing and deleting states.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { TrafficLightComponent } from "./traffic-light.component";
+import { TrafficLightComponent } from "./components/traffic-light.component";
 
 @Component({
   selector: "app-root",
@@ -7389,7 +7389,7 @@ import { TrafficLightComponent } from "./traffic-light.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/lights.ts": `// The whole traffic light as data: a finite state machine.
+          "/src/app/data/lights.ts": `// The whole traffic light as data: a finite state machine.
 // Each state knows how long it lasts and which state comes next.
 export type Light = "red" | "yellow" | "green";
 
@@ -7402,8 +7402,8 @@ export const LIGHTS: Record<Light, { ms: number; next: Light; label: string }> =
 // top to bottom on the housing
 export const ORDER: Light[] = ["red", "yellow", "green"];
 `,
-          "/src/app/traffic-light.component.ts": `import { Component, effect, signal, untracked } from "@angular/core";
-import { LIGHTS, ORDER, Light } from "./lights";
+          "/src/app/components/traffic-light.component.ts": `import { Component, effect, signal, untracked } from "@angular/core";
+import { LIGHTS, ORDER, Light } from "../data/lights";
 
 @Component({
   selector: "app-traffic-light",
@@ -7648,7 +7648,7 @@ Note the modulo in the last branch: <code>(state.index + 1) % words.length</code
 
 ~~~jsx
 import { useEffect, useState } from "react";
-import { START, plan, visibleText } from "./typewriterMachine";
+import { START, plan, visibleText } from "../utils/typewriterMachine";
 
 export default function Typewriter({
   prefix,
@@ -7712,7 +7712,7 @@ The effect reads the current state, asks <code>plan()</code> for the delay and t
 The dependency list includes every value the effect reads: <code>state</code>, <code>paused</code>, <code>words</code> and the four timings. That has a consequence for the parent:
 
 ~~~jsx
-import Typewriter from "./src/Typewriter";
+import Typewriter from "./src/components/Typewriter";
 
 // Defined outside the component so the
 // array keeps one identity across renders.
@@ -7895,7 +7895,7 @@ Two loops: StrictMode's first effect run was never cancelled, and every state ch
 
 **Conclusion:** A typewriter is a four-phase state machine with one timer. Keep the transitions in a pure function, arm exactly one timeout per step in an effect that always cleans up, keep the inputs stable, and give screen readers and motion-sensitive users a calm version. Compare it with the [Traffic Light](/interview-question/build-a-traffic-light) and the [Countdown Timer](/interview-question/build-a-countdown-timer), which use the same one-timer discipline.`,
         files: {
-          "/App.js": `import Typewriter from "./src/Typewriter";
+          "/App.js": `import Typewriter from "./src/components/Typewriter";
 
 // Defined outside the component so the array keeps one identity across renders.
 const WORDS = ["React", "Vue", "Angular"];
@@ -7918,8 +7918,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Typewriter.js": `import { useEffect, useState } from "react";
-import { START, plan, visibleText } from "./typewriterMachine";
+          "/src/components/Typewriter.js": `import { useEffect, useState } from "react";
+import { START, plan, visibleText } from "../utils/typewriterMachine";
 
 export default function Typewriter({
   prefix,
@@ -7970,7 +7970,7 @@ export default function Typewriter({
   );
 }
 `,
-          "/src/typewriterMachine.js": `// The typewriter as a pure state machine. Given where we are, return how long
+          "/src/utils/typewriterMachine.js": `// The typewriter as a pure state machine. Given where we are, return how long
 // to wait and what the next state is. No timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
@@ -8166,7 +8166,7 @@ export const visibleText = (state, words) =>
 ~~~vue
 <script setup>
 import { computed, ref, watch } from "vue";
-import { START, plan, visibleText } from "../typewriterMachine";
+import { START, plan, visibleText } from "../utils/typewriterMachine";
 
 const props = defineProps({
   prefix: { type: String, required: true },
@@ -8475,7 +8475,7 @@ body {
 `,
           "/src/components/Typewriter.vue": `<script setup>
 import { computed, ref, watch } from "vue";
-import { START, plan, visibleText } from "../typewriterMachine";
+import { START, plan, visibleText } from "../utils/typewriterMachine";
 
 const props = defineProps({
   prefix: { type: String, required: true },
@@ -8589,7 +8589,7 @@ button:focus-visible {
 }
 </style>
 `,
-          "/src/typewriterMachine.js": `// The typewriter as a pure state machine. Given where we are, return how long
+          "/src/utils/typewriterMachine.js": `// The typewriter as a pure state machine. Given where we are, return how long
 // to wait and what the next state is. No timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
@@ -8918,7 +8918,7 @@ timers after unmount: 37 timeout(s) + 0 interval(s) created, 2 cleared, 0 still 
 **Conclusion:** The Angular typewriter is a pure four-phase machine, signals fed by input setters, and one effect whose cleanup guarantees a single pending timeout. A hidden sentence and a Pause button make it accessible. The [Countdown Timer](/interview-question/build-a-countdown-timer) uses the same effect-owned timer for a deadline.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { TypewriterComponent } from "./typewriter.component";
+import { TypewriterComponent } from "./components/typewriter.component";
 
 @Component({
   selector: "app-root",
@@ -8980,7 +8980,7 @@ export class AppComponent {
   readonly words = ["React", "Vue", "Angular"];
 }
 `,
-          "/src/app/typewriter-machine.ts": `// The typewriter as a pure state machine. Given where we are, return how long
+          "/src/app/utils/typewriter-machine.ts": `// The typewriter as a pure state machine. Given where we are, return how long
 // to wait and what the next state is. No timers in here, so it is easy to test.
 //   typing   -> one more character every typeMs
 //   full     -> hold for holdMs, then start deleting
@@ -9025,8 +9025,8 @@ export function plan(
 export const visibleText = (state: TypeState, words: string[]) =>
   words[state.index].slice(0, state.count);
 `,
-          "/src/app/typewriter.component.ts": `import { Component, Input, computed, effect, signal } from "@angular/core";
-import { START, plan, visibleText } from "./typewriter-machine";
+          "/src/app/components/typewriter.component.ts": `import { Component, Input, computed, effect, signal } from "@angular/core";
+import { START, plan, visibleText } from "../utils/typewriter-machine";
 
 @Component({
   selector: "app-typewriter",

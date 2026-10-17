@@ -393,7 +393,7 @@ What this proves: the portal really renders outside \`#root\` ("inside app root:
 ---
 **Conclusion:** A toast system is small, but it tests whether you can separate concerns cleanly: one list in a provider, a stable API that callers can use without re-rendering, a timer owned by each toast and cleared by its effect cleanup, and a portal into an always-present live region. The verified run on React 19.3.1 shows success toasts closing at 3 s, errors at 5 s, sticky toasts staying, and the stack rendering outside the app root. Once this is solid, the natural next step is [a queue with a max-visible limit and pause on hover](/interview-question/build-a-toast-snackbar-queue-with-pause-on-hover).`,
         files: {
-          "/App.js": `import { ToastProvider, useToast } from "./src/ToastProvider";
+          "/App.js": `import { ToastProvider, useToast } from "./src/components/ToastProvider";
 
 function Demo() {
   const toast = useToast();
@@ -445,7 +445,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Toast.js": `import { useEffect } from "react";
+          "/src/components/Toast.js": `import { useEffect } from "react";
 
 const ICON = { success: "✓", error: "!", info: "i" };
 
@@ -484,7 +484,7 @@ export default function Toast({ toast, onDismiss }) {
   );
 }
 `,
-          "/src/ToastProvider.js": `import {
+          "/src/components/ToastProvider.js": `import {
   createContext,
   useCallback,
   useContext,
@@ -755,7 +755,7 @@ A factory (rather than one module-level \`reactive\` array) means each app, and 
 ~~~vue
 <script setup>
 import { provide } from "vue";
-import { createToaster, ToasterKey } from "./toaster";
+import { createToaster, ToasterKey } from "./utils/toaster";
 provide(ToasterKey, createToaster());
 </script>
 
@@ -921,7 +921,7 @@ Teleport really moved the stack out of \`#app\`, the success toast closed at 3 s
         files: {
           "/src/App.vue": `<script setup>
 import { provide } from "vue";
-import { createToaster, ToasterKey } from "./toaster";
+import { createToaster, ToasterKey } from "./utils/toaster";
 import ToastDemo from "./components/ToastDemo.vue";
 import ToastViewport from "./components/ToastViewport.vue";
 
@@ -943,7 +943,7 @@ body {
 </style>
 `,
           "/src/components/ToastDemo.vue": `<script setup>
-import { useToast } from "../toaster";
+import { useToast } from "../utils/toaster";
 
 const toast = useToast();
 </script>
@@ -1115,7 +1115,7 @@ onBeforeUnmount(() => clearTimeout(timer));
 </style>
 `,
           "/src/components/ToastViewport.vue": `<script setup>
-import { useToaster } from "../toaster";
+import { useToaster } from "../utils/toaster";
 import ToastItem from "./ToastItem.vue";
 
 const { toasts, toast } = useToaster();
@@ -1156,7 +1156,7 @@ const { toasts, toast } = useToaster();
 }
 </style>
 `,
-          "/src/toaster.js": `import { inject, reactive, readonly } from "vue";
+          "/src/utils/toaster.js": `import { inject, reactive, readonly } from "vue";
 
 // How long each type stays on screen by default (ms). 0 means "until closed".
 const DEFAULT_DURATION = { success: 3000, info: 3000, error: 5000 };
@@ -1458,8 +1458,8 @@ The runtime JIT run (the way the playground compiles) printed the same seven lin
 **Conclusion:** In Angular, a toast system is a root service with a signal list and a map of timers, a viewport that renders the list with \`@for\` inside a live region, and a little DOM move to escape the page layout. It passed both AOT strict templates and the runtime JIT on Angular 22.2.3 with output identical to React and Vue. The next step, a capped queue with pause on hover, is covered in [the toast queue question](/interview-question/build-a-toast-snackbar-queue-with-pause-on-hover).`,
         files: {
           "/src/app/app.component.ts": `import { Component, inject } from "@angular/core";
-import { ToastService } from "./toast.service";
-import { ToastViewportComponent } from "./toast-viewport.component";
+import { ToastService } from "./services/toast.service";
+import { ToastViewportComponent } from "./components/toast-viewport.component";
 
 @Component({
   selector: "app-root",
@@ -1510,14 +1510,14 @@ export class AppComponent {
   readonly toast = inject(ToastService);
 }
 `,
-          "/src/app/toast-viewport.component.ts": `import {
+          "/src/app/components/toast-viewport.component.ts": `import {
   Component,
   ElementRef,
   OnDestroy,
   OnInit,
   inject,
 } from "@angular/core";
-import { ToastService } from "./toast.service";
+import { ToastService } from "../services/toast.service";
 
 const ICON = { success: "✓", error: "!", info: "i" };
 
@@ -1583,7 +1583,7 @@ export class ToastViewportComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/toast.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
+          "/src/app/services/toast.service.ts": `import { Injectable, OnDestroy, signal } from "@angular/core";
 
 export type ToastType = "success" | "error" | "info";
 export interface Toast {
@@ -2033,7 +2033,7 @@ import {
   useToast,
   MAX_VISIBLE,
   DURATION,
-} from "./src/ToastQueue";
+} from "./src/components/ToastQueue";
 
 function Demo() {
   const toast = useToast();
@@ -2081,7 +2081,7 @@ export default function App() {
   );
 }
 `,
-          "/src/QueuedToast.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/QueuedToast.js": `import { useEffect, useRef, useState } from "react";
 
 export default function QueuedToast({ toast, duration, onDismiss }) {
   const { id, message, type } = toast;
@@ -2151,7 +2151,7 @@ export default function QueuedToast({ toast, duration, onDismiss }) {
   );
 }
 `,
-          "/src/ToastQueue.js": `import { createContext, useContext, useMemo, useReducer, useRef } from "react";
+          "/src/components/ToastQueue.js": `import { createContext, useContext, useMemo, useReducer, useRef } from "react";
 import { createPortal } from "react-dom";
 import QueuedToast from "./QueuedToast";
 
@@ -2663,7 +2663,7 @@ Notification 1 paused with about 2 s left (the exact milliseconds vary slightly 
         files: {
           "/src/App.vue": `<script setup>
 import { provide } from "vue";
-import { createToastQueue, ToastQueueKey } from "./toastQueue";
+import { createToastQueue, ToastQueueKey } from "./utils/toastQueue";
 import QueueDemo from "./components/QueueDemo.vue";
 import ToastStack from "./components/ToastStack.vue";
 
@@ -2685,7 +2685,7 @@ body {
 </style>
 `,
           "/src/components/QueueDemo.vue": `<script setup>
-import { useToast, MAX_VISIBLE, DURATION } from "../toastQueue";
+import { useToast, MAX_VISIBLE, DURATION } from "../utils/toastQueue";
 
 const toast = useToast();
 let count = 0;
@@ -2746,7 +2746,7 @@ button {
 `,
           "/src/components/QueuedToast.vue": `<script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { createPausableTimer } from "../pausableTimer";
+import { createPausableTimer } from "../utils/pausableTimer";
 
 const props = defineProps({
   toast: { type: Object, required: true },
@@ -2892,7 +2892,7 @@ function sync() {
 </style>
 `,
           "/src/components/ToastStack.vue": `<script setup>
-import { useToast, DURATION } from "../toastQueue";
+import { useToast, DURATION } from "../utils/toastQueue";
 import QueuedToast from "./QueuedToast.vue";
 
 const { visible, waiting, dismiss } = useToast();
@@ -2946,7 +2946,7 @@ const { visible, waiting, dismiss } = useToast();
 }
 </style>
 `,
-          "/src/pausableTimer.js": `// A setTimeout you can pause and resume. It remembers how much time is left,
+          "/src/utils/pausableTimer.js": `// A setTimeout you can pause and resume. It remembers how much time is left,
 // so a resumed timer fires after the remainder, not after the full delay.
 export function createPausableTimer(callback, delay) {
   let remaining = delay;
@@ -2983,7 +2983,7 @@ export function createPausableTimer(callback, delay) {
   };
 }
 `,
-          "/src/toastQueue.js": `import { computed, inject, ref } from "vue";
+          "/src/utils/toastQueue.js": `import { computed, inject, ref } from "vue";
 
 export const MAX_VISIBLE = 3;
 export const DURATION = 3000;
@@ -3350,8 +3350,8 @@ import {
   DURATION,
   MAX_VISIBLE,
   ToastQueueService,
-} from "./toast-queue.service";
-import { QueuedToastComponent } from "./queued-toast.component";
+} from "./services/toast-queue.service";
+import { QueuedToastComponent } from "./components/queued-toast.component";
 
 @Component({
   selector: "app-toast-stack",
@@ -3448,7 +3448,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/pausable-timer.ts": `// A setTimeout you can pause and resume. It remembers how much time is left,
+          "/src/app/utils/pausable-timer.ts": `// A setTimeout you can pause and resume. It remembers how much time is left,
 // so a resumed timer fires after the remainder, not after the full delay.
 export class PausableTimer {
   private handle: ReturnType<typeof setTimeout> | null = null;
@@ -3489,7 +3489,7 @@ export class PausableTimer {
   }
 }
 `,
-          "/src/app/queued-toast.component.ts": `import {
+          "/src/app/components/queued-toast.component.ts": `import {
   Component,
   EventEmitter,
   HostBinding,
@@ -3501,8 +3501,8 @@ export class PausableTimer {
   computed,
   signal,
 } from "@angular/core";
-import { PausableTimer } from "./pausable-timer";
-import { QueuedToastData } from "./toast-queue.service";
+import { PausableTimer } from "../utils/pausable-timer";
+import { QueuedToastData } from "../services/toast-queue.service";
 
 @Component({
   selector: "app-queued-toast",
@@ -3601,7 +3601,7 @@ export class QueuedToastComponent implements OnInit, OnDestroy {
   }
 }
 `,
-          "/src/app/toast-queue.service.ts": `import { Injectable, computed, signal } from "@angular/core";
+          "/src/app/services/toast-queue.service.ts": `import { Injectable, computed, signal } from "@angular/core";
 
 export type ToastType = "success" | "error" | "info";
 export interface QueuedToastData {
@@ -4086,7 +4086,7 @@ Every requirement shows up: Ctrl+K and Cmd+K both open it with focus in the inpu
 **Conclusion:** A command palette is a search box with three hard parts: a matcher you can explain, keyboard handling that never steals focus from the input, and the combobox and dialog semantics that make it usable with a screen reader. The hand-written matcher here ranks word starts and consecutive letters, returns the indices used for highlighting, and its one known weakness (greedy placement) is stated honestly. The verified run on React 19.3.1 shows hotkeys, wrapping arrows, keywords, Recent and focus return all working, and the same driver produces identical output for the Vue and Angular versions. For related list-with-keyboard widgets, compare [the combobox question](/interview-question/build-a-combobox-search-select).`,
         files: {
           "/App.js": `import { useCallback, useEffect, useMemo, useState } from "react";
-import CommandPalette from "./src/CommandPalette";
+import CommandPalette from "./src/components/CommandPalette";
 
 const isTypingTarget = (el) =>
   el &&
@@ -4259,9 +4259,9 @@ export default function App() {
   );
 }
 `,
-          "/src/CommandPalette.js": `import { useEffect, useMemo, useRef, useState } from "react";
+          "/src/components/CommandPalette.js": `import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { highlight, searchCommands } from "./fuzzy";
+import { highlight, searchCommands } from "../utils/fuzzy";
 
 const GROUPS = ["Navigation", "Actions", "Help"];
 
@@ -4453,7 +4453,7 @@ export default function CommandPalette({
   );
 }
 `,
-          "/src/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
+          "/src/utils/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
 // order (a subsequence). Among the possible placements we keep the best score.
 
 const isWordStart = (text, i) =>
@@ -5207,7 +5207,7 @@ import {
   ref,
   watch,
 } from "vue";
-import { highlight, searchCommands } from "../fuzzy";
+import { highlight, searchCommands } from "../utils/fuzzy";
 
 const props = defineProps({
   commands: { type: Array, required: true },
@@ -5452,7 +5452,7 @@ function onKeydown(e) {
 }
 </style>
 `,
-          "/src/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
+          "/src/utils/fuzzy.js": `// Hand-written fuzzy matcher: every query letter must appear in the label in
 // order (a subsequence). Among the possible placements we keep the best score.
 
 const isWordStart = (text, i) =>
@@ -5853,8 +5853,8 @@ The runtime JIT run printed the same lines, and both match React and Vue. One su
 **Conclusion:** In Angular the palette is a pure, typed matcher, a component whose only state is two signals with everything else \`computed\`, a global \`@HostListener\` for the hotkeys, and lifecycle hooks for focus in and focus back. It passed AOT strict templates and the runtime JIT on Angular 22.2.3 with output identical to React and Vue. Related keyboard-list widgets: [the combobox question](/interview-question/build-a-combobox-search-select).`,
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, signal } from "@angular/core";
-import { CommandPaletteComponent } from "./command-palette.component";
-import { Command } from "./fuzzy";
+import { CommandPaletteComponent } from "./components/command-palette.component";
+import { Command } from "./utils/fuzzy";
 
 const isTypingTarget = (el: EventTarget | null) => {
   const node = el as HTMLElement | null;
@@ -6041,7 +6041,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/command-palette.component.ts": `import {
+          "/src/app/components/command-palette.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -6054,7 +6054,7 @@ export class AppComponent {
   effect,
   signal,
 } from "@angular/core";
-import { Command, highlight, searchCommands } from "./fuzzy";
+import { Command, highlight, searchCommands } from "../utils/fuzzy";
 
 interface Item {
   command: Command;
@@ -6271,7 +6271,7 @@ export class CommandPaletteComponent implements AfterViewInit, OnDestroy {
   }
 }
 `,
-          "/src/app/fuzzy.ts": `// Hand-written fuzzy matcher: every query letter must appear in the label in
+          "/src/app/utils/fuzzy.ts": `// Hand-written fuzzy matcher: every query letter must appear in the label in
 // order (a subsequence). Among the possible placements we keep the best score.
 
 export interface Command {
@@ -6815,7 +6815,7 @@ The mirror-div left edge matches the canvas measurement within 0.3 px, and \`top
 **Conclusion:** @mentions look like an autocomplete, but the hard parts are text-editing details: deriving the token from the caret, inserting without destroying the rest of the text, restoring the caret after a controlled update, and finding the caret on screen with a mirror div. The text and keyboard logic was verified on React 19.3.1 in jsdom, the positioning was measured in real Chromium where it matched an independent canvas measurement within 0.3 px, and the limits (scrolled textareas, IME, real screen readers) are stated rather than assumed. For the simpler cousin without caret maths, see [the autocomplete question](/interview-question/build-an-autocomplete-typeahead-search).`,
         files: {
           "/App.js": `import { useState } from "react";
-import MentionsTextarea from "./src/MentionsTextarea";
+import MentionsTextarea from "./src/components/MentionsTextarea";
 
 const USERS = [
   { handle: "ada", name: "Ada Lovelace" },
@@ -6838,14 +6838,14 @@ export default function App() {
   );
 }
 `,
-          "/src/MentionsTextarea.js": `import { useLayoutEffect, useRef, useState } from "react";
+          "/src/components/MentionsTextarea.js": `import { useLayoutEffect, useRef, useState } from "react";
 import {
   extractMentions,
   filterUsers,
   findMentionQuery,
   getCaretCoordinates,
   insertMention,
-} from "./mentions";
+} from "../utils/mentions";
 
 export default function MentionsTextarea({ users, value, onChange }) {
   const [caret, setCaret] = useState(0);
@@ -6974,7 +6974,7 @@ export default function MentionsTextarea({ users, value, onChange }) {
   );
 }
 `,
-          "/src/mentions.js": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
+          "/src/utils/mentions.js": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
 
 const HANDLE_CHAR = /[a-z0-9_.]/i;
 const MAX_QUERY = 20;
@@ -7468,7 +7468,7 @@ import {
   findMentionQuery,
   getCaretCoordinates,
   insertMention,
-} from "../mentions";
+} from "../utils/mentions";
 
 const props = defineProps({ users: { type: Array, required: true } });
 // defineModel (Vue 3.4+) gives a two-way bound "modelValue" ref.
@@ -7659,7 +7659,7 @@ textarea:focus {
 }
 </style>
 `,
-          "/src/mentions.js": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
+          "/src/utils/mentions.js": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
 
 const HANDLE_CHAR = /[a-z0-9_.]/i;
 const MAX_QUERY = 20;
@@ -8079,8 +8079,8 @@ Not measured in this run: pixel positions (jsdom has no layout; Angular's inline
 **Conclusion:** In Angular, mentions are signals for text and caret, \`computed\` for everything the menu needs, and \`afterNextRender\` for the two DOM jobs that must wait for Angular to write the value: restoring the caret and measuring the mirror div. Both compile modes on Angular 22.2.3 produced output identical to React and Vue, with two Angular-only surprises along the way (\`&#64;\` for a literal at sign, and stripped whitespace between spans). Positioning is honestly marked as measured in Chromium for the shared function, not in this build. Compare [the autocomplete question](/interview-question/build-an-autocomplete-typeahead-search) for the simpler case.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { MentionsTextareaComponent } from "./mentions-textarea.component";
-import { User } from "./mentions";
+import { MentionsTextareaComponent } from "./components/mentions-textarea.component";
+import { User } from "./utils/mentions";
 
 @Component({
   selector: "app-root",
@@ -8131,7 +8131,7 @@ export class AppComponent {
   readonly text = signal("");
 }
 `,
-          "/src/app/mentions-textarea.component.ts": `import {
+          "/src/app/components/mentions-textarea.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -8152,7 +8152,7 @@ import {
   findMentionQuery,
   getCaretCoordinates,
   insertMention,
-} from "./mentions";
+} from "../utils/mentions";
 
 @Component({
   selector: "app-mentions-textarea",
@@ -8323,7 +8323,7 @@ export class MentionsTextareaComponent {
   }
 }
 `,
-          "/src/app/mentions.ts": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
+          "/src/app/utils/mentions.ts": `// Pure text logic for @mentions. No DOM here, so all of it is unit-testable.
 
 const HANDLE_CHAR = /[a-z0-9_.]/i;
 const MAX_QUERY = 20;
@@ -8886,7 +8886,7 @@ The control proves the test would have caught a real hole: without escaping, Chr
 ---
 **Conclusion:** A Markdown previewer is a small parser wrapped around one security rule: escape every piece of user text first, then add only your own tags, and allowlist link schemes. The parser here is a block pass plus an inline pass in about 90 lines, and its defence was proven three ways: with node, in jsdom on React 19.3.1, and in real Chromium, where the same \`<img onerror>\` payload fired an alert through plain \`innerHTML\` and did nothing through the previewer. Related widget: [the basic rich text editor](/interview-question/build-a-basic-rich-text-editor).`,
         files: {
-          "/App.js": `import MarkdownPreviewer from "./src/MarkdownPreviewer";
+          "/App.js": `import MarkdownPreviewer from "./src/components/MarkdownPreviewer";
 
 export default function App() {
   return (
@@ -8897,9 +8897,9 @@ export default function App() {
   );
 }
 `,
-          "/src/MarkdownPreviewer.js": `import { useMemo, useState } from "react";
-import { markdownToHtml } from "./markdown";
-import { SAMPLE } from "./sample";
+          "/src/components/MarkdownPreviewer.js": `import { useMemo, useState } from "react";
+import { markdownToHtml } from "../utils/markdown";
+import { SAMPLE } from "../data/sample";
 
 export default function MarkdownPreviewer() {
   const [source, setSource] = useState(SAMPLE);
@@ -8953,7 +8953,7 @@ export default function MarkdownPreviewer() {
   );
 }
 `,
-          "/src/markdown.js": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
+          "/src/utils/markdown.js": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
 // paragraphs, **bold**, *italic*, \`inline code\`, fenced code blocks,
 // - and 1. lists, > quotes, --- rules and [links](https://...).
 //
@@ -9087,7 +9087,7 @@ export function markdownToHtml(source) {
   return out.join("\\n");
 }
 `,
-          "/src/sample.js": `export const SAMPLE = \`# Release notes
+          "/src/data/sample.js": `export const SAMPLE = \`# Release notes
 
 Version **2.1** adds *dark mode* and a \\\`--quiet\\\` flag.
 
@@ -9296,8 +9296,8 @@ Code spans are split out first (the capturing group in \`split\` keeps them) and
 ~~~vue
 <script setup>
 import { computed, ref } from "vue";
-import { markdownToHtml } from "../markdown";
-import { SAMPLE } from "../sample";
+import { markdownToHtml } from "../utils/markdown";
+import { SAMPLE } from "../data/sample";
 
 const source = ref(SAMPLE);
 const showHtml = ref(false);
@@ -9475,8 +9475,8 @@ body {
 `,
           "/src/components/MarkdownPreviewer.vue": `<script setup>
 import { computed, ref } from "vue";
-import { markdownToHtml } from "../markdown";
-import { SAMPLE } from "../sample";
+import { markdownToHtml } from "../utils/markdown";
+import { SAMPLE } from "../data/sample";
 
 const source = ref(SAMPLE);
 const showHtml = ref(false);
@@ -9608,7 +9608,7 @@ textarea {
 }
 </style>
 `,
-          "/src/markdown.js": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
+          "/src/utils/markdown.js": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
 // paragraphs, **bold**, *italic*, \`inline code\`, fenced code blocks,
 // - and 1. lists, > quotes, --- rules and [links](https://...).
 //
@@ -9742,7 +9742,7 @@ export function markdownToHtml(source) {
   return out.join("\\n");
 }
 `,
-          "/src/sample.js": `export const SAMPLE = \`# Release notes
+          "/src/data/sample.js": `export const SAMPLE = \`# Release notes
 
 Version **2.1** adds *dark mode* and a \\\`--quiet\\\` flag.
 
@@ -9988,8 +9988,8 @@ The JIT run printed the same lines, matching React and Vue. A separate check pri
 **Conclusion:** In Angular the previewer is a typed parser that escapes first and allowlists links, a computed signal for the HTML, and \`[innerHTML]\` with the built-in sanitiser as a second layer that, verified here, had nothing to strip. Both compile modes on Angular 22.2.3 matched React and Vue exactly, with the payloads displayed as text. Related: [the basic rich text editor](/interview-question/build-a-basic-rich-text-editor).`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { markdownToHtml } from "./markdown";
-import { SAMPLE } from "./sample";
+import { markdownToHtml } from "./utils/markdown";
+import { SAMPLE } from "./data/sample";
 
 @Component({
   selector: "app-root",
@@ -10155,7 +10155,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/markdown.ts": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
+          "/src/app/utils/markdown.ts": `// A small hand-written Markdown parser. Supported: # headings (1 to 3),
 // paragraphs, **bold**, *italic*, \`inline code\`, fenced code blocks,
 // - and 1. lists, > quotes, --- rules and [links](https://...).
 //
@@ -10291,7 +10291,7 @@ export function markdownToHtml(source: string): string {
   return out.join("\\n");
 }
 `,
-          "/src/app/sample.ts": `export const SAMPLE = \`# Release notes
+          "/src/app/data/sample.ts": `export const SAMPLE = \`# Release notes
 
 Version **2.1** adds *dark mode* and a \\\`--quiet\\\` flag.
 

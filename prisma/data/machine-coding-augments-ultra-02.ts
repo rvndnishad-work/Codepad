@@ -139,7 +139,7 @@ One family emoji is 1 grapheme, 5 code points, 8 code units and 18 bytes. Four h
 
 Only the accent box is state. Everything else is a plain <code>const</code> computed on each render. The other state is <code>enforce</code> (the checkbox) and, in the parent, the list of posts.
 
-**Component tree:** <code>App</code> holds the posted messages and renders <code>CharacterCounter</code>, which owns the text and the checkbox and calls <code>onPost(text)</code>. The counting helpers live in <code>src/graphemes.js</code> so they can be unit tested without React.
+**Component tree:** <code>App</code> holds the posted messages and renders <code>CharacterCounter</code>, which owns the text and the checkbox and calls <code>onPost(text)</code>. The counting helpers live in <code>src/utils/graphemes.js</code> so they can be unit tested without React.
 
 ## 4. Build It Step by Step
 
@@ -401,7 +401,7 @@ Not verified here: visual colours (jsdom drops styles) and how a specific screen
 **Conclusion:** A character counter is one piece of state, the text, with everything else derived from it: the count, the remaining number, the ok/warn/over status, the button state and the announcement. The real substance is the definition of a character: <code>length</code> counts code units, <code>maxlength</code> does the same and can cut an emoji, and <code>Intl.Segmenter</code> counts what the user sees. Add a hard limit that truncates by graphemes and waits for IME composition, wire up <code>aria-describedby</code>, <code>aria-invalid</code> and a quiet live region, and you have shown an interviewer you understand both React and text.`,
         files: {
         "/App.js": `import { useState } from "react";
-import CharacterCounter from "./src/CharacterCounter";
+import CharacterCounter from "./src/components/CharacterCounter";
 
 export default function App() {
   const [posts, setPosts] = useState([]);
@@ -422,8 +422,8 @@ export default function App() {
   );
 }
 `,
-        "/src/CharacterCounter.js": `import { useId, useState } from "react";
-import { countGraphemes, truncateGraphemes } from "./graphemes";
+        "/src/components/CharacterCounter.js": `import { useId, useState } from "react";
+import { countGraphemes, truncateGraphemes } from "../utils/graphemes";
 
 export default function CharacterCounter({ limit = 50, warnAt = 10, onPost }) {
   const id = useId();
@@ -508,7 +508,7 @@ export default function CharacterCounter({ limit = 50, warnAt = 10, onPost }) {
   );
 }
 `,
-        "/src/graphemes.js": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
+        "/src/utils/graphemes.js": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
 // skin tone, one family emoji or one accented letter is ONE character even
 // though JavaScript's string.length counts UTF-16 code units (2, 4, 8 ...).
 const segmenter =
@@ -658,7 +658,7 @@ In Vue the model maps neatly onto the reactivity primitives:
 
 ### Step 1: grapheme helpers (plain JavaScript)
 
-<code>src/graphemes.js</code> is framework-free and shared with the other tabs. It creates one <code>Intl.Segmenter</code> with <code>granularity: "grapheme"</code>, splits text into graphemes, counts them and truncates by them, falling back to <code>Array.from</code> (code points) where the API is missing.
+<code>src/utils/graphemes.js</code> is framework-free and shared with the other tabs. It creates one <code>Intl.Segmenter</code> with <code>granularity: "grapheme"</code>, splits text into graphemes, counts them and truncates by them, falling back to <code>Array.from</code> (code points) where the API is missing.
 
 📌 **Interview term: Intl.Segmenter** — a built-in API that splits text by Unicode rules. Firefox was the last engine to ship it, in version 125 in April 2024 ([Firefox 125 notes](https://developer.mozilla.org/docs/Mozilla/Firefox/Releases/125)).
 
@@ -903,7 +903,7 @@ h1 {
 `,
         "/src/components/CharacterCounter.vue": `<script setup>
 import { computed, ref, useId } from "vue";
-import { countGraphemes, truncateGraphemes } from "../graphemes.js";
+import { countGraphemes, truncateGraphemes } from "../utils/graphemes.js";
 
 const props = defineProps({
   limit: { type: Number, default: 50 },
@@ -1075,7 +1075,7 @@ button:disabled {
 }
 </style>
 `,
-        "/src/graphemes.js": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
+        "/src/utils/graphemes.js": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
 // skin tone, one family emoji or one accented letter is ONE character even
 // though JavaScript's string.length counts UTF-16 code units (2, 4, 8 ...).
 const segmenter =
@@ -1322,7 +1322,7 @@ The IME was faked with an <code>InputEvent</code> carrying <code>isComposing: tr
 **Conclusion:** In Angular the counter is two signals and a set of <code>computed()</code> values, with <code>@Input</code> for configuration and an <code>@Output</code> for posting. Counting with <code>Intl.Segmenter</code> makes emoji count as one, and the hard limit truncates by graphemes, waits for IME composition and writes the value back when truncation changes nothing. Both the AOT strict build and the runtime JIT build printed the same verified behaviour on Angular 22.2.3.`,
         files: {
         "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { CharacterCounterComponent } from "./character-counter.component";
+import { CharacterCounterComponent } from "./components/character-counter.component";
 
 @Component({
   selector: "app-root",
@@ -1376,7 +1376,7 @@ export class AppComponent {
   }
 }
 `,
-        "/src/app/character-counter.component.ts": `import {
+        "/src/app/components/character-counter.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -1384,7 +1384,7 @@ export class AppComponent {
   computed,
   signal,
 } from "@angular/core";
-import { countGraphemes, truncateGraphemes } from "./graphemes";
+import { countGraphemes, truncateGraphemes } from "../utils/graphemes";
 
 let nextId = 0;
 
@@ -1521,7 +1521,7 @@ export class CharacterCounterComponent {
   }
 }
 `,
-        "/src/app/graphemes.ts": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
+        "/src/app/utils/graphemes.ts": `// A "character" as a person sees it is a grapheme cluster: one emoji with a
 // skin tone, one family emoji or one accented letter is ONE character even
 // though JavaScript's string.length counts UTF-16 code units (2, 4, 8 ...).
 const segmenter =
@@ -1868,7 +1868,7 @@ jsdom cannot show the masking itself (it has no rendering), so this was checked 
 **Conclusion:** A show/hide password input is one boolean that drives the input's <code>type</code>, wrapped in the details that make it safe and accessible: a <code>type="button"</code> toggle with a clear accessible name and <code>aria-controls</code>, a polite announcement, a Caps Lock hint from <code>getModifierState</code>, security attributes for spell-check and password managers, and a submit listener that always hides the password again. Verified on React 19.3.1, the value survives every toggle and the submit flips the field back before the request goes out.`,
         files: {
         "/App.js": `import { useState } from "react";
-import PasswordInput from "./src/PasswordInput";
+import PasswordInput from "./src/components/PasswordInput";
 
 // Simulated server: no network in the playground.
 function fakeSignIn(username, password) {
@@ -1927,7 +1927,7 @@ export default function App() {
   );
 }
 `,
-        "/src/PasswordInput.js": `import { useEffect, useId, useRef, useState } from "react";
+        "/src/components/PasswordInput.js": `import { useEffect, useId, useRef, useState } from "react";
 
 export default function PasswordInput({
   label = "Password",
@@ -2796,7 +2796,7 @@ Value kept across toggles, the accessible name and announcement in sync, Caps Lo
 **Conclusion:** The Angular password input is three signals and an input/output pair for the value, with the input's <code>[type]</code> bound to <code>visible()</code>. A <code>type="button"</code> toggle with <code>[attr.aria-label]</code> and <code>[attr.aria-controls]</code>, a polite live region, a Caps Lock hint, security attributes and a submit listener managed in <code>ngAfterViewInit</code> and <code>ngOnDestroy</code> complete it. Both compile modes on Angular 22.2.3 produced the same verified behaviour.`,
         files: {
         "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { PasswordInputComponent } from "./password-input.component";
+import { PasswordInputComponent } from "./components/password-input.component";
 
 // Simulated server: no network in the playground.
 function fakeSignIn(username: string, password: string) {
@@ -2870,7 +2870,7 @@ export class AppComponent {
   }
 }
 `,
-        "/src/app/password-input.component.ts": `import {
+        "/src/app/components/password-input.component.ts": `import {
   AfterViewInit,
   Component,
   ElementRef,
@@ -3353,8 +3353,8 @@ When collapsing a very long text the button moves up the page and can end up far
 ---
 **Conclusion:** Read More is one boolean of state per instance, with the preview derived by a pure function that cuts by graphemes, backs off to a word boundary and trims punctuation before the ellipsis. A native button with <code>aria-expanded</code> and <code>aria-controls</code> makes it accessible, and the button only appears when something is hidden. If the requirement is lines rather than characters, <code>-webkit-line-clamp</code> does the cutting, but deciding whether to show the button needs a layout measurement, which jsdom cannot do and which Chromium 141 showed working with <code>scrollHeight</code> and <code>clientHeight</code>.`,
         files: {
-        "/App.js": `import ReadMore from "./src/ReadMore";
-import { reviews } from "./src/reviews";
+        "/App.js": `import ReadMore from "./src/components/ReadMore";
+import { reviews } from "./src/data/reviews";
 
 export default function App() {
   return (
@@ -3370,8 +3370,8 @@ export default function App() {
   );
 }
 `,
-        "/src/ReadMore.js": `import { useId, useMemo, useState } from "react";
-import { truncateText } from "./truncate";
+        "/src/components/ReadMore.js": `import { useId, useMemo, useState } from "react";
+import { truncateText } from "../utils/truncate";
 
 export default function ReadMore({ text, maxChars = 120 }) {
   const id = useId();
@@ -3403,7 +3403,7 @@ export default function ReadMore({ text, maxChars = 120 }) {
   );
 }
 `,
-        "/src/reviews.js": `export const reviews = [
+        "/src/data/reviews.js": `export const reviews = [
   {
     id: 1,
     author: "Priya",
@@ -3413,7 +3413,7 @@ export default function ReadMore({ text, maxChars = 120 }) {
   { id: 3, author: "Mei", text: "🎉".repeat(130) },
 ];
 `,
-        "/src/truncate.js": `const segmenter =
+        "/src/utils/truncate.js": `const segmenter =
   typeof Intl !== "undefined" && Intl.Segmenter
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
     : null;
@@ -3521,7 +3521,7 @@ A <code>ReadMore</code> component with <code>text</code> and <code>maxChars</cod
 
 ### Step 1: the truncation function
 
-<code>src/truncate.js</code> is plain JavaScript shared with the other tabs:
+<code>src/utils/truncate.js</code> is plain JavaScript shared with the other tabs:
 
 ~~~js
 export function truncateText(text, maxChars) {
@@ -3545,7 +3545,7 @@ The back-off to the last space only happens if at least 60 percent of the allowe
 ~~~vue
 <script setup>
 import { computed, ref, useId } from "vue";
-import { truncateText } from "../truncate.js";
+import { truncateText } from "../utils/truncate.js";
 
 const props = defineProps({
   text: { type: String, required: true },
@@ -3711,7 +3711,7 @@ Long review: 117 characters collapsed (cut after "the lid" plus "…"), 276 expa
         files: {
         "/src/App.vue": `<script setup>
 import ReadMore from "./components/ReadMore.vue";
-import { reviews } from "./reviews.js";
+import { reviews } from "./data/reviews.js";
 </script>
 
 <template>
@@ -3757,7 +3757,7 @@ h1 {
 `,
         "/src/components/ReadMore.vue": `<script setup>
 import { computed, ref, useId } from "vue";
-import { truncateText } from "../truncate.js";
+import { truncateText } from "../utils/truncate.js";
 
 const props = defineProps({
   text: { type: String, required: true },
@@ -3815,7 +3815,7 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
 }
 </style>
 `,
-        "/src/reviews.js": `export const reviews = [
+        "/src/data/reviews.js": `export const reviews = [
   {
     id: 1,
     author: "Priya",
@@ -3825,7 +3825,7 @@ const cut = computed(() => truncateText(props.text, props.maxChars));
   { id: 3, author: "Mei", text: "🎉".repeat(130) },
 ];
 `,
-        "/src/truncate.js": `const segmenter =
+        "/src/utils/truncate.js": `const segmenter =
   typeof Intl !== "undefined" && Intl.Segmenter
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
     : null;
@@ -4064,8 +4064,8 @@ after Show less card3: chars=121 button="Read more" aria-expanded=false
 **Conclusion:** The Angular Read More component is one <code>expanded</code> signal and one <code>computed()</code> over inputs mirrored in <code>ngOnChanges</code>, with a pure grapheme-safe truncation function doing the real work. <code>@if</code> renders the button only when needed, attribute bindings carry the ARIA state, and <code>@for ... track r.id</code> keeps each review's state its own. Line clamping is the layout-based alternative, measured in Chromium because jsdom cannot.`,
         files: {
         "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { ReadMoreComponent } from "./read-more.component";
-import { reviews } from "./reviews";
+import { ReadMoreComponent } from "./components/read-more.component";
+import { reviews } from "./data/reviews";
 
 @Component({
   selector: "app-root",
@@ -4120,8 +4120,8 @@ export class AppComponent {
   readonly reviews = reviews;
 }
 `,
-        "/src/app/read-more.component.ts": `import { Component, Input, OnChanges, computed, signal } from "@angular/core";
-import { truncateText } from "./truncate";
+        "/src/app/components/read-more.component.ts": `import { Component, Input, OnChanges, computed, signal } from "@angular/core";
+import { truncateText } from "../utils/truncate";
 
 let nextId = 0;
 
@@ -4176,7 +4176,7 @@ export class ReadMoreComponent implements OnChanges {
   }
 }
 `,
-        "/src/app/reviews.ts": `export interface Review {
+        "/src/app/data/reviews.ts": `export interface Review {
   id: number;
   author: string;
   text: string;
@@ -4192,7 +4192,7 @@ export const reviews: Review[] = [
   { id: 3, author: "Mei", text: "🎉".repeat(130) },
 ];
 `,
-        "/src/app/truncate.ts": `const segmenter =
+        "/src/app/utils/truncate.ts": `const segmenter =
   typeof Intl !== "undefined" && Intl.Segmenter
     ? new Intl.Segmenter(undefined, { granularity: "grapheme" })
     : null;
@@ -4563,7 +4563,7 @@ The badge goes 2 → 1 → hidden as items are read; the accessible name always 
 **Conclusion:** A notification badge is a view of a list: the unread count, the <code>99+</code> label and the accessible name are all derived from the notifications, so they can never disagree. Render the badge only above zero, hide it from screen readers while the button's name carries the exact count, give the bell disclosure semantics, close the panel on Escape and outside clicks with cleaned-up listeners, and update the list immutably with pure updaters, a rule the verified StrictMode run enforced in practice.`,
         files: {
         "/App.js": `import { useRef, useState } from "react";
-import NotificationBell from "./src/NotificationBell";
+import NotificationBell from "./src/components/NotificationBell";
 
 const initial = [
   { id: 3, text: "Sam commented on your post", read: false },
@@ -4625,7 +4625,7 @@ export default function App() {
   );
 }
 `,
-        "/src/NotificationBell.js": `import { useEffect, useId, useRef, useState } from "react";
+        "/src/components/NotificationBell.js": `import { useEffect, useId, useRef, useState } from "react";
 
 export function badgeLabel(count, max) {
   return count > max ? max + "+" : String(count);
@@ -5674,7 +5674,7 @@ Badge 2 → 1 → hidden; exact counts in the accessible name; Escape closes and
 import {
   Notification,
   NotificationBellComponent,
-} from "./notification-bell.component";
+} from "./components/notification-bell.component";
 
 @Component({
   selector: "app-root",
@@ -5753,7 +5753,7 @@ export class AppComponent {
   }
 }
 `,
-        "/src/app/notification-bell.component.ts": `import {
+        "/src/app/components/notification-bell.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -6254,7 +6254,7 @@ Typing alone changed nothing (draft vs committed); 4 x 5 produced the snake rows
 ---
 **Conclusion:** Generate Table is a lesson in what to store. The inputs hold a string draft, submission validates it and commits a numeric size, and the whole grid is derived from that size with a closed-form formula, <code>col * rows + row + 1</code> going down and <code>col * rows + (rows - row)</code> coming back up. Errors are per field with <code>aria-invalid</code> and <code>aria-describedby</code>, the last valid table stays visible, and a size cap keeps the DOM small, all confirmed by the verified run on React 19.3.1.`,
         files: {
-        "/App.js": `import TableGenerator from "./src/TableGenerator";
+        "/App.js": `import TableGenerator from "./src/components/TableGenerator";
 
 export default function App() {
   return (
@@ -6265,7 +6265,7 @@ export default function App() {
   );
 }
 `,
-        "/src/table.js": `export const MAX = 20;
+        "/src/utils/table.js": `export const MAX = 20;
 
 // Returns an error message, or "" when value is a whole number from 1 to MAX.
 export function validate(label, value) {
@@ -6288,8 +6288,8 @@ export function buildGrid(rows, cols) {
   );
 }
 `,
-        "/src/TableGenerator.js": `import { useMemo, useState } from "react";
-import { buildGrid, MAX, validate } from "./table";
+        "/src/components/TableGenerator.js": `import { useMemo, useState } from "react";
+import { buildGrid, MAX, validate } from "../utils/table";
 
 export default function TableGenerator() {
   // Draft: what is in the inputs right now (strings, can be invalid).
@@ -6491,7 +6491,7 @@ Rows and Columns inputs (1 to 20), a Generate button, Enter submits, per-field e
 
 ### Step 1: pure helpers
 
-<code>src/table.js</code> holds <code>validate(label, value)</code>, <code>cellValue(row, col, rows)</code> and <code>buildGrid(rows, cols)</code>. The formula: even columns count down with <code>col * rows + row + 1</code>, odd columns count up with <code>col * rows + (rows - row)</code>. <code>validate</code> converts with <code>String(value).trim()</code> first, and the next step shows why that matters in Vue.
+<code>src/utils/table.js</code> holds <code>validate(label, value)</code>, <code>cellValue(row, col, rows)</code> and <code>buildGrid(rows, cols)</code>. The formula: even columns count down with <code>col * rows + row + 1</code>, odd columns count up with <code>col * rows + (rows - row)</code>. <code>validate</code> converts with <code>String(value).trim()</code> first, and the next step shows why that matters in Vue.
 
 ### Step 2: the v-model number surprise
 
@@ -6709,7 +6709,7 @@ h1 {
 `,
         "/src/components/TableGenerator.vue": `<script setup>
 import { computed, reactive, ref } from "vue";
-import { buildGrid, MAX, validate } from "../table.js";
+import { buildGrid, MAX, validate } from "../utils/table.js";
 
 // Draft: what is in the inputs now. v-model on type="number" hands back a
 // number (or "" when empty), so validate() accepts both.
@@ -6854,7 +6854,7 @@ td {
 }
 </style>
 `,
-        "/src/table.js": `export const MAX = 20;
+        "/src/utils/table.js": `export const MAX = 20;
 
 // Returns an error message, or "" when value is a whole number from 1 to MAX.
 export function validate(label, value) {
@@ -7100,7 +7100,7 @@ No table until Generate, the 4 x 5 snake, both errors with the old table kept, 1
 **Conclusion:** The Angular Generate Table keeps a draft signal fed by <code>ngModel</code>, validates on <code>ngSubmit</code>, commits a numeric size and derives the grid with <code>computed()</code> from a closed-form formula. The Angular-specific detail is that <code>ngModel</code> on a number input yields <code>number | null</code>, verified by logging, and <code>@if ... as</code> with <code>@for ... track</code> renders the table cleanly under strict templates.`,
         files: {
         "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { TableGeneratorComponent } from "./table-generator.component";
+import { TableGeneratorComponent } from "./components/table-generator.component";
 
 @Component({
   selector: "app-root",
@@ -7134,9 +7134,9 @@ import { TableGeneratorComponent } from "./table-generator.component";
 })
 export class AppComponent {}
 `,
-        "/src/app/table-generator.component.ts": `import { Component, computed, signal } from "@angular/core";
+        "/src/app/components/table-generator.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { buildGrid, MAX, validate } from "./table";
+import { buildGrid, MAX, validate } from "../utils/table";
 
 @Component({
   selector: "app-table-generator",
@@ -7245,7 +7245,7 @@ export class TableGeneratorComponent {
   }
 }
 `,
-        "/src/app/table.ts": `export const MAX = 20;
+        "/src/app/utils/table.ts": `export const MAX = 20;
 
 // Returns an error message, or "" when value is a whole number from 1 to MAX.
 export function validate(label: string, value: string | number): string {
@@ -7622,8 +7622,8 @@ Not verified here: the visual overlap, the real loading of the data-URL photos a
 ---
 **Conclusion:** An avatar group is a slice of a list plus careful presentation: visible and hidden derived from <code>people</code> and <code>max</code> with no "+1", a per-avatar image fallback to initials on a deterministic colour, a reset key when the photo changes, explicit <code>z-index</code> on positioned items so the first avatar is on top, and tooltips on hover and focus. A labelled list, one accessible name per avatar and a real +N button make it usable without a mouse, as the verified run on React 19.3.1 showed.`,
         files: {
-        "/App.js": `import AvatarGroup from "./src/AvatarGroup";
-import { people } from "./src/people";
+        "/App.js": `import AvatarGroup from "./src/components/AvatarGroup";
+import { people } from "./src/data/people";
 
 export default function App() {
   return (
@@ -7641,8 +7641,8 @@ export default function App() {
   );
 }
 `,
-        "/src/Avatar.js": `import { useState } from "react";
-import { colorFor, initials } from "./people";
+        "/src/components/Avatar.js": `import { useState } from "react";
+import { colorFor, initials } from "../data/people";
 
 export default function Avatar({ person, size, z }) {
   const [failed, setFailed] = useState(false);
@@ -7690,7 +7690,7 @@ export default function Avatar({ person, size, z }) {
   );
 }
 `,
-        "/src/AvatarGroup.js": `import { useState } from "react";
+        "/src/components/AvatarGroup.js": `import { useState } from "react";
 import Avatar from "./Avatar";
 
 export default function AvatarGroup({
@@ -7748,7 +7748,7 @@ export default function AvatarGroup({
   );
 }
 `,
-        "/src/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
+        "/src/data/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
 const PHOTO_A =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
 const PHOTO_B =
@@ -7901,7 +7901,7 @@ Up to 4 overlapping avatars then a <code>+N</code> button (never "+1"), initials
 
 ### Step 1: helpers
 
-<code>src/people.js</code> exports the demo data (two tiny inline PNG photos, one deliberately broken URL, four people with no photo), <code>initials(name)</code> (first and last word, first code point each, "Plato" gives "P") and <code>colorFor(name)</code>, which hashes the name into a hue so a person always gets the same colour.
+<code>src/data/people.js</code> exports the demo data (two tiny inline PNG photos, one deliberately broken URL, four people with no photo), <code>initials(name)</code> (first and last word, first code point each, "Plato" gives "P") and <code>colorFor(name)</code>, which hashes the name into a hue so a person always gets the same colour.
 
 ### Step 2: the group
 
@@ -8110,7 +8110,7 @@ Seven people give four avatars and "+3"; five give all five; z-index runs 4 to 0
         files: {
         "/src/App.vue": `<script setup>
 import AvatarGroup from "./components/AvatarGroup.vue";
-import { people } from "./people.js";
+import { people } from "./data/people.js";
 </script>
 
 <template>
@@ -8160,7 +8160,7 @@ h1 {
 `,
         "/src/components/Avatar.vue": `<script setup>
 import { computed, ref, watch } from "vue";
-import { colorFor, initials } from "../people.js";
+import { colorFor, initials } from "../data/people.js";
 
 const props = defineProps({
   person: { type: Object, required: true },
@@ -8334,7 +8334,7 @@ const hidden = computed(() => props.people.slice(visibleCount.value));
 }
 </style>
 `,
-        "/src/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
+        "/src/data/people.js": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
 const PHOTO_A =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
 const PHOTO_B =
@@ -8604,8 +8604,8 @@ Four avatars plus "+3" for seven, all five for five, z-index 4 to 0, the broken 
 **Conclusion:** The Angular avatar group mirrors its inputs into signals, derives <code>visible</code> and <code>hidden</code> with <code>computed()</code>, and keeps per-avatar state as keyed signals: the id showing a tooltip and an immutable set of failed URLs. Built-in control flow renders photos or initials, style bindings handle the stacking, and attribute bindings carry the accessibility. AOT and JIT runs on Angular 22.2.3 printed the same verified behaviour.`,
         files: {
         "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { AvatarGroupComponent } from "./avatar-group.component";
-import { people } from "./people";
+import { AvatarGroupComponent } from "./components/avatar-group.component";
+import { people } from "./data/people";
 
 @Component({
   selector: "app-root",
@@ -8665,8 +8665,8 @@ export class AppComponent {
   readonly reviewers = people.slice(0, 5);
 }
 `,
-        "/src/app/avatar-group.component.ts": `import { Component, Input, OnChanges, computed, signal } from "@angular/core";
-import { Person, colorFor, initials } from "./people";
+        "/src/app/components/avatar-group.component.ts": `import { Component, Input, OnChanges, computed, signal } from "@angular/core";
+import { Person, colorFor, initials } from "../data/people";
 
 @Component({
   selector: "app-avatar-group",
@@ -8801,7 +8801,7 @@ export class AvatarGroupComponent implements OnChanges {
   }
 }
 `,
-        "/src/app/people.ts": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
+        "/src/app/data/people.ts": `// Two tiny gradient PNGs stand in for profile photos (no network needed).
 const PHOTO_A =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAnUlEQVR42mOoCz9UE3m4KuZoRdzxssQTJSmnitLOFGSezcs+n513MavwckbxlbSyaykVN5KqbybU3WYgSXVcw10GklTHNN9jIEl1VOsDBpJUR3Q8YiBJdVj3EwaSVIf0PmUgSXXQhOcMJKkOmPSSgSTVflNfMZCk2mfGGwaSVHvNesdAkmqPue8ZSFLtNv8jA0mqXRZ9ZiBJtdPSrwBqXrisqzAjWQAAAABJRU5ErkJggg==";
 const PHOTO_B =

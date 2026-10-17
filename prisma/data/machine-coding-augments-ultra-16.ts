@@ -81,7 +81,7 @@ The game looks like a beginner exercise, but it quietly tests the things that br
 
 ## 3. Requirements and Plan
 
-The plan has two layers. The bottom layer is **plain JavaScript** in <code>src/memory.js</code>: it knows the rules and nothing about React. The top layer is two components that render the game and decide *when* to call the rules.
+The plan has two layers. The bottom layer is **plain JavaScript** in <code>src/utils/memory.js</code>: it knows the rules and nothing about React. The top layer is two components that render the game and decide *when* to call the rules.
 
 📌 **Interview term: Pure function** — a function whose result depends only on its arguments and which changes nothing outside itself. <code>flip(game, 3)</code> always returns the same new game for the same inputs and never edits the old one. Pure functions are trivial to unit test and safe to call twice, which matters under StrictMode (section 5).
 
@@ -381,8 +381,8 @@ jsdom has no layout or paint, so the driver checked DOM state and timing only. A
 **Conclusion:** A memory game is three ideas done carefully. Keep the rules in pure functions with an injected random source, so the deck is fair and testable. Derive the lock from the open cards instead of storing a flag. And let the flip-back timer be owned by an effect that starts when the board locks and is cleaned up on reset and unmount. With those in place, fast clicks, mid-delay resets and StrictMode all behave, and the same rules file drives the [Wordle](/interview-question/build-wordle) and [Minesweeper](/interview-question/build-minesweeper) style of build too.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import Card from "./src/Card";
-import { createGame, flip, hideUnmatched, isLocked, isWon } from "./src/memory";
+import Card from "./src/components/Card";
+import { createGame, flip, hideUnmatched, isLocked, isWon } from "./src/utils/memory";
 
 const FLIP_BACK_MS = 800;
 
@@ -437,7 +437,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Card.js": `export default function Card({ index, symbol, faceUp, matched, onFlip }) {
+          "/src/components/Card.js": `export default function Card({ index, symbol, faceUp, matched, onFlip }) {
   const label = faceUp
     ? "Card " + (index + 1) + ": " + symbol
     : "Card " + (index + 1) + ": face down";
@@ -455,7 +455,7 @@ export default function App() {
   );
 }
 `,
-          "/src/memory.js": `// Pure game logic: no React, no DOM, no timers. Every function takes a game
+          "/src/utils/memory.js": `// Pure game logic: no React, no DOM, no timers. Every function takes a game
 // object and returns a new one, so the UI layer only decides WHEN to call them.
 
 // Small seeded PRNG (mulberry32). Same seed, same sequence, every run.
@@ -591,7 +591,7 @@ Turn two picture cards over on a table. Two apples stay up. An apple and a banan
 
 Sixteen cards (eight pairs) dealt by a fair shuffle; a mismatch flips back after 800 ms; clicks during that delay are ignored; moves, pairs and a win message; New game at any moment.
 
-The rules live in a plain <code>src/memory.js</code> with no Vue in it: <code>createGame(seed)</code>, <code>flip(game, i)</code>, <code>hideUnmatched(game)</code>, <code>isLocked</code> and <code>isWon</code>. Each returns a **new** game object.
+The rules live in a plain <code>src/utils/memory.js</code> with no Vue in it: <code>createGame(seed)</code>, <code>flip(game, i)</code>, <code>hideUnmatched(game)</code>, <code>isLocked</code> and <code>isWon</code>. Each returns a **new** game object.
 
 📌 **Interview term: Pure function** — output depends only on the inputs and nothing outside is changed. Pure rules can be unit tested without mounting a component, and the component just decides when to call them.
 
@@ -815,7 +815,7 @@ The mismatch locks the board, the third click is ignored, both cards flip back a
           "/src/App.vue": `<script setup>
 import { computed, onUnmounted, ref, watch } from "vue";
 import MemoryCard from "./components/MemoryCard.vue";
-import { createGame, flip, hideUnmatched, isLocked, isWon } from "./memory.js";
+import { createGame, flip, hideUnmatched, isLocked, isWon } from "./utils/memory.js";
 
 const FLIP_BACK_MS = 800;
 const game = ref(createGame(1));
@@ -969,7 +969,7 @@ const emit = defineEmits(["flip"]);
   </button>
 </template>
 `,
-          "/src/memory.js": `// Pure game logic: no React, no DOM, no timers. Every function takes a game
+          "/src/utils/memory.js": `// Pure game logic: no React, no DOM, no timers. Every function takes a game
 // object and returns a new one, so the UI layer only decides WHEN to call them.
 
 // Small seeded PRNG (mulberry32). Same seed, same sequence, every run.
@@ -1256,8 +1256,8 @@ The lock holds, the cards flip back after the delay, the solve takes 9 moves and
 **Conclusion:** In Angular the memory game is one signal holding an immutable <code>Game</code>, two computed signals for the lock and the win, and one effect that owns the flip-back timer through <code>onCleanup</code>. With the rules in pure TypeScript and the deck dealt by a seeded shuffle, the same driver produces the same output in AOT, JIT, React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { MemoryCardComponent } from "./memory-card.component";
-import { createGame, flip, hideUnmatched, isLocked, isWon } from "./memory";
+import { MemoryCardComponent } from "./components/memory-card.component";
+import { createGame, flip, hideUnmatched, isLocked, isWon } from "./utils/memory";
 
 const FLIP_BACK_MS = 800;
 
@@ -1377,7 +1377,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/memory-card.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+          "/src/app/components/memory-card.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 
 @Component({
   selector: "app-memory-card",
@@ -1413,7 +1413,7 @@ export class MemoryCardComponent {
   @Output() flip = new EventEmitter<number>();
 }
 `,
-          "/src/app/memory.ts": `// Pure game logic: no Angular, no DOM, no timers. Every function takes a game
+          "/src/app/utils/memory.ts": `// Pure game logic: no Angular, no DOM, no timers. Every function takes a game
 // object and returns a new one, so the
 // component only decides WHEN to call them.
 
@@ -1537,7 +1537,7 @@ Interviewers use Snake because it mixes a timer, keyboard input that arrives at 
 
 The design has three parts that never mix:
 
-1. **Rules** in <code>src/snake.js</code>: <code>createGame(seed)</code>, <code>turn(game, dir)</code>, <code>step(game)</code>, <code>togglePause(game)</code>. Plain functions, no React, no timers.
+1. **Rules** in <code>src/utils/snake.js</code>: <code>createGame(seed)</code>, <code>turn(game, dir)</code>, <code>step(game)</code>, <code>togglePause(game)</code>. Plain functions, no React, no timers.
 2. **The loop**: one <code>setInterval</code> that calls <code>step</code> every 150 ms while the status is <code>"running"</code>.
 3. **Input**: one <code>keydown</code> listener on <code>window</code> that calls <code>turn</code> or <code>togglePause</code>.
 
@@ -1875,7 +1875,7 @@ A real-time game is hard to make fully accessible; the honest answer in an inter
 **Conclusion:** Snake is a lesson in keeping clocks apart. Input feeds a small, validated direction queue; one interval, owned by an effect that depends only on whether the game is running, advances the world by calling a pure <code>step</code>; and React simply draws whatever game object comes out. Put the RNG state inside that object and the game is reproducible, testable and immune to StrictMode. The same "rules in plain functions" approach drives the [Memory game](/interview-question/build-a-memory-flip-card-game) and [Minesweeper](/interview-question/build-minesweeper).`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import Board from "./src/Board";
+import Board from "./src/components/Board";
 import {
   KEY_TO_DIR,
   TICK_MS,
@@ -1883,7 +1883,7 @@ import {
   step,
   togglePause,
   turn,
-} from "./src/snake";
+} from "./src/utils/snake";
 
 const LABEL = {
   ready: "Press an arrow key or Start",
@@ -1964,7 +1964,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Board.js": `import { SIZE } from "./snake";
+          "/src/components/Board.js": `import { SIZE } from "../utils/snake";
 
 // Purely presentational: it renders whatever snake and food it is given.
 export default function Board({ snake, food }) {
@@ -2006,7 +2006,7 @@ export default function Board({ snake, food }) {
   );
 }
 `,
-          "/src/snake.js": `// Pure Snake logic. A game is a plain object; every function returns a new one.
+          "/src/utils/snake.js": `// Pure Snake logic. A game is a plain object; every function returns a new one.
 // Cells are numbered row * SIZE + col. The snake array is head first.
 
 export const SIZE = 12;
@@ -2216,7 +2216,7 @@ A toy train moves one tile every time a metronome clicks. You shout directions; 
 
 A 12 by 12 grid, a 150 ms tick, arrows and WASD to steer, food that grows the snake, walls and body that end the game, Space to pause, Restart, and touch buttons.
 
-The rules live in a plain <code>src/snake.js</code> with no Vue in it: <code>createGame(seed)</code>, <code>turn(game, dir)</code>, <code>step(game)</code>, <code>togglePause(game)</code>. Each returns a new game object.
+The rules live in a plain <code>src/utils/snake.js</code> with no Vue in it: <code>createGame(seed)</code>, <code>turn(game, dir)</code>, <code>step(game)</code>, <code>togglePause(game)</code>. Each returns a new game object.
 
 📌 **Interview term: Game loop** — the repeating "advance the world one step, then draw" cycle. Here the step is the pure <code>step()</code> and Vue does the drawing.
 
@@ -2454,7 +2454,7 @@ import {
   step,
   togglePause,
   turn,
-} from "./snake.js";
+} from "./utils/snake.js";
 
 const LABEL = {
   ready: "Press an arrow key or Start",
@@ -2633,7 +2633,7 @@ button:focus-visible {
 `,
           "/src/components/SnakeBoard.vue": `<script setup>
 import { computed } from "vue";
-import { SIZE } from "../snake.js";
+import { SIZE } from "../utils/snake.js";
 
 const props = defineProps({
   snake: { type: Array, required: true },
@@ -2673,7 +2673,7 @@ const kinds = computed(() => {
   </div>
 </template>
 `,
-          "/src/snake.js": `// Pure Snake logic. A game is a plain object; every function returns a new one.
+          "/src/utils/snake.js": `// Pure Snake logic. A game is a plain object; every function returns a new one.
 // Cells are numbered row * SIZE + col. The snake array is head first.
 
 export const SIZE = 12;
@@ -3000,7 +3000,7 @@ The loop exists only while running, opposite keys and the queued-180 case are dr
   effect,
   signal,
 } from "@angular/core";
-import { SnakeBoardComponent } from "./snake-board.component";
+import { SnakeBoardComponent } from "./components/snake-board.component";
 import {
   Dir,
   Game,
@@ -3010,7 +3010,7 @@ import {
   step,
   togglePause,
   turn,
-} from "./snake";
+} from "./utils/snake";
 
 const LABEL: Record<string, string> = {
   ready: "Press an arrow key or Start",
@@ -3124,8 +3124,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/snake-board.component.ts": `import { ChangeDetectionStrategy, Component, Input } from "@angular/core";
-import { SIZE } from "./snake";
+          "/src/app/components/snake-board.component.ts": `import { ChangeDetectionStrategy, Component, Input } from "@angular/core";
+import { SIZE } from "../utils/snake";
 
 @Component({
   selector: "app-snake-board",
@@ -3214,7 +3214,7 @@ export class SnakeBoardComponent {
   }
 }
 `,
-          "/src/app/snake.ts": `// Pure Snake logic. A game is a plain object; every function returns a new one.
+          "/src/app/utils/snake.ts": `// Pure Snake logic. A game is a plain object; every function returns a new one.
 // Cells are numbered row * SIZE + col. The snake array is head first.
 
 export type Dir = "up" | "down" | "left" | "right";
@@ -3703,7 +3703,7 @@ A separate check in Chromium 141 (playwright-core, 360 px wide viewport) loaded 
 **Conclusion:** A Sudoku board is one array of 81 numbers and a handful of pure functions. Precompute the 27 units, flag repeated values in each, and derive the highlights, the counts and the solved state from the array on every change. Add strict input sanitising, a guard on givens and roving tabindex, and the board is correct, fast and usable from the keyboard. The same "derive, do not store" idea powers the neighbour counts in [Minesweeper](/interview-question/build-minesweeper).`,
         files: {
           "/App.js": `import { useMemo, useRef, useState } from "react";
-import Cell from "./src/Cell";
+import Cell from "./src/components/Cell";
 import {
   PUZZLE,
   digitFrom,
@@ -3713,7 +3713,7 @@ import {
   moveFrom,
   parse,
   setCell,
-} from "./src/sudoku";
+} from "./src/utils/sudoku";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -3775,7 +3775,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Cell.js": `import { colOf, rowOf } from "./sudoku";
+          "/src/components/Cell.js": `import { colOf, rowOf } from "../utils/sudoku";
 
 export default function Cell({
   index,
@@ -3827,7 +3827,7 @@ export default function Cell({
   );
 }
 `,
-          "/src/sudoku.js": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
+          "/src/utils/sudoku.js": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
 // read left to right, top to bottom (index = row * 9 + col).
 
 // A classic puzzle with a unique solution (0 = blank).
@@ -3992,7 +3992,7 @@ A Sudoku is a 9 by 9 grid of nine 3 by 3 boxes. Some digits are printed (the **g
 
 📌 **Interview term: Unit** — a row, a column or a box: 27 in total, three per cell. Cells sharing a unit are **peers** (20 per cell).
 
-The rules live in a plain <code>src/sudoku.js</code>: <code>findConflicts</code>, <code>setCell</code>, <code>digitFrom</code>, <code>isPeer</code>, <code>moveFrom</code>.
+The rules live in a plain <code>src/utils/sudoku.js</code>: <code>findConflicts</code>, <code>setCell</code>, <code>digitFrom</code>, <code>isPeer</code>, <code>moveFrom</code>.
 
 | Piece | Vue primitive | Why |
 | :--- | :--- | :--- |
@@ -4222,7 +4222,7 @@ import {
   moveFrom,
   parse,
   setCell,
-} from "./sudoku.js";
+} from "./utils/sudoku.js";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -4372,7 +4372,7 @@ button {
 `,
           "/src/components/SudokuCell.vue": `<script setup>
 import { computed } from "vue";
-import { colOf, rowOf } from "../sudoku.js";
+import { colOf, rowOf } from "../utils/sudoku.js";
 
 const props = defineProps({
   index: { type: Number, required: true },
@@ -4419,7 +4419,7 @@ function onInput(e) {
   />
 </template>
 `,
-          "/src/sudoku.js": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
+          "/src/utils/sudoku.js": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
 // read left to right, top to bottom (index = row * 9 + col).
 
 // A classic puzzle with a unique solution (0 = blank).
@@ -4736,7 +4736,7 @@ Every member of each duplicate is flagged and un-flagged correctly, rejected tex
   computed,
   signal,
 } from "@angular/core";
-import { SudokuCellComponent } from "./sudoku-cell.component";
+import { SudokuCellComponent } from "./components/sudoku-cell.component";
 import {
   PUZZLE,
   digitFrom,
@@ -4746,7 +4746,7 @@ import {
   moveFrom,
   parse,
   setCell,
-} from "./sudoku";
+} from "./utils/sudoku";
 
 const START = parse(PUZZLE);
 const GIVENS = START.map((v) => v > 0);
@@ -4856,7 +4856,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/sudoku-cell.component.ts": `import {
+          "/src/app/components/sudoku-cell.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -4864,7 +4864,7 @@ export class AppComponent {
   Output,
   inject,
 } from "@angular/core";
-import { colOf, rowOf } from "./sudoku";
+import { colOf, rowOf } from "../utils/sudoku";
 
 @Component({
   selector: "app-sudoku-cell",
@@ -4972,7 +4972,7 @@ export class SudokuCellComponent {
   }
 }
 `,
-          "/src/app/sudoku.ts": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
+          "/src/app/utils/sudoku.ts": `// Pure Sudoku logic. The board is an array of 81 numbers, 0 = empty,
 // read left to right, top to bottom (index = row * 9 + col).
 
 // A classic puzzle with a unique solution (0 = blank).
@@ -5465,8 +5465,8 @@ The jsdom verifier dispatches clicks and keys, not right-clicks. A separate chec
 **Conclusion:** Minesweeper is a small data model and one algorithm done carefully. Defer mine placement to the first click and pick mines with a seeded partial Fisher-Yates; open regions with an explicit stack, marking on push and expanding only zeros; count opened cells for the win; and keep the truth (mines, counts) apart from what the player knows (open, flags). The measured stack overflow is the concrete reason to avoid recursion. The same seeded, pure-rules approach is used in the [Memory game](/interview-question/build-a-memory-flip-card-game) and [Snake](/interview-question/build-the-snake-game).`,
         files: {
           "/App.js": `import { useRef, useState } from "react";
-import Cell from "./src/Cell";
-import { createGame, flagsUsed, reveal, toggleFlag } from "./src/minesweeper";
+import Cell from "./src/components/Cell";
+import { createGame, flagsUsed, reveal, toggleFlag } from "./src/utils/minesweeper";
 
 const MESSAGE = {
   ready: "Click any cell to start",
@@ -5557,7 +5557,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Cell.js": `import { view } from "./minesweeper";
+          "/src/components/Cell.js": `import { view } from "../utils/minesweeper";
 
 const SHOW = { hidden: "", flag: "🚩", mine: "💣" };
 
@@ -5618,7 +5618,7 @@ export default function Cell({
   );
 }
 `,
-          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no
+          "/src/utils/minesweeper.js": `// Pure Minesweeper logic: no framework, no
 // DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
@@ -5856,7 +5856,7 @@ A field of tiles hides ten traps. Lift a tile: a trap ends the game; otherwise t
 
 9 by 9, 10 mines, a mines-left counter, New game, a safe first click that opens an area, flood fill on zeros, right-click, F key and a touch Flag mode for flags, loss reveals every mine, opening all safe cells wins, arrow-key navigation.
 
-The rules live in a plain <code>src/minesweeper.js</code>: <code>createGame(seed)</code>, <code>reveal(game, i)</code>, <code>toggleFlag(game, i)</code>, <code>flagsUsed</code> and <code>view(cell)</code>. A cell is <code>{ mine, adj, open, flag }</code>.
+The rules live in a plain <code>src/utils/minesweeper.js</code>: <code>createGame(seed)</code>, <code>reveal(game, i)</code>, <code>toggleFlag(game, i)</code>, <code>flagsUsed</code> and <code>view(cell)</code>. A cell is <code>{ mine, adj, open, flag }</code>.
 
 | Piece | Vue primitive | Why |
 | :--- | :--- | :--- |
@@ -6073,7 +6073,7 @@ The first click opened 36 cells with no mine placed before it, flags block revea
           "/src/App.vue": `<script setup>
 import { computed, nextTick, ref, shallowRef, useTemplateRef } from "vue";
 import MineCell from "./components/MineCell.vue";
-import { createGame, flagsUsed, reveal, toggleFlag } from "./minesweeper.js";
+import { createGame, flagsUsed, reveal, toggleFlag } from "./utils/minesweeper.js";
 
 const MESSAGE = {
   ready: "Click any cell to start",
@@ -6258,7 +6258,7 @@ button[aria-pressed="true"] {
 `,
           "/src/components/MineCell.vue": `<script setup>
 import { computed } from "vue";
-import { view } from "../minesweeper.js";
+import { view } from "../utils/minesweeper.js";
 
 const props = defineProps({
   index: { type: Number, required: true },
@@ -6307,7 +6307,7 @@ const face = computed(() =>
   </button>
 </template>
 `,
-          "/src/minesweeper.js": `// Pure Minesweeper logic: no framework, no
+          "/src/utils/minesweeper.js": `// Pure Minesweeper logic: no framework, no
 // DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
@@ -6692,8 +6692,8 @@ Same boards as React and Vue: 36 cells from the first click, flags block reveals
   computed,
   signal,
 } from "@angular/core";
-import { MineCellComponent } from "./mine-cell.component";
-import { createGame, flagsUsed, reveal, toggleFlag } from "./minesweeper";
+import { MineCellComponent } from "./components/mine-cell.component";
+import { createGame, flagsUsed, reveal, toggleFlag } from "./utils/minesweeper";
 
 const MESSAGE: Record<string, string> = {
   ready: "Click any cell to start",
@@ -6803,7 +6803,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/mine-cell.component.ts": `import {
+          "/src/app/components/mine-cell.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -6811,7 +6811,7 @@ export class AppComponent {
   Output,
   inject,
 } from "@angular/core";
-import { Cell, view } from "./minesweeper";
+import { Cell, view } from "../utils/minesweeper";
 
 @Component({
   selector: "app-mine-cell",
@@ -6895,7 +6895,7 @@ export class MineCellComponent {
   }
 }
 `,
-          "/src/app/minesweeper.ts": `// Pure Minesweeper logic: no framework, no
+          "/src/app/utils/minesweeper.ts": `// Pure Minesweeper logic: no framework, no
 // DOM. Every function returns a new game.
 // Cells are numbered row * cols + col.
 
@@ -7100,7 +7100,7 @@ Now the friend's word is "abide", which has **one** E. Your "speed" has **two**.
 
 ## 3. Requirements and Plan
 
-The plan has a pure core in <code>src/wordle.js</code> and three thin components:
+The plan has a pure core in <code>src/utils/wordle.js</code> and three thin components:
 
 | Piece | Kind | Notes |
 | :--- | :--- | :--- |
@@ -7404,8 +7404,8 @@ A separate check in Chromium 141 (playwright-core, 360 px wide viewport) loaded 
 **Conclusion:** Wordle is a medium question with one hard core: duplicate letters. Score in two passes with a count of unmatched answer letters, prove it on "speed" against "abide", "geese" against "those" and "lolly" against "hello", and keep the rest as pure transitions on one game object. Route both keyboards through a single <code>applyKey</code>, derive the board and the key colours, and the UI is just a view of the state. The same structure, rules first and components second, carries over to [Minesweeper](/interview-question/build-minesweeper) and the [Memory game](/interview-question/build-a-memory-flip-card-game).`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import Board from "./src/Board";
-import Keyboard from "./src/Keyboard";
+import Board from "./src/components/Board";
+import Keyboard from "./src/components/Keyboard";
 import {
   FIRST_SEED,
   applyKey,
@@ -7413,7 +7413,7 @@ import {
   createGame,
   isGameKey,
   letterStates,
-} from "./src/wordle";
+} from "./src/utils/wordle";
 
 export default function App() {
   const [game, setGame] = useState(() => createGame(FIRST_SEED));
@@ -7455,7 +7455,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Board.js": `export default function Board({ rows, guesses }) {
+          "/src/components/Board.js": `export default function Board({ rows, guesses }) {
   return (
     <div className="board" data-testid="board">
       {rows.map((row, r) => {
@@ -7493,7 +7493,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Keyboard.js": `import { KEY_ROWS } from "./wordle";
+          "/src/components/Keyboard.js": `import { KEY_ROWS } from "../utils/wordle";
 
 export default function Keyboard({ states, onKey }) {
   return (
@@ -7527,7 +7527,7 @@ export default function Keyboard({ states, onKey }) {
   );
 }
 `,
-          "/src/wordle.js": `// Pure Wordle logic: no framework, no DOM.
+          "/src/utils/wordle.js": `// Pure Wordle logic: no framework, no DOM.
 
 export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;
@@ -7800,7 +7800,7 @@ A friend picks a five-letter word and colours each letter of your guess: green f
 
 A 6 by 5 grid, typing, Backspace, Enter, "Not enough letters" and "Not in word list" without using a try, correct duplicate-letter scoring, an on-screen keyboard showing each letter's best state, win and loss messages, New game.
 
-The rules live in a plain <code>src/wordle.js</code>: <code>score</code>, <code>createGame(seed)</code>, <code>typeLetter</code>, <code>backspace</code>, <code>submit</code>, <code>applyKey</code>, <code>boardRows</code> and <code>letterStates</code>.
+The rules live in a plain <code>src/utils/wordle.js</code>: <code>score</code>, <code>createGame(seed)</code>, <code>typeLetter</code>, <code>backspace</code>, <code>submit</code>, <code>applyKey</code>, <code>boardRows</code> and <code>letterStates</code>.
 
 | Piece | Vue primitive | Why |
 | :--- | :--- | :--- |
@@ -8021,7 +8021,7 @@ import {
   createGame,
   isGameKey,
   letterStates,
-} from "./wordle.js";
+} from "./utils/wordle.js";
 
 // The pure functions return a new game every time, so a shallowRef is enough.
 const game = shallowRef(createGame(FIRST_SEED));
@@ -8219,7 +8219,7 @@ const label = (row, r, guesses) =>
 </template>
 `,
           "/src/components/WordleKeyboard.vue": `<script setup>
-import { KEY_ROWS } from "../wordle.js";
+import { KEY_ROWS } from "../utils/wordle.js";
 
 defineProps({ states: { type: Object, required: true } });
 const emit = defineEmits(["key"]);
@@ -8247,7 +8247,7 @@ const wide = (k) => k === "+" || k === "-";
   </div>
 </template>
 `,
-          "/src/wordle.js": `// Pure Wordle logic: no framework, no DOM.
+          "/src/utils/wordle.js": `// Pure Wordle logic: no framework, no DOM.
 
 export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;
@@ -8598,8 +8598,8 @@ Invalid guesses cost no try, the sixth letter is ignored, the duplicate cases sc
 **Conclusion:** In Angular, Wordle is one signal holding an immutable game, two computed signals for the board and the key colours, a <code>@HostListener</code> on <code>window</code> and an on-screen keyboard that both call the same <code>applyKey</code>. The typed two-pass <code>score</code> is the real logic, and the Verified output proves it on the duplicate-letter cases in AOT and JIT alike.`,
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, computed, signal } from "@angular/core";
-import { WordleBoardComponent } from "./wordle-board.component";
-import { WordleKeyboardComponent } from "./wordle-keyboard.component";
+import { WordleBoardComponent } from "./components/wordle-board.component";
+import { WordleKeyboardComponent } from "./components/wordle-keyboard.component";
 import {
   FIRST_SEED,
   applyKey,
@@ -8607,7 +8607,7 @@ import {
   createGame,
   isGameKey,
   letterStates,
-} from "./wordle";
+} from "./utils/wordle";
 
 @Component({
   selector: "app-root",
@@ -8666,8 +8666,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/wordle-board.component.ts": `import { Component, Input } from "@angular/core";
-import { Guess, Tile } from "./wordle";
+          "/src/app/components/wordle-board.component.ts": `import { Component, Input } from "@angular/core";
+import { Guess, Tile } from "../utils/wordle";
 
 @Component({
   selector: "app-wordle-board",
@@ -8718,8 +8718,8 @@ export class WordleBoardComponent {
   }
 }
 `,
-          "/src/app/wordle-keyboard.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { KEY_ROWS } from "./wordle";
+          "/src/app/components/wordle-keyboard.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { KEY_ROWS } from "../utils/wordle";
 
 @Component({
   selector: "app-wordle-keyboard",
@@ -8759,7 +8759,7 @@ export class WordleKeyboardComponent {
   wide = (k: string) => k === "+" || k === "-";
 }
 `,
-          "/src/app/wordle.ts": `// Pure Wordle logic: no framework, no DOM.
+          "/src/app/utils/wordle.ts": `// Pure Wordle logic: no framework, no DOM.
 
 export const WORD_LENGTH = 5;
 export const MAX_GUESSES = 6;

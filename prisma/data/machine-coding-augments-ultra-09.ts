@@ -365,7 +365,7 @@ What this proves:
 ---
 **Conclusion:** A debounced search bar is two ideas joined by one effect: a debounced term that changes only after the user pauses, and a request effect that aborts its predecessor in its cleanup. The verified run shows three keystrokes producing one request, and a slow older request being aborted so its results never reach the screen, with the abort landing one microtask after the newer request starts. Name both ideas, explain why debouncing alone does not prevent stale results, and handle the loading, empty and error states, and you have answered the question completely. For the history and suggestion variants, see [search with history](/interview-question/build-a-search-bar-with-history) and [autocomplete](/interview-question/build-an-autocomplete-typeahead-search).`,
         files: {
-          "/App.js": `import SearchBar from "./src/SearchBar";
+          "/App.js": `import SearchBar from "./src/components/SearchBar";
 
 export default function App() {
   return (
@@ -376,7 +376,7 @@ export default function App() {
   );
 }
 `,
-          "/src/api.js": `// Simulated server: there is no network in this demo.
+          "/src/api/api.js": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
 // longer ones are fast (200 ms), so an older
 // request can finish after a newer one.
@@ -424,9 +424,9 @@ export function searchBooks(query, { signal } = {}) {
   });
 }
 `,
-          "/src/SearchBar.js": `import { useEffect, useRef, useState } from "react";
-import { searchBooks } from "./api";
-import { useDebouncedValue } from "./useDebouncedValue";
+          "/src/components/SearchBar.js": `import { useEffect, useRef, useState } from "react";
+import { searchBooks } from "../api/api";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 
 const DELAY = 300;
 
@@ -555,7 +555,7 @@ export default function SearchBar() {
   );
 }
 `,
-          "/src/useDebouncedValue.js": `import { useEffect, useState } from "react";
+          "/src/hooks/useDebouncedValue.js": `import { useEffect, useState } from "react";
 
 // Returns \`value\`, but only after it has stopped changing for \`delay\` ms.
 export function useDebouncedValue(value, delay) {
@@ -935,7 +935,7 @@ h1 {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated server: there is no network in this demo.
+          "/src/api/api.js": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
 // longer ones are fast (200 ms), so an older
 // request can finish after a newer one.
@@ -985,7 +985,7 @@ export function searchBooks(query, { signal } = {}) {
 `,
           "/src/components/SearchBar.vue": `<script setup>
 import { computed, ref, watch } from "vue";
-import { searchBooks } from "../api.js";
+import { searchBooks } from "../api/api.js";
 import { useDebounced } from "../composables/useDebounced.js";
 
 const DELAY = 300;
@@ -1435,7 +1435,7 @@ Three keystrokes became one request. The slow "ja" request was aborted by \`swit
 **Conclusion:** The Angular answer is a short RxJS pipeline (\`debounceTime\`, \`distinctUntilChanged\`, \`switchMap\`) feeding signals the template reads, plus an Observable teardown that turns \`switchMap\`'s unsubscribe into a real \`abort()\`. The verified AOT and JIT runs on Angular 22.2.3 show one request for three keystrokes and a slow older request aborted before it could overwrite newer results. Related builds: [search with history](/interview-question/build-a-search-bar-with-history) and [autocomplete](/interview-question/build-an-autocomplete-typeahead-search).`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { SearchBarComponent } from "./search-bar.component";
+import { SearchBarComponent } from "./components/search-bar.component";
 
 @Component({
   selector: "app-root",
@@ -1476,7 +1476,7 @@ import { SearchBarComponent } from "./search-bar.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/api.ts": `// Simulated server: there is no network in this demo.
+          "/src/app/api/api.ts": `// Simulated server: there is no network in this demo.
 // Latency depends on the query ON PURPOSE: short queries are slow (700 ms),
 // longer ones are fast (200 ms), so an older
 // request can finish after a newer one.
@@ -1527,7 +1527,7 @@ export function searchBooks(
   });
 }
 `,
-          "/src/app/search-bar.component.ts": `import {
+          "/src/app/components/search-bar.component.ts": `import {
   Component,
   DestroyRef,
   ElementRef,
@@ -1544,7 +1544,7 @@ import {
   of,
   switchMap,
 } from "rxjs";
-import { searchBooks } from "./api";
+import { searchBooks } from "../api/api";
 
 const DELAY = 300;
 type Status = "idle" | "loading" | "success" | "error";
@@ -2097,7 +2097,7 @@ Reading it: the eight searches were React, Vue, "  react  ", Angular, Svelte, CS
 ---
 **Conclusion:** A search bar with history is a small data-structure problem wrapped in a focus-management problem. Keep the rules (trim, case-insensitive dedupe, newest first, cap) in pure functions, read storage once and defensively, write through one commit path, and move real focus between button rows so removal and re-running are both keyboard-friendly. The verified run on React 19.3.1 shows the cap and dedupe working, a corrupt stored value handled safely, focus staying in the list after Delete, and a second tab's change arriving through the \`storage\` event. For the request-timing side of search, see the [debounced search bar](/interview-question/build-a-debounced-search-bar).`,
         files: {
-          "/App.js": `import HistorySearch from "./src/HistorySearch";
+          "/App.js": `import HistorySearch from "./src/components/HistorySearch";
 
 export default function App() {
   return (
@@ -2108,7 +2108,7 @@ export default function App() {
   );
 }
 `,
-          "/src/history.js": `// Pure helpers for the recent-searches list. No framework code in here.
+          "/src/utils/history.js": `// Pure helpers for the recent-searches list. No framework code in here.
 export const STORAGE_KEY = "recent-searches";
 export const MAX_ITEMS = 5;
 
@@ -2169,7 +2169,7 @@ export function searchArticles(term) {
   return ARTICLES.filter((a) => a.toLowerCase().includes(q));
 }
 `,
-          "/src/HistorySearch.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/HistorySearch.js": `import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import {
   STORAGE_KEY,
@@ -2179,7 +2179,7 @@ import {
   removeFromHistory,
   saveHistory,
   searchArticles,
-} from "./history";
+} from "../utils/history";
 
 export default function HistorySearch() {
   const [query, setQuery] = useState("");
@@ -2840,7 +2840,7 @@ import {
   removeFromHistory,
   saveHistory,
   searchArticles,
-} from "../history.js";
+} from "../utils/history.js";
 
 const query = ref("");
 const history = ref(loadHistory());
@@ -3153,7 +3153,7 @@ button:focus-visible {
 }
 </style>
 `,
-          "/src/history.js": `// Pure helpers for the recent-searches list. No framework code in here.
+          "/src/utils/history.js": `// Pure helpers for the recent-searches list. No framework code in here.
 export const STORAGE_KEY = "recent-searches";
 export const MAX_ITEMS = 5;
 
@@ -3465,7 +3465,7 @@ The eight searches (React, Vue, "  react  ", Angular, Svelte, CSS grid, HTML, vu
 **Conclusion:** The Angular build keeps history in a signal, its rules in pure functions, writes through one commit path, and uses \`@HostListener\` for outside presses, focus leaving and cross-tab sync, with \`afterNextRender\` to keep focus in the list after a removal. The verified AOT and JIT runs on Angular 22.2.3 show dedupe, the cap, safe parsing of corrupt storage and live updates from another tab. For server-fetched suggestions, see the [autocomplete build](/interview-question/build-an-autocomplete-typeahead-search).`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { HistorySearchComponent } from "./history-search.component";
+import { HistorySearchComponent } from "./components/history-search.component";
 
 @Component({
   selector: "app-root",
@@ -3506,7 +3506,7 @@ import { HistorySearchComponent } from "./history-search.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/history-search.component.ts": `import {
+          "/src/app/components/history-search.component.ts": `import {
   Component,
   ElementRef,
   HostListener,
@@ -3525,7 +3525,7 @@ import {
   removeFromHistory,
   saveHistory,
   searchArticles,
-} from "./history";
+} from "../utils/history";
 
 @Component({
   selector: "app-history-search",
@@ -3744,7 +3744,7 @@ export class HistorySearchComponent {
   }
 }
 `,
-          "/src/app/history.ts": `// Pure helpers for the recent-searches list. No framework code in here.
+          "/src/app/utils/history.ts": `// Pure helpers for the recent-searches list. No framework code in here.
 export const STORAGE_KEY = "recent-searches";
 export const MAX_ITEMS = 5;
 
@@ -4141,7 +4141,7 @@ Typing "c", "ca" sent one request; prefix matches ranked first. Going back to "c
 ---
 **Conclusion:** An autocomplete is a debounced lookup, a cache in front of the API, an active index the keyboard moves around, and a mouse handler that never steals focus from the input. The verified run on React 19.3.1 shows one request for a burst of typing, a cache hit when returning to an earlier query, wrap-around keyboard navigation and mouse selection with \`mousedown\` prevented. Name the active-index reset and the \`mousedown\` trick and you have covered the two bugs most candidates ship.`,
         files: {
-          "/App.js": `import Autocomplete from "./src/Autocomplete";
+          "/App.js": `import Autocomplete from "./src/components/Autocomplete";
 
 export default function App() {
   return (
@@ -4152,7 +4152,7 @@ export default function App() {
   );
 }
 `,
-          "/src/api.js": `// Simulated server: no network. Every call takes 150 ms.
+          "/src/api/api.js": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
   "Afghanistan",
   "Argentina",
@@ -4203,9 +4203,9 @@ export function fetchCountries(query) {
   });
 }
 `,
-          "/src/Autocomplete.js": `import { useEffect, useId, useRef, useState } from "react";
-import { fetchCountries } from "./api";
-import { useDebouncedValue } from "./useDebouncedValue";
+          "/src/components/Autocomplete.js": `import { useEffect, useId, useRef, useState } from "react";
+import { fetchCountries } from "../api/api";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 
 export default function Autocomplete() {
   const [query, setQuery] = useState("");
@@ -4358,7 +4358,7 @@ export default function Autocomplete() {
   );
 }
 `,
-          "/src/useDebouncedValue.js": `import { useEffect, useState } from "react";
+          "/src/hooks/useDebouncedValue.js": `import { useEffect, useState } from "react";
 
 // Returns \`value\`, but only after it has stopped changing for \`delay\` ms.
 export function useDebouncedValue(value, delay) {
@@ -4734,7 +4734,7 @@ h1 {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated server: no network. Every call takes 150 ms.
+          "/src/api/api.js": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
   "Afghanistan",
   "Argentina",
@@ -4787,7 +4787,7 @@ export function fetchCountries(query) {
 `,
           "/src/components/Autocomplete.vue": `<script setup>
 import { computed, ref, useId, watch } from "vue";
-import { fetchCountries } from "../api.js";
+import { fetchCountries } from "../api/api.js";
 import { useDebounced } from "../composables/useDebounced.js";
 
 const query = ref("");
@@ -5271,7 +5271,7 @@ The effect-based debounce produced one request for "c", "ca"; returning to "ca" 
 **Conclusion:** The Angular autocomplete is signals for state, an effect-based \`debounced()\` helper, a lookup effect that reads its triggers and then works in \`untracked\`, a \`Map\` cache with a latest-id check, and options that prevent \`mousedown\`. The verified AOT and JIT runs on Angular 22.2.3 show one request per burst, a cache hit when returning to a query, wrap-around navigation and mouse selection.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { AutocompleteComponent } from "./autocomplete.component";
+import { AutocompleteComponent } from "./components/autocomplete.component";
 
 @Component({
   selector: "app-root",
@@ -5312,7 +5312,7 @@ import { AutocompleteComponent } from "./autocomplete.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/api.ts": `// Simulated server: no network. Every call takes 150 ms.
+          "/src/app/api/api.ts": `// Simulated server: no network. Every call takes 150 ms.
 const COUNTRIES = [
   "Afghanistan",
   "Argentina",
@@ -5363,9 +5363,9 @@ export function fetchCountries(query: string): Promise<string[]> {
   });
 }
 `,
-          "/src/app/autocomplete.component.ts": `import { Component, computed, effect, signal, untracked } from "@angular/core";
-import { fetchCountries } from "./api";
-import { debounced } from "./debounced";
+          "/src/app/components/autocomplete.component.ts": `import { Component, computed, effect, signal, untracked } from "@angular/core";
+import { fetchCountries } from "../api/api";
+import { debounced } from "../utils/debounced";
 
 let nextId = 0;
 
@@ -5542,7 +5542,7 @@ export class AutocompleteComponent {
   }
 }
 `,
-          "/src/app/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
+          "/src/app/utils/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
 
 // A signal that follows \`source\`, but only
 // after it has stopped changing for \`ms\`.
@@ -5879,7 +5879,7 @@ What this proves:
 ---
 **Conclusion:** A production typeahead needs two guarantees on top of the basics: the screen only ever shows the answer to the current query, and suggestion text is never parsed as HTML. The first comes from aborting the previous request and checking a request id; the second from splitting on an escaped regex and rendering text nodes inside \`mark\` elements. The verified run on React 19.3.1 shows the race reproduced with the guard off (results for "r" under "rea"), fixed with it on, and a markup entry rendered as plain text with zero \`img\` elements created. For the full ARIA keyboard contract, continue with the [combobox](/interview-question/build-a-combobox-search-select).`,
         files: {
-          "/App.js": `import Typeahead from "./src/Typeahead";
+          "/App.js": `import Typeahead from "./src/components/Typeahead";
 
 export default function App() {
   return (
@@ -5890,7 +5890,7 @@ export default function App() {
   );
 }
 `,
-          "/src/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
+          "/src/api/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
 // 1 letter = 1500 ms, 2 letters = 900 ms,
 // longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
@@ -5932,7 +5932,7 @@ export function searchPackages(query, { signal } = {}) {
   });
 }
 `,
-          "/src/Highlight.js": `import { splitMatches } from "./matchParts";
+          "/src/components/Highlight.js": `import { splitMatches } from "../utils/matchParts";
 
 // Renders text with the matching parts wrapped in <mark>. Every part is a
 // React text child, so a result containing markup is shown, never parsed.
@@ -5946,7 +5946,7 @@ export default function Highlight({ text, query }) {
   );
 }
 `,
-          "/src/matchParts.js": `// Escape every character that means something in a regular expression,
+          "/src/utils/matchParts.js": `// Escape every character that means something in a regular expression,
 // so a query like "c++" or "(" is searched for literally.
 export function escapeRegExp(text) {
   return text.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&");
@@ -5963,9 +5963,9 @@ export function splitMatches(text, query) {
     .filter((part) => part.text !== "");
 }
 `,
-          "/src/Typeahead.js": `import { useEffect, useId, useRef, useState } from "react";
-import { searchPackages } from "./api";
-import { useDebouncedValue } from "./useDebouncedValue";
+          "/src/components/Typeahead.js": `import { useEffect, useId, useRef, useState } from "react";
+import { searchPackages } from "../api/api";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import Highlight from "./Highlight";
 
 export default function Typeahead() {
@@ -6127,7 +6127,7 @@ export default function Typeahead() {
   );
 }
 `,
-          "/src/useDebouncedValue.js": `import { useEffect, useState } from "react";
+          "/src/hooks/useDebouncedValue.js": `import { useEffect, useState } from "react";
 
 // Returns \`value\`, but only after it has stopped changing for \`delay\` ms.
 export function useDebouncedValue(value, delay) {
@@ -6505,7 +6505,7 @@ mark {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
+          "/src/api/api.js": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
 // 1 letter = 1500 ms, 2 letters = 900 ms,
 // longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
@@ -6549,7 +6549,7 @@ export function searchPackages(query, { signal } = {}) {
 `,
           "/src/components/HighlightText.vue": `<script setup>
 import { computed } from "vue";
-import { splitMatches } from "../matchParts.js";
+import { splitMatches } from "../utils/matchParts.js";
 
 const props = defineProps({
   text: { type: String, required: true },
@@ -6568,7 +6568,7 @@ const parts = computed(() => splitMatches(props.text, props.query));
 `,
           "/src/components/Typeahead.vue": `<script setup>
 import { computed, ref, useId, watch } from "vue";
-import { searchPackages } from "../api.js";
+import { searchPackages } from "../api/api.js";
 import { useDebounced } from "../composables/useDebounced.js";
 import HighlightText from "./HighlightText.vue";
 
@@ -6811,7 +6811,7 @@ export function useDebounced(source, delay) {
   return debounced;
 }
 `,
-          "/src/matchParts.js": `// Escape every character that means something in a regular expression,
+          "/src/utils/matchParts.js": `// Escape every character that means something in a regular expression,
 // so a query like "c++" or "(" is searched for literally.
 export function escapeRegExp(text) {
   return text.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&");
@@ -7061,7 +7061,7 @@ Guard on: older requests aborted, only "rea" applied. Guard off: answers landed 
 **Conclusion:** In Angular, the production-safe typeahead is an effect whose \`onCleanup\` aborts the previous request and whose callback checks a request id, plus a highlight component that renders escaped-regex parts as text inside \`mark\` elements. The verified AOT and JIT runs on Angular 22.2.3 reproduced the race with the guard off, fixed it with the guard on, and showed a markup entry as plain text. Continue with the full keyboard contract in the [combobox](/interview-question/build-a-combobox-search-select).`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { TypeaheadComponent } from "./typeahead.component";
+import { TypeaheadComponent } from "./components/typeahead.component";
 
 @Component({
   selector: "app-root",
@@ -7102,7 +7102,7 @@ import { TypeaheadComponent } from "./typeahead.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/api.ts": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
+          "/src/app/api/api.ts": `// Simulated server: no network. Latency depends on the query ON PURPOSE:
 // 1 letter = 1500 ms, 2 letters = 900 ms,
 // longer = 150 ms. Typing "r", "re", "rea"
 // therefore gets its answers back in the order rea, re, r: oldest LAST.
@@ -7147,7 +7147,7 @@ export function searchPackages(
   });
 }
 `,
-          "/src/app/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
+          "/src/app/utils/debounced.ts": `import { Signal, effect, signal } from "@angular/core";
 
 // A signal that follows \`source\`, but only
 // after it has stopped changing for \`ms\`.
@@ -7163,8 +7163,8 @@ export function debounced<T>(source: () => T, ms: number): Signal<T> {
   return out.asReadonly();
 }
 `,
-          "/src/app/highlight.component.ts": `import { Component, Input } from "@angular/core";
-import { splitMatches } from "./match-parts";
+          "/src/app/components/highlight.component.ts": `import { Component, Input } from "@angular/core";
+import { splitMatches } from "../utils/match-parts";
 
 // Interpolation writes text nodes, so markup
 // inside a result is shown, never parsed.
@@ -7199,7 +7199,7 @@ export class HighlightComponent {
   }
 }
 `,
-          "/src/app/match-parts.ts": `// Escape every character that means something in a regular expression,
+          "/src/app/utils/match-parts.ts": `// Escape every character that means something in a regular expression,
 // so a query like "c++" or "(" is searched for literally.
 export function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&");
@@ -7221,9 +7221,9 @@ export function splitMatches(text: string, query: string): Part[] {
     .filter((part) => part.text !== "");
 }
 `,
-          "/src/app/typeahead.component.ts": `import { Component, computed, effect, signal, untracked } from "@angular/core";
-import { searchPackages } from "./api";
-import { debounced } from "./debounced";
+          "/src/app/components/typeahead.component.ts": `import { Component, computed, effect, signal, untracked } from "@angular/core";
+import { searchPackages } from "../api/api";
+import { debounced } from "../utils/debounced";
 import { HighlightComponent } from "./highlight.component";
 
 let nextId = 0;
@@ -7784,8 +7784,8 @@ Every rule in the requirements shows up: opening on the selected option, wrap-ar
 **Conclusion:** A correct combobox is mostly precision: four separate pieces of state, a keyboard map for the closed and open states, a blur rule that matches the autocomplete variant you chose, and focus that never leaves the input. The verified run on React 19.3.1 walks through every rule with the ARIA attributes printed at each step: opening on the selected option, skipping a disabled option while wrapping, committing ids while showing labels, blur committing or restoring, two-step Escape, and a value set by the parent. That precision is what turns a hard rating into a straightforward answer.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Combobox from "./src/Combobox";
-import { LANGUAGES } from "./src/options";
+import Combobox from "./src/components/Combobox";
+import { LANGUAGES } from "./src/utils/options";
 
 export default function App() {
   const [lang, setLang] = useState("rs");
@@ -7813,8 +7813,8 @@ export default function App() {
   );
 }
 `,
-          "/src/Combobox.js": `import { useEffect, useId, useRef, useState } from "react";
-import { filterOptions, step } from "./options";
+          "/src/components/Combobox.js": `import { useEffect, useId, useRef, useState } from "react";
+import { filterOptions, step } from "../utils/options";
 
 // WAI-ARIA combobox: editable input + listbox popup, "list autocomplete with
 // automatic selection". DOM focus never leaves the input; the highlighted
@@ -8042,7 +8042,7 @@ export default function Combobox({ label, options, value, onChange }) {
   );
 }
 `,
-          "/src/options.js": `export const LANGUAGES = [
+          "/src/utils/options.js": `export const LANGUAGES = [
   { value: "ts", label: "TypeScript" },
   { value: "js", label: "JavaScript" },
   { value: "py", label: "Python" },
@@ -8485,7 +8485,7 @@ The output matches the React and Angular builds line for line: opening on the se
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import Combobox from "./components/Combobox.vue";
-import { LANGUAGES } from "./options.js";
+import { LANGUAGES } from "./utils/options.js";
 
 const lang = ref("rs");
 </script>
@@ -8551,7 +8551,7 @@ h1 {
 `,
           "/src/components/Combobox.vue": `<script setup>
 import { computed, nextTick, ref, useId, watch } from "vue";
-import { filterOptions, step } from "../options.js";
+import { filterOptions, step } from "../utils/options.js";
 
 // WAI-ARIA combobox: editable input + listbox popup, "list autocomplete with
 // automatic selection". DOM focus never leaves the input; the highlighted
@@ -8883,7 +8883,7 @@ function hover(o, i) {
 }
 </style>
 `,
-          "/src/options.js": `export const LANGUAGES = [
+          "/src/utils/options.js": `export const LANGUAGES = [
   { value: "ts", label: "TypeScript" },
   { value: "js", label: "JavaScript" },
   { value: "py", label: "Python" },
@@ -9181,8 +9181,8 @@ Alt+ArrowDown  : input="" expanded=true active=none (open, nothing highlighted)
 **Conclusion:** The Angular combobox keeps the committed id, the input text, the filter and the active option apart in signals, exposes the value through \`[(value)]\`, and drives the listbox with \`aria-activedescendant\` and the APG keyboard and blur rules. The verified AOT and JIT runs on Angular 22.2.3 print the ARIA state at every step and match the React and Vue builds exactly.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { ComboboxComponent } from "./combobox.component";
-import { LANGUAGES } from "./options";
+import { ComboboxComponent } from "./components/combobox.component";
+import { LANGUAGES } from "./utils/options";
 
 @Component({
   selector: "app-root",
@@ -9227,7 +9227,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/combobox.component.ts": `import {
+          "/src/app/components/combobox.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -9236,7 +9236,7 @@ export class AppComponent {
   effect,
   signal,
 } from "@angular/core";
-import { Option, filterOptions, step } from "./options";
+import { Option, filterOptions, step } from "../utils/options";
 
 let nextId = 0;
 
@@ -9493,7 +9493,7 @@ export class ComboboxComponent {
   }
 }
 `,
-          "/src/app/options.ts": `export interface Option {
+          "/src/app/utils/options.ts": `export interface Option {
   value: string;
   label: string;
   disabled?: boolean;
@@ -9850,8 +9850,8 @@ The list stayed open after Enter; filtering on "s" kept JavaScript marked as sel
 **Conclusion:** A multi-select dropdown is a single-value combobox with a different selection model: a controlled array of ids, a derived \`Set\` for rendering, one normalising \`set\` function for every change, a panel that stays open on Enter, and focus that always returns to the search input. The verified run on React 19.3.1 shows the list staying open while picking, select-all-shown respecting the filter, output in options order, Backspace and chip removal, and the live-region sentences a screen reader would hear.`,
         files: {
           "/App.js": `import { useState } from "react";
-import MultiSelect from "./src/MultiSelect";
-import { SKILLS } from "./src/skills";
+import MultiSelect from "./src/components/MultiSelect";
+import { SKILLS } from "./src/utils/skills";
 
 export default function App() {
   const [skills, setSkills] = useState([]);
@@ -9871,8 +9871,8 @@ export default function App() {
   );
 }
 `,
-          "/src/MultiSelect.js": `import { useEffect, useId, useRef, useState } from "react";
-import { normalize } from "./skills";
+          "/src/components/MultiSelect.js": `import { useEffect, useId, useRef, useState } from "react";
+import { normalize } from "../utils/skills";
 
 export default function MultiSelect({ label, options, value, onChange }) {
   const [open, setOpen] = useState(false);
@@ -10079,7 +10079,7 @@ export default function MultiSelect({ label, options, value, onChange }) {
   );
 }
 `,
-          "/src/skills.js": `export const SKILLS = [
+          "/src/utils/skills.js": `export const SKILLS = [
   { value: "js", label: "JavaScript" },
   { value: "ts", label: "TypeScript" },
   { value: "react", label: "React" },
@@ -10518,7 +10518,7 @@ The panel stayed open after Enter, filtering kept selection marks, Select all sh
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import MultiSelect from "./components/MultiSelect.vue";
-import { SKILLS } from "./skills.js";
+import { SKILLS } from "./utils/skills.js";
 
 const skills = ref([]);
 </script>
@@ -10571,7 +10571,7 @@ h1 {
 `,
           "/src/components/MultiSelect.vue": `<script setup>
 import { computed, onBeforeUnmount, ref, useId, watch } from "vue";
-import { normalize } from "../skills.js";
+import { normalize } from "../utils/skills.js";
 
 const props = defineProps({
   label: { type: String, required: true },
@@ -10904,7 +10904,7 @@ onBeforeUnmount(() =>
 }
 </style>
 `,
-          "/src/skills.js": `export const SKILLS = [
+          "/src/utils/skills.js": `export const SKILLS = [
   { value: "js", label: "JavaScript" },
   { value: "ts", label: "TypeScript" },
   { value: "react", label: "React" },
@@ -11214,8 +11214,8 @@ The panel stayed open after Enter, filtering kept the selection marks, Select al
 **Conclusion:** In Angular the multi-select is a \`[(value)]\` array of ids copied into a signal, a \`computed\` \`Set\` for rendering, one normalising \`set\` method that emits, a panel that stays open on Enter, and \`@HostListener\`s that close it when focus or the pointer leaves. The verified AOT and JIT runs on Angular 22.2.3 match the React and Vue builds line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { MultiSelectComponent } from "./multi-select.component";
-import { SKILLS } from "./skills";
+import { MultiSelectComponent } from "./components/multi-select.component";
+import { SKILLS } from "./utils/skills";
 
 @Component({
   selector: "app-root",
@@ -11273,7 +11273,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/multi-select.component.ts": `import {
+          "/src/app/components/multi-select.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -11285,7 +11285,7 @@ export class AppComponent {
   inject,
   signal,
 } from "@angular/core";
-import { Option, normalize } from "./skills";
+import { Option, normalize } from "../utils/skills";
 
 let nextId = 0;
 
@@ -11511,7 +11511,7 @@ export class MultiSelectComponent {
   }
 }
 `,
-          "/src/app/skills.ts": `export interface Option {
+          "/src/app/utils/skills.ts": `export interface Option {
   value: string;
   label: string;
 }
@@ -11923,8 +11923,8 @@ The Vue and Angular builds printed identical lines; there was no console error o
 **Conclusion:** A good transfer list stores very little: the master items, the chosen ids, a set of checked ids and two filters. Everything else, both panels, what is shown, what can move and what the header checkbox shows, is derived each render, so order never drifts and disabled states never lie. The indeterminate header needs a ref because it is a property without an attribute. The verified run on React 19.3.1 shows master order kept through mixed moves, filtered bulk moves and all three header states, identical to the Vue and Angular builds.`,
         files: {
           "/App.js": `import { useState } from "react";
-import TransferList from "./src/TransferList";
-import { COLUMNS } from "./src/columns";
+import TransferList from "./src/components/TransferList";
+import { COLUMNS } from "./src/utils/columns";
 
 export default function App() {
   const [chosen, setChosen] = useState([]);
@@ -11939,7 +11939,7 @@ export default function App() {
   );
 }
 `,
-          "/src/columns.js": `// The master list. Its order is the order both sides always show.
+          "/src/utils/columns.js": `// The master list. Its order is the order both sides always show.
 export const COLUMNS = [
   { id: "name", label: "Name" },
   { id: "email", label: "Email" },
@@ -11956,9 +11956,9 @@ export function matches(item, filter) {
   return !q || item.label.toLowerCase().includes(q);
 }
 `,
-          "/src/TransferList.js": `import { useState } from "react";
+          "/src/components/TransferList.js": `import { useState } from "react";
 import TransferPanel from "./TransferPanel";
-import { matches } from "./columns";
+import { matches } from "../utils/columns";
 
 // \`value\` = ids on the right. Both lists are DERIVED from \`items\` (master
 // order), so moving things never reorders them.
@@ -12075,7 +12075,7 @@ export default function TransferList({ items, value, onChange }) {
   );
 }
 `,
-          "/src/TransferPanel.js": `import { useEffect, useRef } from "react";
+          "/src/components/TransferPanel.js": `import { useEffect, useRef } from "react";
 
 // Presentational: renders one side. All state lives in TransferList.
 export default function TransferPanel({
@@ -12575,7 +12575,7 @@ Master order held through mixed moves (Team and Email checked in that order arri
           "/src/App.vue": `<script setup>
 import { ref } from "vue";
 import TransferList from "./components/TransferList.vue";
-import { COLUMNS } from "./columns.js";
+import { COLUMNS } from "./utils/columns.js";
 
 const chosen = ref([]);
 </script>
@@ -12627,7 +12627,7 @@ h1 {
 }
 </style>
 `,
-          "/src/columns.js": `// The master list. Its order is the order both sides always show.
+          "/src/utils/columns.js": `// The master list. Its order is the order both sides always show.
 export const COLUMNS = [
   { id: "name", label: "Name" },
   { id: "email", label: "Email" },
@@ -12647,7 +12647,7 @@ export function matches(item, filter) {
           "/src/components/TransferList.vue": `<script setup>
 import { computed, ref } from "vue";
 import TransferPanel from "./TransferPanel.vue";
-import { matches } from "../columns.js";
+import { matches } from "../utils/columns.js";
 
 // v-model = ids on the right. Both lists are DERIVED from \`items\` (master
 // order), so moving things never reorders them.
@@ -13197,8 +13197,8 @@ Master order held through mixed moves, the filtered "move all shown" left Role a
 **Conclusion:** In Angular the transfer list keeps the chosen ids, a replaced-not-mutated checked set and two filters in signals, derives both panels from one master list with \`computed\`, and binds \`[indeterminate]\` as a DOM property. The verified AOT and JIT runs on Angular 22.2.3 match the React and Vue builds line for line.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { TransferListComponent } from "./transfer-list.component";
-import { COLUMNS } from "./columns";
+import { TransferListComponent } from "./components/transfer-list.component";
+import { COLUMNS } from "./utils/columns";
 
 @Component({
   selector: "app-root",
@@ -13257,7 +13257,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/columns.ts": `// The master list. Its order is the order both sides always show.
+          "/src/app/utils/columns.ts": `// The master list. Its order is the order both sides always show.
 export interface Item {
   id: string;
   label: string;
@@ -13279,7 +13279,7 @@ export function matches(item: Item, filter: string): boolean {
   return !q || item.label.toLowerCase().includes(q);
 }
 `,
-          "/src/app/transfer-list.component.ts": `import {
+          "/src/app/components/transfer-list.component.ts": `import {
   Component,
   EventEmitter,
   Input,
@@ -13288,7 +13288,7 @@ export function matches(item: Item, filter: string): boolean {
   signal,
 } from "@angular/core";
 import { TransferPanelComponent } from "./transfer-panel.component";
-import { Item, matches } from "./columns";
+import { Item, matches } from "../utils/columns";
 
 // [(value)] = ids on the right. Both lists are DERIVED from \`items\` (master
 // order), so moving things never reorders them.
@@ -13424,8 +13424,8 @@ export class TransferListComponent {
   }
 }
 `,
-          "/src/app/transfer-panel.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Item } from "./columns";
+          "/src/app/components/transfer-panel.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Item } from "../utils/columns";
 
 // Presentational: renders one side. All state lives in TransferListComponent.
 @Component({

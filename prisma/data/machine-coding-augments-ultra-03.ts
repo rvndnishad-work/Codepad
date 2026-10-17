@@ -373,7 +373,7 @@ The open panel measures 100 px and the closed ones 0. 80 ms after a click, panel
 **Conclusion:** A good accordion is one list of open ids plus derived logic for single mode, real buttons inside headings with \`aria-expanded\` and \`aria-controls\`, labelled regions, and closed panels that are truly closed with \`inert\`. The driver output shows single and multi mode, the mode switch and wrap-around arrow keys working in React 19.3.1, and the Chromium run confirms the grid-row height animation and that Tab skips closed content. Lead with the state model, then the semantics, then the polish: that order shows you build components other people can use.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Accordion from "./src/Accordion";
+import Accordion from "./src/components/Accordion";
 
 const FAQ = [
   {
@@ -424,7 +424,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Accordion.js": `import { useId, useRef, useState } from "react";
+          "/src/components/Accordion.js": `import { useId, useRef, useState } from "react";
 
 export default function Accordion({
   items,
@@ -1323,7 +1323,7 @@ Single mode, multi mode, the mode switch and wrap-around keys all behave as in t
 ---
 **Conclusion:** The Angular accordion keeps open ids in a signal, derives the single-open view with \`computed\`, feeds the \`multiple\` input into a signal through a setter so that derivation stays reactive, and renders real heading buttons with ARIA attributes and \`inert\` closed panels. It passed both the strict AOT build and the JIT playground on Angular 22.2.3 with output identical to React and Vue.`,
         files: {
-          "/src/app/accordion.component.ts": `import {
+          "/src/app/components/accordion.component.ts": `import {
   Component,
   ElementRef,
   Input,
@@ -1500,7 +1500,7 @@ export class AccordionComponent implements OnInit {
 }
 `,
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { AccordionComponent, AccordionItem } from "./accordion.component";
+import { AccordionComponent, AccordionItem } from "./components/accordion.component";
 
 @Component({
   selector: "app-root",
@@ -1915,7 +1915,7 @@ Tab enters the list on the selected tab; the arrow selects Notes; the next Tab s
 ---
 **Conclusion:** An accessible tabs component is one \`activeId\` with everything else derived, the \`tablist\` / \`tab\` / \`tabpanel\` roles joined by unique ids, a roving tabindex so Tab enters and leaves the list in one step, and arrow, Home and End keys that wrap and select. The jsdom run shows the wiring, the key handling and the textarea surviving a switch on React 19.3.1, and the Chromium run shows real Tab and Shift+Tab focus moving exactly as the APG pattern describes.`,
         files: {
-          "/App.js": `import Tabs from "./src/Tabs";
+          "/App.js": `import Tabs from "./src/components/Tabs";
 
 const TABS = [
   {
@@ -1952,7 +1952,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Tabs.js": `import { useId, useRef, useState } from "react";
+          "/src/components/Tabs.js": `import { useId, useRef, useState } from "react";
 
 export default function Tabs({ tabs, defaultActive, label }) {
   // The one piece of state: which tab is selected. Everything else is derived.
@@ -2794,7 +2794,7 @@ Everything matches the React and Vue runs, including the textarea keeping "call 
 **Conclusion:** The Angular version of an accessible tabs component lets authors write \`app-tab\` children, collects them with \`@ContentChildren\`, keeps the active id in a signal that each panel reads through \`inject\`, and follows the APG tabs pattern with roving tabindex and wrap-around keys. It passed the strict AOT build and the playground JIT on Angular 22.2.3 with output identical to React and Vue, and it avoids two Angular-specific traps: an output named \`change\` and a \`:host\` display rule that defeats \`hidden\`.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { TabComponent, TabsComponent } from "./tabs.component";
+import { TabComponent, TabsComponent } from "./components/tabs.component";
 
 @Component({
   selector: "app-root",
@@ -2862,7 +2862,7 @@ import { TabComponent, TabsComponent } from "./tabs.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/tabs.component.ts": `import {
+          "/src/app/components/tabs.component.ts": `import {
   AfterContentInit,
   Component,
   ContentChildren,
@@ -3449,8 +3449,8 @@ Enter and Space select the focused tab, a real reload restores Settings from the
 **Conclusion:** Make the URL the source of truth: read and validate \`?tab=\` on mount, \`pushState\` on deliberate selection, \`replaceState\` to correct bad values, and follow \`popstate\` without pushing. Keep \`active\` and a grow-only \`mounted\` list in one reducer so panels are created on first visit and hidden, not destroyed, afterwards. The jsdom run on React 19.3.1 shows history length, parameter preservation, validation and lazy mounting step by step, and Chromium confirms Enter, Space, reload and the real Back button.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import UrlTabs from "./src/UrlTabs";
-import { ActivityPanel, OverviewPanel, SettingsPanel } from "./src/panels";
+import UrlTabs from "./src/components/UrlTabs";
+import { ActivityPanel, OverviewPanel, SettingsPanel } from "./src/utils/panels";
 
 const TABS = [
   { id: "overview", label: "Overview", Panel: OverviewPanel },
@@ -3499,8 +3499,8 @@ export default function App() {
   );
 }
 `,
-          "/src/UrlTabs.js": `import { useEffect, useId, useReducer, useRef } from "react";
-import { readParam, writeParam } from "./url";
+          "/src/components/UrlTabs.js": `import { useEffect, useId, useReducer, useRef } from "react";
+import { readParam, writeParam } from "../utils/url";
 
 // active: the selected tab. mounted: every tab visited so far, in visit order.
 function reducer(state, id) {
@@ -3620,7 +3620,7 @@ export default function UrlTabs({
   );
 }
 `,
-          "/src/panels.js": `import { useEffect, useState } from "react";
+          "/src/utils/panels.js": `import { useEffect, useState } from "react";
 
 // Simulated server: resolves after 300 ms. There is no network in this demo.
 function fetchActivity() {
@@ -3671,7 +3671,7 @@ export function SettingsPanel() {
   );
 }
 `,
-          "/src/url.js": `// The URL is the source of truth for the
+          "/src/utils/url.js": `// The URL is the source of truth for the
 // selected tab. No router: just the History API.
 export function readParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -4182,7 +4182,7 @@ const name = ref("");
 `,
           "/src/components/UrlTabs.vue": `<script setup>
 import { onBeforeUnmount, onMounted, ref, useId } from "vue";
-import { readParam, writeParam } from "../url";
+import { readParam, writeParam } from "../utils/url";
 
 const props = defineProps({
   tabs: { type: Array, required: true }, // [{ id, label, component }]
@@ -4322,7 +4322,7 @@ function onKeydown(e) {
 }
 </style>
 `,
-          "/src/url.js": `// The URL is the source of truth for the
+          "/src/utils/url.js": `// The URL is the source of truth for the
 // selected tab. No router: just the History API.
 export function readParam(name) {
   return new URLSearchParams(window.location.search).get(name);
@@ -4604,12 +4604,12 @@ Activity mounts on first visit and loads once, Settings keeps \`input=Ada\` acro
 **Conclusion:** In Angular, URL-synced lazy tabs read \`?tab=\` in \`ngOnInit\`, push on deliberate selection, replace to correct bad values, follow \`window:popstate\` through \`@HostListener\`, and create panels with \`@if\` plus \`NgComponentOutlet\` on first visit while \`[hidden]\` keeps them afterwards. Both the strict AOT build and the playground JIT on Angular 22.2.3 printed the same output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, HostListener, signal } from "@angular/core";
-import { UrlTabsComponent, UrlTab } from "./url-tabs.component";
+import { UrlTabsComponent, UrlTab } from "./components/url-tabs.component";
 import {
   ActivityPanelComponent,
   OverviewPanelComponent,
   SettingsPanelComponent,
-} from "./panels";
+} from "./utils/panels";
 
 const currentQuery = () => window.location.search || "(empty)";
 
@@ -4679,7 +4679,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/panels.ts": `import { Component, OnInit, signal } from "@angular/core";
+          "/src/app/utils/panels.ts": `import { Component, OnInit, signal } from "@angular/core";
 
 // Simulated server: resolves after 300 ms. There is no network in this demo.
 function fetchActivity(): Promise<string[]> {
@@ -4748,7 +4748,7 @@ export class SettingsPanelComponent {
   readonly name = signal("");
 }
 `,
-          "/src/app/url-tabs.component.ts": `import {
+          "/src/app/components/url-tabs.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -4762,7 +4762,7 @@ export class SettingsPanelComponent {
   signal,
 } from "@angular/core";
 import { NgComponentOutlet } from "@angular/common";
-import { readParam, writeParam } from "./url";
+import { readParam, writeParam } from "../utils/url";
 
 export interface UrlTab {
   id: string;
@@ -4928,7 +4928,7 @@ export class UrlTabsComponent implements OnInit {
   }
 }
 `,
-          "/src/app/url.ts": `// The URL is the source of truth for the
+          "/src/app/utils/url.ts": `// The URL is the source of truth for the
 // selected tab. No router: just the History API.
 export function readParam(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
@@ -5271,8 +5271,8 @@ The trail wraps onto two lines (74 px high) without widening the page, focus is 
 **Conclusion:** Accessible breadcrumbs are a labelled \`nav\` with an ordered list, links for every ancestor, \`aria-current="page"\` on the last level and hidden separators. The collapse rule is derived from the items and one \`expanded\` flag; the ellipsis is a named button that moves focus to the first revealed link; and a \`key\` resets the component for each new trail. Both the jsdom run on React 19.3.1 and the Chromium check at 360 px confirm those behaviours.`,
         files: {
           "/App.js": `import { useState } from "react";
-import Breadcrumbs from "./src/Breadcrumbs";
-import { childrenOf } from "./src/tree";
+import Breadcrumbs from "./src/components/Breadcrumbs";
+import { childrenOf } from "./src/utils/tree";
 
 export default function App() {
   const [path, setPath] = useState([
@@ -5315,7 +5315,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Breadcrumbs.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/Breadcrumbs.js": `import { useEffect, useRef, useState } from "react";
 
 export default function Breadcrumbs({
   items,
@@ -5390,7 +5390,7 @@ export default function Breadcrumbs({
   );
 }
 `,
-          "/src/tree.js": `// A fake folder tree for the demo. Each key is
+          "/src/utils/tree.js": `// A fake folder tree for the demo. Each key is
 // a folder; its value holds the subfolders.
 export const TREE = {
   Home: {
@@ -5727,7 +5727,7 @@ Collapsed to four entries with a named ellipsis, expanded with focus on Projects
           "/src/App.vue": `<script setup>
 import { computed, ref } from "vue";
 import Breadcrumbs from "./components/Breadcrumbs.vue";
-import { childrenOf } from "./tree";
+import { childrenOf } from "./utils/tree";
 
 const path = ref(["Home", "Projects", "Codepad", "src", "components"]);
 const items = computed(() =>
@@ -5931,7 +5931,7 @@ async function expand() {
 }
 </style>
 `,
-          "/src/tree.js": `// A fake folder tree for the demo. Each key is
+          "/src/utils/tree.js": `// A fake folder tree for the demo. Each key is
 // a folder; its value holds the subfolders.
 export const TREE = {
   Home: {
@@ -6200,8 +6200,8 @@ Collapsed with a named ellipsis, expanded with focus on Projects, navigated up, 
 **Conclusion:** Angular breadcrumbs feed the \`items\` input into a signal through a setter that also collapses the trail, derive the visible entries with \`computed\`, render them with \`@for\` and \`@if\` chains, and move focus with \`afterNextRender\` once the expanded links exist. The strict AOT build and the playground JIT on Angular 22.2.3 printed the same output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { BreadcrumbsComponent, Crumb } from "./breadcrumbs.component";
-import { childrenOf } from "./tree";
+import { BreadcrumbsComponent, Crumb } from "./components/breadcrumbs.component";
+import { childrenOf } from "./utils/tree";
 
 @Component({
   selector: "app-root",
@@ -6263,7 +6263,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/breadcrumbs.component.ts": `import {
+          "/src/app/components/breadcrumbs.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -6387,7 +6387,7 @@ export class BreadcrumbsComponent {
   }
 }
 `,
-          "/src/app/tree.ts": `// A fake folder tree for the demo. Each key is
+          "/src/app/utils/tree.ts": `// A fake folder tree for the demo. Each key is
 // a folder; its value holds the subfolders.
 type Folder = { [name: string]: Folder };
 
@@ -6756,7 +6756,7 @@ After each change settles, the indicator's x position and width equal the checke
 **Conclusion:** A good segmented control is controlled (index derived from the \`value\` prop), uses the radio group pattern with a roving tabindex and wrap-around arrows, and slides one decorative indicator with \`translateX(index * 100%)\` over equal-width grid columns. The React 19.3.1 run shows the parent reset and two independent instances working, and the Chromium measurement shows the indicator landing exactly on the checked segment.`,
         files: {
           "/App.js": `import { useState } from "react";
-import SegmentedControl from "./src/SegmentedControl";
+import SegmentedControl from "./src/components/SegmentedControl";
 
 const VIEWS = [
   { value: "day", label: "Day" },
@@ -6802,7 +6802,7 @@ export default function App() {
   );
 }
 `,
-          "/src/SegmentedControl.js": `import { useRef } from "react";
+          "/src/components/SegmentedControl.js": `import { useRef } from "react";
 
 export default function SegmentedControl({ options, value, onChange, label }) {
   const buttons = useRef([]);
@@ -7613,7 +7613,7 @@ The indicator follows the index, keys wrap, the parent reset is reflected (provi
 import {
   SegmentedControlComponent,
   SegmentOption,
-} from "./segmented-control.component";
+} from "./components/segmented-control.component";
 
 @Component({
   selector: "app-root",
@@ -7674,7 +7674,7 @@ export class AppComponent {
   readonly density = signal("comfortable");
 }
 `,
-          "/src/app/segmented-control.component.ts": `import {
+          "/src/app/components/segmented-control.component.ts": `import {
   Component,
   ElementRef,
   EventEmitter,
@@ -8161,7 +8161,7 @@ jsdom does not animate. In Chromium 141, with the fill measured as a share of th
 **Conclusion:** A solid progress bar clamps its input once (with \`null\` meaning indeterminate), exposes \`role="progressbar"\` with min, max and a rounded current value, animates a \`transform: scaleX()\` fill with a reduced-motion fallback, and, in the demo, derives "running" from the progress so the effect cleanup always stops the timer. The React 19.3.1 run shows clamping and the timer in action, and Chromium confirms the fill really animates and that reduced motion turns it off.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import ProgressBar from "./src/ProgressBar";
+import ProgressBar from "./src/components/ProgressBar";
 
 export default function App() {
   const [upload, setUpload] = useState(0);
@@ -8221,7 +8221,7 @@ export default function App() {
   );
 }
 `,
-          "/src/ProgressBar.js": `// Clamp to 0..100. null or undefined means "unknown yet": an indeterminate bar.
+          "/src/components/ProgressBar.js": `// Clamp to 0..100. null or undefined means "unknown yet": an indeterminate bar.
 export function clampPercent(value) {
   if (value === null || value === undefined) return null;
   const n = Number(value);
@@ -8962,7 +8962,7 @@ Clamping, the indeterminate bar without \`aria-valuenow\`, the upload reaching "
 **Conclusion:** The Angular progress bar feeds its input into a signal, derives clamped and rounded values with \`computed\`, removes \`aria-valuenow\` and the transform by binding \`null\` when progress is unknown, and animates a \`scaleX\` fill. The demo timer is an \`effect\` whose \`onCleanup\` stops the interval at 100 and on destroy. The strict AOT build and the playground JIT on Angular 22.2.3 matched React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { ProgressBarComponent } from "./progress-bar.component";
+import { ProgressBarComponent } from "./components/progress-bar.component";
 
 @Component({
   selector: "app-root",
@@ -9067,7 +9067,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/progress-bar.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
+          "/src/app/components/progress-bar.component.ts": `import { Component, Input, computed, signal } from "@angular/core";
 
 /** Clamp to 0..100. null means "unknown yet": an indeterminate bar. */
 export function clampPercent(value: number | null): number | null {
@@ -9533,8 +9533,8 @@ Skeleton and real cards are both 116 px tall and the list is 372 px both times, 
 **Conclusion:** A good skeleton loader is one explicit loading state, small \`aria-hidden\` primitives composed into a placeholder that shares the real card's box model, a fetch effect that ignores stale responses, and a polite status plus \`aria-busy\` so screen-reader users know what is happening. The React 19.3.1 run walks through loading, success, error and retry, and the Chromium measurement shows identical 116 px heights for skeleton and real cards after fixing a 2 px mismatch.`,
         files: {
           "/App.js": `import { useEffect, useState } from "react";
-import { fetchProfiles } from "./src/api";
-import { ProfileCard, ProfileCardSkeleton } from "./src/ProfileCard";
+import { fetchProfiles } from "./src/api/api";
+import { ProfileCard, ProfileCardSkeleton } from "./src/components/ProfileCard";
 
 export default function App() {
   // One state object, three shapes: loading,
@@ -9606,7 +9606,7 @@ export default function App() {
   );
 }
 `,
-          "/src/ProfileCard.js": `import Skeleton from "./Skeleton";
+          "/src/components/ProfileCard.js": `import Skeleton from "./Skeleton";
 
 export function ProfileCard({ profile }) {
   return (
@@ -9638,7 +9638,7 @@ export function ProfileCardSkeleton() {
   );
 }
 `,
-          "/src/Skeleton.js": `// One primitive, three shapes. Purely decorative,
+          "/src/components/Skeleton.js": `// One primitive, three shapes. Purely decorative,
 // so it is hidden from screen readers.
 export default function Skeleton({ variant = "text", width, height }) {
   return (
@@ -9650,7 +9650,7 @@ export default function Skeleton({ variant = "text", width, height }) {
   );
 }
 `,
-          "/src/api.js": `// Simulated server: there is no network in this
+          "/src/api/api.js": `// Simulated server: there is no network in this
 // demo. Resolves (or rejects) after 600 ms.
 const PROFILES = [
   {
@@ -10043,7 +10043,7 @@ The size line confirms the \`px\` helper (\`48px by 48px\`, \`45% by 20px\`). Lo
         files: {
           "/src/App.vue": `<script setup>
 import { ref, watch } from "vue";
-import { fetchProfiles } from "./api";
+import { fetchProfiles } from "./api/api";
 import ProfileCard from "./components/ProfileCard.vue";
 import ProfileCardSkeleton from "./components/ProfileCardSkeleton.vue";
 
@@ -10226,7 +10226,7 @@ h1 {
 }
 </style>
 `,
-          "/src/api.js": `// Simulated server: there is no network in this
+          "/src/api/api.js": `// Simulated server: there is no network in this
 // demo. Resolves (or rejects) after 600 ms.
 const PROFILES = [
   {
@@ -10586,7 +10586,7 @@ Loading with three \`aria-hidden\` skeleton cards, success, the failing reload w
 ---
 **Conclusion:** The Angular skeleton loader is a host-only \`app-skeleton\` primitive, card components that share one style constant so their boxes match, a \`LoadState\` union in a signal, and an \`effect\` whose \`onCleanup\` drops stale responses, rendered with \`@switch\` and announced with \`aria-busy\` and a status message. The strict AOT build and the playground JIT on Angular 22.2.3 printed the same output as React and Vue.`,
         files: {
-          "/src/app/api.ts": `// Simulated server: there is no network in this
+          "/src/app/api/api.ts": `// Simulated server: there is no network in this
 // demo. Resolves (or rejects) after 600 ms.
 export interface Profile {
   id: number;
@@ -10629,11 +10629,11 @@ export function fetchProfiles({
 }
 `,
           "/src/app/app.component.ts": `import { Component, computed, effect, signal } from "@angular/core";
-import { Profile, fetchProfiles } from "./api";
+import { Profile, fetchProfiles } from "./api/api";
 import {
   ProfileCardComponent,
   ProfileCardSkeletonComponent,
-} from "./profile-card.component";
+} from "./components/profile-card.component";
 
 // One state object, three shapes: loading,
 // success (with data) or error (with a message).
@@ -10753,8 +10753,8 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/profile-card.component.ts": `import { Component, Input } from "@angular/core";
-import { Profile } from "./api";
+          "/src/app/components/profile-card.component.ts": `import { Component, Input } from "@angular/core";
+import { Profile } from "../api/api";
 import { SkeletonComponent } from "./skeleton.component";
 
 // Shared by the real card and its skeleton, so their boxes are identical.
@@ -10806,7 +10806,7 @@ export class ProfileCardComponent {
 })
 export class ProfileCardSkeletonComponent {}
 `,
-          "/src/app/skeleton.component.ts": `import { Component, Input } from "@angular/core";
+          "/src/app/components/skeleton.component.ts": `import { Component, Input } from "@angular/core";
 
 /** One primitive, three shapes. Purely decorative, so it is hidden from screen readers. */
 @Component({

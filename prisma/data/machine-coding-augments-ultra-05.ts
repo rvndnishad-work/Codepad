@@ -420,7 +420,7 @@ Read it line by line: typing "A" showed nothing until blur; the submit revealed 
 ---
 **Conclusion:** A validated form is three separate concerns: pure rules that say what is wrong, touched and submitted flags that say when to show it, and accessible markup that says it to everyone. Keeping values as the single source of truth and deriving errors on each render removes a whole class of sync bugs, and the run on React 19.3.1 shows the payoff: errors appear only after blur or submit, vanish the moment the input is fixed, server errors land on the right field, and focus always goes where the work is. Once this is solid, the [multi-step wizard](/interview-question/build-a-multi-step-form-wizard) and the [async username check](/interview-question/build-a-signup-form-with-async-username-availability-check) build on exactly the same ideas.`,
         files: {
-          "/App.js": `import ContactForm from "./src/ContactForm";
+          "/App.js": `import ContactForm from "./src/components/ContactForm";
 import "./styles.css";
 
 export default function App() {
@@ -431,10 +431,10 @@ export default function App() {
   );
 }
 `,
-          "/src/ContactForm.js": `import { useRef, useState } from "react";
+          "/src/components/ContactForm.js": `import { useRef, useState } from "react";
 import Field from "./Field";
-import { FIELDS, MESSAGE_MAX, validate } from "./validate";
-import { sendMessage } from "./fakeApi";
+import { FIELDS, MESSAGE_MAX, validate } from "../utils/validate";
+import { sendMessage } from "../api/fakeApi";
 
 const EMPTY = { name: "", email: "", message: "" };
 
@@ -562,7 +562,7 @@ export default function ContactForm() {
   );
 }
 `,
-          "/src/Field.js": `// One labelled control plus its error. The error element always exists when
+          "/src/components/Field.js": `// One labelled control plus its error. The error element always exists when
 // there is an error, and the control points at it with aria-describedby.
 export default function Field({
   id,
@@ -603,7 +603,7 @@ export default function Field({
   );
 }
 `,
-          "/src/fakeApi.js": `// Simulated server: there is no network in the playground. It answers after
+          "/src/api/fakeApi.js": `// Simulated server: there is no network in the playground. It answers after
 // 400 ms and rejects one domain with a field error, the way a real API might.
 export function sendMessage(values) {
   return new Promise((resolve) => {
@@ -620,7 +620,7 @@ export function sendMessage(values) {
   });
 }
 `,
-          "/src/validate.js": `// Pure validation rules: values in, errors out. No React here, so the same
+          "/src/utils/validate.js": `// Pure validation rules: values in, errors out. No React here, so the same
 // function can be unit tested on its own and reused on the server.
 export const FIELDS = ["name", "email", "message"];
 export const MESSAGE_MAX = 200;
@@ -759,7 +759,7 @@ The build is a contact form with Name (at least 2 characters), Email (valid form
 
 ### Step 1: pure rules
 
-The rules live in <code>src/validate.js</code>, a plain function with no Vue imports, so it is easy to unit test and to share with a server:
+The rules live in <code>src/utils/validate.js</code>, a plain function with no Vue imports, so it is easy to unit test and to share with a server:
 
 \`\`\`js
 export function validate(values) {
@@ -1092,8 +1092,8 @@ button:disabled {
           "/src/components/ContactForm.vue": `<script setup>
 import { computed, reactive, ref } from "vue";
 import FormField from "./FormField.vue";
-import { FIELDS, MESSAGE_MAX, validate } from "../validate.js";
-import { sendMessage } from "../fakeApi.js";
+import { FIELDS, MESSAGE_MAX, validate } from "../utils/validate.js";
+import { sendMessage } from "../api/fakeApi.js";
 
 const values = reactive({ name: "", email: "", message: "" });
 const touched = reactive({});
@@ -1249,7 +1249,7 @@ defineExpose({ focus: () => control.value?.focus() });
   </div>
 </template>
 `,
-          "/src/fakeApi.js": `// Simulated server: there is no network in the playground. It answers after
+          "/src/api/fakeApi.js": `// Simulated server: there is no network in the playground. It answers after
 // 400 ms and rejects one domain with a field error, the way a real API might.
 export function sendMessage(values) {
   return new Promise((resolve) => {
@@ -1266,7 +1266,7 @@ export function sendMessage(values) {
   });
 }
 `,
-          "/src/validate.js": `// Pure validation rules: values in, errors out. No React here, so the same
+          "/src/utils/validate.js": `// Pure validation rules: values in, errors out. No React here, so the same
 // function can be unit tested on its own and reused on the server.
 export const FIELDS = ["name", "email", "message"];
 export const MESSAGE_MAX = 200;
@@ -1576,7 +1576,7 @@ Apart from one space in the first line (Angular keeps a whitespace text node bef
 **Conclusion:** Angular reactive forms already give you derived validation and touched tracking; the work is writing validators that match the real rules (the built-ins accepted spaces and <code>a@b</code> when tested), deciding visibility in one helper, and wiring accessible markup. Signals carry the submit status, which is also what makes the zoneless view refresh after the simulated server answers. The AOT and JIT runs on Angular 22.2.3 matched the React and Vue output. Next steps: the [multi-step wizard](/interview-question/build-a-multi-step-form-wizard) nests one FormGroup per step, and the [async username check](/interview-question/build-a-signup-form-with-async-username-availability-check) adds RxJS.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { ContactFormComponent } from "./contact-form.component";
+import { ContactFormComponent } from "./components/contact-form.component";
 
 @Component({
   selector: "app-root",
@@ -1671,10 +1671,10 @@ import { ContactFormComponent } from "./contact-form.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/contact-form.component.ts": `import { Component, ElementRef, inject, signal } from "@angular/core";
+          "/src/app/components/contact-form.component.ts": `import { Component, ElementRef, inject, signal } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule } from "@angular/forms";
-import { MESSAGE_MAX, emailRule, messageRule, nameRule } from "./validators";
-import { sendMessage } from "./fake-api";
+import { MESSAGE_MAX, emailRule, messageRule, nameRule } from "../utils/validators";
+import { sendMessage } from "../api/fake-api";
 
 type FieldName = "name" | "email" | "message";
 const FIELDS: FieldName[] = ["name", "email", "message"];
@@ -1820,7 +1820,7 @@ export class ContactFormComponent {
   }
 }
 `,
-          "/src/app/fake-api.ts": `// Simulated server: there is no network in the playground. It answers after
+          "/src/app/api/fake-api.ts": `// Simulated server: there is no network in the playground. It answers after
 // 400 ms and rejects one domain with a field error, the way a real API might.
 export type SendResult =
   { ok: true } | { ok: false; fieldErrors: Record<string, string> };
@@ -1844,7 +1844,7 @@ export function sendMessage(values: {
   });
 }
 `,
-          "/src/app/validators.ts": `import { AbstractControl, ValidationErrors, ValidatorFn } from "@angular/forms";
+          "/src/app/utils/validators.ts": `import { AbstractControl, ValidationErrors, ValidatorFn } from "@angular/forms";
 
 export const MESSAGE_MAX = 200;
 const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
@@ -2244,7 +2244,7 @@ So the flag version steals focus on page load under StrictMode; the shipped vers
 ---
 **Conclusion:** A wizard is a validated form spread across screens, and the design choice that decides everything is where the data lives. With one object owned by the wizard and a config array of steps, Back and Edit are free, progress is derived, and Next is a generic gate that validates only what the user can see. The React 19.3.1 run confirmed the gate, the kept values, the review and the focus moves, and showed why the focus effect compares steps instead of skipping the first render under StrictMode. For async checks inside a step, see the [signup form with an async username check](/interview-question/build-a-signup-form-with-async-username-availability-check).`,
         files: {
-          "/App.js": `import Wizard from "./src/Wizard";
+          "/App.js": `import Wizard from "./src/components/Wizard";
 import "./styles.css";
 
 export default function App() {
@@ -2255,7 +2255,7 @@ export default function App() {
   );
 }
 `,
-          "/src/StepFields.js": `import { PLANS, planLabel } from "./steps";
+          "/src/components/StepFields.js": `import { PLANS, planLabel } from "../utils/steps";
 
 function Text({
   id,
@@ -2378,10 +2378,10 @@ export function ReviewStep({ data, onEdit }) {
   );
 }
 `,
-          "/src/Wizard.js": `import { useEffect, useRef, useState } from "react";
-import { INITIAL, STEPS, planLabel } from "./steps";
+          "/src/components/Wizard.js": `import { useEffect, useRef, useState } from "react";
+import { INITIAL, STEPS, planLabel } from "../utils/steps";
 import { AccountStep, ProfileStep, ReviewStep } from "./StepFields";
-import { createAccount } from "./fakeApi";
+import { createAccount } from "../api/fakeApi";
 
 const BODIES = [AccountStep, ProfileStep, ReviewStep];
 
@@ -2507,14 +2507,14 @@ export default function Wizard() {
   );
 }
 `,
-          "/src/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
+          "/src/api/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
 export function createAccount(data) {
   return new Promise((resolve) =>
     setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400),
   );
 }
 `,
-          "/src/steps.js": `// The wizard is driven by this config: each step names its fields and
+          "/src/utils/steps.js": `// The wizard is driven by this config: each step names its fields and
 // validates only those. Adding a step means adding an entry, not a branch.
 export const PLANS = [
   { id: "free", label: "Free" },
@@ -2735,7 +2735,7 @@ The whole question turns on one decision: the data lives in **one object owned b
 
 ### Step 1: steps as data
 
-<code>src/steps.js</code> holds an array of steps, each with an <code>id</code>, <code>title</code>, the <code>fields</code> it owns and a <code>validate(data)</code> function that returns messages for those fields. Adding a step means adding an entry.
+<code>src/utils/steps.js</code> holds an array of steps, each with an <code>id</code>, <code>title</code>, the <code>fields</code> it owns and a <code>validate(data)</code> function that returns messages for those fields. Adding a step means adding an entry.
 
 📌 **Interview term: Config-driven UI** — the variable part of a component described as data, so the component logic stays generic.
 
@@ -3071,7 +3071,7 @@ input:focus-visible {
 </style>
 `,
           "/src/components/ReviewList.vue": `<script setup>
-import { planLabel } from "../steps.js";
+import { planLabel } from "../utils/steps.js";
 
 defineProps({ data: { type: Object, required: true } });
 const emit = defineEmits(["edit"]);
@@ -3092,8 +3092,8 @@ const emit = defineEmits(["edit"]);
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import TextField from "./TextField.vue";
 import ReviewList from "./ReviewList.vue";
-import { INITIAL, PLANS, STEPS, planLabel } from "../steps.js";
-import { createAccount } from "../fakeApi.js";
+import { INITIAL, PLANS, STEPS, planLabel } from "../utils/steps.js";
+import { createAccount } from "../api/fakeApi.js";
 
 const data = reactive({ ...INITIAL }); // one object for ALL steps
 const step = ref(0);
@@ -3262,14 +3262,14 @@ defineProps({
   </div>
 </template>
 `,
-          "/src/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
+          "/src/api/fakeApi.js": `// Simulated server (no network in the playground): answers after 400 ms.
 export function createAccount(data) {
   return new Promise((resolve) =>
     setTimeout(() => resolve({ ok: true, id: "u_" + data.email.length }), 400),
   );
 }
 `,
-          "/src/steps.js": `// The wizard is driven by this config: each step names its fields and
+          "/src/utils/steps.js": `// The wizard is driven by this config: each step names its fields and
 // validates only those. Adding a step means adding an entry, not a branch.
 export const PLANS = [
   { id: "free", label: "Free" },
@@ -3587,7 +3587,7 @@ Identical to the React and Vue runs. Two things this run caught while building: 
 **Conclusion:** Angular reactive forms model a wizard directly: a parent group owns the data, child groups gate each step, and signals carry the navigation state that a zoneless app needs to re-render. <code>afterNextRender</code> moves focus once the new step is on screen. The AOT and JIT runs on Angular 22.2.3 matched React and Vue line for line, and building it surfaced two radio-group details (a shared <code>name</code>, and <code>[value]</code> not touching the DOM value) worth naming in an interview.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { SignupWizardComponent } from "./signup-wizard.component";
+import { SignupWizardComponent } from "./components/signup-wizard.component";
 
 @Component({
   selector: "app-root",
@@ -3747,7 +3747,7 @@ import { SignupWizardComponent } from "./signup-wizard.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/fake-api.ts": `// Simulated server (no network in the playground): answers after 400 ms.
+          "/src/app/api/fake-api.ts": `// Simulated server (no network in the playground): answers after 400 ms.
 export function createAccount(data: {
   email: string;
 }): Promise<{ ok: true; id: string }> {
@@ -3756,7 +3756,7 @@ export function createAccount(data: {
   );
 }
 `,
-          "/src/app/signup-wizard.component.ts": `import {
+          "/src/app/components/signup-wizard.component.ts": `import {
   Component,
   ElementRef,
   Injector,
@@ -3774,7 +3774,7 @@ import {
   ValidationErrors,
   Validators,
 } from "@angular/forms";
-import { createAccount } from "./fake-api";
+import { createAccount } from "../api/fake-api";
 
 const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
 // Validators.required accepts "   ", so names use a trimmed check instead.
@@ -4390,7 +4390,7 @@ The late answer for "jane" overwrote the result, and the form told the user "jan
 ---
 **Conclusion:** An async availability check is a debounce plus a staleness rule. In React both live in one effect: the timer debounces, and the cleanup both clears the timer and marks the previous request stale, while the status is derived by comparing the tagged result with the current name. The React 19.3.1 run showed one request for a burst of typing and an older, slower answer arriving last and being ignored, and a deliberately broken copy showed the false "janet is taken" that the two guards prevent. The same pattern powers a [debounced search bar](/interview-question/build-a-debounced-search-bar) and [dependent dropdowns](/interview-question/build-dependent-country-state-dropdowns).`,
         files: {
-          "/App.js": `import SignupForm from "./src/SignupForm";
+          "/App.js": `import SignupForm from "./src/components/SignupForm";
 import "./styles.css";
 
 export default function App() {
@@ -4401,10 +4401,10 @@ export default function App() {
   );
 }
 `,
-          "/src/SignupForm.js": `import { useState } from "react";
-import { useUsernameCheck } from "./useUsernameCheck";
-import { createUser } from "./fakeApi";
-import { STATUS_TEXT, emailError, usernameError } from "./rules";
+          "/src/components/SignupForm.js": `import { useState } from "react";
+import { useUsernameCheck } from "../hooks/useUsernameCheck";
+import { createUser } from "../api/fakeApi";
+import { STATUS_TEXT, emailError, usernameError } from "../utils/rules";
 
 export default function SignupForm() {
   const [username, setUsername] = useState("");
@@ -4495,7 +4495,7 @@ export default function SignupForm() {
   );
 }
 `,
-          "/src/fakeApi.js": `// Simulated server (no network in the playground). Latency is derived from
+          "/src/api/fakeApi.js": `// Simulated server (no network in the playground). Latency is derived from
 // the name so runs are reproducible: some names answer in 200 ms, others in
 // 1000 ms, which is exactly how an older request can come back last.
 const TAKEN = new Set(["admin", "alex", "jane", "root", "sam"]);
@@ -4521,7 +4521,7 @@ export function createUser(user) {
   );
 }
 `,
-          "/src/rules.js": `export const DEBOUNCE_MS = 400;
+          "/src/utils/rules.js": `export const DEBOUNCE_MS = 400;
 
 export function usernameError(v) {
   if (!v) return "Username is required";
@@ -4546,9 +4546,9 @@ export const STATUS_TEXT = {
   error: "Could not check right now. Edit the name to retry.",
 };
 `,
-          "/src/useUsernameCheck.js": `import { useEffect, useRef, useState } from "react";
-import { checkUsername } from "./fakeApi";
-import { DEBOUNCE_MS } from "./rules";
+          "/src/hooks/useUsernameCheck.js": `import { useEffect, useRef, useState } from "react";
+import { checkUsername } from "../api/fakeApi";
+import { DEBOUNCE_MS } from "../utils/rules";
 
 // Debounced availability check that ignores stale responses.
 // Returns the derived status plus a request log for the demo panel.
@@ -5034,9 +5034,9 @@ button:disabled {
 `,
           "/src/components/SignupForm.vue": `<script setup>
 import { computed, ref } from "vue";
-import { useUsernameCheck } from "../useUsernameCheck.js";
-import { createUser } from "../fakeApi.js";
-import { STATUS_TEXT, emailError, usernameError } from "../rules.js";
+import { useUsernameCheck } from "../composables/useUsernameCheck.js";
+import { createUser } from "../api/fakeApi.js";
+import { STATUS_TEXT, emailError, usernameError } from "../utils/rules.js";
 
 const username = ref("");
 const email = ref("");
@@ -5115,7 +5115,7 @@ async function onSubmit() {
   </form>
 </template>
 `,
-          "/src/fakeApi.js": `// Simulated server (no network in the playground). Latency is derived from
+          "/src/api/fakeApi.js": `// Simulated server (no network in the playground). Latency is derived from
 // the name so runs are reproducible: some names answer in 200 ms, others in
 // 1000 ms, which is exactly how an older request can come back last.
 const TAKEN = new Set(["admin", "alex", "jane", "root", "sam"]);
@@ -5141,7 +5141,7 @@ export function createUser(user) {
   );
 }
 `,
-          "/src/rules.js": `export const DEBOUNCE_MS = 400;
+          "/src/utils/rules.js": `export const DEBOUNCE_MS = 400;
 
 export function usernameError(v) {
   if (!v) return "Username is required";
@@ -5166,9 +5166,9 @@ export const STATUS_TEXT = {
   error: "Could not check right now. Edit the name to retry.",
 };
 `,
-          "/src/useUsernameCheck.js": `import { computed, onWatcherCleanup, ref, toValue, watch } from "vue";
-import { checkUsername } from "./fakeApi.js";
-import { DEBOUNCE_MS } from "./rules.js";
+          "/src/composables/useUsernameCheck.js": `import { computed, onWatcherCleanup, ref, toValue, watch } from "vue";
+import { checkUsername } from "../api/fakeApi.js";
+import { DEBOUNCE_MS } from "../utils/rules.js";
 
 // Composable: debounced availability check that ignores stale responses.
 // \`username\` and \`enabled\` are getters, so the caller passes () => value.
@@ -5483,7 +5483,7 @@ In the textbook version the old answer *was* applied during the debounce window;
 **Conclusion:** In Angular the race-safe check is a short RxJS pipeline: <code>switchMap</code> on every keystroke, a <code>timer</code> inside it for the debounce, and a Promise wrapper whose teardown marks abandoned requests stale, with signals holding what the template shows. The Angular 22.2.3 runs matched React and Vue, and a second run showed why the timer belongs inside <code>switchMap</code>: with the textbook <code>debounceTime</code> first, an older answer was applied during the debounce window and only the name check kept it off the screen.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { SignupFormComponent } from "./signup-form.component";
+import { SignupFormComponent } from "./components/signup-form.component";
 
 @Component({
   selector: "app-root",
@@ -5591,7 +5591,7 @@ import { SignupFormComponent } from "./signup-form.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/fake-api.ts": `// Simulated server (no network in the playground). Latency is derived from
+          "/src/app/api/fake-api.ts": `// Simulated server (no network in the playground). Latency is derived from
 // the name so runs are reproducible: some names answer in 200 ms, others in
 // 1000 ms, which is exactly how an older request can come back last.
 const TAKEN = new Set(["admin", "alex", "jane", "root", "sam"]);
@@ -5618,7 +5618,7 @@ export function createUser(user: {
   return new Promise((resolve) => setTimeout(() => resolve({ ok: true }), 300));
 }
 `,
-          "/src/app/rules.ts": `export const DEBOUNCE_MS = 400;
+          "/src/app/utils/rules.ts": `export const DEBOUNCE_MS = 400;
 
 export function usernameError(v: string): string {
   if (!v) return "Username is required";
@@ -5635,11 +5635,11 @@ export function emailError(v: string): string {
   return "";
 }
 `,
-          "/src/app/signup-form.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
+          "/src/app/components/signup-form.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { EMPTY, Observable, switchMap, timer } from "rxjs";
-import { checkUsername, createUser } from "./fake-api";
-import { DEBOUNCE_MS, emailError, usernameError } from "./rules";
+import { checkUsername, createUser } from "../api/fake-api";
+import { DEBOUNCE_MS, emailError, usernameError } from "../utils/rules";
 
 type Result = { name: string; available?: boolean; error?: boolean };
 type LogEntry = { id: number; name: string; outcome: string };
@@ -6152,7 +6152,7 @@ One-way booked straight away; switching to return enabled the field and cleared 
 ---
 **Conclusion:** The Flight Booker rewards restraint: four pieces of state, a strict parser, and everything else derived, so the enabled state of Book, the errors and the night count can never disagree. The Node runs confirmed the two <code>Date</code> traps the parser avoids (30 February rolling into March, and date-only strings shifting a day in western time zones), and the React 19.3.1 run confirmed every constraint between the widgets. The same derive-don't-store habit carries into [dependent dropdowns](/interview-question/build-dependent-country-state-dropdowns) and the [mortgage calculator](/interview-question/build-a-mortgage-calculator).`,
         files: {
-          "/App.js": `import FlightBooker from "./src/FlightBooker";
+          "/App.js": `import FlightBooker from "./src/components/FlightBooker";
 import "./styles.css";
 
 export default function App() {
@@ -6163,8 +6163,8 @@ export default function App() {
   );
 }
 `,
-          "/src/FlightBooker.js": `import { useState } from "react";
-import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "./dates";
+          "/src/components/FlightBooker.js": `import { useState } from "react";
+import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "../utils/dates";
 
 export default function FlightBooker() {
   const [trip, setTrip] = useState("one-way"); // one-way | return
@@ -6263,7 +6263,7 @@ export default function FlightBooker() {
   );
 }
 `,
-          "/src/dates.js": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
+          "/src/utils/dates.js": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
 // so we build the date from its parts and check that they survive the trip.
 const FORMAT = /^(\\d{4})-(\\d{2})-(\\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -6414,7 +6414,7 @@ The build: a select (one-way or return), two text inputs in <code>YYYY-MM-DD</co
 
 ### Step 1: a strict parser
 
-<code>src/dates.js</code> (shared logic, no Vue imports) matches <code>^(\\d{4})-(\\d{2})-(\\d{2})$</code>, builds the date with <code>Date.UTC</code>, and accepts it only if year, month and day come back unchanged.
+<code>src/utils/dates.js</code> (shared logic, no Vue imports) matches <code>^(\\d{4})-(\\d{2})-(\\d{2})$</code>, builds the date with <code>Date.UTC</code>, and accepts it only if year, month and day come back unchanged.
 
 📌 **Interview term: Date rollover** — <code>Date</code> normalizes out-of-range parts instead of rejecting them, so 30 February silently becomes 2 March. Checking the round trip turns that into "That date does not exist". UTC also makes the night count exact (no daylight-saving days). For new code, [Temporal](/interview-question/how-does-the-temporal-api-fix-javascript-date-instant-plaindate-and-zoneddatetim) has a <code>PlainDate</code> type.
 
@@ -6704,7 +6704,7 @@ button:disabled {
 `,
           "/src/components/FlightBooker.vue": `<script setup>
 import { computed, ref, watch } from "vue";
-import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "../dates.js";
+import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "../utils/dates.js";
 
 const trip = ref("one-way"); // one-way | return
 const depart = ref(DEFAULT_DATE);
@@ -6798,7 +6798,7 @@ function book() {
   </form>
 </template>
 `,
-          "/src/dates.js": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
+          "/src/utils/dates.js": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
 // so we build the date from its parts and check that they survive the trip.
 const FORMAT = /^(\\d{4})-(\\d{2})-(\\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -7103,7 +7103,7 @@ Identical to the React and Vue runs. No <code>console.error</code>. Visual state
 **Conclusion:** With signals, the Flight Booker is four writable values, a strict parser and a set of computeds, with a single <code>edit</code> method as the only writer. The AOT and JIT runs on Angular 22.2.3 matched React and Vue, and the Node runs showed the <code>Date</code> rollover and time-zone shift the parser is designed around.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { FlightBookerComponent } from "./flight-booker.component";
+import { FlightBookerComponent } from "./components/flight-booker.component";
 
 @Component({
   selector: "app-root",
@@ -7205,7 +7205,7 @@ import { FlightBookerComponent } from "./flight-booker.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/dates.ts": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
+          "/src/app/utils/dates.ts": `// Strict YYYY-MM-DD parsing. new Date("2026-02-30") rolls over to March 2,
 // so we build the date from its parts and check that they survive the trip.
 const FORMAT = /^(\\d{4})-(\\d{2})-(\\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -7238,8 +7238,8 @@ export function nightsBetween(a: Date, b: Date): number {
 // In a real app this would be today; fixed here so the demo is reproducible.
 export const DEFAULT_DATE = "2026-12-01";
 `,
-          "/src/app/flight-booker.component.ts": `import { Component, computed, signal } from "@angular/core";
-import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "./dates";
+          "/src/app/components/flight-booker.component.ts": `import { Component, computed, signal } from "@angular/core";
+import { DEFAULT_DATE, dateError, nightsBetween, parseDate } from "../utils/dates";
 
 type Trip = "one-way" | "return";
 
@@ -7680,7 +7680,7 @@ Read the race in the middle: after "switched to US at once" two requests were in
 ---
 **Conclusion:** Dependent dropdowns are a small data model (three values, three option lists with a status) plus three rules: reset everything below a change in the same handler, drop responses from an older generation at every affected level, and cache Promises so repeated or simultaneous requests share one call. The React 19.3.1 run showed the slow India answer arriving after the United States and being ignored, StrictMode's double effect costing one request instead of two, and a return to India served from the cache. The same race thinking appears in the [debounced search bar](/interview-question/build-a-debounced-search-bar) and the [Flight Booker](/interview-question/build-a-flight-booker) shows the derive-don't-store side.`,
         files: {
-          "/App.js": `import LocationPicker from "./src/LocationPicker";
+          "/App.js": `import LocationPicker from "./src/components/LocationPicker";
 import "./styles.css";
 
 export default function App() {
@@ -7691,7 +7691,7 @@ export default function App() {
   );
 }
 `,
-          "/src/LevelSelect.js": `// One dropdown level. \`options\` is { status:
+          "/src/components/LevelSelect.js": `// One dropdown level. \`options\` is { status:
 // "idle" | "loading" | "ready", items }.
 export default function LevelSelect({
   id,
@@ -7731,7 +7731,7 @@ export default function LevelSelect({
   );
 }
 `,
-          "/src/LocationPicker.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/LocationPicker.js": `import { useEffect, useRef, useState } from "react";
 import LevelSelect from "./LevelSelect";
 import {
   countRequests,
@@ -7739,7 +7739,7 @@ import {
   getCities,
   getCountries,
   getStates,
-} from "./locationApi";
+} from "../api/locationApi";
 
 const IDLE = { status: "idle", items: [] };
 const LOADING = { status: "loading", items: [] };
@@ -7851,7 +7851,7 @@ export default function LocationPicker() {
   );
 }
 `,
-          "/src/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
+          "/src/api/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
 const DATA = {
   IN: {
     name: "India",
@@ -8005,7 +8005,7 @@ The build: Country, State and City selects backed by an in-file fake API (no net
 
 ### Step 1: a promise cache in the API module
 
-<code>src/locationApi.js</code> keeps a <code>Map</code> from a key such as <code>states:IN</code> to the *Promise* for it. Two callers asking at once share one request, and later callers get the resolved Promise.
+<code>src/api/locationApi.js</code> keeps a <code>Map</code> from a key such as <code>states:IN</code> to the *Promise* for it. Two callers asking at once share one request, and later callers get the resolved Promise.
 
 📌 **Interview term: Promise cache** — caching the Promise rather than the value, which also deduplicates in-flight requests. A real version deletes the key if the Promise rejects.
 
@@ -8285,7 +8285,7 @@ import {
   getCities,
   getCountries,
   getStates,
-} from "../locationApi.js";
+} from "../api/locationApi.js";
 
 const IDLE = { status: "idle", items: [] };
 const LOADING = { status: "loading", items: [] };
@@ -8386,7 +8386,7 @@ const summary = computed(() =>
   </form>
 </template>
 `,
-          "/src/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
+          "/src/api/locationApi.js": `// Simulated server (no network in the playground) plus a small client cache.
 const DATA = {
   IN: {
     name: "India",
@@ -8677,7 +8677,7 @@ India's late answer was ignored, the return to India came from the cache (the co
 **Conclusion:** In Angular the dependent dropdowns are signals for the selections and option lists, handler methods that reset the lower levels together with the change, a counter per level to drop stale answers, and a promise cache. The AOT and JIT runs on Angular 22.2.3 matched React and Vue, and the first run caught a real bug worth mentioning in an interview: a component input named <code>id</code> duplicates the id on the host element.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { LocationPickerComponent } from "./location-picker.component";
+import { LocationPickerComponent } from "./components/location-picker.component";
 
 @Component({
   selector: "app-root",
@@ -8755,9 +8755,9 @@ import { LocationPickerComponent } from "./location-picker.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/level-select.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+          "/src/app/components/level-select.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { Option } from "./location-api";
+import { Option } from "../api/location-api";
 
 export type Level = { status: "idle" | "loading" | "ready"; items: Option[] };
 
@@ -8810,7 +8810,7 @@ export class LevelSelectComponent {
   }
 }
 `,
-          "/src/app/location-api.ts": `// Simulated server (no network in the playground) plus a small client cache.
+          "/src/app/api/location-api.ts": `// Simulated server (no network in the playground) plus a small client cache.
 export type Option = { value: string; label: string };
 const DATA: Record<string, { name: string; states: Record<string, string[]> }> =
   {
@@ -8875,7 +8875,7 @@ export const getCities = (country: string, state: string) =>
 export const countRequests = () => requestsSent;
 export const countryName = (code: string) => DATA[code]?.name ?? "";
 `,
-          "/src/app/location-picker.component.ts": `import { Component, computed, signal } from "@angular/core";
+          "/src/app/components/location-picker.component.ts": `import { Component, computed, signal } from "@angular/core";
 import { Level, LevelSelectComponent } from "./level-select.component";
 import {
   countRequests,
@@ -8884,7 +8884,7 @@ import {
   getCountries,
   getStates,
   Option,
-} from "./location-api";
+} from "../api/location-api";
 
 const IDLE: Level = { status: "idle", items: [] };
 const LOADING: Level = { status: "loading", items: [] };
@@ -9328,7 +9328,7 @@ All 200 eight-character passwords contained every class and all were distinct; d
 ---
 **Conclusion:** A password generator is a test of knowing which randomness to trust and how not to spoil it. <code>crypto.getRandomValues</code> supplies unpredictable numbers, rejection sampling keeps every character equally likely, and "one per class, fill, then Fisher–Yates" satisfies the policy without leaving a pattern. The runs backed each claim: a near-uniform distribution over 860,000 draws, the exact modulo-bias counts, 100,000 out of 100,000 passwords with every class, and a React 19.3.1 UI that generated, scored, copied and failed gracefully. For a related input pattern, see the [show/hide password input](/interview-question/build-a-show-hide-password-input).`,
         files: {
-          "/App.js": `import PasswordGenerator from "./src/PasswordGenerator";
+          "/App.js": `import PasswordGenerator from "./src/components/PasswordGenerator";
 import "./styles.css";
 
 export default function App() {
@@ -9339,14 +9339,14 @@ export default function App() {
   );
 }
 `,
-          "/src/PasswordGenerator.js": `import { useEffect, useRef, useState } from "react";
+          "/src/components/PasswordGenerator.js": `import { useEffect, useRef, useState } from "react";
 import {
   CLASSES,
   MAX_LENGTH,
   MIN_LENGTH,
   generatePassword,
   strength,
-} from "./password";
+} from "../utils/password";
 
 const DEFAULT = { length: 16, enabled: CLASSES.map((c) => c.id) };
 
@@ -9477,7 +9477,7 @@ export default function PasswordGenerator() {
   );
 }
 `,
-          "/src/password.js": `// Password generation with the Web Crypto API. No React in this file.
+          "/src/utils/password.js": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
   {
     id: "upper",
@@ -10038,7 +10038,7 @@ import {
   MIN_LENGTH,
   generatePassword,
   strength,
-} from "../password.js";
+} from "../utils/password.js";
 
 const length = ref(16);
 // Checkbox v-model bound to an array collects the checked values.
@@ -10136,7 +10136,7 @@ onUnmounted(() => clearTimeout(timer));
   </section>
 </template>
 `,
-          "/src/password.js": `// Password generation with the Web Crypto API. No React in this file.
+          "/src/utils/password.js": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
   {
     id: "upper",
@@ -10517,7 +10517,7 @@ Apart from whitespace in the first line, identical to the React and Vue runs. No
 **Conclusion:** In Angular the generator is a handful of signals and computeds over a framework-free core: <code>crypto.getRandomValues</code>, rejection sampling, and one-per-class plus Fisher–Yates. Handlers write the setting and regenerate together, and the copy status is a signal so the zoneless view refreshes after the clipboard Promise. The Node runs confirmed uniformity and the class guarantee, and the AOT and JIT runs on Angular 22.2.3 matched React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, ViewEncapsulation } from "@angular/core";
-import { PasswordGeneratorComponent } from "./password-generator.component";
+import { PasswordGeneratorComponent } from "./components/password-generator.component";
 
 @Component({
   selector: "app-root",
@@ -10645,14 +10645,14 @@ import { PasswordGeneratorComponent } from "./password-generator.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/password-generator.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
+          "/src/app/components/password-generator.component.ts": `import { Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import {
   CLASSES,
   MAX_LENGTH,
   MIN_LENGTH,
   generatePassword,
   strength,
-} from "./password";
+} from "../utils/password";
 
 const ALL = CLASSES.map((c) => c.id);
 
@@ -10784,7 +10784,7 @@ export class PasswordGeneratorComponent {
   }
 }
 `,
-          "/src/app/password.ts": `// Password generation with the Web Crypto API. No React in this file.
+          "/src/app/utils/password.ts": `// Password generation with the Web Crypto API. No React in this file.
 export const CLASSES = [
   {
     id: "upper",

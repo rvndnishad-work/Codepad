@@ -470,8 +470,8 @@ import {
   addCard,
   newCardId,
   findCard,
-} from "./src/board";
-import Column from "./src/Column";
+} from "./src/utils/board";
+import Column from "./src/components/Column";
 
 export default function App() {
   const [board, setBoard] = useState(initialBoard);
@@ -623,7 +623,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Column.js": `import { useState } from "react";
+          "/src/components/Column.js": `import { useState } from "react";
 
 export default function Column({
   col,
@@ -712,7 +712,7 @@ export default function Column({
   );
 }
 `,
-          "/src/board.js": `// Pure board logic: no React in here, so it is trivial to unit test.
+          "/src/utils/board.js": `// Pure board logic: no React in here, so it is trivial to unit test.
 export const initialBoard = {
   columns: [
     { id: "todo", title: "To Do", cardIds: ["c1", "c2", "c3"] },
@@ -1107,7 +1107,7 @@ import {
   findCard,
   snapshot,
   restore,
-} from "./board.js";
+} from "./utils/board.js";
 
 const board = reactive(createBoard());
 const over = ref(null); // { colId, index } under the pointer
@@ -1274,7 +1274,7 @@ h1 {
 }
 </style>
 `,
-          "/src/board.js": `// Board state and the moves on it. In Vue the board is a reactive() object,
+          "/src/utils/board.js": `// Board state and the moves on it. In Vue the board is a reactive() object,
 // so a move can simply splice the arrays: Vue tracks the mutation.
 export function createBoard() {
   return {
@@ -1727,7 +1727,7 @@ These lines match the React and Vue runs exactly. Real-browser behaviour was che
   inject,
   signal,
 } from "@angular/core";
-import { KanbanColumnComponent } from "./kanban-column.component";
+import { KanbanColumnComponent } from "./components/kanban-column.component";
 import {
   Board,
   DropTarget,
@@ -1735,7 +1735,7 @@ import {
   findCard,
   initialBoard,
   moveCard,
-} from "./board";
+} from "./utils/board";
 
 @Component({
   selector: "app-root",
@@ -1922,7 +1922,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/board.ts": `// Pure, immutable board logic. The component keeps the board in a signal and
+          "/src/app/utils/board.ts": `// Pure, immutable board logic. The component keeps the board in a signal and
 // replaces it with a new object on every
 // move, so signal equality sees the change.
 export interface Card {
@@ -2005,9 +2005,9 @@ export function addCard(board: Board, colId: string, title: string): Board {
   };
 }
 `,
-          "/src/app/kanban-column.component.ts": `import { Component, EventEmitter, Input, Output, signal } from "@angular/core";
+          "/src/app/components/kanban-column.component.ts": `import { Component, EventEmitter, Input, Output, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { Card, Column, DropTarget } from "./board";
+import { Card, Column, DropTarget } from "../utils/board";
 
 @Component({
   selector: "app-kanban-column",
@@ -2538,8 +2538,8 @@ import {
   cellCards,
   canMove,
   moveCard,
-} from "./src/model";
-import Cell from "./src/Cell";
+} from "./src/utils/model";
+import Cell from "./src/components/Cell";
 
 export default function App() {
   const [cards, setCards] = useState(initialCards);
@@ -2742,7 +2742,7 @@ export default function App() {
   );
 }
 `,
-          "/src/Cell.js": `export default function Cell({
+          "/src/components/Cell.js": `export default function Cell({
   lane,
   col,
   cards,
@@ -2794,7 +2794,7 @@ export default function App() {
   );
 }
 `,
-          "/src/model.js": `// Pure model: one flat, ordered list of cards. Columns and swimlanes are both
+          "/src/utils/model.js": `// Pure model: one flat, ordered list of cards. Columns and swimlanes are both
 // DERIVED by filtering, so a card can never be "in two places".
 export const COLUMNS = [
   { id: "todo", title: "To Do" },
@@ -3271,7 +3271,7 @@ import {
   initialLimits,
   canMove,
   moveCard,
-} from "./model.js";
+} from "./utils/model.js";
 
 const cards = ref(initialCards());
 const limits = reactive(initialLimits());
@@ -3657,7 +3657,7 @@ function payload(event) {
 }
 </style>
 `,
-          "/src/model.js": `// One flat, ordered list of cards. Columns and swimlanes are DERIVED by
+          "/src/utils/model.js": `// One flat, ordered list of cards. Columns and swimlanes are DERIVED by
 // filtering, so a card can never be "in two places".
 export const COLUMNS = [
   { id: "todo", title: "To Do" },
@@ -3985,7 +3985,7 @@ The lines match the React and Vue runs exactly. Layout, the native no-drop curso
   inject,
   signal,
 } from "@angular/core";
-import { SwimCellComponent, CellDragEvent } from "./swim-cell.component";
+import { SwimCellComponent, CellDragEvent } from "./components/swim-cell.component";
 import {
   COLUMNS,
   LANES,
@@ -3999,7 +3999,7 @@ import {
   initialCards,
   initialLimits,
   moveCard,
-} from "./model";
+} from "./utils/model";
 
 @Component({
   selector: "app-root",
@@ -4238,7 +4238,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/model.ts": `// One flat, ordered list of cards. Columns and swimlanes are DERIVED by
+          "/src/app/utils/model.ts": `// One flat, ordered list of cards. Columns and swimlanes are DERIVED by
 // filtering, so a card can never be "in two places".
 export type Status = "todo" | "doing" | "review" | "done";
 export type GroupBy = "assignee" | "priority";
@@ -4353,8 +4353,8 @@ export function moveCard(
     : [...rest.slice(0, at), moved, ...rest.slice(at)];
 }
 `,
-          "/src/app/swim-cell.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { Card, Over, Status } from "./model";
+          "/src/app/components/swim-cell.component.ts": `import { Component, EventEmitter, Input, Output } from "@angular/core";
+import { Card, Over, Status } from "../utils/model";
 
 export interface CellDragEvent {
   event: DragEvent;
@@ -4889,8 +4889,8 @@ What this does not prove: behaviour across real tabs or networks, persistence, o
 **Conclusion:** Collaboration without a referee works when every replica applies the same deterministic merge. Here that merge is "keep the larger Lamport timestamp" per register, with column and position written together, deletes kept as tombstones and fractional positions so reorders never collide. Bound to React through \`useSyncExternalStore\`, the two replicas edited concurrently while partitioned and converged after reconnecting, and a 500-session property test with shuffled, duplicated delivery agreed. Yjs packages the same promise with better text merging, compact updates and providers, and the private run showed its maps converging the same way.`,
         files: {
           "/App.js": `import { useState } from "react";
-import { createNetwork } from "./src/crdt";
-import ReplicaBoard from "./src/ReplicaBoard";
+import { createNetwork } from "./src/utils/crdt";
+import ReplicaBoard from "./src/components/ReplicaBoard";
 
 export default function App() {
   // Two replicas in one page, standing in for two browser tabs.
@@ -4928,8 +4928,8 @@ export default function App() {
   );
 }
 `,
-          "/src/ReplicaBoard.js": `import { useRef, useState, useSyncExternalStore } from "react";
-import { COLUMNS } from "./crdt";
+          "/src/components/ReplicaBoard.js": `import { useRef, useState, useSyncExternalStore } from "react";
+import { COLUMNS } from "../utils/crdt";
 
 export default function ReplicaBoard({ replica, name, online, onToggle }) {
   // The replica is an external store: React
@@ -5053,7 +5053,7 @@ export default function ReplicaBoard({ replica, name, online, onToggle }) {
   );
 }
 `,
-          "/src/crdt.js": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
+          "/src/utils/crdt.js": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
 // Every card is a set of last-writer-wins (LWW) registers: title, place
 // ({ col, pos }) and deleted. Each write carries a Lamport timestamp
 // [counter, replicaId]; merging keeps the larger timestamp per register.
@@ -5544,7 +5544,7 @@ In that run, two documents that set the same key concurrently converged, and the
           "/src/App.vue": `<script setup>
 import { reactive } from "vue";
 import ReplicaBoard from "./components/ReplicaBoard.vue";
-import { createNetwork } from "./crdt.js";
+import { createNetwork } from "./utils/crdt.js";
 
 // Two replicas in one page, standing in for two browser tabs. The network is
 // a plain object on purpose: Vue only needs to know WHEN it changed.
@@ -5613,7 +5613,7 @@ h1 {
 `,
           "/src/components/ReplicaBoard.vue": `<script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { COLUMNS } from "../crdt.js";
+import { COLUMNS } from "../utils/crdt.js";
 
 const props = defineProps({
   replica: { type: Object, required: true },
@@ -5836,7 +5836,7 @@ function add() {
 }
 </style>
 `,
-          "/src/crdt.js": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
+          "/src/utils/crdt.js": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
 // Every card is a set of last-writer-wins (LWW) registers: title, place
 // ({ col, pos }) and deleted. Each write carries a Lamport timestamp
 // [counter, replicaId]; merging keeps the larger timestamp per register.
@@ -6203,8 +6203,8 @@ In the private run, concurrent sets of one key converged on both documents, and 
 **Conclusion:** The Angular board keeps the CRDT in a plain typed class and bridges it into the view with one \`version\` signal per replica board, subscribed in \`ngOnInit\` and released through \`DestroyRef\`. Deterministic last-writer-wins registers, tombstones and fractional positions made two partitioned replicas converge 300 ms after reconnecting, in both AOT and JIT, with the same output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component, signal } from "@angular/core";
-import { ReplicaBoardComponent } from "./replica-board.component";
-import { Network } from "./crdt";
+import { ReplicaBoardComponent } from "./components/replica-board.component";
+import { Network } from "./utils/crdt";
 
 @Component({
   selector: "app-root",
@@ -6280,7 +6280,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/crdt.ts": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
+          "/src/app/utils/crdt.ts": `// A minimal state-based CRDT for a Kanban board, plus a fake network.
 // Every card is a set of last-writer-wins (LWW) registers: title, place
 // ({ col, pos }) and deleted. Each write carries a Lamport timestamp
 // [counter, replicaId]; merging keeps the larger timestamp per register.
@@ -6438,7 +6438,7 @@ export class Network {
   }
 }
 `,
-          "/src/app/replica-board.component.ts": `import {
+          "/src/app/components/replica-board.component.ts": `import {
   Component,
   DestroyRef,
   EventEmitter,
@@ -6449,7 +6449,7 @@ export class Network {
   inject,
   signal,
 } from "@angular/core";
-import { COLUMNS, CardView, ColId, Replica } from "./crdt";
+import { COLUMNS, CardView, ColId, Replica } from "../utils/crdt";
 
 @Component({
   selector: "app-replica-board",
@@ -6947,7 +6947,7 @@ The 360 px line needed a fix found by this run: the first version overflowed to 
 ---
 **Conclusion:** A resizable panel is a small hook with a precise contract: record where the drag started, compute every size from that start and clamp it, keep listening on \`window\` until \`pointerup\` or \`pointercancel\`, clean up on unmount, and persist only when the drag is over. Give the handle the window splitter semantics and keys, and \`touch-action: none\` for phones. The verified runs show the clamping, the drift-free arithmetic, persistence across a real reload, and a real narrow-screen bug caught and fixed.`,
         files: {
-          "/App.js": `import { useResizable } from "./src/useResizable";
+          "/App.js": `import { useResizable } from "./src/hooks/useResizable";
 
 export default function App() {
   const { size, dragging, handleProps } = useResizable({
@@ -6991,7 +6991,7 @@ export default function App() {
   );
 }
 `,
-          "/src/useResizable.js": `import { useEffect, useRef, useState } from "react";
+          "/src/hooks/useResizable.js": `import { useEffect, useRef, useState } from "react";
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
@@ -7373,7 +7373,7 @@ These lines are identical to the React and Angular runs. A real-browser check (C
 **Conclusion:** In Vue the resize logic is a composable that returns reactive \`size\`, a computed attribute object and a listener object, so the template wires the handle in one line. Compute each size from the drag's start, keep listening on \`window\` until up or cancel, clean up with \`onScopeDispose\`, and persist through a watcher once \`dragging\` is false. The verified run matches the React and Angular versions line for line.`,
         files: {
           "/src/App.vue": `<script setup>
-import { useResizable } from "./useResizable.js";
+import { useResizable } from "./composables/useResizable.js";
 
 const { size, dragging, handleAttrs, handleEvents } = useResizable({
   initial: 280,
@@ -7480,7 +7480,7 @@ body {
 }
 </style>
 `,
-          "/src/useResizable.js": `import { ref, computed, watch, onScopeDispose } from "vue";
+          "/src/composables/useResizable.js": `import { ref, computed, watch, onScopeDispose } from "vue";
 
 const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 
@@ -7834,7 +7834,7 @@ These lines match the React and Vue runs. A real-browser check was done on the R
 **Conclusion:** In Angular the resize logic fits naturally in an attribute directive: host metadata gives the handle its separator semantics, \`@HostListener\` attaches pointer and window listeners that Angular cleans up, signals hold the size, and \`exportAs\` lets the layout read it. Compute every size from the drag's start, read inputs in \`ngOnInit\`, and persist through an effect gated on \`dragging()\`. AOT and JIT printed the same verified output as React and Vue.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { ResizeHandleDirective } from "./resize-handle.directive";
+import { ResizeHandleDirective } from "./directives/resize-handle.directive";
 
 @Component({
   selector: "app-root",
@@ -7883,7 +7883,7 @@ import { ResizeHandleDirective } from "./resize-handle.directive";
 })
 export class AppComponent {}
 `,
-          "/src/app/resize-handle.directive.ts": `import {
+          "/src/app/directives/resize-handle.directive.ts": `import {
   Directive,
   HostListener,
   Input,
@@ -8362,7 +8362,7 @@ At 360 px the page does not scroll sideways, and the right side gets 176 px, les
 ---
 **Conclusion:** A good split pane separates what changes with the window (the proportion, stored as a fraction) from what does not (pixel minimums, applied whenever you measure). One two-sided clamp with a deterministic winner, a grab offset, an axis switch on \`clientX\` or \`clientY\`, and a window resize listener give a single component that nests into an IDE layout. The verified runs show both bars respecting every minimum, the split re-clamped when the window shrinks, the impossible case resolved as designed, and a real browser agreeing with the jsdom numbers.`,
         files: {
-          "/App.js": `import SplitPane from "./src/SplitPane";
+          "/App.js": `import SplitPane from "./src/components/SplitPane";
 
 export default function App() {
   return (
@@ -8401,7 +8401,7 @@ export default function App() {
   );
 }
 `,
-          "/src/SplitPane.js": `import { Children, useLayoutEffect, useRef, useState } from "react";
+          "/src/components/SplitPane.js": `import { Children, useLayoutEffect, useRef, useState } from "react";
 
 const GUTTER = 8; // px taken by the separator bar
 
@@ -9355,7 +9355,7 @@ The re-clamp to 60% at 608 px and the first-pane-wins result at 308 px match the
 **Conclusion:** The Angular split pane projects two slots, keeps the split as a fraction in a signal, and applies pixel minimums whenever it measures: after the first render, on window resize and at the start of every drag. Drag listeners exist only while dragging and are removed by their unlisten functions, including on destroy. Nested through \`paneSecond\`, it produced the same verified output as React and Vue in both AOT and JIT.`,
         files: {
           "/src/app/app.component.ts": `import { Component } from "@angular/core";
-import { SplitPaneComponent } from "./split-pane.component";
+import { SplitPaneComponent } from "./components/split-pane.component";
 
 @Component({
   selector: "app-root",
@@ -9438,7 +9438,7 @@ import { SplitPaneComponent } from "./split-pane.component";
 })
 export class AppComponent {}
 `,
-          "/src/app/split-pane.component.ts": `import {
+          "/src/app/components/split-pane.component.ts": `import {
   Component,
   DestroyRef,
   ElementRef,
@@ -10050,7 +10050,7 @@ Moving 2000 px past the grid still selected up to the far corner, which is point
 **Conclusion:** Drag-to-select is two pieces of state and one derivation: a committed \`Set\`, a pending drag, and \`combine\` that turns them into what you see. Map coordinates to cells from the grid box instead of listening on every cell, capture the pointer so the gesture survives leaving the grid and works on touch, and only update when the pointer crosses into a new cell. Add a roving tabindex with Shift extension for keyboard users. The verified runs show live previews, add and subtract modes, clamping outside the grid and a clean cancel, in jsdom and in real Chromium.`,
         files: {
           "/App.js": `import { useEffect, useMemo, useRef, useState } from "react";
-import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./src/selection";
+import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./src/utils/selection";
 
 export default function App() {
   const [committed, setCommitted] = useState(() => new Set());
@@ -10198,7 +10198,7 @@ export default function App() {
   );
 }
 `,
-          "/src/selection.js": `// Pure selection helpers. A cell is the string key "row,col".
+          "/src/utils/selection.js": `// Pure selection helpers. A cell is the string key "row,col".
 export const ROWS = 6;
 export const COLS = 8;
 export const key = (r, c) => r + "," + c;
@@ -10514,7 +10514,7 @@ import {
   nextTick,
   useTemplateRef,
 } from "vue";
-import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./selection.js";
+import { ROWS, COLS, key, rectKeys, combine, cellAt } from "./utils/selection.js";
 
 // shallowRef + replace-on-write: a Set is swapped, never mutated in place,
 // so Vue only has to notice one assignment per change.
@@ -10713,7 +10713,7 @@ h1 {
 }
 </style>
 `,
-          "/src/selection.js": `// Pure selection helpers. A cell is the string key "row,col".
+          "/src/utils/selection.js": `// Pure selection helpers. A cell is the string key "row,col".
 export const ROWS = 6;
 export const COLS = 8;
 export const key = (r, c) => r + "," + c;
@@ -11005,7 +11005,7 @@ import {
   combine,
   key,
   rectKeys,
-} from "./selection";
+} from "./utils/selection";
 
 @Component({
   selector: "app-root",
@@ -11175,7 +11175,7 @@ export class AppComponent {
   }
 }
 `,
-          "/src/app/selection.ts": `// Pure selection helpers. A cell is the string key "row,col".
+          "/src/app/utils/selection.ts": `// Pure selection helpers. A cell is the string key "row,col".
 export type Cell = [number, number];
 export type Mode = "replace" | "add" | "subtract";
 export interface Drag {

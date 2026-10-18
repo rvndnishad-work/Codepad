@@ -15,6 +15,7 @@ import WowFinal from "@/components/wow/WowFinal";
 import { type BlogFeedEntry } from "@/components/BlogFeedItem";
 import { techLabel } from "@/lib/interview-questions/shared";
 import SpotlightScope from "@/components/wow/SpotlightScope";
+import { currentSite } from "@/lib/current-site";
 
 async function loadStats() {
   try {
@@ -101,6 +102,8 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const session = await auth().catch(() => null);
+  // On the developer domain, hiring is promoted on its own site, not here.
+  const developerSite = (await currentSite()) === "developer";
   await validatePageAccess("/", session);
 
   const userType = (session?.user as { userType?: string | null } | undefined)?.userType;
@@ -200,9 +203,10 @@ export default async function HomePage() {
         stats={{ questions: stats.prepQuestions, challenges: stats.totalChallenges, sessions: stats.interviewsRun }}
         userName={welcomeData?.name}
         recentSnippet={welcomeData?.recent}
+        showPersonaSwitch={!developerSite}
       />
 
-      <HomeWowPortals counts={arsenal.counts} techs={arsenal.techs} />
+      <HomeWowPortals counts={arsenal.counts} techs={arsenal.techs} showHiring={!developerSite} />
 
       <HomeWowSteps />
 
@@ -219,7 +223,7 @@ export default async function HomePage() {
         />
       )}
 
-      <WowFinal />
+      <WowFinal showHiringLink={!developerSite} />
     </div>
   );
 }

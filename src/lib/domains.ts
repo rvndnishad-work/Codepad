@@ -178,3 +178,15 @@ export function recruiterUrl(pathname: string): string {
   const cfg = domainConfig();
   return cfg ? cfg.recruiterOrigin + recruiterPath(pathname) : siteOrigin() + pathname;
 }
+
+/**
+ * Which site this request host is, or null when the domains are not split or
+ * the host is neither domain (previews, localhost, an old domain). Null means
+ * "show both sites", as before the split.
+ */
+export function siteForRequestHost(host: string | null | undefined): SiteKind | null {
+  const cfg = domainConfig();
+  if (!cfg) return null;
+  const site = siteForHost(host, cfg);
+  return site === "legacy" ? null : site;
+}

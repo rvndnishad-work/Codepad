@@ -54,10 +54,13 @@ export default function HomeWowHero({
   stats,
   userName,
   recentSnippet,
+  showPersonaSwitch = true,
 }: {
   stats: HeroStats;
   userName?: string | null;
   recentSnippet?: { slug: string; title: string } | null;
+  /** Off on the developer domain, where hiring lives on its own site: hides the persona switch and the hiring link. */
+  showPersonaSwitch?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
   const statTiles = [
@@ -140,10 +143,12 @@ export default function HomeWowHero({
       <div className="relative z-20 mx-auto flex min-h-[100vh] max-w-7xl flex-col items-center px-4 pb-16 pt-24 text-center md:pt-32">
         <div className="wow-hero-fade flex flex-wrap items-center justify-center gap-3">
           {/* persona switch — developers here, hiring teams one tap away */}
-          <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-xs uppercase tracking-[0.12em] backdrop-blur-md">
-            <span aria-current="page" className="rounded-full bg-accent px-4 py-1.5 font-bold text-accent-ink">Developers</span>
-            <Link href="/hire" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">Hiring teams →</Link>
-          </nav>
+          {showPersonaSwitch && (
+            <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-xs uppercase tracking-[0.12em] backdrop-blur-md">
+              <span aria-current="page" className="rounded-full bg-accent px-4 py-1.5 font-bold text-accent-ink">Developers</span>
+              <Link href="/hire" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">Hiring teams →</Link>
+            </nav>
+          )}
 
           <div className="flex items-center gap-2 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-accent" />
@@ -192,10 +197,12 @@ export default function HomeWowHero({
           </Link>
         </div>
 
-        <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
-          Hiring? Interviewpad for teams
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Link>
+        {showPersonaSwitch && (
+          <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
+            Hiring? Interviewpad for teams
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        )}
 
         {/* live stat strip — every number from the DB; zero-count tiles are
             dropped, same honesty rule as the portals */}

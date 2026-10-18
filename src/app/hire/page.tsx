@@ -16,6 +16,7 @@ import SpotlightScope from "@/components/wow/SpotlightScope";
 import { applyPricingCopy } from "@/lib/billing/pricing-copy";
 import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 import { recruiterUrl } from "@/lib/domains";
+import { currentSite } from "@/lib/current-site";
 
 export const metadata: Metadata = {
   title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
@@ -52,6 +53,7 @@ export default async function HirePage() {
         stats={heroStats}
         ctaHref={ctaHref}
         signedIn={!!session?.user}
+        showPersonaSwitch={(await currentSite()) !== "recruiter"}
       />
 
       <HireWowFlood />

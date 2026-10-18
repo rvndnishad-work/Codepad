@@ -25,10 +25,13 @@ export default function HireWowHero({
   stats,
   ctaHref,
   signedIn,
+  showPersonaSwitch = true,
 }: {
   stats: HeroStat[];
   ctaHref: string;
   signedIn: boolean;
+  /** Off on the recruiter domain, where there is no developer view to switch to. */
+  showPersonaSwitch?: boolean;
 }) {
   const root = useRef<HTMLElement>(null);
   const [paused, setPaused] = useState(false);
@@ -100,10 +103,12 @@ export default function HireWowHero({
 
       <div className="relative z-20 mx-auto flex min-h-[100vh] max-w-7xl flex-col items-center px-4 pb-16 pt-24 text-center md:pt-[7.5rem]">
         <div className="wow-hire-fade flex flex-wrap items-center justify-center gap-3">
-          <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-xs uppercase tracking-[0.12em] backdrop-blur-md">
-            <Link href="/" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">← Developers</Link>
-            <span aria-current="page" className="rounded-full bg-secondary px-4 py-1.5 font-bold text-secondary-ink">Hiring teams</span>
-          </nav>
+          {showPersonaSwitch && (
+            <nav aria-label="Choose your view" className="flex items-center rounded-full border border-fg/15 bg-fg/[0.06] p-1 font-mono text-xs uppercase tracking-[0.12em] backdrop-blur-md">
+              <Link href="/" className="rounded-full px-4 py-1.5 text-fg/60 transition hover:text-fg">← Developers</Link>
+              <span aria-current="page" className="rounded-full bg-secondary px-4 py-1.5 font-bold text-secondary-ink">Hiring teams</span>
+            </nav>
+          )}
           <span className="hidden items-center gap-1.5 rounded-full border border-fg/15 bg-fg/[0.06] px-4 py-2 font-mono sm:flex text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md">
             <Building2 className="h-3.5 w-3.5 text-secondary" /> Technical hiring
           </span>

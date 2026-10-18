@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoLockup } from "./Logo";
+import { currentSite } from "@/lib/current-site";
 
 /**
  * The colophon.
@@ -32,6 +33,23 @@ const HIRING_LINKS = [
   { href: "/become-creator", label: "Become a creator" },
 ];
 
+/** The developer domain: no hiring links (they live on the recruiter site). */
+const ACCOUNT_LINKS = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/become-creator", label: "Become a creator" },
+];
+
+/** The recruiter domain: only hiring links. */
+const RECRUITER_PRODUCT_LINKS = [
+  { href: "/", label: "Platform overview" },
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+];
+const RECRUITER_ACCOUNT_LINKS = [
+  { href: "/w", label: "Workspaces" },
+  { href: "/docs/mcp", label: "API and MCP" },
+];
+
 /** Every claim here maps to a shipped mechanism — keep it that way. */
 const RUNTIME_FACTS = [
   "Network-isolated execution",
@@ -42,7 +60,9 @@ const RUNTIME_FACTS = [
   "GDPR compliant",
 ];
 
-export default function Footer() {
+export default async function Footer() {
+  // On a split domain each site lists only its own pages; null shows both.
+  const site = await currentSite();
   return (
     <footer className="border-t border-border bg-bg">
       <div className="mx-auto max-w-7xl px-4">
@@ -72,9 +92,18 @@ export default function Footer() {
           </div>
 
           <nav className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:col-span-7">
-            <FooterColumn title="Build" links={PRODUCT_LINKS} />
-            <FooterColumn title="Prepare" links={PREPARE_LINKS} />
-            <FooterColumn title="Hire" links={HIRING_LINKS} />
+            {site === "recruiter" ? (
+              <>
+                <FooterColumn title="Product" links={RECRUITER_PRODUCT_LINKS} />
+                <FooterColumn title="Teams" links={RECRUITER_ACCOUNT_LINKS} />
+              </>
+            ) : (
+              <>
+                <FooterColumn title="Build" links={PRODUCT_LINKS} />
+                <FooterColumn title="Prepare" links={PREPARE_LINKS} />
+                <FooterColumn title={site === "developer" ? "Account" : "Hire"} links={site === "developer" ? ACCOUNT_LINKS : HIRING_LINKS} />
+              </>
+            )}
           </nav>
         </div>
 
@@ -103,9 +132,11 @@ export default function Footer() {
             <Link href="/terms" className="ip-label hover:text-fg">
               Terms
             </Link>
-            <Link href="/docs" className="ip-label hover:text-fg">
-              Docs
-            </Link>
+            {site !== "developer" && (
+              <Link href="/docs/mcp" className="ip-label hover:text-fg">
+                Docs
+              </Link>
+            )}
           </div>
         </div>
       </div>

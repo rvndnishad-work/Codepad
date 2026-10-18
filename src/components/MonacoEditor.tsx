@@ -11,7 +11,8 @@ import { setupTypeAcquisition } from "@typescript/ata";
 // gone. See lib/ata-typescript-shim.ts.
 import { ataTypeScript } from "@/lib/ata-typescript-shim";
 import type { Monaco } from "@monaco-editor/react";
-import { customSnippets } from "@/lib/snippets";
+import { registerSnippets } from "@/lib/monaco-snippets";
+import { registerEmmet, attachEmmetTab } from "@/lib/monaco-emmet";
 import { defineNanoBananaThemes } from "@/lib/monaco-themes";
 import { editorThemeById, DEFAULT_EDITOR_THEME_ID } from "@/lib/editor-themes";
 import "@/lib/monaco-loader";
@@ -102,36 +103,17 @@ export default function MonacoEditor({
     }
   }, [monacoInstance, sandpack.files, activeFile]);
 
-  // ── Custom snippets ──
+  // ── Snippets + Emmet ──
+  // VS Code's snippet sets for every language (`log` → console.log, `for`,
+  // `main`, ...) and Emmet (`div` → <div>|</div>) in HTML, JSX/TSX and CSS.
   useEffect(() => {
     if (!monacoInstance) return;
-
-    const disposable = monacoInstance.languages.registerCompletionItemProvider(
-      ['javascript', 'typescript', 'javascriptreact', 'typescriptreact'],
-      {
-        provideCompletionItems: (model: any, position: any) => {
-          const word = model.getWordUntilPosition(position);
-          const range = {
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-          };
-
-          const suggestions = customSnippets.map(s => ({
-            label: s.label,
-            kind: monacoInstance.languages.CompletionItemKind.Snippet,
-            insertText: s.insertText,
-            insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            documentation: s.documentation,
-            range
-          }));
-          return { suggestions };
-        }
-      }
-    );
-
-    return () => disposable.dispose();
+    const snippets = registerSnippets(monacoInstance);
+    const emmet = registerEmmet(monacoInstance);
+    return () => {
+      snippets.dispose();
+      emmet.dispose();
+    };
   }, [monacoInstance]);
 
   // ── ATA: Automatic Type Acquisition for npm packages ──
@@ -175,6 +157,7 @@ export default function MonacoEditor({
   const handleEditorDidMount = useCallback((editor: any, monaco: Monaco) => {
     setMonacoInstance(monaco);
     editorRef.current = editor;
+    attachEmmetTab(editor, monaco);
 
     // ── Immediate model sync on mount ──
     // The multi-file sync useEffect runs only after setMonacoInstance triggers

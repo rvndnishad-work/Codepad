@@ -1,26 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest) {
+async function run() {
   try {
-    // Fail closed: refuse to run if no CRON_SECRET is configured. Vercel
-    // Cron automatically attaches the Authorization header with this env var
-    // value when invoking us; manual triggers can pass ?token=... instead.
-    const cronSecret = process.env.CRON_SECRET;
-    if (!cronSecret) {
-      console.error("[Cron Telemetry] CRON_SECRET is not configured — refusing to run.");
-      return NextResponse.json(
-        { error: "Server misconfigured: CRON_SECRET not set." },
-        { status: 503 }
-      );
-    }
-
-    const authHeader = req.headers.get("authorization");
-    const token = req.nextUrl.searchParams.get("token");
-    if (authHeader !== `Bearer ${cronSecret}` && token !== cronSecret) {
-      return NextResponse.json({ error: "Unauthorized: Invalid cron secret token." }, { status: 401 });
-    }
-
     console.log("[Cron] Triggering platform telemetry scan...");
 
     let createdAlerts = 0;
@@ -221,3 +204,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
+
+// Vercel Cron sends GET (Authorization: Bearer CRON_SECRET); POST for manual calls.
+export const GET = withCronRun("telemetry-scan", run);
+export const POST = GET;

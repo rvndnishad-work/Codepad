@@ -8,6 +8,7 @@ import {
   syncMembershipStatus,
 } from "@/lib/marketplace/fulfillment";
 import { syncConnectAccountFromStripe } from "@/lib/marketplace/connect";
+import { recordCreatorPayoutEvent } from "@/lib/marketplace/payouts";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS, type WorkspaceAuditAction } from "@/lib/workspace-audit";
@@ -15,6 +16,7 @@ import { planDisplayName, subscriptionUpdateAudits } from "@/lib/billing/usage";
 import { checkLowCredits } from "@/lib/billing/credit-alerts";
 import { runIncludedCreditsIfDue } from "@/lib/billing/included-credits-server";
 import { linkVideoAddonAfterCheckout } from "@/lib/video/addon-server";
+import { syncStripeFromWebhook } from "@/lib/admin/stripe-sync";
 
 /** Billing events in the workspace audit log. Stripe is the actor. */
 function audit(workspaceId: string, action: WorkspaceAuditAction, meta: Record<string, unknown>) {
@@ -163,7 +165,15 @@ export async function POST(req: Request) {
         });
         // Mirror onto space memberships (no-op for workspace subs).
         await syncMembershipStatus(sub.id, "canceled", null);
+        await syncStripeFromWebhook({ subscriptionId: sub.id, customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id });
         console.log(`Subscription ${sub.id} canceled.`);
+        break;
+      }
+
+      // Admin console Stripe snapshot only; checkout.session.completed links the subscription.
+      case "customer.subscription.created": {
+        const sub = event.data.object as Stripe.Subscription;
+        await syncStripeFromWebhook({ subscriptionId: sub.id, customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id });
         break;
       }
 
@@ -197,6 +207,7 @@ export async function POST(req: Request) {
           sub.status,
           cpe ? new Date(cpe * 1000) : null,
         );
+        await syncStripeFromWebhook({ subscriptionId: sub.id, customerId: typeof sub.customer === "string" ? sub.customer : sub.customer?.id });
         console.log(`Subscription ${sub.id} status → ${sub.status}.`);
         break;
       }
@@ -206,6 +217,7 @@ export async function POST(req: Request) {
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
         await fulfillMembershipRenewal(invoice);
+        await syncStripeFromWebhook({ customerId: typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id });
         break;
       }
 
@@ -221,6 +233,7 @@ export async function POST(req: Request) {
             currency: invoice.currency ?? null,
           });
         }
+        await syncStripeFromWebhook({ customerId: customer });
         break;
       }
 
@@ -229,6 +242,19 @@ export async function POST(req: Request) {
         const account = event.data.object as Stripe.Account;
         await syncConnectAccountFromStripe(account.id);
         console.log(`Connect account ${account.id} synced.`);
+        break;
+      }
+
+      // Connect: creator payouts (on the connected account) and transfers to it.
+      case "payout.created":
+      case "payout.updated":
+      case "payout.paid":
+      case "payout.failed":
+      case "payout.canceled":
+      case "transfer.created":
+      case "transfer.reversed": {
+        const r = await recordCreatorPayoutEvent(event);
+        if (!r.stored) console.log(`Stripe webhook: ${eventType} skipped (${r.reason}).`);
         break;
       }
 

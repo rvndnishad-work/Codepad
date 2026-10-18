@@ -10,7 +10,7 @@ import { addNoteAction, quickViewAction, type QuickViewData } from "../manage-ac
 import { ChecklistList } from "./Checklist";
 import { RoundRows } from "./RoundsCell";
 import { RoundStrip } from "./RoundStrip";
-import { roundsLine, stripItems } from "@/lib/interview/rounds-view";
+import { roundsLine, stripItems, thenLabel } from "@/lib/interview/rounds-view";
 import { Avatar, Btn, inputCls } from "./ui";
 
 export function QuickView({
@@ -153,7 +153,7 @@ export function QuickView({
             <section>
               <div className="flex items-center justify-between gap-3 mb-1.5">
                 <h3 className="text-xs font-medium text-subtle">Rounds · {row.rounds.done} of {row.rounds.total} done</h3>
-                <RoundStrip items={stripItems(row.rounds)} />
+                <RoundStrip items={stripItems(row.rounds)} then={thenLabel(row.rounds)} />
               </div>
               <p className="text-[13px] text-fg">{roundsLine(row.rounds)}</p>
               <RoundRows rounds={row.rounds} />

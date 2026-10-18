@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { eraseWorkspace, workspacesDueForErase } from "@/lib/workspace/data-privacy-server";
 
 /**
@@ -12,9 +12,7 @@ import { eraseWorkspace, workspacesDueForErase } from "@/lib/workspace/data-priv
  */
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   const due = await workspacesDueForErase(now);
@@ -33,7 +31,6 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, task: "workspace-deletion", due: due.length, erased, failed, ranAt: now.toISOString() });
 }
 
-// Vercel Cron sends GET: same auth, same body.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("workspace-deletion", run);
+export const GET = POST;

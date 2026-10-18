@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronDown, HelpCircle, LayoutGrid, Menu, Plus, Search, X } from "lucide-react";
 import { LogoDynamicMark } from "@/components/LogoDynamic";
 import NotificationBell from "@/components/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "@/components/UserMenu";
 
 export type SwitcherWorkspace = { name: string; slug: string; planLabel: string };
@@ -211,6 +212,7 @@ export default function WorkspaceAppBar({ current, workspaces, user, isAdmin, me
         >
           <HelpCircle className="w-[18px] h-[18px]" />
         </Link>
+        <ThemeToggle />
         <NotificationBell />
         <UserMenu user={{ name: user.name, email: user.email, image: user.image }} isAdmin={isAdmin} />
       </div>

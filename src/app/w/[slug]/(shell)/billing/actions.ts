@@ -7,6 +7,7 @@
  */
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertFeatureOn, FeaturePausedError } from "@/lib/admin/switches";
 import { canMember } from "@/lib/permissions";
 import { appOrigin } from "@/lib/interview/links";
 import { CreditCheckoutError, createCreditPackCheckout } from "@/lib/billing/credit-checkout";
@@ -32,10 +33,11 @@ export async function buyCreditsAction(slug: string, packId: string): Promise<Bu
     if (!workspace) return { ok: false, error: "Workspace not found." };
     const me = workspace.members[0];
     if (!me || !(await canMember(me, "billing:manage"))) return { ok: false, error: "Only owners and admins with billing access can buy credits." };
+    await assertFeatureOn("credit-checkout");
     const url = await createCreditPackCheckout({ workspace, packId: String(packId), origin: await appOrigin() });
     return { ok: true, url };
   } catch (err) {
-    if (err instanceof CreditCheckoutError) return { ok: false, error: err.message };
+    if (err instanceof CreditCheckoutError || err instanceof FeaturePausedError) return { ok: false, error: err.message };
     console.error("[billing] credit checkout failed:", err);
     return { ok: false, error: "Could not open checkout. Try again in a moment." };
   }

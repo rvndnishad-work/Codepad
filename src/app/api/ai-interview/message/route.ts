@@ -1,5 +1,6 @@
 import { interviewerQuestionList, questionTexts } from "@/lib/ai-interview/questionnaire";
 import { NextRequest, NextResponse } from "next/server";
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { prisma } from "@/lib/prisma";
 import { resolveSessionRounds, type SessionRound } from "@/lib/ai-interview/rounds";
 import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
@@ -535,6 +536,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Feature switch "ai-screening": no new screening starts while paused.
+    if (!session.startedAt) {
+      const featurePaused = await featureBlockedResponse("ai-screening");
+      if (featurePaused) return featurePaused;
+    }
     // Charge the workspace 1 credit on the candidate's first message.
     // Race-safe: only the request that flips startedAt NULL -> NOW writes the ledger.
     try {

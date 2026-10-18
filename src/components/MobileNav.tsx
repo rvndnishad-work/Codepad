@@ -64,6 +64,8 @@ type Props = {
   blogStatus?: NavStatus;
   devsMenuStatus?: NavStatus;
   recruitersMenuStatus?: NavStatus;
+  /** True on the recruiter domain, where "/" is the recruiter home. */
+  recruiterSite?: boolean;
 };
 
 /**
@@ -80,6 +82,7 @@ export default function MobileNav({
   blogStatus,
   devsMenuStatus,
   recruitersMenuStatus,
+  recruiterSite = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<"devs" | "recruiters" | null>(null);
@@ -123,7 +126,7 @@ export default function MobileNav({
     }
   }, [open, pathname, developerItems, recruiterItems]);
 
-  const isRecruiterRoute = pathname?.startsWith("/hire") || pathname?.startsWith("/w");
+  const isRecruiterRoute = recruiterSite || pathname?.startsWith("/hire") || pathname?.startsWith("/w");
 
   return (
     <>

@@ -63,14 +63,14 @@ ${feedback}
   };
 
   return (
-    <div className="w-full mt-4 border border-border bg-[#111625]/40 rounded-2xl overflow-hidden transition-all duration-300">
+    <div className="w-full mt-4 border border-border bg-bg/70 dark:bg-[#111625]/40 rounded-2xl overflow-hidden transition-all duration-300">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-5 py-3 hover:bg-[#161B2E]/40 transition text-left"
+        className="w-full flex items-center justify-between px-5 py-3 hover:bg-surface dark:hover:bg-[#161B2E]/40 transition text-left"
       >
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-accent" />
-          <span className="text-xs font-black uppercase tracking-wider text-[#F3F4F6]">
+          <span className="text-xs font-semibold text-fg dark:text-[#F3F4F6]">
             AI Rubric & Feedback Drafter
           </span>
         </div>
@@ -78,44 +78,44 @@ ${feedback}
       </button>
 
       {open && (
-        <div className="p-5 border-t border-border/30 bg-[#0B0F19]/40 space-y-4 animate-fade-in">
+        <div className="p-5 border-t border-border/30 bg-bg/70 dark:bg-[#0B0F19]/40 space-y-4 animate-fade-in">
           {/* Rubrics rating grids */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="p-3 rounded-xl border border-border bg-bg/40 text-center">
-              <span className="text-[9px] uppercase font-black text-muted block mb-1">Code Quality</span>
+              <span className="text-xs font-semibold text-muted block mb-1">Code Quality</span>
               <span className="text-sm font-bold text-fg">{codeQuality} / 5</span>
             </div>
             <div className="p-3 rounded-xl border border-border bg-bg/40 text-center">
-              <span className="text-[9px] uppercase font-black text-muted block mb-1">Problem Solving</span>
+              <span className="text-xs font-semibold text-muted block mb-1">Problem Solving</span>
               <span className="text-sm font-bold text-fg">{problemSolving} / 5</span>
             </div>
             <div className="p-3 rounded-xl border border-border bg-bg/40 text-center">
-              <span className="text-[9px] uppercase font-black text-muted block mb-1">Proctor Integrity</span>
+              <span className="text-xs font-semibold text-muted block mb-1">Proctor Integrity</span>
               <span className="text-sm font-bold text-fg">{integrityRating} / 5</span>
             </div>
           </div>
 
           {/* Text feedback editor */}
           <div className="space-y-1">
-            <label className="text-[9px] font-black uppercase tracking-wider text-muted block">
+            <label className="text-xs font-semibold text-muted block">
               Suggested Assessment Review Draft
             </label>
             <textarea
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               rows={4}
-              className="w-full p-3 rounded-xl border border-border bg-bg text-xs text-[#F3F4F6] focus:outline-none focus:border-accent font-sans leading-relaxed resize-y"
+              className="w-full p-3 rounded-xl border border-border bg-bg text-xs text-fg dark:text-[#F3F4F6] focus:outline-none focus:border-accent font-sans leading-relaxed resize-y"
             />
           </div>
 
           {/* Copy and apply controls */}
           <div className="flex items-center justify-between gap-3 pt-2">
-            <span className="text-[10px] text-muted leading-tight">
+            <span className="text-xs text-muted leading-tight">
               Tweak feedback comments and copy structured results to clipboard.
             </span>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer shrink-0"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent-soft text-bg text-xs font-semibold transition-all shadow-md cursor-pointer shrink-0"
             >
               <Clipboard className="w-3.5 h-3.5" />
               Copy Rubric Draft

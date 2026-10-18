@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { notifyTakeHomeExpiringForAssignment } from "@/lib/notifications/triggers";
 
 /**
@@ -16,9 +16,7 @@ import { notifyTakeHomeExpiringForAssignment } from "@/lib/notifications/trigger
 const WINDOW_HOURS = 24;
 const MAX_BATCH = 200;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   const horizon = new Date(now.getTime() + WINDOW_HOURS * 60 * 60 * 1000);
@@ -66,7 +64,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// GET allowed for easy curl testing in dev — same auth, same body.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("notify-take-home-expiring", run);
+export const GET = POST;

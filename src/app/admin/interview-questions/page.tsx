@@ -10,12 +10,14 @@ import QuestionAdminRow from "./QuestionAdminRow";
 import QuestionsFilterBar from "./QuestionsFilterBar";
 import { PAGE_SIZES, DEFAULT_PAGE_SIZE, SORT_OPTIONS, FILTER_COOKIE, PERSISTED_KEYS, type SortKey } from "./list-params";
 import Pagination from "../Pagination";
+import ContentTabs from "../content/_components/ContentTabs";
 
-export const metadata = { title: "Interview Questions — Admin", robots: { index: false } };
+export const metadata = { title: "Content — Admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
 
 const ROW_SELECT = {
   id: true, title: true, slug: true, status: true, difficulty: true, technology: true, views: true,
+  scheduledAt: true,
   company: { select: { name: true } },
 } as const;
 
@@ -104,7 +106,7 @@ export default async function InterviewQuestionsAdmin({
     prisma.prepQuestion.count({ where: { status: "published" } }),
     prisma.prepQuestion.count({ where: { status: "draft" } }),
     prisma.prepExperience.count(),
-    prisma.prepExperience.count({ where: { status: "pending" } }),
+    prisma.prepExperience.count({ where: { status: { in: ["pending", "approved"] } } }),
     prisma.prepQuestion.count({ where }),
     sort
       ? findSortedByDifficulty(where, sort === "difficulty-asc" ? "asc" : "desc", (page - 1) * perPage, perPage)
@@ -129,16 +131,14 @@ export default async function InterviewQuestionsAdmin({
 
   return (
     <div className="space-y-8">
+      <ContentTabs active="questions" />
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Interview Questions</h1>
-          <p className="text-sm text-muted mt-1">Manage the company-indexed question bank and experiences.</p>
-        </div>
+        <p className="text-sm text-muted">The company-indexed question bank and candidate experiences.</p>
         <div className="flex items-center gap-2">
           <Link href="/admin/interview-questions/import" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-xs font-bold hover:border-accent/40 transition">
             <Upload className="w-4 h-4" /> Bulk import
           </Link>
-          <Link href="/admin/interview-questions/new" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition">
+          <Link href="/admin/interview-questions/new" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition">
             <Plus className="w-4 h-4" /> New question
           </Link>
         </div>
@@ -149,11 +149,11 @@ export default async function InterviewQuestionsAdmin({
         {metrics.map((m) => {
           const card = (
             <div className={`p-4 rounded-2xl border bg-bg/40 ${m.alert ? "border-amber-500/40" : "border-border"} h-full`}>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted">
+              <div className="flex items-center gap-2 text-xs font-semibold text-muted">
                 <m.icon className="w-3.5 h-3.5" /> {m.label}
               </div>
-              <div className={`text-2xl font-black mt-2 ${m.alert ? "text-amber-500" : ""}`}>{m.value}</div>
-              {m.sub && <div className="text-[10px] text-muted mt-0.5">{m.sub}</div>}
+              <div className={`text-2xl font-semibold mt-2 ${m.alert ? "text-amber-500" : ""}`}>{m.value}</div>
+              {m.sub && <div className="text-xs text-muted mt-0.5">{m.sub}</div>}
             </div>
           );
           return m.href ? (
@@ -173,14 +173,14 @@ export default async function InterviewQuestionsAdmin({
       {/* Questions */}
       <div className="space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-muted">
+          <h2 className="text-xs font-semibold text-muted">
             Questions{filtering ? ` — ${filteredQ} match${filteredQ === 1 ? "" : "es"}` : ""}
           </h2>
           <QuestionsFilterBar q={q} tech={tech} status={status} per={perPage} sort={sort} />
         </div>
         <div className="rounded-2xl border border-border overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-bg/50 text-[10px] font-black uppercase tracking-wider text-muted">
+            <thead className="bg-bg/50 text-xs font-semibold text-muted">
               <tr>
                 <th className="text-left p-3">Title</th>
                 <th className="text-left p-3 hidden sm:table-cell">Company</th>
@@ -191,7 +191,7 @@ export default async function InterviewQuestionsAdmin({
             </thead>
             <tbody className="divide-y divide-border">
               {questions.map((row) => (
-                <QuestionAdminRow key={row.id} q={{ ...row, company: row.company?.name ?? null }} />
+                <QuestionAdminRow key={row.id} q={{ ...row, company: row.company?.name ?? null, scheduledAt: row.scheduledAt?.toISOString() ?? null }} />
               ))}
               {questions.length === 0 && (
                 <tr>

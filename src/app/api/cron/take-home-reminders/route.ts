@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { sendTakeHomeReminder, sendTakeHomeSessionReminder } from "@/lib/take-home/emails";
 import { dueReminder, LAST_CALL_CHOICES, START_REMINDER_CHOICES } from "@/lib/take-home/reminders";
 
@@ -25,9 +25,7 @@ import { dueReminder, LAST_CALL_CHOICES, START_REMINDER_CHOICES } from "@/lib/ta
 const REMIND_WINDOW_HOURS = 24;
 const MAX_BATCH = 200;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   const horizon = new Date(now.getTime() + REMIND_WINDOW_HOURS * 60 * 60 * 1000);
@@ -189,7 +187,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// GET allowed for easy curl testing in dev — same auth, same body.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("take-home-reminders", run);
+export const GET = POST;

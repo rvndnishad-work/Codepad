@@ -15,5 +15,8 @@ declare module "next-auth/jwt" {
     uid?: string;
     /** When this sign-in started (ms since epoch). */
     signedInAt?: number;
+    /** Revocation anchor for tokens minted before `signedInAt` existed: their
+     *  first-seen `iat` (ms), frozen so re-signing cannot move it forward. */
+    authAt?: number;
   }
 }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Send, Trash2, MessageSquare, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import RelativeTime from "./RelativeTime";
+import ReportButton from "./ReportButton";
 
 export type CommentNode = {
   id: string;
@@ -30,6 +31,7 @@ export default function CommentSection({
   placeholder = "What are your thoughts?",
   bare = false,
   emptyText = "No responses yet. Be the first to share what you think.",
+  reportType = "blog_comment",
 }: {
   postId: string;
   initialComments: CommentNode[];
@@ -45,6 +47,8 @@ export default function CommentSection({
   /** Leave out the outer spacing and heading when the page already titles the section. */
   bare?: boolean;
   emptyText?: string;
+  /** What a "Report" on a comment files as. */
+  reportType?: "blog_comment" | "question_comment";
 }) {
   const createUrl = postUrl ?? `/api/blogs/${postId}/comments`;
   const router = useRouter();
@@ -212,10 +216,13 @@ export default function CommentSection({
                       <span className="text-[11px] text-muted/60">
                         <RelativeTime iso={c.createdAt} />
                       </span>
+                      {signedIn && currentUserId !== c.user.id && (
+                        <ReportButton targetType={reportType} targetId={c.id} className="ml-auto" />
+                      )}
                       {canDelete && (
                         <button
                           onClick={() => handleDelete(c.id)}
-                          className="ml-auto text-muted/50 hover:text-rose-500 transition-colors"
+                          className={`${signedIn && currentUserId !== c.user.id ? "" : "ml-auto "}text-muted/50 hover:text-rose-500 transition-colors`}
                           title="Delete comment"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

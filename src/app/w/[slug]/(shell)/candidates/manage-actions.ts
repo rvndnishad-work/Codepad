@@ -97,12 +97,13 @@ export async function bulkCandidatesAction(
   slug: string,
   ids: string[],
   op: BulkAction,
-): Promise<ActionResult<{ changed: number }>> {
+): Promise<ActionResult<{ changed: number; interviewsCancelled: number }>> {
   try {
     const actor = await resolveCandidateActor(slug);
     const r = await runBulkAction(actor, ids, op);
     refresh(slug, ids.length === 1 ? ids[0] : undefined, op.action === "batch" ? op.batchId : undefined);
-    return { ok: true, changed: r.changed };
+    if (r.interviewsCancelled) revalidatePath(`/w/${slug}/interviews`, "layout");
+    return { ok: true, changed: r.changed, interviewsCancelled: r.interviewsCancelled ?? 0 };
   } catch (err) {
     return fail(err);
   }

@@ -3,6 +3,7 @@
 import { appOrigin } from "@/lib/interview/links";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertFeatureOn } from "@/lib/admin/switches";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -838,6 +839,7 @@ export async function subscribeTierAction(tierId: string): Promise<string> {
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) throw new Error("Sign in to subscribe.");
+  await assertFeatureOn("creator-checkout");
   return createTierCheckout({ tierId, buyerId: userId, origin: await origin() });
 }
 
@@ -845,5 +847,6 @@ export async function buyContentAction(spaceContentId: string, coupon?: string |
   const session = await auth().catch(() => null);
   const userId = session?.user?.id;
   if (!userId) throw new Error("Sign in to purchase.");
+  await assertFeatureOn("creator-checkout");
   return createContentCheckout({ spaceContentId, buyerId: userId, origin: await origin(), coupon: coupon ?? null });
 }

@@ -35,11 +35,16 @@ export default function NavChrome({ children }: { children: ReactNode }) {
   // Runtime-detected dark hero (set after mount / on every navigation —
   // the page DOM is fully committed before effects run, so the query is safe).
   const [hasDarkHero, setHasDarkHero] = useState(false);
+  // A hero that stays dark in the light theme too (`keep-dark`), so the
+  // floating bar keeps white content over it in both themes. Heroes marked
+  // data-dark-hero="dark-only" turn light with the page.
+  const [heroAlwaysDark, setHeroAlwaysDark] = useState(false);
   const immersive = isImmersive(pathname) || hasDarkHero;
   const [scrolled, setScrolled] = useState(true);
 
   useEffect(() => {
     setHasDarkHero(!!document.querySelector("[data-dark-hero]"));
+    setHeroAlwaysDark(!!document.querySelector('[data-dark-hero]:not([data-dark-hero="dark-only"])'));
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -47,7 +52,7 @@ export default function NavChrome({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <header data-scrolled={scrolled} data-immersive={immersive} className="site-nav sticky top-0 z-[100] transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300">
+    <header data-scrolled={scrolled} data-immersive={immersive} data-hero-dark={immersive && heroAlwaysDark} className="site-nav sticky top-0 z-[100] transition-[background-color,border-color,box-shadow,backdrop-filter] duration-300">
       <div
         aria-hidden
         className="nav-hairline pointer-events-none absolute inset-x-0 bottom-[-1px] h-px bg-gradient-to-r from-transparent via-secondary/60 to-transparent transition-opacity duration-300"

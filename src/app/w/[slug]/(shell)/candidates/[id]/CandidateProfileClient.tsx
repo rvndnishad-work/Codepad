@@ -577,7 +577,7 @@ export default function CandidateProfileClient({
       {confirm === "archive" && (
         <ConfirmDialog
           title={`Archive ${row.name}?`}
-          body="They leave the list and the board but keep their history, notes and results. You can restore them at any time."
+          body="They leave the list and the board but keep their history, notes and results. Interviews still to come are cancelled and they are told by email. You can restore them at any time."
           confirmLabel="Archive"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
@@ -589,7 +589,7 @@ export default function CandidateProfileClient({
       {confirm === "erase" && (
         <ConfirmDialog
           title={`Erase ${row.name} for good?`}
-          body="This removes them and their notes permanently and replaces their name on past assessments with Erased candidate. This cannot be undone."
+          body="This removes them and their notes permanently and replaces their name on past assessments with Erased candidate. Interviews still to come are cancelled. This cannot be undone."
           confirmLabel="Erase"
           danger
           requireText="erase"

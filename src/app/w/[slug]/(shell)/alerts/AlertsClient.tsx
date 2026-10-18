@@ -54,6 +54,7 @@ const SAMPLE: Record<WorkspaceEvent, Record<string, unknown>> = {
   "interview.completed": { candidate: { name: "Ana Lima" }, interview: { title: "Frontend pairing" } },
   "invite.bounced": { email: { recipient: "ana.lima@example.com" } },
   "candidate.decided": { candidate: { name: "Ana Lima" }, decision: "passed" },
+  "round.waiting": { candidate: { name: "Ana Lima" }, waiting: "next_step", round: { name: "Coding round", kind: "interview" }, result: "above bar" },
 };
 
 function relative(iso: string): string {

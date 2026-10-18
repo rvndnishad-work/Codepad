@@ -36,6 +36,8 @@ export type HarnessTestInput = {
 export const HARNESS_LANGUAGES = ["python", "javascript", "typescript", "go", "java", "cpp", "rust"] as const;
 
 export type ChallengeStepInput = {
+  /** Id of the saved ChallengeStep; absent until the step is first saved. */
+  id?: string;
   title: string;
   description: string;
   template: string;
@@ -75,6 +77,12 @@ export type ChallengeFormInput = {
   /** Whether the challenge requires a paid premium subscription (admin only) */
   premium: boolean;
   steps: ChallengeStepInput[];
+  /** Admin only: ISO time the cron publishes this draft at, "" for none. */
+  scheduledAt?: string;
+  /** Admin only: archived challenges are hidden everywhere and cannot be published. */
+  archived?: boolean;
+  /** Admin only: attempts + take-homes; a challenge with any can only be archived. */
+  historyCount?: number;
 };
 
 export type ChallengeFormSurface = {
@@ -87,6 +95,7 @@ export type ChallengeFormSurface = {
 /** Maps a persisted ChallengeStep row to the form's step input, hydrating the
  *  harness fields from their JSON columns. Pure + server-safe. */
 export function stepInputFromDb(s: {
+  id?: string;
   title: string | null;
   description: string;
   template: string;
@@ -121,6 +130,7 @@ export function stepInputFromDb(s: {
   };
   const sig = parse<{ params?: ContractParamInput[]; returnType?: string }>(s.signatureJson, {});
   return {
+    id: s.id,
     title: s.title ?? "",
     description: s.description,
     template: s.template,

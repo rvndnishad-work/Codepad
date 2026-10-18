@@ -18,6 +18,7 @@ export const LEDGER_KIND_LABELS: Record<string, string> = {
   INCLUDED: "Included with plan",
   INCLUDED_EXPIRED: "Expired",
   TRIAL: "Trial credits",
+  ADJUSTMENT: "Adjusted by Interviewpad",
 };
 
 export function ledgerKindLabel(kind: LedgerKind): string {

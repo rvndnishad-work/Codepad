@@ -1,0 +1,216 @@
+[
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "data-types",
+      "basics"
+    ],
+    "title": "What are Python's built-in data types?",
+    "description": "The core built-in types (int, float, bool, str, list, tuple, dict, set, None), how to check them, and which are mutable."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "modules",
+      "basics"
+    ],
+    "title": "What does if __name__ == \"__main__\" do?",
+    "description": "How __name__ is set when a file is run versus imported, and why scripts use a main guard."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "files",
+      "pathlib",
+      "io"
+    ],
+    "title": "How do you read and write files in Python?",
+    "description": "open() modes, with blocks, text vs binary, encodings, and reading files with pathlib."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "lists",
+      "basics"
+    ],
+    "title": "What is the difference between append, extend and insert on a list?",
+    "description": "Adding one item, many items or an item at a position, with their costs."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "dict",
+      "basics"
+    ],
+    "title": "How do you work with dictionaries (get, setdefault, items, merging)?",
+    "description": "Safe lookups, defaults, iterating keys and values, and merging with | and update()."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "control-flow",
+      "basics"
+    ],
+    "title": "How do break, continue, pass and loop else work?",
+    "description": "Leaving or skipping loop iterations, the empty pass statement, and the else clause on for and while."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "functions",
+      "parameters"
+    ],
+    "title": "How do default, keyword-only and positional-only parameters work?",
+    "description": "Parameter kinds in a def: defaults, the * and / markers, and how calls bind arguments."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "functions",
+      "objects"
+    ],
+    "title": "Is Python pass-by-value or pass-by-reference?",
+    "description": "How arguments are passed as references to objects, and why mutating and rebinding behave differently."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "float",
+      "decimal",
+      "numbers"
+    ],
+    "title": "Why does 0.1 + 0.2 != 0.3 in Python, and when do you use Decimal or Fraction?",
+    "description": "Binary floating point, math.isclose, and exact arithmetic with decimal and fractions."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "json",
+      "serialization"
+    ],
+    "title": "How do you convert between Python objects and JSON?",
+    "description": "json.dumps and json.loads, type mapping, custom encoders and common pitfalls."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "logging",
+      "stdlib"
+    ],
+    "title": "How does the logging module work?",
+    "description": "Loggers, levels, handlers and formatters, and why logging beats print in real code."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "testing",
+      "unittest",
+      "pytest"
+    ],
+    "title": "How do you write tests in Python with unittest and pytest?",
+    "description": "Test structure, assertions, fixtures and mocking with unittest and pytest."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "easy",
+    "tags": [
+      "enum",
+      "stdlib"
+    ],
+    "title": "What is the enum module and when should you use it?",
+    "description": "Enum, IntEnum, auto() and Flag for named constants instead of magic values."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "performance",
+      "timeit",
+      "cprofile"
+    ],
+    "title": "How do you measure and profile Python performance?",
+    "description": "timeit for micro-benchmarks, cProfile for finding hot spots, and how to read the results."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "datetime",
+      "zoneinfo"
+    ],
+    "title": "How do you handle dates, times and time zones in Python?",
+    "description": "datetime, timedelta, aware vs naive times, zoneinfo and ISO 8601 formatting."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "regex",
+      "re"
+    ],
+    "title": "How do you use regular expressions in Python?",
+    "description": "re.search, match, findall, groups, compiled patterns and raw strings."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "subprocess",
+      "security"
+    ],
+    "title": "How do you run external commands with subprocess safely?",
+    "description": "subprocess.run, capturing output, return codes, timeouts and why shell=True is risky."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "concurrency",
+      "concurrent-futures"
+    ],
+    "title": "How do ThreadPoolExecutor and ProcessPoolExecutor work?",
+    "description": "concurrent.futures executors, submit vs map, futures and choosing threads or processes."
+  },
+  {
+    "technology": "python",
+    "round": "Backend",
+    "difficulty": "medium",
+    "tags": [
+      "security",
+      "eval",
+      "pickle"
+    ],
+    "title": "What are common Python security pitfalls?",
+    "description": "eval/exec, pickle, shell injection, SQL injection, path traversal and secrets handling."
+  }
+]

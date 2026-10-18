@@ -12,6 +12,7 @@ export default async function CompaniesAdminPage() {
   await requireAdminAccess("content:curate");
   const companies = await prisma.company.findMany({
     orderBy: { name: "asc" },
+    take: 1000,
     include: { _count: { select: { questions: true, experiences: true } } },
   });
   const rows: CompanyRow[] = companies.map((c) => ({

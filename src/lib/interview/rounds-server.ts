@@ -9,6 +9,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { loadCandidateResults } from "@/lib/crm/results-server";
+import { providerName } from "@/lib/ats/provider-name";
 import { INTERVIEW_PASS_RATING, type CandidateResult } from "@/lib/crm/results";
 import type { RoundResultView, RoundsSummary, RoundView } from "@/lib/interview/rounds-view";
 import {
@@ -50,6 +51,9 @@ export type RoundMeta = {
 export type CandidateRounds = {
   candidateId: string;
   planName: string | null;
+  /** The plan hands over to the company ATS after its last round. */
+  continuesInAts: boolean;
+  atsName: string | null;
   roleType: RoleType;
   progress: PlanProgress;
   /** Per round id: format, whether it came from the plan, whether it has happened, and its latest result. */
@@ -111,13 +115,13 @@ export async function loadCandidateRounds(
   const ids = [...new Set(candidateIds)];
   if (!ids.length) return out;
   const [ws, candidates] = await Promise.all([
-    prisma.workspace.findUnique({ where: { id: workspaceId }, select: { hiringType: true } }),
+    prisma.workspace.findUnique({ where: { id: workspaceId }, select: { hiringType: true, atsIntegration: { select: { provider: true } } } }),
     prisma.candidate.findMany({
       where: { workspaceId, id: { in: ids } },
       select: {
         id: true,
         stage: true,
-        plan: { select: { name: true, roleType: true } },
+        plan: { select: { name: true, roleType: true, continuesInAts: true } },
         rounds: {
           orderBy: { order: "asc" },
           select: {
@@ -144,6 +148,7 @@ export async function loadCandidateRounds(
   const withRounds = candidates.filter((c) => c.rounds.length > 0);
   const results: Map<string, CandidateResult[]> = preloaded ?? (withRounds.length ? await loadCandidateResults(workspaceId, workspaceSlug, withRounds.map((c) => c.id)) : new Map());
   const hiring = normalizeHiringType(ws?.hiringType);
+  const atsName = ws?.atsIntegration ? providerName(ws.atsIntegration.provider) : null;
   const sendsName = await sourceNames(workspaceId, withRounds.flatMap((c) => c.rounds.map((r) => ({ kind: r.kind, json: r.planRound?.settingsJson ?? null }))));
 
   for (const c of candidates) {
@@ -214,6 +219,8 @@ export async function loadCandidateRounds(
     out.set(c.id, {
       candidateId: c.id,
       planName: c.plan?.name ?? null,
+      continuesInAts: !!c.plan?.continuesInAts,
+      atsName,
       roleType: c.plan ? normalizeRoleType(c.plan.roleType) : hiring === "non_technical" ? "non_technical" : "technical",
       progress: planProgress(inputs, stages?.get(c.id) ?? c.stage),
       meta,
@@ -239,6 +246,8 @@ export function summarizeRounds(cr: CandidateRounds, nameOf: (id: string | null)
     currentId: p.current?.id ?? null,
     stoppedAtId: p.stoppedAt?.id ?? null,
     override: p.total > 0 ? overrideReason(p) : null,
+    continuesInAts: cr.continuesInAts,
+    atsName: cr.atsName,
     rounds: p.rounds.map((r) => {
       const m = cr.meta.get(r.id);
       return {
@@ -265,6 +274,13 @@ export function summarizeRounds(cr: CandidateRounds, nameOf: (id: string | null)
       };
     }),
   };
+}
+
+/** One candidate's rounds as plain data, or null when they have none. */
+export async function loadRoundsSummary(workspaceId: string, workspaceSlug: string, candidateId: string): Promise<RoundsSummary | null> {
+  const cr = (await loadCandidateRounds(workspaceId, workspaceSlug, [candidateId])).get(candidateId);
+  if (!cr || cr.progress.total === 0) return null;
+  return summarizeRounds(cr, await deciderNames([cr]));
 }
 
 /** Names for the members who moved people on, for summarizeRounds. */

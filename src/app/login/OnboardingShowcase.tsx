@@ -26,7 +26,7 @@ export default function OnboardingShowcase() {
       description: "Write, test, and run code instantly in isolated browser-only sandboxes. No configuration or installation required.",
       preview: (
         <div 
-          className="w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-mono text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 relative"
+          className="keep-dark w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-mono text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 relative"
           style={{ transformStyle: "preserve-3d" }}
         >
           <div 
@@ -67,7 +67,7 @@ export default function OnboardingShowcase() {
       description: "Delegate first-round technical evaluations to autonomous AI agents that invite, evaluate, and talk directly with candidates.",
       preview: (
         <div 
-          className="w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-sans text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 space-y-[clamp(0.5rem,1.5vh,1.25rem)] relative"
+          className="keep-dark w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-sans text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 space-y-[clamp(0.5rem,1.5vh,1.25rem)] relative"
           style={{ transformStyle: "preserve-3d" }}
         >
           <div 
@@ -106,7 +106,7 @@ export default function OnboardingShowcase() {
       description: "Collaborate, share, and code live with candidates and team members with shared audio, code sync, and terminal output.",
       preview: (
         <div 
-          className="w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-mono text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 relative"
+          className="keep-dark w-full rounded-2xl bg-gradient-to-b from-[#1e2229]/95 to-[#121418]/95 p-[clamp(1rem,2vh,2rem)] font-mono text-[clamp(0.75rem,1.5vh,1rem)] select-none shadow-2xl shadow-black/50 ring-1 ring-white/5 relative"
           style={{ transformStyle: "preserve-3d" }}
         >
           <div 

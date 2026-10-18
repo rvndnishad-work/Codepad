@@ -99,7 +99,7 @@ export default function Pagination({
             <Link
               key={`page-${pageNum}`}
               href={getPageUrl(pageNum)}
-              className={`w-8 h-8 rounded-lg text-xs font-black flex items-center justify-center transition ${
+              className={`w-8 h-8 rounded-lg text-xs font-semibold flex items-center justify-center transition ${
                 isActive
                   ? "bg-accent text-bg"
                   : "border border-border text-muted hover:text-fg hover:bg-elevated/50 hover:border-border-strong"

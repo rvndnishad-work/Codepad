@@ -7,7 +7,15 @@ import DashboardList from "./DashboardList";
 import BlogsTab from "./BlogsTab";
 import ChallengesTab from "./ChallengesTab";
 import DashboardFeed from "./DashboardFeed";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 import type { SnippetItem, BlogItem, ChallengeItem, FeedItem } from "./types";
+
+const LIGHT_ACCENT: Record<string, string> = {
+  "#8b93ff": "#6c74d8",
+  "#22d3ee": "#4b8fa9",
+  "#ffd166": "#d9a50a",
+  "#ff2fb3": "#b779ad",
+};
 
 type TabId = "snippets" | "blogs" | "challenges" | "discover";
 
@@ -76,6 +84,9 @@ export default function DashboardWorkspace({
     discover: following.length + trending.length,
   };
   const current = TABS.find((t) => t.id === active)!;
+  // Light theme: neon accents swap for clay "lo" tones legible on the pale surface.
+  const light = useIsLightTheme();
+  const tone = (c: string) => (light ? LIGHT_ACCENT[c] ?? c : c);
 
   return (
     <section className="gx gx-panel overflow-hidden rounded-[28px]">
@@ -101,11 +112,17 @@ export default function DashboardWorkspace({
                     : "border-white/10 bg-black/20 text-[rgba(238,240,255,0.6)] hover:border-white/25 hover:text-white"
                 }`}
               >
-                <Icon className="h-4 w-4" style={{ color: isActive ? t.accent : undefined }} />
+                <Icon className="h-4 w-4" style={{ color: isActive ? tone(t.accent) : undefined }} />
                 <span>{t.label}</span>
                 <span
                   className="rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums"
-                  style={isActive ? { background: `${t.accent}26`, color: t.accent } : { background: "rgba(255,255,255,0.06)", color: "rgba(238,240,255,0.5)" }}
+                  style={
+                    isActive
+                      ? { background: `${tone(t.accent)}26`, color: tone(t.accent) }
+                      : light
+                        ? { background: "rgba(15,23,48,0.06)", color: "#6679a2" }
+                        : { background: "rgba(255,255,255,0.06)", color: "rgba(238,240,255,0.5)" }
+                  }
                 >
                   {counts[t.id]}
                 </span>
@@ -117,7 +134,7 @@ export default function DashboardWorkspace({
 
       <div className="border-b border-white/10 px-4 py-3 md:px-6">
         <p className="text-xs text-[rgba(238,240,255,0.55)]">
-          <span className="font-bold" style={{ color: current.accent }}>{current.label}</span>
+          <span className="font-bold" style={{ color: tone(current.accent) }}>{current.label}</span>
           {" — "}{current.blurb}
         </p>
       </div>

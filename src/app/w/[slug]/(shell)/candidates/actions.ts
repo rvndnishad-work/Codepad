@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertFeatureOn } from "@/lib/admin/switches";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import {
@@ -135,6 +136,7 @@ export async function bulkCreateTakeHomeSessions(
     slug,
     "takehome:create",
   );
+  await assertFeatureOn("take-home");
 
   const challengeIds = [...new Set(input.curation.challengeIds ?? [])];
   const playgroundIds = [...new Set(input.curation.playgroundIds ?? [])];

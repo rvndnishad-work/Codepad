@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { isRecruiterHost } from "@/lib/domains";
 import { auth } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions/staff";
 import { userCan } from "@/lib/permissions/access";
@@ -13,9 +15,12 @@ import UserMenu from "./UserMenu";
 import MobileNav from "./MobileNav";
 import NavGlide from "./NavGlide";
 import NotificationBell from "./NotificationBell";
+import ThemeToggle from "./ThemeToggle";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
+  const hdrs = await headers();
+  const recruiterSite = isRecruiterHost(hdrs.get("x-forwarded-host") ?? hdrs.get("host"));
   const user = session?.user;
   const showAdmin = await isStaff(session);
   const showCreator = user?.id ? await userCan(user.id, "content:author") : false;
@@ -241,10 +246,11 @@ export default async function Header() {
           blogStatus={blogStatus}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
+          recruiterSite={recruiterSite}
         />
 
         {/* Desktop: logo links to home */}
-        <HeaderLogo />
+        <HeaderLogo recruiterSite={recruiterSite} />
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">
@@ -296,6 +302,8 @@ export default async function Header() {
                 silently no-ops when unauthenticated (API returns 401). */}
             {user ? <NotificationBell /> : null}
 
+            <ThemeToggle />
+
             {user ? (
               <UserMenu
                 user={{ name: user.name, email: user.email, image: user.image }}
@@ -305,7 +313,7 @@ export default async function Header() {
             ) : (
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-fg px-5 py-2 text-[13px] font-semibold text-bg transition-colors duration-200 hover:bg-fg/85 active:translate-y-px"
+                className="nav-signin inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-fg px-5 py-2 text-[13px] font-semibold text-bg transition-colors duration-200 hover:bg-fg/85 active:translate-y-px"
               >
                 Sign in
               </Link>

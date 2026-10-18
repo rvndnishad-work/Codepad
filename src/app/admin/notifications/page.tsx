@@ -1,7 +1,5 @@
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
+import { requireAdminAccess } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import AdminBroadcastConsole from "./AdminBroadcastConsole";
 import { listBroadcastsAction } from "@/lib/notifications/broadcast";
 
@@ -10,9 +8,12 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+/** Cap on the workspace picker. Larger platforms should target by user
+ *  email or pick from the newest workspaces. */
+const WORKSPACE_PICKER_LIMIT = 500;
+
 export default async function AdminNotificationsPage() {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) redirect("/");
+  await requireAdminAccess("platform:admin");
 
   // Pre-load the sent log + workspace list (for the WORKSPACE audience picker)
   // server-side so the first paint is complete.
@@ -21,6 +22,7 @@ export default async function AdminNotificationsPage() {
     prisma.workspace.findMany({
       select: { id: true, name: true, slug: true, planName: true },
       orderBy: { name: "asc" },
+      take: WORKSPACE_PICKER_LIMIT,
     }),
   ]);
 

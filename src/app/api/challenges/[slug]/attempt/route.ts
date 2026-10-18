@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -5,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { clientKey, rateLimitDistributed } from "@/lib/rate-limit";
 import { runUnitJs } from "@/lib/judge/unit-js";
 import { PistonUnavailableError } from "@/lib/piston";
+import { trackActivity } from "@/lib/admin/activity";
 import { resolveCandidateFromToken } from "@/lib/take-home/candidate";
 import { recordPrepCompletion } from "@/lib/prep-journey/complete";
 
@@ -66,6 +68,9 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  // Feature switch "challenges" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("challenges");
+  if (featurePaused) return featurePaused;
   const { slug } = await params;
   const body = await req.json().catch(() => null);
   const parsed = submitSchema.safeParse(body);
@@ -177,6 +182,8 @@ export async function POST(
       const isTs = [...Object.keys(judged), ...Object.keys(hiddenTests)].some(
         (p) => p.endsWith(".ts") || p.endsWith(".tsx")
       );
+      const judgeStartedAt = Date.now();
+      const judgeLabel = isTs ? "typescript" : "javascript";
       try {
         const result = await runUnitJs({
           sourceFiles: judged,
@@ -189,6 +196,7 @@ export async function POST(
             ? "passed"
             : "failed";
         score = result.score;
+        trackActivity({ kind: "judge_run", userId: candidateUserId, label: judgeLabel, durationMs: Date.now() - judgeStartedAt, ok: true, targetId: challenge.id });
         testResults = {
           passed: result.passed,
           total: result.total,
@@ -200,6 +208,7 @@ export async function POST(
           })),
         };
       } catch (err) {
+        trackActivity({ kind: "judge_run", userId: candidateUserId, label: judgeLabel, durationMs: Date.now() - judgeStartedAt, ok: false, targetId: challenge.id });
         if (!(err instanceof PistonUnavailableError)) {
           console.error("[attempt] server judge failed:", err);
         }

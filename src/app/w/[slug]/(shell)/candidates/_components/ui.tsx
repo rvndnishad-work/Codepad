@@ -8,12 +8,14 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { STAGE_LABELS, isPipelineStage } from "@/lib/crm/stages";
 import { STAGE_SWATCH } from "@/lib/workspace/display";
@@ -140,7 +142,12 @@ export function Btn({ variant = "ghost", size = "sm", icon: Icon, href, classNam
   );
 }
 
-/** Click-to-open menu. Closes on outside click and Escape. */
+/**
+ * Click-to-open menu. Closes on outside click and Escape. The list
+ * renders into document.body with fixed positioning, so cards and tables
+ * with overflow hidden never crop it; it opens upwards when there is no room
+ * below and stays inside the viewport.
+ */
 export function Menu({
   trigger,
   children,
@@ -155,11 +162,56 @@ export function Menu({
   label?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number; maxHeight: number; up: boolean } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Place the list next to the trigger, flipping up when the space below is short.
+  useLayoutEffect(() => {
+    if (!open) {
+      setPos(null);
+      return;
+    }
+    const place = () => {
+      const anchor = ref.current?.getBoundingClientRect();
+      if (!anchor) return;
+      const gap = 6;
+      const edge = 8;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const w = Math.min(width, vw - edge * 2);
+      const natural = Math.min(listRef.current?.scrollHeight ?? 320, 320);
+      const below = vh - anchor.bottom - gap - edge;
+      const above = anchor.top - gap - edge;
+      const up = below < natural && above > below;
+      const maxHeight = Math.max(120, Math.min(320, up ? above : below));
+      const left = Math.min(Math.max(edge, align === "right" ? anchor.right - w : anchor.left), vw - w - edge);
+      const top = up ? anchor.top - gap - Math.min(natural, maxHeight) : anchor.bottom + gap;
+      setPos({ top, left, maxHeight, up });
+    };
+    place();
+    // The list's own height is known after its first paint; place it again then.
+    const raf = requestAnimationFrame(place);
+    // Follow the trigger when the page or a scroll area moves; scrolling inside the list is fine.
+    const onScroll = (e: Event) => {
+      if (listRef.current && e.target instanceof Node && listRef.current.contains(e.target)) return;
+      place();
+    };
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open, align, width]);
+
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (ref.current?.contains(t) || listRef.current?.contains(t)) return;
+      setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     document.addEventListener("mousedown", onDown);
@@ -169,19 +221,31 @@ export function Menu({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
   return (
     <div ref={ref} className="relative inline-flex">
       {trigger({ onClick: () => setOpen((o) => !o), "aria-expanded": open, "aria-haspopup": "menu" })}
-      {open && (
-        <div
-          role="menu"
-          aria-label={label}
-          className={`absolute z-40 top-full mt-1.5 ${align === "right" ? "right-0" : "left-0"} rounded-xl border border-border-strong bg-elevated p-1 shadow-xl shadow-black/30 max-h-80 overflow-auto animate-[menuIn_140ms_ease-out] motion-reduce:animate-none`}
-          style={{ width }}
-        >
-          {children(() => setOpen(false))}
-        </div>
-      )}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={listRef}
+            role="menu"
+            aria-label={label}
+            className="fixed z-[70] rounded-xl border border-border-strong bg-elevated p-1 shadow-xl shadow-black/30 overflow-auto animate-[menuIn_140ms_ease-out] motion-reduce:animate-none"
+            style={{
+              width: Math.min(width, typeof window !== "undefined" ? window.innerWidth - 16 : width),
+              top: pos?.top ?? -9999,
+              left: pos?.left ?? -9999,
+              maxHeight: pos?.maxHeight ?? 320,
+              visibility: pos ? "visible" : "hidden",
+              transformOrigin: pos?.up ? "bottom" : "top",
+            }}
+          >
+            {children(() => setOpen(false))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

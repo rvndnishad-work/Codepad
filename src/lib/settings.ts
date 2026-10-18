@@ -5,14 +5,9 @@ import {
   NavLinkConfig,
   DEFAULT_NAV_LINKS,
   isProtectedRoute,
-  type MaintenanceConfig,
 } from "./settings-constants";
 import { getNavLinksCached, NAV_LINKS_TAG } from "./nav-links-cache";
-import {
-  getMaintenanceConfig,
-  clearMaintenanceCache,
-  MAINTENANCE_KEY,
-} from "./maintenance";
+import { logAdminAction, type AdminActor } from "./admin/audit";
 
 import { auth } from "./auth";
 import { staffCan } from "./permissions/staff";
@@ -20,6 +15,45 @@ import { sanitizeAssistSettings } from "./playground-assist";
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
+/** Platform-admin gate for every settings write. Returns the actor for the
+ *  audit row. */
+async function requireSettingsAdmin(): Promise<AdminActor> {
+  const session = await auth().catch(() => null);
+  if (!(await staffCan(session, "platform:admin"))) {
+    throw new Error("Unauthorized: Platform administrator access required.");
+  }
+  return { id: session?.user?.id ?? null, email: session?.user?.email ?? null };
+}
+
+/** Upsert one SiteSetting JSON value and write a `setting.update` audit row
+ *  with before/after. Skips both the write and the audit when nothing
+ *  changed, so saving an untouched section leaves no noise in the log. */
+async function saveSetting<T>(actor: AdminActor, key: string, value: T) {
+  const next = JSON.stringify(value);
+  const prev = await prisma.siteSetting.findUnique({ where: { key } });
+  if (prev?.value === next) return prev;
+  const result = await prisma.siteSetting.upsert({
+    where: { key },
+    update: { value: next },
+    create: { key, value: next },
+  });
+  let before: unknown = null;
+  try {
+    before = prev ? JSON.parse(prev.value) : null;
+  } catch {
+    before = prev?.value ?? null;
+  }
+  await logAdminAction({
+    actor,
+    action: "setting.update",
+    targetType: "setting",
+    targetId: key,
+    targetLabel: key,
+    before,
+    after: value,
+  });
+  return result;
+}
 
 export async function getNavLinks(): Promise<NavLinkConfig[]> {
   try {
@@ -31,21 +65,14 @@ export async function getNavLinks(): Promise<NavLinkConfig[]> {
 }
 
 export async function updateNavLinks(links: NavLinkConfig[]) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
+  const actor = await requireSettingsAdmin();
   // Defense in depth: protected routes (the home page) can never be gated, no
   // matter what the client posts. Coerce them back to "visible" before saving
   // so a crafted request can't take the public site dark.
   const sanitized = links.map((l) =>
     isProtectedRoute(l.href) ? { ...l, status: "visible" as const } : l
   );
-  const result = await prisma.siteSetting.upsert({
-    where: { key: "nav_links" },
-    update: { value: JSON.stringify(sanitized) },
-    create: { key: "nav_links", value: JSON.stringify(sanitized) },
-  });
+  const result = await saveSetting(actor, "nav_links", sanitized);
   // Drop the Data Cache entry so the new nav config is live immediately
   // (read-your-own-writes from this server action).
   updateTag(NAV_LINKS_TAG);
@@ -84,71 +111,6 @@ export async function validatePageAccess(pathname: string, session: any) {
   }
 }
 
-/** Read the site-wide maintenance switch (for the admin settings form). */
-export async function getMaintenanceSettings(): Promise<MaintenanceConfig> {
-  return getMaintenanceConfig();
-}
-
-/** Toggle / update the site-wide maintenance switch. Admin-only. */
-export async function updateMaintenanceSettings(config: MaintenanceConfig) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
-  const clean: MaintenanceConfig = {
-    enabled: Boolean(config.enabled),
-    message: (config.message ?? "").slice(0, 280),
-  };
-  const result = await prisma.siteSetting.upsert({
-    where: { key: MAINTENANCE_KEY },
-    update: { value: JSON.stringify(clean) },
-    create: { key: MAINTENANCE_KEY, value: JSON.stringify(clean) },
-  });
-  // Best-effort: clears this bundle's cache immediately. The proxy runs in a
-  // separate bundle and picks up the change within the cache TTL.
-  clearMaintenanceCache();
-  return result;
-}
-
-export type B2bSettingsConfig = {
-  freeSeatLimit: number;
-  seatPrice: number;
-  proctoringEnabled: boolean;
-};
-
-const DEFAULT_B2B_SETTINGS: B2bSettingsConfig = {
-  freeSeatLimit: 3,
-  seatPrice: 49,
-  proctoringEnabled: true,
-};
-
-export async function getB2bSettings(): Promise<B2bSettingsConfig> {
-  try {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: "b2b_settings" },
-    });
-
-    if (!setting) return DEFAULT_B2B_SETTINGS;
-
-    return JSON.parse(setting.value) as B2bSettingsConfig;
-  } catch (error) {
-    console.error("Failed to fetch B2B settings:", error);
-    return DEFAULT_B2B_SETTINGS;
-  }
-}
-
-export async function updateB2bSettings(config: B2bSettingsConfig) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
-  return prisma.siteSetting.upsert({
-    where: { key: "b2b_settings" },
-    update: { value: JSON.stringify(config) },
-    create: { key: "b2b_settings", value: JSON.stringify(config) },
-  });
-}
-
 export type InterviewArenaSettings = {
   showMockToDeveloper: boolean;
   showScheduleToDeveloper: boolean;
@@ -171,7 +133,12 @@ export async function getInterviewArenaSettings(): Promise<InterviewArenaSetting
 
     if (!setting) return DEFAULT_ARENA_SETTINGS;
 
-    return JSON.parse(setting.value) as InterviewArenaSettings;
+    // Merge over the defaults so a row saved before a field existed (e.g.
+    // showScheduleToDeveloper) still yields a complete object.
+    return {
+      ...DEFAULT_ARENA_SETTINGS,
+      ...(JSON.parse(setting.value) as Partial<InterviewArenaSettings>),
+    };
   } catch (error) {
     console.error("Failed to fetch Interview Arena settings:", error);
     return DEFAULT_ARENA_SETTINGS;
@@ -179,15 +146,15 @@ export async function getInterviewArenaSettings(): Promise<InterviewArenaSetting
 }
 
 export async function updateInterviewArenaSettings(config: InterviewArenaSettings) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
-  return prisma.siteSetting.upsert({
-    where: { key: "interview_arena_settings" },
-    update: { value: JSON.stringify(config) },
-    create: { key: "interview_arena_settings", value: JSON.stringify(config) },
-  });
+  const actor = await requireSettingsAdmin();
+  // Only the four known booleans are stored, whatever the client posts.
+  const clean: InterviewArenaSettings = {
+    showMockToDeveloper: Boolean(config.showMockToDeveloper),
+    showScheduleToDeveloper: Boolean(config.showScheduleToDeveloper),
+    showMockToRecruiter: Boolean(config.showMockToRecruiter),
+    showScheduleToRecruiter: Boolean(config.showScheduleToRecruiter),
+  };
+  return saveSetting(actor, "interview_arena_settings", clean);
 }
 
 export type PlaygroundAssistSettings = {
@@ -218,15 +185,8 @@ export async function getPlaygroundAssistSettings(): Promise<PlaygroundAssistSet
 export async function updatePlaygroundAssistSettings(
   config: PlaygroundAssistSettings,
 ) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
+  const actor = await requireSettingsAdmin();
   const clean = sanitizeAssistSettings(config);
-  return prisma.siteSetting.upsert({
-    where: { key: "playground_assist_settings" },
-    update: { value: JSON.stringify(clean) },
-    create: { key: "playground_assist_settings", value: JSON.stringify(clean) },
-  });
+  return saveSetting(actor, "playground_assist_settings", clean);
 }
 

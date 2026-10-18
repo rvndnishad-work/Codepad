@@ -1,7 +1,9 @@
 /**
  * Augment Angular (technology='angular') questions with a detailed markdown
  * answer (optional inline SVG diagrams + GFM tables) and code examples, from
- * prisma/data/angular-augments*.ts.
+ * prisma/data/angular-augments*.ts. Files load in name order, so
+ * angular-augments-ultra-*.ts (the full CLAUDE.md rewrites) override the
+ * older angular-augments-{1,2,3} and -gold-* answers for the same title.
  *
  * Matches by exact title + technology='angular'. Idempotent (sets fields).
  *
@@ -49,6 +51,8 @@ async function main() {
       where: { id: q.id },
       data: {
         ...(a.answer ? { answer: a.answer } : {}),
+        ...(a.description ? { description: a.description } : {}),
+        ...(a.seoDescription ? { seoDescription: a.seoDescription } : {}),
         ...(a.examples ? { examplesData: JSON.stringify(a.examples) } : {}),
       },
     });

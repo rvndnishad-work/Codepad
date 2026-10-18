@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 // Server Components.
 const GalaxyCanvas = dynamic(() => import("./GalaxyCanvas"), {
   ssr: false,
-  loading: () => <div aria-hidden className="fixed inset-0 -z-10 bg-[#02030a]" />,
+  loading: () => <div aria-hidden className="fixed inset-0 -z-10 bg-bg dark:bg-[#02030a]" />,
 });
 
 export default function GalaxyBackdrop() {

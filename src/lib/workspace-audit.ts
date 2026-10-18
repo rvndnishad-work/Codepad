@@ -42,6 +42,8 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   BATCH_UPDATED: "BATCH_UPDATED",
   BATCH_DELETED: "BATCH_DELETED",
   BATCH_PLAN_SET: "BATCH_PLAN_SET",
+  // meta { candidateName, planName } a plan picked for one candidate whose batch has none.
+  CANDIDATE_PLAN_SET: "CANDIDATE_PLAN_SET",
   INTERVIEW_PLAN_CREATED: "INTERVIEW_PLAN_CREATED",
   INTERVIEW_PLAN_UPDATED: "INTERVIEW_PLAN_UPDATED",
   INTERVIEW_PLAN_DELETED: "INTERVIEW_PLAN_DELETED",
@@ -151,6 +153,8 @@ export const WORKSPACE_AUDIT_ACTIONS = {
   INTERVIEW_INVITE_RESENT: "INTERVIEW_INVITE_RESENT",
   // meta { candidateName?, reason? } upcoming interview cancelled (for example, on member removal).
   INTERVIEW_CANCELLED: "INTERVIEW_CANCELLED",
+  // meta { candidateName, from, to, notified } upcoming interview moved to a new time.
+  INTERVIEW_RESCHEDULED: "INTERVIEW_RESCHEDULED",
   // meta { candidateName, recordingId } host started recording the built-in call.
   RECORDING_STARTED: "RECORDING_STARTED",
   // meta { candidateName, reason? } recording stopped by the host, or when the interview ended.

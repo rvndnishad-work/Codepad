@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -11,6 +12,9 @@ const createSchema = z.object({
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function POST(req: Request, { params }: Ctx) {
+  // Feature switch "blogs" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("blogs");
+  if (featurePaused) return featurePaused;
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -4,6 +4,8 @@ import { useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import * as THREE from "three";
+import { ScrollTicker, heroFrameloop } from "@/components/wow/ScrollTicker";
+import { useTheme } from "next-themes";
 
 /**
  * Perf notes (see hero lag report):
@@ -39,6 +41,26 @@ const PALETTES = {
   },
 } as const;
 
+/** Light theme ("Clay"): the same scene in the reference palette, navy
+ *  wireframe over a pale shell, the golden yellow of the light accent
+ *  with sky/pink/slate cubes. No stars: white
+ *  points vanish on the light page. */
+type Palette = { core: string; rings: readonly [string, string]; cubes: readonly string[]; dust: string };
+const LIGHT_PALETTES: Record<keyof typeof PALETTES, Palette> = {
+  arcade: {
+    core: "#27314f",
+    rings: ["#f5c518", "#4ba3c7"],
+    cubes: ["#f5c518", "#4ba3c7", "#eac7e5", "#6679a2", "#434f7c"],
+    dust: "#6679a2",
+  },
+  boss: {
+    core: "#434f7c",
+    rings: ["#9aa2ff", "#4ba3c7"],
+    cubes: ["#9aa2ff", "#3f47b8", "#83c0d4", "#eac7e5", "#6679a2"],
+    dust: "#6679a2",
+  },
+};
+
 export type VerseTone = keyof typeof PALETTES;
 
 /** Advance owned time by a clamped frame delta. Clamping absorbs the huge
@@ -49,7 +71,7 @@ function stepTime(time: React.MutableRefObject<number>, rawDelta: number) {
 }
 
 /** Floating distorted core — the "runtime planet". */
-function Core({ color }: { color: string }) {
+function Core({ color, shell }: { color: string; shell: string }) {
   const ref = useRef<THREE.Group>(null);
   const time = useRef(0);
   useFrame((_, rawDelta) => {
@@ -65,7 +87,7 @@ function Core({ color }: { color: string }) {
     <group ref={ref} position={[0, -1.1, -1.2]}>
       <mesh>
         <icosahedronGeometry args={[1.6, 1]} />
-        <meshBasicMaterial color="#0d0d18" transparent opacity={0.88} />
+        <meshBasicMaterial color={shell} transparent opacity={0.88} />
       </mesh>
       <mesh>
         <icosahedronGeometry args={[1.6, 1]} />
@@ -142,25 +164,28 @@ function CometField({ count = 140, color }: { count?: number; color: string }) {
   );
 }
 
-export default function CodeVerse3D({ paused = false, tone = "arcade" }: { paused?: boolean; tone?: VerseTone }) {
-  const p = PALETTES[tone];
+export default function CodeVerse3D({ paused = false, scrolling = false, tone = "arcade" }: { paused?: boolean; scrolling?: boolean; tone?: VerseTone }) {
+  const { resolvedTheme } = useTheme();
+  const light = resolvedTheme === "light";
+  const p: Palette = light ? LIGHT_PALETTES[tone] : PALETTES[tone];
   return (
     <Canvas
       camera={{ position: [0, 0.4, 8.5], fov: 46 }}
       dpr={[1, 1.25]}
-      frameloop={paused ? "never" : "always"}
+      frameloop={heroFrameloop(paused, scrolling)}
       performance={{ min: 0.5 }}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       style={{ background: "transparent" }}
     >
       {/* Stars keep R3F's internal clock for twinkle phase; a reset there is a
           subtle shimmer, never a positional snap. */}
-      <Stars radius={60} depth={40} count={1200} factor={3.2} saturation={0.4} fade speed={0.5} />
+      {light ? null : <Stars radius={60} depth={40} count={1200} factor={3.2} saturation={0.4} fade speed={0.5} />}
       <CometField color={p.dust} />
-      <Core color={p.core} />
+      <Core color={p.core} shell={light ? "#dfe8ee" : "#0d0d18"} />
       <Ring radius={2.55} color={p.rings[0]} speed={0.25} tilt={0.55} />
       <Ring radius={3.2} color={p.rings[1]} speed={-0.16} tilt={0.9} />
       <Satellites colors={p.cubes} />
+      <ScrollTicker active={!paused && scrolling} />
     </Canvas>
   );
 }

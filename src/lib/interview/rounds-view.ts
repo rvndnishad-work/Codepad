@@ -62,6 +62,10 @@ export type RoundsSummary = {
   stoppedAtId: string | null;
   /** Why passing now would be a manual pass, or null. */
   override: string | null;
+  /** The plan ends here and later rounds happen in the company ATS. */
+  continuesInAts: boolean;
+  /** The connected ATS ("Greenhouse"), or null when none is connected. */
+  atsName: string | null;
   rounds: RoundView[];
 };
 
@@ -108,6 +112,12 @@ export function stoppedRound(s: RoundsSummary): RoundView | null {
 /** The segments of the strip, with names for the tooltip. */
 export function stripItems(s: RoundsSummary): { seg: Segment; name: string }[] {
   return liveRounds(s).map((r) => ({ seg: r.seg, name: r.name }));
+}
+
+/** "Greenhouse" or "your ATS" when the plan hands over after its last round; null otherwise. */
+export function thenLabel(s: RoundsSummary | null | undefined): string | null {
+  if (!s?.continuesInAts || s.total === 0) return null;
+  return s.atsName ?? "your ATS";
 }
 
 type Fmt = (iso: string | null | undefined) => string;
@@ -227,4 +237,92 @@ export function planColumns(summaries: (RoundsSummary | null | undefined)[]): Pl
 
 export function roundInColumn(s: RoundsSummary | null | undefined, key: string): RoundView | null {
   return s?.rounds.find((r) => r.planRoundId === key) ?? null;
+}
+
+/** One round as the ATS hears about it when a candidate is decided. */
+export type AtsRound = {
+  number: number | null;
+  name: string;
+  kind: PlanRoundKind;
+  /** "above_bar", "below_bar", "did_not_finish", "skipped", "not_held" and so on. */
+  state: RoundState | "skipped" | "not_held";
+  /** "82%" or "3.2 of 4"; left out when scores are not shared. */
+  score: string | null;
+  bar: string | null;
+};
+
+const NOT_HELD: RoundState[] = ["not_started", "stopped", "scheduled", "in_progress"];
+
+/** Every round of the plan, in order, for the candidate.decided event and the ATS write-back. */
+export function roundsForAts(s: RoundsSummary, opts: { includeScore: boolean }): AtsRound[] {
+  return s.rounds.map((r) => ({
+    number: r.number,
+    name: r.name,
+    kind: r.kind,
+    state: r.skipped ? "skipped" : NOT_HELD.includes(r.state) ? "not_held" : r.state,
+    score: opts.includeScore ? (r.result?.score ?? null) : null,
+    bar: opts.includeScore ? (r.result?.barText?.replace(/^bar /, "") ?? null) : null,
+  }));
+}
+
+const ATS_WORDS: Record<string, string> = {
+  above_bar: "above bar",
+  below_bar: "below bar",
+  did_not_finish: "did not finish",
+  awaiting_review: "not reviewed",
+  skipped: "skipped",
+  not_held: "not held",
+};
+
+/**
+ * The rounds in one line for an ATS field that only takes text:
+ * "1. AI interview: above bar, 82% (bar 70%). 2. Coding round: not held."
+ * Ends with where the plan continues when it hands over.
+ */
+export function atsRoundsText(s: RoundsSummary, opts: { includeScore: boolean }, max = 1000): string | null {
+  if (s.total === 0) return null;
+  const parts = roundsForAts(s, opts).map((r) => {
+    const words = ATS_WORDS[r.state] ?? r.state.replace(/_/g, " ");
+    const score = r.score ? `, ${r.score}${r.bar ? ` (bar ${r.bar})` : ""}` : "";
+    return `${r.number ? `${r.number}. ` : ""}${r.name}: ${words}${score}.`;
+  });
+  const then = thenLabel(s);
+  if (then) parts.push(`Later rounds happen in ${then}.`);
+  const text = parts.join(" ");
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/* ── Nudges ────────────────────────────────────────────────────────────── */
+
+export type NudgeKey = "next_step" | "next_round";
+
+/** How long a round waits before the nudge, and after how long it is too old to bother. */
+export const NUDGE_AFTER_MS: Record<NudgeKey, number> = { next_step: 3600_000, next_round: 24 * 3600_000 };
+export const NUDGE_STALE_MS = 14 * 24 * 3600_000;
+
+/**
+ * The nudge a candidate's rounds call for right now, if any: a round result
+ * that waits for move on or stop, or a round they were moved on to that is
+ * not sent or booked. `since` is when the wait began.
+ */
+export function nudgeFor(s: RoundsSummary | null | undefined, now: Date = new Date()): { key: NudgeKey; round: RoundView; since: string } | null {
+  if (!s || s.total === 0 || s.readyForDecision) return null;
+  const cur = currentRound(s);
+  if (!cur) return null;
+  let key: NudgeKey | null = null;
+  let since: string | null = null;
+  if (s.waitingOn === "next_step" && cur.result?.at) {
+    key = "next_step";
+    since = cur.result.at;
+  } else if (s.waitingOn === "schedule") {
+    const prev = [...liveRounds(s)].reverse().find((r) => (r.number ?? 0) < (cur.number ?? 0));
+    if (prev?.nextStep === "advance" && prev.decidedAt) {
+      key = "next_round";
+      since = prev.decidedAt;
+    }
+  }
+  if (!key || !since) return null;
+  const waited = now.getTime() - new Date(since).getTime();
+  if (waited < NUDGE_AFTER_MS[key] || waited > NUDGE_STALE_MS) return null;
+  return { key, round: cur, since };
 }

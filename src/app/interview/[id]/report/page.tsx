@@ -205,7 +205,7 @@ export default async function CandidateReportPage({
   proctorSignals.sort((a, b) => (sevRank[b.severity] ?? 0) - (sevRank[a.severity] ?? 0));
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] p-6 sm:p-12 font-sans select-none print:bg-white print:text-black print:p-0">
+    <div className="min-h-screen bg-bg text-fg p-6 sm:p-12 font-sans select-none print:bg-white print:text-black print:p-0">
       
       {/* PRINT-ONLY CSS RULES */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -234,7 +234,7 @@ export default async function CandidateReportPage({
       `}} />
 
       {/* TOP CONTROL BAR (Hidden on Print) */}
-      <div className="max-w-4xl mx-auto mb-8 flex items-center justify-between no-print bg-[#18181b] border border-[#27272a] rounded-2xl p-4 shadow-xl">
+      <div className="max-w-4xl mx-auto mb-8 flex items-center justify-between no-print bg-surface border border-border rounded-2xl p-4 shadow-xl">
         <Link
           href={guest ? `/interview/${interview.id}?guest=${encodeURIComponent(guestKey!)}` : `/interview/${interview.id}?token=${interview.shareToken}`}
           className="flex items-center gap-2 text-xs font-bold text-muted hover:text-fg transition-all"
@@ -246,10 +246,10 @@ export default async function CandidateReportPage({
       </div>
 
       {/* EXECUTIVE REPORT WRAPPER */}
-      <div className="max-w-4xl mx-auto bg-[#18181b] border border-[#27272a] rounded-3xl shadow-2xl overflow-hidden print:bg-white print:border-none print:shadow-none print:rounded-none">
+      <div className="max-w-4xl mx-auto bg-surface border border-border rounded-3xl shadow-2xl overflow-hidden print:bg-white print:border-none print:shadow-none print:rounded-none">
         
         {/* Header Block */}
-        <div className="p-8 border-b border-[#27272a] print:border-b-2 print:border-zinc-200 bg-gradient-to-r from-accent/5 via-transparent to-transparent print:from-transparent">
+        <div className="p-8 border-b border-border print:border-b-2 print:border-zinc-200 bg-gradient-to-r from-accent/5 via-transparent to-transparent print:from-transparent">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.25em] text-accent print:text-zinc-500">
@@ -277,7 +277,7 @@ export default async function CandidateReportPage({
         </div>
 
         {/* Candidate & Metadata */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#27272a] print:divide-zinc-200 border-b border-[#27272a] print:border-b-2 print:border-zinc-200 bg-[#121214]/50 print:bg-zinc-50">
+        <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-border print:divide-zinc-200 border-b border-border print:border-b-2 print:border-zinc-200 bg-panel/50 print:bg-zinc-50">
           <div className="p-5 flex items-center gap-3">
             <User className="w-5 h-5 text-accent shrink-0 print:text-zinc-400" />
             <div>
@@ -324,12 +324,12 @@ export default async function CandidateReportPage({
                 { name: "Communication", val: rubricRatings.Communication, desc: "Process transparency, collaborative responses, and clarity." },
                 { name: "Problem Solving", val: rubricRatings.ProblemSolving, desc: "Logical clarity, performance constraints, and bug remediation." }
               ].map((metric) => (
-                <div key={metric.name} className="p-5 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200">
+                <div key={metric.name} className="p-5 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-extrabold print:text-zinc-800">{metric.name}</span>
                     <span className="text-xs font-mono font-black text-accent print:text-zinc-900">{metric.val} / 5</span>
                   </div>
-                  <div className="w-full bg-[#27272a] print:bg-zinc-200 h-2 rounded-full overflow-hidden flex gap-0.5 mt-2.5">
+                  <div className="w-full bg-panel print:bg-zinc-200 h-2 rounded-full overflow-hidden flex gap-0.5 mt-2.5">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <div
                         key={star}
@@ -349,7 +349,7 @@ export default async function CandidateReportPage({
             </div>
 
             {rubricNotes && (
-              <div className="p-5 rounded-2xl border border-[#27272a] bg-[#121214]/20 print:bg-zinc-50 print:border-zinc-200 space-y-2">
+              <div className="p-5 rounded-2xl border border-border bg-panel/20 print:bg-zinc-50 print:border-zinc-200 space-y-2">
                 <span className="text-[11px] font-black uppercase tracking-[0.15em] text-muted block print:text-zinc-500">
                   Comprehensive Notes & Performance Feedback
                 </span>
@@ -368,7 +368,7 @@ export default async function CandidateReportPage({
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">AI Suspicion index</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className={`text-2xl font-black ${
@@ -379,21 +379,21 @@ export default async function CandidateReportPage({
                   <span className="text-[11px] text-muted">/ 100</span>
                 </div>
               </div>
-              <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Out-Of-Tab Blurs</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalBlurCount}</span>
                   <span className="text-[11px] text-muted">events</span>
                 </div>
               </div>
-              <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Time spent Unfocused</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalBlurSec}</span>
                   <span className="text-[11px] text-muted">seconds</span>
                 </div>
               </div>
-              <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+              <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                 <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Clipboard Pastes</span>
                 <div className="mt-3.5 flex items-baseline gap-1">
                   <span className="text-2xl font-black text-fg print:text-zinc-900">{totalPasteCount}</span>
@@ -424,7 +424,7 @@ export default async function CandidateReportPage({
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Peak Overlay Risk</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className={`text-2xl font-black ${
@@ -435,21 +435,21 @@ export default async function CandidateReportPage({
                     <span className="text-[11px] text-muted">/ 100</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Detections</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctorSignals.length}</span>
                     <span className="text-[11px] text-muted">flagged</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Windows Scanned</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.scannedWindows}</span>
                     <span className="text-[11px] text-muted">windows</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl border border-[#27272a] bg-[#121214]/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
+                <div className="p-4 rounded-2xl border border-border bg-panel/30 print:bg-zinc-50 print:border-zinc-200 flex flex-col justify-between">
                   <span className="text-[9px] font-black uppercase tracking-widest text-muted print:text-zinc-500">Agent Reports</span>
                   <div className="mt-3.5 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-fg print:text-zinc-900">{proctor.reportCount}</span>
@@ -511,10 +511,10 @@ export default async function CandidateReportPage({
               Technical Assessment Breakdown
             </h2>
 
-            <div className="border border-[#27272a] rounded-2xl overflow-hidden print:border-zinc-200">
+            <div className="border border-border rounded-2xl overflow-hidden print:border-zinc-200">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-[#121214]/80 text-[11px] font-black uppercase tracking-wider text-muted border-b border-[#27272a] print:bg-zinc-50 print:border-zinc-200 print:text-zinc-700">
+                  <tr className="bg-panel/80 text-[11px] font-black uppercase tracking-wider text-muted border-b border-border print:bg-zinc-50 print:border-zinc-200 print:text-zinc-700">
                     <th className="p-4">Step Name</th>
                     <th className="p-4">Difficulty</th>
                     <th className="p-4">Execution Status</th>
@@ -522,7 +522,7 @@ export default async function CandidateReportPage({
                     <th className="p-4">Duration</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#27272a] print:divide-zinc-200 text-xs text-fg/90 print:text-zinc-800">
+                <tbody className="divide-y divide-border print:divide-zinc-200 text-xs text-fg/90 print:text-zinc-800">
                   {attemptSummaries.map((summary, idx) => {
                     const isPass = summary.status === "passed";
                     return (
@@ -573,7 +573,7 @@ export default async function CandidateReportPage({
         </div>
 
         {/* Footer Signature */}
-        <div className="p-6 bg-[#121214]/50 border-t border-[#27272a] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
+        <div className="p-6 bg-panel/50 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
           <span>Interviewpad Candidate Report • Confidential Evaluation Summary</span>
           <span>Generated: {new Date().toLocaleString()}</span>
         </div>

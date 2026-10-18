@@ -1,0 +1,123 @@
+[
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "types",
+      "basics"
+    ],
+    "title": "What are the basic types in TypeScript?",
+    "description": "string, number, boolean, bigint, symbol, null, undefined, arrays, objects, any, unknown, void and never, and how annotations attach to them."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "inference",
+      "basics"
+    ],
+    "title": "How does type inference work in TypeScript?",
+    "description": "How TypeScript infers variable, return and generic types, best common type, contextual typing, and when to annotate explicitly."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "functions",
+      "basics"
+    ],
+    "title": "How do you type functions: optional, default and rest parameters?",
+    "description": "Function type syntax, optional and default parameters, rest parameters, callback types and void returns."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "optional",
+      "null-safety"
+    ],
+    "title": "What are optional properties and optional chaining in TypeScript?",
+    "description": "Optional properties (?:), optional chaining (?.), nullish coalescing (??) and how the types change."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "tsconfig",
+      "tooling"
+    ],
+    "title": "What is tsconfig.json and which options matter most?",
+    "description": "The role of tsconfig.json, include/exclude, target, module, lib, strict, outDir, and how tsc picks it up."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "void",
+      "never"
+    ],
+    "title": "What is the difference between void, undefined and never as return types?",
+    "description": "When a function returns void, undefined or never, and why void callbacks may return values."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "as-const",
+      "literal-types"
+    ],
+    "title": "What does as const do?",
+    "description": "const assertions: readonly literal types for objects, arrays and tuples, and how they feed keyof and indexed access."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "utility-types",
+      "record"
+    ],
+    "title": "What is the Record utility type?",
+    "description": "Record<K, V> for dictionaries and exhaustive maps over a union, versus index signatures and Map."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "widening",
+      "literal-types"
+    ],
+    "title": "What is type widening and how do you prevent it?",
+    "description": "How literal types widen to string or number, let vs const, and preventing widening with as const, satisfies and const type parameters."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "async",
+      "promises"
+    ],
+    "title": "How do you type async functions and Promises?",
+    "description": "Promise<T> return types, async function inference, typing errors in catch, Promise.all tuples and Awaited."
+  },
+  {
+    "technology": "typescript",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "migration",
+      "tooling"
+    ],
+    "title": "How do you migrate a JavaScript codebase to TypeScript?",
+    "description": "Incremental migration: allowJs, checkJs, JSDoc types, strictness ramp-up, any budgets and declaration files for untyped dependencies."
+  }
+]

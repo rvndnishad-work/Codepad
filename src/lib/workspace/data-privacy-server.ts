@@ -7,6 +7,8 @@
 import "server-only";
 import JSZip from "jszip";
 import { prisma } from "@/lib/prisma";
+import { cancelInterviewEvent } from "@/lib/calendar/server";
+import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { collectRecordingKeys, deleteRecordingKeys, markInterviewRecordingsDeleted, readRecordingObject } from "@/lib/recording/objects-server";
 import { sendEmail } from "@/lib/email";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
@@ -381,16 +383,26 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
 export async function eraseCandidateScope(workspaceId: string, scope: CandidateScope): Promise<number> {
   const { candidateIds, takeHomeIds, interviewSessionIds, aiSessionIds, attemptIds, emails } = scope;
   const recordingKeys = await collectRecordingKeys({ aiSessionIds, interviewSessionIds });
+  // Their interviews still to come are called off: nobody is left to join them.
+  const upcomingIds = (
+    await prisma.interviewSession.findMany({
+      where: { id: { in: interviewSessionIds }, workspaceId, type: { not: "take-home" }, status: "scheduled", startedAt: null },
+      select: { id: true },
+    })
+  ).map((s) => s.id);
   await prisma.$transaction([
     prisma.sessionEventLog.deleteMany({ where: { attemptId: { in: attemptIds } } }),
     prisma.takeHomeAssignment.updateMany({
       where: { id: { in: takeHomeIds }, workspaceId },
       data: { candidateName: ERASED_NAME, candidateEmail: ERASED_EMAIL },
     }),
-    prisma.interviewSession.updateMany({ where: { id: { in: interviewSessionIds }, workspaceId }, data: { candidateName: ERASED_NAME } }),
+    // The round links are cleared here, not left to the cascade: Postgres re-checks
+    // a row this transaction already changed, and the rounds are gone by then.
+    prisma.interviewSession.updateMany({ where: { id: { in: interviewSessionIds }, workspaceId }, data: { candidateName: ERASED_NAME, candidateRoundId: null } }),
+    prisma.interviewSession.updateMany({ where: { id: { in: upcomingIds }, status: "scheduled" }, data: { status: "cancelled", cancelledAt: new Date() } }),
     prisma.aIInterviewSession.updateMany({
       where: { id: { in: aiSessionIds }, workspaceId },
-      data: { candidateName: ERASED_NAME, candidateEmail: ERASED_EMAIL, chatHistory: "[]" },
+      data: { candidateName: ERASED_NAME, candidateEmail: ERASED_EMAIL, chatHistory: "[]", candidateRoundId: null },
     }),
     prisma.aIInterviewRound.updateMany({ where: { sessionId: { in: aiSessionIds } }, data: { chatHistory: null } }),
     prisma.aIInterviewAudio.deleteMany({ where: { sessionId: { in: aiSessionIds } } }),
@@ -399,6 +411,10 @@ export async function eraseCandidateScope(workspaceId: string, scope: CandidateS
     prisma.atsSyncEvent.deleteMany({ where: { workspaceId, candidateId: { in: candidateIds } } }),
     prisma.candidate.deleteMany({ where: { id: { in: candidateIds }, workspaceId } }),
   ]);
+  for (const id of upcomingIds) {
+    await cancelInterviewEvent(id).catch((err) => console.error("[erase] calendar cancel failed", err));
+    closeVideoRoomAfter(id);
+  }
   // Interview videos go too; their rows stay, marked deleted.
   await markInterviewRecordingsDeleted(interviewSessionIds).catch((err) => console.error("[recordings] could not mark videos deleted", err));
   await deleteRecordingKeys(recordingKeys);

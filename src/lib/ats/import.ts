@@ -8,6 +8,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { logSyncEvent } from "./sync-log";
+import { providerName } from "./provider-name";
 import { syncCandidateRounds } from "@/lib/interview/plans-sync-server";
 import { screeningNoun, sendRequestScreening } from "./dispatch";
 
@@ -47,8 +48,7 @@ export type ImportOutcome = {
   error?: string;
 };
 
-const PROVIDER_NAMES: Record<string, string> = { greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby" };
-export const providerName = (p: string) => PROVIDER_NAMES[p.toLowerCase()] ?? p;
+export { providerName };
 
 async function findOrCreateBatch(workspaceId: string, jobName: string): Promise<string> {
   const name = jobName.trim().slice(0, 120) || "Imported";

@@ -66,10 +66,10 @@ export default function HomeWowHero({
     { n: stats.sessions, v: formatK(stats.sessions), l: "Interview sessions run" },
   ].filter((s) => s.n > 0);
   const typed = useTypewriter(["solve('lru-cache')", "review(aiPR).findBugs()", "run --tests=hidden", "mock.start('system-design')"]);
-  // Offscreen → loop paused (long-session lag fix). Scrolling → loop frozen:
-  // a live canvas competing with the scroll compositor is what drops frames
-  // on laptop iGPUs. The GSAP parallax is compositor-only, so the frozen
-  // frame keeps gliding and the loop resumes after the scroll settles.
+  // Offscreen → loop paused (long-session lag fix). Scrolling → loop capped
+  // at 30fps (ScrollTicker): a free-running canvas competing with the scroll
+  // compositor drops frames on laptop iGPUs, but a fully frozen one read as
+  // the scene stopping. Full rate resumes after the scroll settles.
   const [paused, setPaused] = useState(false);
   const [scrolling, setScrolling] = useState(false);
 
@@ -113,7 +113,7 @@ export default function HomeWowHero({
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
+    <section ref={root} data-dark-hero="dark-only" className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-secondary/10 blur-[140px]" />
         <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-accent-4/[0.07] blur-[120px]" />
@@ -122,14 +122,14 @@ export default function HomeWowHero({
       </div>
 
       <div className="wow-hero-3d absolute inset-0 transform-gpu opacity-90 will-change-transform">
-        <CodeVerse3D paused={paused || scrolling} />
+        <CodeVerse3D paused={paused} scrolling={scrolling} />
       </div>
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_62%_52%_at_50%_44%,rgb(var(--c-bg)/0.88),transparent_72%)]" />
 
       {PHOTOS.map((p) => (
         <figure key={p.src} className={`wow-hero-photo wow-float absolute z-10 hidden w-52 lg:block ${p.pos}`} style={{ ["--wow-rot" as string]: p.rot }}>
-          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-md">
+          <div className="rotate-[var(--wow-rot)] overflow-hidden rounded-2xl border border-fg/25 bg-fg/10 p-2 shadow-clay dark:shadow-[0_20px_50px_-20px_rgb(0_0_0/0.9)] backdrop-blur-md">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.src} alt="" className="h-32 w-full rounded-xl object-cover" loading="eager" />
             <figcaption className="px-1 py-2 text-[13px] font-medium leading-snug text-fg/80">{p.label}</figcaption>
@@ -152,18 +152,18 @@ export default function HomeWowHero({
           </div>
         </div>
 
-        <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
+        <h1 className="wow-font-display mt-8 text-[15vw] leading-[0.88] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[11vw] lg:text-[7.5rem]">
           <span className="block overflow-hidden pb-1"><span className="wow-hero-line block">Don&apos;t learn</span></span>
-          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text block pb-2">to interview.</span></span>
+          <span className="block overflow-hidden pb-1"><span className="wow-hero-line wow-gradient-text mx-auto block pb-2">to interview.</span></span>
           <span className="block overflow-hidden pb-2"><span className="wow-hero-line wow-text-stroke block">Live inside it.</span></span>
         </h1>
 
-        <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
+        <p className="wow-hero-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 dark:[text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
           Solve problems in a real editor against hidden tests, sit AI mock interviews that ask the
           follow-up, and build a replay portfolio that shows recruiters how you actually work.
         </p>
 
-        <div className="wow-hero-terminal mt-8 w-full max-w-xl overflow-hidden rounded-2xl border border-fg/15 bg-surface/95 text-left shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)]">
+        <div className="wow-hero-terminal mt-8 w-full max-w-xl overflow-hidden rounded-2xl border border-fg/15 bg-surface/95 text-left shadow-clay dark:shadow-[0_24px_70px_-20px_rgba(0,0,0,0.9)]">
           <div className="flex items-center gap-1.5 border-b border-fg/10 bg-fg/[0.04] px-4 py-2.5">
             <span className="h-2.5 w-2.5 rounded-full bg-danger" />
             <span className="h-2.5 w-2.5 rounded-full bg-warning" />

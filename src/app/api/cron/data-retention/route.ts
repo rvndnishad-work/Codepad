@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { runRetention } from "@/lib/workspace/data-privacy-server";
 
 /**
@@ -14,9 +14,7 @@ import { runRetention } from "@/lib/workspace/data-privacy-server";
  */
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   const summary = await runRetention(now);
@@ -40,7 +38,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// Vercel Cron sends GET: same auth, same body.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("data-retention", run);
+export const GET = POST;

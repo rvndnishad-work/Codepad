@@ -55,6 +55,27 @@ interface QuestionData {
  * solution, code, discussion) in a reading column with a sidebar, a section
  * bar that follows you on md and up, and a dock on phones.
  */
+/** One selectable bundle in frameworksData: a framework (machine coding) or a language (DSA). */
+type LangBundle = {
+  answer: string;
+  /** Question Body written for this language (falls back to the shared one). */
+  description?: string;
+  /** Multi-file solution (machine coding). */
+  files?: Record<string, string>;
+  /** Single-file examples in this language (DSA). */
+  examples?: ExampleData[];
+};
+
+/** Languages whose examples run in the page instead of opening the playground. */
+const IN_PAGE = new Set(["python", "javascript"]);
+
+/** Where the selector remembers its choice, and what it falls back to. */
+function preferenceFor(technology: string | null | undefined) {
+  return technology === "dsa"
+    ? { key: "dsa-language", fallback: "python", label: "Solution language" }
+    : { key: "mc-framework", fallback: "react", label: "Solution framework" };
+}
+
 export default function QuestionDetailClient({
   q,
   followUps,
@@ -119,9 +140,10 @@ export default function QuestionDetailClient({
   // (highlighted code + "Open in Playground" into the empty-react template).
   const isReact = q.technology === "reactjs" || q.technology === "machine-coding";
 
-  // Per-framework tutorial bundles (machine-coding): a selector swaps BOTH the
-  // tutorial answer and the runnable solution between React / Vue / Angular.
-  const frameworks = useMemo<Record<string, { answer: string; files: Record<string, string> }>>(() => {
+  // Per-framework / per-language bundles: a selector swaps the tutorial answer,
+  // the question body and the code. Machine coding uses React / Vue / Angular
+  // (multi-file `files`); DSA uses Python / JavaScript / Java / C++ (`examples`).
+  const frameworks = useMemo<Record<string, LangBundle>>(() => {
     if (!q.frameworksData) return {};
     try {
       const o = JSON.parse(q.frameworksData);
@@ -133,18 +155,19 @@ export default function QuestionDetailClient({
   const frameworkKeys = useMemo(() => Object.keys(frameworks), [frameworks]);
   const hasFrameworks = frameworkKeys.length > 0;
 
-  const [framework, setFramework] = useState<string>("react");
+  const pref = preferenceFor(q.technology);
+  const [framework, setFramework] = useState<string>(pref.fallback);
   // Restore the saved preference once mounted (kept in sync with the listing).
   useEffect(() => {
     if (!hasFrameworks) return;
-    const saved = typeof window !== "undefined" ? localStorage.getItem("mc-framework") : null;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(pref.key) : null;
     const nextFw = saved && frameworkKeys.includes(saved)
       ? saved
-      : frameworkKeys.includes("react")
-        ? "react"
+      : frameworkKeys.includes(pref.fallback)
+        ? pref.fallback
         : frameworkKeys[0];
     setFramework(nextFw);
-  }, [hasFrameworks, frameworkKeys]);
+  }, [hasFrameworks, frameworkKeys, pref.key, pref.fallback]);
 
   const [saved, setSaved] = useState(false);
   const [solved, setSolved] = useState(false);
@@ -323,7 +346,7 @@ export default function QuestionDetailClient({
   function selectFramework(fw: string) {
     setFramework(fw);
     try {
-      localStorage.setItem("mc-framework", fw);
+      localStorage.setItem(pref.key, fw);
     } catch {
       /* ignore */
     }
@@ -335,28 +358,38 @@ export default function QuestionDetailClient({
 
   // What actually renders: the framework bundle wins when present.
   const answerContent = fwBundle ? fwBundle.answer : q.answer;
+  const problemContent = fwBundle?.description || cleanDescription;
   const displayExamples: ExampleData[] = fwBundle
-    ? [{ label: "Complete solution", files: fwBundle.files }]
+    ? fwBundle.files
+      ? [{ label: "Complete solution", files: fwBundle.files }]
+      : (fwBundle.examples ?? []).map((e) => ({ ...e, tech: e.tech ?? activeFw ?? undefined }))
     : rawExamples;
+  // Python and JavaScript run in the page; other languages open the playground.
+  const runsInPage = activeFw ? IN_PAGE.has(activeFw) && !fwBundle?.files : isRunnable;
+  const runTech = activeFw && IN_PAGE.has(activeFw) ? activeFw : (q.technology ?? "javascript");
 
 
   const answerMarkdown = answerContent ?? "";
   const minutes = readingMinutes(answerMarkdown);
   const headings = useMemo(() => extractHeadings(answerMarkdown), [answerMarkdown]);
 
-  const hasProblem = Boolean(cleanDescription) || tags.length > 0;
+  const hasProblem = Boolean(problemContent) || tags.length > 0;
   const hasAnswer = Boolean(answerContent);
   const hasExamples = displayExamples.length > 0;
   const canRun = displayExamples.some((e) => e.runnable !== false);
   const codeTitle = activeFw
-    ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} solution`
+    ? `${CODE_VARIANTS[activeFw]?.label ?? activeFw} ${fwBundle?.files ? "solution" : "code"}`
     : (isRunnable || isSql) && canRun
       ? "Run the code"
       : isReact && canRun
         ? "Try it in the playground"
         : "Read the code";
   const codeSub = activeFw
-    ? "Every file of the working solution. Open it in the playground to run and change it."
+    ? fwBundle?.files
+      ? "Every file of the working solution. Open it in the playground to run and change it."
+      : runsInPage
+        ? "Edit the code and run it here. Each printed line with an expected value becomes a test."
+        : "Open it in the playground to run and change it."
     : isSql && canRun
       ? "Edit the query and run it against the tables for this question."
       : isRunnable && canRun
@@ -462,13 +495,13 @@ export default function QuestionDetailClient({
           {hasProblem && (
             <Section id="problem" num={num("problem")} title="The problem">
               <div className="rounded-2xl border border-border bg-surface p-5 md:p-7">
-                {cleanDescription && (
-                  <div className="qa-doc">
-                    <MarkdownRenderer content={cleanDescription} docs />
+                {problemContent && (
+                  <div className="qa-doc" key={activeFw ?? "problem"}>
+                    <MarkdownRenderer content={problemContent} docs />
                   </div>
                 )}
                 {tags.length > 0 && (
-                  <ul aria-label="Topics" className={`flex flex-wrap gap-2 ${cleanDescription ? "mt-6 border-t border-border pt-5" : ""}`}>
+                  <ul aria-label="Topics" className={`flex flex-wrap gap-2 ${problemContent ? "mt-6 border-t border-border pt-5" : ""}`}>
                     {tags.map((t) => (
                       <li key={t} className="inline-flex h-7 items-center gap-1 rounded-lg bg-panel px-2.5 text-[13px] text-muted">
                         <Hash className="h-3 w-3 text-subtle" aria-hidden />
@@ -497,7 +530,7 @@ export default function QuestionDetailClient({
               title="Solution"
               aside={
                 hasFrameworks ? (
-                  <div role="tablist" aria-label="Solution framework" className="flex rounded-xl border border-border bg-surface p-1">
+                  <div role="tablist" aria-label={pref.label} className="flex rounded-xl border border-border bg-surface p-1">
                     {frameworkKeys.map((fw) => (
                       <button
                         key={fw}
@@ -546,8 +579,8 @@ export default function QuestionDetailClient({
                     );
                   }
                   // In-page runner for JS/TS/Python single-variant examples.
-                  if (isRunnable && ex.runnable !== false && !ex.variants) {
-                    return <JsPlayground key={i} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} technology={q.technology ?? "javascript"} />;
+                  if (runsInPage && ex.runnable !== false && !ex.variants) {
+                    return <JsPlayground key={`${activeFw ?? "ex"}-${i}`} code={ex.code ?? ""} label={ex.label} title={q.title} description={q.description ?? undefined} backFrom={`/interview-question/${q.slug}`} technology={runTech} />;
                   }
                   // In-page runner for SQL examples.
                   if (isSql && ex.runnable !== false && !ex.variants) {
@@ -558,7 +591,7 @@ export default function QuestionDetailClient({
                   // single-variant examples default to the react template.
                   return (
                     <CodeExample
-                      key={i}
+                      key={`${activeFw ?? "ex"}-${i}`}
                       example={ex}
                       defaultTech={isReact ? "react" : undefined}
                     />
@@ -582,6 +615,7 @@ export default function QuestionDetailClient({
               isAdmin={isAdmin}
               postUrl={`/api/interview-questions/${q.slug}/comments`}
               deleteUrlBase="/api/interview-questions/comments"
+              reportType="question_comment"
               placeholder="Share your approach, another answer, or a follow-up you were asked…"
               bare
               emptyText="No comments yet. Share how you would answer it."

@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { loadTakeHomes, countRows } from "@/lib/take-home/list-server";
 import { paginate, parseReviewView, reviewRows } from "@/lib/take-home/list";
 import { relativeTime, plural } from "@/lib/workspace/display";
@@ -70,6 +71,7 @@ export default async function TakeHomeReviewPage({ params, searchParams }: Props
 
   return (
     <div className="flex flex-col gap-5">
+      <FeaturePaused featureKey="take-home" />
       <TakeHomeHeader
         slug={slug}
         active="review"

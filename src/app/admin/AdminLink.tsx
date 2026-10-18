@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail, ShieldCheck, CreditCard } from "lucide-react";
+import { LayoutDashboard, Target, Users, FileText, Settings, Pin, Briefcase, Code2, MessageCircle, Inbox, Building2, Sparkles, Coins, ClipboardList, GraduationCap, HelpCircle, Activity, Megaphone, Mail, ShieldCheck, CreditCard, BarChart3, UserCog, UserCheck, Wrench, ToggleRight, ScrollText } from "lucide-react";
 import type { ComponentType } from "react";
 import GemmaMark from "./copilot/GemmaMark";
+import { useAdminNavCollapsed } from "./admin-nav-context";
 
 // Lucide icons accept className; our custom GemmaMark accepts className + size.
 // The shared shape below is the subset every nav icon must support.
@@ -32,6 +33,12 @@ const iconsMap: Record<string, NavIcon> = {
   Mail,
   ShieldCheck,
   CreditCard,
+  BarChart3,
+  UserCog,
+  UserCheck,
+  Wrench,
+  ToggleRight,
+  ScrollText,
   // Custom brand glyph — used for the Gemma Copilot row.
   GemmaMark,
 };
@@ -46,6 +53,8 @@ export default function AdminLink({
   disabled,
   exact,
   nested,
+  match,
+  badge,
 }: {
   href: string;
   icon: IconName;
@@ -57,42 +66,70 @@ export default function AdminLink({
   exact?: boolean;
   /** Render as an indented sub-link under a parent group. */
   nested?: boolean;
+  /** Extra path prefixes that also light this link. */
+  match?: string[];
+  /** Small count shown at the end of the row. */
+  badge?: { count: number; tone: "warn" | "bad" };
 }) {
   const pathname = usePathname();
   const Icon = iconsMap[icon];
 
   // /admin is always exact (otherwise every admin route would match it).
   // Callers also opt into exact for parents that now have child routes.
+  const under = (p: string) => pathname === p || pathname.startsWith(p + "/");
   const isActive =
     href === "/admin" || exact
       ? pathname === href
-      : pathname.startsWith(href);
+      : under(href) || (match ?? []).some(under);
+
+  const collapsed = useAdminNavCollapsed();
+  const iconClass = `w-4 h-4 shrink-0 ${isActive ? "text-secondary" : "text-subtle"}`;
 
   if (disabled) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-muted/30 cursor-not-allowed">
-        {Icon && <Icon className="w-4 h-4" size={16} />}
-        {label}
-        <span className="ml-auto text-[9px] font-medium normal-case tracking-normal">soon</span>
+      <div className="flex items-center gap-2.5 h-[34px] px-2.5 rounded-lg text-sm text-subtle/60 cursor-not-allowed">
+        {Icon && <Icon className="w-4 h-4 shrink-0" size={16} />}
+        {!collapsed && <span className="flex-1 truncate">{label}</span>}
+        {!collapsed && <span className="text-xs">Soon</span>}
       </div>
+    );
+  }
+
+  const tone = isActive ? "bg-panel text-fg font-medium" : "text-muted hover:text-fg hover:bg-panel";
+
+  if (collapsed) {
+    // Icon-only rail with a native tooltip, same as the workspace sidebar.
+    return (
+      <Link
+        href={href}
+        title={label}
+        aria-label={label}
+        aria-current={isActive ? "page" : undefined}
+        className={`relative flex items-center justify-center h-9 rounded-lg transition-colors ${tone}`}
+      >
+        {Icon && <Icon className={iconClass} size={16} />}
+      </Link>
     );
   }
 
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-xl uppercase tracking-wider transition-all duration-200 ${
-        nested
-          ? "ml-3 pl-4 pr-3 py-1.5 text-[10px] font-bold border-l border-border/60"
-          : "px-3.5 py-2.5 text-xs font-black"
-      } ${
-        isActive
-          ? "bg-violet-500/10 text-violet-400 border-l-2 border-violet-500 pl-3 shadow-[0_0_15px_rgba(139,92,246,0.05)]"
-          : "text-muted hover:text-fg hover:bg-panel/40"
-      }`}
+      aria-current={isActive ? "page" : undefined}
+      className={`relative flex items-center gap-2.5 h-[34px] px-2.5 rounded-lg text-sm transition-colors ${nested ? "ml-4" : ""} ${tone}`}
     >
-      {Icon && <Icon className={nested ? "w-3.5 h-3.5" : "w-4 h-4"} size={nested ? 14 : 16} />}
-      {label}
+      {isActive && <span aria-hidden className="absolute -left-3 top-2 bottom-2 w-[3px] rounded-r bg-secondary" />}
+      {Icon && <Icon className={iconClass} size={16} />}
+      <span className="flex-1 truncate">{label}</span>
+      {badge && badge.count > 0 && (
+        <span
+          className={`min-w-5 h-5 px-1.5 rounded-full text-xs font-medium tabular-nums inline-flex items-center justify-center ${
+            badge.tone === "bad" ? "bg-rose-500/15 text-rose-700 dark:text-rose-300" : "bg-amber-500/15 text-amber-800 dark:text-amber-300"
+          }`}
+        >
+          {badge.count}
+        </span>
+      )}
     </Link>
   );
 }

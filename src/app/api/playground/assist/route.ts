@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { featureBlockedResponse, isFeatureOn } from "@/lib/admin/switches";
 import { auth } from "@/lib/auth";
 import { rateLimitDistributed } from "@/lib/rate-limit";
 import {
@@ -65,7 +66,8 @@ async function assistSettings(): Promise<PlaygroundAssistSettings> {
  */
 export async function GET() {
   const cfg = await assistSettings();
-  return json({ enabled: cfg.enabled, dailyLimit: cfg.dailyLimit }, 200);
+  const switchOn = await isFeatureOn("playground-assist");
+  return json({ enabled: cfg.enabled && switchOn, dailyLimit: cfg.dailyLimit }, 200);
 }
 
 function json(data: unknown, status: number, extraHeaders?: Record<string, string>) {
@@ -108,6 +110,9 @@ export async function POST(req: NextRequest) {
       403,
     );
   }
+
+  const featurePaused = await featureBlockedResponse("playground-assist");
+  if (featurePaused) return featurePaused;
 
   const rl = await rateLimitDistributed(
     `playground-assist:${userId}`,

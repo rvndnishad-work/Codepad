@@ -225,7 +225,11 @@ export default function AuthCard({
           throw new Error(
             errCode === "CredentialsSignin"
               ? "Wrong email or password."
-              : (errCode ?? "Sign in failed.")
+              : errCode === "AccountSuspended"
+                ? "This account is suspended. Contact support if you think this is a mistake."
+                : errCode === "AccountDeleted"
+                  ? "This account has been deleted."
+                  : (errCode ?? "Sign in failed.")
           );
         }
         toast.success(mode === "signup" ? "Account created" : "Welcome back");

@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
+import UsersListPage from "../_components/UsersListPage";
+import type { RawParams } from "../_lib/filters";
 
-// Back-compat shim. Candidates now live at the bare /admin/users URL since
-// the persona toggle makes a separate /candidates path redundant.
-export default function AdminCandidatesPage() {
-  redirect("/admin/users");
+export default async function AdminCandidateAccountsPage({ searchParams }: { searchParams: Promise<RawParams> }) {
+  return <UsersListPage side="candidates" searchParams={await searchParams} />;
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { handlePartnerCall } from "@/lib/ats/partner-server";
+import { isFeatureOn, isFeatureReadable } from "@/lib/admin/switches";
 
 /**
  * Greenhouse Assessment Partner endpoints:
@@ -14,6 +15,11 @@ type Ctx = { params: Promise<{ action: string }> };
 
 async function handle(req: Request, { params }: Ctx) {
   const { action } = await params;
+  // Feature switch "ats-greenhouse": read only stops new tests, off stops everything.
+  const allowed = action === "send_test" ? await isFeatureOn("ats-greenhouse") : await isFeatureReadable("ats-greenhouse");
+  if (!allowed) {
+    return NextResponse.json({ errors: ["Greenhouse sync is paused. Try again later."] }, { status: 503, headers: { "Retry-After": "600" } });
+  }
   let body: unknown = null;
   if (req.method === "POST") {
     const raw = await req.text();

@@ -21,6 +21,7 @@ import {
   Inbox,
   ListChecks,
   LogOut,
+  MoreHorizontal,
   Plus,
   Radio,
   Scale,
@@ -38,7 +39,9 @@ import { segmentOf, type RoundState, type Segment, type WaitingOn } from "@/lib/
 import type { NextRoundDue } from "@/lib/interview/rounds-server";
 import { RoundTile } from "../candidates/_components/PlanEditor";
 import { RoundStrip } from "../candidates/_components/RoundStrip";
-import { Avatar, Btn, fmtDate, inputCls, useToasts } from "../candidates/_components/ui";
+import { Avatar, Btn, Dialog, Field, Menu, MenuItem, fmtDate, inputCls, useToasts } from "../candidates/_components/ui";
+import { localInputValue } from "@/lib/interview/reschedule";
+import { cancelInterviewAction, rescheduleInterviewAction } from "./actions";
 
 type Tone = "success" | "warning" | "danger" | "neutral";
 
@@ -89,6 +92,8 @@ export type InterviewRow = {
   questions: QuestionState;
   questionsOwner: string | null;
   mineToPick: boolean;
+  /** The viewer may move or cancel it, and it has not started. */
+  canChange: boolean;
 };
 
 /** One candidate's whole plan, for Group by candidate. */
@@ -252,6 +257,7 @@ export default function InterviewsList({
   const [grouped, setGrouped] = useState(false);
   const [openPeople, setOpenPeople] = useState<Set<string>>(new Set());
   const [toasts, toast] = useToasts();
+  const [changing, setChanging] = useState<{ row: InterviewRow; mode: ChangeMode } | null>(null);
   const router = useRouter();
   const [origin, setOrigin] = useState("");
   const [now, setNow] = useState<number | null>(null);
@@ -484,6 +490,19 @@ export default function InterviewsList({
         </ul>
       )}
       {toasts}
+      {changing && (
+        <ChangeDialog
+          slug={slug}
+          row={changing.row}
+          mode={changing.mode}
+          onClose={() => setChanging(null)}
+          onDone={(text) => {
+            setChanging(null);
+            toast(text);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 
@@ -558,6 +577,7 @@ export default function InterviewsList({
                   <Actions
                     r={r}
                     slug={slug}
+                    onChange={(mode) => setChanging({ row: r, mode })}
                     onCopy={() => {
                       navigator.clipboard?.writeText(`${origin}${r.candidateLink}`);
                       toast(`Candidate link for ${r.candidateName ?? r.title} copied`);
@@ -668,7 +688,7 @@ function Signals({ r }: { r: InterviewRow }) {
   return <>{out}</>;
 }
 
-function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: () => void }) {
+function Actions({ r, slug, onCopy, onChange }: { r: InterviewRow; slug: string; onCopy: () => void; onChange: (mode: ChangeMode) => void }) {
   const report = `/w/${slug}/interviews/${r.id}/report`;
   const copy = (
     <button
@@ -681,12 +701,57 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
       <Copy className="w-3.5 h-3.5" />
     </button>
   );
+  const more = r.canChange ? (
+    <Menu
+      align="right"
+      width={200}
+      label={`More for ${r.candidateName ?? r.title}`}
+      trigger={(p) => (
+        <button
+          type="button"
+          {...p}
+          aria-label={`More for ${r.candidateName ?? r.title}`}
+          title="Reschedule or cancel"
+          className="w-8 h-8 rounded-lg border border-border bg-surface flex items-center justify-center text-muted hover:text-fg hover:bg-panel"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      )}
+    >
+      {(close) => (
+        <>
+          <MenuItem
+            onClick={() => {
+              close();
+              onChange("move");
+            }}
+          >
+            <CalendarClock className="w-4 h-4 text-muted" aria-hidden />
+            {r.scheduledAt ? "Reschedule" : "Set a time"}
+          </MenuItem>
+          <MenuItem
+            danger
+            onClick={() => {
+              close();
+              onChange("cancel");
+            }}
+          >
+            <CalendarX2 className="w-4 h-4" aria-hidden />
+            Cancel interview
+          </MenuItem>
+        </>
+      )}
+    </Menu>
+  ) : null;
   switch (r.outcome) {
     case "questions":
       return (
-        <Btn variant={r.mineToPick ? "primary" : "ghost"} icon={ListChecks} href={`/w/${slug}/interviews/${r.id}/questions`}>
-          Pick questions
-        </Btn>
+        <>
+          <Btn variant={r.mineToPick ? "primary" : "ghost"} icon={ListChecks} href={`/w/${slug}/interviews/${r.id}/questions`}>
+            Pick questions
+          </Btn>
+          {more}
+        </>
       );
     case "live":
       return r.href ? (
@@ -708,6 +773,7 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
           ) : (
             <Btn href={`/w/${slug}/interviews/${r.id}/questions`}>Questions</Btn>
           )}
+          {more}
         </>
       );
     case "scorecards":
@@ -748,6 +814,89 @@ function Actions({ r, slug, onCopy }: { r: InterviewRow; slug: string; onCopy: (
 }
 
 /** One line under the outcome saying what it means for this interview. */
+type ChangeMode = "move" | "cancel";
+
+/** Reschedule (new time, optional email) or cancel (optional email) one interview. */
+function ChangeDialog({ slug, row, mode, onClose, onDone }: { slug: string; row: InterviewRow; mode: ChangeMode; onClose: () => void; onDone: (toast: string) => void }) {
+  const who = row.candidateName ?? "the candidate";
+  const [at, setAt] = useState(() => localInputValue(row.scheduledAt && new Date(row.scheduledAt).getTime() > Date.now() ? row.scheduledAt : null, nextHour()));
+  const [notify, setNotify] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const hasGuests = row.panel.some((p) => p.includes("@"));
+
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    if (mode === "move") {
+      const d = new Date(at);
+      const res = await rescheduleInterviewAction(slug, row.id, { at: Number.isNaN(d.getTime()) ? "" : d.toISOString(), notify });
+      setBusy(false);
+      if (!res.ok) return setError(res.error);
+      if (res.note) return onDone(`Moved to ${dayText(d.toISOString(), true)}. ${res.note}`);
+      onDone(`Moved to ${dayText(d.toISOString(), true)}${res.emailed ? `, ${who} has the new time` : ""}`);
+    } else {
+      const res = await cancelInterviewAction(slug, row.id, { notify });
+      setBusy(false);
+      if (!res.ok) return setError(res.error);
+      onDone(`Interview with ${who} cancelled`);
+    }
+  };
+
+  const move = mode === "move";
+  return (
+    <Dialog
+      title={move ? (row.scheduledAt ? "Reschedule interview" : "Set a time") : "Cancel interview?"}
+      onClose={onClose}
+      width={460}
+      footer={
+        <>
+          <Btn onClick={onClose} disabled={busy}>
+            {move ? "Close" : "Keep it"}
+          </Btn>
+          <Btn variant={move ? "primary" : "danger"} onClick={submit} disabled={busy}>
+            {busy ? (move ? "Saving..." : "Cancelling...") : move ? "Save new time" : "Cancel interview"}
+          </Btn>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4 text-[13px] text-muted">
+        <p>
+          <span className="text-fg font-medium">{row.title}</span>
+          {row.candidateName ? ` with ${row.candidateName}` : ""}
+          {row.scheduledAt ? `, now ${dayText(row.scheduledAt, true)}` : ", no time set yet"}.
+        </p>
+        {move ? (
+          <Field label="New date and time" hint={`Your time zone. It stays ${fmtLength(row.minutes)}.`}>
+            <input type="datetime-local" className={inputCls} value={at} onChange={(e) => setAt(e.target.value)} />
+          </Field>
+        ) : (
+          <p>The calendar event is removed and the room closes. Notes and anything already written stay on the report.</p>
+        )}
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input type="checkbox" className="mt-0.5 w-4 h-4 accent-secondary" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+          <span>
+            {move ? `Email ${who} the new time and a fresh link` : `Email ${who} that it is cancelled`}
+            {move && hasGuests ? ", and the emailed interviewers too" : ""}
+            {move && !notify && <span className="block text-xs text-subtle mt-0.5">The old link stops working after the old time, so copy the new one for them.</span>}
+          </span>
+        </label>
+        {error && (
+          <p role="alert" className="text-danger">
+            {error}
+          </p>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+function nextHour(): Date {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  d.setMinutes(0, 0, 0);
+  return d;
+}
+
 function detail(r: InterviewRow, now: number | null): string {
   const s = r.scoring;
   switch (r.outcome) {

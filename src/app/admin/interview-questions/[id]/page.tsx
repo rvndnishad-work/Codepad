@@ -47,6 +47,7 @@ export default async function EditQuestionPage({ params }: { params: Promise<{ i
     seoDescription: q.seoDescription ?? "",
     examplesData: prettyJson(q.examplesData),
     frameworksData: prettyJson(q.frameworksData),
+    scheduledAt: q.scheduledAt?.toISOString() ?? "",
   };
 
   return (

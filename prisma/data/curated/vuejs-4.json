@@ -1,0 +1,277 @@
+[
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "setup",
+      "vite",
+      "project-structure"
+    ],
+    "title": "How do you create a new Vue 3 app, and what is in the project structure?",
+    "description": "Scaffolding with create-vue and Vite, and what each generated file is for."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "templates",
+      "syntax"
+    ],
+    "title": "What is Vue template syntax (interpolation, directives, expressions)?",
+    "description": "Text interpolation, attribute binding, directives and the JavaScript expressions templates allow."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "v-for",
+      "lists",
+      "templates"
+    ],
+    "title": "How do you render lists with v-for?",
+    "description": "Looping over arrays, objects and ranges, with keys and v-if precedence."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "events",
+      "v-on",
+      "modifiers"
+    ],
+    "title": "How do you handle events in Vue (v-on and event modifiers)?",
+    "description": "Listening to DOM events, inline vs method handlers, and event and key modifiers."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "v-model",
+      "forms"
+    ],
+    "title": "How does v-model work on form inputs?",
+    "description": "Two-way binding on text inputs, checkboxes, radios and selects, and what it compiles to."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "props",
+      "components"
+    ],
+    "title": "What are props in Vue and how do you validate them?",
+    "description": "Declaring props, one-way data flow, defaults, required props and runtime validation."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "vue",
+      "vue3",
+      "migration"
+    ],
+    "title": "What changed from Vue 2 to Vue 3, and what does Vue 2 end of life mean?",
+    "description": "The main Vue 3 changes and what the end of Vue 2 support means for existing apps."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "data-fetching",
+      "composables",
+      "async"
+    ],
+    "title": "How do you fetch data in a Vue component (loading, errors, cancellation)?",
+    "description": "Loading data with lifecycle hooks, watchers and composables, with loading, error and abort handling."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "forms",
+      "validation"
+    ],
+    "title": "How do you handle forms and validation in Vue?",
+    "description": "Form state, validation rules, error display and submission in Vue 3."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "testing",
+      "vitest",
+      "vue-test-utils"
+    ],
+    "title": "How do you test Vue components (Vitest and Vue Test Utils)?",
+    "description": "Mounting components, simulating events, testing composables and stubbing children."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "vue-router",
+      "routing"
+    ],
+    "title": "How do you set up Vue Router (routes, RouterLink, RouterView, history modes)?",
+    "description": "Creating a router, nested routes, navigation components and history modes."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "lazy-loading",
+      "code-splitting",
+      "vue-router"
+    ],
+    "title": "How do you lazy-load routes and components in Vue?",
+    "description": "Dynamic import() for routes and async components, and what it does to the bundle."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "errors",
+      "error-handling"
+    ],
+    "title": "How do you handle errors in Vue (onErrorCaptured, app.config.errorHandler)?",
+    "description": "Error boundaries with onErrorCaptured, the global handler and async errors."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "typescript",
+      "vue-tsc"
+    ],
+    "title": "How do you use TypeScript with Vue (typed props, emits, refs, vue-tsc)?",
+    "description": "Type-based props and emits, typing refs and template refs, and type-checking SFCs."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "nuxt",
+      "ssr",
+      "framework"
+    ],
+    "title": "What is Nuxt and how does it relate to Vue?",
+    "description": "What Nuxt adds on top of Vue: file routing, SSR, data fetching and server routes."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "vue",
+      "performance",
+      "optimization"
+    ],
+    "title": "How do you optimize performance in a Vue app?",
+    "description": "Measuring and fixing slow renders, reactivity overhead and large bundles in Vue."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "compiler",
+      "internals",
+      "performance"
+    ],
+    "title": "How does the Vue compiler optimize templates (static hoisting, patch flags, block tree)?",
+    "description": "Compiler-informed virtual DOM: hoisting, patch flags and block trees."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "virtual-dom",
+      "diffing",
+      "internals"
+    ],
+    "title": "How does Vue's virtual DOM diff keyed lists?",
+    "description": "The keyed children diff, the longest increasing subsequence step and why keys matter."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "ssr",
+      "hydration"
+    ],
+    "title": "How does server-side rendering work in Vue (renderToString, hydration)?",
+    "description": "Rendering Vue on the server, hydrating in the browser and the SSR constraints on code."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "custom-renderer",
+      "internals"
+    ],
+    "title": "What is a custom renderer in Vue (createRenderer)?",
+    "description": "Using Vue's runtime-core with your own node operations to target non-DOM platforms."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "state-management",
+      "pinia",
+      "architecture"
+    ],
+    "title": "How would you structure state management for a large Vue app?",
+    "description": "Choosing between local state, composables, provide/inject and Pinia as an app grows."
+  },
+  {
+    "technology": "vuejs",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "vue",
+      "performance",
+      "virtual-scrolling",
+      "lists"
+    ],
+    "title": "How do you render very large lists efficiently in Vue (virtual scrolling)?",
+    "description": "Windowing long lists, keeping reactivity cheap and measuring the result."
+  }
+]

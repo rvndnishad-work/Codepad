@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import Link from "next/link";
 import { Flame, Sparkles, TrendingUp, Users, PenSquare, Hash, Search, X } from "lucide-react";
 import { auth } from "@/lib/auth";
@@ -201,6 +202,7 @@ export default async function BlogListingPage({
 
   return (
     <div className="bg-bg min-h-screen">
+      <FeaturePaused featureKey="blogs" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
       {/* Hero strip (compact) */}
       <div className="border-b border-border bg-bg/50">
         <div className="mx-auto max-w-6xl px-4 py-10">

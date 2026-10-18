@@ -107,6 +107,29 @@ function readDeclaredDependencies(files: SandpackFiles): string[] {
   }
 }
 
+/**
+ * Merges a multi-file hand-off over the template. The template's own sample
+ * files (e.g. Vue's AppHeader.vue/Counter.vue) are dropped unless the
+ * hand-off still uses them, so the explorer shows only the solution's files.
+ * Hidden scaffolding and entry files (main.ts, polyfills.ts, index.html,
+ * package.json) always stay.
+ */
+const ENTRY_FILE = /^\/(?:src\/)?(?:main|polyfills|index)\.[a-z]+$|^\/(?:public\/)?index\.html$|^\/package\.json$/;
+function mergeHandoff(template: SandpackFiles, handoff: SandpackFiles): SandpackFiles {
+  const sources = Object.values(handoff)
+    .map((f) => (typeof f === "string" ? f : (f as { code?: string }).code ?? ""))
+    .join("\n");
+  const out: SandpackFiles = {};
+  for (const [path, file] of Object.entries(template)) {
+    const hidden = typeof file === "object" && (file as { hidden?: boolean }).hidden === true;
+    const stem = path.split("/").pop()!.replace(/\.[^.]+$/, "");
+    // Still imported by a hand-off file, e.g. `from "./components/Counter.vue"`.
+    const used = /^[\w-]+$/.test(stem) && new RegExp(`/${stem}(?:\\.\\w+)?["']`).test(sources);
+    if (hidden || path in handoff || ENTRY_FILE.test(path) || used) out[path] = file;
+  }
+  return { ...out, ...handoff };
+}
+
 function hideFile(files: SandpackFiles, path: string) {
   const f = files[path];
   files[path] = f === undefined ? { code: "", hidden: true } : typeof f === "string" ? { code: f, hidden: true } : { ...f, hidden: true };
@@ -209,10 +232,10 @@ function PlaygroundEditor({
 
   const cleanFiles = useMemo(() => {
     let files = initialFiles ?? tpl.files;
-    // Multi-file handoff wins: merge the supplied files over the template ones
+    // Multi-file handoff wins: its files replace the template's sample files
     // (overrides /App.js, adds /src/* which then show in the file explorer).
     if (prefillFiles && Object.keys(prefillFiles).length > 0) {
-      files = { ...files, ...prefillFiles };
+      files = mergeHandoff(files, prefillFiles);
     } else if (prefillCode) {
       const entry =
         Object.keys(files).find((k) => {

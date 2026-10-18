@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertCronAuth } from "@/lib/cron-auth";
+import { withCronRun } from "@/lib/admin/cron-run";
 import { runIncludedCreditsIfDue, workspacesForIncludedCredits } from "@/lib/billing/included-credits-server";
 
 /**
@@ -12,9 +12,7 @@ import { runIncludedCreditsIfDue, workspacesForIncludedCredits } from "@/lib/bil
  */
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
-  const gate = assertCronAuth(req);
-  if (!gate.ok) return gate.response;
+async function run(req: NextRequest) {
 
   const now = new Date();
   const ids = await workspacesForIncludedCredits();
@@ -46,7 +44,6 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// Vercel Cron sends GET: same auth, same body.
-export async function GET(req: NextRequest) {
-  return POST(req);
-}
+// Vercel Cron sends GET; POST stays for manual and scheduler calls.
+export const POST = withCronRun("included-credits", run);
+export const GET = POST;

@@ -2,33 +2,52 @@
 
 import { useEffect, useState } from "react";
 
-const FRAMEWORKS: [string, string][] = [
-  ["react", "React"],
-  ["vue", "Vue"],
-  ["angular", "Angular"],
-];
+const OPTIONS = {
+  "machine-coding": {
+    key: "mc-framework",
+    label: "Solutions open in",
+    choices: [
+      ["react", "React"],
+      ["vue", "Vue"],
+      ["angular", "Angular"],
+    ],
+  },
+  dsa: {
+    key: "dsa-language",
+    label: "Answers in",
+    choices: [
+      ["python", "Python"],
+      ["javascript", "JavaScript"],
+      ["java", "Java"],
+      ["cpp", "C++"],
+    ],
+  },
+} as const;
 
 /**
- * Lets the user pick a preferred framework for machine-coding solutions. The
- * choice is saved to localStorage ("mc-framework") and read by the question
- * detail page, so opening any question defaults to this framework.
+ * Lets the user pick a preferred framework (machine coding) or language (DSA).
+ * The choice is saved to localStorage and read by the question detail page, so
+ * opening any question in the section defaults to it.
  */
-export default function FrameworkPreference() {
+export default function FrameworkPreference({ tech }: { tech: keyof typeof OPTIONS }) {
+  const opts = OPTIONS[tech];
+  const FRAMEWORKS = opts.choices;
+  const fallback = FRAMEWORKS[0][0];
   const [fw, setFw] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("mc-framework") || "react";
+      const saved = localStorage.getItem(opts.key) || fallback;
       setTimeout(() => setFw(saved), 0);
     } catch {
-      setTimeout(() => setFw("react"), 0);
+      setTimeout(() => setFw(fallback), 0);
     }
-  }, []);
+  }, [opts.key, fallback]);
 
   function pick(value: string) {
     setFw(value);
     try {
-      localStorage.setItem("mc-framework", value);
+      localStorage.setItem(opts.key, value);
     } catch {
       /* ignore */
     }
@@ -36,7 +55,7 @@ export default function FrameworkPreference() {
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2.5">
-      <span className="text-sm text-subtle">Solutions open in</span>
+      <span className="text-sm text-subtle">{opts.label}</span>
       <div className="flex gap-1.5">
         {FRAMEWORKS.map(([value, lbl]) => {
           const active = fw === value;

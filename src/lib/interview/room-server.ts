@@ -20,11 +20,11 @@ import { formatUsd } from "@/lib/billing/plans";
 import { roomVideoMode, videoOffer, type RoomVideo } from "@/lib/video/room-video";
 import { pendingRoomAsk, recordingConfigured } from "@/lib/recording/live-server";
 import { appOrigin } from "./links";
-import { siteOrigin } from "@/lib/site-url";
+import { recruiterOrigin } from "@/lib/site-url";
 
 /** Site origin for links built without a request. Never localhost on a deployment. */
 export function baseUrl(): string {
-  return siteOrigin();
+  return recruiterOrigin();
 }
 
 /** Path (no origin) that lets the candidate into one room until the pass expires. */

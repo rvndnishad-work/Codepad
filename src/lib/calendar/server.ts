@@ -5,6 +5,7 @@
  * Server only.
  */
 import { prisma } from "@/lib/prisma";
+import { isFeatureOn } from "@/lib/admin/switches";
 import { decryptAtRest, encryptAtRest } from "@/lib/crypto/at-rest";
 import { appOrigin } from "@/lib/interview/links";
 import {
@@ -197,6 +198,7 @@ export async function syncInterviewEvent(sessionId: string, opts: { organiserIds
       await prisma.interviewCalendarEvent.update({ where: { id: existing.id }, data: { updatedAt: new Date() } });
       return { status: "updated" };
     }
+    if (!(await isFeatureOn("calendar"))) return { status: "skipped", reason: "calendar switch is paused" };
     const ids = opts.organiserIds ?? [];
     if (!ids.length) return { status: "skipped", reason: "no event" };
     const conns = await prisma.calendarConnection.findMany({ where: { workspaceId: s.workspaceId, userId: { in: ids }, status: "active" }, select: CONNECTION_SELECT });

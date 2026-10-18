@@ -114,11 +114,28 @@ export async function PATCH(req: Request, { params }: Params) {
       });
 
       if (stepsProvided) {
-        await tx.challengeStep.deleteMany({ where: { challengeId: challenge.id } });
-        await tx.challengeStep.createMany({
-          data: body.steps!.map((s, i) => ({
-            challengeId: challenge.id,
-            position: i,
+        // Save steps in place by position so ChallengeAttempt.stepId stays
+        // valid: existing positions are updated, new ones created, and
+        // trailing steps removed only when nobody has attempted them.
+        const existing = await tx.challengeStep.findMany({
+          where: { challengeId: challenge.id },
+          orderBy: { position: "asc" },
+          select: { id: true, position: true, _count: { select: { attempts: true } } },
+        });
+        const incoming = body.steps!;
+        const removed = existing.slice(incoming.length);
+        const attempted = removed.filter((r) => r._count.attempts > 0);
+        if (attempted.length > 0) {
+          throw new StepsInUseError(
+            `Step ${attempted.map((r) => r.position + 1).join(", ")} already has attempts and cannot be removed.`,
+          );
+        }
+        if (removed.length > 0) {
+          await tx.challengeStep.deleteMany({ where: { id: { in: removed.map((r) => r.id) } } });
+        }
+        for (let i = 0; i < incoming.length; i++) {
+          const s = incoming[i];
+          const data = {
             title: s.title || null,
             description: s.description ?? "",
             template: s.template ?? "test-ts",
@@ -128,14 +145,20 @@ export async function PATCH(req: Request, { params }: Params) {
             hint: s.hint || null,
             videoUrl: s.videoUrl || null,
             testCasesJson: JSON.stringify(s.testCases ?? []),
-          })),
-        });
+          };
+          const row = existing[i];
+          if (row) await tx.challengeStep.update({ where: { id: row.id }, data });
+          else await tx.challengeStep.create({ data: { ...data, challengeId: challenge.id, position: i } });
+        }
       }
       return c;
     });
 
     return NextResponse.json({ id: updated.id, slug: updated.slug });
   } catch (err) {
+    if (err instanceof StepsInUseError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("Unique constraint")) {
       return NextResponse.json(
@@ -173,3 +196,5 @@ export async function DELETE(_req: Request, { params }: Params) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+class StepsInUseError extends Error {}

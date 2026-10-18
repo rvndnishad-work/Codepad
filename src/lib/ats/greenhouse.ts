@@ -178,6 +178,8 @@ export type StatusInput = {
   profileUrl: string;
   includeScore: boolean;
   screeningLabel: string;
+  /** Every interview round in one line (see atsRoundsText), when the candidate follows a plan. */
+  rounds?: string | null;
 };
 
 export type TestStatus = {
@@ -219,6 +221,7 @@ export function buildTestStatus(input: StatusInput): TestStatus {
       Screening: input.screeningLabel,
     };
     if (input.result?.state === "expired") metadata.Note = "The candidate did not finish before the invite expired.";
+    if (input.rounds) metadata.Rounds = input.rounds;
     const out: TestStatus = { partner_status: "complete", partner_profile_url: input.profileUrl, metadata };
     if (input.includeScore && input.result?.score != null) out.partner_score = input.result.score;
     return out;

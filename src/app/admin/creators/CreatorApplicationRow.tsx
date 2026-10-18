@@ -33,7 +33,10 @@ export default function CreatorApplicationRow({ app }: { app: AppRow }) {
   const decided = app.status !== "PENDING";
 
   async function decide(kind: "approve" | "reject") {
-    if (kind === "reject" && !note.trim() && !window.confirm("Reject without a note?")) return;
+    if (kind === "reject" && !note.trim()) {
+      toast.error("Add a reason. The applicant sees it.");
+      return;
+    }
     setBusy(true);
     try {
       if (kind === "approve") await approveCreatorApplicationAction(app.id, note || undefined);
@@ -51,9 +54,9 @@ export default function CreatorApplicationRow({ app }: { app: AppRow }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-bold text-fg truncate">{app.userName || "Unnamed"}</div>
-          <div className="text-[11px] text-muted font-mono truncate">{app.userEmail}</div>
+          <div className="text-xs text-muted font-mono truncate">{app.userEmail}</div>
         </div>
-        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${STATUS_TONE[app.status] ?? "text-muted bg-panel/60"}`}>
+        <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${STATUS_TONE[app.status] ?? "text-muted bg-panel/60"}`}>
           {app.status}
         </span>
       </div>
@@ -74,13 +77,13 @@ export default function CreatorApplicationRow({ app }: { app: AppRow }) {
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional note (shown to applicant)"
-            className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-bg text-fg text-[11px] focus:outline-none focus:border-accent/40"
+            placeholder="Note for the applicant (required to reject)"
+            className="flex-1 px-2.5 py-1.5 rounded-md border border-border bg-bg text-fg text-xs focus:outline-none focus:border-accent/40"
           />
-          <button onClick={() => decide("reject")} disabled={busy} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50">
+          <button onClick={() => decide("reject")} disabled={busy} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 text-xs font-bold disabled:opacity-50">
             <X className="w-3 h-3" /> Reject
           </button>
-          <button onClick={() => decide("approve")} disabled={busy} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider disabled:opacity-50">
+          <button onClick={() => decide("approve")} disabled={busy} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold disabled:opacity-50">
             <Check className="w-3 h-3" /> Approve
           </button>
         </div>

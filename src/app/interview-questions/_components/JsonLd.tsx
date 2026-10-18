@@ -1,3 +1,5 @@
+import { siteOrigin } from "@/lib/site-url";
+
 /** Renders a JSON-LD <script> for structured data / rich results. */
 export default function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
   return (
@@ -8,7 +10,7 @@ export default function JsonLd({ data }: { data: Record<string, unknown> | Recor
   );
 }
 
-const SITE = "https://interviewpad.in";
+const SITE = siteOrigin();
 
 export function breadcrumb(items: { name: string; path: string }[]) {
   return {

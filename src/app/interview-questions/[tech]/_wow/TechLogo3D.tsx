@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { SVGLoader } from "three/addons/loaders/SVGLoader.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { TOPIC_LOGO_SVGS, type LogoSvg } from "./logo-svgs";
+import { useIsLightTheme } from "@/lib/use-light-theme";
 
 /**
  * TECH LOGO 3D — the topic's logo as a solid, glowing object that turns
@@ -13,7 +14,13 @@ import { TOPIC_LOGO_SVGS, type LogoSvg } from "./logo-svgs";
  * icons become neon tubes along their strokes. A halo, a rim shell and an
  * orbiting ring carry the glow (no post-processing). Mouse tilts it; it
  * pauses offscreen and holds a still pose under reduced motion.
+ * In the light theme it becomes a matte clay tile (brand colour kept, soft
+ * top-left shading), a navy hairline orbit and no glow at all.
  */
+
+/** Light theme ink for the orbit hairline and its beads. */
+const NAVY = "#0f1730";
+const GOLD = "#f5c518";
 
 /** Longest side of the logo in scene units. */
 const SIZE = 3;
@@ -128,10 +135,12 @@ function stepTime(time: React.MutableRefObject<number>, rawDelta: number) {
 function Logo({
   logo,
   still,
+  light,
   pointer,
 }: {
   logo: LogoSvg;
   still: boolean;
+  light: boolean;
   pointer: React.MutableRefObject<{ x: number; y: number }>;
 }) {
   const spin = useRef<THREE.Group>(null);
@@ -162,7 +171,7 @@ function Logo({
       spin.current.rotation.z = tilt.current.x * -0.12;
       spin.current.position.y = Math.sin(t * 1.1) * 0.08;
     }
-    if (halo.current) {
+    if (halo.current && !light) {
       const pulse = 1 + Math.sin(t * 1.6) * 0.06;
       halo.current.scale.setScalar(6.2 * pulse);
       (halo.current.material as THREE.SpriteMaterial).opacity = 0.5 + Math.sin(t * 1.6) * 0.1;
@@ -177,7 +186,7 @@ function Logo({
 
   return (
     <group>
-      {haloTex && (
+      {haloTex && !light && (
         <sprite ref={halo} position={[0, 0, -1.2]} scale={6.2}>
           <spriteMaterial map={haloTex} color={color} transparent opacity={0.42} depthWrite={false} blending={THREE.AdditiveBlending} />
         </sprite>
@@ -185,6 +194,10 @@ function Logo({
 
       <group ref={spin}>
         <mesh geometry={geometry}>
+          {light ? (
+            // matte clay: no emissive, no metal, the key light does the shading
+            <meshStandardMaterial color={body} metalness={0} roughness={0.92} />
+          ) : (
           <meshStandardMaterial
             color={body}
             emissive={body}
@@ -192,6 +205,7 @@ function Logo({
             metalness={0.45}
             roughness={0.28}
           />
+          )}
         </mesh>
         {logo.core && (
           // sits mid-depth, so it only shows through the cut-outs
@@ -201,6 +215,7 @@ function Logo({
           </mesh>
         )}
         {/* rim glow: a slightly larger additive shell that lights up at the edges */}
+        {!light && (
         <mesh geometry={geometry} scale={1.04}>
           <shaderMaterial
             uniforms={rimUniforms}
@@ -211,26 +226,42 @@ function Logo({
             blending={THREE.AdditiveBlending}
           />
         </mesh>
+        )}
       </group>
 
       <group ref={ring}>
         <mesh>
           <torusGeometry args={[2.35, 0.012, 8, 160]} />
+          {light ? (
+            <meshBasicMaterial color={NAVY} transparent opacity={0.28} depthWrite={false} />
+          ) : (
           <meshBasicMaterial color={color} transparent opacity={0.55} blending={THREE.AdditiveBlending} depthWrite={false} />
+          )}
         </mesh>
         <mesh position={[2.35, 0, 0]}>
           <sphereGeometry args={[0.06, 16, 16]} />
-          <meshBasicMaterial color="#ffffff" />
+          <meshBasicMaterial color={light ? GOLD : "#ffffff"} />
         </mesh>
         <mesh position={[-2.35, 0, 0]}>
           <sphereGeometry args={[0.045, 16, 16]} />
-          <meshBasicMaterial color={color} />
+          <meshBasicMaterial color={light ? NAVY : color} />
         </mesh>
       </group>
 
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[-3, 4, 5]} intensity={1.6} />
-      <pointLight position={[3, -2, 3]} intensity={18} distance={12} color={color} />
+      {light ? (
+        // daylight: bright fill plus a soft key from the top left, no coloured kicker
+        <>
+          <ambientLight intensity={1.1} />
+          <hemisphereLight args={["#ffffff", "#c9d6e0", 0.6]} />
+          <directionalLight position={[-4, 5, 5]} intensity={1.5} />
+        </>
+      ) : (
+        <>
+          <ambientLight intensity={0.55} />
+          <directionalLight position={[-3, 4, 5]} intensity={1.6} />
+          <pointLight position={[3, -2, 3]} intensity={18} distance={12} color={color} />
+        </>
+      )}
     </group>
   );
 }
@@ -242,6 +273,7 @@ export default function TechLogo3D({ tech }: { tech: string }) {
   const [still, setStill] = useState(false);
   // The canvas takes no pointer events, so the tilt follows the pointer across the whole page.
   const pointer = useRef({ x: 0, y: 0 });
+  const light = useIsLightTheme();
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -280,7 +312,7 @@ export default function TechLogo3D({ tech }: { tech: string }) {
         gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         style={{ background: "transparent" }}
       >
-        <Logo logo={logo} still={still} pointer={pointer} />
+        <Logo logo={logo} still={still} light={light} pointer={pointer} />
       </Canvas>
     </div>
   );

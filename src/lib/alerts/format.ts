@@ -29,6 +29,7 @@ export const ALERT_EVENTS: { event: WorkspaceEvent; label: string; hint: string 
   { event: "interview.completed", label: "A live interview ends", hint: "When the interviewer closes the room" },
   { event: "invite.bounced", label: "An invite bounced", hint: "So you can fix the address or resend" },
   { event: "candidate.decided", label: "A candidate is passed or not passed", hint: "Useful for hiring managers" },
+  { event: "round.waiting", label: "A round needs a next step or the next round is due", hint: "Once per round, so nobody waits unseen" },
 ];
 
 /** What a new channel posts until someone changes it. */
@@ -120,6 +121,15 @@ export function formatAlert(
       const decision = data.decision === "passed" ? "Passed" : data.decision === "not_passed" ? "Not passed" : null;
       let text = decision ? `${name} was marked ${decision}.` : `A decision was recorded for ${name}.`;
       if (decision === "Passed" && str(data.manualOverride)) text += " This was a manual override.";
+      return { text, linkUrl: reportUrl, linkLabel: "Open candidate" };
+    }
+    case "round.waiting": {
+      const r = obj(data.round);
+      const round = capped(str(r.name), 80) ?? "a round";
+      const text =
+        data.waiting === "next_round"
+          ? `${name} moved on and ${round} is not ${r.kind === "interview" ? "booked" : "sent"} yet.`
+          : `${name} finished ${round}${str(data.result) ? ` (${capped(str(data.result), 40)})` : ""}. Move them on or stop here.`;
       return { text, linkUrl: reportUrl, linkLabel: "Open candidate" };
     }
     case "invite.bounced": {

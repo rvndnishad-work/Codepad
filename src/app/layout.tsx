@@ -1,5 +1,6 @@
 import { siteOrigin } from "@/lib/site-url";
 import "./globals.css";
+import "./light-remap.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono, Fira_Code } from "next/font/google";
@@ -9,6 +10,7 @@ import Header from "@/components/Header";
 import HeaderShell from "@/components/HeaderShell";
 import Footer from "@/components/Footer";
 import FooterShell from "@/components/FooterShell";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 
@@ -92,11 +94,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         // cover our own components; they're still hydration-checked normally.
         suppressHydrationWarning
       >
-        {/* Dark-only product: forcedTheme locks it even for visitors with a
-            stored light preference from before the switch was removed. */}
-        <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" enableSystem={false}>
+        {/* Dark stays the default. Pages reviewed in the light theme (see
+            lib/theme-routes.ts) follow the visitor's choice from the header
+            toggle; all other pages are forced dark by ThemeProvider. */}
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <Suspense fallback={null}>
             <RouteProgress />
+          </Suspense>
+          <Suspense fallback={null}>
+            <MaintenanceBanner />
           </Suspense>
           <HeaderShell><Header /></HeaderShell>
           <main className="flex-1 flex flex-col">{children}</main>

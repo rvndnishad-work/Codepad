@@ -13,6 +13,7 @@
  * are asked to agree; only interviewers learn why Record would not work,
  * and only they can start or stop it.
  */
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import type { RoomViewer } from "@/lib/interview/room-access";
 import { roomRecordingState, startLiveRecording, stopLiveRecording } from "@/lib/recording/live-server";
@@ -31,6 +32,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  // Feature switch "recordings" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("recordings");
+  if (featurePaused) return featurePaused;
   const { id } = await params;
   const v = await recordingViewer(req, id);
   if ("res" in v) return v.res;

@@ -81,7 +81,7 @@ function editorLanguage(tech: string): CodeLanguage {
 }
 
 const inputCls = "w-full px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:border-accent/50";
-const miniLabel = "text-[10px] font-black uppercase tracking-widest text-muted mb-1.5 block";
+const miniLabel = "text-xs font-semibold text-muted mb-1.5 block";
 
 export default function ExamplesEditor({
   items,
@@ -141,18 +141,18 @@ export default function ExamplesEditor({
                 {item.kind === "simple" ? (
                   <>
                     {item.tech && (
-                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-border text-muted shrink-0">
+                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded border border-border text-muted shrink-0">
                         {CODE_VARIANTS[item.tech]?.label ?? item.tech}
                       </span>
                     )}
                     {item.runnable && (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-500 shrink-0">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-500 shrink-0">
                         <Play className="w-2.5 h-2.5" /> runnable
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-500 shrink-0">
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded border border-amber-500/30 text-amber-500 shrink-0">
                     <Braces className="w-2.5 h-2.5" /> JSON
                   </span>
                 )}
@@ -216,7 +216,7 @@ export default function ExamplesEditor({
                   </>
                 ) : (
                   <>
-                    <p className="text-[10px] text-muted">
+                    <p className="text-xs text-muted">
                       Multi-variant / multi-file example — edited as JSON. Shape: <code className="text-accent">{'{ label, variants: [{ tech, code }] }'}</code> or <code className="text-accent">{'{ label, files: { "/App.js": "…" } }'}</code>.
                     </p>
                     <JsonField

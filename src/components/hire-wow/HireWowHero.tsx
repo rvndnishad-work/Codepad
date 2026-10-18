@@ -69,7 +69,7 @@ export default function HireWowHero({
   }, []);
 
   return (
-    <section ref={root} data-dark-hero className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
+    <section ref={root} data-dark-hero="dark-only" className="wow-noise relative -mt-16 overflow-hidden bg-bg text-fg">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/2 top-24 h-[480px] w-[900px] -translate-x-1/2 rounded-full bg-secondary/20 blur-[140px]" />
         <div className="absolute right-[-160px] top-1/3 h-[420px] w-[420px] rounded-full bg-accent-4/10 blur-[120px]" />
@@ -77,7 +77,7 @@ export default function HireWowHero({
       </div>
 
       <div className="absolute inset-0 transform-gpu opacity-80 will-change-transform">
-        <CodeVerse3D paused={paused || scrolling} tone="boss" />
+        <CodeVerse3D paused={paused} scrolling={scrolling} tone="boss" />
       </div>
       <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_64%_54%_at_50%_44%,rgb(var(--c-bg)/0.9),transparent_72%)]" />
@@ -109,12 +109,12 @@ export default function HireWowHero({
           </span>
         </div>
 
-        <h1 className="wow-font-display mt-8 text-[9vw] leading-[0.9] drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[7.5vw] lg:text-[5rem]">
+        <h1 className="wow-font-display mt-8 text-[9vw] leading-[0.9] dark:drop-shadow-[0_2px_16px_rgba(0,0,0,0.95)] sm:text-[7.5vw] lg:text-[5rem]">
           <span className="block overflow-hidden pb-1"><span className="wow-hire-line block">1,000 applied.</span></span>
           <span className="block overflow-hidden pb-2"><span className="wow-hire-line block whitespace-nowrap"><HireHeroTypewriter /></span></span>
         </h1>
 
-        <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 [text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
+        <p className="wow-hire-fade mt-6 max-w-2xl text-balance text-base font-medium leading-relaxed text-fg/85 dark:[text-shadow:0_2px_18px_rgba(0,0,0,0.9)] md:text-lg">
           A thousand applications, read in the order they arrived, and the
           shortlist closed at forty. Send every applicant the same take-home or
           AI screening interview instead. We grade each attempt on our servers
@@ -123,7 +123,7 @@ export default function HireWowHero({
         </p>
 
         <div className="wow-hire-fade mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center">
-          <Link href={ctaHref} className="group flex items-center justify-center gap-2 rounded-full bg-fg px-8 py-4 text-sm font-semibold text-bg transition hover:scale-[1.03]">
+          <Link href={ctaHref} className="group flex items-center justify-center gap-2 rounded-full bg-secondary px-8 py-4 text-sm font-semibold text-secondary-ink transition dark:bg-fg dark:text-bg hover:scale-[1.03]">
             {signedIn ? "Open your workspace" : "Create a workspace"}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>

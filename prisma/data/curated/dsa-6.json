@@ -1,0 +1,328 @@
+[
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "complexity",
+      "recursion",
+      "space"
+    ],
+    "title": "What is space complexity, and how much stack space does recursion use?",
+    "description": "Auxiliary space versus input space, and why a recursion depth of n costs O(n) stack."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "interview-strategy",
+      "problem-solving"
+    ],
+    "title": "How should you approach a DSA problem in a coding interview?",
+    "description": "A repeatable framework: clarify, examples, brute force, optimise, code, test."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "sorting",
+      "divide-and-conquer",
+      "recursion"
+    ],
+    "title": "How do merge sort and quicksort work?",
+    "description": "Divide and conquer two ways: merge after splitting versus partition before recursing."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "binary-search",
+      "matrix"
+    ],
+    "title": "How do you search a sorted 2D matrix?",
+    "description": "Treat a fully sorted matrix as one array, or walk from the top-right corner of a row-and-column sorted one."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "prefix-sum",
+      "arrays"
+    ],
+    "title": "What is the prefix sum technique?",
+    "description": "Precompute running totals so any range sum is one subtraction."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "two-pointers",
+      "strings"
+    ],
+    "title": "How do you check if a string is a valid palindrome?",
+    "description": "Two pointers from both ends, skipping non-alphanumeric characters and ignoring case."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "stack",
+      "design"
+    ],
+    "title": "How do you design a min stack with O(1) getMin?",
+    "description": "Keep the running minimum alongside each pushed value."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "monotonic-stack",
+      "arrays"
+    ],
+    "title": "How do you find the next greater element for every item (Daily Temperatures)?",
+    "description": "A decreasing stack of indices answers next-greater queries in one pass."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "monotonic-stack",
+      "arrays"
+    ],
+    "title": "How do you find the largest rectangle in a histogram?",
+    "description": "An increasing stack finds each bar's left and right limits in O(n)."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "strings"
+    ],
+    "title": "How do you find the longest common prefix of an array of strings?",
+    "description": "Vertical scanning, horizontal reduction, or sort and compare the first and last word."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "strings",
+      "pattern-matching"
+    ],
+    "title": "How does the KMP string-matching algorithm work?",
+    "description": "The prefix (failure) function lets the search never move backwards in the text."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "linked-list",
+      "two-pointers"
+    ],
+    "title": "What is the fast and slow pointer technique?",
+    "description": "Two pointers at different speeds find middles, cycles and k-th-from-end nodes."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "binary-tree",
+      "recursion"
+    ],
+    "title": "How do you invert a binary tree?",
+    "description": "Swap left and right children at every node, recursively or with a queue."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "segment-tree",
+      "range-query"
+    ],
+    "title": "What is a segment tree and when do you need one?",
+    "description": "Range sums or minimums with point updates, both in O(log n)."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "easy",
+    "tags": [
+      "dsa",
+      "graph",
+      "adjacency-list"
+    ],
+    "title": "What is a graph, and how do you represent it?",
+    "description": "Adjacency list versus adjacency matrix versus edge list, and when each fits."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "graph",
+      "bfs",
+      "grid"
+    ],
+    "title": "How do you solve the Rotting Oranges problem with multi-source BFS?",
+    "description": "Start BFS from every rotten orange at once and count the levels."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "graph",
+      "scc",
+      "dfs"
+    ],
+    "title": "How do you find strongly connected components in a directed graph?",
+    "description": "Kosaraju's two DFS passes and Tarjan's low-link values."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "graph",
+      "shortest-path",
+      "dynamic-programming"
+    ],
+    "title": "How does the Floyd-Warshall algorithm work?",
+    "description": "All-pairs shortest paths by allowing one more intermediate vertex at a time."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "graph",
+      "shortest-path",
+      "bellman-ford"
+    ],
+    "title": "How do you find the cheapest flight with at most K stops?",
+    "description": "Bellman-Ford limited to K+1 rounds, or BFS by stops."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "greedy",
+      "arrays"
+    ],
+    "title": "How do you solve the Jump Game?",
+    "description": "Track the farthest reachable index in one pass."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "greedy",
+      "arrays"
+    ],
+    "title": "How do you solve the Gas Station problem?",
+    "description": "If total gas covers total cost, the start is right after the lowest running balance."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "dynamic-programming",
+      "bitmask"
+    ],
+    "title": "What is bitmask dynamic programming?",
+    "description": "Encode a subset as an integer so DP can range over subsets, as in the travelling salesman problem."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "backtracking",
+      "recursion"
+    ],
+    "title": "How do you generate all subsets of an array?",
+    "description": "Include-or-exclude recursion, iterative doubling, or bitmasks."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "backtracking",
+      "recursion"
+    ],
+    "title": "How do you generate all permutations of an array?",
+    "description": "Swap-based or used-array backtracking, and handling duplicates."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "backtracking"
+    ],
+    "title": "How do you solve the Combination Sum problem?",
+    "description": "Backtracking with reuse allowed and pruning once the sum overshoots."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "hard",
+    "tags": [
+      "dsa",
+      "backtracking"
+    ],
+    "title": "How do you solve the N-Queens problem?",
+    "description": "Place one queen per row and track used columns and diagonals."
+  },
+  {
+    "technology": "dsa",
+    "round": "DSA",
+    "difficulty": "medium",
+    "tags": [
+      "dsa",
+      "bit-manipulation"
+    ],
+    "title": "What are the most useful bit manipulation tricks for interviews?",
+    "description": "Masks, x & (x - 1), x & -x, XOR identities and shifts."
+  }
+]

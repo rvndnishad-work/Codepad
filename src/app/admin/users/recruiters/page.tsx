@@ -1,18 +1,6 @@
-import AdminUsersList from "../AdminUsersList";
-import { requireAdminAccess } from "@/lib/permissions/staff";
+import UsersListPage from "../_components/UsersListPage";
+import type { RawParams } from "../_lib/filters";
 
-interface AdminRecruitersPageProps {
-  searchParams: Promise<{ q?: string; page?: string; status?: string }>;
-}
-
-export default async function AdminRecruitersPage({ searchParams }: AdminRecruitersPageProps) {
-  await requireAdminAccess("user:manage");
-  const params = await searchParams;
-  return (
-    <AdminUsersList
-      userTypeFilter="recruiter"
-      baseUrl="/admin/users/recruiters"
-      searchParams={params}
-    />
-  );
+export default async function AdminRecruiterAccountsPage({ searchParams }: { searchParams: Promise<RawParams> }) {
+  return <UsersListPage side="recruiters" searchParams={await searchParams} />;
 }

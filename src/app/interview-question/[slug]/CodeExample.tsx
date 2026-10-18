@@ -82,6 +82,22 @@ function normalizeCode(code: string): string {
   return s.trim();
 }
 
+const FOLDER_ORDER = ["components", "hooks", "composables", "services", "directives", "api", "data", "utils"];
+
+/** Where a solution file sorts among the tabs. */
+function fileRank(p: string) {
+  if (/\/App\.\w+$/.test(p) || /app\.component\.ts$/.test(p)) return 0;
+  if (/\/index\.\w+$/.test(p)) return 1;
+  if (/\.(css|scss)$/.test(p)) return 99;
+  const i = FOLDER_ORDER.indexOf(folderOf(p));
+  return i === -1 ? 2 : 3 + i;
+}
+
+/** The folder a tab shows before the file name, without the src/ or src/app/ prefix every file shares. */
+function folderOf(p: string) {
+  return p.replace(/^\/(src\/(app\/)?)?/, "").split("/").slice(0, -1).join("/");
+}
+
 /**
  * Renders a multi-file example (component-wise solution): a tab per file +
  * the active file highlighted, with one "Run Playground" that opens every file
@@ -97,11 +113,11 @@ export function MultiFileExample({
   /** Sandpack template the "Run Playground" handoff opens (react/vue/angular…). */
   template?: string;
 }) {
-  // Show the entry file (App / app.component / index) first, then authored order.
-  const entryRank = (p: string) =>
-    /\/App\.\w+$/.test(p) || /app\.component\.ts$/.test(p) ? 0 : /\/index\.\w+$/.test(p) ? 1 : 2;
+  // Entry file (App / app.component / index) first, then folder by folder in
+  // project order (components before hooks, services, api, data, utils),
+  // stylesheets last; authored order within a folder.
   const paths = useMemo(
-    () => Object.keys(files).sort((a, b) => entryRank(a) - entryRank(b)),
+    () => Object.keys(files).sort((a, b) => fileRank(a) - fileRank(b)),
     [files],
   );
   const [active, setActive] = useState(0);
@@ -150,7 +166,10 @@ export function MultiFileExample({
             }`}
           >
             <FileCode className="h-3.5 w-3.5 opacity-70" aria-hidden />
-            {p.replace(/^\//, "")}
+            <span title={p.replace(/^\//, "")}>
+              {folderOf(p) && <span className="opacity-60">{folderOf(p)}/</span>}
+              {p.slice(p.lastIndexOf("/") + 1)}
+            </span>
           </button>
         ))}
       </div>

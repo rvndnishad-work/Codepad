@@ -1,0 +1,242 @@
+[
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "Forms",
+      "State",
+      "Accessibility"
+    ],
+    "title": "Build a Character Counter (textarea with limit)",
+    "description": "A textarea that shows characters used and remaining, warns near the limit and blocks submit past it."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "State",
+      "Forms",
+      "Math"
+    ],
+    "title": "Build a Mortgage Calculator",
+    "description": "Inputs for loan amount, interest rate and term that compute the monthly payment, total paid and total interest."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "Rendering",
+      "Lists",
+      "Forms"
+    ],
+    "title": "Build a Generate Table (rows x columns)",
+    "description": "A form takes a row and column count and renders a table whose numbers snake down and up the columns."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "Forms",
+      "Accessibility",
+      "State"
+    ],
+    "title": "Build a Show/Hide Password Input",
+    "description": "A password field with a toggle button that reveals and hides the value, keeps focus and caret position, and is screen-reader friendly."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "Rendering",
+      "State",
+      "Accessibility"
+    ],
+    "title": "Build a Read More / Show Less text component",
+    "description": "Truncate long text to a few lines or characters with a toggle that expands and collapses it."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "easy",
+    "tags": [
+      "Timers",
+      "State",
+      "Effects"
+    ],
+    "title": "Build a Countdown Timer",
+    "description": "Enter minutes and seconds, then start, pause, resume and reset a countdown that stops at zero and announces completion."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Grid",
+      "Timers",
+      "State"
+    ],
+    "title": "Build Grid Lights",
+    "description": "A 3x3 grid (centre cell empty) where clicked cells light up and, once all are lit, switch off one by one in reverse click order."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "State",
+      "History",
+      "Undo"
+    ],
+    "title": "Build an Undoable Counter (undo/redo history)",
+    "description": "A counter with +1/-1/+10/-10 buttons, a history log, and undo/redo that behaves correctly after a new action following an undo."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Forms",
+      "Validation",
+      "Dates"
+    ],
+    "title": "Build a Flight Booker",
+    "description": "Choose one-way or return, pick dates, validate that the return is not before departure, and confirm the booking."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Data fetching",
+      "Pagination",
+      "Async"
+    ],
+    "title": "Build a Job Board (paginated fetch)",
+    "description": "Load job IDs, fetch details in pages of six, show a Load more button, and handle loading and errors without duplicates."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Forms",
+      "Async",
+      "Debounce"
+    ],
+    "title": "Build a Signup Form with async username availability check",
+    "description": "Validate fields as the user types and check username availability with a debounced request that ignores stale responses."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Parsing",
+      "Rendering",
+      "Security"
+    ],
+    "title": "Build a Markdown Previewer",
+    "description": "A textarea of markdown with a live preview for headings, bold, italics, links, lists and code, without injecting unsafe HTML."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Grid",
+      "Mouse events",
+      "Selection"
+    ],
+    "title": "Build a Selectable Cell Grid (drag to select)",
+    "description": "Click and drag across a grid to select a rectangular block of cells, with the selection clearing on the next drag."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "medium",
+    "tags": [
+      "Games",
+      "Keyboard",
+      "State"
+    ],
+    "title": "Build Wordle",
+    "description": "Guess a five-letter word in six tries with per-letter feedback, an on-screen keyboard and correct handling of repeated letters."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Games",
+      "Algorithms",
+      "Grid"
+    ],
+    "title": "Build Tic-Tac-Toe II (N x N board, M in a row)",
+    "description": "Generalise tic-tac-toe to a configurable N x N board where M in a row wins, with an efficient win check and undo."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Games",
+      "Recursion",
+      "Grid"
+    ],
+    "title": "Build Minesweeper",
+    "description": "A board with hidden mines, numbered cells, flood-fill reveal of empty areas, flags, a first-click-safe guarantee and win/lose states."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Layout",
+      "Algorithms",
+      "Calendar"
+    ],
+    "title": "Build a Calendar Day View with overlapping events",
+    "description": "Lay out timed events on a day grid so that overlapping events share the width in columns without hiding each other."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Data fetching",
+      "Caching",
+      "Hooks"
+    ],
+    "title": "Build a data-fetching hook with caching, deduplication and retry",
+    "description": "A reusable useQuery-style hook or composable that caches by key, shares one request between callers, retries with backoff and can be invalidated."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Real-time",
+      "Performance",
+      "Throttling"
+    ],
+    "title": "Build a Live Stock Ticker with throttled updates",
+    "description": "Render a table of prices from a fast simulated WebSocket feed, batching updates per frame and flashing changed cells without dropping data."
+  },
+  {
+    "technology": "machine-coding",
+    "round": "Frontend",
+    "difficulty": "hard",
+    "tags": [
+      "Text input",
+      "Keyboard",
+      "Accessibility"
+    ],
+    "title": "Build @Mentions in a textarea",
+    "description": "Typing @ opens a filtered user list at the caret, arrow keys and Enter insert the mention, and Escape or a space closes it."
+  }
+]

@@ -92,7 +92,7 @@ Rules:
 
 /**
  * ADMIN_HELPER — platform operations copilot for staff admins.
- * Consumed by src/app/api/admin/copilot/route.ts. The giant grounded system
+ * Not used by the admin assistant (src/lib/admin/assistant), which has its own prompt. The giant grounded system
  * instruction lives in the route today (it embeds the tool catalog + HITL
  * policy); an AgentConfig row with a custom systemPrompt overrides it.
  */

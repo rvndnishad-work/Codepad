@@ -1,0 +1,22 @@
+{
+	"sysout": { "prefix": ["sysout", "sout"], "body": "System.out.println($0);", "description": "Print to standard out" },
+	"syserr": { "prefix": ["syserr", "serr"], "body": "System.err.println($0);", "description": "Print to standard err" },
+	"main": { "prefix": ["main", "psvm"], "body": ["public static void main(String[] args) {", "\t$0", "}"], "description": "main method" },
+	"class": { "prefix": "class", "body": ["public class ${1:${TM_FILENAME_BASE:Main}} {", "\t$0", "}"], "description": "class" },
+	"interface": { "prefix": "interface", "body": ["public interface ${1:Name} {", "\t$0", "}"], "description": "interface" },
+	"ctor": { "prefix": "ctor", "body": ["public ${1:${TM_FILENAME_BASE:Main}}($2) {", "\t$0", "}"], "description": "constructor" },
+	"method": { "prefix": "method", "body": ["${1|public,protected,private|} ${2:void} ${3:name}($4) {", "\t$0", "}"], "description": "method" },
+	"field": { "prefix": "field", "body": "${1|private,protected,public|} ${2:String} ${3:name};", "description": "field" },
+	"new": { "prefix": "new", "body": "${1:Object} ${2:obj} = new ${1:Object}($3);", "description": "create a new object" },
+	"fori": { "prefix": "fori", "body": ["for (int ${1:i} = 0; ${1:i} < ${2:max}; ${1:i}++) {", "\t$0", "}"], "description": "indexed for loop" },
+	"foreach": { "prefix": ["foreach", "iter"], "body": ["for (${1:var} ${2:item} : ${3:iterable}) {", "\t$0", "}"], "description": "enhanced for loop" },
+	"if": { "prefix": "if", "body": ["if (${1:condition}) {", "\t$0", "}"], "description": "if statement" },
+	"ifelse": { "prefix": "ifelse", "body": ["if (${1:condition}) {", "\t$2", "} else {", "\t$0", "}"], "description": "if/else statement" },
+	"ifnull": { "prefix": "ifnull", "body": ["if (${1:obj} == null) {", "\t$0", "}"], "description": "null check" },
+	"ifnotnull": { "prefix": "ifnotnull", "body": ["if (${1:obj} != null) {", "\t$0", "}"], "description": "not-null check" },
+	"while": { "prefix": "while", "body": ["while (${1:condition}) {", "\t$0", "}"], "description": "while loop" },
+	"dowhile": { "prefix": "dowhile", "body": ["do {", "\t$0", "} while (${1:condition});"], "description": "do-while loop" },
+	"switch": { "prefix": "switch", "body": ["switch (${1:key}) {", "\tcase ${2:value}:", "\t\t$0", "\t\tbreak;", "\tdefault:", "\t\tbreak;", "}"], "description": "switch statement" },
+	"try_catch": { "prefix": ["try_catch", "try"], "body": ["try {", "\t$1", "} catch (${2:Exception} ${3:e}) {", "\t$0", "}"], "description": "try/catch block" },
+	"try_resources": { "prefix": "try_resources", "body": ["try (${1:var resource = $2}) {", "\t$0", "} catch (${3:Exception} ${4:e}) {", "}"], "description": "try-with-resources" }
+}

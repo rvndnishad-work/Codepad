@@ -27,18 +27,23 @@ export function RoundStrip({
   items,
   className = "",
   size = "sm",
+  then = null,
 }: {
   items: { seg: Segment; name: string; here?: boolean }[];
   className?: string;
   size?: keyof typeof SIZE;
+  /** The plan continues in this ATS after its last round ("Greenhouse"). */
+  then?: string | null;
 }) {
-  const title = items.map((i, n) => `${n + 1}. ${i.name}: ${SEG[i.seg].label}${i.here ? " (this interview)" : ""}`).join("\n");
+  const lines = items.map((i, n) => `${n + 1}. ${i.name}: ${SEG[i.seg].label}${i.here ? " (this interview)" : ""}`);
+  if (then) lines.push(`Then ${then}: later rounds are not tracked here`);
+  const title = lines.join("\n");
   return (
     <span
       className={`${size === "full" ? "flex w-full gap-1" : `inline-flex ${size === "md" ? "gap-[3px]" : "gap-[2px]"} shrink-0`} items-center ${className}`}
       title={title}
       role="img"
-      aria-label={`Rounds: ${items.map((i) => `${i.name} ${SEG[i.seg].label}`).join(", ")}`}
+      aria-label={`Rounds: ${items.map((i) => `${i.name} ${SEG[i.seg].label}`).join(", ")}${then ? `, then ${then}` : ""}`}
     >
       {items.map((i, n) => (
         <span
@@ -47,6 +52,16 @@ export function RoundStrip({
           className={`block box-border ${SIZE[size]} rounded-full ${SEG[i.seg].cls} ${i.here ? "ring-2 ring-fg/60 ring-offset-1 ring-offset-surface" : ""}`}
         />
       ))}
+      {then &&
+        (size === "sm" ? (
+          <span className="text-[10px] leading-none text-subtle pl-0.5" aria-hidden>
+            →
+          </span>
+        ) : (
+          <span className="shrink-0 whitespace-nowrap pl-1 text-[11px] leading-none text-subtle" aria-hidden>
+            then {then}
+          </span>
+        ))}
     </span>
   );
 }

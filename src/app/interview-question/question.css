@@ -57,7 +57,9 @@
 .doc-anchor:focus-visible { opacity: 1; }
 .doc-anchor:hover { color: rgb(var(--c-accent)); }
 
-.qa-doc article.prose strong:not([style]) { color: rgb(var(--c-fg)); font-weight: 600; }
+/* Bold carries the key phrase of a sentence: full text colour, a little heavier
+   than the body, so it reads as emphasis in both themes. */
+.qa-doc article.prose strong:not([style]) { color: rgb(var(--c-fg)); font-weight: 650; }
 .qa-doc article.prose a:not([style]) {
   color: rgb(var(--c-accent-2));
   text-decoration: underline;
@@ -66,17 +68,19 @@
 }
 .qa-doc article.prose a:not([style]):hover { text-decoration-color: rgb(var(--c-accent-2)); }
 
-/* Inline code: quiet chip in the text colour, not a highlighter. */
+/* Inline code: a tinted chip in the second accent, so identifiers stand apart
+   from prose. The accent token is tuned per theme, so contrast holds in both. */
 .qa-doc article.prose :not(pre) > code:not([style]) {
-  padding: 0.12em 0.4em;
-  border: 1px solid rgb(var(--c-border));
+  padding: 0.1em 0.38em;
+  border: 1px solid rgb(var(--c-accent-2) / 0.22);
   border-radius: 6px;
-  background: rgb(var(--c-panel));
-  color: rgb(var(--c-fg));
+  background: rgb(var(--c-accent-2) / 0.08);
+  color: rgb(var(--c-accent-2));
   font-size: 0.86em;
   font-weight: 500;
   white-space: break-spaces;
 }
+.qa-doc article.prose a:not([style]) > code:not([style]) { text-decoration: none; }
 
 .qa-doc article.prose :where(ul, ol) { margin: 0 0 1.2em; padding-left: 1.4em; }
 .qa-doc article.prose li { margin: 0.35em 0; padding-left: 0.2em; }
@@ -144,11 +148,17 @@
 /* ---------- Code blocks ---------- */
 
 .doc-code {
+  --code-bg: #f6f8fa;
+  --code-fg: #1f2328;
   margin: 1.6em 0;
   overflow: hidden;
   border: 1px solid rgb(var(--c-border));
   border-radius: 14px;
-  background: #0b0d12; /* fixed dark: the highlight theme is github-dark */
+  background: var(--code-bg);
+}
+.dark .doc-code {
+  --code-bg: #0b0d12;
+  --code-fg: #c9d1d9;
 }
 .doc-code-bar {
   display: flex;
@@ -188,14 +198,36 @@
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--c-border-strong)) transparent;
 }
-.doc-code pre code {
+.doc-code pre code,
+.doc-code pre code.hljs {
   padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
   font-size: inherit !important;
   white-space: pre !important;
-  color: rgb(var(--c-muted));
+  color: var(--code-fg);
 }
+
+/* Syntax colours. The bundled highlight theme (github-dark) is right for the
+   dark frame; on the light frame these GitHub-light colours replace it, so no
+   token is pale-on-white. Selectors carry html:not(.dark) to outrank it. The
+   solution file viewer (.qa-code) shares them. */
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-doctag, .hljs-keyword, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-variable.language_) { color: #cf222e; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-title, .hljs-title.class_, .hljs-title.class_.inherited__, .hljs-title.function_) { color: #8250df; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-attr, .hljs-attribute, .hljs-literal, .hljs-meta, .hljs-number, .hljs-operator, .hljs-variable, .hljs-selector-attr, .hljs-selector-class, .hljs-selector-id) { color: #0550ae; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-regexp, .hljs-string, .hljs-meta .hljs-string) { color: #0a3069; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-built_in, .hljs-symbol) { color: #953800; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-comment, .hljs-code, .hljs-formula) { color: #57606a; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-name, .hljs-quote, .hljs-selector-tag, .hljs-selector-pseudo) { color: #116329; }
+html:not(.dark) :is(.doc-code, .qa-code) :is(.hljs-subst, .hljs-params, .hljs-punctuation, .hljs-property) { color: #1f2328; }
+html:not(.dark) :is(.doc-code, .qa-code) .hljs-section { color: #0550ae; font-weight: 600; }
+html:not(.dark) :is(.doc-code, .qa-code) .hljs-bullet { color: #953800; }
+html:not(.dark) :is(.doc-code, .qa-code) .hljs-addition { color: #116329; background: #dafbe1; }
+html:not(.dark) :is(.doc-code, .qa-code) .hljs-deletion { color: #82071e; background: #ffebe9; }
+
+/* Verified output: plain text, so it gets its own calm colour per theme. */
+.doc-code[data-lang="output"] pre code { color: #24292f; }
+.dark .doc-code[data-lang="output"] pre code { color: #b8c4d0; }
 
 /* The same frame for code outside the answer (examples, runners). */
 .qa-code-scroll {

@@ -153,7 +153,8 @@ self.onmessage = function (e) {
     error: function () { send('error', arguments); },
   };
   try {
-    var jsCode = ts.transpile(e.data);
+    // ES2022, not the ES5 default: ES5 output silently drops Set/Map spread and for...of over Maps.
+    var jsCode = ts.transpile(e.data, { target: ts.ScriptTarget.ES2022 });
     var fn = new Function('console', jsCode);
     var result = fn(sandbox);
     if (result !== undefined) send('log', ['=> ' + fmt(result)]);
@@ -196,12 +197,10 @@ self.onmessage = async function(e) {
         let passed = false;
         let errorMsg = null;
         try {
-          const res = await pyodide.runPythonAsync(t.expression);
-          if (res !== undefined && res !== null) {
-            actualVal = String(res);
-          } else {
-            actualVal = "None";
-          }
+          // Capture what print() shows for the expression, so True, 3.0,
+          // None and multi-argument prints compare exactly as they printed.
+          const wrapped = "import io as __io, contextlib as __cl\\n__buf = __io.StringIO()\\nwith __cl.redirect_stdout(__buf):\\n    print(" + t.expression + ")\\n__buf.getvalue()[:-1]";
+          actualVal = String(await pyodide.runPythonAsync(wrapped));
           
           const cleanExpected = t.expected.replace(/^["']|["']$/g, '');
           passed = (actualVal === t.expected || 
@@ -473,7 +472,7 @@ export default function JsPlayground({
             )}
           </div>
 
-          <div className="qa-code-scroll max-h-72 overflow-auto bg-[#0b0d12] px-4 py-3 font-mono text-[13px] leading-relaxed">
+          <div className="qa-code-scroll max-h-72 overflow-auto bg-[#f6f8fa] px-4 py-3 font-mono text-[13px] leading-relaxed text-[#1f2328] dark:bg-[#0b0d12] dark:text-[#c9d1d9]">
             {running && logs.length === 0 && testResults.every((r) => r.passed === undefined) ? (
               <div className="flex items-center gap-2 text-subtle"><Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Running…</div>
             ) : activeTab === "tests" && testCases.length > 0 ? (

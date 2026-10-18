@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
 import { prisma } from "@/lib/prisma";
+import { logAdminAction } from "@/lib/admin/audit";
+import { staffContext } from "@/app/admin/content/_lib/guard";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Params) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "content:curate"))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const ctx = await staffContext("content:curate");
+  if (!ctx) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
   const body = (await req.json().catch(() => ({}))) as { pinned?: unknown };
@@ -21,7 +19,7 @@ export async function PATCH(req: Request, { params }: Params) {
   try {
     const existing = await prisma.snippet.findUnique({
       where: { id },
-      select: { id: true, visibility: true },
+      select: { id: true, visibility: true, title: true, pinned: true },
     });
     if (!existing) {
       return NextResponse.json({ error: "Snippet not found" }, { status: 404 });
@@ -40,6 +38,15 @@ export async function PATCH(req: Request, { params }: Params) {
       where: { id },
       data: { pinned: body.pinned },
       select: { id: true, pinned: true },
+    });
+    await logAdminAction({
+      actor: ctx.actor,
+      action: body.pinned ? "content.snippet.pin" : "content.snippet.unpin",
+      targetType: "snippet",
+      targetId: id,
+      targetLabel: existing.title,
+      before: { pinned: existing.pinned },
+      after: { pinned: body.pinned },
     });
     return NextResponse.json(updated);
   } catch (error) {

@@ -7,6 +7,7 @@
  * alerts page. They never throw into the code that raised the event.
  */
 import { prisma } from "@/lib/prisma";
+import { isFeatureOn } from "@/lib/admin/switches";
 import { decryptAtRest } from "@/lib/crypto/at-rest";
 import { bodyFor, formatAlert, isAlertProvider, validateAlertUrl, type AlertMessage, type AlertProvider } from "./format";
 
@@ -87,6 +88,7 @@ async function sendToChannel(ch: ChannelRow, envelope: unknown, origin: string):
 
 /** Post one event to every active channel in the workspace that wants it. */
 export async function notifyAlertChannels(workspaceId: string, event: string, envelope: unknown, origin: string): Promise<void> {
+  if (!(await isFeatureOn("chat-notifications"))) return; // paused from admin: skip silently
   const channels = await prisma.alertChannel.findMany({
     where: { workspaceId, active: true, events: { has: event } },
     select: { id: true, provider: true, url: true, includeScore: true },

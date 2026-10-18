@@ -1,3 +1,4 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -46,6 +47,9 @@ export async function GET() {
 
 /** Create a journey: validate, generate the day plan, persist plan + items. */
 export async function POST(req: Request) {
+  // Feature switch "journeys" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("journeys");
+  if (featurePaused) return featurePaused;
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

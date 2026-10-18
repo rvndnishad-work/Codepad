@@ -26,6 +26,7 @@ export const BATCHES = [
   { key: "fe", name: "Frontend Engineer · Oct", roleTitle: "Senior Frontend Engineer", owner: "priya", deadlineDays: 14, targetHires: 2, status: "OPEN", createdDaysAgo: 12 },
   { key: "be", name: "Backend Engineer · Oct", roleTitle: "Backend Engineer (Node.js)", owner: "mei", deadlineDays: 21, targetHires: 1, status: "OPEN", createdDaysAgo: 9 },
   { key: "grad", name: "Graduate Engineers · Sep", roleTitle: "Graduate Software Engineer", owner: "priya", deadlineDays: -4, targetHires: 2, status: "CLOSED", createdDaysAgo: 30 },
+  { key: "cs", name: "Customer Success · Oct", roleTitle: "Customer Success Manager", owner: "mei", deadlineDays: 18, targetHires: 1, status: "OPEN", createdDaysAgo: 10 },
 ] as const;
 
 export type BatchKey = (typeof BATCHES)[number]["key"];
@@ -105,6 +106,12 @@ export const CANDIDATES: CandidateSeed[] = [
   { key: "nina", name: "Nina Petrova", source: "job-board", tags: ["graduate"], batch: "grad", owner: "priya", stage: "REJECTED", rejectReason: "SKILL_GAP", rejectReasonNote: "Borderline screening; strong candidates ahead of her in this intake.", addedDaysAgo: 28, stageDaysAgo: 18 },
 
   // Not in a batch yet: fresh from the careers page and the ATS
+  // Customer Success batch (non-technical plan: intro, case discussion, behavioural)
+  { key: "olivia", name: "Olivia Grant", source: "careers-page", tags: ["saas", "onboarding"], batch: "cs", owner: "mei", stage: "NEW", addedDaysAgo: 2 },
+  { key: "aisha", name: "Aisha Bello", source: "linkedin", tags: ["saas"], batch: "cs", owner: "mei", stage: "SCREENING", addedDaysAgo: 6, stageDaysAgo: 3 },
+  { key: "marcus", name: "Marcus Lee", source: "referral", tags: ["enterprise", "renewals"], batch: "cs", owner: "mei", stage: "SCREENING", addedDaysAgo: 9, stageDaysAgo: 6 },
+  { key: "leila", name: "Leila Ahmadi", source: "job-board", tags: ["support"], batch: "cs", owner: "mei", stage: "SCREENING", addedDaysAgo: 10, stageDaysAgo: 8 },
+  { key: "tom", name: "Tom Becker", source: "linkedin", tags: ["enterprise", "saas"], batch: "cs", owner: "mei", stage: "SCREENING", addedDaysAgo: 10, stageDaysAgo: 8 },
   { key: "ellis", name: "Ellis Carter", source: "careers-page", tags: ["fullstack"], batch: null, owner: "owner", stage: "NEW", addedDaysAgo: 1 },
   { key: "rhea", name: "Rhea Das", source: "ats", tags: ["data", "python"], batch: null, owner: "owner", stage: "NEW", addedDaysAgo: 0 },
   { key: "jamal", name: "Jamal Wright", source: "manual", tags: ["devops"], batch: null, owner: "owner", stage: "NEW", addedDaysAgo: 3 },
@@ -749,6 +756,8 @@ export type InterviewSeed = {
   ratings?: { CodeQuality: number; ProblemSolving: number; Communication: number };
   verdict?: "success" | "failed";
   notes?: string;
+  /** The interview wizard format ("intro", "coding", "discussion", "behavioural"). */
+  format?: string;
   /** Teammates on the panel besides the host. */
   panel?: TeamKey[];
   /** Submitted panel scorecards (1 to 4 per competency) and each one's recommendation. */
@@ -756,18 +765,26 @@ export type InterviewSeed = {
 };
 
 export const INTERVIEWS: InterviewSeed[] = [
-  { candidate: "ana", title: "Senior Frontend: live pairing", interviewer: "daniel", status: "completed", atDays: -2, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 5, ProblemSolving: 4, Communication: 4 }, verdict: "success", notes: "Handled focus return and the inert background without hints." },
-  { candidate: "ravi", title: "Senior Frontend: live pairing", interviewer: "daniel", status: "completed", atDays: -3, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 4 }, verdict: "success" },
-  { candidate: "tomasz", title: "Senior Frontend: live pairing", interviewer: "daniel", status: "scheduled", atDays: 2, minutes: 60, challenges: ["debounce"] },
-  { candidate: "yusuf", title: "Backend: system design and code", interviewer: "daniel", status: "completed", atDays: -2, minutes: 75, challenges: ["retry"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success", notes: "Designed an idempotent job queue with retries and a dead-letter table." },
-  { candidate: "dmitri", title: "Backend: system design and code", interviewer: "daniel", status: "completed", atDays: 0, minutes: 75, challenges: ["lru"] },
-  { candidate: "chloe", title: "Backend: system design and code", interviewer: "mei", status: "scheduled", atDays: 1, minutes: 75, challenges: ["lru"] },
-  { candidate: "samuel", title: "Graduate: pair programming", interviewer: "daniel", status: "completed", atDays: -20, minutes: 45, challenges: ["lru"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success" },
+  { candidate: "ana", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", status: "completed", atDays: -2, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 5, ProblemSolving: 4, Communication: 4 }, verdict: "success", notes: "Handled focus return and the inert background without hints." },
+  { candidate: "ravi", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", status: "completed", atDays: -3, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 4 }, verdict: "success" },
+  { candidate: "tomasz", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", status: "scheduled", atDays: 2, minutes: 60, challenges: ["debounce"] },
+  { candidate: "yusuf", title: "Backend: system design and code", format: "coding", interviewer: "daniel", status: "completed", atDays: -2, minutes: 75, challenges: ["retry"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success", notes: "Designed an idempotent job queue with retries and a dead-letter table." },
+  { candidate: "dmitri", title: "Backend: system design and code", format: "coding", interviewer: "daniel", status: "completed", atDays: 0, minutes: 75, challenges: ["lru"] },
+  { candidate: "chloe", title: "Backend: system design and code", format: "coding", interviewer: "mei", status: "scheduled", atDays: 1, minutes: 75, challenges: ["lru"] },
+  { candidate: "samuel", title: "Graduate: pair programming", format: "coding", interviewer: "daniel", status: "completed", atDays: -20, minutes: 45, challenges: ["lru"], ratings: { CodeQuality: 4, ProblemSolving: 4, Communication: 3 }, verdict: "success" },
   // One of each outcome the Interviews list shows: not passed, waiting for a decision, waiting for a scorecard, cancelled.
-  { candidate: "kofi", title: "Senior Frontend: live pairing", interviewer: "daniel", status: "completed", atDays: -4, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 2, ProblemSolving: 2, Communication: 3 }, verdict: "failed", notes: "Could not get focus handling working and did not test the close paths." },
-  { candidate: "lena", title: "Senior Frontend: live pairing", interviewer: "daniel", panel: ["priya"], status: "completed", atDays: -1, minutes: 60, challenges: ["debounce"], verdict: "success", scorecards: [{ by: "daniel", ratings: [4, 3, 3], recommendation: "yes" }, { by: "priya", ratings: [3, 3, 3], recommendation: "unsure" }] },
-  { candidate: "grace", title: "Senior Frontend: live pairing", interviewer: "daniel", panel: ["mei"], status: "completed", atDays: 0, minutes: 60, challenges: ["debounce"], scorecards: [{ by: "daniel", ratings: [3, 3, 4], recommendation: "yes" }] },
-  { candidate: "arjun", title: "Backend: system design and code", interviewer: "mei", status: "cancelled", atDays: 1, minutes: 75, challenges: ["retry"] },
+  { candidate: "kofi", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", status: "completed", atDays: -4, minutes: 60, challenges: ["modal"], ratings: { CodeQuality: 2, ProblemSolving: 2, Communication: 3 }, verdict: "failed", notes: "Could not get focus handling working and did not test the close paths." },
+  { candidate: "lena", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", panel: ["priya"], status: "completed", atDays: -1, minutes: 60, challenges: ["debounce"], verdict: "success", scorecards: [{ by: "daniel", ratings: [4, 3, 3], recommendation: "yes" }, { by: "priya", ratings: [3, 3, 3], recommendation: "unsure" }] },
+  { candidate: "grace", title: "Senior Frontend: live pairing", format: "coding", interviewer: "daniel", panel: ["mei"], status: "completed", atDays: 0, minutes: 60, challenges: ["debounce"], scorecards: [{ by: "daniel", ratings: [3, 3, 4], recommendation: "yes" }] },
+  { candidate: "arjun", title: "Backend: system design and code", format: "coding", interviewer: "mei", status: "cancelled", atDays: 1, minutes: 75, challenges: ["retry"] },
+  // Customer Success: one person at each point of the non-technical plan.
+  { candidate: "aisha", title: "Customer Success: intro chat", format: "intro", interviewer: "mei", status: "scheduled", atDays: 1, minutes: 30, challenges: [] },
+  { candidate: "marcus", title: "Customer Success: intro chat", format: "intro", interviewer: "mei", status: "completed", atDays: -5, minutes: 30, challenges: [], scorecards: [{ by: "mei", ratings: [4, 3, 4], recommendation: "yes" }] },
+  { candidate: "leila", title: "Customer Success: intro chat", format: "intro", interviewer: "mei", status: "completed", atDays: -7, minutes: 30, challenges: [], scorecards: [{ by: "mei", ratings: [3, 3, 4], recommendation: "yes" }] },
+  { candidate: "leila", title: "Customer Success: renewal case", format: "discussion", interviewer: "priya", panel: ["mei"], status: "completed", atDays: -1, minutes: 60, challenges: [], scorecards: [{ by: "priya", ratings: [2, 2, 3], recommendation: "no" }, { by: "mei", ratings: [2, 3, 2], recommendation: "unsure" }] },
+  { candidate: "tom", title: "Customer Success: intro chat", format: "intro", interviewer: "mei", status: "completed", atDays: -8, minutes: 30, challenges: [], scorecards: [{ by: "mei", ratings: [4, 4, 4], recommendation: "yes" }] },
+  { candidate: "tom", title: "Customer Success: renewal case", format: "discussion", interviewer: "priya", status: "completed", atDays: -5, minutes: 60, challenges: [], scorecards: [{ by: "priya", ratings: [4, 3, 4], recommendation: "yes" }] },
+  { candidate: "tom", title: "Customer Success: behavioural", format: "behavioural", interviewer: "mei", status: "completed", atDays: -2, minutes: 45, challenges: [], scorecards: [{ by: "mei", ratings: [3, 4, 4], recommendation: "yes" }] },
 ];
 
 /* ── Prompt tasks (Question library) ───────────────────────────────────── */

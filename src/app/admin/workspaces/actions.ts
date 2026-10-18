@@ -1,52 +1,18 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { staffCan } from "@/lib/permissions/staff";
-import { prisma } from "@/lib/prisma";
-import { collectRecordingKeys, deleteRecordingKeys } from "@/lib/recording/objects-server";
 import { revalidatePath } from "next/cache";
+import { requireAdminAccess } from "@/lib/permissions/staff";
+import { changePlan } from "@/lib/admin/workspace-actions";
 
 /**
- * Site Admin Action: Manually override a B2B workspace's subscription tier.
+ * Change a workspace plan. Goes through Stripe and the audit log (see
+ * changePlan in src/lib/admin/workspace-actions.ts). The old hard delete and
+ * the LOCKED plan are gone: use Lock and Schedule deletion on the workspace
+ * page instead.
  */
-export async function updateWorkspacePlanAction(workspaceId: string, planName: string) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
-
-  if (!workspaceId || !planName) {
-    throw new Error("Missing workspace ID or plan name.");
-  }
-
-  await prisma.workspace.update({
-    where: { id: workspaceId },
-    data: { planName },
-  });
-
-  revalidatePath("/admin/workspaces");
-  return { success: true };
-}
-
-/**
- * Site Admin Action: Hard delete a workspace for support cleanups or non-payment.
- */
-export async function deleteWorkspaceAction(workspaceId: string) {
-  const session = await auth().catch(() => null);
-  if (!(await staffCan(session, "platform:admin"))) {
-    throw new Error("Unauthorized: Platform administrator access required.");
-  }
-
-  if (!workspaceId) {
-    throw new Error("Missing workspace ID.");
-  }
-
-  const recordingKeys = await collectRecordingKeys({ workspaceId });
-  await prisma.workspace.delete({
-    where: { id: workspaceId },
-  });
-  await deleteRecordingKeys(recordingKeys);
-
-  revalidatePath("/admin/workspaces");
-  return { success: true };
+export async function updateWorkspacePlanAction(workspaceId: string, planName: string, note: string) {
+  const session = await requireAdminAccess("platform:admin");
+  const res = await changePlan({ actor: { id: session?.user?.id, email: session?.user?.email } }, workspaceId, planName, note);
+  if (res.ok) revalidatePath("/admin/workspaces", "layout");
+  return res;
 }

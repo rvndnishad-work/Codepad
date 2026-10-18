@@ -1,9 +1,13 @@
+import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isInterviewerFor } from "@/lib/interview/wizard";
 
 export async function GET(req: NextRequest) {
+  // Feature switch "video-addon" (admin > Feature switches): 503 while paused.
+  const featurePaused = await featureBlockedResponse("video-addon");
+  if (featurePaused) return featurePaused;
   try {
     const session = await auth().catch(() => null);
     if (!session?.user?.id) {

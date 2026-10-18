@@ -137,7 +137,7 @@ export default function DashboardSidebar({
             </p>
             <Link
               href="/w/create"
-              className="gx-btn-star flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-[#ffd166] to-[#ff2fb3] py-2.5 text-[10px] font-black uppercase tracking-wider text-[#14092b]"
+              className="gx-btn-star flex w-full items-center justify-center gap-1 rounded-xl bg-[#f5c518] py-2.5 text-[10px] font-black uppercase tracking-wider text-[#0f1730] dark:bg-gradient-to-r dark:from-[#ffd166] dark:to-[#ff2fb3] dark:text-[#14092b]"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={3} />
               <span>Found a Station</span>

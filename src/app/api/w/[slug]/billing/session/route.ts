@@ -6,7 +6,7 @@ import { getStripe } from "@/lib/stripe";
 import { canMember } from "@/lib/permissions";
 import { checkoutSeatChargeCents } from "@/lib/billing/plans";
 import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
-import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
+import { getEffectivePricing, getEffectiveStarterPrice, starterSeatChargeCents } from "@/lib/billing/pricing-copy-store";
 import { NextResponse } from "next/server";
 
 export async function POST(
@@ -83,7 +83,10 @@ export async function POST(
     // page and Stripe agree. Annual plans bill once a year, so the amount is
     // twelve discounted months.
     const pricing = await getEffectivePricing();
-    const priceAmount = checkoutSeatChargeCents(isStarter ? "STARTER" : "GROWTH", cadence, pricing.growth);
+    // Starter is legacy but its seat price can be overridden in /admin/pricing too.
+    const priceAmount = isStarter
+      ? starterSeatChargeCents(cadence, await getEffectiveStarterPrice())
+      : checkoutSeatChargeCents("GROWTH", cadence, pricing.growth);
 
     const productName = isStarter
       ? "Interviewpad Starter Workspace Seats"

@@ -33,7 +33,8 @@ export default function WowFinal() {
 
   return (
     // A closing CTA band, not a footer: the global <Footer /> renders right
-    // after it and owns the links, socials and copyright.
+    // after it and owns the links, socials and copyright. Yellow in both
+    // themes, with navy type on light.
     <section ref={root} className="wow-noise relative overflow-hidden bg-accent text-accent-ink">
       {/* morphing SVG waves on top edge. Wave 2 scrubs right by 12% of its
           own width, so it starts pulled left by more than that to keep its
@@ -53,10 +54,10 @@ export default function WowFinal() {
         </h2>
 
         <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-center">
-          <Link href="/login" className="group flex w-fit items-center gap-2 rounded-full bg-accent-ink px-9 py-4 text-sm font-semibold text-accent transition hover:scale-[1.02]">
+          <Link href="/login" className="group flex w-fit items-center gap-2 rounded-full bg-ink px-9 py-4 text-sm font-semibold text-ink-fg transition dark:bg-accent-ink dark:text-accent hover:scale-[1.02]">
             Create free account <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
-          <Link href="/challenges" className="flex w-fit items-center gap-2 rounded-full border-2 border-accent-ink px-9 py-[14px] text-sm font-semibold transition hover:bg-accent-ink hover:text-accent">
+          <Link href="/challenges" className="flex w-fit items-center gap-2 rounded-full border-2 border-ink px-9 py-[14px] text-sm font-semibold transition hover:bg-ink hover:text-ink-fg dark:border-accent-ink dark:hover:bg-accent-ink dark:hover:text-accent">
             Browse challenges
           </Link>
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest md:ml-auto md:items-end">

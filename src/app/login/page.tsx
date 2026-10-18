@@ -42,6 +42,13 @@ export default async function LoginPage({
               You were signed out by your workspace&apos;s security settings. Sign in again to continue.
             </p>
           )}
+          {(reason === "suspended" || reason === "deleted") && (
+            <p role="status" className="mb-4 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-muted">
+              {reason === "suspended"
+                ? "This account is suspended. Contact support if you think this is a mistake."
+                : "This account has been deleted."}
+            </p>
+          )}
           <AuthCard
             providers={providers}
             next={safeNext}

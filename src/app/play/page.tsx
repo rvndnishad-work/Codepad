@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import PlaygroundLoader from "@/components/PlaygroundLoader";
 import { templatesById } from "@/lib/templates";
 import { auth } from "@/lib/auth";
@@ -17,11 +18,14 @@ export default async function NewPlaygroundPage({
   const backHref =
     from && from.startsWith("/interview-question") && !from.startsWith("//") ? from : undefined;
   return (
-    <PlaygroundLoader
-      templateId={templateId}
-      signedIn={Boolean(session?.user)}
-      backHref={backHref}
-    />
+    <>
+      <FeaturePaused featureKey="playground-run" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
+      <PlaygroundLoader
+        templateId={templateId}
+        signedIn={Boolean(session?.user)}
+        backHref={backHref}
+      />
+    </>
   );
 }
 

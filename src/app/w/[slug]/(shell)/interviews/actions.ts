@@ -24,7 +24,11 @@ import { videoCallsOn } from "@/lib/video/addon";
 import { closeVideoRoomAfter } from "@/lib/video/close-after";
 import { recordingConfigured } from "@/lib/recording/live-server";
 import { loadCandidateRounds } from "@/lib/interview/rounds-server";
-import { roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
+import { normalizeRoleType, roleTypesFor, roundStateLabel, suggestLiveRound } from "@/lib/interview/rounds";
+import { setCandidatePlan, workspaceHiringType } from "@/lib/interview/plans-server";
+import { CandidateError, resolveCandidateActor } from "@/lib/crm/candidates-server";
+import { cancelUpcomingInterview, resendInterviewInvite } from "@/lib/interview/invite-server";
+import { canChangeInterview, mayChangeInterview, newTimeProblem } from "@/lib/interview/reschedule";
 import {
   offersGuide,
   formatOf,
@@ -500,6 +504,119 @@ export async function deleteInterviewAction(slug: string, id: string): Promise<R
   }
 }
 
+/** Loads an interview that can still be moved or cancelled, and checks the caller may. */
+async function changeableInterview(a: Awaited<ReturnType<typeof loadActor>>, id: string) {
+  const s = await prisma.interviewSession.findFirst({
+    where: { id: String(id).slice(0, 40), workspaceId: a.workspace.id, type: { not: "take-home" } },
+    select: {
+      id: true,
+      userId: true,
+      createdById: true,
+      title: true,
+      format: true,
+      totalSec: true,
+      interviewerBrief: true,
+      status: true,
+      startedAt: true,
+      finishedAt: true,
+      scheduledAt: true,
+      candidateName: true,
+      candidateId: true,
+      user: { select: { name: true, email: true } },
+      guests: { select: { email: true } },
+    },
+  });
+  if (!s) throw new ActionError("This interview no longer exists.");
+  const member = a.workspace.members.find((m) => m.userId === a.userId)!;
+  if (!mayChangeInterview(s, a.userId, await canMember(member, "interview:manage"))) {
+    throw new ActionError("Only the host, whoever set it up, or someone who manages interviews can change it.");
+  }
+  if (!canChangeInterview(s)) throw new ActionError("This interview has started, finished or been cancelled, so it can no longer be changed.");
+  return s;
+}
+
+/**
+ * Moves an interview that has not started to a new time. The calendar event
+ * follows; with `notify`, the candidate and any emailed interviewers get the
+ * new time and a fresh link (the old link stops working after the old time).
+ */
+export async function rescheduleInterviewAction(
+  slug: string,
+  id: string,
+  input: { at: string; notify: boolean },
+): Promise<Result<{ emailed: boolean; note: string | null }>> {
+  try {
+    const a = await loadActor(slug);
+    const s = await changeableInterview(a, id);
+    const at = new Date(String(input?.at ?? ""));
+    const problem = newTimeProblem(at);
+    if (problem) throw new ActionError(problem);
+    const moved = await prisma.interviewSession.updateMany({
+      where: { id: s.id, status: "scheduled", startedAt: null },
+      data: { scheduledAt: at },
+    });
+    if (!moved.count) throw new ActionError("This interview has just started or been cancelled.");
+    await syncInterviewEvent(s.id);
+
+    let emailed = false;
+    let note: string | null = null;
+    if (input?.notify) {
+      const res = await resendInterviewInvite({ workspaceId: a.workspace.id, sessionId: s.id, actor: { userId: a.userId, email: a.email } });
+      if (res.ok && res.sent) emailed = true;
+      else note = res.ok ? "The email could not be sent. Copy the new link for the candidate instead." : res.error;
+      if (s.guests.length) {
+        await inviteGuests({
+          workspaceId: a.workspace.id,
+          emails: s.guests.map((g) => g.email),
+          rooms: [{ id: s.id, candidateName: s.candidateName, scheduledAt: at }],
+          title: s.title,
+          format: s.format,
+          minutes: Math.round(s.totalSec / 60),
+          hostName: s.user.name || s.user.email || "the host",
+          inviterName: a.name,
+          brief: s.interviewerBrief,
+          origin: await appOrigin(),
+        });
+      }
+    }
+    void writeWorkspaceAuditEntry({
+      workspaceId: a.workspace.id,
+      actorUserId: a.userId,
+      actorEmail: a.email,
+      action: WORKSPACE_AUDIT_ACTIONS.INTERVIEW_RESCHEDULED,
+      targetType: "interviewSession",
+      targetId: s.id,
+      meta: { candidateName: s.candidateName, from: s.scheduledAt?.toISOString() ?? null, to: at.toISOString(), notified: emailed },
+    });
+    revalidatePath(`/w/${slug}/interviews`, "layout");
+    if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
+    return { ok: true, emailed, note };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Cancels an interview that has not started. The report and notes stay. */
+export async function cancelInterviewAction(slug: string, id: string, input: { notify: boolean }): Promise<Result> {
+  try {
+    const a = await loadActor(slug);
+    const s = await changeableInterview(a, id);
+    const done = await cancelUpcomingInterview({
+      workspaceId: a.workspace.id,
+      sessionId: s.id,
+      actor: { userId: a.userId, email: a.email },
+      reason: "Cancelled from Interviews",
+      notifyCandidate: !!input?.notify,
+    });
+    if (!done) throw new ActionError("This interview has just started or been cancelled.");
+    revalidatePath(`/w/${slug}/interviews`, "layout");
+    if (s.candidateId) revalidatePath(`/w/${slug}/candidates/${s.candidateId}`);
+    return { ok: true };
+  } catch (err) {
+    return fail(err);
+  }
+}
+
 export type RoundChoice = {
   planName: string | null;
   /** Rounds held out of the total, for "2 of 4 done". */
@@ -509,13 +626,51 @@ export type RoundChoice = {
   suggested: string | null;
 };
 
+/** Someone with no plan: whether a plan can be picked for them here, and why not. */
+export type NoPlan = { canPick: true } | { canPick: false; reason: string };
+
+/** A plan that can be picked for people with none. */
+export type PlanOption = { id: string; name: string; live: number; total: number; isDefault: boolean };
+
 /** Each candidate's live rounds for the wizard's Round step, with the one we suggest. */
-export async function candidateRoundChoicesAction(slug: string, candidateIds: string[], format: string | null): Promise<Result<{ choices: Record<string, RoundChoice> }>> {
+export async function candidateRoundChoicesAction(
+  slug: string,
+  candidateIds: string[],
+  format: string | null,
+): Promise<Result<{ choices: Record<string, RoundChoice>; noPlan: Record<string, NoPlan>; plans: PlanOption[] }>> {
   try {
     const a = await loadActor(slug);
     const ids = [...new Set(candidateIds.filter((x) => typeof x === "string" && x.length <= 40))].slice(0, MAX_CANDIDATES);
     const plans = await loadCandidateRounds(a.workspace.id, slug, ids);
     const choices: Record<string, RoundChoice> = {};
+    // People with no rounds yet can be given a plan here, unless a batch plan or a decision says otherwise.
+    const missing = ids.filter((id) => !plans.get(id)?.progress.rounds.some((r) => r.kind === "interview"));
+    const noPlan: Record<string, NoPlan> = {};
+    let planOptions: PlanOption[] = [];
+    if (missing.length) {
+      const [people, hiring, all] = await Promise.all([
+        prisma.candidate.findMany({
+          where: { workspaceId: a.workspace.id, id: { in: missing } },
+          select: { id: true, stage: true, status: true, batch: { select: { name: true, planId: true } } },
+        }),
+        workspaceHiringType(a.workspace.id),
+        prisma.interviewPlan.findMany({
+          where: { workspaceId: a.workspace.id },
+          orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+          select: { id: true, name: true, roleType: true, isDefault: true, rounds: { select: { kind: true } } },
+        }),
+      ]);
+      const allowed = roleTypesFor(hiring);
+      planOptions = all
+        .filter((p) => allowed.includes(normalizeRoleType(p.roleType)))
+        .map((p) => ({ id: p.id, name: p.name, live: p.rounds.filter((r) => r.kind === "interview").length, total: p.rounds.length, isDefault: p.isDefault }));
+      for (const c of people) {
+        if (c.batch?.planId) noPlan[c.id] = { canPick: false, reason: `Their batch ${c.batch.name} has a plan with no live interview round.` };
+        else if (c.status === "archived") noPlan[c.id] = { canPick: false, reason: "Archived, so no plan is added." };
+        else if (c.stage !== "NEW" && c.stage !== "SCREENING") noPlan[c.id] = { canPick: false, reason: "Already decided, so no plan is added." };
+        else noPlan[c.id] = { canPick: true };
+      }
+    }
     for (const [id, p] of plans) {
       const live = p.progress.rounds.filter((r) => r.kind === "interview");
       choices[id] = {
@@ -526,8 +681,21 @@ export async function candidateRoundChoicesAction(slug: string, candidateIds: st
         suggested: suggestLiveRound(p.progress, format),
       };
     }
-    return { ok: true, choices };
+    return { ok: true, choices, noPlan, plans: planOptions };
   } catch (err) {
+    return fail(err);
+  }
+}
+
+/** Gives one person with no plan an interview plan, from the Round step. Needs `candidate:write`. */
+export async function pickCandidatePlanAction(slug: string, candidateId: string, planId: string): Promise<Result> {
+  try {
+    const actor = await resolveCandidateActor(slug, "candidate:write");
+    await setCandidatePlan(actor, String(candidateId).slice(0, 40), String(planId).slice(0, 40));
+    revalidatePath(`/w/${slug}/candidates`, "layout");
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof CandidateError) return { ok: false, error: err.message };
     return fail(err);
   }
 }

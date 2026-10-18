@@ -43,7 +43,7 @@ import { RESULT_KIND_LABELS } from "@/lib/crm/results";
 import { WAITING_KEYS, WAITING_LABELS, type WaitingKey } from "@/lib/interview/rounds-view";
 import { RoundsBadge, RoundsCell } from "./RoundsCell";
 import { RoundLegend, RoundStrip } from "./RoundStrip";
-import { roundsBadge, roundsLine, stripItems } from "@/lib/interview/rounds-view";
+import { roundsBadge, roundsLine, stripItems, thenLabel } from "@/lib/interview/rounds-view";
 import { plural, sourceLabel } from "@/lib/workspace/display";
 import { bulkCandidatesAction } from "../manage-actions";
 import type { BulkAction } from "@/lib/crm/candidates-server";
@@ -258,7 +258,9 @@ export function CandidatesView({
         toast(r.error, "error");
         return;
       }
-      toast(done(r.changed), "ok", undo ? () => run(ids, undo, () => "Undone") : undefined);
+      // Restoring does not bring cancelled interviews back, so say so.
+      const called = r.interviewsCancelled ? `, ${r.interviewsCancelled === 1 ? "1 upcoming interview" : `${r.interviewsCancelled} upcoming interviews`} cancelled` : "";
+      toast(done(r.changed) + called, "ok", undo ? () => run(ids, undo, () => (called ? "Restored. Book the interview again if needed" : "Undone")) : undefined);
       if (op.action === "archive" || op.action === "restore" || op.action === "erase") setSelected(new Set());
       router.refresh();
     });
@@ -819,7 +821,7 @@ export function CandidatesView({
       {confirm === "archive" && (
         <ConfirmDialog
           title={`Archive ${plural(selected.size, "candidate")}?`}
-          body="They leave the list and the board but keep their history and results. You can restore them from Saved views, Show archived."
+          body="They leave the list and the board but keep their history and results. Interviews still to come are cancelled and they are told by email. You can restore them from Saved views, Show archived."
           confirmLabel="Archive"
           onCancel={() => setConfirm(null)}
           onConfirm={() => {
@@ -832,7 +834,7 @@ export function CandidatesView({
       {confirm === "erase" && (
         <ConfirmDialog
           title={`Erase ${plural(selected.size, "candidate")} for good?`}
-          body="This removes them and their notes permanently and replaces their name on past take-homes, interviews and screenings with Erased candidate. Scores stay for reporting. This cannot be undone."
+          body="This removes them and their notes permanently and replaces their name on past take-homes, interviews and screenings with Erased candidate. Interviews still to come are cancelled. Scores stay for reporting. This cannot be undone."
           confirmLabel="Erase"
           danger
           requireText="erase"
@@ -1020,7 +1022,7 @@ function ListTable({
                 </div>
                 {r.rounds && r.rounds.total > 0 && (
                   <div className="xl:hidden flex items-center gap-2 mt-2 min-w-0">
-                    <RoundStrip items={stripItems(r.rounds)} />
+                    <RoundStrip items={stripItems(r.rounds)} then={thenLabel(r.rounds)} />
                     <span className="text-xs text-muted truncate">{roundsLine(r.rounds)}</span>
                   </div>
                 )}

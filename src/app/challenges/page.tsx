@@ -1,3 +1,4 @@
+import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import ChallengeList, { type ChallengeListItem } from "./ChallengeList";
@@ -97,6 +98,7 @@ export default async function ChallengesPage() {
 
   return (
     <>
+      <FeaturePaused featureKey="challenges" wrapperClassName="mx-auto w-full max-w-6xl px-4 pt-4" />
       <ChallengesHero stats={heroStats} />
       <ContinueStrip userId={userId ?? null} />
       <FeaturedShelf />

@@ -23,6 +23,7 @@ import { deliverWebhook } from "./deliver";
 import { hasAlertChannels, notifyAlertChannels } from "@/lib/alerts/send";
 import { buildEnvelope, newEventId } from "./envelope";
 import { runEventListeners } from "./listeners";
+import type { AtsRound } from "@/lib/interview/rounds-view";
 
 export type EventCandidate = { id?: string | null; name?: string | null; email?: string | null };
 
@@ -49,7 +50,18 @@ export type EventPayloads = {
     rejectReason?: string | null;
     /** Set when a recruiter passed someone over failing results. */
     manualOverride?: string | null;
+    /** The candidate's interview rounds and results, when they follow a plan. */
+    rounds?: { plan: string | null; continuesIn: string | null; list: AtsRound[] } | null;
     decidedBy?: { email: string | null; via?: string } | null;
+    reportPath?: string;
+  };
+  "round.waiting": {
+    candidate: EventCandidate;
+    /** "next_step": a result waits for move on or stop. "next_round": moved on, the next round is not sent or booked. */
+    waiting: "next_step" | "next_round";
+    round: { id: string; name: string; number: number | null; total: number; kind: string; state: string };
+    /** "above bar, 82%" for next_step; null otherwise. */
+    result?: string | null;
     reportPath?: string;
   };
   "invite.bounced": {

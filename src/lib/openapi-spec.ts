@@ -56,7 +56,7 @@ tags:
   - name: Workspace
     description: Recruiter workspace — candidates, members, integrations, billing, take-home.
   - name: Admin
-    description: Admin-only management (users, challenges, blogs, interviews, copilot, TTS).
+    description: Admin-only management (users, challenges, blogs, interviews, assistant, TTS).
   - name: MCP
     description: Model Context Protocol JSON-RPC endpoints (workspace API key auth).
   - name: Webhooks
@@ -773,13 +773,13 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     patch:
       tags: [Admin]
-      summary: Update a user (ban, type, etc.)
+      summary: Edit a user's profile (name, email, bio, hire-me link, portfolio). Suspension and deletion are admin console actions.
       security: [{ session: [] }]
       requestBody: { content: { application/json: { schema: { $ref: "#/components/schemas/GenericObject" } } } }
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
     delete:
       tags: [Admin]
-      summary: Delete a user
+      summary: Permanently delete a user (platform admin, typed confirmation required)
       security: [{ session: [] }]
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
   /api/admin/snippets/{id}:
@@ -870,24 +870,30 @@ paths:
       summary: Delete an interview (admin)
       security: [{ session: [] }]
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
-  /api/admin/copilot:
+  /api/admin/assistant/chat:
     post:
       tags: [Admin]
-      summary: Admin operations copilot (Gemma RAG) query
+      summary: Ask the admin assistant (named tools; writes only through approval cards)
       security: [{ session: [] }]
-      requestBody: { content: { application/json: { schema: { type: object, properties: { message: { type: string } } } } } }
+      requestBody: { content: { application/json: { schema: { type: object, properties: { conversationId: { type: string }, message: { type: string } } } } } }
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
-  /api/admin/copilot/alerts-count:
+  /api/admin/assistant/approve:
+    post:
+      tags: [Admin]
+      summary: Approve an assistant proposal card
+      security: [{ session: [] }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { messageId: { type: string } } } } } }
+      responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
+  /api/admin/assistant/dismiss:
+    post:
+      tags: [Admin]
+      summary: Dismiss an assistant proposal card
+      security: [{ session: [] }]
+      responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
+  /api/admin/assistant/alerts-count:
     get:
       tags: [Admin]
-      summary: Count of open copilot alerts
-      security: [{ session: [] }]
-      responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
-  /api/admin/copilot/blog-preview/{id}:
-    parameters: [{ $ref: "#/components/parameters/Id" }]
-    get:
-      tags: [Admin]
-      summary: Preview an AI-drafted blog
+      summary: Count of open assistant alerts
       security: [{ session: [] }]
       responses: { "200": { $ref: "#/components/responses/OkResponse" }, "403": { $ref: "#/components/responses/Forbidden" } }
   /api/admin/tts:

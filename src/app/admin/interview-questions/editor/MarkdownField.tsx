@@ -75,7 +75,7 @@ export default function MarkdownField({
         type="button"
         onClick={() => setMode(m)}
         title={title}
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider transition ${
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition ${
           mode === m ? "bg-accent text-bg" : "text-muted hover:text-fg hover:bg-elevated"
         }`}
       >
@@ -112,7 +112,7 @@ export default function MarkdownField({
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-2 px-2 py-1.5 border-b border-border bg-bg/60">
           <div className="flex items-center gap-1 min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted px-2 whitespace-nowrap">{label}</span>
+            <span className="text-xs font-semibold text-muted px-2 whitespace-nowrap">{label}</span>
             {mode !== "preview" && (
               <div className="flex items-center gap-0.5 border-l border-border pl-1.5 overflow-x-auto">
                 {tools.map((tool) => (
@@ -147,8 +147,8 @@ export default function MarkdownField({
         )}
       </div>
       <div className="flex items-center justify-between mt-1 px-1">
-        <p className="text-[10px] text-muted">{hint ?? "Markdown — GFM tables, code fences and inline SVG supported."}</p>
-        <span className="text-[10px] text-muted tabular-nums">{value.length.toLocaleString()} chars</span>
+        <p className="text-xs text-muted">{hint ?? "Markdown — GFM tables, code fences and inline SVG supported."}</p>
+        <span className="text-xs text-muted tabular-nums">{value.length.toLocaleString()} chars</span>
       </div>
     </div>
   );

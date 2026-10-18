@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, X } from "lucide-react";
 import { saveCompany, deleteCompany } from "../actions";
+import ConfirmButton from "../../content/_components/ConfirmButton";
 
 export type CompanyRow = {
   id: string;
@@ -19,7 +20,7 @@ export type CompanyRow = {
 };
 
 const field = "w-full px-3 py-2 rounded-lg border border-border bg-bg text-sm focus:outline-none focus:border-accent/50";
-const label = "text-[10px] font-black uppercase tracking-widest text-muted mb-1.5 block";
+const label = "text-xs font-semibold text-muted mb-1.5 block";
 
 const blank: CompanyRow = {
   id: "", name: "", slug: "", logo: "", description: "", website: "", industry: "", hiringRoles: "",
@@ -57,7 +58,7 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
     <div className="space-y-5">
       <button
         onClick={() => setEditing({ ...blank })}
-        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft"
+        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent text-bg text-xs font-semibold hover:bg-accent-soft"
       >
         <Plus className="w-4 h-4" /> Add company
       </button>
@@ -78,14 +79,14 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
           <div><label className={label}>Frequently asked roles (comma separated)</label><input value={editing.hiringRoles} onChange={setE("hiringRoles")} className={field} placeholder="SDE, Frontend Engineer" /></div>
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 rounded-lg border border-border text-sm font-bold text-muted">Cancel</button>
-            <button disabled={pending} className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-black uppercase tracking-wider disabled:opacity-60">{pending ? "Saving…" : "Save"}</button>
+            <button disabled={pending} className="px-4 py-2 rounded-lg bg-accent text-bg text-sm font-semibold disabled:opacity-60">{pending ? "Saving…" : "Save"}</button>
           </div>
         </form>
       )}
 
       <div className="rounded-2xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-bg/50 text-[10px] font-black uppercase tracking-wider text-muted">
+          <thead className="bg-bg/50 text-xs font-semibold text-muted">
             <tr>
               <th className="text-left p-3">Company</th>
               <th className="text-left p-3 hidden sm:table-cell">Questions</th>
@@ -98,20 +99,25 @@ export default function CompanyManager({ companies }: { companies: CompanyRow[] 
               <tr key={c.id} className="hover:bg-bg/30">
                 <td className="p-3">
                   <div className="font-bold">{c.name}</div>
-                  <div className="text-[11px] text-muted">/{c.slug}</div>
+                  <div className="text-xs text-muted">/{c.slug}</div>
                 </td>
                 <td className="p-3 hidden sm:table-cell text-muted">{c.questionCount}</td>
                 <td className="p-3 hidden sm:table-cell text-muted">{c.experienceCount}</td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-1.5">
                     <button onClick={() => setEditing(c)} className="p-1.5 rounded-md hover:bg-bg text-muted hover:text-accent" title="Edit"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button
-                      onClick={() => {
-                        if (!confirm(`Delete ${c.name}? Its questions/experiences will be unlinked.`)) return;
-                        start(async () => { await deleteCompany(c.id); router.refresh(); });
-                      }}
-                      className="p-1.5 rounded-md hover:bg-rose-500/10 text-muted hover:text-rose-500" title="Delete"
-                    ><Trash2 className="w-3.5 h-3.5" /></button>
+                    <ConfirmButton
+                      action={deleteCompany.bind(null, c.id)}
+                      label="Delete"
+                      confirmLabel="Delete company"
+                      prompt={
+                        c.questionCount > 0
+                          ? `${c.questionCount} questions use ${c.name}, so it cannot be deleted yet.`
+                          : `Delete ${c.name}?${c.experienceCount ? ` ${c.experienceCount} experiences will keep the name but lose the link.` : ""}`
+                      }
+                      tone="danger"
+                      disabled={c.questionCount > 0}
+                    />
                   </div>
                 </td>
               </tr>

@@ -8,6 +8,7 @@ export const WORKSPACE_EVENTS = [
   "takehome.submitted",
   "interview.completed",
   "candidate.decided",
+  "round.waiting",
   "invite.bounced",
 ] as const;
 
@@ -21,6 +22,7 @@ export const EVENT_DESCRIPTIONS: Record<WorkspaceEvent, string> = {
   "takehome.submitted": "A candidate submits a take home.",
   "interview.completed": "An interviewer ends a live interview.",
   "candidate.decided": "A recruiter marks a candidate Passed or Not passed.",
+  "round.waiting": "An interview round needs a next step, or a candidate moved on and their next round is not sent or booked.",
   "invite.bounced": "An invite or reminder email to a candidate bounced.",
 };
 
@@ -58,6 +60,10 @@ export function summarizeDelivery(event: string, payload: unknown): string {
     case "candidate.decided": {
       const d = data.decision === "passed" ? "Passed" : data.decision === "not_passed" ? "Not passed" : null;
       return [name, d].filter(Boolean).join(", ") || "Decision recorded";
+    }
+    case "round.waiting": {
+      const round = str(obj(data.round).name);
+      return [name, round, data.waiting === "next_round" ? "next round due" : "needs next step"].filter(Boolean).join(", ");
     }
     case "screening.completed":
       return [name, "AI screening"].filter(Boolean).join(", ");

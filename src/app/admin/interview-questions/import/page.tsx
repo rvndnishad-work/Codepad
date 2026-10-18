@@ -14,7 +14,7 @@ export default async function ImportPage() {
       </Link>
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight">Bulk import questions</h1>
-        <p className="text-sm text-muted mt-1">Upload a JSON array or CSV. Companies are matched by name or slug.</p>
+        <p className="text-sm text-muted mt-1">Upload a JSON array or CSV of up to 500 rows. Companies are matched by name or slug. Status must be draft, published or archived (published when left out).</p>
       </div>
       <BulkImport />
     </div>

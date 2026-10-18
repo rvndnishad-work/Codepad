@@ -66,6 +66,39 @@ const config: Config = {
            their own alpha, so they stay as plain vars. */
         rule: "var(--rule)",
         grid: "var(--grid)",
+        /* Pastel clay fills from the light theme reference (dimmed on
+           dark). Tiles and illustrations only, always with fg text. */
+        clay: {
+          pink: "rgb(var(--c-clay-pink) / <alpha-value>)",
+          sky: "rgb(var(--c-clay-sky) / <alpha-value>)",
+          ice: "rgb(var(--c-clay-ice) / <alpha-value>)",
+          slate: "rgb(var(--c-clay-slate) / <alpha-value>)",
+        },
+      },
+
+      /* Surfaces take the accent's FILL step (secondary likewise). On dark it equals --accent;
+         on light it is the golden yellow, while text-accent keeps the deep
+         gold text step (see globals.css). Only DEFAULT is overridden, so
+         accent-3/4/soft and the opacity modifiers work as before. */
+      backgroundColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      fill: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      borderColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      ringColor: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
+      },
+      gradientColorStops: {
+        accent: { DEFAULT: "rgb(var(--c-accent-fill) / <alpha-value>)" },
+        secondary: { DEFAULT: "rgb(var(--c-accent-2-fill) / <alpha-value>)" },
       },
       fontFamily: {
         sans: [
@@ -111,6 +144,8 @@ const config: Config = {
            than a blurred glass bubble. Defined per theme in globals.css — on
            dark a black drop is invisible, so the token swaps to an edge ring. */
         "panel": "var(--shadow-panel)",
+        /* Light theme cards: the soft navy drop of the clay reference. */
+        "clay": "var(--shadow-clay)",
       },
       backgroundImage: {
         "grid-pattern":

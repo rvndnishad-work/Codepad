@@ -267,7 +267,7 @@ export default function AdminTodosConsole({
   return (
     <div className="space-y-6 font-sans">
       <div>
-        <h1 className="text-3xl font-black tracking-tight text-fg flex items-center gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-fg flex items-center gap-2">
           <ClipboardList className="w-7 h-7 text-accent" /> Platform Todos
         </h1>
         <p className="text-sm text-muted/80 mt-1 max-w-2xl leading-relaxed">
@@ -312,7 +312,7 @@ export default function AdminTodosConsole({
         <button
           type="submit"
           disabled={!newTitle.trim() || isCreating}
-          className="px-4 py-2 rounded-xl bg-accent text-bg text-xs font-black uppercase tracking-wider hover:bg-accent-soft transition disabled:opacity-50 flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl bg-accent text-bg text-xs font-semibold hover:bg-accent-soft transition disabled:opacity-50 flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" />
           Add
@@ -324,7 +324,7 @@ export default function AdminTodosConsole({
           <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setFilterCategory("ALL")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                 filterCategory === "ALL"
                   ? "bg-accent/15 border-accent/30 text-accent"
                   : "bg-bg border-border/40 text-muted hover:text-fg"
@@ -336,7 +336,7 @@ export default function AdminTodosConsole({
               <button
                 key={c}
                 onClick={() => setFilterCategory(c)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
                   filterCategory === c
                     ? "bg-accent/15 border-accent/30 text-accent"
                     : "bg-bg border-border/40 text-muted hover:text-fg"
@@ -414,16 +414,16 @@ function KanbanColumn({
       }`}
     >
       <div className="p-3 border-b border-border/60 flex items-center justify-between">
-        <h2 className="text-[11px] font-black uppercase tracking-widest text-fg">
+        <h2 className="text-xs font-semibold text-fg">
           {column.label}
         </h2>
-        <span className="text-[10px] font-bold tabular-nums text-muted bg-bg px-2 py-0.5 rounded-full border border-border/60">
+        <span className="text-xs font-bold tabular-nums text-muted bg-bg px-2 py-0.5 rounded-full border border-border/60">
           {cards.length}
         </span>
       </div>
       <div className="p-2 flex-1 flex flex-col gap-2 overflow-y-auto max-h-[70vh]">
         {cards.length === 0 ? (
-          <div className="text-[11px] text-muted/60 italic text-center py-6">
+          <div className="text-xs text-muted/60 italic text-center py-6">
             {column.id === "BACKLOG" ? "Nothing captured yet." : "Drop cards here."}
           </div>
         ) : (
@@ -520,7 +520,7 @@ function CardView({
         )}
         <div className="flex-1 min-w-0">
           {todo.ticketKey && (
-            <div className="text-[9px] font-mono font-bold text-accent/80 tracking-wider mb-0.5">
+            <div className="text-xs font-mono font-bold text-accent/80 mb-0.5">
               {todo.ticketKey}
             </div>
           )}
@@ -548,19 +548,19 @@ function CardView({
 
       <div className="flex items-center gap-1 flex-wrap pt-1">
         <span
-          className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${priorityCls}`}
+          className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${priorityCls}`}
         >
           {todo.priority}
         </span>
         {todo.category && (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border bg-surface text-[9px] font-bold uppercase tracking-wider text-muted">
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border bg-surface text-xs font-bold text-muted">
             <Tag className="w-2.5 h-2.5" />
             {todo.category}
           </span>
         )}
         {acTotal > 0 && (
           <span
-            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[9px] font-bold tracking-wider ${
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-xs font-bold ${
               acDone === acTotal
                 ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
                 : "border-border bg-surface text-muted"
@@ -687,12 +687,12 @@ function TicketDetailModal({
         <div className="p-5 border-b border-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {todo.ticketKey && (
-              <span className="font-mono text-xs font-bold text-accent tracking-wider px-2 py-1 rounded-md bg-accent/10 border border-accent/30 shrink-0">
+              <span className="font-mono text-xs font-bold text-accent px-2 py-1 rounded-md bg-accent/10 border border-accent/30 shrink-0">
                 {todo.ticketKey}
               </span>
             )}
             <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-wider ${STATUS_STYLES[todo.status] ?? STATUS_STYLES.BACKLOG}`}
+              className={`inline-flex items-center px-1.5 py-0.5 rounded border text-xs font-bold ${STATUS_STYLES[todo.status] ?? STATUS_STYLES.BACKLOG}`}
             >
               {todo.status.replace("_", " ")}
             </span>
@@ -700,7 +700,7 @@ function TicketDetailModal({
           <div className="flex items-center gap-1">
             <button
               onClick={() => onDelete(todo)}
-              className="px-2.5 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-[10px] font-bold uppercase tracking-wider transition"
+              className="px-2.5 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs font-bold transition"
             >
               <Trash2 className="w-3 h-3 inline mr-1" />
               Delete
@@ -781,7 +781,7 @@ function TicketDetailModal({
                     <button
                       key={col.id}
                       onClick={() => handleStatusChange(col.id)}
-                      className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border transition ${
+                      className={`px-2 py-1 rounded-md text-xs font-semibold border transition ${
                         todo.status === col.id
                           ? STATUS_STYLES[col.id]
                           : "border-border bg-bg text-muted hover:text-fg"
@@ -799,7 +799,7 @@ function TicketDetailModal({
                     <button
                       key={p}
                       onClick={() => handlePriorityChange(p)}
-                      className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border transition ${
+                      className={`px-2 py-1 rounded-md text-xs font-semibold border transition ${
                         todo.priority === p
                           ? PRIORITY_STYLES[p]
                           : "border-border bg-bg text-muted hover:text-fg"
@@ -823,7 +823,7 @@ function TicketDetailModal({
                 />
               </MetaSection>
 
-              <div className="border-t border-border pt-4 space-y-2 text-[11px] text-muted">
+              <div className="border-t border-border pt-4 space-y-2 text-xs text-muted">
                 <MetaInline icon={<Calendar className="w-3 h-3" />} label="Created">
                   {new Date(todo.createdAt).toLocaleString()}
                 </MetaInline>
@@ -863,7 +863,7 @@ function MetaSection({
 }) {
   return (
     <div className="space-y-1.5">
-      <div className="text-[10px] font-black uppercase text-muted tracking-wider flex items-center gap-1">
+      <div className="text-xs font-semibold text-muted flex items-center gap-1">
         {icon} {label}
       </div>
       {children}
@@ -998,10 +998,10 @@ function EditableField({
 
   return (
     <div className="space-y-1.5">
-      <div className="text-[10px] font-black uppercase text-muted tracking-wider flex items-center gap-1">
+      <div className="text-xs font-semibold text-muted flex items-center gap-1">
         {icon} {label}
         {isSaving && (
-          <span className="ml-auto text-[9px] text-muted/60 normal-case font-medium tracking-normal">
+          <span className="ml-auto text-xs text-muted/60 normal-case font-medium tracking-normal">
             saving…
           </span>
         )}
@@ -1041,7 +1041,7 @@ function EditableField({
             }}
             placeholder={placeholder}
             className={`w-full px-3 py-2 rounded-xl border border-accent/40 bg-bg text-fg focus:outline-none focus:border-accent ${
-              large ? "text-xl font-black tracking-tight" : "text-sm"
+              large ? "text-xl font-semibold tracking-tight" : "text-sm"
             }`}
           />
         )
@@ -1050,7 +1050,7 @@ function EditableField({
           type="button"
           onClick={() => setEditing(true)}
           className={`w-full text-left px-3 py-2 rounded-xl border border-border/40 bg-bg/40 hover:bg-bg hover:border-border transition cursor-text ${
-            large ? "text-xl font-black tracking-tight text-fg" : "text-sm"
+            large ? "text-xl font-semibold tracking-tight text-fg" : "text-sm"
           } ${!value ? "text-muted/60 italic" : "text-fg"}`}
         >
           <div className={multiline ? "whitespace-pre-line leading-relaxed" : ""}>
@@ -1137,17 +1137,17 @@ function AcceptanceCriteriaSection({
 
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-black uppercase text-muted tracking-wider flex items-center gap-1">
+      <div className="text-xs font-semibold text-muted flex items-center gap-1">
         <ListChecks className="w-3.5 h-3.5" /> Acceptance criteria
         {list.length > 0 && (
-          <span className="ml-auto text-[10px] text-muted/70 normal-case font-medium tracking-normal">
+          <span className="ml-auto text-xs text-muted/70 normal-case font-medium tracking-normal">
             {done} / {list.length} done
           </span>
         )}
       </div>
 
       {list.length === 0 && (
-        <div className="text-[11px] text-muted/60 italic px-3 py-2 rounded-lg border border-dashed border-border/50">
+        <div className="text-xs text-muted/60 italic px-3 py-2 rounded-lg border border-dashed border-border/50">
           No acceptance criteria yet. Add the first one below.
         </div>
       )}
@@ -1249,7 +1249,7 @@ function LinkedTicketsSection({
 
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-black uppercase text-muted tracking-wider flex items-center gap-1">
+      <div className="text-xs font-semibold text-muted flex items-center gap-1">
         <Link2 className="w-3.5 h-3.5" /> Linked tickets
       </div>
       <div className="rounded-lg border border-border bg-bg/40 p-3 space-y-2.5">
@@ -1296,7 +1296,7 @@ function LinkedRow({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-muted/80 w-[88px] shrink-0 pt-1">
+      <div className="text-xs font-bold text-muted/80 w-[88px] shrink-0 pt-1">
         {label}
       </div>
       <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
@@ -1305,7 +1305,7 @@ function LinkedRow({
             key={t.id}
             type="button"
             onClick={() => onOpenLinked(t.id)}
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10.5px] font-semibold hover:brightness-125 transition max-w-full ${tone}`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold hover:brightness-125 transition max-w-full ${tone}`}
             title={t.title}
           >
             <span className="font-mono shrink-0">{t.ticketKey ?? "—"}</span>

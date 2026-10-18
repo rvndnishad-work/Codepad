@@ -5011,7 +5011,7 @@ def to_int32(v):                               # what a 32-bit int would hold
 
 lo, hi = 2_000_000_000, 2_100_000_000
 print("lo=" + str(lo) + " hi=" + str(hi))
-print("naive 32-bit mid:", int(to_int32(lo + hi) / 2))  # Python ints never overflow; simulated
+print("naive 32-bit mid:", int(to_int32(lo + hi) / 2))
 print("safe mid:", lo + (hi - lo) // 2)`,
           },
         ],

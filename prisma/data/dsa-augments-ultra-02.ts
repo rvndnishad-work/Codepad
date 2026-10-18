@@ -2244,16 +2244,16 @@ class LinkedList:
         return " -> ".join(parts + ["null"])
 
 lst = LinkedList()
-print("empty:            " + str(lst))  # empty:            null
+print("empty:            " + str(lst))
 lst.push_front(20)
 lst.push_front(10)
 lst.push_back(40)
-print("after pushes:     " + str(lst))  # after pushes:     10 -> 20 -> 40 -> null
+print("after pushes:     " + str(lst))
 lst.insert_after(lst.find(20), 30)
-print("insert 30 after 20: " + str(lst))  # insert 30 after 20: 10 -> 20 -> 30 -> 40 -> null
-print("remove 10: " + str(lst.remove(10)).lower() + "  -> " + str(lst))  # remove 10: true  -> 20 -> 30 -> 40 -> null
-print("remove 40: " + str(lst.remove(40)).lower() + "  -> " + str(lst))  # remove 40: true  -> 20 -> 30 -> null
-print("remove 99: " + str(lst.remove(99)).lower() + " -> " + str(lst))  # remove 99: false -> 20 -> 30 -> null
+print("insert 30 after 20: " + str(lst))
+print("remove 10: " + str(lst.remove(10)).lower() + "  -> " + str(lst))
+print("remove 40: " + str(lst.remove(40)).lower() + "  -> " + str(lst))
+print("remove 99: " + str(lst.remove(99)).lower() + " -> " + str(lst))
 lst.push_back(50)
 print("push_back 50:     " + str(lst) + "  (size " + str(lst.size) + ")")  # push_back 50:     20 -> 30 -> 50 -> null  (size 3)`,
           },
@@ -4035,13 +4035,13 @@ for item in arrivals:
     queue.append(item)     # enqueue at the back
 
 print("arrivals:     " + " ".join(arrivals))  # arrivals:     A B C D
-print("stack peek:   " + stack[-1])  # stack peek:   D
-print("queue peek:   " + queue[0])  # queue peek:   A
+print("stack peek:   " + stack[-1])
+print("queue peek:   " + queue[0])
 
 out = []
 while stack:
     out.append(stack.pop())        # pop from the top (the end)
-print("stack pops:   " + " ".join(out) + "   (LIFO)")  # stack pops:   D C B A   (LIFO)
+print("stack pops:   " + " ".join(out) + "   (LIFO)")
 
 out = []
 while queue:

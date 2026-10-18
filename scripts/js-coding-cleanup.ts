@@ -207,6 +207,7 @@ const REASSIGNS: Reassign[] = [
   { oldTitle: "Partition Array", newTitle: "Partition Array", newRound: "DSA", newDifficulty: "medium" },
   { oldTitle: "Priority queue binary heap", newTitle: "Priority queue binary heap", newRound: "Low-Level Design", newDifficulty: "medium" },
   { oldTitle: "Promise Retry with Backoff", newTitle: "Promise Retry with Backoff", newRound: "Frontend", newDifficulty: "medium" },
+  { oldTitle: "Async batch load queues", newTitle: "Build a Dataloader-Style Batching Utility That Coalesces Individual Async Calls", newRound: "Low-Level Design", newDifficulty: "medium" },
   { oldTitle: "Promise Timeout", newTitle: "Promise Timeout", newRound: "Frontend", newDifficulty: "easy" },
   { oldTitle: "Pub-Sub topic structures", newTitle: "Pub-Sub topic structures", newRound: "Frontend", newDifficulty: "easy" },
   { oldTitle: "Query String Generator", newTitle: "Query String Generator", newRound: "Frontend", newDifficulty: "medium" },

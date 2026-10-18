@@ -153,7 +153,8 @@ self.onmessage = function (e) {
     error: function () { send('error', arguments); },
   };
   try {
-    var jsCode = ts.transpile(e.data);
+    // ES2022, not the ES5 default: ES5 output silently drops Set/Map spread and for...of over Maps.
+    var jsCode = ts.transpile(e.data, { target: ts.ScriptTarget.ES2022 });
     var fn = new Function('console', jsCode);
     var result = fn(sandbox);
     if (result !== undefined) send('log', ['=> ' + fmt(result)]);
@@ -196,12 +197,10 @@ self.onmessage = async function(e) {
         let passed = false;
         let errorMsg = null;
         try {
-          const res = await pyodide.runPythonAsync(t.expression);
-          if (res !== undefined && res !== null) {
-            actualVal = String(res);
-          } else {
-            actualVal = "None";
-          }
+          // Capture what print() shows for the expression, so True, 3.0,
+          // None and multi-argument prints compare exactly as they printed.
+          const wrapped = "import io as __io, contextlib as __cl\\n__buf = __io.StringIO()\\nwith __cl.redirect_stdout(__buf):\\n    print(" + t.expression + ")\\n__buf.getvalue()[:-1]";
+          actualVal = String(await pyodide.runPythonAsync(wrapped));
           
           const cleanExpected = t.expected.replace(/^["']|["']$/g, '');
           passed = (actualVal === t.expected || 

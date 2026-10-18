@@ -11,6 +11,7 @@ import { PrismaClient } from "@prisma/client";
 import { readdirSync } from "fs";
 import { join } from "path";
 import { pathToFileURL } from "url";
+import { applyUltra, isUltraFile, loadUltra } from "./lib/apply-ultra";
 import type { AiAugment } from "./data/ai-augments.types";
 
 const prisma = new PrismaClient();
@@ -18,7 +19,7 @@ const prisma = new PrismaClient();
 async function loadAugments(): Promise<AiAugment[]> {
   const dir = join(process.cwd(), "prisma", "data");
   const files = readdirSync(dir)
-    .filter((f) => /^ai-augments.*\.ts$/.test(f) && !f.includes("types"))
+    .filter((f) => /^ai-augments.*\.ts$/.test(f) && !f.includes("types") && !isUltraFile(f))
     .sort();
 
   const all: AiAugment[] = [];
@@ -31,7 +32,9 @@ async function loadAugments(): Promise<AiAugment[]> {
 }
 
 async function main() {
-  const items = await loadAugments();
+  const ultra = await loadUltra("ai");
+  const ultraTitles = new Set(ultra.map((u) => u.title));
+  const items = (await loadAugments()).filter((a) => !ultraTitles.has(a.title));
 
   let updated = 0;
   const notFound: string[] = [];
@@ -55,7 +58,11 @@ async function main() {
     updated++;
   }
 
-  console.log(`Augmented ${updated}/${items.length} AI Engineering questions.`);
+  const u = await applyUltra(prisma, "ai-engineering", ultra, (ex) => ex);
+  updated += u.updated;
+  notFound.push(...u.notFound);
+  console.log(`Applied ${u.updated} AI Engineering answers with the full treatment.`);
+  console.log(`Augmented ${updated}/${items.length + ultra.length} AI Engineering questions.`);
   if (notFound.length) console.log(`No exact-title match for ${notFound.length}:`, notFound);
   await prisma.$disconnect();
   process.exit(0);

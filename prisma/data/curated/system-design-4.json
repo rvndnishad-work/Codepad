@@ -1,0 +1,80 @@
+[
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "easy",
+    "tags": [
+      "fundamentals",
+      "estimation"
+    ],
+    "title": "What latency numbers and availability targets should every engineer know?",
+    "description": "Order-of-magnitude latencies (memory, SSD, network, cross-region), what 99.9% vs 99.99% allows per month, and using them in estimates."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "easy",
+    "tags": [
+      "networking",
+      "dns"
+    ],
+    "title": "How does DNS resolution work?",
+    "description": "Recursive and authoritative resolvers, caching and TTLs, record types, and DNS-based load balancing and failover."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "easy",
+    "tags": [
+      "networking",
+      "proxy"
+    ],
+    "title": "What is the difference between a reverse proxy and a forward proxy?",
+    "description": "Who each proxy represents, what reverse proxies do (TLS termination, caching, routing), and how they relate to load balancers and API gateways."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "hard",
+    "tags": [
+      "collaboration",
+      "crdt",
+      "real-time"
+    ],
+    "title": "How would you design a collaborative editor like Google Docs?",
+    "description": "Real-time co-editing with operational transforms or CRDTs, presence, offline edits, and document storage."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "hard",
+    "tags": [
+      "scheduler",
+      "queues"
+    ],
+    "title": "How would you design a distributed job scheduler?",
+    "description": "Scheduling millions of delayed and recurring jobs: storage, leasing, at-least-once execution, retries and exactly-once side effects."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "hard",
+    "tags": [
+      "media",
+      "feed"
+    ],
+    "title": "How would you design Instagram?",
+    "description": "Photo upload and storage, feed generation, follows, likes and comments at scale, with media delivery through a CDN."
+  },
+  {
+    "technology": "system-design",
+    "round": "System Design",
+    "difficulty": "hard",
+    "tags": [
+      "booking",
+      "concurrency"
+    ],
+    "title": "How would you design a ticket booking system like Ticketmaster?",
+    "description": "Flash-sale traffic, seat holds with expiry, no double booking, queues and fairness, and payment hand-off."
+  }
+]

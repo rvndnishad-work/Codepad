@@ -5027,8 +5027,8 @@ print("same result: " + str(a == b).lower())  # same result: true
 print("buggy two-step assignment: " + serialize(invert_buggy(build(values))))  # buggy two-step assignment: [4, 7, 7, 9, 9, 9, 9]
 
 bst = build([4, 2, 7, 1, 3, 6, 9])
-print("BST inorder:      " + str(inorder(bst)))  # BST inorder:      [1, 2, 3, 4, 6, 7, 9]
-print("inverted inorder: " + str(inorder(invert_iterative(bst))))  # inverted inorder: [9, 7, 6, 4, 3, 2, 1]
+print("BST inorder:      " + str(inorder(bst)))
+print("inverted inorder: " + str(inorder(invert_iterative(bst))))
 
 chain = None
 for v in range(100000):                  # every node has only a left child
@@ -7231,7 +7231,7 @@ for v in range(1, 50001):
     left_end.left = TreeNode(v)
     right_end.right = TreeNode(v)
     left_end, right_end = left_end.left, right_end.right
-print("V tree of 100001 nodes, iterative: " + str(is_symmetric_iterative(root)).lower())  # V tree of 100001 nodes, iterative: true
+print("V tree of 100001 nodes, iterative: " + str(is_symmetric_iterative(root)).lower())
 right_end.val = -1                              # break the mirror at the very bottom
 print("same tree with one leaf changed, iterative: " + str(is_symmetric_iterative(root)).lower())  # same tree with one leaf changed, iterative: false
 `,

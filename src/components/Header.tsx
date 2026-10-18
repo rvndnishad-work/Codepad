@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { isRecruiterHost } from "@/lib/domains";
 import { auth } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions/staff";
 import { userCan } from "@/lib/permissions/access";
@@ -17,6 +19,8 @@ import ThemeToggle from "./ThemeToggle";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
+  const hdrs = await headers();
+  const recruiterSite = isRecruiterHost(hdrs.get("x-forwarded-host") ?? hdrs.get("host"));
   const user = session?.user;
   const showAdmin = await isStaff(session);
   const showCreator = user?.id ? await userCan(user.id, "content:author") : false;
@@ -242,10 +246,11 @@ export default async function Header() {
           blogStatus={blogStatus}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
+          recruiterSite={recruiterSite}
         />
 
         {/* Desktop: logo links to home */}
-        <HeaderLogo />
+        <HeaderLogo recruiterSite={recruiterSite} />
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">

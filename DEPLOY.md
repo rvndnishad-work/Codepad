@@ -132,6 +132,46 @@ The admin account is whatever email you put in `ADMIN_EMAILS` — sign in with i
 
 ---
 
+## Developer and recruiter domains
+
+One Vercel project serves both sites. The proxy (`src/proxy.ts` with
+`src/lib/domains.ts`) looks at the domain of each request:
+
+| Request | What happens |
+| :--- | :--- |
+| Recruiter page (`/w`, `/pricing`, `/features`, `/take-home`, `/ai-interview`, `/invite`, `/docs`, `/share/screening`, `/purchase`) on the developer domain | Redirect to the same path on the recruiter domain |
+| Developer page (`/challenges`, `/interview-questions`, `/playgrounds`, `/blog`, `/c`, `/u`, `/dashboard`, ...) on the recruiter domain | Redirect to the same path on the developer domain |
+| `/` on the recruiter domain | Shows the `/hire` page; `/hire` there redirects to `/` |
+| `/sitemap.xml`, `/robots.txt` on the recruiter domain | The recruiter sitemap and robots |
+| Old domain in `LEGACY_SITE_HOSTS` | Redirect to whichever new domain owns the page; `/api/*` is served as is so webhooks and OAuth callbacks keep working |
+| Shared pages (`/login`, `/interview/*`, `/join`, `/admin`, `/api`, legal) | Served on either domain |
+
+Nothing changes until `RECRUITER_SITE_URL` is set. Redirects are 307 until
+`DOMAIN_REDIRECTS_PERMANENT=true`. Preview deployments (`*.vercel.app`) and
+localhost are never redirected.
+
+**Production env vars**
+
+| Var | Value |
+| :--- | :--- |
+| `NEXT_PUBLIC_SITE_URL` | `https://<developer-domain>` |
+| `RECRUITER_SITE_URL` | `https://<recruiter-domain>` |
+| `LEGACY_SITE_HOSTS` | the old domain, e.g. `interviewpad.in` (if it is not one of the two) |
+| `NEXTAUTH_URL`, `AUTH_URL` | **delete both**. Auth.js rewrites every auth request to that URL, which would send recruiter sign-ins to the developer domain. `AUTH_TRUST_HOST=true` makes it use the domain the visitor is on. |
+
+Sessions are per domain: someone who uses both sites signs in on each.
+Recruiter-facing links (invites, take-home, AI screening, interview rooms,
+workspace emails) are built on `RECRUITER_SITE_URL`.
+
+**OAuth and integrations:** add `https://<recruiter-domain>/api/auth/callback/google`
+(and `/facebook`) next to the developer one. A GitHub OAuth app accepts only one
+callback host, so GitHub sign-in on the recruiter domain needs a second GitHub
+OAuth app (follow-up). Slack, Google/Microsoft calendar and Stripe return URLs
+for workspaces now use the recruiter domain: add those redirect URLs in each
+provider. Webhooks can stay on the old domain while it is in `LEGACY_SITE_HOSTS`.
+
+---
+
 ## Notes & follow-ups
 - **Local dev now needs Postgres too** (the schema provider is `postgresql`). Run a local
   Postgres or use a Neon dev branch; set `DATABASE_URL`/`DIRECT_URL` in `.env`. This keeps the

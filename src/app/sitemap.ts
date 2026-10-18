@@ -1,7 +1,8 @@
-import { siteOrigin } from "@/lib/site-url";
+import { recruiterConfiguredOrigin, siteOrigin } from "@/lib/site-url";
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { TECHNOLOGIES } from "@/lib/interview-questions/shared";
+import { siteForPath } from "@/lib/domains";
 
 const SITE_URL = siteOrigin();
 
@@ -87,7 +88,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] DB unavailable, emitting static routes only:", err);
   }
 
-  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((r) => ({
+  // Once the recruiter site has its own domain, its pages are listed in that
+  // domain's sitemap (src/app/sitemap-recruiter.xml) instead of this one.
+  const split = !!recruiterConfiguredOrigin();
+  const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.filter(
+    (r) => !split || siteForPath(r.path) !== "recruiter",
+  ).map((r) => ({
     url: `${SITE_URL}${r.path}`,
     lastModified: now,
     changeFrequency: r.changeFrequency,

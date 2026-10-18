@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoDynamic from "./LogoDynamic";
 
-export default function HeaderLogo() {
+/** `recruiterSite` is true on the recruiter domain, where "/" is the recruiter home. */
+export default function HeaderLogo({ recruiterSite = false }: { recruiterSite?: boolean }) {
   const pathname = usePathname();
   const isAdminPage = pathname?.startsWith("/admin");
   // Recruiter/hiring view carries the indigo (secondary) brand mark.
-  const isRecruiter = pathname?.startsWith("/hire") || pathname?.startsWith("/w");
+  const isRecruiter = recruiterSite || pathname?.startsWith("/hire") || pathname?.startsWith("/w");
 
   return (
     <Link

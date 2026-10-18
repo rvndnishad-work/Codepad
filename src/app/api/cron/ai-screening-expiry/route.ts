@@ -1,4 +1,4 @@
-import { configuredOrigin, originFromHeaders, siteOrigin } from "@/lib/site-url";
+import { configuredOrigin, originFromHeaders, recruiterConfiguredOrigin, recruiterOrigin } from "@/lib/site-url";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCronRun } from "@/lib/admin/cron-run";
@@ -33,7 +33,7 @@ import { deliverInvite } from "@/lib/ai-interview/invites";
  */
 async function run(req: NextRequest) {
 
-  const origin = configuredOrigin() ?? originFromHeaders(req.headers) ?? siteOrigin();
+  const origin = recruiterConfiguredOrigin() ?? configuredOrigin() ?? originFromHeaders(req.headers) ?? recruiterOrigin();
   const now = Date.now();
 
   // Candidates in flight: started, never finished, still ACTIVE.

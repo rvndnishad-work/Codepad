@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { siteOrigin } from "@/lib/site-url";
+import { recruiterOrigin } from "@/lib/site-url";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { actionLabel } from "@/lib/admin/audit";
 import { fmtScore, parseCriteria, parseRatings, scorecardAverage } from "@/lib/interview/scorecard";
@@ -119,7 +119,7 @@ export default async function AdminInterviewDetailPage({ params }: { params: Pro
       .join(", ");
 
   const st = interviewStatus(s.status);
-  const shareUrl = `${siteOrigin()}/interview/${s.id}?token=${s.shareToken}`;
+  const shareUrl = `${recruiterOrigin()}/interview/${s.id}?token=${s.shareToken}`;
   const candidate = s.candidate?.name || s.candidateName;
   const submitted = s.scorecards.filter((c) => c.status === "submitted");
   const averages = submitted

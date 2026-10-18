@@ -28,7 +28,7 @@ type Props = {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   return {
-    title: `Email activity · ${slug} — Interviewpad`,
+    title: `Email activity · ${slug}`,
     robots: { index: false, follow: false },
   };
 }

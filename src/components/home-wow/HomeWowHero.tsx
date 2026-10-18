@@ -199,7 +199,7 @@ export default function HomeWowHero({
 
         {showPersonaSwitch && (
           <Link href="/hire" className="wow-hero-fade group mt-5 inline-flex items-center gap-2 rounded-full border border-fg/20 bg-fg/[0.06] px-6 py-3 font-mono text-xs uppercase tracking-[0.12em] text-fg/80 backdrop-blur-md transition hover:border-fg/40 hover:text-fg">
-            Hiring? Interviewpad for teams
+            Hiring? Intervutree for teams
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         )}

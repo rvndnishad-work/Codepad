@@ -1,5 +1,5 @@
 /**
- * Static reference catalog for the Interviewpad MCP server.
+ * Static reference catalog for the Intervutree MCP server.
  *
  * Source of truth for the public /docs/mcp page. Each entry mirrors what
  * `buildMcpServer()` actually registers — keep them in sync when adding a new
@@ -224,7 +224,7 @@ export const MCP_PUBLIC_TOOLS: ToolCatalogEntry[] = [
     title: "Describe pricing",
     scope: "read",
     description:
-      "Returns the credit pack tiers (id, credits, price, ≈ per-screening rate). For up-to-date plan pricing visit https://interviewpad.in/pricing.",
+      "Returns the credit pack tiers (id, credits, price, ≈ per-screening rate). For up-to-date plan pricing visit https://intervutree.com/pricing.",
     example: "describe_pricing()",
   },
 ];

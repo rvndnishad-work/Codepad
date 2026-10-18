@@ -89,8 +89,8 @@ export async function POST(
       : checkoutSeatChargeCents("GROWTH", cadence, pricing.growth);
 
     const productName = isStarter
-      ? "Interviewpad Starter Workspace Seats"
-      : "Interviewpad Growth Workspace Seats";
+      ? "Intervutree Starter Workspace Seats"
+      : "Intervutree Growth Workspace Seats";
 
     const productDescription = isStarter
       ? "Per-seat premium team workspace licenses (Starter Tier)."

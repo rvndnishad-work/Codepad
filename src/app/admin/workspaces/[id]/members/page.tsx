@@ -7,7 +7,7 @@ import { getAdminWorkspace } from "../_data";
 import { Empty, ListFilters, Pager, Pill, Table, fmtDate, one, td, urlWith } from "../_ui";
 import { MemberActions, RevokeInvite } from "./MemberActions";
 
-export const metadata = { title: "Workspace members — Interviewpad Admin" };
+export const metadata = { title: "Workspace members — Admin" };
 
 const PAGE_SIZE = 50;
 

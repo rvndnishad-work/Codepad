@@ -37,12 +37,12 @@ export async function generateMetadata({ params }: Props) {
   const data = await getPortfolioData(id);
 
   if (!data || !data.portfolioPublic) {
-    return { title: "Portfolio — Interviewpad" };
+    return { title: "Portfolio" };
   }
 
   return {
     title: `${data.name ?? "Developer"} — Portfolio & Badges`,
-    description: `${data.name ?? "A developer"}'s public verified portfolio and achievements on Interviewpad.`,
+    description: `${data.name ?? "A developer"}'s public verified portfolio and achievements on DevPrep.`,
   };
 }
 

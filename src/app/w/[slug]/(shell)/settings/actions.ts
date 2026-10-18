@@ -71,7 +71,7 @@ export async function saveWorkspaceSettingsAction(
   const slugChange = changes.find((c) => c.field === "slug");
   if (slugChange) {
     const next = slugChange.value as string;
-    if (isReservedSlug(next)) errors.slug = "That web address is kept for Interviewpad pages. Try another.";
+    if (isReservedSlug(next)) errors.slug = "That web address is kept for Intervutree pages. Try another.";
     const [takenBy, redirectBy] = await Promise.all([
       prisma.workspace.findUnique({ where: { slug: next }, select: { id: true } }),
       prisma.workspaceSlugRedirect.findUnique({ where: { oldSlug: next }, select: { workspaceId: true } }),

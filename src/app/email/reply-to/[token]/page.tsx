@@ -3,7 +3,7 @@ import { replyToTokenFresh } from "@/lib/workspace/candidate-experience";
 import EmailLinkCard, { primaryBtn } from "../../EmailLinkCard";
 import { confirmReplyToAction } from "../../actions";
 
-export const metadata = { title: "Confirm reply-to address · Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Confirm reply-to address", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 type Props = {
@@ -50,7 +50,7 @@ export default async function ConfirmReplyToPage({ params, searchParams }: Props
   return (
     <EmailLinkCard title="Confirm this reply-to address">
       <p>
-        When candidates of <span className="text-fg font-medium">{ws.name}</span> reply to an email from Interviewpad, the reply will go to{" "}
+        When candidates of <span className="text-fg font-medium">{ws.name}</span> reply to an email from Intervutree, the reply will go to{" "}
         <span className="text-fg font-medium break-all">{ws.replyToEmail}</span>.
       </p>
       <form action={confirmReplyToAction}>

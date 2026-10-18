@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 
 const SITE_URL = siteOrigin();
 
-const SITE_NAME = "Interviewpad";
+const SITE_NAME = "DevPrep";
 const FEED_DESCRIPTION =
-  "Articles, tutorials, and deep-dives on JavaScript, TypeScript, React, and modern web tooling from the Interviewpad community.";
+  "Articles, tutorials, and deep-dives on JavaScript, TypeScript, React, and modern web tooling from the DevPrep community.";
 
 export const revalidate = 600;
 

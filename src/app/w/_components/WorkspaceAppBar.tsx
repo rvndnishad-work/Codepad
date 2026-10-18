@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandWordmark } from "@/components/brand/BrandLogo";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -187,10 +188,10 @@ export default function WorkspaceAppBar({ current, workspaces, user, isAdmin, me
         </button>
       )}
 
-      <Link href="/w" aria-label="Interviewpad workspaces" className="flex items-center gap-1.5 shrink-0 text-fg">
+      <Link href="/w" aria-label="Intervutree workspaces" className="flex items-center gap-1.5 shrink-0 text-fg">
         <LogoDynamicMark className="w-8 h-8" />
         <span className={`text-[15px] font-semibold tracking-[-0.02em] ${current ? "hidden md:inline" : ""}`}>
-          interview<span className="text-secondary-soft">pad</span>
+          <BrandWordmark brand="intervutree" />
         </span>
       </Link>
 

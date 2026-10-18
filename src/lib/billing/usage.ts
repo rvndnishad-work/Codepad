@@ -13,12 +13,12 @@ export type LedgerKind = "PURCHASE" | "CONSUMPTION" | "GRANT" | "REFUND" | strin
 export const LEDGER_KIND_LABELS: Record<string, string> = {
   PURCHASE: "Bought",
   CONSUMPTION: "Used",
-  GRANT: "Added by Interviewpad",
+  GRANT: "Added by Intervutree",
   REFUND: "Refunded",
   INCLUDED: "Included with plan",
   INCLUDED_EXPIRED: "Expired",
   TRIAL: "Trial credits",
-  ADJUSTMENT: "Adjusted by Interviewpad",
+  ADJUSTMENT: "Adjusted by Intervutree",
 };
 
 export function ledgerKindLabel(kind: LedgerKind): string {

@@ -2,22 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import LogoDynamic from "./LogoDynamic";
+import { BrandLogo } from "./brand/BrandLogo";
+import { BRANDS, type BrandKey } from "@/lib/brand";
 
-/** `recruiterSite` is true on the recruiter domain, where "/" is the recruiter home. */
-export default function HeaderLogo({ recruiterSite = false }: { recruiterSite?: boolean }) {
+/** `brand` is the domain's brand; `null` keeps the old per-route behaviour when both sites share a domain. */
+export default function HeaderLogo({ brand }: { brand: BrandKey | null }) {
   const pathname = usePathname();
   const isAdminPage = pathname?.startsWith("/admin");
-  // Recruiter/hiring view carries the indigo (secondary) brand mark.
-  const isRecruiter = recruiterSite || pathname?.startsWith("/hire") || pathname?.startsWith("/w");
+  const shown: BrandKey = brand ?? (pathname?.startsWith("/hire") || pathname?.startsWith("/w") ? "intervutree" : "devprep");
 
   return (
     <Link
       href={isAdminPage ? "/admin" : "/"}
       className="hidden md:flex items-center gap-3 group shrink-0 overflow-visible"
-      aria-label="Interviewpad home"
+      aria-label={`${BRANDS[shown].name} home`}
     >
-      <LogoDynamic tone={isRecruiter ? "secondary" : "accent"} />
+      <BrandLogo brand={shown} />
       {isAdminPage && (
         <span className="ip-label ip-label-accent border-l border-border pl-2.5">
           Admin Portal
@@ -26,4 +26,3 @@ export default function HeaderLogo({ recruiterSite = false }: { recruiterSite?: 
     </Link>
   );
 }
-

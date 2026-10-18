@@ -8,7 +8,7 @@ import { jsonDiff } from "./diff";
 import { Pill, btnCls, cardCls, inputCls } from "../jobs/ui";
 
 export const metadata = {
-  title: "Audit log — Interviewpad Admin",
+  title: "Audit log — Admin",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

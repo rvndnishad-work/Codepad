@@ -104,7 +104,7 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
   },
   ADMIN_BROADCAST: {
     label: "Platform announcements",
-    body: "System messages from the Interviewpad team (maintenance, policy updates).",
+    body: "System messages from the DevPrep team (maintenance, policy updates).",
     Icon: Megaphone,
     group: "system",
   },
@@ -113,7 +113,7 @@ const TYPE_META: Record<string, { label: string; body: string; Icon: typeof Bell
 const GROUP_ORDER: Array<{ id: "events" | "social" | "security" | "system"; label: string; sub: string }> = [
   { id: "events", label: "Workflow events", sub: "Things that happen in your active work — interviews, take-homes, scorecards." },
   { id: "social", label: "Social", sub: "Community engagement with your shared content." },
-  { id: "system", label: "System messages", sub: "Platform announcements from the Interviewpad team." },
+  { id: "system", label: "System messages", sub: "Platform announcements from the DevPrep team." },
   { id: "security", label: "Security", sub: "Sign-in alerts and account changes. These can't be turned off." },
 ];
 

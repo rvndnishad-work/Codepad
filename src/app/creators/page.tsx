@@ -4,7 +4,7 @@ import { Store, Heart, Users, LayoutGrid, Sparkles, BadgeCheck, ArrowRight, Gift
 import { prisma } from "@/lib/prisma";
 
 export const metadata = {
-  title: "Creators — Exclusive Interview Prep from People Who've Been There | Interviewpad",
+  title: "Creators — Exclusive Interview Prep from People Who've Been There",
   description:
     "Follow creators sharing exclusive tutorials, interview experiences, and prep guides. Free to follow — get notified when they publish.",
 };

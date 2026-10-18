@@ -13,7 +13,7 @@ import CalendarConnectionsClient, { type MemberRow } from "./CalendarConnections
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return { title: `Calendar · ${slug} — Interviewpad`, robots: { index: false, follow: false } };
+  return { title: `Calendar · ${slug}`, robots: { index: false, follow: false } };
 }
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ connected?: string; error?: string }> };

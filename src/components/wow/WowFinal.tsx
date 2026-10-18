@@ -64,7 +64,7 @@ export default function WowFinal({ showHiringLink = true }: { showHiringLink?: b
           <div className="flex flex-col gap-2 font-mono text-xs uppercase tracking-widest md:ml-auto md:items-end">
             <p className="opacity-70">Free to start · No credit card · Runs in your browser</p>
             {showHiringLink && (
-              <Link href="/hire" className="w-fit py-1 underline underline-offset-4 hover:no-underline">Hiring? Interviewpad for teams →</Link>
+              <Link href="/hire" className="w-fit py-1 underline underline-offset-4 hover:no-underline">Hiring? Intervutree for teams →</Link>
             )}
           </div>
         </div>

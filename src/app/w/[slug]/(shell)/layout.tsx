@@ -61,7 +61,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     redirect(email && canJoinWithoutInvite(settings, email) && !slug.startsWith("__") ? "/w" : "/dashboard");
   }
 
-  // Locked by an Interviewpad admin: members are refused, data is kept.
+  // Locked by an Intervutree admin: members are refused, data is kept.
   if (workspaceIsLocked(activeWorkspace)) return <WorkspaceLockedNotice name={activeWorkspace.name} />;
 
   // Settings > Security: a sign-in older than the workspace allows, or from

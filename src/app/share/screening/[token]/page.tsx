@@ -9,7 +9,7 @@ type Props = { params: Promise<{ token: string }> };
 
 export const dynamic = "force-dynamic";
 export const metadata = {
-  title: "Screening report — Interviewpad",
+  title: "Screening report",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

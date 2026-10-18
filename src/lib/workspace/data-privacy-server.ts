@@ -61,7 +61,7 @@ export async function emailManagers(
       template: "data-privacy-notice",
       to: email,
       workspaceId,
-      props: { ...props, footer: "You get this because you are an owner or admin of this workspace on Interviewpad." },
+      props: { ...props, footer: "You get this because you are an owner or admin of this workspace on Intervutree." },
     }).catch(() => null);
     if (res?.sent) sent++;
   }
@@ -274,7 +274,7 @@ export async function buildCandidateCopy(workspaceId: string, scope: CandidateSc
 
   let audioBytes = 0;
   const copy = {
-    about: `A copy of the data ${workspaceName} holds about you on Interviewpad, made on ${new Date().toISOString()}.`,
+    about: `A copy of the data ${workspaceName} holds about you on Intervutree, made on ${new Date().toISOString()}.`,
     email: scope.emails[0] ?? null,
     candidateRecords: candidates.map((c) => ({ ...c, tags: parseJson(c.tags) })),
     notes,
@@ -657,7 +657,7 @@ export async function runRetention(now = new Date()): Promise<RetentionRunSummar
 
 /* ── Export everything ──────────────────────────────────────────────────── */
 
-const README = (name: string, at: Date) => `Export of ${name} from Interviewpad, made ${at.toISOString()}.
+const README = (name: string, at: Date) => `Export of ${name} from Intervutree, made ${at.toISOString()}.
 
 Each CSV file is one kind of record. ai-screenings.json holds the full AI
 screening conversations, rounds and answers. Voice recordings are not in
@@ -947,7 +947,7 @@ export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } 
           ...(ws.stripeSubscriptionId ? ["The subscription was cancelled, so there are no further charges."] : []),
         ],
         cta: null,
-        footer: "You get this because you were an owner or admin of this workspace on Interviewpad.",
+        footer: "You get this because you were an owner or admin of this workspace on Intervutree.",
       },
     }).catch(() => null);
   }

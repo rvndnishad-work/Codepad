@@ -20,7 +20,7 @@ const MAX_RESPONSE_BYTES = 256 * 1024; // 256KB — tools/list responses should 
 export type SSRFCheckResult = { ok: true } | { ok: false; reason: string };
 
 /**
- * Reject URLs that could be used to pivot inside the Interviewpad network
+ * Reject URLs that could be used to pivot inside the Intervutree network
  * (SSRF). The list of blocked ranges covers RFC1918, loopback, link-local,
  * carrier-grade NAT, and IPv6 equivalents.
  *
@@ -160,7 +160,7 @@ export async function testRemoteMcpConnection(params: {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "Interviewpad-MCP-Probe/1.0",
+    "User-Agent": "Intervutree-MCP-Probe/1.0",
   };
   if (params.authToken) {
     headers.Authorization = `Bearer ${params.authToken}`;
@@ -183,7 +183,7 @@ export async function testRemoteMcpConnection(params: {
         params: {
           protocolVersion: "2025-06-18",
           capabilities: {},
-          clientInfo: { name: "Interviewpad", version: "1.0" },
+          clientInfo: { name: "Intervutree", version: "1.0" },
         },
       }),
     });

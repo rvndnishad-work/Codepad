@@ -5,7 +5,7 @@ import { userCan } from "@/lib/permissions/access";
 import CreatorOnboarding from "./CreatorOnboarding";
 
 export const metadata = {
-  title: "Creator Studio — Interviewpad",
+  title: "Creator Studio",
   robots: { index: false, follow: false },
 };
 

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tech: str
   const { tech } = await params;
   const label = techLabel(tech);
   return {
-    title: `${label} Interview Questions & Answers — Interviewpad`,
+    title: `${label} Interview Questions & Answers`,
     description: `Top ${label} interview questions with answers, filtered by difficulty, company and round. Practice for your next interview.`,
     alternates: { canonical: `/interview-questions/${tech}` },
   };

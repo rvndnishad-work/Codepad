@@ -5,7 +5,7 @@ import ScreeningsList from "../_components/ScreeningsList";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const metadata = { title: "AI screenings — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "AI screenings", robots: { index: false, follow: false } };
 
 export default async function AiScreeningsPage({ params }: Props) {
   const { slug } = await params;

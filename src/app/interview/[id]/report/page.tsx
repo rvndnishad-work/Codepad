@@ -26,7 +26,7 @@ import { loadReportScorecards } from "@/lib/interview/scorecard-server";
 import InterviewReportView from "@/app/w/[slug]/(shell)/interviews/[id]/report/InterviewReportView";
 
 export const metadata = {
-  title: "Executive Candidate Report — Interviewpad Recruiter",
+  title: "Executive Candidate Report — Recruiter",
 };
 
 export default async function CandidateReportPage({
@@ -253,7 +253,7 @@ export default async function CandidateReportPage({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="text-[11px] font-black uppercase tracking-[0.25em] text-accent print:text-zinc-500">
-                Interviewpad Recruiter Platform
+                Intervutree Recruiter Platform
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-fg tracking-tight mt-1 print:text-zinc-900">
                 Executive Candidate Report
@@ -574,7 +574,7 @@ export default async function CandidateReportPage({
 
         {/* Footer Signature */}
         <div className="p-6 bg-panel/50 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted print:bg-transparent print:border-zinc-200 print:text-zinc-500">
-          <span>Interviewpad Candidate Report • Confidential Evaluation Summary</span>
+          <span>Intervutree Candidate Report • Confidential Evaluation Summary</span>
           <span>Generated: {new Date().toLocaleString()}</span>
         </div>
       </div>

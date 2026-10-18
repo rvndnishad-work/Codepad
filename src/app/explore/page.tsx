@@ -5,8 +5,8 @@ import { auth } from "@/lib/auth";
 import { validatePageAccess } from "@/lib/settings";
 
 export const metadata = {
-  title: "Explore — Interviewpad",
-  description: "Browse public snippets shared by the Interviewpad community.",
+  title: "Explore",
+  description: "Browse public snippets shared by the DevPrep community.",
 };
 
 const PAGE_SIZE = 20;

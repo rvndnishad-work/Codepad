@@ -5,7 +5,7 @@ import NoAccess from "../../../_room/NoAccess";
 import LobbyClient from "../../../_room/LobbyClient";
 import { featurePausedPage } from "@/components/FeaturePaused";
 
-export const metadata = { title: "Interview lobby — Interviewpad" };
+export const metadata = { title: "Interview lobby" };
 export const dynamic = "force-dynamic";
 
 export default async function LobbyPage({

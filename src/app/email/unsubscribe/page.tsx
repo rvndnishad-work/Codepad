@@ -2,7 +2,7 @@ import { verifyUnsubscribe } from "@/lib/email-unsubscribe";
 import EmailLinkCard, { primaryBtn } from "../EmailLinkCard";
 import { unsubscribeAction } from "../actions";
 
-export const metadata = { title: "Unsubscribe · Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Unsubscribe", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ e?: string; s?: string; state?: string; sample?: string }> };
@@ -52,7 +52,7 @@ export default async function UnsubscribePage({ searchParams }: Props) {
     <EmailLinkCard title="Stop these emails?">
       <p>
         We will stop sending invites, reminders and updates about screenings to{" "}
-        <span className="text-fg font-medium break-all">{email}</span>, from every team that uses Interviewpad.
+        <span className="text-fg font-medium break-all">{email}</span>, from every team that uses Intervutree.
       </p>
       <form action={unsubscribeAction}>
         <input type="hidden" name="e" value={email} />

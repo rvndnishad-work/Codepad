@@ -34,7 +34,7 @@ export function TakeHomeSubmittedRecruiter({
   return (
     <BaseLayout
       preview={`${candidateName} submitted their take-home`}
-      footer={`Sent from ${workspaceName} — Interviewpad take-homes.`}
+      footer={`Sent from ${workspaceName} — Intervutree take-homes.`}
     >
       <Text style={emailStyles.badge("#34d399")}>Take-Home Submitted</Text>
       <Text style={emailStyles.h1}>{candidateName} submitted their take-home.</Text>

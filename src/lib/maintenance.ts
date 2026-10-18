@@ -57,6 +57,8 @@ export type MaintenancePageOptions = {
   /** Pages to go to instead, shown as buttons. */
   elsewhere?: { label: string; href: string }[];
   now?: Date;
+  /** Product name for the page, from the request host ("DevPrep" or "Intervutree"). */
+  brandName?: string;
 };
 
 function backIn(endsAt: Date | null | undefined, now: Date): string | null {
@@ -77,7 +79,7 @@ export function maintenanceHtml(message?: string, opts: MaintenancePageOptions =
   const now = opts.now ?? new Date();
   const title = opts.title?.trim() || "We will be right back";
   const body =
-    message?.trim() || "Interviewpad is briefly offline for maintenance. Please check back shortly.";
+    message?.trim() || `${opts.brandName ?? "DevPrep"} is briefly offline for maintenance. Please check back shortly.`;
   const back = backIn(opts.endsAt, now);
   const links = [...(opts.elsewhere ?? []), { label: "Home", href: "/" }]
     .map((l) => `<a class="btn" href="${escapeHtml(l.href)}">${escapeHtml(l.label)}</a>`)
@@ -89,7 +91,7 @@ export function maintenanceHtml(message?: string, opts: MaintenancePageOptions =
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <meta name="color-scheme" content="light dark" />
-<title>${escapeHtml(title)} - Interviewpad</title>
+<title>${escapeHtml(title)}</title>
 <style>
   :root {
     --bg: #e9eff3; --card: #fbfcfd; --border: #cfdbe3; --fg: #0f1730; --muted: #4a5568;
@@ -137,7 +139,7 @@ export function maintenanceHtml(message?: string, opts: MaintenancePageOptions =
     <p>${escapeHtml(body)}</p>
     ${back ? `<div class="back">${escapeHtml(back)}</div>` : ""}
     <div class="links">${links}</div>
-    <div class="brand">Interviewpad</div>
+    <div class="brand">${escapeHtml(opts.brandName ?? "DevPrep")}</div>
   </main>
 </body>
 </html>`;

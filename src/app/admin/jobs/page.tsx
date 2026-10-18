@@ -17,7 +17,7 @@ import RunNowButton from "./RunNowButton";
 import { Dot, Pill, cardCls, duration, timeAgo } from "./ui";
 
 export const metadata = {
-  title: "Jobs and health — Interviewpad Admin",
+  title: "Jobs and health — Admin",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

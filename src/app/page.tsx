@@ -94,7 +94,7 @@ async function loadArsenalCounts(): Promise<{ counts: PortalCounts; techs: TechL
 }
 
 export const metadata: Metadata = {
-  title: "Interviewpad — Interview Prep, Coding Challenges & Developer Portfolio",
+  title: "DevPrep — Interview Prep, Coding Challenges & Developer Portfolio",
   description:
     "Prep with 1,000+ hand-written interview questions across 14 technologies, solve runnable challenges in 8 languages, train AI-readiness skills, and turn it all into a shareable developer portfolio.",
   alternates: { canonical: "/" },

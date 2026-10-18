@@ -204,7 +204,7 @@ export default function SecurityClient({
 
   function downloadCodesTxt(codes: string[]) {
     const body =
-      `Interviewpad — 2FA backup codes for ${email ?? "your account"}\n` +
+      `DevPrep — 2FA backup codes for ${email ?? "your account"}\n` +
       `Generated ${new Date().toISOString()}\n\n` +
       `Each code works ONCE. Keep this file somewhere safe — your\n` +
       `password manager or a printed copy in a drawer.\n\n` +

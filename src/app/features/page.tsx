@@ -4,8 +4,8 @@ import FeaturesClient from "./FeaturesClient";
 import { recruiterUrl } from "@/lib/domains";
 
 export const metadata = {
-  title: "Features — Interviewpad Platform Features",
-  description: "Explore Interviewpad's assessment pipelines, AI proctoring, key timeline replays, Greenhouse/Lever ATS integrations, and corporate developer hiring workspaces.",
+  title: "Features — Platform Features",
+  description: "Explore Intervutree's assessment pipelines, AI proctoring, key timeline replays, Greenhouse/Lever ATS integrations, and corporate developer hiring workspaces.",
   alternates: { canonical: recruiterUrl("/features") },
 };
 

@@ -9,7 +9,7 @@ import PreviewClient from "./PreviewClient";
 
 type Props = { params: Promise<{ slug: string; sessionId: string }> };
 
-export const metadata = { title: "Preview as candidate — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Preview as candidate", robots: { index: false, follow: false } };
 
 /**
  * "Preview as candidate": the screening's candidate screen, from the starter

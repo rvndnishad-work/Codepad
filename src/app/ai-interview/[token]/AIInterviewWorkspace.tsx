@@ -968,7 +968,7 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
                 C
               </div>
               <span className="font-extrabold text-xs tracking-widest text-fg uppercase hidden sm:inline">
-                Interviewpad
+                Intervutree
               </span>
             </Link>
           )}

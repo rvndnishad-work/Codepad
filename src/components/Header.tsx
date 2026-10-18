@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { currentSite } from "@/lib/current-site";
+import { brandForSite } from "@/lib/brand";
 import { auth } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions/staff";
 import { userCan } from "@/lib/permissions/access";
@@ -21,6 +22,7 @@ export default async function Header() {
   // On a split domain each site shows only its own menu; null shows both.
   const site = await currentSite();
   const recruiterSite = site === "recruiter";
+  const brandKey = site ? brandForSite(site).key : null;
   const showDeveloperMenu = site !== "recruiter";
   const showRecruiterMenu = site !== "developer";
   const user = session?.user;
@@ -250,12 +252,13 @@ export default async function Header() {
           recruiterItems={showRecruiterMenu ? filteredRecruiterItems : []}
           blogStatus={showDeveloperMenu ? blogStatus : "hidden"}
           site={site}
+          brand={brandKey}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
         />
 
         {/* Desktop: logo links to home */}
-        <HeaderLogo recruiterSite={recruiterSite} />
+        <HeaderLogo brand={brandKey} />
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">

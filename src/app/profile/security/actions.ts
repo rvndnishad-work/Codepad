@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { currentBrand } from "@/lib/current-site";
 import {
   buildOtpauthUri,
   decryptTotpSecret,
@@ -118,7 +119,7 @@ export async function startTotpEnrollmentAction(): Promise<StartEnrollmentResult
 
   const secret = generateTotpSecret();
   const label = email ?? existing?.email ?? `user-${userId.slice(0, 8)}`;
-  const otpauthUri = buildOtpauthUri(secret, label);
+  const otpauthUri = buildOtpauthUri(secret, label, (await currentBrand()).name);
 
   // Store as pending — totpEnabledAt stays null until verify completes.
   await prisma.user.update({

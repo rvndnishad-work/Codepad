@@ -1,5 +1,6 @@
 "use client";
 
+import { BRANDS, type BrandKey } from "@/lib/brand";
 import { useState, useEffect, useRef } from "react";
 import { Zap, Sparkles, Users } from "lucide-react";
 
@@ -11,7 +12,8 @@ type Slide = {
   preview: React.ReactNode;
 };
 
-export default function OnboardingShowcase() {
+export default function OnboardingShowcase({ brand = "devprep" }: { brand?: BrandKey }) {
+  const name = BRANDS[brand].name;
   const [activeSlide, setActiveSlide] = useState(0);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
@@ -45,7 +47,7 @@ export default function OnboardingShowcase() {
             style={{ transform: "translateZ(40px)" }}
           >
             <div><span className="text-pink-800 dark:text-pink-400">const</span> <span className="text-blue-800 dark:text-blue-400">greeting</span> = () =&gt; &#123;</div>
-            <div className="pl-6"><span className="text-pink-800 dark:text-pink-400">return</span> <span className="text-amber-800 dark:text-amber-400">"Welcome to Interviewpad!"</span>;</div>
+            <div className="pl-6"><span className="text-pink-800 dark:text-pink-400">return</span> <span className="text-amber-800 dark:text-amber-400">"Welcome to {name}!"</span>;</div>
             <div>&#125;;</div>
             <div className="pt-2 text-subtle">// Run code instantly</div>
             <div><span className="text-purple-800 dark:text-purple-400">console</span>.<span className="text-emerald-800 dark:text-emerald-400">log</span>(<span className="text-blue-800 dark:text-blue-400">greeting</span>());</div>
@@ -55,7 +57,7 @@ export default function OnboardingShowcase() {
             style={{ transform: "translateZ(55px)" }}
           >
             <span className="w-[clamp(6px,1vh,10px)] h-[clamp(6px,1vh,10px)] rounded-full bg-emerald-400 animate-ping" />
-            Output: "Welcome to Interviewpad!"
+            Output: "Welcome to {name}!"
           </div>
         </div>
       ),
@@ -79,7 +81,7 @@ export default function OnboardingShowcase() {
             </div>
             <div>
               <div className="font-bold text-slate-100 text-[clamp(0.95rem,2vh,1.25rem)] leading-tight">AI Interviewer</div>
-              <div className="text-[clamp(0.7rem,1.4vh,0.875rem)] text-muted">Interviewpad Agent</div>
+              <div className="text-[clamp(0.7rem,1.4vh,0.875rem)] text-muted">{name} Agent</div>
             </div>
           </div>
           <div className="space-y-[clamp(0.5rem,1.5vh,1rem)]">

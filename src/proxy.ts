@@ -13,7 +13,8 @@ import { guardFor, STAFF_SENTINEL } from "@/lib/permissions/route-guards";
 import { resolveUserPermissionsUncached } from "@/lib/permissions/access";
 import { PLATFORM_PERMISSIONS } from "@/lib/permissions/permissions";
 import { REQUEST_PATH_HEADER } from "@/lib/workspace/screening-defaults";
-import { domainConfig, routeForHost } from "@/lib/domains";
+import { domainConfig, routeForHost, siteForRequestHost } from "@/lib/domains";
+import { brandForSite } from "@/lib/brand";
 
 // Next.js 16 "Proxy" (formerly Middleware) — runs on the Node.js runtime by
 // default, so Prisma + next-auth JWT decoding work here directly.
@@ -152,6 +153,9 @@ export async function proxy(req: NextRequest) {
         title: area?.pausedTitle ?? "This page is paused for maintenance",
         endsAt: rule.endsAt,
         elsewhere: area?.elsewhere,
+        brandName: brandForSite(
+          siteForRequestHost(req.headers.get("x-forwarded-host") ?? req.headers.get("host")),
+        ).name,
       }),
       {
         status: 503,

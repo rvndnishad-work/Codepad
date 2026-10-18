@@ -56,7 +56,7 @@ export function recordingRefusal(a: {
   active: boolean;
 }): { code: RecordingRefusalCode; message: string } | null {
   if (a.active) return { code: "already", message: "The call is already being recorded." };
-  if (!a.configured) return { code: "not_set_up", message: "Recording is not set up yet. Ask whoever runs Interviewpad for your team to finish the setup." };
+  if (!a.configured) return { code: "not_set_up", message: "Recording is not set up yet. Ask whoever runs Intervutree for your team to finish the setup." };
   if (!a.builtinVideo) return { code: "no_builtin_video", message: "Recording works only with built-in video." };
   if (!a.recordVideo) return { code: "not_enabled", message: "Recording is off for this interview. It can be switched on in the lobby before the interview starts." };
   if (!(VIDEO_JOIN_STATUSES as readonly string[]).includes(a.status)) return { code: "closed", message: "This interview has ended, so the call cannot be recorded." };

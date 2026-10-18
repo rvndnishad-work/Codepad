@@ -293,7 +293,7 @@ export async function previewEmailAction(slug: string, key: string, draft: Previ
   const def = TEMPLATES[built.template] as unknown as { Component: React.ComponentType<unknown> };
   try {
     const html = await render(React.createElement(def.Component, built.props as object));
-    return { ok: true, subject: built.subject, from: built.fromName ?? "Interviewpad", replyTo: built.replyTo, html };
+    return { ok: true, subject: built.subject, from: built.fromName ?? "Intervutree", replyTo: built.replyTo, html };
   } catch (err) {
     console.error("[settings] email preview failed:", err);
     return fail("Could not build the preview. Try again.");

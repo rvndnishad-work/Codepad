@@ -19,7 +19,7 @@ export type CandidateBrand = {
   /** Workspace name, shown next to or instead of the logo. */
   name: string;
   logoUrl: string | null;
-  /** "#rrggbb" or null for the Interviewpad default. */
+  /** "#rrggbb" or null for the Intervutree default. */
   color: string | null;
   helpEmail: string | null;
   privacyNoticeUrl: string | null;
@@ -106,7 +106,7 @@ export function brandColorWarning(color: string | null | undefined): string | nu
 
 /**
  * The From header for a display name, keeping the address of the base
- * sender ("Interviewpad <noreply@x>" or "noreply@x").
+ * sender ("Intervutree <noreply@x>" or "noreply@x").
  */
 export function formatFrom(displayName: string, baseFrom: string): string {
   const m = baseFrom.match(/<([^>]+)>/);
@@ -398,7 +398,7 @@ export type CandidateEmailContext = {
   brand: CandidateBrand;
   /** Growth tools on: sender name, reply-to and wording apply. */
   growth: boolean;
-  /** "Acme via Interviewpad" when growth, else null (keep the default sender). */
+  /** "Acme via Intervutree" when growth, else null (keep the default sender). */
   fromName: string | null;
   /** Confirmed reply-to when growth, else null. */
   replyTo: string | null;

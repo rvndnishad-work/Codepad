@@ -6,7 +6,7 @@ import JourneyWizard from "./JourneyWizard";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Create your Prep Journey — Interviewpad",
+  title: "Create your Prep Journey",
   description: "Build a day-by-day interview prep plan for your tech stack.",
 };
 

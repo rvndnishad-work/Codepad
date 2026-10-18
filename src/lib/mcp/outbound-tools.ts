@@ -148,7 +148,7 @@ async function fetchRemoteTools(server: {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "Interviewpad-AI-Interviewer/1.0",
+    "User-Agent": "Intervutree-AI-Interviewer/1.0",
   };
   if (server.authToken) {
     const plaintext = decryptAtRest(server.authToken);
@@ -360,7 +360,7 @@ export async function executeOutboundTool(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "Interviewpad-AI-Interviewer/1.0",
+    "User-Agent": "Intervutree-AI-Interviewer/1.0",
   };
   if (live.authToken) {
     const plaintext = decryptAtRest(live.authToken);

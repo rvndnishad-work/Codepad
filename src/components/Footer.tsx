@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { LogoLockup } from "./Logo";
+import { BrandLockup } from "./brand/BrandLogo";
+import { brandForSite } from "@/lib/brand";
 import { currentSite } from "@/lib/current-site";
 
 /**
@@ -63,6 +64,7 @@ const RUNTIME_FACTS = [
 export default async function Footer() {
   // On a split domain each site lists only its own pages; null shows both.
   const site = await currentSite();
+  const brand = brandForSite(site);
   return (
     <footer className="border-t border-border bg-bg">
       <div className="mx-auto max-w-7xl px-4">
@@ -70,13 +72,12 @@ export default async function Footer() {
         <div className="grid grid-cols-1 gap-12 border-b border-border py-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-5 lg:pr-12">
             <Link href="/" className="inline-flex">
-              <LogoLockup height={44} />
+              <BrandLockup brand={brand.key} height={44} />
             </Link>
             <p className="mt-6 max-w-sm text-[13.5px] leading-relaxed text-muted">
-              An interview runtime. Candidates practise on the same
-              network-isolated sandbox that hiring teams grade on, so what
-              happens in preparation and what happens in the room are the
-              same system.
+              {site === "recruiter"
+                ? "A hiring runtime. Every applicant gets the same take-home or AI screening, graded on our servers with integrity signals attached, so the shortlist is ranked by evidence."
+                : "An interview runtime. Practise on the same network-isolated sandbox that real interviews are graded on, so what happens in preparation and what happens in the room are the same system."}
             </p>
             <div className="mt-7 flex items-center gap-5">
               {[
@@ -123,7 +124,7 @@ export default async function Footer() {
         {/* ── Bottom bar ── */}
         <div className="flex flex-col items-start justify-between gap-3 py-6 sm:flex-row sm:items-center">
           <span className="ip-label">
-            © {new Date().getFullYear()} Interviewpad
+            © {new Date().getFullYear()} {brand.name}
           </span>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="ip-label hover:text-fg">

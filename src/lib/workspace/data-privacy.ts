@@ -23,7 +23,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type Subprocessor = { name: string; purpose: string; location: string; url: string };
 
-/** Services that process workspace data for Interviewpad. */
+/** Services that process workspace data for Intervutree. */
 export const SUBPROCESSORS: readonly Subprocessor[] = [
   {
     name: "Google Gemini",

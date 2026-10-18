@@ -16,7 +16,7 @@ export default function WorkspaceLockedNotice({ name, audience = "member" }: { n
           <h1 className="text-xl font-semibold text-fg">This workspace is locked</h1>
           {audience === "member" ? (
             <p className="text-sm text-muted">
-              {name ? `${name} has` : "It has"} been locked by Interviewpad. Nothing has been deleted. An owner can contact support to find out more and to
+              {name ? `${name} has` : "It has"} been locked by Intervutree. Nothing has been deleted. An owner can contact support to find out more and to
               unlock it.
             </p>
           ) : (

@@ -38,7 +38,7 @@ export default function UserTypeChooser() {
     <div className="rounded-2xl border border-border bg-surface p-6 md:p-8 max-w-2xl mx-auto">
       <div className="text-center space-y-2 mb-6">
         <h2 className="text-xl font-semibold text-fg tracking-tight">
-          Tell us how you'll use Interviewpad
+          Tell us how you'll use DevPrep
         </h2>
         <p className="text-sm text-muted max-w-md mx-auto">
           We'll tailor your navigation, dashboard, and interview tools accordingly.

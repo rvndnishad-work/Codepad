@@ -3,7 +3,7 @@ import { ArrowLeft, Users } from "lucide-react";
 import ShareForm from "./ShareForm";
 
 export const metadata = {
-  title: "Share your interview experience — Interviewpad",
+  title: "Share your interview experience",
   description: "Help other candidates by sharing your real interview experience — company, rounds, questions and tips.",
   alternates: { canonical: "/interview-questions/share" },
 };

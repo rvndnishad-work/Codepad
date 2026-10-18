@@ -23,7 +23,7 @@ export default function ShareButtons({ name, userId, badgeCount, challengeCount 
 
   const displayName = name || "this developer";
   const shareText =
-    `Check out ${displayName}'s verified developer portfolio on Interviewpad — ` +
+    `Check out ${displayName}'s verified developer portfolio on DevPrep — ` +
     `${badgeCount} badge${badgeCount === 1 ? "" : "s"}, ` +
     `${challengeCount} challenge${challengeCount === 1 ? "" : "s"} solved.`;
 

@@ -10,7 +10,7 @@ import TracksCarousel from "./TracksCarousel";
 import { validatePageAccess } from "@/lib/settings";
 
 export const metadata = {
-  title: "Challenges — Interviewpad",
+  title: "Challenges",
   description:
     "Practice coding challenges with hidden tests. Sharpen your interview skills.",
 };

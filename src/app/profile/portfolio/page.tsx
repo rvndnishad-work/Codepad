@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import PortfolioSettings from "./PortfolioSettings";
 
 export const metadata = {
-  title: "Portfolio Settings — Interviewpad",
+  title: "Portfolio Settings",
 };
 
 export default async function PortfolioSettingsPage() {

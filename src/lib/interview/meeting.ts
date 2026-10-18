@@ -1,7 +1,7 @@
 /**
  * The video call for a live interview is a link to the team's own meeting
  * tool (Zoom, Google Meet, Teams, ...). The room shows it as a Join call
- * button; Interviewpad does not carry audio or video itself.
+ * button; Intervutree does not carry audio or video itself.
  */
 
 export const MAX_MEETING_URL = 500;

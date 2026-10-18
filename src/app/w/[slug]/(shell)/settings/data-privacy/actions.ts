@@ -231,7 +231,7 @@ export async function sendCandidateCopyAction(slug: string, emailInput: string):
         "The file opens in any text editor. If you have questions about it, contact the team you applied to.",
       ],
       cta: null,
-      footer: `${a.ws.name} uses Interviewpad to run technical screenings.`,
+      footer: `${a.ws.name} uses Intervutree to run technical screenings.`,
     },
   });
   if (!res.sent) return fail("The email could not be sent. Try again in a few minutes.");
@@ -278,11 +278,11 @@ export async function eraseCandidateDataAction(slug: string, emailInput: string,
       badge: "Your data",
       heading: `${a.ws.name} has erased your data.`,
       paragraphs: [
-        `As you asked, ${a.ws.name} erased the data it held about you on Interviewpad: ${summary}.`,
+        `As you asked, ${a.ws.name} erased the data it held about you on Intervutree: ${summary}.`,
         "Scores from your screenings may stay in the workspace reports without your name or email. They can no longer be linked to you.",
       ],
       cta: null,
-      footer: `${a.ws.name} uses Interviewpad to run technical screenings.`,
+      footer: `${a.ws.name} uses Intervutree to run technical screenings.`,
     },
   }).catch(() => null);
   await prisma.emailLog
@@ -342,7 +342,7 @@ export async function requestExportAction(slug: string): Promise<{ ok: true } | 
               `The link works for ${EXPORT_LINK_DAYS} days, until ${dateFor(a, expiresAt)}, and only for owners and admins who are signed in. It downloads the latest data each time.`,
             ],
             cta: { label: "Download the export", url },
-            footer: "You get this because you asked for an export of this workspace on Interviewpad.",
+            footer: "You get this because you asked for an export of this workspace on Intervutree.",
           },
         });
       }

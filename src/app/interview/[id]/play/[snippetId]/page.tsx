@@ -10,7 +10,7 @@ import { isInterviewerFor } from "@/lib/interview/wizard";
 import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
-  title: "Interview Playground — Interviewpad",
+  title: "Interview Playground",
 };
 
 export default async function InterviewPlaygroundPage({

@@ -1,4 +1,5 @@
 import { siteOrigin } from "@/lib/site-url";
+import { currentBrand } from "@/lib/current-site";
 import "./globals.css";
 import "./light-remap.css";
 import type { Metadata } from "next";
@@ -42,41 +43,37 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const SITE_NAME = "Interviewpad";
-const SITE_DESCRIPTION =
-  "Run and save JS, TS, React, Vue, Angular, Svelte, and Solid snippets. Isolated sandbox execution in your browser — no install needed.";
-
-export const metadata: Metadata = {
-  metadataBase: new URL(siteOrigin()),
-  title: {
-    default: "Interviewpad — JavaScript Playground",
-    template: "%s — Interviewpad",
-  },
-  description: SITE_DESCRIPTION,
-  applicationName: SITE_NAME,
-  keywords: [
-    "javascript playground",
-    "react sandbox",
-    "typescript playground",
-    "code editor",
-    "online IDE",
-    "sandpack",
-    "snippet sharing",
-  ],
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    title: "Interviewpad — JavaScript Playground",
-    description: SITE_DESCRIPTION,
-    locale: "en_US",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Interviewpad — JavaScript Playground",
-    description: SITE_DESCRIPTION,
-  },
-  robots: { index: true, follow: true },
-};
+/** Tab icon, title, description and share cards follow the domain's brand (src/lib/brand.ts). */
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await currentBrand();
+  return {
+    metadataBase: new URL(siteOrigin()),
+    title: {
+      default: brand.title,
+      template: `%s — ${brand.name}`,
+    },
+    description: brand.description,
+    applicationName: brand.name,
+    icons: { icon: brand.icon },
+    keywords:
+      brand.key === "intervutree"
+        ? ["technical screening", "take-home assessment", "AI interview", "candidate shortlist", "hiring platform"]
+        : ["interview prep", "coding challenges", "interview questions", "javascript playground", "react sandbox", "developer portfolio"],
+    openGraph: {
+      type: "website",
+      siteName: brand.name,
+      title: brand.title,
+      description: brand.description,
+      locale: "en_US",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: brand.title,
+      description: brand.description,
+    },
+    robots: { index: true, follow: true },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

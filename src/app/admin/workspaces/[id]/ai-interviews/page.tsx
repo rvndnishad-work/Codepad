@@ -6,7 +6,7 @@ import { pageOf } from "@/lib/admin/workspace-actions";
 import { getAdminWorkspace } from "../_data";
 import { Empty, ListFilters, Pager, Pill, Table, fmtDate, one, statusLabel, statusTone, td, urlWith } from "../_ui";
 
-export const metadata = { title: "Workspace AI screenings — Interviewpad Admin" };
+export const metadata = { title: "Workspace AI screenings — Admin" };
 
 const PAGE_SIZE = 25;
 

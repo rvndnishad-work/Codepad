@@ -4,18 +4,20 @@ import { BaseLayout, emailStyles } from "./BaseLayout";
 
 export type OtpVerificationProps = {
   otp: string;
+  /** The product the person signed up to ("DevPrep" or "Intervutree"). */
+  brandName?: string;
 };
 
-export function OtpVerification({ otp }: OtpVerificationProps) {
+export function OtpVerification({ otp, brandName = "DevPrep" }: OtpVerificationProps) {
   return (
     <BaseLayout
-      preview="Your Interviewpad verification code"
+      preview={`Your ${brandName} verification code`}
       footer="If you did not request this code, you can safely ignore this email."
     >
       <Text style={emailStyles.badge("#3b82f6")}>Email Verification</Text>
       <Text style={emailStyles.h1}>Verify your email address</Text>
       <Text style={emailStyles.body}>
-        Thank you for signing up for Interviewpad. Please use the following one-time passcode (OTP) to complete your registration. This code is valid for 10 minutes:
+        Thank you for signing up for {brandName}. Please use the following one-time passcode (OTP) to complete your registration. This code is valid for 10 minutes:
       </Text>
       <div
         style={{
@@ -45,7 +47,7 @@ export function otpVerificationText(p: OtpVerificationProps): string {
   return [
     "Verify your email address",
     "",
-    "Thank you for signing up for Interviewpad. Please use the following one-time passcode (OTP) to complete your registration:",
+    `Thank you for signing up for ${p.brandName ?? "DevPrep"}. Please use the following one-time passcode (OTP) to complete your registration:`,
     "",
     p.otp,
     "",

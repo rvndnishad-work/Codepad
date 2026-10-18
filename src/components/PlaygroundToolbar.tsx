@@ -35,7 +35,7 @@ import {
 import { TemplateLogo } from "@/lib/icons";
 import { EDITOR_THEMES, editorThemeById, type EditorThemeDef } from "@/lib/editor-themes";
 import { readBoolPref, readPref, writeBoolPref, writePref, PREF_KEYS } from "@/lib/prefs";
-import LogoDynamic from "./LogoDynamic";
+import { BrandLogo } from "./brand/BrandLogo";
 import { useChallengeTimer, type ChallengeTimerController } from "./ChallengeTimer";
 import { RUN_SHORTCUT } from "./playground/Consoles";
 import { usePlayground, type ViewMode } from "./playground/PlaygroundContext";
@@ -651,14 +651,14 @@ export default function PlaygroundToolbar() {
           <Link
             href="/"
             className={`flex shrink-0 items-center rounded-md p-1 transition-colors hover:bg-panel ${FOCUS}`}
-            title="Interviewpad home"
-            aria-label="Interviewpad home"
+            title="DevPrep home"
+            aria-label="DevPrep home"
           >
             <span className="hidden md:block [&_.ld-word]:text-[15px] [&_svg]:h-7 [&_svg]:w-7">
-              <LogoDynamic tone="accent" showSub={false} />
+              <BrandLogo brand="devprep" showSub={false} />
             </span>
             <span className="md:hidden [&_svg]:h-7 [&_svg]:w-7">
-              <LogoDynamic tone="accent" compact />
+              <BrandLogo brand="devprep" compact />
             </span>
           </Link>
           <span className="hidden h-5 w-px shrink-0 bg-border md:block" aria-hidden />

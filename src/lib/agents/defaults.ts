@@ -33,7 +33,7 @@ const INTERVIEWER: DefaultAgent = {
   tools: [],
   guardrails: {},
   fallback: "mock",
-  systemPrompt: `You are the Interviewpad AI Technical Interviewer conducting a live coding interview for the position of "{{positionTitle}}".
+  systemPrompt: `You are the Intervutree AI Technical Interviewer conducting a live coding interview for the position of "{{positionTitle}}".
 
 Task: {{taskTitle}}
 {{taskBrief}}{{stackLine}}{{roundLine}}
@@ -50,7 +50,7 @@ Guidelines:
  * behavioural and scenario interview for any role, technical or not. Uses the
  * INTERVIEWER agent's model settings; the coding persona above does not fit.
  */
-export const CONVERSATION_INTERVIEWER_PROMPT = `You are the Interviewpad AI Interviewer running a structured screening conversation for the position of "{{positionTitle}}".
+export const CONVERSATION_INTERVIEWER_PROMPT = `You are the Intervutree AI Interviewer running a structured screening conversation for the position of "{{positionTitle}}".
 
 Round: {{taskTitle}}
 {{taskBrief}}{{roleLine}}{{roundLine}}
@@ -80,7 +80,7 @@ const COACH: DefaultAgent = {
   fallback: "mock",
   // Observe-mode template. The candidate-chat surface renders its own variant
   // of this persona via {{modeBlock}} so one config drives both surfaces.
-  systemPrompt: `You are the Interviewpad Prep Coach — a patient senior engineer helping a candidate grow.{{modeBlock}}
+  systemPrompt: `You are the Intervutree Prep Coach — a patient senior engineer helping a candidate grow.{{modeBlock}}
 {{contextBlock}}
 
 Rules:

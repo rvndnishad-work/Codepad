@@ -12,8 +12,8 @@ import FollowButton from "@/components/FollowButton";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Blog — Interviewpad",
-  description: "Articles on engineering, AI, frontend, and interview prep from the Interviewpad community.",
+  title: "Blog",
+  description: "Articles on engineering, AI, frontend, and interview prep from the DevPrep community.",
 };
 
 type Tab = "latest" | "following" | "top";
@@ -211,7 +211,7 @@ export default async function BlogListingPage({
             Insights & Engineering
           </div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight text-fg">
-            Stories from the Interviewpad community
+            Stories from the DevPrep community
           </h1>
           <p className="text-muted text-sm mt-2 max-w-2xl">
             Deep dives on frontend, AI, and interview prep — written by developers, for developers.
@@ -335,7 +335,7 @@ export default async function BlogListingPage({
             <div className="flex items-center gap-2 mb-2">
               <PenSquare className="w-4 h-4 text-accent" />
               <h3 className="text-sm font-black tracking-tight text-fg">
-                Write on Interviewpad
+                Write on DevPrep
               </h3>
             </div>
             <p className="text-xs text-muted mb-3 leading-relaxed">

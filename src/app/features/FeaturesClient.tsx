@@ -113,7 +113,7 @@ export default function FeaturesPage() {
           <p 
             className="text-muted text-base md:text-lg leading-relaxed font-medium"
           >
-            Interviewpad combines professional-grade coding sandboxes with enterprise-ready 
+            Intervutree combines professional-grade coding sandboxes with enterprise-ready 
             telemetry, standard rubrics, and automated grading pipelines to empower modern talent acquisition.
           </p>
         </div>

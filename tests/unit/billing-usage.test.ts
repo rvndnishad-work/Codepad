@@ -23,7 +23,7 @@ describe("credit history", () => {
     expect(views.map((v) => [v.label, v.detail, v.balanceAfter])).toEqual([
       ["Used", "AI screening with Ana Lopez", 53],
       ["Bought", "Team pack", 55],
-      ["Added by Interviewpad", "Welcome credits", 5],
+      ["Added by Intervutree", "Welcome credits", 5],
     ]);
   });
 
@@ -33,7 +33,7 @@ describe("credit history", () => {
 
   it("writes a CSV that spreadsheets cannot run", () => {
     const csv = ledgerCsv(ledgerViews([{ id: "x", kind: "GRANT", amount: 1, createdAt: "2026-09-01T08:05:00Z", note: '=HYPERLINK("x"), hi' }], 1));
-    expect(csv).toBe('Date (UTC),Type,Credits,Balance after,Details\r\n2026-09-01 08:05,Added by Interviewpad,1,1,"\'=HYPERLINK(""x""), hi"\r\n');
+    expect(csv).toBe('Date (UTC),Type,Credits,Balance after,Details\r\n2026-09-01 08:05,Added by Intervutree,1,1,"\'=HYPERLINK(""x""), hi"\r\n');
   });
 
   it("keeps Stripe ids out of the details", () => {

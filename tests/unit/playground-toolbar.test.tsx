@@ -84,9 +84,9 @@ function openMore() {
 describe("PlaygroundToolbar", () => {
   it("renders the navbar brand lockup linking home", () => {
     renderBar();
-    const brand = screen.getByRole("link", { name: "Interviewpad home" });
+    const brand = screen.getByRole("link", { name: "DevPrep home" });
     expect(brand.getAttribute("href")).toBe("/");
-    expect(brand.textContent).toContain("interview");
+    expect(brand.textContent).toContain("dev");
     expect(brand.textContent).not.toContain("Interview runtime");
   });
 

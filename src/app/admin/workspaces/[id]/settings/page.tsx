@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { Card, Kv, fmtDate } from "../_ui";
 
-export const metadata = { title: "Workspace settings — Interviewpad Admin" };
+export const metadata = { title: "Workspace settings — Admin" };
 
 type Props = { params: Promise<{ id: string }> };
 

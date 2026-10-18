@@ -18,9 +18,9 @@ async function getQuestion(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const q = await getQuestion(slug);
-  if (!q) return { title: "Question not found — Interviewpad" };
+  if (!q) return { title: "Question not found" };
   return {
-    title: q.seoTitle ?? `${q.title} — Interview Question | Interviewpad`,
+    title: q.seoTitle ?? `${q.title} — Interview Question`,
     description: q.seoDescription ?? (q.description ?? q.title).slice(0, 155),
     alternates: { canonical: `/interview-question/${q.slug}` },
   };
@@ -104,7 +104,7 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
             headline: q.title,
             datePublished: q.createdAt.toISOString(),
             dateModified: q.updatedAt.toISOString(),
-            author: { "@type": "Organization", name: "Interviewpad" },
+            author: { "@type": "Organization", name: "DevPrep" },
           },
         ]}
       />

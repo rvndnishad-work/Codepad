@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Resolving Session Code — Interviewpad",
+  title: "Resolving Session Code",
 };
 
 interface JoinCodePageProps {

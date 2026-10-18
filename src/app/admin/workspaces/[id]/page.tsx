@@ -6,7 +6,7 @@ import { planLabel } from "@/lib/admin/workspace-actions";
 import { getAdminWorkspace } from "./_data";
 import { Card, Kpi, Kv, Pill, fmtDate, fmtUsd } from "./_ui";
 
-export const metadata = { title: "Workspace overview — Interviewpad Admin" };
+export const metadata = { title: "Workspace overview — Admin" };
 
 const DAY = 86_400_000;
 

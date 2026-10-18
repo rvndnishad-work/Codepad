@@ -204,7 +204,7 @@ export default function TemplatePicker({
                         "Pick up where you left off"
                       ) : isFresh ? (
                         <>
-                          Welcome to Interviewpad,
+                          Welcome to DevPrep,
                           <span className="block bg-clip-text text-transparent bg-gradient-to-r from-accent to-violet-400 mt-1">
                             {firstName}.
                           </span>

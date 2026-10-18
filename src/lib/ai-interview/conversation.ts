@@ -64,7 +64,7 @@ export function conversationFallback(msgs: ChatEntry[]): ConversationGrade {
 
 /** Grading prompt for one conversation round. */
 export function conversationGraderPrompt(p: { positionTitle: string; brief: string; questionList: string; transcript: string }): string {
-  return `You are the Interviewpad AI Grading Agent.
+  return `You are the Intervutree AI Grading Agent.
 Evaluate a candidate's screening conversation for the position of "${p.positionTitle}". There is no code in this round.
 
 Round brief: ${p.brief || "(none)"}

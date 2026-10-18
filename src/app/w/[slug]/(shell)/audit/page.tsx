@@ -20,7 +20,7 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   return {
-    title: `Audit log · ${slug} — Interviewpad`,
+    title: `Audit log · ${slug}`,
     robots: { index: false, follow: false },
   };
 }

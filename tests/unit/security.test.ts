@@ -86,7 +86,7 @@ describe("TOTP and Backup Codes (totp.ts)", () => {
 
     const uri = buildOtpauthUri(secret, "rvndnishad@gmail.com");
     expect(uri).toContain("otpauth://totp/");
-    expect(uri).toContain("issuer=Interviewpad");
+    expect(uri).toContain("issuer=DevPrep");
     expect(uri).toContain("rvndnishad%40gmail.com");
   });
 

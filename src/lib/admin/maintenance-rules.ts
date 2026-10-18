@@ -94,7 +94,7 @@ export const AREAS: AreaDef[] = [
   {
     key: "dev",
     label: "Developer side",
-    pausedTitle: "This part of Interviewpad is paused",
+    pausedTitle: "This part of Intervutree is paused",
     parent: "site",
     paths: [
       ...PLAYGROUND_PATHS,

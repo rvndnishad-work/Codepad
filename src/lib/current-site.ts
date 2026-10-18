@@ -1,6 +1,7 @@
 import "server-only";
 import { headers } from "next/headers";
 import { siteForRequestHost, type SiteKind } from "./domains";
+import { brandForSite, type Brand } from "./brand";
 
 /**
  * The site the current request is on: "developer", "recruiter", or null when
@@ -14,4 +15,9 @@ export async function currentSite(): Promise<SiteKind | null> {
   } catch {
     return null;
   }
+}
+
+/** The brand for the current request: Intervutree on the recruiter domain, DevPrep otherwise. */
+export async function currentBrand(): Promise<Brand> {
+  return brandForSite(await currentSite());
 }

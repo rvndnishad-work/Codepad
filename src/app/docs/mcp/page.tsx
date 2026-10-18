@@ -20,9 +20,9 @@ import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import CopyButton from "./CopyButton";
 
 export const metadata = {
-  title: "MCP API — Interviewpad",
+  title: "MCP API",
   description:
-    "Connect Claude, Cursor, Goose, or any MCP-compatible client to your Interviewpad workspace. Tools, resources, and prompts reference.",
+    "Connect Claude, Cursor, Goose, or any MCP-compatible client to your Intervutree workspace. Tools, resources, and prompts reference.",
 };
 
 async function resolveOrigin(): Promise<string> {
@@ -77,13 +77,13 @@ export default async function McpDocsPage() {
         {/* Header */}
         <header className="space-y-3">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-accent/30 bg-accent/10 text-accent text-[10px] font-black uppercase tracking-widest">
-            <Sparkles className="w-3 h-3" /> Interviewpad × MCP
+            <Sparkles className="w-3 h-3" /> Intervutree × MCP
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight">
             Talk to your hiring pipeline from any AI assistant.
           </h1>
           <p className="text-lg text-muted/90 leading-relaxed max-w-2xl">
-            Interviewpad ships a Model Context Protocol server. Drop it into Claude
+            Intervutree ships a Model Context Protocol server. Drop it into Claude
             Desktop, Cursor, Goose, or anything else that speaks MCP, and your
             candidates, screenings, and scorecards become first-class context for
             your AI work.
@@ -132,7 +132,7 @@ export default async function McpDocsPage() {
             </li>
             <li>Copy the key. You only see it once.</li>
             <li>Paste the install snippet below into your MCP client&apos;s config.</li>
-            <li>Restart the client. Ask &quot;what tools do you have for Interviewpad?&quot;</li>
+            <li>Restart the client. Ask &quot;what tools do you have for Intervutree?&quot;</li>
           </ol>
         </section>
 
@@ -249,7 +249,7 @@ export default async function McpDocsPage() {
             We also expose <code className="font-mono text-xs bg-panel px-1.5 py-0.5 rounded">{publicUrl}</code>{" "}
             with read-only catalog tools — no API key required. Add it to your
             client and AI assistants can answer questions like &quot;what AI screening
-            templates does Interviewpad offer?&quot; without anyone having an account.
+            templates does Intervutree offer?&quot; without anyone having an account.
           </p>
           <SnippetCard
             title="Public install"
@@ -328,7 +328,7 @@ export default async function McpDocsPage() {
             </Link>
           </span>
           <Link href="/" className="text-accent underline underline-offset-2">
-            ← Back to Interviewpad
+            ← Back to Intervutree
           </Link>
         </footer>
       </div>

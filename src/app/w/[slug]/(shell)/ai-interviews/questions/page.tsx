@@ -5,7 +5,7 @@ import QuestionSets from "../_components/QuestionSets";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<{ q?: string }> };
 
-export const metadata = { title: "AI question sets — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "AI question sets", robots: { index: false, follow: false } };
 
 export default async function AiQuestionSetsPage({ params, searchParams }: Props) {
   const { slug } = await params;

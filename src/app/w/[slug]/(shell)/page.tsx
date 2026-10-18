@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Props) {
     select: { name: true },
   });
   return {
-    title: workspace ? `${workspace.name} Workspace Dashboard — Interviewpad` : "Workspace not found",
+    title: workspace ? `${workspace.name} Workspace Dashboard` : "Workspace not found",
   };
 }
 

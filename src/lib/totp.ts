@@ -24,7 +24,7 @@ authenticator.options = { window: 1, step: 30 };
 
 export type BackupCode = { hash: string; usedAt: string | null };
 
-const ISSUER = "Interviewpad";
+const ISSUER = "DevPrep"; // default; the 2FA setup passes the brand of the domain it runs on
 const BACKUP_CODE_COUNT = 10;
 const BACKUP_CODE_BYTES = 5; // 5 bytes → 10 hex chars → 1.1e12 keyspace
 
@@ -40,8 +40,8 @@ export function generateTotpSecret(): string {
  * Builds the otpauth:// URI that the QR encodes. Both the issuer and the
  * account label are URI-encoded by otplib internally.
  */
-export function buildOtpauthUri(secret: string, accountLabel: string): string {
-  return authenticator.keyuri(accountLabel, ISSUER, secret);
+export function buildOtpauthUri(secret: string, accountLabel: string, issuer: string = ISSUER): string {
+  return authenticator.keyuri(accountLabel, issuer, secret);
 }
 
 /**

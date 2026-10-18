@@ -150,8 +150,8 @@ describe("helpers", () => {
   });
 
   it("builds sender, reply-to, deletion date and formatted dates", () => {
-    expect(senderDisplayName(base())).toBe("Acme via Interviewpad");
-    expect(senderDisplayName({ ...base(), senderName: "Acme hiring" })).toBe("Acme hiring via Interviewpad");
+    expect(senderDisplayName(base())).toBe("Acme via Intervutree");
+    expect(senderDisplayName({ ...base(), senderName: "Acme hiring" })).toBe("Acme hiring via Intervutree");
     expect(replyToAddress({ replyToEmail: "jobs@acme.com", replyToConfirmedAt: null })).toBeNull();
     expect(replyToAddress({ replyToEmail: "jobs@acme.com", replyToConfirmedAt: new Date() })).toBe("jobs@acme.com");
     expect(deletionFinalAt({ deletionScheduledAt: new Date("2026-10-01T00:00:00Z") })).toEqual(new Date("2026-10-31T00:00:00Z"));

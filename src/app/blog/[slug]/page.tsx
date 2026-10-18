@@ -64,7 +64,7 @@ export async function generateMetadata({
       user: { select: { name: true } },
     },
   });
-  if (!blog || !blog.published) return { title: "Story not found — Interviewpad" };
+  if (!blog || !blog.published) return { title: "Story not found" };
   // next/metadata can't serialize a base64 data URL into OG image tags, so we
   // only forward http(s) covers. Data-URL covers still render in-page but are
   // omitted from social previews.
@@ -73,10 +73,10 @@ export async function generateMetadata({
       ? [blog.coverImage]
       : undefined;
   const canonical = `/blog/${slug}`;
-  const authorName = blog.user?.name ?? "Interviewpad";
+  const authorName = blog.user?.name ?? "DevPrep";
   return {
-    title: `${blog.title} — Interviewpad`,
-    description: blog.excerpt ?? `${blog.title} on Interviewpad.`,
+    title: `${blog.title}`,
+    description: blog.excerpt ?? `${blog.title} on DevPrep.`,
     alternates: { canonical },
     authors: [{ name: authorName }],
     openGraph: {
@@ -264,7 +264,7 @@ export default async function BlogPostPage({
     },
     publisher: {
       "@type": "Organization",
-      name: "Interviewpad",
+      name: "DevPrep",
       url: siteUrl,
     },
     mainEntityOfPage: {

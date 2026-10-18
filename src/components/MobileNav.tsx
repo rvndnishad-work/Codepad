@@ -22,7 +22,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import LogoDynamic from "./LogoDynamic";
+import { BrandLogo } from "./brand/BrandLogo";
+import type { BrandKey } from "@/lib/brand";
 import type { NavStatus } from "@/lib/settings-constants";
 
 /** Icon names are passed across the RSC boundary as strings. See NavDropdown for rationale. */
@@ -66,6 +67,8 @@ type Props = {
   recruitersMenuStatus?: NavStatus;
   /** The domain this page is on; null when both sites share one domain. */
   site?: "developer" | "recruiter" | null;
+  /** The domain's brand; null keeps the per-route behaviour when both sites share a domain. */
+  brand?: BrandKey | null;
 };
 
 /**
@@ -83,6 +86,7 @@ export default function MobileNav({
   devsMenuStatus,
   recruitersMenuStatus,
   site = null,
+  brand = null,
 }: Props) {
   const recruiterSite = site === "recruiter";
   const [open, setOpen] = useState(false);
@@ -157,10 +161,7 @@ export default function MobileNav({
           href={isAdmin ? "/admin" : "/"}
           className="flex items-center group shrink-0"
         >
-          <LogoDynamic
-            compact
-            tone={isRecruiterRoute ? "secondary" : "accent"}
-          />
+          <BrandLogo compact brand={brand ?? (isRecruiterRoute ? "intervutree" : "devprep")} />
         </Link>
       </div>
 

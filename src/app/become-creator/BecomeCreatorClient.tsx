@@ -72,7 +72,7 @@ export default function BecomeCreatorClient({ application }: { application: Appl
             <span className="text-accent">Get paid for it.</span>
           </h1>
           <p className="mt-5 text-base md:text-lg text-muted max-w-2xl mx-auto leading-relaxed">
-            Launch your own creator space on Interviewpad — publish tutorials, interview prep,
+            Launch your own creator space on DevPrep — publish tutorials, interview prep,
             challenges and playgrounds, and earn through memberships and one-time sales.
           </p>
           {!pending && (

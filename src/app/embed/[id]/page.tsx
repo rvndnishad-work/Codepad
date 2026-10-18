@@ -5,7 +5,7 @@ import { after } from "next/server";
 import type { SandpackFiles } from "@codesandbox/sandpack-react";
 
 export const metadata = {
-  title: "Interviewpad embed",
+  title: "DevPrep embed",
 };
 
 export default async function EmbedPage({

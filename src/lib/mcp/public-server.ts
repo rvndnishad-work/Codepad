@@ -32,7 +32,7 @@ export function buildPublicMcpServer(): McpServer {
     {
       title: "List builtin screening templates",
       description:
-        "Returns the catalog of builtin AI screening templates Interviewpad ships. Workspace-custom templates are not exposed on this public surface.",
+        "Returns the catalog of builtin AI screening templates Intervutree ships. Workspace-custom templates are not exposed on this public surface.",
       inputSchema: {},
     },
     async () => {
@@ -43,7 +43,7 @@ export function buildPublicMcpServer(): McpServer {
         estimatedMinutes: t.estimatedMinutes,
       }));
       const text = [
-        `Interviewpad ships ${rows.length} builtin AI screening templates:`,
+        `Intervutree ships ${rows.length} builtin AI screening templates:`,
         "",
         ...rows.map(
           (t) =>
@@ -65,7 +65,7 @@ export function buildPublicMcpServer(): McpServer {
     {
       title: "Describe AI credit pricing",
       description:
-        "Returns the one-time AI screening credit pack tiers. 1 credit = 1 completed AI screening. For up-to-date subscription plan pricing, see https://interviewpad.in/pricing.",
+        "Returns the one-time AI screening credit pack tiers. 1 credit = 1 completed AI screening. For up-to-date subscription plan pricing, see https://intervutree.com/pricing.",
       inputSchema: {},
     },
     async () => {
@@ -84,7 +84,7 @@ export function buildPublicMcpServer(): McpServer {
             `• ${r.label}: ${r.credits} credits for $${r.priceUsd.toFixed(0)} (≈ $${r.perCreditUsd.toFixed(2)} / screening)`
         ),
         "",
-        "Workspace plans (Growth / Enterprise) unlock the AI screening feature. See https://interviewpad.in/pricing for plan details.",
+        "Workspace plans (Growth / Enterprise) unlock the AI screening feature. See https://intervutree.com/pricing for plan details.",
       ].join("\n");
 
       return {

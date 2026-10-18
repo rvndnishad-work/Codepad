@@ -3,7 +3,7 @@ import { Briefcase, Home, ArrowRight } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 
 export const metadata = {
-  title: "Session not found — Interviewpad",
+  title: "Session not found",
 };
 
 export default function InterviewNotFound() {

@@ -697,7 +697,7 @@ export default async function CreatorSpacePage({ params }: Props) {
           >
             <div>
               <div className="text-xs font-bold text-fg group-hover:text-accent transition-colors">
-                Teach on Interviewpad
+                Teach on DevPrep
               </div>
               <p className="text-[10px] text-muted mt-0.5">Launch your own creator space.</p>
             </div>

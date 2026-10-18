@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
-export const alt = "Creator Space on Interviewpad";
+export const alt = "Creator Space on DevPrep";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

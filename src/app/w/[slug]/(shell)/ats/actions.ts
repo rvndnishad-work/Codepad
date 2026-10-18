@@ -266,7 +266,7 @@ function samplePayload(provider: AtsProvider) {
       durationSec: 2700,
       finishedAt: new Date().toISOString(),
     },
-    note: "Synthetic test event from the Interviewpad workspace ATS console.",
+    note: "Synthetic test event from the Intervutree workspace ATS console.",
   };
 }
 
@@ -290,8 +290,8 @@ export async function sendAtsTestEventAction(slug: string): Promise<AtsTestResul
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json, text/plain;q=0.9, */*;q=0.5",
-    "User-Agent": "Interviewpad-ATS-Probe/1.0",
-    "X-Interviewpad-Event": "test",
+    "User-Agent": "Intervutree-ATS-Probe/1.0",
+    "X-Intervutree-Event": "test",
   };
   if (row.apiKey) {
     const plaintext = decryptAtRest(row.apiKey);

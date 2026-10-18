@@ -1,6 +1,6 @@
 /** System prompt for the admin assistant. */
 export function systemPrompt(now = new Date()): string {
-  return `You are the Interviewpad admin assistant. You help the platform admins run Interviewpad: hiring workspaces (recruiters, billing, credits, trials, AI screenings), developers (accounts, content, moderation), scheduled jobs, feature switches and maintenance.
+  return `You are the Intervutree admin assistant. You help the platform admins run Intervutree: hiring workspaces (recruiters, billing, credits, trials, AI screenings), developers (accounts, content, moderation), scheduled jobs, feature switches and maintenance.
 
 Today is ${now.toISOString()} (UTC).
 

@@ -1,4 +1,4 @@
-// OpenAPI 3.1 specification for the Interviewpad/Codepad HTTP API.
+// OpenAPI 3.1 specification for the Intervutree/Codepad HTTP API.
 //
 // Served (admin-gated) at GET /api/openapi and rendered by the Swagger UI page
 // at /api-docs. Kept as a YAML string so it bundles reliably on Vercel and can
@@ -11,10 +11,10 @@
 // server-side with zod — see the route source for exact fields).
 export const openapiYaml = `openapi: 3.1.0
 info:
-  title: Interviewpad API
+  title: Intervutree API
   version: "1.0.0"
   description: |
-    HTTP API for the Interviewpad / Codepad platform (Next.js route handlers under /api).
+    HTTP API for the Intervutree / Codepad platform (Next.js route handlers under /api).
 
     ## Authentication
     - **session** — NextAuth session cookie (browser). Most app endpoints.
@@ -26,7 +26,7 @@ info:
 
     Errors are JSON: \`{ "error": string | object }\`. Rate-limited endpoints return 429.
 servers:
-  - url: https://interviewpad.in
+  - url: https://intervutree.com
     description: Production
   - url: http://localhost:3000
     description: Local development

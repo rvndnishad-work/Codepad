@@ -3,7 +3,7 @@ import { Compass, Home, ArrowRight } from "lucide-react";
 import { LogoLockup } from "@/components/Logo";
 
 export const metadata = {
-  title: "Not found — Interviewpad",
+  title: "Not found",
 };
 
 export default function NotFound() {

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Mock & Live Interview Sessions — Interviewpad",
+  title: "Mock & Live Interview Sessions",
 };
 
 export default async function InterviewDashboardPage() {

@@ -5,10 +5,12 @@ import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import { applyPricingCopy } from "@/lib/billing/pricing-copy";
 import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 import PricingClient from "./PricingClient";
+import { recruiterUrl } from "@/lib/domains";
 
 export const metadata = {
   title: "Pricing | Interviewpad",
   description: "Free, Growth and Enterprise plans for technical screening. Pay per seat, and pay for AI screening with credits only when a candidate starts.",
+  alternates: { canonical: recruiterUrl("/pricing") },
 };
 
 export default async function PricingPage() {

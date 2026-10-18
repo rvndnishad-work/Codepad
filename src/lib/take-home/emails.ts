@@ -6,14 +6,14 @@
  * All sends are fire-and-forget at the call site: a transport failure must
  * never roll back the underlying action (assignment created, submission saved).
  */
-import { siteOrigin } from "@/lib/site-url";
+import { recruiterOrigin } from "@/lib/site-url";
 import { sendEmail, sendTemplatedBatch, type BatchSendResult } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { STAFF_ROLES } from "@/lib/permissions/role-groups";
 
 /** Base URL for candidate/recruiter links — matches the AI-screening helper. */
 export function appBaseUrl(): string {
-  return siteOrigin();
+  return recruiterOrigin();
 }
 
 export function takeHomeUrl(token: string): string {

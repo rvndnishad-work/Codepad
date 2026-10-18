@@ -62,6 +62,23 @@ export function siteOrigin(): string {
 }
 
 /**
+ * The recruiter site's origin from RECRUITER_SITE_URL, or null when it is not
+ * set (then the recruiter pages live on the main site, as before the split).
+ */
+export function recruiterConfiguredOrigin(): string | null {
+  return cleanOrigin(process.env.RECRUITER_SITE_URL);
+}
+
+/**
+ * Absolute origin for recruiter-facing links (workspace pages, candidate
+ * invites, take-home and AI screening links). Falls back to siteOrigin()
+ * until RECRUITER_SITE_URL is set.
+ */
+export function recruiterOrigin(): string {
+  return recruiterConfiguredOrigin() ?? siteOrigin();
+}
+
+/**
  * Origin from request headers (x-forwarded-host, then host), or null when
  * missing or local on a deployment. On production a *.vercel.app host (Vercel
  * cron calls, someone opening the raw deployment URL) is skipped too, so

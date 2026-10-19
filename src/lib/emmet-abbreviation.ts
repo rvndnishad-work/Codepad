@@ -16,8 +16,10 @@
 import expand, { extract } from "emmet";
 
 export type EmmetExpansion = {
-  /** The abbreviation as typed, e.g. `ul>li*3`. */
+  /** The abbreviation as typed, e.g. `ul>li*3` (what the snippet replaces). */
   abbreviation: string;
+  /** What the suggest list shows: the abbreviation, or the full tag name for a half-typed tag. */
+  label: string;
   /** Monaco snippet text with `${1}` tab stops. */
   snippet: string;
 };
@@ -67,6 +69,21 @@ function isJsxLocation(before: string): boolean {
   return false;
 }
 
+/**
+ * True when the cursor sits in plain text between JSX tags, e.g. after
+ * `<div className="app">` on the way to typing `Hello there`. Code snippets
+ * (`throw`, `log`, `for`) make no sense there, so the snippet provider stays
+ * quiet. Anything code-like since the last tag (`{`, `(`, `;`, `=` ...)
+ * means we are back in JavaScript.
+ */
+export function isInJsxText(textBefore: string): boolean {
+  const text = textBefore.length > CONTEXT_CHARS ? textBefore.slice(-CONTEXT_CHARS) : textBefore;
+  const gt = text.lastIndexOf(">");
+  if (gt < 0) return false;
+  if (/[{}<>();=`]/.test(text.slice(gt + 1))) return false;
+  return closesJsxTag(text, gt);
+}
+
 function isHtmlLocation(before: string): boolean {
   // Inside a tag (`<div cla|`) or an attribute value.
   if (before.lastIndexOf("<") > before.lastIndexOf(">")) return false;
@@ -94,14 +111,10 @@ function looksLikeMarkup(abbreviation: string): boolean {
   return HTML_TAGS.has(name);
 }
 
-/**
- * Expand the emmet abbreviation that ends at the cursor, or return null when
- * there is none or the cursor is not somewhere markup belongs.
- *
- * @param textBefore everything in the model before the cursor
- * @param language   Monaco language id of the model
- */
-export function emmetExpansionAt(textBefore: string, language: string): EmmetExpansion | null {
+type Located = { syntax: Syntax; type: "markup" | "stylesheet"; abbreviation: string; };
+
+/** Find the abbreviation ending at the cursor and check it sits where emmet belongs. */
+function locate(textBefore: string, language: string): Located | null {
   const syntax = syntaxFor(language);
   if (!syntax) return null;
 
@@ -117,13 +130,16 @@ export function emmetExpansionAt(textBefore: string, language: string): EmmetExp
   const before = text.slice(0, lineStart + found.start);
 
   if (syntax === "jsx") {
-    if (!looksLikeMarkup(abbreviation) || !isJsxLocation(before)) return null;
+    if (!isJsxLocation(before)) return null;
   } else if (syntax === "html") {
     if (!isHtmlLocation(before)) return null;
   } else if (!isStylesheetLocation(before)) {
     return null;
   }
+  return { syntax, type, abbreviation };
+}
 
+function expandAt({ syntax, type }: Located, abbreviation: string): string | null {
   let snippet: string;
   try {
     snippet = expand(abbreviation, {
@@ -144,5 +160,44 @@ export function emmetExpansionAt(textBefore: string, language: string): EmmetExp
   // An expansion that only echoes the input back is not worth offering.
   // `abc` → `abc: ;` (unknown property) is noise too.
   if (!snippet || snippet === abbreviation || snippet === `${abbreviation}: \${0};`) return null;
-  return { abbreviation, snippet };
+  return snippet;
+}
+
+/**
+ * Expand the emmet abbreviation that ends at the cursor, or return null when
+ * there is none or the cursor is not somewhere markup belongs. This is what
+ * Tab expands.
+ *
+ * @param textBefore everything in the model before the cursor
+ * @param language   Monaco language id of the model
+ */
+export function emmetExpansionAt(textBefore: string, language: string): EmmetExpansion | null {
+  const at = locate(textBefore, language);
+  if (!at) return null;
+  if (at.syntax === "jsx" && !looksLikeMarkup(at.abbreviation)) return null;
+  const snippet = expandAt(at, at.abbreviation);
+  return snippet ? { abbreviation: at.abbreviation, label: at.abbreviation, snippet } : null;
+}
+
+/**
+ * Everything the suggest list should offer at the cursor: the expansion of
+ * what was typed, plus, while a tag name is half typed (`d`, `se`), every
+ * HTML tag it could become (`div`, `dialog`, `section`, `select`), the way
+ * VS Code lists emmet tag suggestions. Without these, a half-typed tag in
+ * JSX text has no suggestions at all and the list falls back to plain words.
+ */
+export function emmetSuggestionsAt(textBefore: string, language: string): EmmetExpansion[] {
+  const at = locate(textBefore, language);
+  if (!at) return [];
+  const out: EmmetExpansion[] = [];
+  const main = emmetExpansionAt(textBefore, language);
+  if (main) out.push(main);
+  if (at.type === "markup" && /^[a-z][a-z0-9]*$/.test(at.abbreviation)) {
+    for (const tag of HTML_TAGS) {
+      if (tag === at.abbreviation || !tag.startsWith(at.abbreviation)) continue;
+      const snippet = expandAt(at, tag);
+      if (snippet) out.push({ abbreviation: at.abbreviation, label: tag, snippet });
+    }
+  }
+  return out;
 }

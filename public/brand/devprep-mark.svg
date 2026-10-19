@@ -1,4 +1,93 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 560"><defs>
-<linearGradient id="dpg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE14D"/><stop offset="1" stop-color="#FFB400"/></linearGradient>
-<linearGradient id="dpg2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD83A"/><stop offset="1" stop-color="#FFB400"/></linearGradient>
-</defs><path d="M42 170 C40 160 48 152 60 148 L300 22 C308 18 318 18 326 22 L536 138 C548 145 548 158 536 164 L400 232 C392 236 384 236 376 232 L300 192 L224 250 C216 256 206 256 196 252 L58 184 C48 180 42 176 42 170 Z" fill="url(#dpg)"/><circle cx="44" cy="172" r="10" fill="#1C1C1E"/><path d="M38 176 L48 300 C49 312 60 326 54 346 C50 358 36 358 32 346 C26 326 36 312 38 300 Z" fill="#1C1C1E"/><path d="M40 170 C38 180 50 182 58 184 L196 252" fill="none" stroke="url(#dpg2)" stroke-width="0"/><path d="M238 262 L190 310 L238 358" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M362 262 L410 310 L362 358" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M322 236 L278 372" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round"/><path d="M100 410 C170 395 240 420 300 470 C300 500 300 520 300 540 C240 490 170 468 100 462 Z" fill="#1C1C1E"/><path d="M500 410 C430 395 360 420 300 470 C300 500 300 520 300 540 C360 490 430 468 500 462 Z" fill="#1C1C1E"/><path d="M112 338 C180 334 245 370 298 446 C300 450 300 460 298 468 C240 410 180 392 112 395 Z" fill="url(#dpg)"/><path d="M488 338 C420 334 355 370 302 446 C300 450 300 460 302 468 C360 410 420 392 488 395 Z" fill="url(#dpg)"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none" role="img" aria-label="DevPrep Academy Mark">
+  <defs>
+    <!-- Cap top gradient -->
+    <linearGradient id="dp-cap-grad" x1="160" y1="50" x2="350" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFDD00"/>
+      <stop offset="60%" stop-color="#FFB000"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <!-- Cap bevel gradient -->
+    <linearGradient id="dp-bevel-grad" x1="120" y1="120" x2="392" y2="155" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="50%" stop-color="#B45309"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <!-- Book inner gold gradient -->
+    <linearGradient id="dp-book-gold" x1="130" y1="310" x2="382" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#FFC107"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+    <!-- Tassel cord gold -->
+    <linearGradient id="dp-cord-grad" x1="256" y1="105" x2="135" y2="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="100%" stop-color="#FFB703"/>
+    </linearGradient>
+    <!-- Shadow filter for depth -->
+    <filter id="dp-shadow" x="-8%" y="-8%" width="116%" height="116%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Group with subtle drop shadow -->
+  <g filter="url(#dp-shadow)">
+    <!-- 1. MORTARBOARD CAP -->
+    <!-- Cap lower bevel edge / thickness -->
+    <path d="M 120 120 L 256 168 L 392 120 L 392 134 L 256 182 L 120 134 Z" fill="url(#dp-bevel-grad)"/>
+
+    <!-- Cap main diamond surface -->
+    <polygon points="256,52 392,120 256,168 120,120" fill="url(#dp-cap-grad)"/>
+
+    <!-- Center cap button -->
+    <ellipse cx="256" cy="118" rx="8" ry="4.5" fill="#FFEAA7"/>
+
+    <!-- Tassel Cord: wraps from center button to left tip -->
+    <path d="M 256 118 Q 185 110 132 132" fill="none" stroke="url(#dp-cord-grad)" stroke-width="4.5" stroke-linecap="round"/>
+
+    <!-- Tassel hanging drop: ring and black fringe skirt -->
+    <circle cx="132" cy="136" r="3.5" fill="#FFB703"/>
+    <!-- Tassel ring band -->
+    <rect x="129" y="140" width="6" height="4" rx="1.5" fill="#D97706"/>
+    <!-- Tassel skirt (dark charcoal) -->
+    <path d="M 129 144 L 126 195 C 126 198 138 198 138 195 L 135 144 Z" fill="#18181B"/>
+
+    <!-- 2. CODE BRACKETS: </> in center -->
+    <g stroke="#18181B" stroke-width="19" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- Left Chevron < -->
+      <path d="M 200 220 L 164 246 L 200 272"/>
+      <!-- Middle Slash / -->
+      <path d="M 268 214 L 244 278"/>
+      <!-- Right Chevron > -->
+      <path d="M 312 220 L 348 246 L 312 272"/>
+    </g>
+
+    <!-- 3. OPEN BOOK BASE -->
+    <!-- Outer Book Base (Solid dark foundation/cover) -->
+    <path d="M 256 424 
+             C 214 402 164 394 118 408 
+             L 118 368 
+             C 166 352 216 360 256 380 
+             C 296 360 346 352 394 368 
+             L 394 408 
+             C 348 394 298 402 256 424 Z" 
+          fill="#18181B"/>
+
+    <!-- Inner Book Pages (Vibrant curved golden leaf spread) -->
+    <!-- Left page -->
+    <path d="M 256 374 
+             C 218 344 166 336 122 350 
+             C 120 330 120 310 124 294 
+             C 168 280 220 292 256 324 Z" 
+          fill="url(#dp-book-gold)"/>
+
+    <!-- Right page -->
+    <path d="M 256 374 
+             C 294 344 346 336 390 350 
+             C 392 330 392 310 388 294 
+             C 344 280 292 292 256 324 Z" 
+          fill="url(#dp-book-gold)"/>
+
+    <!-- Book spine center line -->
+    <path d="M 256 324 L 256 374" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

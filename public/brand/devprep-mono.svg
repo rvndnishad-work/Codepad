@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none" role="img" aria-label="DevPrep Academy Monochrome Logo">
+  <!-- Group in solid black -->
+  <g fill="#000000">
+    <!-- Cap Diamond -->
+    <polygon points="256,52 392,120 256,168 120,120"/>
+
+    <!-- Tassel Cord & Skirt -->
+    <path d="M 256 118 Q 185 110 132 132" fill="none" stroke="#000000" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="132" cy="136" r="4"/>
+    <path d="M 129 144 L 126 195 C 126 198 138 198 138 195 L 135 144 Z"/>
+
+    <!-- </> code brackets -->
+    <g stroke="#000000" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M 198 220 L 162 246 L 198 272"/>
+      <path d="M 268 214 L 244 278"/>
+      <path d="M 314 220 L 350 246 L 314 272"/>
+    </g>
+
+    <!-- Upper Book Leaves (Outlined) -->
+    <path d="M 256 374 C 218 344 166 336 122 350 C 120 330 120 310 124 294 C 168 280 220 292 256 324 C 292 292 344 280 388 294 C 392 310 392 330 390 350 C 346 336 294 344 256 374 Z" 
+          fill="none" stroke="#000000" stroke-width="12" stroke-linejoin="round"/>
+
+    <!-- Lower Book Base (Filled) -->
+    <path d="M 256 424 C 214 402 164 394 118 408 L 118 380 C 166 364 216 372 256 392 C 296 372 346 364 394 380 L 394 408 C 348 394 298 402 256 424 Z"/>
+  </g>
+</svg>

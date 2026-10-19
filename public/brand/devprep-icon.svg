@@ -1,4 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="devprep"><g transform="translate(30.7 45.7) scale(0.7509)"><defs>
-<linearGradient id="dpg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE14D"/><stop offset="1" stop-color="#FFB400"/></linearGradient>
-<linearGradient id="dpg2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFD83A"/><stop offset="1" stop-color="#FFB400"/></linearGradient>
-</defs><path d="M42 170 C40 160 48 152 60 148 L300 22 C308 18 318 18 326 22 L536 138 C548 145 548 158 536 164 L400 232 C392 236 384 236 376 232 L300 192 L224 250 C216 256 206 256 196 252 L58 184 C48 180 42 176 42 170 Z" fill="url(#dpg)"/><circle cx="44" cy="172" r="10" fill="#1C1C1E"/><path d="M38 176 L48 300 C49 312 60 326 54 346 C50 358 36 358 32 346 C26 326 36 312 38 300 Z" fill="#1C1C1E"/><path d="M40 170 C38 180 50 182 58 184 L196 252" fill="none" stroke="url(#dpg2)" stroke-width="0"/><path d="M238 262 L190 310 L238 358" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M362 262 L410 310 L362 358" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M322 236 L278 372" fill="none" stroke="#1C1C1E" stroke-width="26" stroke-linecap="round"/><path d="M100 410 C170 395 240 420 300 470 C300 500 300 520 300 540 C240 490 170 468 100 462 Z" fill="#1C1C1E"/><path d="M500 410 C430 395 360 420 300 470 C300 500 300 520 300 540 C360 490 430 468 500 462 Z" fill="#1C1C1E"/><path d="M112 338 C180 334 245 370 298 446 C300 450 300 460 298 468 C240 410 180 392 112 395 Z" fill="url(#dpg)"/><path d="M488 338 C420 334 355 370 302 446 C300 450 300 460 302 468 C360 410 420 392 488 395 Z" fill="url(#dpg)"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none" role="img" aria-label="DevPrep Academy App Icon">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="dp-ic-bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#222631"/>
+      <stop offset="100%" stop-color="#0E1015"/>
+    </linearGradient>
+
+    <!-- Border highlight -->
+    <linearGradient id="dp-ic-border" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD54F" stop-opacity="0.35"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.4"/>
+    </linearGradient>
+
+    <!-- Cap gradient -->
+    <linearGradient id="dp-ic-cap" x1="160" y1="50" x2="350" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE033"/>
+      <stop offset="60%" stop-color="#FFB300"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="dp-ic-bevel" x1="120" y1="120" x2="392" y2="155" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <linearGradient id="dp-ic-gold" x1="130" y1="310" x2="382" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+
+    <!-- Subtle radial glow behind mark -->
+    <radialGradient id="dp-ic-glow" cx="256" cy="256" r="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFB300" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#FFB300" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="8" y="8" width="496" height="496" rx="108" fill="url(#dp-ic-bg)"/>
+  <rect x="8" y="8" width="496" height="496" rx="108" stroke="url(#dp-ic-border)" stroke-width="3"/>
+
+  <!-- Warm background glow -->
+  <circle cx="256" cy="256" r="180" fill="url(#dp-ic-glow)"/>
+
+  <!-- Scaled Mark -->
+  <g transform="translate(48, 48) scale(0.8125)">
+    <!-- Mortarboard Cap -->
+    <path d="M 120 120 L 256 168 L 392 120 L 392 134 L 256 182 L 120 134 Z" fill="url(#dp-ic-bevel)"/>
+    <polygon points="256,52 392,120 256,168 120,120" fill="url(#dp-ic-cap)"/>
+    <ellipse cx="256" cy="118" rx="8" ry="4.5" fill="#FFF9C4"/>
+    <path d="M 256 118 Q 185 110 132 132" fill="none" stroke="#FFD54F" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="132" cy="136" r="3.5" fill="#FFD54F"/>
+    <rect x="129" y="140" width="6" height="4" rx="1.5" fill="#FFA000"/>
+    <path d="M 129 144 L 126 195 C 126 198 138 198 138 195 L 135 144 Z" fill="#FFE082"/>
+
+    <!-- </> code brackets (White) -->
+    <g stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M 198 220 L 162 246 L 198 272"/>
+      <path d="M 268 214 L 244 278"/>
+      <path d="M 314 220 L 350 246 L 314 272"/>
+    </g>
+
+    <!-- Open book -->
+    <path d="M 256 424 C 214 402 164 394 118 408 L 118 368 C 166 352 216 360 256 380 C 296 360 346 352 394 368 L 394 408 C 348 394 298 402 256 424 Z" fill="#FFB300" opacity="0.25"/>
+    <path d="M 256 374 C 218 344 166 336 122 350 C 120 330 120 310 124 294 C 168 280 220 292 256 324 Z" fill="url(#dp-ic-gold)"/>
+    <path d="M 256 374 C 294 344 346 336 390 350 C 392 330 392 310 388 294 C 344 280 292 292 256 324 Z" fill="url(#dp-ic-gold)"/>
+    <path d="M 256 324 L 256 374" stroke="#FFF9C4" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

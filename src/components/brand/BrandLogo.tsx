@@ -5,11 +5,12 @@ import { BRANDS, type BrandKey } from "@/lib/brand";
  * supplied set (mark, mark-dark, logo, logo-dark, icon, icon-light, mono);
  * Intervutree's were drawn to match its brand board. `icon` here is the bare
  * mark for inline use; the tab icon comes from src/lib/brand.ts. The dark
- * DevPrep logo is the supplied file minus its background plate, so it sits
- * on the page rather than in a box.
+ * DevPrep logo is the supplied file minus its background plate, and both
+ * DevPrep logos are served with the viewBox cropped to the artwork (the
+ * supplied canvas has wide margins), so the two brands render at one size.
  */
 const FILES = {
-  devprep: { icon: "/brand/devprep-mark.svg", iconDark: "/brand/devprep-mark-dark.svg", lockup: "/brand/devprep-logo.svg", lockupDark: "/brand/devprep-logo-dark-transparent.svg" },
+  devprep: { icon: "/brand/devprep-mark.svg", iconDark: "/brand/devprep-mark-dark.svg", lockup: "/brand/devprep-logo-tight.svg", lockupDark: "/brand/devprep-logo-dark-tight.svg" },
   intervutree: { icon: "/brand/intervutree-icon.svg", iconDark: "/brand/intervutree-icon.svg", lockup: "/brand/intervutree-lockup.svg", lockupDark: "/brand/intervutree-lockup-dark.svg" },
 } as const;
 
@@ -44,7 +45,7 @@ function LockupImage({ brand, height, className }: { brand: BrandKey; height: nu
 /** The header logo: the lockup, or just the mark when compact. */
 export function BrandLogo({ brand, compact = false, className }: { brand: BrandKey; compact?: boolean; showSub?: boolean; className?: string }) {
   if (compact) return <BrandIcon brand={brand} className={`h-9 w-9 ${className ?? ""}`} />;
-  return <LockupImage brand={brand} height={brand === "devprep" ? 46 : 40} className={`transition-transform duration-300 hover:scale-[1.02] ${className ?? ""}`} />;
+  return <LockupImage brand={brand} height={40} className={`transition-transform duration-300 hover:scale-[1.02] ${className ?? ""}`} />;
 }
 
 /** A larger lockup for the footer, the sign-in page and the 404 pages. */

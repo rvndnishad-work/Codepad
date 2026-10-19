@@ -54,7 +54,7 @@ export const RECRUITER_BRAND: Brand = {
   name: "Intervutree",
   domain: "intervutree.com",
   wordmark: ["intervu", "tree"],
-  tagline: "Hiring runtime",
+  tagline: "Hire better. Faster. Together.",
   tone: "green",
   icon: "/brand/intervutree-icon.svg",
   title: "Intervutree — Technical Screening for Hiring Teams",

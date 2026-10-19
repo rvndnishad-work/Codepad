@@ -86,7 +86,7 @@ describe("PlaygroundToolbar", () => {
     renderBar();
     const brand = screen.getByRole("link", { name: "DevPrep home" });
     expect(brand.getAttribute("href")).toBe("/");
-    expect(brand.textContent).toContain("dev");
+    expect(brand.querySelector("img")?.getAttribute("alt")).toBe("DevPrep");
     expect(brand.textContent).not.toContain("Interview runtime");
   });
 

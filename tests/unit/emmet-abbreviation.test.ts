@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emmetExpansionAt } from "@/lib/emmet-abbreviation";
+import { emmetExpansionAt, emmetSuggestionsAt, isInJsxText } from "@/lib/emmet-abbreviation";
 
 const jsx = (before: string) => emmetExpansionAt(before, "javascript")?.snippet ?? null;
 
@@ -72,5 +72,46 @@ describe("emmetExpansionAt — CSS", () => {
     expect(css(".a { m10 }\ndf")).toBeNull();
     expect(css(".a {\n  /* m10")).toBeNull();
     expect(css(".a {\n  xyz")).toBeNull();
+  });
+});
+
+describe("isInJsxText", () => {
+  const app = 'export default function App() {\n  return (\n    <div className="app">\n      ';
+
+  it("is true for plain text between JSX tags", () => {
+    expect(isInJsxText(app + "Hello ")).toBe(true);
+    expect(isInJsxText(app + "<Header />\n      ")).toBe(true);
+    expect(isInJsxText("<main>")).toBe(true);
+  });
+
+  it("is false in JavaScript, attributes and expressions", () => {
+    expect(isInJsxText("function f() {\n  ")).toBe(false);
+    expect(isInJsxText(app + "{")).toBe(false);
+    expect(isInJsxText(app + "<p>{count > 1 && ")).toBe(false);
+    expect(isInJsxText(app + '<button onClick={() => ')).toBe(false);
+    expect(isInJsxText(app + "</div>\n  );\n}\n\nfunction g() {\n  ")).toBe(false);
+    expect(isInJsxText("const add = (a) => ")).toBe(false);
+    expect(isInJsxText("if (a > ")).toBe(false);
+  });
+});
+
+describe("emmetSuggestionsAt", () => {
+  const app = 'export default function App() {\n  return (\n    <div className="app">\n      <Header />\n      ';
+  const labels = (before: string, lang = "javascript") => emmetSuggestionsAt(before, lang).map((s) => s.label);
+
+  it("lists the HTML tags a half-typed name could become", () => {
+    expect(labels(app + "d")).toEqual(expect.arrayContaining(["div", "dialog", "details"]));
+    expect(labels(app + "div")[0]).toBe("div");
+    expect(emmetSuggestionsAt(app + "se", "javascript").find((s) => s.label === "section")).toEqual({
+      abbreviation: "se",
+      label: "section",
+      snippet: "<section>${1}</section>",
+    });
+    expect(labels("<body>\n  na", "html")).toContain("nav");
+  });
+
+  it("offers nothing outside markup", () => {
+    expect(labels("function f() {\n  d")).toEqual([]);
+    expect(labels(app + "Hello d")).toEqual([]);
   });
 });

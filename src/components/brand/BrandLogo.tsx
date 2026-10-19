@@ -1,6 +1,6 @@
 import { BRANDS, type BrandKey } from "@/lib/brand";
-import { DevprepMark } from "./DevprepLogo";
-import { IntervutreeMark, IntervutreeWordmark } from "./IntervutreeLogo";
+import { DevprepMark, DevprepWordmarkFile } from "./DevprepLogo";
+import { IntervutreeMark } from "./IntervutreeLogo";
 
 /**
  * The header logo for a brand: the mark beside a two-tone wordmark, or the
@@ -58,19 +58,33 @@ export function BrandLogo({
   );
 }
 
-/** A larger lockup for the footer and the sign-in page. */
+/**
+ * A larger lockup for the footer, the sign-in page and the 404 pages. DevPrep
+ * on the light theme shows the pack's own wordmark-and-tagline file; on dark,
+ * where that file's charcoal text would vanish, and for Intervutree, which
+ * has no wordmark file, it is the mark beside the two-tone name.
+ */
 export function BrandLockup({ brand, height = 44, className }: { brand: BrandKey; height?: number; className?: string }) {
   const b = BRANDS[brand];
-  if (brand === "intervutree") {
-    return <IntervutreeWordmark height={height} className={className} />;
-  }
-  return (
-    <span className={`inline-flex items-center gap-3 ${className ?? ""}`} style={{ height }}>
-      <DevprepMark className="h-full w-auto" />
+  const Mark = brand === "intervutree" ? IntervutreeMark : DevprepMark;
+  const coloured = brand === "intervutree" ? "var(--brand-green, #00A86B)" : "var(--accent)";
+  const text = (
+    <span className="inline-flex items-center gap-3" style={{ height }}>
+      <Mark className="h-full w-auto" />
       <span className="font-bold tracking-[-0.04em] text-fg" style={{ fontSize: Math.round(height * 0.6) }}>
         {b.wordmark[0]}
-        <span className="text-accent">{b.wordmark[1]}</span>
+        <span style={{ color: coloured }}>{b.wordmark[1]}</span>
       </span>
+    </span>
+  );
+  if (brand !== "devprep") return <span className={className}>{text}</span>;
+  return (
+    <span className={className}>
+      <span className="inline-flex items-center gap-3 dark:hidden" style={{ height }}>
+        <Mark className="h-full w-auto" />
+        <DevprepWordmarkFile height={Math.round(height * 1.1)} />
+      </span>
+      <span className="hidden dark:inline-flex">{text}</span>
     </span>
   );
 }

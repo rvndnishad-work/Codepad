@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#facc15" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="5%" cy="100%" r="50%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="y" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="26" markerHeight="26" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <!-- left: title -->
+  <text x="72" y="300" fill="#facc15" font-size="24" font-weight="700" letter-spacing="5">SENIOR JS</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">The</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">follow-up</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">questions</text>
+
+  <!-- centre: event loop ring -->
+  <circle cx="800" cy="400" r="210" fill="none" stroke="#2a2f3d" stroke-width="2"/>
+  <path d="M800 190 A210 210 0 0 1 1010 400" fill="none" stroke="#60a5fa" stroke-width="12" stroke-linecap="round" marker-end="url(#y)"/>
+  <path d="M1010 400 A210 210 0 0 1 800 610" fill="none" stroke="#a78bfa" stroke-width="12" stroke-linecap="round" marker-end="url(#y)"/>
+  <path d="M800 610 A210 210 0 0 1 590 400" fill="none" stroke="#34d399" stroke-width="12" stroke-linecap="round" marker-end="url(#y)"/>
+  <path d="M590 400 A210 210 0 0 1 800 190" fill="none" stroke="#facc15" stroke-width="12" stroke-linecap="round" marker-end="url(#y)"/>
+
+  <rect x="690" y="340" width="220" height="120" rx="24" fill="#171a23" stroke="#2a2f3d" stroke-width="2"/>
+  <text x="800" y="392" fill="#f4f5f8" font-size="30" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">( ) =&gt;</text>
+  <text x="800" y="430" fill="#9aa3b5" font-size="22" text-anchor="middle">closure</text>
+
+  <text x="960" y="200" fill="#60a5fa" font-size="24" font-weight="700">task</text>
+  <text x="980" y="610" fill="#a78bfa" font-size="24" font-weight="700">microtasks</text>
+  <text x="560" y="640" fill="#34d399" font-size="24" font-weight="700">render</text>
+  <text x="580" y="200" fill="#facc15" font-size="24" font-weight="700">next</text>
+
+  <!-- right: topic chips -->
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="236" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="272" fill="#e8eaf0" text-anchor="middle">queueMicrotask</text>
+    <rect x="1250" y="316" width="280" height="56" rx="28" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+    <text x="1390" y="352" fill="#e8eaf0" text-anchor="middle">hidden classes</text>
+    <rect x="1250" y="396" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="432" fill="#e8eaf0" text-anchor="middle">structuredClone</text>
+    <rect x="1250" y="476" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="512" fill="#e8eaf0" text-anchor="middle">import graph</text>
+  </g>
+</svg>

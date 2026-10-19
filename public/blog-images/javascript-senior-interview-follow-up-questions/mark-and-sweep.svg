@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#34d399"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b7280"/></marker>
+  </defs>
+  <rect width="960" height="480" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">Mark and sweep: reachable means alive</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">The collector walks from the roots. Anything it never reaches is freed, cycles included.</text>
+
+  <rect x="48" y="200" width="150" height="110" rx="16" fill="#1d1a0b" stroke="#facc15" stroke-width="2"/>
+  <text x="74" y="240" fill="#facc15" font-size="15" font-weight="700" letter-spacing="1.5">ROOTS</text>
+  <text x="74" y="270" fill="#e8eaf0" font-size="15">globals</text>
+  <text x="74" y="292" fill="#e8eaf0" font-size="15">call stack</text>
+
+  <path d="M198 230 L 268 180" stroke="#34d399" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="272" y="140" width="170" height="70" rx="14" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="296" y="182" fill="#e8eaf0" font-size="18" font-weight="700">closure</text>
+  <path d="M442 175 L 512 175" stroke="#34d399" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="516" y="140" width="170" height="70" rx="14" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="182" fill="#e8eaf0" font-size="18" font-weight="700">context</text>
+  <path d="M686 175 L 756 175" stroke="#34d399" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="760" y="140" width="150" height="70" rx="14" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="784" y="182" fill="#e8eaf0" font-size="18" font-weight="700">count</text>
+  <text x="272" y="240" fill="#34d399" font-size="15">marked: kept</text>
+
+  <!-- unreachable cycle -->
+  <rect x="272" y="320" width="170" height="70" rx="14" fill="#171a23" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="296" y="362" fill="#9aa3b5" font-size="18" font-weight="700">object a</text>
+  <rect x="560" y="320" width="170" height="70" rx="14" fill="#171a23" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="584" y="362" fill="#9aa3b5" font-size="18" font-weight="700">object b</text>
+  <path d="M442 340 L 556 340" stroke="#6b7280" stroke-width="3" marker-end="url(#g)"/>
+  <path d="M560 372 L 446 372" stroke="#6b7280" stroke-width="3" marker-end="url(#g)"/>
+  <text x="272" y="430" fill="#9aa3b5" font-size="15">a and b point at each other, but nothing reachable points at them.</text>
+  <text x="272" y="454" fill="#f87171" font-size="15">Not marked: swept, even though it is a cycle.</text>
+</svg>

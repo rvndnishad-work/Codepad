@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b7280"/></marker>
+  </defs>
+  <rect width="960" height="520" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">Why a tiny closure can hold 8 MB</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">In V8, closures created in the same scope share one context object</text>
+
+  <!-- left: leaky -->
+  <text x="48" y="150" fill="#f87171" font-size="15" font-weight="700" letter-spacing="1.5">LEAKY</text>
+  <rect x="48" y="172" width="170" height="70" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="72" y="214" fill="#e8eaf0" font-size="18" font-weight="700">keep()</text>
+  <rect x="48" y="300" width="170" height="70" rx="14" fill="#171a23" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="72" y="342" fill="#9aa3b5" font-size="18">unused()</text>
+  <path d="M218 207 L 286 250" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <path d="M218 335 L 286 292" stroke="#6b7280" stroke-width="3" marker-end="url(#g)"/>
+  <rect x="290" y="200" width="196" height="130" rx="16" fill="#2a1414" stroke="#f87171" stroke-width="2"/>
+  <text x="312" y="236" fill="#f87171" font-size="14" font-weight="700" letter-spacing="1">SHARED CONTEXT</text>
+  <text x="312" y="276" fill="#e8eaf0" font-size="18" font-family="ui-monospace, Menlo, Consolas, monospace">bigData</text>
+  <text x="312" y="306" fill="#fca5a5" font-size="15">about 8 MB, kept</text>
+  <text x="48" y="420" fill="#9aa3b5" font-size="15">unused() mentions bigData, so it goes into</text>
+  <text x="48" y="444" fill="#9aa3b5" font-size="15">the shared context, and keep() holds it.</text>
+
+  <!-- divider -->
+  <line x1="516" y1="140" x2="516" y2="470" stroke="#2a2f3d" stroke-width="2"/>
+
+  <!-- right: fixed -->
+  <text x="540" y="150" fill="#34d399" font-size="15" font-weight="700" letter-spacing="1.5">FIXED</text>
+  <rect x="540" y="172" width="170" height="70" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="564" y="214" fill="#e8eaf0" font-size="18" font-weight="700">keep()</text>
+  <path d="M710 207 L 768 207" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="772" y="172" width="150" height="70" rx="16" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="794" y="214" fill="#e8eaf0" font-size="18" font-family="ui-monospace, Menlo, Consolas, monospace">len</text>
+  <rect x="540" y="300" width="382" height="70" rx="14" fill="#171a23" stroke="#4b5563" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="564" y="342" fill="#9aa3b5" font-size="17" font-family="ui-monospace, Menlo, Consolas, monospace">bigData: local, freed on return</text>
+  <text x="540" y="420" fill="#9aa3b5" font-size="15">No closure mentions bigData, so only the</text>
+  <text x="540" y="444" fill="#9aa3b5" font-size="15">small number it needs is kept.</text>
+</svg>

@@ -1,3 +1,11 @@
+---
+slug: javascript-senior-interview-follow-up-questions
+title: The JavaScript Follow-Up Questions Senior Interviews Actually Ask
+excerpt: Everyone can define a closure or say "JS is single-threaded". These are the follow-ups where answers collapse: closure memory, garbage collection, microtasks, starvation, hidden classes, the JIT, private fields, structuredClone, ESM resolution and execution order. Each one is answered with code you can run.
+tags: ["javascript", "interview", "closures", "event-loop", "v8"]
+cover: /blog-images/javascript-senior-interview-follow-up-questions/cover.png
+---
+
 Ask a room of JavaScript developers "What is a closure?" and almost everyone gives the same answer: *a function that remembers its outer variables.* That's correct. Then the follow-ups start, and that's where a lot of good answers fall apart.
 
 This post works through those follow-ups one at a time. It covers closures, the event loop and the engine-level topics senior interviews tend to reach. Each question gets a short answer you could say out loud, the explanation behind it, and a small program you can run. The examples marked **Run** run in your browser on this page. The others need Node flags, and their output was captured with Node 22.
@@ -17,6 +25,8 @@ There's more on the basics in [What are closures in JavaScript?](/interview-ques
 ### Do closures store values or references?
 
 > **Short answer:** References. A closure captures the variable binding itself, not a snapshot of its value. If the variable changes later, the closure sees the new value.
+
+![A closure keeps a link to the scope where it was created, so it reads the live variable, not a copy](/blog-images/javascript-senior-interview-follow-up-questions/closure-scope.svg)
 
 ```javascript-run
 // Closures capture variables (bindings), not a snapshot of their values.
@@ -73,6 +83,8 @@ The cycle problem belongs to **reference counting**. In that scheme each object 
 
 Today's engines use **tracing** collectors. They start from the *roots* (the global object, the current call stack, active handles held by the host) and mark everything they can reach. Anything left unmarked is garbage, whatever it points to itself. A cycle that is cut off from the roots is unreachable, so it is collected.
 
+![Mark-and-sweep starts from the roots. The unreachable cycle is never marked, so it is swept](/blog-images/javascript-senior-interview-follow-up-questions/mark-and-sweep.svg)
+
 This program builds a cycle with a closure pointing into it, drops the only outside reference, and watches both objects get collected. It needs Node's `--expose-gc` flag to force a collection, so it can't run in the browser:
 
 ```javascript
@@ -117,6 +129,8 @@ The order of the two "collected" lines isn't guaranteed. All that's guaranteed i
 ### How can closures accidentally cause memory leaks?
 
 > **Short answer:** A closure keeps its whole scope reachable. If something long-lived holds the closure (a timer, an event listener, a cache, a global), everything that closure can see stays in memory. In V8 there's a sneakier version: closures created in the same scope share one context object.
+
+![Closures from the same scope share one context, so an unused closure can keep big data alive for a live one](/blog-images/javascript-senior-interview-follow-up-questions/shared-context-leak.svg)
 
 The usual causes:
 
@@ -196,6 +210,8 @@ A Web Worker or a Node `worker_thread` is a *separate* agent with its own heap, 
 ### Microtasks vs macrotasks
 
 > **Short answer:** A *task* (often called a macrotask) is one unit of work from a queue: a timer firing, an event, a message. *Microtasks* are promise reactions and `queueMicrotask` callbacks. After every task, the loop drains **all** microtasks before it takes the next task.
+
+![One turn of the event loop: one task, then every microtask, then maybe a render](/blog-images/javascript-senior-interview-follow-up-questions/event-loop.svg)
 
 | | Tasks (macrotasks) | Microtasks |
 | --- | --- | --- |
@@ -337,6 +353,8 @@ So when someone says "JavaScript's event loop", the precise answer is "the host'
 ### Hidden classes and inline caching
 
 > **Short answer:** V8 gives objects with the same properties added in the same order a shared internal layout, called a *hidden class* (V8 calls it a **Map**). Property access code then caches "for this hidden class, `x` is at offset 0". That cache is an *inline cache*. Code that only ever sees one shape (monomorphic) is fastest. Code that sees many shapes (megamorphic) falls back to slow lookups.
+
+![Adding the same keys in a different order produces a different hidden class](/blog-images/javascript-senior-interview-follow-up-questions/hidden-classes.svg)
 
 A hidden class depends on **which** properties an object has **and in what order** they were added. You can check this with a V8 debugging intrinsic (Node only, behind a flag):
 
@@ -553,6 +571,8 @@ ESM loading happens in three phases:
 1. **Construction**: parse each module, find its `import` statements, resolve each specifier to a URL, fetch the file, and repeat. This is how the whole module graph is built.
 2. **Linking**: connect each `import` to the matching `export`. Imports are **live bindings**, so an importer sees updates made to an exported `let`.
 3. **Evaluation**: run each module's top-level code **once**, depth-first, dependencies before dependents.
+
+![ES modules are constructed, linked, then evaluated depth-first, so shared.js runs first and only once](/blog-images/javascript-senior-interview-follow-up-questions/esm-phases.svg)
 
 This demo has three files importing a shared module, plus a few resolution attempts:
 

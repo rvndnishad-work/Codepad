@@ -4,7 +4,8 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Loader2, Video, Wifi, WifiOff } from "lucide-react";
-import { LogoDynamicMark } from "@/components/LogoDynamic";
+import { IntervutreeMark } from "@/components/brand/IntervutreeLogo";
+import { BrandWordmark } from "@/components/brand/BrandLogo";
 import { meetingProvider } from "@/lib/interview/meeting";
 import type { RelaySnapshot } from "@/lib/interview/relay-provider";
 import { Avatar } from "../../(shell)/candidates/_components/ui";
@@ -43,9 +44,9 @@ export function Brand({
   const logo = workspace.brand?.logoUrl ?? null;
   const mark = (
     <span className="flex items-center gap-2 shrink-0">
-      <LogoDynamicMark className="w-7 h-7" />
+      <IntervutreeMark className="w-7 h-7" />
       <span className="hidden sm:inline text-[15px] font-semibold tracking-[-0.02em]">
-        interview<span className="text-secondary-soft">pad</span>
+        <BrandWordmark brand="intervutree" />
       </span>
     </span>
   );

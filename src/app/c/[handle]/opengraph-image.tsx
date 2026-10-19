@@ -129,7 +129,7 @@ export default async function OgImage({ params }: { params: Promise<{ handle: st
             </div>
           </div>
           <div style={{ display: "flex", fontSize: 30, fontWeight: 800, color: "#fafafa" }}>
-            interview<span style={{ color: "#facc15" }}>pad</span>
+            devprep<span style={{ color: "#facc15" }}>.academy</span>
           </div>
         </div>
       </div>

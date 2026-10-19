@@ -4,8 +4,7 @@ import { useId } from "react";
  * Intervutree brand mark, "Tree of Talent": a tree whose leaves hold three
  * people in green, teal and blue. From the designer pack
  * (public/brand/intervutree-icon.svg is the same drawing for the browser tab).
- * The trunk follows the theme through --brand-trunk so it stays visible on
- * dark backgrounds.
+ * Colours are the pack's own, unchanged.
  */
 export function IntervutreeMark({ className, title = "Intervutree" }: { className?: string; title?: string }) {
   const id = useId().replace(/:/g, "");
@@ -19,10 +18,10 @@ export function IntervutreeMark({ className, title = "Intervutree" }: { classNam
         <linearGradient id={t} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#16D9B0" /><stop offset="1" stopColor="#008F91" /></linearGradient>
         <linearGradient id={b} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#3B9BFF" /><stop offset="1" stopColor="#4D43D9" /></linearGradient>
       </defs>
-      <g stroke="var(--brand-trunk, #073B4C)" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" fill="none">
+      <g stroke="#073B4C" strokeWidth="24" strokeLinecap="round" strokeLinejoin="round" fill="none">
         <path d="M256 438V286M256 344L166 254M256 327L350 236M256 382L194 337M256 382L320 322" />
       </g>
-      <path d="M223 438L245 365L267 365L289 438Z" fill="var(--brand-trunk, #073B4C)" />
+      <path d="M223 438L245 365L267 365L289 438Z" fill="#073B4C" />
       <path d="M127 112C158 71 208 61 244 79C247 119 221 160 180 172C151 159 133 139 127 112Z" fill={`url(#${g})`} />
       <path d="M270 70C310 50 354 64 375 99C365 137 333 159 296 153C274 130 266 100 270 70Z" fill={`url(#${t})`} />
       <path d="M350 176C377 142 420 139 450 161C447 199 419 226 382 226C360 214 349 197 350 176Z" fill={`url(#${b})`} />

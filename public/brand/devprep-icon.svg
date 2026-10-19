@@ -1,6 +1,10 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="32" height="32" rx="10" fill="#050505"/>
-  <rect x="0.5" y="0.5" width="31" height="31" rx="9.5" stroke="#FFE600" stroke-opacity="0.2"/>
-  <path d="M11 10L23 16L11 22V10Z" fill="#FFE600" />
-  <rect x="11" y="24" width="10" height="2" rx="1" fill="#FFE600" fill-opacity="0.3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">DevPrep Academy — Cap, Code and Book</title><desc id="desc">Gold graduation cap above dark code brackets and an open book.</desc>
+<defs><linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFE34D"/><stop offset="1" stop-color="#FFB800"/></linearGradient></defs>
+<path d="M64 142L256 52L448 142L256 229Z" fill="url(#gold)"/>
+<path d="M112 166V231C151 271 205 284 256 284S361 271 400 231V166L256 236Z" fill="#FFD700"/>
+<path d="M437 151V231" stroke="#111318" stroke-width="12" stroke-linecap="round"/><path d="M424 231H450L463 272H411Z" fill="#111318"/>
+<path d="M173 199L139 230L173 261M339 199L373 230L339 261M283 190L229 272" fill="none" stroke="#111318" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M83 321Q164 316 256 388Q348 316 429 321V366Q346 361 256 438Q166 361 83 366Z" fill="#111318"/>
+<path d="M83 303Q164 298 256 370Q348 298 429 303V348Q346 343 256 420Q166 343 83 348Z" fill="url(#gold)" stroke="#111318" stroke-width="13" stroke-linejoin="round"/><path d="M256 370V420" stroke="#111318" stroke-width="12"/>
 </svg>

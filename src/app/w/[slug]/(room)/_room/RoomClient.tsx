@@ -47,7 +47,7 @@ import { TimerPanel, TimerPill } from "@/app/interview/[id]/tools/Timer";
 import type { ToolProps } from "@/app/interview/[id]/tools/types";
 import RoundStage from "./RoundStage";
 import InterviewerPanel from "./InterviewerPanel";
-import { LogoDynamicMark } from "@/components/LogoDynamic";
+import { IntervutreeMark } from "@/components/brand/IntervutreeLogo";
 import { BTN_DANGER, BTN_SOLID, COMPACT_CALL, ConnectionPill, DotGrid, GLOW, MeetingButton, PresenceDot, RoleAvatar, roleLabel, useMedia, useNow, useRoster, type Person } from "./parts";
 import { VideoCall, useCall } from "./video/VideoCall";
 import { CallDock } from "./video/CallDock";
@@ -539,7 +539,7 @@ function TopBar({
         title="Back to the lobby"
         className="group relative w-9 h-10 md:w-9 md:h-9 rounded-lg flex items-center justify-center hover:bg-panel shrink-0"
       >
-        <LogoDynamicMark className="w-7 h-7 transition-opacity group-hover:opacity-0" />
+        <IntervutreeMark className="w-7 h-7 transition-opacity group-hover:opacity-0" />
         <ArrowLeft className="absolute w-4 h-4 text-fg opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
       </Link>
       <span className="hidden md:block w-px h-6 bg-border shrink-0" aria-hidden />
@@ -1445,7 +1445,7 @@ function LeftRoom({ data }: { data: RoomData }) {
   return (
     <div className="h-[100dvh] flex flex-col overflow-hidden">
       <header className="h-14 shrink-0 flex items-center gap-2.5 px-3 md:px-4 border-b border-border bg-surface">
-        <LogoDynamicMark className="w-7 h-7 shrink-0" />
+        <IntervutreeMark className="w-7 h-7 shrink-0" />
         <span className="min-w-0 flex flex-col leading-tight">
           <span className="text-[14px] font-semibold truncate">{iv.title}</span>
           <span className="text-[12px] text-muted truncate">{workspace.name}</span>

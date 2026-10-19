@@ -1,10 +1,10 @@
 import { BRANDS, type BrandKey } from "@/lib/brand";
-import { LogoDynamicMark } from "@/components/LogoDynamic";
+import { DevprepMark } from "./DevprepLogo";
 import { IntervutreeMark, IntervutreeWordmark } from "./IntervutreeLogo";
 
 /**
- * The header logo for a brand. DevPrep keeps the `>_` mark with a two-tone
- * wordmark; Intervutree is the banyan wordmark, or just the tree when compact.
+ * The header logo for a brand: the mark beside a two-tone wordmark, or the
+ * mark alone when compact. Both marks come from the designer packs.
  */
 export function BrandLogo({
   brand,
@@ -40,10 +40,10 @@ export function BrandLogo({
   }
   return (
     <span className={`group/logo flex items-center gap-2.5 ${className ?? ""}`}>
-      <LogoDynamicMark className="h-9 w-9 transition-transform duration-300 group-hover/logo:scale-105" />
+      <DevprepMark className="h-9 w-9 shrink-0 transition-transform duration-300 group-hover/logo:scale-105" />
       {!compact && (
         <span className="flex flex-col leading-none">
-          <span className="ld-word text-[17px] font-semibold tracking-[-0.03em]" style={{ color: "var(--fg)" }}>
+          <span className="ld-word text-[17px] font-bold tracking-[-0.04em]" style={{ color: "var(--fg)" }}>
             {b.wordmark[0]}
             <span className="text-accent">{b.wordmark[1]}</span>
           </span>
@@ -66,8 +66,8 @@ export function BrandLockup({ brand, height = 44, className }: { brand: BrandKey
   }
   return (
     <span className={`inline-flex items-center gap-3 ${className ?? ""}`} style={{ height }}>
-      <LogoDynamicMark className="h-full w-auto" />
-      <span className="font-semibold tracking-[-0.03em] text-fg" style={{ fontSize: Math.round(height * 0.6) }}>
+      <DevprepMark className="h-full w-auto" />
+      <span className="font-bold tracking-[-0.04em] text-fg" style={{ fontSize: Math.round(height * 0.6) }}>
         {b.wordmark[0]}
         <span className="text-accent">{b.wordmark[1]}</span>
       </span>

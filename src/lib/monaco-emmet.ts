@@ -11,20 +11,23 @@
  */
 import type { Monaco } from "@monaco-editor/react";
 import type * as MonacoApi from "monaco-editor";
-import { emmetExpansionAt, type EmmetExpansion } from "./emmet-abbreviation";
+import { emmetExpansionAt, emmetSuggestionsAt, type EmmetExpansion } from "./emmet-abbreviation";
 
 const LANGUAGES = ["html", "javascript", "typescript", "css", "scss", "less"];
 
-function expansionAt(model: MonacoApi.editor.ITextModel, position: MonacoApi.IPosition): EmmetExpansion | null {
-  const language = model.getLanguageId();
-  if (!LANGUAGES.includes(language)) return null;
-  const textBefore = model.getValueInRange({
+function textBeforeCursor(model: MonacoApi.editor.ITextModel, position: MonacoApi.IPosition): string {
+  return model.getValueInRange({
     startLineNumber: Math.max(1, position.lineNumber - 200),
     startColumn: 1,
     endLineNumber: position.lineNumber,
     endColumn: position.column,
   });
-  return emmetExpansionAt(textBefore, language);
+}
+
+function expansionAt(model: MonacoApi.editor.ITextModel, position: MonacoApi.IPosition): EmmetExpansion | null {
+  const language = model.getLanguageId();
+  if (!LANGUAGES.includes(language)) return null;
+  return emmetExpansionAt(textBeforeCursor(model, position), language);
 }
 
 export function registerEmmet(monaco: Monaco): { dispose(): void } {
@@ -32,31 +35,29 @@ export function registerEmmet(monaco: Monaco): { dispose(): void } {
     // Re-ask as the abbreviation grows past emmet operators (`ul>li`, `.a`, `li*3`, `!`).
     triggerCharacters: ["!", ">", ".", "#", "*", "+", "^", "]", ")", "}", ":", "-"],
     provideCompletionItems(model: MonacoApi.editor.ITextModel, position: MonacoApi.Position) {
-      const hit = expansionAt(model, position);
+      const language = model.getLanguageId();
+      const hits = LANGUAGES.includes(language) ? emmetSuggestionsAt(textBeforeCursor(model, position), language) : [];
       // `incomplete` makes Monaco ask again on every keystroke: `d` and `df`
       // are different abbreviations, not a filter over the same list.
-      if (!hit) return { suggestions: [], incomplete: true };
       return {
         incomplete: true,
-        suggestions: [
-          {
-            label: { label: hit.abbreviation, description: "Emmet" },
-            kind: monaco.languages.CompletionItemKind.Snippet,
-            insertText: hit.snippet,
-            insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-            documentation: { value: "```\n" + hit.snippet.replace(/\$\{\d+(?::([^}]*))?\}/g, "$1") + "\n```" },
-            filterText: hit.abbreviation,
-            // Sort ahead of other snippets and word suggestions so Tab picks it.
-            sortText: "\u0000",
-            preselect: true,
-            range: {
-              startLineNumber: position.lineNumber,
-              startColumn: position.column - hit.abbreviation.length,
-              endLineNumber: position.lineNumber,
-              endColumn: position.column,
-            },
+        suggestions: hits.map((hit, i) => ({
+          label: { label: hit.label, description: "Emmet" },
+          kind: monaco.languages.CompletionItemKind.Snippet,
+          insertText: hit.snippet,
+          insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+          documentation: { value: "```\n" + hit.snippet.replace(/\$\{\d+(?::([^}]*))?\}/g, "$1") + "\n```" },
+          filterText: hit.label,
+          // Sort ahead of other snippets and word suggestions so Tab picks it.
+          sortText: i === 0 ? "\u0000" : `\u0001${hit.label}`,
+          preselect: i === 0,
+          range: {
+            startLineNumber: position.lineNumber,
+            startColumn: position.column - hit.abbreviation.length,
+            endLineNumber: position.lineNumber,
+            endColumn: position.column,
           },
-        ],
+        })),
       };
     },
   });

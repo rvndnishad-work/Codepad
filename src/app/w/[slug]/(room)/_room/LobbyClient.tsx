@@ -928,7 +928,7 @@ function useChecks(ping: (() => Promise<number | null>) | null, offset: number, 
         net.state === "checking"
           ? "Checking"
           : net.state === "fail"
-            ? "Cannot reach Interviewpad. Check your internet connection, or try another network."
+            ? "Cannot reach Intervutree. Check your internet connection, or try another network."
             : net.state === "warn"
               ? `Slow (${net.ms} ms) but it works. Edits may take a moment to appear.`
               : `Good (${net.ms} ms). Works on office and home networks, no special setup needed.`,

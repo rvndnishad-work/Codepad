@@ -632,7 +632,7 @@ export default function InterviewRunner({
   const candidateLink = `${typeof window !== "undefined" ? window.location.origin : ""}/interview/${interview.id}?token=${interview.shareToken}`;
   // Co-interviewer link appends a ?cointerviewer=1 hint so the lobby knows to greet them differently  
   const coInterviewerLink = `${typeof window !== "undefined" ? window.location.origin : ""}/interview/${interview.id}?token=${interview.shareToken}&cointerviewer=1`;
-  const shareText = `Join my live coding session on Interviewpad!\n\nLink: ${joinUrl}\nCode: ${interview.shortCode || "N/A"}`;
+  const shareText = `Join my live coding session on DevPrep!\n\nLink: ${joinUrl}\nCode: ${interview.shortCode || "N/A"}`;
 
   async function copyCandidateLink() {
     try {

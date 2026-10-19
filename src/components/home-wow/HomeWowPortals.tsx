@@ -34,6 +34,13 @@ type Portal = {
   accent: string;
 };
 
+const COUNT_WORDS = ["", "One way", "Two ways", "Three ways", "Four ways", "Five ways"];
+
+/** "Three ways to get ready." from the number of practice cards shown. */
+function headline(n: number): string {
+  return n > 0 && n < COUNT_WORDS.length ? `${COUNT_WORDS[n]} to get ready.` : "Ways to get ready.";
+}
+
 /** A token colour from its channel var, optionally with alpha. */
 function tone(channel: string, alpha?: number): string {
   return alpha === undefined ? `rgb(var(${channel}))` : `rgb(var(${channel}) / ${alpha})`;
@@ -44,7 +51,16 @@ function tone(channel: string, alpha?: number): string {
  * DB. Cards with no content hide themselves; the hiring card always shows
  * because it is a doorway, not a catalogue.
  */
-export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalCounts; techs?: TechLink[] }) {
+export default function HomeWowPortals({
+  counts,
+  techs = [],
+  showHiring = true,
+}: {
+  counts: PortalCounts;
+  techs?: TechLink[];
+  /** Off on the developer domain, where hiring lives on its own site. */
+  showHiring?: boolean;
+}) {
   const portals: Portal[] = [];
 
   if (counts.prepQuestions > 0) {
@@ -90,7 +106,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       accent: "--c-accent-2-soft",
     });
   }
-  portals.push({
+  if (showHiring) portals.push({
     key: "hire",
     icon: Briefcase,
     title: "For hiring teams",
@@ -105,7 +121,7 @@ export default function HomeWowPortals({ counts, techs = [] }: { counts: PortalC
       <div className="mx-auto max-w-7xl">
         <WowReveal>
           <p className="font-mono text-xs uppercase tracking-[0.12em] text-subtle">the platform</p>
-          <RevealLines className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">Four ways to get ready.</span>, <span key="l1" className="wow-gradient-text">None of them passive.</span>]} />
+          <RevealLines className="wow-font-display mt-3 text-4xl md:text-5xl lg:text-6xl" lines={[<span key="l0">{headline(portals.filter((p) => p.key !== "hire").length)}</span>, <span key="l1" className="wow-gradient-text">None of them passive.</span>]} />
         </WowReveal>
 
         <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">

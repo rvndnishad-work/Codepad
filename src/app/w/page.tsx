@@ -274,7 +274,7 @@ export default async function WorkspaceHubPage() {
             },
             {
               icon: rows.length > 0 ? BookOpen : ClipboardList,
-              title: "New to Interviewpad?",
+              title: "New to Intervutree?",
               body: "See how take-homes, AI screening and live interviews fit together before you invite candidates.",
               href: "/hire",
               link: "How hiring works",

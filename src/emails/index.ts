@@ -152,7 +152,7 @@ export const TEMPLATES = {
 
   "otp-verification": {
     Component: OtpVerification,
-    subject: () => "Verify your Interviewpad account",
+    subject: (p) => `Verify your ${p.brandName ?? "DevPrep"} account`,
     text: otpVerificationText,
   } satisfies TemplateDef<OtpVerificationProps>,
 
@@ -176,7 +176,7 @@ export const TEMPLATES = {
 
   "workspace-invite": {
     Component: WorkspaceInviteEmail,
-    subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Interviewpad`,
+    subject: (p) => `${p.inviterName} invited you to ${p.workspaceName} on Intervutree`,
     text: workspaceInviteEmailText,
   } satisfies TemplateDef<WorkspaceInviteEmailProps>,
 
@@ -194,7 +194,7 @@ export const TEMPLATES = {
 
   "reply-to-confirm": {
     Component: ReplyToConfirm,
-    subject: (p) => `Confirm reply-to for ${p.workspaceName} on Interviewpad`,
+    subject: (p) => `Confirm reply-to for ${p.workspaceName} on Intervutree`,
     text: replyToConfirmText,
   } satisfies TemplateDef<ReplyToConfirmProps>,
 

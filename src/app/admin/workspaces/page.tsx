@@ -5,7 +5,7 @@ import { pageOf } from "@/lib/admin/workspace-actions";
 import { Kpi, Pager, fmtDate, fmtUsd, one, urlWith } from "./[id]/_ui";
 import WorkspacesClientSurface, { type WorkspaceRow } from "./WorkspacesClientSurface";
 
-export const metadata = { title: "Workspaces — Interviewpad Admin" };
+export const metadata = { title: "Workspaces — Admin" };
 
 const PAGE_SIZE = 25;
 

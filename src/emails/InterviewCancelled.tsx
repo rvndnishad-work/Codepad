@@ -21,7 +21,7 @@ export function InterviewCancelled({ candidateName, workspaceName, title, schedu
   return (
     <BaseLayout
       preview={`Your interview with ${workspaceName} is cancelled`}
-      footer={`${workspaceName} sent this through Interviewpad. Reply to your recruiter if you have questions.`}
+      footer={`${workspaceName} sent this through Intervutree. Reply to your recruiter if you have questions.`}
       header={<BrandHeader brand={brand} />}
       footerExtra={<CandidateFooterLines brand={brand} unsubscribeUrl={unsubscribeUrl} />}
     >

@@ -20,7 +20,7 @@ type Props = {
   searchParams: Promise<{ candidates?: string; from?: string; add?: string; challenges?: string }>;
 };
 
-export const metadata = { title: "New AI screening — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "New AI screening", robots: { index: false, follow: false } };
 
 export default async function NewAiScreeningPage({ params, searchParams }: Props) {
   const { slug } = await params;

@@ -78,7 +78,7 @@ export default async function TakeHomeLobbyPage({ params, searchParams }: Props)
           ) : (
             <Link href="/" className="flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent font-black text-xl">C</div>
-              <span className="font-extrabold text-sm tracking-widest text-fg uppercase">Interviewpad</span>
+              <span className="font-extrabold text-sm tracking-widest text-fg uppercase">Intervutree</span>
             </Link>
           )}
         </div>

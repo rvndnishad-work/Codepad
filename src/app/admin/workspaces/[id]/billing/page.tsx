@@ -11,7 +11,7 @@ import { getAdminWorkspace, type AdminWorkspace } from "../_data";
 import { Card, Kv, Pill, Pager, Table, Empty, td, fmtBytes, fmtDate, fmtDuration, fmtUsd, one, urlWith } from "../_ui";
 import WorkspaceAction from "../WorkspaceAction";
 
-export const metadata = { title: "Workspace billing and credits — Interviewpad Admin" };
+export const metadata = { title: "Workspace billing and credits — Admin" };
 
 const DAY = 86_400_000;
 const PAGE_SIZE = 25;

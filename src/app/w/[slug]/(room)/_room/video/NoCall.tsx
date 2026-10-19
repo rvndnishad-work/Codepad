@@ -72,7 +72,7 @@ export function VideoOfferChip({ video, meetingUrl }: { video: RoomVideo; meetin
 export function VideoNotSetUpChip() {
   return (
     <span
-      title="Built-in video is on, but the server is missing its video settings. Use a meeting link for now, or ask whoever runs Interviewpad for your team to finish the setup."
+      title="Built-in video is on, but the server is missing its video settings. Use a meeting link for now, or ask whoever runs Intervutree for your team to finish the setup."
       className="hidden md:inline-flex h-8 px-2.5 rounded-lg ring-1 ring-inset ring-border text-muted text-[13px] items-center gap-1.5 whitespace-nowrap"
     >
       <VideoOff className="w-3.5 h-3.5" aria-hidden /> Video is not set up yet

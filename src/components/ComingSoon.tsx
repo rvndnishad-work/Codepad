@@ -69,7 +69,7 @@ export default function ComingSoon({
             {isUnavailable ? (
               <>
                 The <span className="text-fg font-bold underline decoration-accent/30">{feature ?? "page"}</span> section
-                is currently turned off — but the rest of Interviewpad is open.
+                is currently turned off — but the rest of DevPrep is open.
               </>
             ) : (
               <>
@@ -83,7 +83,7 @@ export default function ComingSoon({
           {/* Value prop — orients a first-time visitor who may have landed here
               cold from a shared link, so the screen isn't a dead end. */}
           <p className="text-xs text-muted/70 max-w-md mx-auto leading-relaxed pt-1">
-            Interviewpad is where developers practice real coding interviews and
+            DevPrep is where developers practice real coding interviews and
             hiring teams run technical screens — all in the browser.
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function ComingSoon({
               className="flex items-center gap-2 px-6 py-3 rounded-xl border border-border bg-surface text-sm font-bold text-muted hover:text-fg hover:bg-elevated transition-all active:scale-95"
             >
               <Compass className="w-4 h-4" />
-              Explore Interviewpad
+              Explore DevPrep
             </Link>
           ) : (
             <button

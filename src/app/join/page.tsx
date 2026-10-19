@@ -4,7 +4,7 @@ import JoinForm from "./JoinForm";
 import { Terminal, ShieldCheck, ArrowLeft, Sparkles } from "lucide-react";
 
 export const metadata = {
-  title: "Join Interview Session — Interviewpad",
+  title: "Join Interview Session",
 };
 
 export default function JoinPage() {

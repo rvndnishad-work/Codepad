@@ -6,7 +6,7 @@ import { getInterviewArenaSettings } from "@/lib/settings";
 import CandidateCockpitClient from "../../interview/CandidateCockpitClient";
 
 export const metadata = {
-  title: "Candidate Prep Arena — Interviewpad",
+  title: "Candidate Prep Arena",
 };
 
 export default async function CandidateInterviewPage() {

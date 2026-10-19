@@ -2,7 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { signIn } from "next-auth/react";
-import { LogoLockup } from "@/components/Logo";
+import { BrandLockup } from "@/components/brand/BrandLogo";
+import type { BrandKey } from "@/lib/brand";
+import { BRANDS } from "@/lib/brand";
 import { toast } from "sonner";
 import { Mail, Lock, User as UserIcon, Loader2, UserCheck, Briefcase, Check, ShieldCheck, ArrowLeft, Tag, Users } from "lucide-react";
 import { SiGoogle, SiFacebook } from "react-icons/si";
@@ -18,9 +20,12 @@ export default function AuthCard({
   providers,
   next,
   initialMode = "signin",
+  brand = "devprep",
 }: {
   providers: Providers;
   next: string;
+  /** Which product the visitor is signing in to (set by the domain). */
+  brand?: BrandKey;
   /** `/login?mode=signup` opens straight on the create-account form. */
   initialMode?: "signin" | "signup";
 }) {
@@ -281,13 +286,13 @@ export default function AuthCard({
       >
       <div className="flex flex-col items-center sm:items-start animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="flex flex-col items-center sm:items-start gap-2.5 mb-[clamp(0.4rem,1vh,0.75rem)]">
-          <LogoLockup height={42} className="drop-shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]" />
+          <BrandLockup brand={brand} height={42} className="drop-shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)]" />
           <h1 className="text-[clamp(1.5rem,3vh,1.85rem)] font-black tracking-tight text-fg leading-tight">
             {signupVerificationPending
               ? "Verify your email"
               : mode === "signin"
                 ? "Welcome back"
-                : "Join Interviewpad"}
+                : `Join ${BRANDS[brand].name}`}
           </h1>
         </div>
         <p className="text-xs sm:text-sm text-muted/90 mb-[clamp(1rem,2.2vh,1.75rem)] leading-relaxed max-w-[95%] text-center sm:text-left">
@@ -617,7 +622,7 @@ export default function AuthCard({
                     />
                     <span className="text-xs text-muted leading-relaxed group-hover:text-fg transition-colors">
                       I agree to the{" "}
-                      <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Terms of Service", { description: "These are the standard Terms of Service for using Interviewpad." }); }} className="text-accent hover:underline font-semibold">Terms of Service</a>{" "}
+                      <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Terms of Service", { description: "These are the standard Terms of Service for using DevPrep." }); }} className="text-accent hover:underline font-semibold">Terms of Service</a>{" "}
                       and{" "}
                       <a href="#" onClick={(e) => { e.preventDefault(); toast.info("Privacy Policy", { description: "Your data is safe and processed in compliance with local privacy standards." }); }} className="text-accent hover:underline font-semibold">Privacy Policy</a>.
                     </span>
@@ -673,7 +678,7 @@ export default function AuthCard({
           </span>
         ) : mode === "signin" ? (
           <>
-            New to Interviewpad?{" "}
+            New to {BRANDS[brand].name}?{" "}
             <button
               type="button"
               onClick={() => toggleMode("signup")}

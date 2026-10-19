@@ -15,7 +15,7 @@ import { Loader2, Play, ShieldCheck } from "lucide-react";
  * network-isolated Piston sandbox that grades real interviews. Guests get a
  * small per-minute budget from the API's rate limiter.
  */
-const DEFAULT_CODE = `// This runs on Interviewpad's real sandbox — edit me and hit Run
+const DEFAULT_CODE = `// This runs on DevPrep's real sandbox — edit me and hit Run
 function fib(n) {
   let [a, b] = [0n, 1n];
   while (n-- > 0) [a, b] = [b, a + b];

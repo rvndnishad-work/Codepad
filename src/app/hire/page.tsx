@@ -16,9 +16,10 @@ import SpotlightScope from "@/components/wow/SpotlightScope";
 import { applyPricingCopy } from "@/lib/billing/pricing-copy";
 import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 import { recruiterUrl } from "@/lib/domains";
+import { currentSite } from "@/lib/current-site";
 
 export const metadata: Metadata = {
-  title: "Screen 1,000 Applicants Without Reading 1,000 Resumes — Interviewpad for Hiring Teams",
+  title: "Screen 1,000 Applicants Without Reading 1,000 Resumes for Hiring Teams",
   description:
     "One opening brings hundreds of applications. Send them all the same take-home or AI screening interview, let our servers grade every attempt with anti-cheat signals attached, and get a shortlist ranked by evidence instead of arrival order.",
   // The recruiter domain serves this page at "/" once the sites are split.
@@ -52,6 +53,7 @@ export default async function HirePage() {
         stats={heroStats}
         ctaHref={ctaHref}
         signedIn={!!session?.user}
+        showPersonaSwitch={(await currentSite()) !== "recruiter"}
       />
 
       <HireWowFlood />

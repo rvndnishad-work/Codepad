@@ -5,7 +5,7 @@ import { userCan } from "@/lib/permissions/access";
 import BecomeCreatorClient from "./BecomeCreatorClient";
 
 export const metadata = {
-  title: "Become a Creator — Interviewpad",
+  title: "Become a Creator",
 };
 
 export default async function BecomeCreatorPage() {

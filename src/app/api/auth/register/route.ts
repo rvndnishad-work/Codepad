@@ -1,3 +1,4 @@
+import { currentBrand } from "@/lib/current-site";
 import { featureBlockedResponse } from "@/lib/admin/switches";
 import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
@@ -129,7 +130,7 @@ export async function POST(req: Request) {
       const emailRes = await sendEmail({
         template: "otp-verification",
         to: email,
-        props: { otp: generatedOtp },
+        props: { otp: generatedOtp, brandName: (await currentBrand()).name },
       });
 
       if (!emailRes.sent) {

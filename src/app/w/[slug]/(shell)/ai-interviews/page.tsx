@@ -18,7 +18,7 @@ type Props = {
   searchParams: Promise<{ view?: string; q?: string; screening?: string; sort?: string; page?: string; candidate?: string; search?: string }>;
 };
 
-export const metadata = { title: "AI screening — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "AI screening", robots: { index: false, follow: false } };
 
 export default async function AiScreeningReviewPage({ params, searchParams }: Props) {
   const { slug } = await params;

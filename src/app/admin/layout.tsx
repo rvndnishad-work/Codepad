@@ -9,7 +9,7 @@ import { visibleNav } from "./admin-nav";
 import { loadNavBadges } from "./nav-badges";
 
 export const metadata = {
-  title: "Admin — Interviewpad",
+  title: "Admin",
   robots: { index: false, follow: false },
 };
 

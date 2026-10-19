@@ -8,7 +8,7 @@ import "@/components/home-wow/home-wow.css";
 import PlaygroundsBrowser from "./PlaygroundsBrowser";
 
 export const metadata: Metadata = {
-  title: "Playgrounds | Interviewpad",
+  title: "Playgrounds",
   description:
     "Pre-wired browser sandboxes for React, Vue, Angular, Svelte, Solid, TypeScript and more. Zero install, save and share with one click.",
 };

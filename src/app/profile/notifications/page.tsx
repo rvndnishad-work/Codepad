@@ -4,7 +4,7 @@ import { getPreferencesView } from "@/lib/notifications/preferences";
 import NotificationPreferencesClient from "./NotificationPreferencesClient";
 
 export const metadata = {
-  title: "Notification preferences — Interviewpad",
+  title: "Notification preferences",
   robots: { index: false, follow: false },
 };
 

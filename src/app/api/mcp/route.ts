@@ -40,7 +40,7 @@ async function handle(req: Request): Promise<Response> {
         error: {
           code: -32001,
           message:
-            "Unauthorized. Provide a valid Interviewpad API key via Authorization: Bearer <key>.",
+            "Unauthorized. Provide a valid Intervutree API key via Authorization: Bearer <key>.",
         },
         id: null,
       }),

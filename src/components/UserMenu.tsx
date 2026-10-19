@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, User as UserIcon, LogOut, Shield, Bell, ShieldCheck, Store } from "lucide-react";
+import { Building2, LayoutDashboard, User as UserIcon, LogOut, Shield, Bell, ShieldCheck, Store } from "lucide-react";
 import { handleSignOut } from "@/app/actions";
 
 type UserShape = {
@@ -16,10 +16,13 @@ export default function UserMenu({
   user,
   isAdmin,
   isCreator = false,
+  recruiterSite = false,
 }: {
   user: UserShape;
   isAdmin: boolean;
   isCreator?: boolean;
+  /** On the recruiter domain: workspaces instead of the developer dashboard, no creator link. */
+  recruiterSite?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -85,12 +88,21 @@ export default function UserMenu({
 
           {/* Primary actions */}
           <div className="p-1">
-            <MenuLink
-              href="/dashboard"
-              icon={LayoutDashboard}
-              label="Dashboard"
-              onClick={() => setOpen(false)}
-            />
+            {recruiterSite ? (
+              <MenuLink
+                href="/w"
+                icon={Building2}
+                label="Workspaces"
+                onClick={() => setOpen(false)}
+              />
+            ) : (
+              <MenuLink
+                href="/dashboard"
+                icon={LayoutDashboard}
+                label="Dashboard"
+                onClick={() => setOpen(false)}
+              />
+            )}
             <MenuLink
               href="/profile"
               icon={UserIcon}
@@ -109,13 +121,15 @@ export default function UserMenu({
               label="Security"
               onClick={() => setOpen(false)}
             />
-            <MenuLink
-              href={isCreator ? "/creator" : "/become-creator"}
-              icon={Store}
-              label={isCreator ? "Creator Studio" : "Become a Creator"}
-              accent
-              onClick={() => setOpen(false)}
-            />
+            {!recruiterSite && (
+              <MenuLink
+                href={isCreator ? "/creator" : "/become-creator"}
+                icon={Store}
+                label={isCreator ? "Creator Studio" : "Become a Creator"}
+                accent
+                onClick={() => setOpen(false)}
+              />
+            )}
             {isAdmin && (
               <MenuLink
                 href="/admin"

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import SecurityClient from "./SecurityClient";
 
 export const metadata = {
-  title: "Security — Interviewpad",
+  title: "Security",
   robots: { index: false, follow: false },
 };
 

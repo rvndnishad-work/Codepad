@@ -12,7 +12,7 @@ import QuestionVerseHero from "./_wow/QuestionVerseHero";
 import SignalTicker from "./_wow/SignalTicker";
 
 export const metadata = {
-  title: "Interview Questions by Company & Technology — Interviewpad",
+  title: "Interview Questions by Company & Technology",
   description:
     "Browse 1000s of real interview questions and experiences by company, technology, role and difficulty. Prepare for Google, Amazon, Meta and more.",
   alternates: { canonical: "/interview-questions" },

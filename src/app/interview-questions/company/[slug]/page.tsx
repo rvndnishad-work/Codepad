@@ -16,9 +16,9 @@ async function getCompany(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const c = await getCompany(slug);
-  if (!c) return { title: "Company not found — Interviewpad" };
+  if (!c) return { title: "Company not found" };
   return {
-    title: `${c.name} Interview Questions & Experiences — Interviewpad`,
+    title: `${c.name} Interview Questions & Experiences`,
     description:
       c.description ??
       `Real ${c.name} interview questions and candidate experiences by role, round and difficulty.`,

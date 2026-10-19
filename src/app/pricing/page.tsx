@@ -8,7 +8,7 @@ import PricingClient from "./PricingClient";
 import { recruiterUrl } from "@/lib/domains";
 
 export const metadata = {
-  title: "Pricing | Interviewpad",
+  title: "Pricing",
   description: "Free, Growth and Enterprise plans for technical screening. Pay per seat, and pay for AI screening with credits only when a candidate starts.",
   alternates: { canonical: recruiterUrl("/pricing") },
 };

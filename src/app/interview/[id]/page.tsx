@@ -18,7 +18,7 @@ import { isInterviewerFor } from "@/lib/interview/wizard";
 import { guestFor } from "@/lib/interview/guests";
 
 export const metadata = {
-  title: "Interview Session — Interviewpad",
+  title: "Interview Session",
 };
 
 export default async function InterviewRunPage({

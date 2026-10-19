@@ -7,7 +7,7 @@ import BatchesClient from "./BatchesClient";
 
 type Props = { params: Promise<{ slug: string }> };
 
-export const metadata = { title: "Batches — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Batches", robots: { index: false, follow: false } };
 
 export default async function BatchesPage({ params }: Props) {
   const { slug } = await params;

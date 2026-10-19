@@ -136,7 +136,7 @@ export default function CreateWorkspacePage() {
               {/* URL Preview */}
               {slug && (
                 <div className="text-xs text-muted/60 pl-1 font-mono">
-                  Preview: <span className="text-secondary">interviewpad.dev/w/{slug}</span>
+                  Preview: <span className="text-secondary">intervutree.com/w/{slug}</span>
                 </div>
               )}
             </div>

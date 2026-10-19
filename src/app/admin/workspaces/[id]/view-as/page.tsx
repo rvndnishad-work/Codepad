@@ -9,7 +9,7 @@ import { loadOverviewExtras } from "@/lib/workspace/overview-server";
 import { getAdminWorkspace } from "../_data";
 import { Card, Empty, Kpi, fmtDate } from "../_ui";
 
-export const metadata = { title: "View as owner — Interviewpad Admin" };
+export const metadata = { title: "View as owner — Admin" };
 
 /** How many recent rows of each kind feed the snapshot (the workspace dashboard reads at most 200). */
 const TAKE = 200;

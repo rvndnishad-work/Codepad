@@ -802,7 +802,7 @@ export async function grantCompMembershipAction(spaceId: string, email: string, 
     where: { email: email.toLowerCase().trim() },
     select: { id: true },
   });
-  if (!user) throw new Error("No Interviewpad account with that email.");
+  if (!user) throw new Error("No DevPrep account with that email.");
   if (user.id === userId) throw new Error("You already own this space.");
 
   await prisma.spaceMembership.upsert({

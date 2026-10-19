@@ -3,10 +3,10 @@ import { staffCan } from "@/lib/permissions/staff";
 import { notFound } from "next/navigation";
 import SwaggerView from "./SwaggerView";
 
-// Interactive API reference (Swagger UI) for the Interviewpad API.
+// Interactive API reference (Swagger UI) for the Intervutree API.
 // Admin-only: non-admins get a 404 so the surface isn't discoverable.
 export const dynamic = "force-dynamic";
-export const metadata = { title: "API Docs — Interviewpad" };
+export const metadata = { title: "API Docs" };
 
 export default async function ApiDocsPage() {
   const session = await auth().catch(() => null);

@@ -313,7 +313,7 @@ export function theoryGraderBlock(round: TheoryRoundData, answers: TheoryAnswer[
 }
 
 export function theoryGraderPrompt(p: { positionTitle: string; block: string; count: number }): string {
-  return `You are the Interviewpad AI Grading Agent.
+  return `You are the Intervutree AI Grading Agent.
 Grade a candidate's spoken answers to theory questions for the position of "${p.positionTitle}". Answers were transcribed from speech, so judge meaning, not spelling (for example "use effect" means useEffect).
 
 ${p.block}

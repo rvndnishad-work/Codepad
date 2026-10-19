@@ -722,9 +722,9 @@ export function checkApiKeyExpiry(
   return { ok: true };
 }
 
-/** "Acme via Interviewpad". */
+/** "Acme via Intervutree". */
 export function senderDisplayName(s: Pick<S, "senderName" | "name">): string {
-  return `${(s.senderName || s.name || "Interviewpad").replace(/[<>"]/g, "")} via Interviewpad`;
+  return `${(s.senderName || s.name || "Intervutree").replace(/[<>"]/g, "")} via Intervutree`;
 }
 
 /** Reply-to for candidate emails, only once the address was confirmed. */

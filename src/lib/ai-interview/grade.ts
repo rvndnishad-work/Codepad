@@ -103,7 +103,7 @@ async function callGeminiGrader(
   diffBlock: string,
   changeSummary: string
 ): Promise<GraderResult> {
-  const prompt = `You are the Interviewpad AI Grading Agent.
+  const prompt = `You are the Intervutree AI Grading Agent.
 Evaluate a candidate who took an automated AI technical coding interview for "${positionTitle}".
 
 IMPORTANT — grade the CANDIDATE'S OWN WORK, not the starter template. Below you

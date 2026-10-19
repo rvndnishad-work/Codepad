@@ -10,7 +10,7 @@ type Props = {
   searchParams: Promise<{ tab?: string; round?: string }>;
 };
 
-export const metadata = { title: "Screening report — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Screening report", robots: { index: false, follow: false } };
 
 const TABS = ["summary", "theory", "code", "tests", "transcript", "run"] as const;
 export type ReportTab = (typeof TABS)[number];

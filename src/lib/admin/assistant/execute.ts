@@ -43,11 +43,11 @@ async function emailOwner(workspaceId: string, workspaceName: string, subject: s
     workspaceId,
     props: {
       subject,
-      badge: "Interviewpad",
+      badge: "Intervutree",
       heading: subject,
       paragraphs: body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean),
       cta: null,
-      footer: `You are receiving this because you own the ${workspaceName} workspace on Interviewpad.`,
+      footer: `You are receiving this because you own the ${workspaceName} workspace on Intervutree.`,
     },
   });
   if (!res.sent) throw new ProposalError(`The email was not sent: ${res.reason}`, 502);

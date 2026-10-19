@@ -39,7 +39,7 @@ type Props = {
   searchParams: Promise<{ tab?: string; open?: string; tech?: string }>;
 };
 
-export const metadata = { title: "Question library — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Question library", robots: { index: false, follow: false } };
 
 const TABS: LibraryTab[] = ["questionnaires", "public", "challenges", "prompts"];
 

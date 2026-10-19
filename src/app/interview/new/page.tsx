@@ -22,7 +22,7 @@ function parseStringArray(raw: string | null | undefined): string[] {
 }
 
 export const metadata = {
-  title: "New Interview Session — Interviewpad",
+  title: "New Interview Session",
 };
 
 export default async function NewInterviewPage({

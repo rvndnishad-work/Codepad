@@ -90,6 +90,8 @@
        highlights with navy on top; --accent-2 is the text step, a clear
        indigo rather than the flat slate of the first pass. */
     --accent-2: #3f47b8;      /* 6.5:1 on bg, 7.3:1 on surface */
+    /* Intervutree brand: the green half of the wordmark. */
+    --brand-green: #0FA36B;
     --accent-2-rgb: 63, 71, 184;
     --c-accent-2: 63 71 184;
     --accent-2-fill: #9aa2ff; /* navy on it: 7.6:1 */
@@ -198,6 +200,7 @@
     --accent-ink: #0f1115;    /* dark ink on yellow */
 
     --accent-2: #8b93ff;
+    --brand-green: #2fd48f;
     --accent-2-rgb: 139, 147, 255;
     --c-accent-2: 139 147 255;
     --accent-2-fill: #8b93ff; /* on dark the text and fill steps are one */

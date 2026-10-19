@@ -45,7 +45,7 @@ export default function FeaturePausedNotice({
         {value.message && <p className="text-sm text-muted leading-relaxed whitespace-pre-line mt-0.5">{value.message}</p>}
         {(back || since) && (
           <div className="text-xs text-muted mt-1">
-            {since && <>Paused by Interviewpad at {since}</>}
+            {since && <>Paused by Intervutree at {since}</>}
             {since && back && " · "}
             {back && <>Back on at {back}</>}
           </div>

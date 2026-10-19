@@ -8,7 +8,7 @@ type Props = {
 };
 
 export const metadata = {
-  title: "Workspace attempts — Interviewpad Admin",
+  title: "Workspace attempts — Admin",
 };
 
 // ChallengeAttempt.status values per schema.

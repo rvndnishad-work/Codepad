@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props) {
     include: { user: { select: { name: true } } },
   });
   return {
-    title: attempt ? `Workspace Session Replay: ${attempt.user.name || "Candidate"} — Interviewpad` : "Replay not found",
+    title: attempt ? `Workspace Session Replay: ${attempt.user.name || "Candidate"}` : "Replay not found",
   };
 }
 

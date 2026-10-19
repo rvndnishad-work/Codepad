@@ -8,7 +8,7 @@ type Props = {
 };
 
 export const metadata = {
-  title: "Workspace challenges — Interviewpad Admin",
+  title: "Workspace challenges — Admin",
 };
 
 const DIFFICULTY_BADGES: Record<string, string> = {

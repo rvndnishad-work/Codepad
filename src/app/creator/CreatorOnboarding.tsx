@@ -60,7 +60,7 @@ export default function CreatorOnboarding() {
               </label>
               <div className="relative">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono text-muted pointer-events-none">
-                  interviewpad.dev/c/
+                  devprep.academy/c/
                 </span>
                 <input
                   value={handle}

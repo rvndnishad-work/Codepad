@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { domainConfig, recruiterUrl, routeForHost, siteForPath, type DomainConfig } from "./domains";
+import { domainConfig, recruiterUrl, routeForHost, siteForPath, siteForRequestHost, type DomainConfig } from "./domains";
 
 const cfg: DomainConfig = {
   developerOrigin: "https://dev.example",
@@ -97,5 +97,16 @@ describe("domainConfig", () => {
     });
     expect(recruiterUrl("/hire")).toBe("https://hire.example/");
     expect(recruiterUrl("/pricing")).toBe("https://hire.example/pricing");
+  });
+
+  it("tells pages which site a request is on, and null when not split", () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://dev.example");
+    expect(siteForRequestHost("dev.example")).toBeNull();
+    vi.stubEnv("RECRUITER_SITE_URL", "https://hire.example");
+    vi.stubEnv("LEGACY_SITE_HOSTS", "old.example");
+    expect(siteForRequestHost("www.dev.example")).toBe("developer");
+    expect(siteForRequestHost("hire.example")).toBe("recruiter");
+    expect(siteForRequestHost("old.example")).toBeNull();
+    expect(siteForRequestHost("codepad-git-x.vercel.app")).toBeNull();
   });
 });

@@ -52,7 +52,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
             <Plug className="w-5 h-5 text-secondary" /> External MCP is a Growth feature
           </h2>
           <p className="text-sm text-muted leading-relaxed max-w-md">
-            Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to wire your internal MCP servers (docs, ATS, repos) into Interviewpad screenings.
+            Upgrade this workspace to <span className="font-bold text-fg">Growth</span> or <span className="font-bold text-fg">Enterprise</span> to wire your internal MCP servers (docs, ATS, repos) into Intervutree screenings.
           </p>
         </div>
         <Link

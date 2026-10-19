@@ -151,7 +151,7 @@ export async function notifyInterviewScheduled(args: {
       where: { email: args.candidateEmail.toLowerCase() },
       select: { id: true },
     });
-    // Silent skip if the candidate doesn't have an Interviewpad account —
+    // Silent skip if the candidate doesn't have an Intervutree account —
     // they'll learn about the session via email (IP-24) or the share link
     // their recruiter sent.
     if (!user) return;

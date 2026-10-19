@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { headers } from "next/headers";
-import { isRecruiterHost } from "@/lib/domains";
+import { currentSite } from "@/lib/current-site";
+import { brandForSite } from "@/lib/brand";
 import { auth } from "@/lib/auth";
 import { isStaff } from "@/lib/permissions/staff";
 import { userCan } from "@/lib/permissions/access";
@@ -19,8 +19,12 @@ import ThemeToggle from "./ThemeToggle";
 
 export default async function Header() {
   const session = await auth().catch(() => null);
-  const hdrs = await headers();
-  const recruiterSite = isRecruiterHost(hdrs.get("x-forwarded-host") ?? hdrs.get("host"));
+  // On a split domain each site shows only its own menu; null shows both.
+  const site = await currentSite();
+  const recruiterSite = site === "recruiter";
+  const brandKey = site ? brandForSite(site).key : null;
+  const showDeveloperMenu = site !== "recruiter";
+  const showRecruiterMenu = site !== "developer";
   const user = session?.user;
   const showAdmin = await isStaff(session);
   const showCreator = user?.id ? await userCan(user.id, "content:author") : false;
@@ -232,7 +236,10 @@ export default async function Header() {
   const recruitersMenuStatus = statusForHref("menu:recruiters");
 
   const filteredDeveloperItems = applyNavStatus(developerItems);
-  const filteredRecruiterItems = applyNavStatus(recruiterItems, true);
+  // On the recruiter domain /hire is served at "/".
+  const filteredRecruiterItems = applyNavStatus(recruiterItems, true).map((item) =>
+    recruiterSite ? { ...item, href: item.href.replace(/^\/hire(?=$|#)/, "/") } : item,
+  );
 
   return (
     <NavChrome>
@@ -241,24 +248,25 @@ export default async function Header() {
         <MobileNav
           signedIn={!!user}
           isAdmin={showAdmin}
-          developerItems={filteredDeveloperItems}
-          recruiterItems={filteredRecruiterItems}
-          blogStatus={blogStatus}
+          developerItems={showDeveloperMenu ? filteredDeveloperItems : []}
+          recruiterItems={showRecruiterMenu ? filteredRecruiterItems : []}
+          blogStatus={showDeveloperMenu ? blogStatus : "hidden"}
+          site={site}
+          brand={brandKey}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
-          recruiterSite={recruiterSite}
         />
 
         {/* Desktop: logo links to home */}
-        <HeaderLogo recruiterSite={recruiterSite} />
+        <HeaderLogo brand={brandKey} />
 
         <div className="flex items-center">
           <nav aria-label="Primary" className="hidden h-16 items-center gap-1 md:flex">
             <NavGlide>
-            {(devsMenuStatus !== "hidden" || showAdmin) &&
+            {showDeveloperMenu && (devsMenuStatus !== "hidden" || showAdmin) &&
               (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
-                  label={devsMenuStatus === "hidden" && showAdmin ? "Developers (Hidden)" : "Developers"}
+                  label={`${site === "developer" ? "Practice" : "Developers"}${devsMenuStatus === "hidden" && showAdmin ? " (Hidden)" : ""}`}
                   items={filteredDeveloperItems}
                   railTitle="For developers"
                   railBlurb="From daily practice to your dream offer — real sandboxes, curated questions, and AI skills."
@@ -266,20 +274,21 @@ export default async function Header() {
                   railHrefLabel="Start a prep journey"
                 />
               )}
-            {(recruitersMenuStatus !== "hidden" || showAdmin) &&
+            {showRecruiterMenu && (recruitersMenuStatus !== "hidden" || showAdmin) &&
               (filteredRecruiterItems.length > 0 || showAdmin) && (
                 <NavDropdown
-                  label={recruitersMenuStatus === "hidden" && showAdmin ? "Hiring teams (Hidden)" : "Hiring teams"}
+                  label={`${recruiterSite ? "Product" : "Hiring teams"}${recruitersMenuStatus === "hidden" && showAdmin ? " (Hidden)" : ""}`}
                   items={filteredRecruiterItems}
                   tone="secondary"
                   railTitle="For hiring teams"
                   railBlurb="Screen, interview, and evaluate candidates on proof of craft with live replay."
-                  railHref="/hire"
+                  railHref={recruiterSite ? "/" : "/hire"}
                   railHrefLabel="See recruiter platform"
                 />
               )}
 
-            {(blogStatus !== "hidden" || showAdmin) && (
+            {recruiterSite && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}
+            {showDeveloperMenu && (blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink
                 href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
                 matchPrefix="/blog"
@@ -309,6 +318,7 @@ export default async function Header() {
                 user={{ name: user.name, email: user.email, image: user.image }}
                 isAdmin={showAdmin}
                 isCreator={showCreator}
+                recruiterSite={recruiterSite}
               />
             ) : (
               <Link

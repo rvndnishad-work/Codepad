@@ -21,6 +21,7 @@
  *     only delivers to your Resend account email until you verify a domain).
  *   - Otherwise in prod → noreply on the production domain.
  */
+import { BRANDS, type BrandKey } from "@/lib/brand";
 import { render } from "@react-email/render";
 import * as React from "react";
 import { TEMPLATES, type TemplateName, type TemplateProps } from "@/emails";
@@ -94,12 +95,21 @@ export type EmailResult =
   | { sent: true; provider: "resend" | "console"; id?: string }
   | { sent: false; reason: string };
 
-function resolveFrom(): string {
+/**
+ * The From header. EMAIL_FROM wins for everything. Otherwise recruiter-side
+ * mail says Intervutree and developer-side mail says DevPrep (each from its own
+ * domain when EMAIL_FROM_RECRUITER / EMAIL_FROM_DEVELOPER is set, which needs
+ * the domain verified in Resend), and `interviewpad.in` is the fallback sender
+ * until then.
+ */
+function resolveFrom(brand: BrandKey = "intervutree"): string {
+  if (process.env.EMAIL_FROM && !process.env.EMAIL_FROM_RECRUITER && !process.env.EMAIL_FROM_DEVELOPER) return process.env.EMAIL_FROM;
+  const perBrand = brand === "intervutree" ? process.env.EMAIL_FROM_RECRUITER : process.env.EMAIL_FROM_DEVELOPER;
+  if (perBrand) return perBrand;
   if (process.env.EMAIL_FROM) return process.env.EMAIL_FROM;
-  if (process.env.NODE_ENV !== "production") {
-    return "Interviewpad (dev) <onboarding@resend.dev>";
-  }
-  return "Interviewpad <noreply@interviewpad.in>";
+  const name = BRANDS[brand].name;
+  if (process.env.NODE_ENV !== "production") return `${name} (dev) <onboarding@resend.dev>`;
+  return `${name} <noreply@interviewpad.in>`;
 }
 
 /**
@@ -133,8 +143,14 @@ async function withCandidateContext(
 }
 
 /** The From header, with a workspace display name when there is one. */
-function fromHeader(fromName: string | null | undefined): string {
-  return fromName ? formatFrom(fromName, resolveFrom()) : resolveFrom();
+function fromHeader(fromName: string | null | undefined, brand: BrandKey = "intervutree"): string {
+  return fromName ? formatFrom(fromName, resolveFrom(brand)) : resolveFrom(brand);
+}
+
+/** Sign-up codes come from the product the person signed up to; everything else is recruiter-side. */
+function brandForTemplate(template: string, props: unknown): BrandKey {
+  if (template !== "otp-verification") return "intervutree";
+  return (props as { brandName?: string } | null)?.brandName === BRANDS.intervutree.name ? "intervutree" : "devprep";
 }
 
 export async function sendEmail<T extends TemplateName>(
@@ -244,7 +260,7 @@ export async function sendEmail<T extends TemplateName>(
     // Dev fallback — surface key fields in the log so a localhost flow that
     // emits an email link is debuggable without standing up Resend.
     console.log(
-      `[email:dev-stub] template=${input.template} from=${fromHeader(fromName)} to=${recipients.join(",")}${replyTo ? ` reply-to=${replyTo}` : ""} subject="${subject}"` +
+      `[email:dev-stub] template=${input.template} from=${fromHeader(fromName, brandForTemplate(input.template, input.props))} to=${recipients.join(",")}${replyTo ? ` reply-to=${replyTo}` : ""} subject="${subject}"` +
         (input.attachments?.length ? ` attachments=${input.attachments.map((a) => a.filename).join(",")}` : "") +
         `\n${text}`,
     );
@@ -260,7 +276,7 @@ export async function sendEmail<T extends TemplateName>(
     if (input.idempotencyKey) headers["Idempotency-Key"] = input.idempotencyKey;
 
     const body: Record<string, unknown> = {
-      from: fromHeader(fromName),
+      from: fromHeader(fromName, brandForTemplate(input.template, input.props)),
       to: recipients,
       subject,
       html,

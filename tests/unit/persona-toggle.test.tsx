@@ -12,7 +12,7 @@ const STATS = { questions: 1600, challenges: 150, sessions: 900 };
 describe("home hero persona toggle", () => {
   it("renders the hiring teams button with an arrow to /hire", () => {
     render(<HomeWowHero stats={STATS} />);
-    const hireLink = screen.getByText("Hiring? Interviewpad for teams").closest("a");
+    const hireLink = screen.getByText("Hiring? Intervutree for teams").closest("a");
     expect(hireLink).toBeTruthy();
     expect(hireLink?.getAttribute("href")).toBe("/hire");
     // lucide renders an inline svg inside the link — assert the arrow icon exists.

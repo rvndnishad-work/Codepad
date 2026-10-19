@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     select: { title: true },
   });
   return {
-    title: challenge ? `Solve: ${challenge.title} — Interviewpad` : "Challenge not found",
+    title: challenge ? `Solve: ${challenge.title}` : "Challenge not found",
   };
 }
 

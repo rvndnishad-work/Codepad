@@ -41,7 +41,7 @@ async function ensureAddonProduct(stripe: Stripe): Promise<string> {
     const product = await stripe.products.create({
       id: VIDEO_ADDON_PRODUCT_ID,
       name: "Built-in video",
-      description: "Video and audio calls inside the Interviewpad interview room, per workspace.",
+      description: "Video and audio calls inside the Intervutree interview room, per workspace.",
       metadata: { kind: VIDEO_ADDON_KIND },
     });
     return product.id;

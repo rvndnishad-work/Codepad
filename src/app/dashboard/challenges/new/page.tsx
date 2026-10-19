@@ -4,7 +4,7 @@ import ChallengeForm from "@/app/admin/challenges/ChallengeForm";
 import { blankStep } from "@/app/admin/challenges/challenge-form-types";
 
 export const metadata = {
-  title: "Create a challenge — Interviewpad",
+  title: "Create a challenge",
 };
 
 export default async function NewUserChallengePage() {

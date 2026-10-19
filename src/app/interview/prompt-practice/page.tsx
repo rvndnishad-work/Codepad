@@ -5,7 +5,7 @@ import { validatePageAccess } from "@/lib/settings";
 import PromptLabClient from "./PromptLabClient";
 
 export const metadata = {
-  // Bare title — the root layout's title template appends "— Interviewpad".
+  // Bare title — the root layout's title template appends "".
   title: "Prompt Arena",
   description: "Practice prompt engineering against scoring scenarios, then experiment freely in the live playground.",
 };

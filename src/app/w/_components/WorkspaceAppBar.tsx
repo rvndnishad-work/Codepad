@@ -1,10 +1,11 @@
 "use client";
 
+import { BrandWordmark } from "@/components/brand/BrandLogo";
+import { IntervutreeMark } from "@/components/brand/IntervutreeLogo";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, HelpCircle, LayoutGrid, Menu, Plus, Search, X } from "lucide-react";
-import { LogoDynamicMark } from "@/components/LogoDynamic";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserMenu from "@/components/UserMenu";
@@ -187,10 +188,10 @@ export default function WorkspaceAppBar({ current, workspaces, user, isAdmin, me
         </button>
       )}
 
-      <Link href="/w" aria-label="Interviewpad workspaces" className="flex items-center gap-1.5 shrink-0 text-fg">
-        <LogoDynamicMark className="w-8 h-8" />
+      <Link href="/w" aria-label="Intervutree workspaces" className="flex items-center gap-1.5 shrink-0 text-fg">
+        <IntervutreeMark className="w-8 h-8" />
         <span className={`text-[15px] font-semibold tracking-[-0.02em] ${current ? "hidden md:inline" : ""}`}>
-          interview<span className="text-secondary-soft">pad</span>
+          <BrandWordmark brand="intervutree" />
         </span>
       </Link>
 

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
-export const alt = "Creator Space on Interviewpad";
+export const alt = "Creator Space on DevPrep";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -129,7 +129,7 @@ export default async function OgImage({ params }: { params: Promise<{ handle: st
             </div>
           </div>
           <div style={{ display: "flex", fontSize: 30, fontWeight: 800, color: "#fafafa" }}>
-            interview<span style={{ color: "#facc15" }}>pad</span>
+            devprep<span style={{ color: "#facc15" }}>.academy</span>
           </div>
         </div>
       </div>

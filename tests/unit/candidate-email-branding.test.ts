@@ -64,7 +64,7 @@ describe("candidate email branding", () => {
     // One lookup for the whole batch.
     expect(db.workspace.findUnique).toHaveBeenCalledTimes(1);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body[0].from).toBe('"Acme Talent via Interviewpad" <noreply@interviewpad.in>');
+    expect(body[0].from).toBe('"Acme Talent via Intervutree" <noreply@interviewpad.in>');
     expect(body[0].reply_to).toBe("jobs@acme.io");
     expect(body[0].subject).toBe("Your Pairing with Acme");
     expect(body[0].html).toContain("Hello Priya,");

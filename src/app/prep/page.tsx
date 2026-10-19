@@ -7,7 +7,7 @@ import PrepTrackerClient from "./PrepTrackerClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Your Prep Journey — Interviewpad",
+  title: "Your Prep Journey",
   description: "Track your day-by-day interview preparation progress.",
 };
 

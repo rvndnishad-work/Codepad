@@ -42,7 +42,7 @@ export async function createCreditPackCheckout(a: {
         price_data: {
           currency: "usd",
           product_data: {
-            name: `Interviewpad AI credits, ${pack.label}`,
+            name: `Intervutree AI credits, ${pack.label}`,
             description: `${pack.credits} AI screening credits for "${a.workspace.name}".`,
           },
           unit_amount: pack.priceCents,

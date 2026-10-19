@@ -8,7 +8,7 @@ import { loadUserPermissions } from "@/lib/permissions/access";
 import { Pill, cardCls, timeAgo } from "../jobs/ui";
 
 export const metadata = {
-  title: "Inbox — Interviewpad Admin",
+  title: "Inbox — Admin",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

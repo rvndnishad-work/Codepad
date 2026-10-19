@@ -5,7 +5,7 @@ import ScreeningCompare from "../../_components/ScreeningCompare";
 
 type Props = { params: Promise<{ slug: string; batchId: string }> };
 
-export const metadata = { title: "AI screening — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "AI screening", robots: { index: false, follow: false } };
 
 export default async function AiScreeningComparePage({ params }: Props) {
   const { slug, batchId } = await params;

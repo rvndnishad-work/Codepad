@@ -82,7 +82,7 @@ export default function HomeHero({
       <div className="relative border-b border-border">
         <div className="mx-auto flex max-w-7xl items-stretch justify-between px-4">
           <div className="hidden items-center gap-3 py-3 md:flex">
-            <span className="ip-label">Interviewpad</span>
+            <span className="ip-label">DevPrep</span>
             <span className="h-[5px] w-[5px] bg-accent" aria-hidden />
             <span className="ip-label">
               {isRecruiter ? "Hiring runtime" : "Interview runtime"}

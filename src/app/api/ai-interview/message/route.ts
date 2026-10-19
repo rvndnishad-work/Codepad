@@ -278,7 +278,7 @@ function callMockAgent(message: string, files: Record<string, string>, historyCo
   // 1. React Todo with Pagination
   if (templateId === "react-todo-pagination" || !templateId) {
     if (historyCount <= 1 || msg.includes("hello") || msg.includes("hi") || msg.includes("hey")) {
-      return `Hello! Welcome to your automated technical interview at Interviewpad. I will be your AI Interviewer today. 
+      return `Hello! Welcome to your automated technical interview at Intervutree. I will be your AI Interviewer today. 
 
 We have pre-wired a coding workspace on the right for you. Your task is to build a **React Todo List component with Pagination controls**. 
 
@@ -322,7 +322,7 @@ This edge-case handling is exactly what recruiters evaluate on their rubrics. Ke
   // 2. Interactive Image Carousel
   if (templateId === "interactive-carousel") {
     if (historyCount <= 1 || msg.includes("hello") || msg.includes("hi") || msg.includes("hey")) {
-      return `Hello! Welcome to your automated technical interview at Interviewpad. I will be your AI Interviewer today. 
+      return `Hello! Welcome to your automated technical interview at Intervutree. I will be your AI Interviewer today. 
 
 Your task is to build a highly responsive **Interactive Image Carousel component in React** with autoplay, pause-on-hover, and slide indicator controls.
 

@@ -33,7 +33,7 @@ export default function App() {
 
   return (
     <div className="todo-app">
-      <h1 className="title">Interviewpad Workpad</h1>
+      <h1 className="title">Intervutree Workpad</h1>
       <p className="subtitle">Build a Paginated Todo List component in React</p>
       
       <div className="placeholder-card">
@@ -166,7 +166,7 @@ export default async function AIInterviewRunPage({ params, searchParams }: Props
       <ConsentGate
         brand={page.brand}
         title={`Before your ${session.positionTitle} screening`}
-        intro={`${page.brand.name} uses Interviewpad for this screening. An AI interviewer asks the questions, and your answers help the team decide on next steps. A person at ${page.brand.name} makes every decision.`}
+        intro={`${page.brand.name} uses Intervutree for this screening. An AI interviewer asks the questions, and your answers help the team decide on next steps. A person at ${page.brand.name} makes every decision.`}
         statement={`I agree that ${page.brand.name} can keep my answers, code${recordsVoice ? ", voice recordings" : ""} and chat from this screening and use them to review my application.${recordsVoice ? " Voice recordings are deleted after 7 days." : ""}`}
         action={giveScreeningConsentAction.bind(null, token)}
         cta="Agree and continue"

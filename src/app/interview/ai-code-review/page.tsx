@@ -6,7 +6,7 @@ import ReviewLabClient from "./ReviewLabClient";
 import type { AttemptSummary, Challenge } from "./types";
 
 export const metadata = {
-  // Bare title — the root layout's title template appends "— Interviewpad".
+  // Bare title — the root layout's title template appends "".
   title: "Review the AI's Code",
   description:
     "Can you catch what the AI got wrong? Review plausible AI-generated code, flag the planted hallucinations, logic bugs, and security holes, and race the clock in Hallucination Hunt mode.",

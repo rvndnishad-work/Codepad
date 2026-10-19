@@ -71,7 +71,7 @@ export function buildPublicPricing(prices: EffectivePrices = DEFAULT_PRICES): Pu
       return {
         key,
         name: plan.name,
-        audience: "For trying Interviewpad and for small teams that run a few screenings",
+        audience: "For trying Intervutree and for small teams that run a few screenings",
         price: { monthly: "$0", annual: "$0" },
         unit: { monthly: "free", annual: "free" },
         note: {

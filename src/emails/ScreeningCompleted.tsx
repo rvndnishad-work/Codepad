@@ -54,7 +54,7 @@ export function ScreeningCompleted({
   return (
     <BaseLayout
       preview={`${candidateName} finished their screening — ${score}%`}
-      footer={`Sent from ${workspaceName} — Interviewpad AI Screening.`}
+      footer={`Sent from ${workspaceName} — Intervutree AI Screening.`}
     >
       <Text style={emailStyles.badge("#34d399")}>Screening Completed</Text>
       <Text style={emailStyles.h1}>

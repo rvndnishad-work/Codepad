@@ -188,11 +188,11 @@ function InviteRow({
 
   const subject = encodeURIComponent(`You're invited to a coding challenge`);
   const body = encodeURIComponent(
-    `Hi,\n\nI'd like to invite you to a coding challenge on Interviewpad. Open the link below to get started:\n\n${link}\n\n— sent from Interviewpad`
+    `Hi,\n\nI'd like to invite you to a coding challenge on DevPrep. Open the link below to get started:\n\n${link}\n\n— sent from DevPrep`
   );
   const mailHref = `mailto:${invitation.email}?subject=${subject}&body=${body}`;
   const waText = encodeURIComponent(
-    `Hey — I'd like to invite you to a coding challenge on Interviewpad: ${link}`
+    `Hey — I'd like to invite you to a coding challenge on DevPrep: ${link}`
   );
   const waHref = `https://wa.me/?text=${waText}`;
 

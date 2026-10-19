@@ -172,7 +172,7 @@ export default function CandidateExperienceClient({ slug, canEdit, growth, works
           label="Sender name"
           htmlFor="ce-sender"
           badge={growth ? undefined : "Growth"}
-          help={growth ? `Candidates see: ${senderPreview}` : `${GROWTH_NOTE} Until then, emails come from Interviewpad.`}
+          help={growth ? `Candidates see: ${senderPreview}` : `${GROWTH_NOTE} Until then, emails come from Intervutree.`}
           error={errors.senderName}
         >
           <TextInput

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Your Challenges — Interviewpad",
+  title: "Your Challenges",
   description: "Your personal practice dashboard: daily challenge, streak, and progress.",
 };
 

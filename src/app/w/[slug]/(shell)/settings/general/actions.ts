@@ -55,7 +55,7 @@ export async function checkSlugAction(slug: string, candidate: string): Promise<
   if (!parsed.ok) return { state: "invalid", message: parsed.error };
   const next = parsed.value as string;
   if (next === e.ws.slug) return { state: "same", message: "This is the current address." };
-  if (isReservedSlug(next)) return { state: "taken", message: "That web address is kept for Interviewpad pages. Try another." };
+  if (isReservedSlug(next)) return { state: "taken", message: "That web address is kept for Intervutree pages. Try another." };
   const [takenBy, redirectBy] = await Promise.all([
     prisma.workspace.findUnique({ where: { slug: next }, select: { id: true } }),
     prisma.workspaceSlugRedirect.findUnique({ where: { oldSlug: next }, select: { workspaceId: true } }),

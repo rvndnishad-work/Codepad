@@ -47,12 +47,12 @@ export async function generateMetadata({ params }: Props) {
       visibility: true,
     },
   });
-  if (!challenge) return { title: "Challenge not found — Interviewpad" };
+  if (!challenge) return { title: "Challenge not found" };
   const indexable = challenge.published && challenge.visibility === "public";
   const description =
     challenge.description?.slice(0, 160).trim() ||
     `Solve the "${challenge.title}" coding challenge (${challenge.difficulty}).`;
-  const title = `${challenge.title} — Interviewpad Challenges`;
+  const title = `${challenge.title} — Challenges`;
   const canonical = `/challenges/${slug}`;
   return {
     title,
@@ -372,7 +372,7 @@ export default async function ChallengeDetailPage({ params, searchParams }: Prop
     inLanguage: "en",
     provider: {
       "@type": "Organization",
-      name: "Interviewpad",
+      name: "DevPrep",
       url: siteUrl,
     },
   };

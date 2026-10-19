@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 export const metadata = {
-  title: "Purchase — Interviewpad",
+  title: "Purchase",
   robots: { index: false, follow: false },
 };
 

@@ -8,7 +8,7 @@ import QuestionDetail, { type DetailProps, type SavedVariant } from "./QuestionD
 
 type Props = { params: Promise<{ slug: string; kind: string; id: string }> };
 
-export const metadata = { title: "Question — Interviewpad", robots: { index: false, follow: false } };
+export const metadata = { title: "Question", robots: { index: false, follow: false } };
 
 async function savedVariants(workspaceId: string, slug: string, originKind: "bank" | "challenge", originId: string): Promise<SavedVariant[]> {
   const rows = await prisma.questionVariant.findMany({

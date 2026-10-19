@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props) {
   const seo = sc?.seo as { title?: string; description?: string; noindex?: boolean } | null;
   return {
     title: seo?.title ?? `${tutorial.title} — ${space.name}`,
-    description: seo?.description ?? tutorial.summary ?? `A tutorial by ${space.name} on Interviewpad.`,
+    description: seo?.description ?? tutorial.summary ?? `A tutorial by ${space.name} on DevPrep.`,
     robots: seo?.noindex ? { index: false, follow: false } : undefined,
   };
 }

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 180" width="100%" height="100%" fill="none" role="img" aria-label="devprep.academy logo">
+  <defs>
+    <!-- Cap top gradient -->
+    <linearGradient id="dp-h-cap" x1="50" y1="20" x2="150" y2="90" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFDD00"/>
+      <stop offset="60%" stop-color="#FFB000"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <!-- Cap bevel gradient -->
+    <linearGradient id="dp-h-bevel" x1="30" y1="58" x2="160" y2="75" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D97706"/>
+      <stop offset="100%" stop-color="#92400E"/>
+    </linearGradient>
+    <!-- Book gold gradient -->
+    <linearGradient id="dp-h-gold" x1="35" y1="110" x2="155" y2="150" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="50%" stop-color="#FFC107"/>
+      <stop offset="100%" stop-color="#FFA000"/>
+    </linearGradient>
+  </defs>
+
+  <!-- LOGO MARK (Scale to fit ~150x150) -->
+  <g transform="translate(15, 12) scale(0.31)">
+    <!-- Mortarboard -->
+    <path d="M 120 120 L 256 168 L 392 120 L 392 134 L 256 182 L 120 134 Z" fill="url(#dp-h-bevel)"/>
+    <polygon points="256,52 392,120 256,168 120,120" fill="url(#dp-h-cap)"/>
+    <ellipse cx="256" cy="118" rx="8" ry="4.5" fill="#FFEAA7"/>
+    <path d="M 256 118 Q 185 110 132 132" fill="none" stroke="#FFC107" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="132" cy="136" r="3.5" fill="#FFB703"/>
+    <rect x="129" y="140" width="6" height="4" rx="1.5" fill="#D97706"/>
+    <path d="M 129 144 L 126 195 C 126 198 138 198 138 195 L 135 144 Z" fill="#18181B"/>
+
+    <!-- </> code brackets -->
+    <g stroke="#18181B" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M 198 220 L 162 246 L 198 272"/>
+      <path d="M 268 214 L 244 278"/>
+      <path d="M 314 220 L 350 246 L 314 272"/>
+    </g>
+
+    <!-- Open book -->
+    <path d="M 256 424 C 214 402 164 394 118 408 L 118 368 C 166 352 216 360 256 380 C 296 360 346 352 394 368 L 394 408 C 348 394 298 402 256 424 Z" fill="#18181B"/>
+    <path d="M 256 374 C 218 344 166 336 122 350 C 120 330 120 310 124 294 C 168 280 220 292 256 324 Z" fill="url(#dp-h-gold)"/>
+    <path d="M 256 374 C 294 344 346 336 390 350 C 392 330 392 310 388 294 C 344 280 292 292 256 324 Z" fill="url(#dp-h-gold)"/>
+    <path d="M 256 324 L 256 374" stroke="#D97706" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- WORDMARK: devprep.academy -->
+  <g font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Montserrat, sans-serif">
+    <!-- "devprep" -->
+    <text x="180" y="104" font-size="64" font-weight="900" letter-spacing="-1.2" fill="#18181B">devprep</text>
+    <!-- ".academy" -->
+    <text x="444" y="104" font-size="64" font-weight="800" letter-spacing="-1" fill="#FFB000">.academy</text>
+
+    <!-- Tagline: PRACTICE • LEARN • BUILD • GET HIRED -->
+    <text x="184" y="142" font-size="14.5" font-weight="600" letter-spacing="0.32em" fill="#6B7280">
+      PRACTICE <tspan fill="#FFB000">•</tspan> LEARN <tspan fill="#FFB000">•</tspan> BUILD <tspan fill="#FFB000">•</tspan> GET HIRED
+    </text>
+  </g>
+</svg>

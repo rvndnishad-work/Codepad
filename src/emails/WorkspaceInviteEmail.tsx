@@ -22,8 +22,8 @@ export function WorkspaceInviteEmail({
 }: WorkspaceInviteEmailProps) {
   return (
     <BaseLayout
-      preview={`${inviterName} invited you to ${workspaceName} on Interviewpad`}
-      footer={`You're receiving this because ${inviterName} invited you to a workspace on Interviewpad. If you weren't expecting it, you can ignore this email.`}
+      preview={`${inviterName} invited you to ${workspaceName} on Intervutree`}
+      footer={`You're receiving this because ${inviterName} invited you to a workspace on Intervutree. If you weren't expecting it, you can ignore this email.`}
     >
       <Text style={emailStyles.badge("#818cf8")}>Team Invitation</Text>
       <Text style={emailStyles.h1}>
@@ -55,7 +55,7 @@ export function WorkspaceInviteEmail({
 
 export function workspaceInviteEmailText(p: WorkspaceInviteEmailProps): string {
   return [
-    `${p.inviterName} invited you to join ${p.workspaceName} on Interviewpad as a ${p.roleLabel}.`,
+    `${p.inviterName} invited you to join ${p.workspaceName} on Intervutree as a ${p.roleLabel}.`,
     "",
     "Accept the invitation here:",
     p.acceptUrl,

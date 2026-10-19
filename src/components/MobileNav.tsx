@@ -22,7 +22,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import LogoDynamic from "./LogoDynamic";
+import { BrandLogo } from "./brand/BrandLogo";
+import type { BrandKey } from "@/lib/brand";
 import type { NavStatus } from "@/lib/settings-constants";
 
 /** Icon names are passed across the RSC boundary as strings. See NavDropdown for rationale. */
@@ -64,8 +65,10 @@ type Props = {
   blogStatus?: NavStatus;
   devsMenuStatus?: NavStatus;
   recruitersMenuStatus?: NavStatus;
-  /** True on the recruiter domain, where "/" is the recruiter home. */
-  recruiterSite?: boolean;
+  /** The domain this page is on; null when both sites share one domain. */
+  site?: "developer" | "recruiter" | null;
+  /** The domain's brand; null keeps the per-route behaviour when both sites share a domain. */
+  brand?: BrandKey | null;
 };
 
 /**
@@ -82,8 +85,10 @@ export default function MobileNav({
   blogStatus,
   devsMenuStatus,
   recruitersMenuStatus,
-  recruiterSite = false,
+  site = null,
+  brand = null,
 }: Props) {
+  const recruiterSite = site === "recruiter";
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<"devs" | "recruiters" | null>(null);
   const pathname = usePathname();
@@ -156,10 +161,7 @@ export default function MobileNav({
           href={isAdmin ? "/admin" : "/"}
           className="flex items-center group shrink-0"
         >
-          <LogoDynamic
-            compact
-            tone={isRecruiterRoute ? "secondary" : "accent"}
-          />
+          <BrandLogo compact brand={brand ?? (isRecruiterRoute ? "intervutree" : "devprep")} />
         </Link>
       </div>
 
@@ -170,18 +172,18 @@ export default function MobileNav({
           className="animate-fade-in absolute left-3 right-3 top-[calc(100%+8px)] z-50 overflow-hidden rounded-3xl border border-border bg-surface shadow-[0_32px_80px_-20px_rgba(0,0,0,0.5)] md:hidden max-h-[calc(100vh-5rem)] overflow-y-auto"
         >
           <nav className="mx-auto max-w-7xl p-2">
-            {(devsMenuStatus !== "hidden" || isAdmin) && (developerItems.length > 0 || isAdmin) && (
+            {site !== "recruiter" && (devsMenuStatus !== "hidden" || isAdmin) && (developerItems.length > 0 || isAdmin) && (
               <MobileGroup
-                title={devsMenuStatus === "hidden" && isAdmin ? "For practising (Hidden)" : "For practising"}
+                title={`${site === "developer" ? "Practice" : "For practising"}${devsMenuStatus === "hidden" && isAdmin ? " (Hidden)" : ""}`}
                 items={developerItems}
                 expanded={openGroup === "devs"}
                 onToggle={() => setOpenGroup((g) => (g === "devs" ? null : "devs"))}
                 pathname={pathname}
               />
             )}
-            {(recruitersMenuStatus !== "hidden" || isAdmin) && (recruiterItems.length > 0 || isAdmin) && (
+            {site !== "developer" && (recruitersMenuStatus !== "hidden" || isAdmin) && (recruiterItems.length > 0 || isAdmin) && (
               <MobileGroup
-                title={recruitersMenuStatus === "hidden" && isAdmin ? "For hiring (Hidden)" : "For hiring"}
+                title={`${recruiterSite ? "Product" : "For hiring"}${recruitersMenuStatus === "hidden" && isAdmin ? " (Hidden)" : ""}`}
                 items={recruiterItems}
                 expanded={openGroup === "recruiters"}
                 onToggle={() => setOpenGroup((g) => (g === "recruiters" ? null : "recruiters"))}

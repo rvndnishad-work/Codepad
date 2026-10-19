@@ -1,5 +1,6 @@
 import AuthCard from "./AuthCard";
 import OnboardingShowcase from "./OnboardingShowcase";
+import { currentBrand } from "@/lib/current-site";
 
 export default async function LoginPage({
   searchParams,
@@ -27,7 +28,7 @@ export default async function LoginPage({
 
         {/* Onboarding Carousel */}
         <div className="relative z-10 w-full">
-          <OnboardingShowcase />
+          <OnboardingShowcase brand={(await currentBrand()).key} />
         </div>
       </div>
 
@@ -53,6 +54,7 @@ export default async function LoginPage({
             providers={providers}
             next={safeNext}
             initialMode={mode === "signup" ? "signup" : "signin"}
+            brand={(await currentBrand()).key}
           />
         </div>
       </div>

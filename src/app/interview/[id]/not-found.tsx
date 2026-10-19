@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { Briefcase, Home, ArrowRight } from "lucide-react";
-import { LogoLockup } from "@/components/Logo";
+import { BrandLockup } from "@/components/brand/BrandLogo";
+import { currentBrand } from "@/lib/current-site";
 
 export const metadata = {
-  title: "Session not found — Interviewpad",
+  title: "Session not found",
 };
 
-export default function InterviewNotFound() {
+export default async function InterviewNotFound() {
+  const brand = await currentBrand();
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-16">
       <div className="relative w-full max-w-lg text-center">
@@ -17,7 +19,7 @@ export default function InterviewNotFound() {
         />
         <div className="relative">
           <div className="flex justify-center mb-6">
-            <LogoLockup height={56} />
+            <BrandLockup brand={brand.key} height={56} />
           </div>
           <p className="text-[10px] font-semibold tracking-[0.18em] text-muted uppercase mb-2">
             404 · Interview session

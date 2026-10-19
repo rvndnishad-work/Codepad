@@ -23,7 +23,7 @@ export function ReplyToConfirm({ workspaceName, requestedBy, confirmUrl, days }:
       <Text style={emailStyles.h1}>Confirm this reply-to address</Text>
       <Text style={emailStyles.body}>
         {requestedBy} wants replies from candidates of <span style={emailStyles.emphasis}>{workspaceName}</span> on
-        Interviewpad to come to this inbox. Confirm to turn it on.
+        Intervutree to come to this inbox. Confirm to turn it on.
       </Text>
       <Button href={confirmUrl} style={emailStyles.cta}>
         Confirm this address
@@ -41,7 +41,7 @@ export function ReplyToConfirm({ workspaceName, requestedBy, confirmUrl, days }:
 
 export function replyToConfirmText(p: ReplyToConfirmProps): string {
   return [
-    `${p.requestedBy} wants replies from candidates of ${p.workspaceName} on Interviewpad to come to this inbox.`,
+    `${p.requestedBy} wants replies from candidates of ${p.workspaceName} on Intervutree to come to this inbox.`,
     "",
     "Confirm this address:",
     p.confirmUrl,

@@ -11,7 +11,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  return { title: `ATS — ${slug} — Interviewpad` };
+  return { title: `ATS — ${slug}` };
 }
 
 export default async function AtsIntegrationPage({ params }: Props) {

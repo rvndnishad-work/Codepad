@@ -12,7 +12,7 @@ import { developerUserWhere } from "@/lib/users/user-type";
 import { Pill, btnCls, cardCls, timeAgo } from "./jobs/ui";
 
 export const metadata = {
-  title: "Home — Interviewpad Admin",
+  title: "Home — Admin",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-dynamic";

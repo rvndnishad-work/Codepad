@@ -708,7 +708,7 @@ function SubprocessorsCard() {
     <AsideCard
       id="subprocessors"
       title="Services that process candidate data"
-      description="Services Interviewpad uses to run this workspace. Each one only gets what it needs for its job."
+      description="Services Intervutree uses to run this workspace. Each one only gets what it needs for its job."
     >
       <ul className="flex flex-col divide-y divide-border">
         {SUBPROCESSORS.map((s) => (

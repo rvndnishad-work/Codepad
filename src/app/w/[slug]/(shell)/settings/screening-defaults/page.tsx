@@ -10,7 +10,7 @@ type Props = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const ws = await prisma.workspace.findUnique({ where: { slug }, select: { name: true } });
-  return { title: ws ? `Screening defaults settings · ${ws.name} — Interviewpad` : "Workspace not found", robots: { index: false } };
+  return { title: ws ? `Screening defaults settings · ${ws.name}` : "Workspace not found", robots: { index: false } };
 }
 
 /** Settings > Screening defaults: what new take-homes, AI screenings and interviews start with. */

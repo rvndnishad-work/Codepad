@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#facc15"/>
+    </marker>
+  </defs>
+  <rect width="960" height="460" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">Two closures, one shared scope</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">Each function keeps a link to the scope it was created in, not a copy of the values</text>
+
+  <!-- functions -->
+  <rect x="64" y="160" width="250" height="96" rx="16" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="90" y="200" fill="#e8eaf0" font-size="20" font-weight="700">inc()</text>
+  <text x="90" y="230" fill="#9aa3b5" font-size="16">() =&gt; ++count</text>
+
+  <rect x="64" y="310" width="250" height="96" rx="16" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="90" y="350" fill="#e8eaf0" font-size="20" font-weight="700">peek()</text>
+  <text x="90" y="380" fill="#9aa3b5" font-size="16">() =&gt; count</text>
+
+  <!-- arrows -->
+  <path d="M314 208 C 430 208, 440 260, 556 268" fill="none" stroke="#facc15" stroke-width="3" marker-end="url(#a)"/>
+  <path d="M314 358 C 430 358, 440 312, 556 304" fill="none" stroke="#facc15" stroke-width="3" marker-end="url(#a)"/>
+  <text x="372" y="190" fill="#facc15" font-size="15">[[Environment]]</text>
+  <text x="372" y="396" fill="#facc15" font-size="15">[[Environment]]</text>
+
+  <!-- environment record -->
+  <rect x="560" y="180" width="340" height="210" rx="18" fill="#1b1f2b" stroke="#34d399" stroke-width="2"/>
+  <text x="590" y="222" fill="#34d399" font-size="15" font-weight="700" letter-spacing="1.5">SCOPE OF makeCounter()</text>
+  <rect x="590" y="248" width="280" height="64" rx="12" fill="#0f1117" stroke="#2a2f3d"/>
+  <text x="614" y="288" fill="#e8eaf0" font-size="22" font-family="ui-monospace, Menlo, Consolas, monospace">count = 2</text>
+  <text x="590" y="352" fill="#9aa3b5" font-size="15">One binding, seen by both functions.</text>
+  <text x="590" y="374" fill="#9aa3b5" font-size="15">It lives as long as either is reachable.</text>
+</svg>

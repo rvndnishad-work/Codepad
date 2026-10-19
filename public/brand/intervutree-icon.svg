@@ -1,5 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 64 64" role="img" aria-label="Intervutree">
-  <rect width="64" height="64" rx="14" fill="#3F47B8"/>
-  <path d="M48.2 30.0 C44.2 28.0 41.2 25.0 39.2 22.0" fill="none" stroke="#FFFFFF" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M39.2 22.0 C38.2 19.0 38.2 16.0 39.2 13.0" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M39.2 22.0 C36.2 20.0 32.2 19.0 28.2 18.0" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M34.2 19.5 C33.2 17.0 32.2 15.5 30.2 14.0" fill="none" stroke="#FFFFFF" stroke-width="1.0" stroke-linecap="round" stroke-linejoin="round"/><path d="M48.2 37.0 C42.2 36.0 37.2 34.0 33.2 31.0" fill="none" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M33.2 31.0 C30.2 29.0 27.2 26.0 24.2 23.0" fill="none" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M33.2 31.0 C28.2 31.0 23.2 30.0 18.2 28.0" fill="none" stroke="#FFFFFF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M25.2 30.5 C23.2 33.0 21.2 34.0 18.2 35.0" fill="none" stroke="#FFFFFF" stroke-width="1.0" stroke-linecap="round" stroke-linejoin="round"/><path d="M46.2 26.0 C45.2 23.0 44.2 20.0 44.2 17.0" fill="none" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path transform="rotate(-65 38.8 11.0)" fill="#4ADE80" d="M35.8 11.0 Q38.8 8.5 41.8 11.0 Q38.8 13.5 35.8 11.0 Z"/><path transform="rotate(25 36.8 14.5)" fill="#4ADE80" d="M34.2 14.5 Q36.8 12.4 39.2 14.5 Q36.8 16.6 34.2 14.5 Z"/><path transform="rotate(-20 27.2 16.5)" fill="#4ADE80" d="M24.2 16.5 Q27.2 14.0 30.2 16.5 Q27.2 19.0 24.2 16.5 Z"/><path transform="rotate(-55 30.2 12.0)" fill="#4ADE80" d="M27.8 12.0 Q30.2 9.9 32.8 12.0 Q30.2 14.1 27.8 12.0 Z"/><path transform="rotate(45 29.2 19.5)" fill="#4ADE80" d="M27.0 19.5 Q29.2 17.6 31.5 19.5 Q29.2 21.4 27.0 19.5 Z"/><path transform="rotate(-35 22.8 21.5)" fill="#4ADE80" d="M19.8 21.5 Q22.8 19.0 25.8 21.5 Q22.8 24.0 19.8 21.5 Z"/><path transform="rotate(5 16.8 27.0)" fill="#4ADE80" d="M13.8 27.0 Q16.8 24.5 19.8 27.0 Q16.8 29.5 13.8 27.0 Z"/><path transform="rotate(50 18.8 30.5)" fill="#4ADE80" d="M16.2 30.5 Q18.8 28.4 21.2 30.5 Q18.8 32.6 16.2 30.5 Z"/><path transform="rotate(20 17.2 36.5)" fill="#4ADE80" d="M14.5 36.5 Q17.2 34.2 20.0 36.5 Q17.2 38.8 14.5 36.5 Z"/><path transform="rotate(-75 44.2 15.0)" fill="#4ADE80" d="M41.5 15.0 Q44.2 12.7 47.0 15.0 Q44.2 17.3 41.5 15.0 Z"/><path transform="rotate(15 42.2 18.5)" fill="#4ADE80" d="M40.0 18.5 Q42.2 16.6 44.5 18.5 Q42.2 20.4 40.0 18.5 Z"/><path transform="rotate(70 33.2 18.0)" fill="#4ADE80" d="M31.0 18.0 Q33.2 16.1 35.5 18.0 Q33.2 19.9 31.0 18.0 Z"/><path transform="rotate(80 24.8 25.0)" fill="#4ADE80" d="M22.5 25.0 Q24.8 23.1 27.0 25.0 Q24.8 26.9 22.5 25.0 Z"/><path d="M41.2 25.0 L41.2 47.4" fill="none" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M31.2 29.5 L31.2 47.4" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36.2 33.0 L36.2 47.0" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M23.2 29.5 L23.2 44.0" fill="none" stroke="#FFFFFF" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M47.2 45.4 C43.2 46.4 39.2 47.4 33.2 48.4" fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M47.2 46.9 C45.2 48.4 43.2 49.4 40.2 50.4" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="46" y="24" width="4.5" height="23.4" rx="1.2" fill="#FFFFFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+<title id="title">Intervutree — Tree of Talent</title><desc id="desc">A stylized tree with three people represented in green, teal, and blue.</desc>
+<defs>
+  <linearGradient id="green" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#67E83F"/><stop offset="1" stop-color="#00B878"/></linearGradient>
+  <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#16D9B0"/><stop offset="1" stop-color="#008F91"/></linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3B9BFF"/><stop offset="1" stop-color="#4D43D9"/></linearGradient>
+</defs>
+<g stroke="#073B4C" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none">
+  <path d="M256 438V286M256 344L166 254M256 327L350 236M256 382L194 337M256 382L320 322"/>
+</g>
+<path d="M223 438L245 365L267 365L289 438Z" fill="#073B4C"/>
+<g>
+  <path d="M127 112C158 71 208 61 244 79C247 119 221 160 180 172C151 159 133 139 127 112Z" fill="url(#green)"/>
+  <path d="M270 70C310 50 354 64 375 99C365 137 333 159 296 153C274 130 266 100 270 70Z" fill="url(#teal)"/>
+  <path d="M350 176C377 142 420 139 450 161C447 199 419 226 382 226C360 214 349 197 350 176Z" fill="url(#blue)"/>
+  <path d="M60 204C78 173 114 165 144 182C150 213 131 241 101 250C77 239 64 224 60 204Z" fill="url(#teal)"/>
+  <path d="M171 240C186 211 219 202 246 216C251 244 234 269 206 277C185 269 174 257 171 240Z" fill="url(#blue)"/>
+</g>
+<g fill="#FFFFFF">
+  <circle cx="186" cy="112" r="19"/><path d="M153 154C153 134 167 124 186 124S219 134 219 154V163H153Z"/>
+  <circle cx="311" cy="100" r="15"/><path d="M285 132C285 116 296 108 311 108S337 116 337 132V141H285Z"/>
+  <circle cx="400" cy="174" r="13"/><path d="M378 203C378 189 387 181 400 181S422 189 422 203V211H378Z"/>
+</g>
 </svg>

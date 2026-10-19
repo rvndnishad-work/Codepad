@@ -22,13 +22,19 @@ export function BrandLogo({
     return compact ? (
       <IntervutreeMark className={`h-9 w-auto ${className ?? ""}`} />
     ) : (
-      <span className={`flex flex-col items-start leading-none ${className ?? ""}`}>
-        <IntervutreeWordmark className="h-8 w-auto" />
-        {showSub && (
-          <span className="ld-sub mt-1 pl-[38px] font-mono text-[10px] font-medium uppercase tracking-[0.18em]" style={{ color: "var(--subtle)" }}>
-            {b.tagline}
+      <span className={`group/logo flex items-center gap-2.5 ${className ?? ""}`}>
+        <IntervutreeMark className="h-9 w-9 shrink-0 transition-transform duration-300 group-hover/logo:scale-105" />
+        <span className="flex flex-col leading-none">
+          <span className="ld-word text-[17px] font-bold tracking-[-0.04em]" style={{ color: "var(--fg)" }}>
+            {b.wordmark[0]}
+            <span style={{ color: "var(--brand-green, #00A86B)" }}>{b.wordmark[1]}</span>
           </span>
-        )}
+          {showSub && (
+            <span className="ld-sub mt-1 font-mono text-[10px] font-medium uppercase tracking-[0.18em]" style={{ color: "var(--subtle)" }}>
+              {b.tagline}
+            </span>
+          )}
+        </span>
       </span>
     );
   }
@@ -75,7 +81,9 @@ export function BrandWordmark({ brand, className }: { brand: BrandKey; className
   return (
     <span className={className}>
       {b.wordmark[0]}
-      <span className={b.tone === "secondary" ? "text-secondary-soft" : "text-accent"}>{b.wordmark[1]}</span>
+      <span className={b.tone === "secondary" ? "text-secondary-soft" : b.tone === "green" ? "" : "text-accent"} style={b.tone === "green" ? { color: "var(--brand-green, #00A86B)" } : undefined}>
+        {b.wordmark[1]}
+      </span>
     </span>
   );
 }

@@ -28,7 +28,7 @@ export type Brand = {
   /** Small caption under the wordmark in the header. */
   tagline: string;
   /** Which accent the brand uses: the developer yellow or the recruiter indigo. */
-  tone: "accent" | "secondary";
+  tone: "accent" | "secondary" | "green";
   /** Browser-tab icon, served from /public. */
   icon: string;
   /** Default <title> and description for pages that set none. */
@@ -53,9 +53,9 @@ export const RECRUITER_BRAND: Brand = {
   key: "intervutree",
   name: "Intervutree",
   domain: "intervutree.com",
-  wordmark: ["Intervu", "tree"],
+  wordmark: ["intervu", "tree"],
   tagline: "Hiring runtime",
-  tone: "secondary",
+  tone: "green",
   icon: "/brand/intervutree-icon.svg",
   title: "Intervutree — Technical Screening for Hiring Teams",
   description:

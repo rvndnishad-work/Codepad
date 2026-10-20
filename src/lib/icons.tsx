@@ -1,5 +1,6 @@
 import type { ComponentType, SVGProps } from "react";
 import {
+  SiHtml5,
   SiJavascript,
   SiTypescript,
   SiReact,
@@ -29,6 +30,7 @@ export const templateIcon: Record<
   string,
   { Icon: IconFn; color: string; bg: string }
 > = {
+  "empty-html":   { Icon: SiHtml5,      color: "#e34f26", bg: "rgba(227,79,38,0.10)" },
   "empty-js":     { Icon: SiJavascript, color: "#f7df1e", bg: "rgba(247,223,30,0.10)" },
   "empty-ts":     { Icon: SiTypescript, color: "#3178c6", bg: "rgba(49,120,198,0.12)" },
   "empty-react":  { Icon: SiReact,      color: "#61dafb", bg: "rgba(97,218,251,0.10)" },

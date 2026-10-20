@@ -7,6 +7,7 @@ import type { TemplateDef } from "./templates";
 
 /** One line on what is inside each template, shown on its card. */
 export const TEMPLATE_BLURBS: Record<string, string> = {
+  "empty-html": "index.html, styles.css and script.js",
   react: "Header and counter components, 2 dependencies",
   vue: "Single-file header and counter components",
   angular: "Component, module and template, ready to run",

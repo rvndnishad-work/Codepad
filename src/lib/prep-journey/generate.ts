@@ -15,6 +15,7 @@
  * prompt-engineering practice stage.
  */
 import { prisma } from "@/lib/prisma";
+import { DIFF_RANK, compareTopicOrder } from "@/lib/interview-questions/ordering";
 import { QUESTION_MINUTES, AI_ENGINEERING_TECH, scenarioDifficulty } from "./shared";
 
 export interface GeneratedItem {
@@ -44,9 +45,8 @@ interface BankQuestion {
   difficulty: string;
   views: number;
   tags: string;
+  sortOrder: number | null;
 }
-
-const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
 
 /** Every Nth day gets one hands-on challenge when the bank has a match. */
 const CHALLENGE_CADENCE = 3;
@@ -155,9 +155,7 @@ function aiPhasedSlice(bank: BankQuestion[], minuteBudget: number): QueueEntry[]
     // kept questions easy → hard so each phase itself ramps in difficulty.
     const ranked = [...phase].sort((a, b) => b.views - a.views);
     const kept = ranked.slice(0, Math.ceil(ranked.length * fraction));
-    kept.sort(
-      (a, b) => (DIFF_RANK[a.difficulty] ?? 1) - (DIFF_RANK[b.difficulty] ?? 1) || b.views - a.views,
-    );
+    kept.sort(compareTopicOrder);
     picked.push(...kept);
   }
 
@@ -211,10 +209,7 @@ function stratifiedSlice(bank: BankQuestion[], minuteBudget: number): QueueEntry
     picked.push(...band.slice(0, Math.ceil(band.length * fraction)));
   }
 
-  picked.sort(
-    (a, b) =>
-      (DIFF_RANK[a.difficulty] ?? 1) - (DIFF_RANK[b.difficulty] ?? 1) || b.views - a.views,
-  );
+  picked.sort(compareTopicOrder);
 
   return picked.map((q) => ({
     itemType: "question" as const,
@@ -238,7 +233,7 @@ export async function generateJourneyPlan(opts: {
   const [questions, challenges, scenarios] = await Promise.all([
     prisma.prepQuestion.findMany({
       where: { technology: { in: stack }, status: "published" },
-      select: { slug: true, title: true, technology: true, difficulty: true, views: true, tags: true },
+      select: { slug: true, title: true, technology: true, difficulty: true, views: true, tags: true, sortOrder: true },
       orderBy: { views: "desc" },
     }),
     prisma.challenge.findMany({

@@ -2977,6 +2977,9 @@ model PrepQuestion {
   tags            String   @default("[]")
   /// JSON number[] of years the question was reportedly asked.
   yearsAsked      String   @default("[]")
+  /// Curated position inside its technology + difficulty group, set from the
+  /// admin "Order" page. Null rows sort after ordered ones, by views.
+  sortOrder       Int?
   views           Int      @default(0)
   likes           Int      @default(0)
   /// "draft" | "published" | "archived"
@@ -3004,6 +3007,7 @@ model PrepQuestion {
 
   @@index([companyId])
   @@index([technology, status])
+  @@index([technology, difficulty, sortOrder])
   @@index([status])
   @@index([slug])
 }

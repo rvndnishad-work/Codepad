@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sortTopic } from "@/lib/interview-questions/ordering";
 import { auth } from "@/lib/auth";
 import { staffCan } from "@/lib/permissions/staff";
 import { notFound } from "next/navigation";
@@ -62,19 +63,16 @@ export default async function QuestionDetailPage({ params }: { params: Promise<{
     q.technology
       ? prisma.prepQuestion.findMany({
           where: { technology: q.technology, status: "published" },
-          select: { title: true, slug: true, difficulty: true, views: true },
+          select: { title: true, slug: true, difficulty: true, views: true, sortOrder: true },
           orderBy: [{ views: "desc" }],
         })
       : Promise.resolve([]),
   ]);
 
-  // Order the track easy -> hard (then popularity, inherited from the query's
-  // views-desc order) exactly like the list page, then find this question's
-  // neighbours for the Previous/Next buttons.
-  const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
-  const ordered = [...techTrack].sort(
-    (a, b) => (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1),
-  );
+  // Order the track exactly like the list page (easy -> hard, curated order,
+  // then popularity), then find this question's neighbours for the
+  // Previous/Next buttons.
+  const ordered = sortTopic(techTrack);
   const idx = ordered.findIndex((n) => n.slug === slug);
   const nav = (n: (typeof ordered)[number] | undefined) =>
     n ? { slug: n.slug, title: n.title, difficulty: n.difficulty } : null;

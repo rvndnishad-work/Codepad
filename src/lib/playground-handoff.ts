@@ -1,3 +1,4 @@
+import type { SandpackFiles } from "@codesandbox/sandpack-react";
 /**
  * One-shot code handoff into the live Sandpack playground.
  *
@@ -81,3 +82,27 @@ export function playgroundFilesHref(
   const fromParam = from ? `&from=${encodeURIComponent(from)}` : "";
   return `/play?template=${templateId}${fromParam}#${FILES_KEY}=${encodePlaygroundFiles(files)}`;
 }
+
+/**
+ * Merges a multi-file hand-off over the template. The template's own sample
+ * files (e.g. Vue's AppHeader.vue/Counter.vue) are dropped unless the
+ * hand-off still uses them, so the explorer shows only the solution's files.
+ * Hidden scaffolding and entry files (main.ts, polyfills.ts, index.html,
+ * package.json) always stay.
+ */
+export const ENTRY_FILE = /^\/(?:src\/)?(?:main|polyfills|index)\.[a-z]+$|^\/(?:public\/)?index\.html$|^\/package\.json$/;
+export function mergeHandoff(template: SandpackFiles, handoff: SandpackFiles): SandpackFiles {
+  const sources = Object.values(handoff)
+    .map((f) => (typeof f === "string" ? f : (f as { code?: string }).code ?? ""))
+    .join("\n");
+  const out: SandpackFiles = {};
+  for (const [path, file] of Object.entries(template)) {
+    const hidden = typeof file === "object" && (file as { hidden?: boolean }).hidden === true;
+    const stem = path.split("/").pop()!.replace(/\.[^.]+$/, "");
+    // Still imported by a hand-off file, e.g. `from "./components/Counter.vue"`.
+    const used = /^[\w-]+$/.test(stem) && new RegExp(`/${stem}(?:\\.\\w+)?["']`).test(sources);
+    if (hidden || path in handoff || ENTRY_FILE.test(path) || used) out[path] = file;
+  }
+  return { ...out, ...handoff };
+}
+

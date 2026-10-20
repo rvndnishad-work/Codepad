@@ -30,6 +30,8 @@ export function allowedExtsForTemplate(templateId?: string): string[] {
   if (id === "node" || id === "ts-node" || id === "empty-js" || id === "empty-ts") {
     return [".js", ".ts", ".json", ".md"];
   }
+  // Plain HTML page: new files default to .html, then css/js.
+  if (id === "empty-html") return [".html", ".css", ".js", ".json", ".md"];
   // Framework-first defaults: the toolbar "New file" button creates the
   // framework's own file kind (Header → Header.vue, not Header.js).
   if (id === "vue" || id === "empty-vue") return [".vue", ...FRONTEND_EXTS];

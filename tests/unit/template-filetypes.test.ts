@@ -64,6 +64,11 @@ describe("template file types", () => {
     expect(defaultExtForTemplate("cpp")).toBe(".cpp");
   });
 
+  it("empty-html creates html first, then css and js", () => {
+    expect(allowedExtsForTemplate("empty-html")).toEqual([".html", ".css", ".js", ".json", ".md"]);
+    expect(defaultExtForTemplate("empty-html")).toBe(".html");
+  });
+
   it("node-family templates allow js/ts only", () => {
     for (const id of ["node", "ts-node", "empty-js", "empty-ts"]) {
       expect(allowedExtsForTemplate(id)).toEqual([".js", ".ts", ".json", ".md"]);
@@ -72,6 +77,7 @@ describe("template file types", () => {
 
   it("every allowed ext has a FILE_TYPES entry (or nothing can be created)", () => {
     const ids = [
+      "empty-html",
       "empty-react",
       "empty-vue",
       "empty-svelte",

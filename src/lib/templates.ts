@@ -77,6 +77,24 @@ export type TemplateDef = {
 
 export const templates: TemplateDef[] = [
   {
+    id: "empty-html",
+    title: "Empty HTML",
+    subtitle: "Clean slate",
+    group: "empty",
+    category: "empty",
+    base: "vanilla",
+    label: "Empty HTML",
+    accent: "#e34f26",
+    files: {
+      "/index.html": `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1" />\n  <title>My page</title>\n  <link rel="stylesheet" href="styles.css" />\n</head>\n<body>\n  <h1>Hello, HTML!</h1>\n  <p>Edit <code>index.html</code>, <code>styles.css</code> and <code>script.js</code> to get started.</p>\n  <script src="script.js"></script>\n</body>\n</html>\n`,
+      "/styles.css": `/* Write CSS here */\nbody {\n  font-family: system-ui, sans-serif;\n  margin: 2rem;\n}\n`,
+      "/script.js": `// Write JavaScript here\nconsole.log("Hello, HTML!");\n`,
+      "/package.json": { code: `{\n  "main": "script.js",\n  "dependencies": {}\n}`, hidden: true },
+      // The `vanilla` base ships a root /index.js; hide it so script.js is the entry.
+      "/index.js": { code: "", hidden: true },
+    },
+  },
+  {
     id: "empty-js",
     title: "Empty JavaScript",
     subtitle: "Clean slate",

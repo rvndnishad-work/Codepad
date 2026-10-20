@@ -193,6 +193,9 @@ export default function MobileNav({
             )}
 
             {/* Flat items below — audience-neutral */}
+            {recruiterSite && (
+              <FlatLink href="/about" label="About us" active={pathname.startsWith("/about")} />
+            )}
             {blogStatus !== "hidden" && (
               <FlatLink
                 href={blogStatus === "coming_soon" ? "/coming-soon?feature=Blog" : "/blog"}

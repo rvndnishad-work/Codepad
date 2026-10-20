@@ -64,7 +64,7 @@ export type NavDropdownItem = {
   /** When set to "coming_soon", the item renders muted and is non-interactive. */
   status?: "visible" | "coming_soon";
   /**
-   * The header shows this item as its own top-level pill from the `xl`
+   * The header shows this item as its own top-level pill from the `lg`
    * breakpoint up, so the panel hides it there to avoid a double entry.
    */
   promoted?: boolean;
@@ -209,8 +209,8 @@ export default function NavDropdown({
     new Set(items.map((i) => i.category).filter(Boolean))
   ) as string[];
   const hasCategories = categories.length > 0;
-  // Promoted items live in the header bar from `xl` up, so they leave the panel there.
-  const hideCls = (item: NavDropdownItem) => (item.promoted ? " xl:hidden" : "");
+  // Promoted items live in the header bar from `lg` up, so they leave the panel there.
+  const hideCls = (item: NavDropdownItem) => (item.promoted ? " lg:hidden" : "");
   const promotedCount = items.filter((i) => i.promoted).length;
 
   function renderCategorizedItem(item: NavDropdownItem, index: number) {
@@ -412,7 +412,7 @@ export default function NavDropdown({
                     const catItems = items.filter((i) => i.category === cat);
                     const allPromoted = catItems.every((i) => i.promoted);
                     return (
-                      <div key={cat} className={`flex min-w-0 flex-col${allPromoted ? " xl:hidden" : ""}`}>
+                      <div key={cat} className={`flex min-w-0 flex-col${allPromoted ? " lg:hidden" : ""}`}>
                         <div className="flex items-center gap-2 px-3 pb-1 pt-1">
                           <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-subtle">{cat}</span>
                         </div>
@@ -433,9 +433,9 @@ export default function NavDropdown({
             {/* ── Footer strip: the panel states its own size, in mono ── */}
             <div className="flex items-center justify-between border-t border-border bg-surface/60 px-5 py-2.5">
               <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
-                <span className={promotedCount ? "xl:hidden" : ""}>{String(items.length).padStart(2, "0")}</span>
+                <span className={promotedCount ? "lg:hidden" : ""}>{String(items.length).padStart(2, "0")}</span>
                 {promotedCount > 0 && (
-                  <span className="hidden xl:inline">{String(items.length - promotedCount).padStart(2, "0")}</span>
+                  <span className="hidden lg:inline">{String(items.length - promotedCount).padStart(2, "0")}</span>
                 )}{" "}
                 destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>

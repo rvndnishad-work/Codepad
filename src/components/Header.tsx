@@ -50,17 +50,25 @@ export default async function Header() {
   // Icons are passed as string names crossing RSC boundary (see NavDropdown.tsx ICON_MAP).
   const developerItems: NavDropdownItem[] = [
     {
-      href: "/candidate/challenges",
-      label: "Challenges",
-      description: "150+ runnable challenges in eight languages.",
-      iconName: "Target" as const,
-      category: "Practice & Code",
-    },
-    {
       href: "/playgrounds",
       label: "Playgrounds",
       description: "Zero-setup whiteboard code sandboxes.",
       iconName: "Box" as const,
+      category: "Practice & Code",
+    },
+    {
+      href: "/interview-questions",
+      label: "Interview Questions",
+      description: "1,600+ hand-curated Q&As across 14 technologies.",
+      iconName: "BookOpen" as const,
+      badge: "1.6k+",
+      category: "Practice & Code",
+    },
+    {
+      href: "/candidate/challenges",
+      label: "Challenges",
+      description: "150+ runnable challenges in eight languages.",
+      iconName: "Target" as const,
       category: "Practice & Code",
     },
     {
@@ -70,14 +78,6 @@ export default async function Header() {
         ? "Practice realistic mock interviews and review replays."
         : "Sign in to practice realistic mock interviews.",
       iconName: "Briefcase" as const,
-      category: "Practice & Code",
-    },
-    {
-      href: "/interview-questions",
-      label: "Interview Questions",
-      description: "1,600+ hand-curated Q&As across 14 technologies.",
-      iconName: "BookOpen" as const,
-      badge: "1.6k+",
       category: "Practice & Code",
     },
     {
@@ -145,10 +145,24 @@ export default async function Header() {
       category: "Platform",
     },
     {
+      href: "/features",
+      label: "Features",
+      description: "Pipelines, proctoring, replays, and ATS integrations.",
+      iconName: "Box" as const,
+      category: "Platform",
+    },
+    {
       href: "/pricing",
       label: "Recruiter Pricing",
       description: "Flexible plans tailored for startups to enterprise.",
       iconName: "CreditCard" as const,
+      category: "Platform",
+    },
+    {
+      href: "/docs/mcp",
+      label: "Docs",
+      description: "MCP API reference for agents and integrations.",
+      iconName: "BookOpen" as const,
       category: "Platform",
     },
   ];
@@ -244,9 +258,9 @@ export default async function Header() {
   /** The live items with these labels, in this order, for top-level pills. */
   const pillsFrom = (items: NavDropdownItem[], labels: string[]) =>
     labels.map((l) => items.find((i) => i.label === l && !i.href.startsWith("/coming-soon"))).filter(Boolean) as NavDropdownItem[];
-  const developerPills = site === "developer" ? pillsFrom(filteredDeveloperItems, ["Challenges", "Interview Questions", "Mock Interviews"]) : [];
-  const recruiterPills = recruiterSite ? pillsFrom(filteredRecruiterItems, ["AI Screening", "Live Interviews"]) : [];
-  /** The dropdown copy of the list, with the pill items flagged so the panel hides them at `xl`. */
+  const developerPills = site === "developer" ? pillsFrom(filteredDeveloperItems, ["Playgrounds", "Interview Questions"]) : [];
+  const recruiterPills = recruiterSite ? pillsFrom(filteredRecruiterItems, ["Workspaces"]) : [];
+  /** The dropdown copy of the list, with the pill items flagged so the panel hides them at `lg`. */
   const withPromoted = (items: NavDropdownItem[], pills: NavDropdownItem[]) =>
     pills.length ? items.map((i) => (pills.includes(i) ? { ...i, promoted: true } : i)) : items;
   /** Active-route prefix for a pill: the destination path, without query or hash. */
@@ -301,18 +315,16 @@ export default async function Header() {
                 />
               )}
 
-            {/* On a split domain the bar would hold one dropdown and a link, so the
-                most-used destinations get their own pills on wide screens. From `xl`
+            {/* On a split domain the bar would hold one dropdown and a link, so a
+                couple of destinations get their own pills on wide screens. From `lg`
                 up they leave the dropdown (no double entry); below that the pills are
                 hidden and the dropdown lists everything again. */}
-            <span className="hidden xl:contents">
+            <span className="hidden lg:contents">
               {[...developerPills, ...recruiterPills].map((item) => (
                 <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
               ))}
             </span>
-            {recruiterSite && <span className="hidden lg:contents"><HeaderLink href="/features" matchPrefix="/features" label="Features" /></span>}
-            {recruiterSite && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}
-            {recruiterSite && <HeaderLink href="/docs/mcp" matchPrefix="/docs" label="Docs" />}
+            {recruiterSite && <HeaderLink href="/about" matchPrefix="/about" label="About us" />}
             {showDeveloperMenu && (blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink
                 href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}

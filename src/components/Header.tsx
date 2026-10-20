@@ -37,14 +37,19 @@ export default async function Header() {
   // explains workspaces.
   let workspaceHref = "/pricing";
   let aiScreeningHref = "/pricing";
+  let hasWorkspace = false;
   if (user?.id) {
     workspaceHref = "/w";
     aiScreeningHref = "/w";
     const slug = await getPrimaryWorkspaceSlug(user.id);
     if (slug) {
       aiScreeningHref = `/w/${slug}/ai-interviews`;
+      hasWorkspace = true;
     }
   }
+  // Pricing is a top-level link for visitors and signed-in users without a
+  // workspace. Once they have one, plans live in the workspace billing settings.
+  const showPricing = showRecruiterMenu && !hasWorkspace;
 
   // For developers menu group. Categorized into Practice & Code vs Knowledge & AI.
   // Icons are passed as string names crossing RSC boundary (see NavDropdown.tsx ICON_MAP).
@@ -81,6 +86,14 @@ export default async function Header() {
       category: "Practice & Code",
     },
     {
+      href: "/candidate/prompt-practice",
+      label: "Prompt Arena",
+      description: "Benchmark and score prompt engineering skills.",
+      iconName: "Sparkles" as const,
+      badge: "New",
+      category: "Practice & Code",
+    },
+    {
       href: "/prep",
       label: "Prep Journeys",
       description: "Structured role-based roadmaps & study plans.",
@@ -93,14 +106,6 @@ export default async function Header() {
       label: "Review the AI's Code",
       description: "Detect hallucinated APIs, bugs, and security flaws.",
       iconName: "Bug" as const,
-      badge: "New",
-      category: "Knowledge & AI",
-    },
-    {
-      href: "/candidate/prompt-practice",
-      label: "Prompt Arena",
-      description: "Benchmark and score prompt engineering skills.",
-      iconName: "Sparkles" as const,
       badge: "New",
       category: "Knowledge & AI",
     },
@@ -149,13 +154,6 @@ export default async function Header() {
       label: "Features",
       description: "Pipelines, proctoring, replays, and ATS integrations.",
       iconName: "Box" as const,
-      category: "Platform",
-    },
-    {
-      href: "/pricing",
-      label: "Recruiter Pricing",
-      description: "Flexible plans tailored for startups to enterprise.",
-      iconName: "CreditCard" as const,
       category: "Platform",
     },
     {
@@ -281,6 +279,7 @@ export default async function Header() {
           blogStatus={showDeveloperMenu ? blogStatus : "hidden"}
           site={site}
           brand={brandKey}
+          showPricing={showPricing}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
         />
@@ -324,6 +323,7 @@ export default async function Header() {
                 <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
               ))}
             </span>
+            {showPricing && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}
             {recruiterSite && <HeaderLink href="/about" matchPrefix="/about" label="About us" />}
             {showDeveloperMenu && (blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink

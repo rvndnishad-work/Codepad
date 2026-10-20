@@ -63,6 +63,11 @@ export type NavDropdownItem = {
   tint?: string;
   /** When set to "coming_soon", the item renders muted and is non-interactive. */
   status?: "visible" | "coming_soon";
+  /**
+   * The header shows this item as its own top-level pill from the `lg`
+   * breakpoint up, so the panel hides it there to avoid a double entry.
+   */
+  promoted?: boolean;
 };
 
 type Props = {
@@ -204,6 +209,9 @@ export default function NavDropdown({
     new Set(items.map((i) => i.category).filter(Boolean))
   ) as string[];
   const hasCategories = categories.length > 0;
+  // Promoted items live in the header bar from `lg` up, so they leave the panel there.
+  const hideCls = (item: NavDropdownItem) => (item.promoted ? " lg:hidden" : "");
+  const promotedCount = items.filter((i) => i.promoted).length;
 
   function renderCategorizedItem(item: NavDropdownItem, index: number) {
     const Icon = ICON_MAP[item.iconName] ?? Code2;
@@ -248,7 +256,7 @@ export default function NavDropdown({
       return (
         <div
           key={item.label}
-          className="flex select-none items-start gap-3 rounded-xl px-3 py-2.5 opacity-45"
+          className={`flex select-none items-start gap-3 rounded-xl px-3 py-2.5 opacity-45${hideCls(item)}`}
         >
           {body}
         </div>
@@ -264,7 +272,7 @@ export default function NavDropdown({
         style={{ ["--nav-i" as string]: index }}
         className={`nav-tile nav-item-in group/item flex items-start gap-3 rounded-xl px-3 py-2.5 ${
           active ? "bg-panel ring-1 ring-inset ring-border" : ""
-        }`}
+        }${hideCls(item)}`}
       >
         {body}
       </Link>
@@ -314,7 +322,7 @@ export default function NavDropdown({
       return (
         <div
           key={item.label}
-          className="flex select-none items-start gap-3 rounded-xl px-3 py-3 opacity-45"
+          className={`flex select-none items-start gap-3 rounded-xl px-3 py-3 opacity-45${hideCls(item)}`}
         >
           {body}
         </div>
@@ -330,7 +338,7 @@ export default function NavDropdown({
         style={{ ["--nav-i" as string]: index }}
         className={`nav-tile nav-item-in group/item flex items-start gap-3 rounded-xl px-3 py-3 ${
           active ? "bg-panel ring-1 ring-inset ring-border" : ""
-        }`}
+        }${hideCls(item)}`}
       >
         {body}
       </Link>
@@ -402,8 +410,9 @@ export default function NavDropdown({
                 <div className="grid grid-cols-1 gap-4 p-1 md:grid-cols-2 md:gap-2">
                   {categories.map((cat) => {
                     const catItems = items.filter((i) => i.category === cat);
+                    const allPromoted = catItems.every((i) => i.promoted);
                     return (
-                      <div key={cat} className="flex min-w-0 flex-col">
+                      <div key={cat} className={`flex min-w-0 flex-col${allPromoted ? " lg:hidden" : ""}`}>
                         <div className="flex items-center gap-2 px-3 pb-1 pt-1">
                           <span className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-subtle">{cat}</span>
                         </div>
@@ -424,7 +433,11 @@ export default function NavDropdown({
             {/* ── Footer strip: the panel states its own size, in mono ── */}
             <div className="flex items-center justify-between border-t border-border bg-surface/60 px-5 py-2.5">
               <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-subtle">
-                {String(items.length).padStart(2, "0")} destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
+                <span className={promotedCount ? "lg:hidden" : ""}>{String(items.length).padStart(2, "0")}</span>
+                {promotedCount > 0 && (
+                  <span className="hidden lg:inline">{String(items.length - promotedCount).padStart(2, "0")}</span>
+                )}{" "}
+                destinations · {tone === "secondary" ? "Recruiter suite" : "Interview runtime"}
               </span>
               <span className="flex items-center gap-2" aria-hidden>
                 <span className={`h-1.5 w-1.5 rounded-full ${accentDot}`} />

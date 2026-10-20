@@ -69,6 +69,8 @@ type Props = {
   site?: "developer" | "recruiter" | null;
   /** The domain's brand; null keeps the per-route behaviour when both sites share a domain. */
   brand?: BrandKey | null;
+  /** Show the top-level Pricing link (visitors and users without a workspace). */
+  showPricing?: boolean;
 };
 
 /**
@@ -87,6 +89,7 @@ export default function MobileNav({
   recruitersMenuStatus,
   site = null,
   brand = null,
+  showPricing = false,
 }: Props) {
   const recruiterSite = site === "recruiter";
   const [open, setOpen] = useState(false);
@@ -193,6 +196,12 @@ export default function MobileNav({
             )}
 
             {/* Flat items below — audience-neutral */}
+            {showPricing && (
+              <FlatLink href="/pricing" label="Pricing" active={pathname.startsWith("/pricing")} />
+            )}
+            {recruiterSite && (
+              <FlatLink href="/about" label="About us" active={pathname.startsWith("/about")} />
+            )}
             {blogStatus !== "hidden" && (
               <FlatLink
                 href={blogStatus === "coming_soon" ? "/coming-soon?feature=Blog" : "/blog"}

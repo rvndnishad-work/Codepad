@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { templateIcon, TemplateLogo } from "@/lib/icons";
 import type { TemplateDef } from "@/lib/templates";
 import { highlight, pickShowpiece, trimForPeek } from "@/lib/code-peek";
-import { runsOnServer, templateBlurb } from "@/lib/playground-catalog";
+import { templateBlurb } from "@/lib/playground-catalog";
 
 function basename(path: string): string {
   const i = path.lastIndexOf("/");
@@ -36,18 +36,7 @@ export function LogoBlob({ t, size }: { t: TemplateDef; size: number }) {
   );
 }
 
-/** Where the code runs, as a dot and a word. */
-export function RuntimeTag({ t }: { t: TemplateDef }) {
-  const server = runsOnServer(t);
-  return (
-    <span className="flex shrink-0 items-center gap-1.5 text-xs text-subtle">
-      <span className={`h-1.5 w-1.5 rounded-full ${server ? "bg-secondary" : "bg-success"}`} aria-hidden />
-      {server ? "Server" : "Browser"}
-    </span>
-  );
-}
-
-/** Catalogue card: logo, name, where it runs and what is inside. */
+/** Catalogue card: logo, name and what is inside. */
 export function CatalogCard({ t }: { t: TemplateDef }) {
   return (
     <Link
@@ -56,10 +45,7 @@ export function CatalogCard({ t }: { t: TemplateDef }) {
     >
       <LogoBlob t={t} size={56} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-center justify-between gap-2">
-          <span className="truncate text-[15px] font-semibold text-fg">{t.title}</span>
-          <RuntimeTag t={t} />
-        </span>
+        <span className="truncate text-[15px] font-semibold text-fg">{t.title}</span>
         <span className="truncate text-[13px] text-subtle">{templateBlurb(t)}</span>
       </span>
     </Link>
@@ -81,11 +67,10 @@ export function CodePeekCard({ t }: { t: TemplateDef }) {
       href={`/play?template=${t.id}`}
       className="pgl-card group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface hover:border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
-      <span className="flex h-9 items-center justify-between border-b border-border bg-panel/50 px-3.5">
+      <span className="flex h-9 items-center border-b border-border bg-panel/50 px-3.5">
         <span className="truncate font-mono text-xs text-subtle">
           {showpiece ? basename(showpiece.path) : "sandbox"}
         </span>
-        <RuntimeTag t={t} />
       </span>
       <span className="flex h-[138px] overflow-hidden bg-bg pr-3.5 pt-3">
         <span className="w-9 shrink-0 select-none pr-3 text-right font-mono text-xs leading-5 text-subtle/50" aria-hidden>

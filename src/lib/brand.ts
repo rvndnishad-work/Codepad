@@ -29,7 +29,10 @@ export type Brand = {
   tagline: string;
   /** Which accent the brand uses: the developer yellow or the recruiter indigo. */
   tone: "accent" | "secondary" | "green";
-  /** Browser-tab icon, served from /public. */
+  /**
+   * Favicon set base path under /public/favicons: `${icon}-32.png`,
+   * `-48.png`, `-192.png`, `-512.png`, `-apple-180.png` and `.ico`.
+   */
   icon: string;
   /** Default <title> and description for pages that set none. */
   title: string;
@@ -43,7 +46,7 @@ export const DEVELOPER_BRAND: Brand = {
   wordmark: ["devprep", ".academy"],
   tagline: "Practice · Learn · Build · Get hired",
   tone: "accent",
-  icon: "/brand/devprep-icon.svg",
+  icon: "/favicons/devprep",
   title: "DevPrep — Interview Prep, Coding Challenges & Developer Portfolio",
   description:
     "Practise on a real interview runtime: coding challenges with hidden tests, 1,600+ hand-written interview questions, AI mock interviews and a replay portfolio that shows how you actually work.",
@@ -56,7 +59,7 @@ export const RECRUITER_BRAND: Brand = {
   wordmark: ["intervu", "tree"],
   tagline: "Hiring runtime",
   tone: "green",
-  icon: "/brand/intervutree-icon.svg",
+  icon: "/favicons/intervutree",
   title: "Intervutree — Technical Screening for Hiring Teams",
   description:
     "Send every applicant the same take-home or AI screening interview, grade each attempt on our servers with anti-cheat signals attached, and shortlist by evidence instead of arrival order.",

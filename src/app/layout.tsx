@@ -54,7 +54,16 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: brand.description,
     applicationName: brand.name,
-    icons: { icon: brand.icon },
+    icons: {
+      icon: [
+        { url: `${brand.icon}-32.png`, sizes: "32x32", type: "image/png" },
+        { url: `${brand.icon}-48.png`, sizes: "48x48", type: "image/png" },
+        { url: `${brand.icon}-192.png`, sizes: "192x192", type: "image/png" },
+        { url: `${brand.icon}-512.png`, sizes: "512x512", type: "image/png" },
+      ],
+      shortcut: `${brand.icon}.ico`,
+      apple: [{ url: `${brand.icon}-apple-180.png`, sizes: "180x180", type: "image/png" }],
+    },
     keywords:
       brand.key === "intervutree"
         ? ["technical screening", "take-home assessment", "AI interview", "candidate shortlist", "hiring platform"]

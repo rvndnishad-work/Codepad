@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+  </defs>
+  <rect width="960" height="460" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">Hidden classes follow the order properties are added</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">Same keys in a different order lead to a different hidden class (V8 calls it a Map)</text>
+
+  <rect x="64" y="226" width="140" height="70" rx="14" fill="#171a23" stroke="#4b5563" stroke-width="2"/>
+  <text x="92" y="268" fill="#e8eaf0" font-size="20" font-family="ui-monospace, Menlo, Consolas, monospace">{ }</text>
+
+  <!-- top path x then y -->
+  <path d="M204 246 C 250 200, 270 180, 330 176" fill="none" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="236" y="168" fill="#facc15" font-size="15">add x</text>
+  <rect x="334" y="140" width="170" height="70" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="360" y="182" fill="#e8eaf0" font-size="20" font-family="ui-monospace, Menlo, Consolas, monospace">{ x }</text>
+  <path d="M504 175 L 594 175" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="522" y="160" fill="#facc15" font-size="15">add y</text>
+  <rect x="598" y="140" width="190" height="70" rx="14" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="622" y="182" fill="#e8eaf0" font-size="20" font-family="ui-monospace, Menlo, Consolas, monospace">{ x, y }</text>
+  <text x="808" y="172" fill="#34d399" font-size="15">Map A</text>
+  <text x="808" y="194" fill="#9aa3b5" font-size="14">new Point(1, 2)</text>
+
+  <!-- bottom path y then x -->
+  <path d="M204 276 C 250 330, 270 350, 330 354" fill="none" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="236" y="374" fill="#facc15" font-size="15">add y</text>
+  <rect x="334" y="320" width="170" height="70" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="360" y="362" fill="#e8eaf0" font-size="20" font-family="ui-monospace, Menlo, Consolas, monospace">{ y }</text>
+  <path d="M504 355 L 594 355" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="522" y="340" fill="#facc15" font-size="15">add x</text>
+  <rect x="598" y="320" width="190" height="70" rx="14" fill="#2a1414" stroke="#f87171" stroke-width="2"/>
+  <text x="622" y="362" fill="#e8eaf0" font-size="20" font-family="ui-monospace, Menlo, Consolas, monospace">{ y, x }</text>
+  <text x="808" y="352" fill="#f87171" font-size="15">Map B</text>
+  <text x="808" y="374" fill="#9aa3b5" font-size="14">{ y: 2, x: 1 }</text>
+</svg>

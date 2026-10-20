@@ -241,6 +241,15 @@ export default async function Header() {
     recruiterSite ? { ...item, href: item.href.replace(/^\/hire(?=$|#)/, "/") } : item,
   );
 
+  /** The live items with these labels, in this order, for top-level pills. */
+  const pillsFrom = (items: NavDropdownItem[], labels: string[]) =>
+    labels.map((l) => items.find((i) => i.label === l && !i.href.startsWith("/coming-soon"))).filter(Boolean) as NavDropdownItem[];
+  /** Active-route prefix for a pill: the destination path, without query or hash. */
+  const pillPrefix = (href: string) => {
+    const next = href.startsWith("/login?next=") ? decodeURIComponent(href.slice("/login?next=".length)) : href;
+    return next.replace(/[?#].*$/, "") || "/";
+  };
+
   return (
     <NavChrome>
       <div className="nav-inner relative mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
@@ -287,7 +296,22 @@ export default async function Header() {
                 />
               )}
 
+            {/* On a split domain the bar would hold one dropdown and a link, so the
+                most-used destinations also get their own pills on wide screens. The
+                dropdown keeps the full list; a pill only appears when its item is live. */}
+            <span className="hidden xl:contents">
+              {site === "developer" &&
+                pillsFrom(filteredDeveloperItems, ["Challenges", "Interview Questions", "Mock Interviews"]).map((item) => (
+                  <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
+                ))}
+              {recruiterSite &&
+                pillsFrom(filteredRecruiterItems, ["AI Screening", "Live Interviews"]).map((item) => (
+                  <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
+                ))}
+            </span>
+            {recruiterSite && <span className="hidden lg:contents"><HeaderLink href="/features" matchPrefix="/features" label="Features" /></span>}
             {recruiterSite && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}
+            {recruiterSite && <HeaderLink href="/docs/mcp" matchPrefix="/docs" label="Docs" />}
             {showDeveloperMenu && (blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink
                 href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}

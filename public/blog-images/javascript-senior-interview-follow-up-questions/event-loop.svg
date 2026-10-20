@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+  </defs>
+  <rect width="960" height="560" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">One turn of the event loop</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">One task, then every microtask, then (in browsers) maybe a render, then the next task</text>
+
+  <!-- step boxes in a loop -->
+  <rect x="64" y="150" width="250" height="120" rx="18" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="90" y="190" fill="#60a5fa" font-size="15" font-weight="700" letter-spacing="1.5">1. RUN ONE TASK</text>
+  <text x="90" y="222" fill="#e8eaf0" font-size="16">script, setTimeout,</text>
+  <text x="90" y="246" fill="#e8eaf0" font-size="16">click, message, I/O</text>
+
+  <rect x="646" y="150" width="250" height="120" rx="18" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="672" y="190" fill="#a78bfa" font-size="15" font-weight="700" letter-spacing="1.5">2. DRAIN MICROTASKS</text>
+  <text x="672" y="222" fill="#e8eaf0" font-size="16">promise.then, await,</text>
+  <text x="672" y="246" fill="#e8eaf0" font-size="16">queueMicrotask, until empty</text>
+
+  <rect x="646" y="380" width="250" height="120" rx="18" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+  <text x="672" y="420" fill="#34d399" font-size="15" font-weight="700" letter-spacing="1.5">3. MAYBE RENDER</text>
+  <text x="672" y="452" fill="#e8eaf0" font-size="16">requestAnimationFrame,</text>
+  <text x="672" y="476" fill="#e8eaf0" font-size="16">style, layout, paint</text>
+
+  <rect x="64" y="380" width="250" height="120" rx="18" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="90" y="420" fill="#facc15" font-size="15" font-weight="700" letter-spacing="1.5">4. PICK NEXT TASK</text>
+  <text x="90" y="452" fill="#e8eaf0" font-size="16">from the task queues,</text>
+  <text x="90" y="476" fill="#e8eaf0" font-size="16">then back to step 1</text>
+
+  <path d="M314 210 L 640 210" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <path d="M771 270 L 771 374" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <path d="M646 440 L 320 440" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <path d="M189 380 L 189 276" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+
+  <!-- microtask loop callout -->
+  <path d="M896 190 C 940 190, 940 250, 896 250" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#y)"/>
+
+  <rect x="370" y="300" width="220" height="64" rx="14" fill="#2a1414" stroke="#f87171" stroke-width="2"/>
+  <text x="392" y="328" fill="#fca5a5" font-size="15" font-weight="700">Starvation:</text>
+  <text x="392" y="350" fill="#fca5a5" font-size="15">step 2 never ends</text>
+</svg>

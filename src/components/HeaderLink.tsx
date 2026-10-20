@@ -35,7 +35,7 @@ export default function HeaderLink({
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`nav-pill group relative z-[1] flex h-9 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-200 ${
+      className={`nav-pill group relative z-[1] flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-4 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-200 ${
         active ? "nav-pill-active" : ""
       } ${toneClass}`}
     >

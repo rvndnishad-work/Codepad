@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useEffect, useRef } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef, useId } from "react";
 import dynamic from "next/dynamic";
 import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
 import { X, FileCode2, Lock } from "lucide-react";
@@ -60,6 +60,14 @@ export default function MonacoEditor({
   const [monacoInstance, setMonacoInstance] = useState<Monaco | null>(null);
   const editorRef = useRef<any>(null);
 
+  // Monaco's model registry is one global singleton, keyed by URI. Two editors
+  // on the same page (a blog post with several runnable snippets) would both
+  // claim file:///index.js and show whichever was written last. Each editor
+  // therefore keeps its models under its own folder, e.g. file:///__ed_r1/index.js.
+  // Files of one editor share that folder, so relative imports still resolve.
+  const reactId = useId();
+  const modelRoot = useMemo(() => `/__ed_${reactId.replace(/[^a-zA-Z0-9]/g, "")}`, [reactId]);
+
   // ── Multi-file sync: keep Monaco's virtual file system in sync with Sandpack ──
   useEffect(() => {
     if (!monacoInstance) return;
@@ -72,7 +80,7 @@ export default function MonacoEditor({
 
       const fileCode = typeof file === "string" ? file : (file as { code: string }).code;
       const lang = languageFor(path);
-      const uri = monacoInstance.Uri.parse(`file://${path}`);
+      const uri = monacoInstance.Uri.parse(`file://${modelRoot}${path}`);
       const uriStr = uri.toString();
 
       if (existingUris.has(uriStr)) {
@@ -101,7 +109,20 @@ export default function MonacoEditor({
         monacoInstance.editor.createModel(fileCode, lang, uri);
       }
     }
-  }, [monacoInstance, sandpack.files, activeFile]);
+  }, [monacoInstance, sandpack.files, activeFile, modelRoot]);
+
+  // Dispose this editor's models when it unmounts, so navigating between
+  // playgrounds does not leave models behind in Monaco's global registry.
+  useEffect(() => {
+    if (!monacoInstance) return;
+    return () => {
+      const prefix = monacoInstance.Uri.parse(`file://${modelRoot}/`).toString();
+      monacoInstance.editor
+        .getModels()
+        .filter((m: { uri: { toString(): string } }) => m.uri.toString().startsWith(prefix))
+        .forEach((m: { dispose(): void }) => m.dispose());
+    };
+  }, [monacoInstance, modelRoot]);
 
   // ── Snippets + Emmet ──
   // VS Code's snippet sets for every language (`log` → console.log, `for`,
@@ -168,7 +189,7 @@ export default function MonacoEditor({
       if (typeof file !== "string" && (file as any).hidden) continue;
       const fileCode = typeof file === "string" ? file : (file as { code: string }).code;
       const lang = languageFor(path);
-      const uri = monaco.Uri.parse(`file://${path}`);
+      const uri = monaco.Uri.parse(`file://${modelRoot}${path}`);
       let model = monaco.editor.getModel(uri);
       if (!model) {
         model = monaco.editor.createModel(fileCode, lang, uri);
@@ -177,7 +198,7 @@ export default function MonacoEditor({
       }
     }
     // Point the editor at the correct model for the active file
-    const activeUri = monaco.Uri.parse(`file://${sp.activeFile}`);
+    const activeUri = monaco.Uri.parse(`file://${modelRoot}${sp.activeFile}`);
     const activeModel = monaco.editor.getModel(activeUri);
     if (activeModel && editor.getModel() !== activeModel) {
       editor.setModel(activeModel);
@@ -329,14 +350,12 @@ export default function MonacoEditor({
       decorationIds = [];
       setTimeout(applyNanoBananaDecorations, 50);
     });
-  }, []);
+  }, [modelRoot]);
 
   const handleEditorWillMount = useCallback((monaco: Monaco) => {
-    // Monaco's model registry is a global singleton that survives React
-    // unmounts. Without this, navigating from one playground to another with
-    // overlapping file paths (e.g. /index.js) makes the editor re-attach to
-    // the previous playground's cached model, showing stale code.
-    monaco.editor.getModels().forEach((m: any) => m.dispose());
+    // Models are namespaced per editor (see modelRoot) and disposed on unmount,
+    // so there is no stale model to clear here. Disposing every model, as this
+    // used to, also wiped the models of other editors still on the page.
 
     // Nano Banana Pro Theme Definition
     defineNanoBananaThemes(monaco);
@@ -493,7 +512,7 @@ export default function MonacoEditor({
           height="100%"
           theme={isDark ? editorThemeById(themeId).monaco : "nbp-light"}
           language={language}
-          path={activeFile}
+          path={`${modelRoot}${activeFile}`}
           defaultValue={code}
           onChange={handleChange}
           onMount={handleEditorDidMount}

@@ -4,7 +4,7 @@ import { requireAdminAccess } from "@/lib/permissions/staff";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Building2, FileText, Users, Clock, CheckCircle2, Plus, Upload } from "lucide-react";
+import { Building2, FileText, Users, Clock, CheckCircle2, Plus, Upload, ListOrdered } from "lucide-react";
 import { DIFFICULTIES } from "@/lib/interview-questions/shared";
 import QuestionAdminRow from "./QuestionAdminRow";
 import QuestionsFilterBar from "./QuestionsFilterBar";
@@ -135,6 +135,9 @@ export default async function InterviewQuestionsAdmin({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <p className="text-sm text-muted">The company-indexed question bank and candidate experiences.</p>
         <div className="flex items-center gap-2">
+          <Link href="/admin/interview-questions/order" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-xs font-bold hover:border-accent/40 transition">
+            <ListOrdered className="w-4 h-4" /> Order topics
+          </Link>
           <Link href="/admin/interview-questions/import" className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-border text-xs font-bold hover:border-accent/40 transition">
             <Upload className="w-4 h-4" /> Bulk import
           </Link>

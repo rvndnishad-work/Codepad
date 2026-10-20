@@ -14,6 +14,7 @@ import FrameworkPreference from "./FrameworkPreference";
 import TechDossierHero from "./_wow/TechDossierHero";
 import WowReveal from "@/components/wow/WowReveal";
 import type { Prisma } from "@prisma/client";
+import { sortTopic } from "@/lib/interview-questions/ordering";
 
 export const dynamic = "force-dynamic";
 
@@ -52,16 +53,17 @@ export default async function TechnologyPage({
     ];
   }
 
-  // Every technology track is ordered easy -> hard (then by popularity) so a
-  // learner can work through it progressively. Difficulty is a string, so the
-  // rank is applied in JS below; the take covers the whole set per tech.
+  // Every technology track is ordered easy -> hard, then by the curated
+  // sortOrder inside each band (unordered rows by popularity), so a learner
+  // can work through it progressively. Difficulty is a string, so the rank is
+  // applied in JS below; the take covers the whole set per tech.
   const [questionsRaw, total, companiesInTech, roundsRaw, difficultyGroups, statsAggregate, allInTech] = await Promise.all([
     prisma.prepQuestion.findMany({
       where,
       orderBy: [{ views: "desc" }],
       select: {
         title: true, slug: true, difficulty: true, technology: true, round: true,
-        views: true, likes: true, yearsAsked: true, answer: true, tags: true,
+        views: true, likes: true, yearsAsked: true, answer: true, tags: true, sortOrder: true,
         company: { select: { name: true, slug: true } },
       },
       take: 200,
@@ -89,25 +91,15 @@ export default async function TechnologyPage({
     // The whole topic, for progress and "up next" whatever the filters are.
     prisma.prepQuestion.findMany({
       where: { technology: tech, status: "published" },
-      select: { slug: true, title: true, difficulty: true, views: true },
+      select: { slug: true, title: true, difficulty: true, views: true, sortOrder: true },
       take: 1000,
     }),
   ]);
 
   if (total === 0 && !isKnownTech(tech)) notFound();
 
-  const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
-  const questions = [...questionsRaw].sort(
-    (a, b) =>
-      (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1) ||
-      b.views - a.views,
-  );
-
-  const ordered = [...allInTech].sort(
-    (a, b) =>
-      (DIFF_RANK[a.difficulty ?? "medium"] ?? 1) - (DIFF_RANK[b.difficulty ?? "medium"] ?? 1) ||
-      b.views - a.views,
-  );
+  const questions = sortTopic(questionsRaw);
+  const ordered = sortTopic(allInTech);
   const filtered = Boolean(difficulty || company || round || q);
 
   const rounds = roundsRaw.map((r) => r.round!).filter(Boolean);

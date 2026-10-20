@@ -244,6 +244,11 @@ export default async function Header() {
   /** The live items with these labels, in this order, for top-level pills. */
   const pillsFrom = (items: NavDropdownItem[], labels: string[]) =>
     labels.map((l) => items.find((i) => i.label === l && !i.href.startsWith("/coming-soon"))).filter(Boolean) as NavDropdownItem[];
+  const developerPills = site === "developer" ? pillsFrom(filteredDeveloperItems, ["Challenges", "Interview Questions", "Mock Interviews"]) : [];
+  const recruiterPills = recruiterSite ? pillsFrom(filteredRecruiterItems, ["AI Screening", "Live Interviews"]) : [];
+  /** The dropdown copy of the list, with the pill items flagged so the panel hides them at `xl`. */
+  const withPromoted = (items: NavDropdownItem[], pills: NavDropdownItem[]) =>
+    pills.length ? items.map((i) => (pills.includes(i) ? { ...i, promoted: true } : i)) : items;
   /** Active-route prefix for a pill: the destination path, without query or hash. */
   const pillPrefix = (href: string) => {
     const next = href.startsWith("/login?next=") ? decodeURIComponent(href.slice("/login?next=".length)) : href;
@@ -276,7 +281,7 @@ export default async function Header() {
               (filteredDeveloperItems.length > 0 || showAdmin) && (
                 <NavDropdown
                   label={`${site === "developer" ? "Practice" : "Developers"}${devsMenuStatus === "hidden" && showAdmin ? " (Hidden)" : ""}`}
-                  items={filteredDeveloperItems}
+                  items={withPromoted(filteredDeveloperItems, developerPills)}
                   railTitle="For developers"
                   railBlurb="From daily practice to your dream offer — real sandboxes, curated questions, and AI skills."
                   railHref="/prep"
@@ -287,7 +292,7 @@ export default async function Header() {
               (filteredRecruiterItems.length > 0 || showAdmin) && (
                 <NavDropdown
                   label={`${recruiterSite ? "Product" : "Hiring teams"}${recruitersMenuStatus === "hidden" && showAdmin ? " (Hidden)" : ""}`}
-                  items={filteredRecruiterItems}
+                  items={withPromoted(filteredRecruiterItems, recruiterPills)}
                   tone="secondary"
                   railTitle="For hiring teams"
                   railBlurb="Screen, interview, and evaluate candidates on proof of craft with live replay."
@@ -297,17 +302,13 @@ export default async function Header() {
               )}
 
             {/* On a split domain the bar would hold one dropdown and a link, so the
-                most-used destinations also get their own pills on wide screens. The
-                dropdown keeps the full list; a pill only appears when its item is live. */}
+                most-used destinations get their own pills on wide screens. From `xl`
+                up they leave the dropdown (no double entry); below that the pills are
+                hidden and the dropdown lists everything again. */}
             <span className="hidden xl:contents">
-              {site === "developer" &&
-                pillsFrom(filteredDeveloperItems, ["Challenges", "Interview Questions", "Mock Interviews"]).map((item) => (
-                  <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
-                ))}
-              {recruiterSite &&
-                pillsFrom(filteredRecruiterItems, ["AI Screening", "Live Interviews"]).map((item) => (
-                  <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
-                ))}
+              {[...developerPills, ...recruiterPills].map((item) => (
+                <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
+              ))}
             </span>
             {recruiterSite && <span className="hidden lg:contents"><HeaderLink href="/features" matchPrefix="/features" label="Features" /></span>}
             {recruiterSite && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}

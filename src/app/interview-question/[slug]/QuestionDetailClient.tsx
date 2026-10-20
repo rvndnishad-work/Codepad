@@ -508,7 +508,6 @@ export default function QuestionDetailClient({
                     files={previewFiles}
                     template={previewTemplate}
                     title={q.title}
-                    backFrom={`/interview-question/${q.slug}`}
                     frameworkLabel={activeFw ? CODE_VARIANTS[activeFw]?.label : undefined}
                   />
                 </div>

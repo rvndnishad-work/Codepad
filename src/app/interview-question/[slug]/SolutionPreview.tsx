@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SandpackLayout } from "@codesandbox/sandpack-react";
-import { ExternalLink, Eye, RefreshCw } from "lucide-react";
+import { Eye, RefreshCw } from "lucide-react";
 import ShimmedSandpackProvider from "@/components/ShimmedSandpackProvider";
 import { SandpackPreviewWithLoader } from "@/components/PreviewLoadingOverlay";
 import { buildNodeBuiltinShims } from "@/lib/node-builtin-shims";
-import { mergeHandoff, playgroundFilesHref } from "@/lib/playground-handoff";
+import { mergeHandoff } from "@/lib/playground-handoff";
 import { templatesById, supportsV2Bundler, V2_BUNDLER_URL } from "@/lib/templates";
 
 /**
@@ -14,20 +14,19 @@ import { templatesById, supportsV2Bundler, V2_BUNDLER_URL } from "@/lib/template
  * running live above the problem statement, so a candidate sees the result
  * before reading a line of code. Preview only, no editor; the files are
  * merged over the framework template exactly like the playground hand-off,
- * and the sandbox mounts once the card scrolls into view.
+ * and the sandbox mounts once the card scrolls into view. The Code section
+ * below carries the "Open in playground" hand-off, so this card has none.
  */
 export default function SolutionPreview({
   files,
   template,
   title,
-  backFrom,
   frameworkLabel,
 }: {
   files: Record<string, string>;
   /** Playground template id (empty-react, vue, angular…). */
   template: string;
   title: string;
-  backFrom: string;
   frameworkLabel?: string;
 }) {
   const tpl = templatesById[template];
@@ -78,14 +77,6 @@ export default function SolutionPreview({
           >
             <RefreshCw className="h-3 w-3" aria-hidden /> Restart
           </button>
-          <a
-            href={playgroundFilesHref(files, template, backFrom)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-7 items-center gap-1 rounded-lg bg-accent px-2.5 text-xs font-semibold text-accent-ink hover:bg-accent-soft"
-          >
-            Open in playground <ExternalLink className="h-3 w-3" aria-hidden />
-          </a>
         </span>
       </div>
       <div className="h-[380px] bg-white">

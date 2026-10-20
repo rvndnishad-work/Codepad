@@ -2258,6 +2258,13 @@ body.sidebar-collapsed .workspace-content {
   color: var(--nav-fg) !important;
   border-color: var(--nav-ring);
 }
+/* Active only while the matching promoted pill is hidden (below lg). */
+@media (max-width: 1023.98px) {
+  .nav-pill-active-narrow {
+    color: var(--nav-fg) !important;
+    border-color: var(--nav-ring);
+  }
+}
 /* The shared hover highlight that glides between items (NavGlide). */
 .nav-glide {
   left: 0;

@@ -119,7 +119,10 @@ export default function NavDropdown({
     (item.href === pathname ||
       (item.href !== "/" && pathname.startsWith(`${item.href}/`)));
 
-  const isGroupActive = items.some(isItemActive);
+  // Promoted items have their own pill from `lg` up, so an active one only
+  // lights the trigger below that breakpoint (see .nav-pill-active-narrow).
+  const isGroupActive = items.some((i) => !i.promoted && isItemActive(i));
+  const isGroupActiveNarrow = !isGroupActive && items.some((i) => i.promoted && isItemActive(i));
 
   // Two columns once the list is long enough that a single column would run
   // past a laptop viewport. Below that, one column reads better.
@@ -361,7 +364,7 @@ export default function NavDropdown({
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={`nav-pill group relative z-[1] flex h-9 items-center gap-1.5 rounded-full px-4 text-[14px] font-medium tracking-[-0.01em] transition-colors duration-200 ${
-          open || isGroupActive ? "nav-pill-active" : ""
+          open || isGroupActive ? "nav-pill-active" : isGroupActiveNarrow ? "nav-pill-active-narrow" : ""
         }`}
       >
         <span>{label}</span>

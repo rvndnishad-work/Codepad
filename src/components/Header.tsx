@@ -261,8 +261,14 @@ export default async function Header() {
   /** The dropdown copy of the list, with the pill items flagged so the panel hides them at `lg`. */
   const withPromoted = (items: NavDropdownItem[], pills: NavDropdownItem[]) =>
     pills.length ? items.map((i) => (pills.includes(i) ? { ...i, promoted: true } : i)) : items;
-  /** Active-route prefix for a pill: the destination path, without query or hash. */
-  const pillPrefix = (href: string) => {
+  /**
+   * Active-route prefix for a pill: the destination path, without query or
+   * hash. Workspaces sends visitors to /pricing, which must not light it up,
+   * so it always matches its real home under /w.
+   */
+  const pillPrefix = (item: NavDropdownItem) => {
+    if (item.label === "Workspaces") return "/w";
+    const href = item.href;
     const next = href.startsWith("/login?next=") ? decodeURIComponent(href.slice("/login?next=".length)) : href;
     return next.replace(/[?#].*$/, "") || "/";
   };
@@ -320,7 +326,7 @@ export default async function Header() {
                 hidden and the dropdown lists everything again. */}
             <span className="hidden lg:contents">
               {[...developerPills, ...recruiterPills].map((item) => (
-                <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item.href)} label={item.label} />
+                <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item)} label={item.label} />
               ))}
             </span>
             {showPricing && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}

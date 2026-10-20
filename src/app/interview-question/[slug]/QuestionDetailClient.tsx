@@ -17,6 +17,7 @@ import { topicColor } from "@/app/interview-questions/_components/TopicLogo";
 import HintBox from "./HintBox";
 import JsPlayground from "./JsPlayground";
 import SqlPlayground from "./SqlPlayground";
+import SolutionPreview from "./SolutionPreview";
 import QuestionHero from "./_components/QuestionHero";
 import StudyBar from "./_components/StudyBar";
 import PhoneDock from "./_components/PhoneDock";
@@ -373,7 +374,13 @@ export default function QuestionDetailClient({
   const minutes = readingMinutes(answerMarkdown);
   const headings = useMemo(() => extractHeadings(answerMarkdown), [answerMarkdown]);
 
-  const hasProblem = Boolean(problemContent) || tags.length > 0;
+  // Machine-coding questions open with the finished solution running live:
+  // the active framework bundle's files, or the first multi-file example.
+  const previewFiles = fwBundle?.files ?? rawExamples.find((e) => e.files && Object.keys(e.files).length > 0)?.files ?? null;
+  const previewTemplate = fwBundle?.files ? fwTemplate : "empty-react";
+  const hasPreview = isReact && previewFiles !== null;
+
+  const hasProblem = Boolean(problemContent) || tags.length > 0 || hasPreview;
   const hasAnswer = Boolean(answerContent);
   const hasExamples = displayExamples.length > 0;
   const canRun = displayExamples.some((e) => e.runnable !== false);
@@ -494,6 +501,18 @@ export default function QuestionDetailClient({
         <div className="min-w-0 space-y-14 md:space-y-16">
           {hasProblem && (
             <Section id="problem" num={num("problem")} title="The problem">
+              {hasPreview && previewFiles && (
+                <div className="mb-5">
+                  <SolutionPreview
+                    key={activeFw ?? "preview"}
+                    files={previewFiles}
+                    template={previewTemplate}
+                    title={q.title}
+                    backFrom={`/interview-question/${q.slug}`}
+                    frameworkLabel={activeFw ? CODE_VARIANTS[activeFw]?.label : undefined}
+                  />
+                </div>
+              )}
               <div className="rounded-2xl border border-border bg-surface p-5 md:p-7">
                 {problemContent && (
                   <div className="qa-doc" key={activeFw ?? "problem"}>

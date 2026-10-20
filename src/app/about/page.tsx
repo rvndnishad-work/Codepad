@@ -1,8 +1,22 @@
-import Link from "next/link";
+import type { Metadata } from "next";
+import { BookOpen, Eye, GitBranch, Plug, Scale, Sparkles, Target, Users } from "lucide-react";
+import "@/components/wow/wow.css";
+import "@/components/home-wow/home-wow.css";
+import "./about.css";
+import { prisma } from "@/lib/prisma";
 import { currentBrand } from "@/lib/current-site";
-import { BrandLockup } from "@/components/brand/BrandLogo";
+import { templates } from "@/lib/templates";
+import { SUPPORTED_LANGUAGES } from "@/lib/piston";
+import SpotlightScope from "@/components/wow/SpotlightScope";
+import ScrollProgressBar from "@/app/hire/ScrollProgressBar";
+import AboutHero, { type HeroCopy } from "./AboutHero";
+import AboutRuntime from "./AboutRuntime";
+import AboutValues, { type Value } from "./AboutValues";
+import AboutNumbers, { type Stat } from "./AboutNumbers";
+import AboutFinal, { type FinalCopy } from "./AboutFinal";
+import { TONES } from "./tone";
 
-export async function generateMetadata() {
+export async function generateMetadata(): Promise<Metadata> {
   const brand = await currentBrand();
   return {
     title: `About us — ${brand.name}`,
@@ -13,90 +27,125 @@ export async function generateMetadata() {
   };
 }
 
+const RECRUITER_HERO: HeroCopy = {
+  eyebrow: "about intervutree",
+  lines: ["Hire on proof", "of craft,", "not on paper."],
+  intro:
+    "Resumes say what someone did. Intervutree shows what they can do. Every applicant gets the same take-home or AI screening interview, every attempt runs on our servers, and you get a ranked shortlist with integrity signals attached.",
+  primary: { href: "/features", label: "See what is included" },
+  secondary: { href: "/pricing", label: "Pricing" },
+};
+
+const DEVELOPER_HERO: HeroCopy = {
+  eyebrow: "about devprep",
+  lines: ["Practice where", "you will be", "interviewed."],
+  intro:
+    "DevPrep gives developers runnable challenges, zero-setup playgrounds, curated interview questions and mock interviews with replay, all in the same sandboxes hiring teams use on Intervutree.",
+  primary: { href: "/playgrounds", label: "Open a playground" },
+  secondary: { href: "/interview-questions", label: "Interview questions" },
+};
+
+const RECRUITER_VALUES: Value[] = [
+  { icon: Target, title: "Evidence over arrival order", body: "A pile of applications is ranked by what people built under the same conditions, not by who applied first or wrote the best cover letter." },
+  { icon: Scale, title: "The same test for everyone", body: "Each applicant meets the same prompt, the same sandbox and the same grader. Fair by construction, and easy to defend." },
+  { icon: Eye, title: "Replay, not hearsay", body: "Every attempt is kept as a timeline with integrity signals attached, captured with the candidate's knowledge. The scorecard links to what actually happened." },
+  { icon: Plug, title: "Open to your tools", body: "Connect the ATS you already use, and drive assessments from your own agents and scripts through the MCP API." },
+];
+
+const DEVELOPER_VALUES: Value[] = [
+  { icon: Sparkles, title: "Real code, zero setup", body: "Open a playground and run it. Frontend, backend and full-stack templates boot in the browser with nothing to install." },
+  { icon: GitBranch, title: "Practice that looks like the real thing", body: "Challenges are graded on our servers with hidden tests, exactly the way an assessment would be." },
+  { icon: Users, title: "Learn from people who have been there", body: "Vetted creators publish tutorials and real interview loops you can work through at your own pace." },
+  { icon: BookOpen, title: "A plan, not a pile", body: "Prep journeys turn a target role into a study plan, so you always know what to practice next." },
+];
+
+const RECRUITER_FINAL: FinalCopy = {
+  eyebrow: "talk to us",
+  lines: ["Make your next", "hire the obvious one."],
+  primary: { href: "/login?next=/dashboard", label: "Create a workspace" },
+  links: [
+    { href: "/features", label: "Features" },
+    { href: "/docs/mcp", label: "Docs" },
+  ],
+  contact: "sales@interviewpad.dev",
+};
+
+const DEVELOPER_FINAL: FinalCopy = {
+  eyebrow: "start today",
+  lines: ["Live inside", "the interview."],
+  primary: { href: "/playgrounds", label: "Open a playground" },
+  links: [
+    { href: "/challenges", label: "Challenges" },
+    { href: "/interview-questions", label: "Interview questions" },
+  ],
+};
+
 export default async function AboutPage() {
   const brand = await currentBrand();
   const recruiter = brand.key === "intervutree";
+  const tone = TONES[brand.key];
+
+  const [challengeCount, sessionCount, workspaceCount] = await Promise.all([
+    prisma.challenge.count({ where: { published: true } }).catch(() => 0),
+    prisma.interviewSession.count().catch(() => 0),
+    prisma.workspace.count().catch(() => 0),
+  ]);
+
+  const stats = buildStats({ challengeCount, sessionCount, workspaceCount, recruiter });
 
   return (
-    <article className="mx-auto max-w-2xl px-4 py-12 text-sm leading-relaxed text-subtle">
-      <BrandLockup brand={brand.key} height={48} className="mb-8" />
-      <h1 className="mb-2 text-2xl font-semibold tracking-tight text-fg">About {brand.name}</h1>
-      <p className="mb-8 text-muted">{brand.tagline}</p>
+    <div className="wow-scope min-h-screen bg-bg transition-colors">
+      <SpotlightScope />
+      <ScrollProgressBar className={tone.bar} />
 
-      {recruiter ? (
-        <>
-          <h2 className="mb-2 mt-6 text-base font-semibold text-fg">Hiring on proof of craft</h2>
-          <p>
-            Resumes say what someone did. Intervutree shows what they can do. Every applicant gets
-            the same take-home or AI screening interview, every attempt runs on our servers, and the
-            result is a ranked shortlist with integrity signals attached, ready before your morning
-            coffee.
-          </p>
+      <AboutHero tone={tone} copy={recruiter ? RECRUITER_HERO : DEVELOPER_HERO} />
 
-          <h2 className="mb-2 mt-6 text-base font-semibold text-fg">One runtime, the whole loop</h2>
-          <p>
-            Screen at scale with autonomous first-round interviews, run live collaborative interviews
-            with full keystroke replay, and manage candidates, pipelines, and team seats in a shared
-            workspace. The same sandboxes that developers practice on at DevPrep power every
-            assessment here, so candidates meet a familiar, fair environment.
-          </p>
+      <AboutRuntime tone={tone} />
 
-          <h2 className="mb-2 mt-6 text-base font-semibold text-fg">Built for teams, open to tools</h2>
-          <p>
-            Intervutree connects to the ATS you already use and exposes an MCP API so your own
-            agents and scripts can create assessments, read results, and move candidates along.
-          </p>
+      <AboutValues
+        tone={tone}
+        title={recruiter ? ["Hiring data is sensitive.", "We treat it that way."] : ["Built by people who", "sat on both sides."]}
+        intro={
+          recruiter
+            ? "None of these are roadmap promises. Each one names something the product does today."
+            : "We built DevPrep because practising on toy problems in a toy editor does not prepare anyone for the real loop."
+        }
+        values={recruiter ? RECRUITER_VALUES : DEVELOPER_VALUES}
+      />
 
-          <p className="mt-8">
-            <Link href="/features" className="font-semibold text-fg underline decoration-2 underline-offset-4">
-              See what is included
-            </Link>
-            {" · "}
-            <Link href="/pricing" className="font-semibold text-fg underline decoration-2 underline-offset-4">
-              Pricing
-            </Link>
-            {" · "}
-            <Link href="/docs/mcp" className="font-semibold text-fg underline decoration-2 underline-offset-4">
-              Docs
-            </Link>
-          </p>
-        </>
-      ) : (
-        <>
-          <h2 className="mb-2 mt-6 text-base font-semibold text-fg">Practice that looks like the real thing</h2>
-          <p>
-            DevPrep gives developers runnable challenges, zero-setup playgrounds, curated interview
-            questions, and mock interviews with replay, all in the same sandboxes that hiring teams
-            use on Intervutree. You practice where you will be interviewed.
-          </p>
+      <AboutNumbers tone={tone} stats={stats} />
 
-          <h2 className="mb-2 mt-6 text-base font-semibold text-fg">Learn from people who have been there</h2>
-          <p>
-            Prep journeys turn a target role into a study plan, and vetted creators publish
-            tutorials and real interview loops you can work through at your own pace.
-          </p>
-
-          <p className="mt-8">
-            <Link href="/playgrounds" className="font-semibold text-fg underline decoration-2 underline-offset-4">
-              Open a playground
-            </Link>
-            {" · "}
-            <Link href="/interview-questions" className="font-semibold text-fg underline decoration-2 underline-offset-4">
-              Interview questions
-            </Link>
-          </p>
-        </>
-      )}
-
-      {recruiter && (
-        <p className="mt-10 text-muted">
-          Questions? Write to{" "}
-          <a href="mailto:sales@interviewpad.dev" className="text-fg underline underline-offset-4">
-            sales@interviewpad.dev
-          </a>
-          .
-        </p>
-      )}
-    </article>
+      <AboutFinal tone={tone} copy={recruiter ? RECRUITER_FINAL : DEVELOPER_FINAL} />
+    </div>
   );
+}
+
+/**
+ * Four counters: live rows first (gated on minimums so a fresh install never
+ * shows "3 sessions"), then capability constants to fill the strip.
+ */
+function buildStats(c: { challengeCount: number; sessionCount: number; workspaceCount: number; recruiter: boolean }): Stat[] {
+  const stats: Stat[] = [];
+  if (c.sessionCount >= 50) stats.push({ value: formatCount(c.sessionCount), label: "Interview sessions run", live: true });
+  if (c.challengeCount >= 10) stats.push({ value: formatCount(c.challengeCount), label: "Challenges ready to run", live: true });
+  if (c.recruiter && c.workspaceCount >= 25) stats.push({ value: formatCount(c.workspaceCount), label: "Hiring workspaces", live: true });
+
+  // "node" aliases "javascript" in the runner map, so count distinct targets.
+  const languages = new Set(SUPPORTED_LANGUAGES.map((l) => (l === "node" ? "javascript" : l))).size;
+  const capabilities: Stat[] = [
+    { value: `${templates.length}`, label: "Playground templates", live: false },
+    { value: `${languages}`, label: "Languages, server-graded", live: false },
+    { value: "100%", label: "Attempts kept as a replay", live: false },
+    { value: "2", label: "Brands, one shared runtime", live: false },
+  ];
+  for (const cap of capabilities) {
+    if (stats.length >= 4) break;
+    stats.push(cap);
+  }
+  return stats.slice(0, 4);
+}
+
+function formatCount(n: number): string {
+  if (n >= 1000) return `${Math.floor(n / 100) / 10}k+`;
+  return `${n}`;
 }

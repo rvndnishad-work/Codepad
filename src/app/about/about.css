@@ -1,0 +1,104 @@
+/* About page: motion helpers scoped to .about-* so nothing leaks. */
+
+/* Soft colour fields drifting behind the hero. */
+.about-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.55;
+  animation: about-drift 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.about-blob-2 { animation-duration: 24s; animation-delay: -8s; }
+.about-blob-3 { animation-duration: 30s; animation-delay: -14s; }
+@keyframes about-drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6%, -8%, 0) scale(1.12); }
+  100% { transform: translate3d(-5%, 6%, 0) scale(0.96); }
+}
+
+/* A pulse of light travelling along the connector between the two doors
+   and the shared runtime. Horizontal on wide screens, vertical when the
+   diagram stacks. */
+.about-pipe { position: relative; overflow: hidden; }
+.about-pipe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--c-fg) / 0.14);
+}
+.about-pipe::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--about-pulse), transparent);
+  box-shadow: 0 0 14px 2px var(--about-pulse-glow);
+  animation: about-pulse-x 2.4s cubic-bezier(0.45, 0, 0.35, 1) infinite;
+  animation-delay: var(--about-pulse-delay, 0s);
+}
+.about-pipe-x { height: 2px; width: 100%; }
+.about-pipe-x::after { top: 0; height: 100%; width: 34%; }
+@keyframes about-pulse-x {
+  0% { transform: translateX(-120%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateX(320%); opacity: 0; }
+}
+.about-pipe-y { width: 2px; height: 56px; }
+.about-pipe-y::after {
+  left: 0; width: 100%; height: 40%;
+  background: linear-gradient(180deg, transparent, var(--about-pulse), transparent);
+  animation-name: about-pulse-y;
+}
+@keyframes about-pulse-y {
+  0% { transform: translateY(-120%); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(300%); opacity: 0; }
+}
+.about-pipe-reverse::after { animation-direction: reverse; }
+
+/* The runtime core breathes. */
+.about-core-ring {
+  animation: about-breathe 4.5s ease-in-out infinite;
+}
+@keyframes about-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.35; }
+  50% { transform: scale(1.18); opacity: 0.08; }
+}
+
+/* Orbiting marks around the hero lockup. */
+.about-orbit {
+  position: absolute;
+  inset: 0;
+  animation: wow-spin 36s linear infinite;
+}
+.about-orbit-reverse { animation-direction: reverse; animation-duration: 52s; }
+.about-counter { display: inline-flex; animation: wow-spin 36s linear infinite reverse; }
+.about-orbit-reverse .about-counter { animation-direction: normal; animation-duration: 52s; }
+
+/* Values cards: an accent sweep on hover. */
+.about-card { position: relative; overflow: hidden; }
+.about-card::before {
+  content: "";
+  position: absolute;
+  inset: -40% auto auto -40%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  background: radial-gradient(circle, var(--about-pulse-glow) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scale(0.6);
+  pointer-events: none;
+}
+.about-card:hover::before { opacity: 1; transform: scale(1.2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .about-blob,
+  .about-pipe::after,
+  .about-core-ring,
+  .about-orbit,
+  .about-counter {
+    animation: none !important;
+  }
+  .about-pipe::after { opacity: 0; }
+}

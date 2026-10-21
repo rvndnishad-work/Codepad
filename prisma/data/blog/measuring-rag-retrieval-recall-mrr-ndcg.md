@@ -121,7 +121,7 @@ Why care about order at all, if the model sees all *k* chunks anyway? Two reason
 
 > **Short answer:** nDCG gives each relevant result points for how relevant it is, shrinks those points the lower it appears, and divides by the score of the best possible ordering. 1.0 means perfect order; 0 means nothing relevant was found.
 
-So far relevance has been yes or no. Real labels are often graded: one chunk *answers* the question, another is merely *related*. **nDCG** (normalised discounted cumulative gain) uses those grades. It was introduced by Järvelin and Kekäläinen in ["Cumulated gain-based evaluation of IR techniques"](https://doi.org/10.1145/582415.582418) (ACM Transactions on Information Systems, 2002) and is now the standard headline metric of retrieval benchmarks such as [BEIR](https://github.com/beir-cellar/beir), which reports nDCG@k alongside recall@k, MAP and precision.
+So far relevance has been yes or no. Real labels are often graded: one chunk *answers* the question, another is merely *related*. **nDCG** (normalised discounted cumulative gain) uses those grades. It was introduced by Järvelin and Kekäläinen in ["Cumulated gain-based evaluation of IR techniques"](https://doi.org/10.1145/582415.582418) (ACM Transactions on Information Systems, 2002) and is one of the standard metrics retrieval benchmarks report: [BEIR](https://github.com/beir-cellar/beir), for example, reports nDCG@k alongside recall@k, MAP and precision@k.
 
 It's built in three steps:
 

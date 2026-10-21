@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+  </defs>
+  <rect width="960" height="440" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">Score the retriever on its own</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">No LLM in the loop: rankings are compared with labels written ahead of time</text>
+
+  <rect x="48" y="150" width="200" height="110" rx="16" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="72" y="186" fill="#60a5fa" font-size="15" font-weight="700" letter-spacing="1.2">EVAL QUERIES</text>
+  <text x="72" y="216" fill="#e8eaf0" font-size="16">50 to 200 real</text>
+  <text x="72" y="240" fill="#e8eaf0" font-size="16">user questions</text>
+
+  <path d="M248 205 L 318 205" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+
+  <rect x="322" y="150" width="190" height="110" rx="16" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="346" y="186" fill="#a78bfa" font-size="15" font-weight="700" letter-spacing="1.2">RETRIEVER</text>
+  <text x="346" y="216" fill="#e8eaf0" font-size="16">keyword, vector</text>
+  <text x="346" y="240" fill="#e8eaf0" font-size="16">or hybrid search</text>
+
+  <path d="M512 205 L 582 205" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+
+  <rect x="586" y="130" width="150" height="150" rx="16" fill="#171a23" stroke="#4b5563" stroke-width="2"/>
+  <text x="610" y="164" fill="#9aa3b5" font-size="15" font-weight="700" letter-spacing="1.2">TOP K</text>
+  <text x="610" y="194" fill="#e8eaf0" font-size="16" font-family="ui-monospace, Menlo, Consolas, monospace">1. c7</text>
+  <text x="610" y="220" fill="#34d399" font-size="16" font-family="ui-monospace, Menlo, Consolas, monospace">2. c2</text>
+  <text x="610" y="246" fill="#e8eaf0" font-size="16" font-family="ui-monospace, Menlo, Consolas, monospace">3. c9</text>
+
+  <path d="M736 205 L 798 205" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+
+  <rect x="802" y="150" width="120" height="110" rx="16" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="824" y="186" fill="#34d399" font-size="15" font-weight="700" letter-spacing="1.2">SCORE</text>
+  <text x="824" y="216" fill="#e8eaf0" font-size="16">recall@k</text>
+  <text x="824" y="240" fill="#e8eaf0" font-size="16">MRR, nDCG</text>
+
+  <rect x="586" y="330" width="150" height="70" rx="16" fill="#2a2210" stroke="#facc15" stroke-width="2"/>
+  <text x="610" y="362" fill="#facc15" font-size="15" font-weight="700" letter-spacing="1.2">LABELS</text>
+  <text x="610" y="386" fill="#e8eaf0" font-size="15">relevant: c2, c4</text>
+  <path d="M736 365 C 800 365, 862 340, 862 266" fill="none" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <path d="M148 260 C 148 330, 400 365, 580 365" fill="none" stroke="#4b5563" stroke-width="2.5" stroke-dasharray="6 6"/>
+</svg>

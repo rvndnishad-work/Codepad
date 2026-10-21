@@ -21,9 +21,17 @@ export default function AuthCard({
   next,
   initialMode = "signin",
   brand = "devprep",
+  role = null,
 }: {
   providers: Providers;
   next: string;
+  /**
+   * The account type this domain signs people up as: "candidate" on the
+   * developer domain, "recruiter" on the recruiter domain. When set, the
+   * signup form skips the role picker. Null where both sites share one
+   * domain (local dev, previews), so the picker shows.
+   */
+  role?: "candidate" | "recruiter" | null;
   /** Which product the visitor is signing in to (set by the domain). */
   brand?: BrandKey;
   /** `/login?mode=signup` opens straight on the create-account form. */
@@ -33,7 +41,7 @@ export default function AuthCard({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState<"candidate" | "recruiter" | "">("");
+  const [userType, setUserType] = useState<"candidate" | "recruiter" | "">(role ?? "");
   const [pending, startTransition] = useTransition();
   const [needsTotp, setNeedsTotp] = useState(false);
   const [totp, setTotp] = useState("");
@@ -300,7 +308,11 @@ export default function AuthCard({
             ? "Enter the 6-digit code we sent to verify your identity."
             : mode === "signin"
               ? "Enter your details to sign in to your workspace."
-              : "Create an account in seconds to start building and hiring."}
+              : role === "recruiter"
+                ? "Create a hiring account in seconds to start screening candidates."
+                : role === "candidate"
+                  ? "Create an account in seconds to start practicing and building."
+                  : "Create an account in seconds to start building and hiring."}
         </p>
       </div>
 
@@ -444,7 +456,7 @@ export default function AuthCard({
           </div>
         ) : (
           <>
-            {mode === "signup" && (
+            {mode === "signup" && !role && (
               <>
                 <div className="space-y-[clamp(0.25rem,0.6vh,0.5rem)] mb-[clamp(0.25rem,0.6vh,0.5rem)]">
                   <div className="text-[11px] font-bold uppercase tracking-widest text-muted mb-[clamp(0.25rem,0.6vh,0.5rem)] pl-1">

@@ -1,6 +1,6 @@
 import AuthCard from "./AuthCard";
 import OnboardingShowcase from "./OnboardingShowcase";
-import { currentBrand } from "@/lib/current-site";
+import { currentBrand, currentSite } from "@/lib/current-site";
 
 export default async function LoginPage({
   searchParams,
@@ -9,6 +9,10 @@ export default async function LoginPage({
 }) {
   const { next, mode, reason } = await searchParams;
   const safeNext = next && next.startsWith("/") ? next : "/";
+  // Each domain belongs to one kind of account, so signup there skips the
+  // role picker. Where both sites share a domain the picker stays.
+  const site = await currentSite();
+  const role = site === "recruiter" ? "recruiter" : site === "developer" ? "candidate" : null;
 
   const providers = {
     github: Boolean(process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET),
@@ -55,6 +59,7 @@ export default async function LoginPage({
             next={safeNext}
             initialMode={mode === "signup" ? "signup" : "signin"}
             brand={(await currentBrand()).key}
+            role={role}
           />
         </div>
       </div>

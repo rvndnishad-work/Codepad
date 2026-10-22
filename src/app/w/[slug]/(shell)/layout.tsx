@@ -105,7 +105,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     where: { userId },
     include: {
       workspace: {
-        select: { name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true },
+        select: { name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, deletionScheduledAt: true },
       },
     },
   });
@@ -121,7 +121,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     .map((m) => ({
       name: m.workspace.name,
       slug: m.workspace.slug,
-      planLabel: planDisplay(m.workspace).label,
+      planLabel: m.workspace.deletionScheduledAt ? "Deleting" : planDisplay(m.workspace).label,
     }));
 
   return (

@@ -20,6 +20,7 @@ import {
   toCsv,
   totalCount,
   withRetentionDefaults,
+  workspaceIsEmpty,
 } from "@/lib/workspace/data-privacy";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -199,6 +200,12 @@ describe("delete the workspace", () => {
     expect(deletionConfirmMatches("Acme", "Acme Hiring")).toBe(false);
     expect(deletionConfirmMatches("", "")).toBe(false);
     expect(deletionConfirmMatches(undefined, "Acme")).toBe(false);
+  });
+
+  it("only counts a workspace as empty when nothing has happened in it", () => {
+    expect(workspaceIsEmpty({ candidates: 0, interviews: 0, takeHomes: 0, screenings: 0 })).toBe(true);
+    expect(workspaceIsEmpty({ candidates: 1, interviews: 0, takeHomes: 0, screenings: 0 })).toBe(false);
+    expect(workspaceIsEmpty({ candidates: 0, interviews: 0, takeHomes: 0, screenings: 2 })).toBe(false);
   });
 
   it("lists the subprocessors from the plan", () => {

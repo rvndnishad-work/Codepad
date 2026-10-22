@@ -56,9 +56,10 @@ export default function DeletionScheduledScreen({
         {isOwner ? (
           <div className="flex flex-col gap-2">
             <p className="text-sm text-muted">You are an owner, so you can undo this. Everyone gets access back straight away.</p>
+            {/* Same weight for both: the person chose this a moment ago, so undo should be easy, not loud. */}
             <div className="flex flex-wrap items-center gap-2">
-              <Btn variant="primary" size="md" onClick={undo} disabled={busy}>
-                {busy ? "Undoing" : "Keep this workspace"}
+              <Btn size="md" onClick={undo} disabled={busy}>
+                {busy ? "Restoring" : "Restore this workspace"}
               </Btn>
               <Btn size="md" href="/w">
                 Go to your workspaces

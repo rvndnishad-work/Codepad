@@ -32,6 +32,7 @@ import {
 import { DELETION_GRACE_DAYS, RETENTION_NOTICE_DAYS, type RetentionKind, type RetentionUnit } from "@/lib/workspace/settings";
 import {
   cancelDataRequestAction,
+  deleteNowAction,
   downloadCandidateCopyAction,
   eraseCandidateDataAction,
   findCandidateDataAction,
@@ -83,6 +84,8 @@ type Props = {
   workspaceName: string;
   canEdit: boolean;
   owner: boolean;
+  /** No candidates, interviews or screenings: owners may delete it straight away. */
+  empty: boolean;
   now: string;
   rules: RuleRow[];
   requests: RequestRow[];
@@ -97,7 +100,7 @@ export default function DataPrivacyClient(props: Props) {
         <RetentionCard rules={props.rules} canEdit={props.canEdit} retention={retention} />
         <RequestsCard slug={props.slug} requests={props.requests} canEdit={props.canEdit} now={props.now} />
         <ExportCard slug={props.slug} exports={props.exports} canEdit={props.canEdit} />
-        <DeleteCard slug={props.slug} workspaceName={props.workspaceName} owner={props.owner} />
+        <DeleteCard slug={props.slug} workspaceName={props.workspaceName} owner={props.owner} empty={props.empty} />
       </div>
       <aside aria-label="Where data goes" className="flex flex-col gap-5 min-w-0 xl:sticky xl:top-6">
         <SubprocessorsCard />
@@ -744,26 +747,40 @@ function CandidatesSeeCard({ slug }: { slug: string }) {
 
 /* ── Delete the workspace ───────────────────────────────────────────────── */
 
-function DeleteCard({ slug, workspaceName, owner }: { slug: string; workspaceName: string; owner: boolean }) {
+function DeleteCard({ slug, workspaceName, owner, empty }: { slug: string; workspaceName: string; owner: boolean; empty: boolean }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
+  // Empty workspaces default to "now": there is nothing the undo window would keep.
+  const [mode, setMode] = useState<"now" | "later">(empty ? "now" : "later");
   const [busy, start] = useTransition();
   const [toastNode, toast] = useToasts();
 
-  const schedule = (typed: string) =>
+  const run = (typed: string) =>
     start(async () => {
+      if (mode === "now") {
+        const res = await deleteNowAction(slug, typed).catch(() => null);
+        if (!res || !res.ok) return toast(res && !res.ok ? res.error : "Could not delete the workspace. Try again.", "error");
+        setConfirm(false);
+        router.push(`/w?removed=${encodeURIComponent(res.name)}`);
+        return;
+      }
       const res = await scheduleDeletionAction(slug, typed).catch(() => null);
       if (!res || !res.ok) return toast(res && !res.ok ? res.error : "Could not schedule the deletion. Try again.", "error");
       setConfirm(false);
-      router.refresh();
+      // The hub shows the workspace as deleting, with Restore; nobody can use it here any more.
+      router.push(`/w?deleted=${encodeURIComponent(slug)}`);
     });
+
+  const description = empty
+    ? `This workspace has no candidates, interviews or screenings yet, so you can delete it straight away or keep it on hold for ${DELETION_GRACE_DAYS} days. Either way everyone loses access as soon as you confirm.`
+    : `Everyone loses access straight away and you go back to your workspaces. For ${DELETION_GRACE_DAYS} days an owner can restore it from there; after that, candidates, screenings, interviews and settings are erased for good and the subscription is cancelled. Export everything first if you want to keep a copy.`;
 
   return (
     <>
       <PrivacyCard
         id="delete"
         title="Delete workspace"
-        description={`Everyone loses access straight away. For ${DELETION_GRACE_DAYS} days an owner can undo it; after that, candidates, screenings, interviews and settings are erased for good and the subscription is cancelled. Export everything first if you want to keep a copy.`}
+        description={description}
         aside={
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-panel border border-border text-xs font-medium text-muted px-2 leading-5">Owners only</span>
@@ -780,19 +797,54 @@ function DeleteCard({ slug, workspaceName, owner }: { slug: string; workspaceNam
             danger
             busy={busy}
             requireText={workspaceName}
-            confirmLabel="Delete workspace"
+            confirmLabel={mode === "now" ? "Delete now" : "Delete workspace"}
             onCancel={() => setConfirm(false)}
-            onConfirm={() => schedule(workspaceName)}
+            onConfirm={() => run(workspaceName)}
             body={
-              <>
-                Nobody on your team can use the workspace from now on, and its API keys stop working. Owners can undo this for {DELETION_GRACE_DAYS} days. After
-                that it is erased for good. Owners and admins get an email about it.
-              </>
+              empty ? (
+                <DeleteModeChoice mode={mode} onChange={setMode} />
+              ) : (
+                <>
+                  Nobody on your team can use the workspace from now on, and its API keys stop working. Owners can undo this for {DELETION_GRACE_DAYS} days. After
+                  that it is erased for good. Owners and admins get an email about it.
+                </>
+              )
             }
           />
         )}
       </PrivacyCard>
       {toastNode}
     </>
+  );
+}
+
+/** Now or in 30 days, offered only while the workspace holds no work. */
+function DeleteModeChoice({ mode, onChange }: { mode: "now" | "later"; onChange: (m: "now" | "later") => void }) {
+  const options: { value: "now" | "later"; title: string; body: string }[] = [
+    { value: "now", title: "Delete now", body: "Erased straight away, along with its settings and members. There is nothing to keep, so there is no undo." },
+    { value: "later", title: `Keep on hold for ${DELETION_GRACE_DAYS} days`, body: "Nobody can use it, and an owner can restore it from your workspaces until then." },
+  ];
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="sr-only">When to delete</legend>
+      {options.map((o) => {
+        const on = mode === o.value;
+        return (
+          <label
+            key={o.value}
+            className={`flex items-start gap-3 rounded-lg border px-3.5 py-3 cursor-pointer transition-colors ${
+              on ? "border-danger/60 bg-danger/5" : "border-border hover:border-border-strong"
+            }`}
+          >
+            <input type="radio" name="delete-mode" value={o.value} checked={on} onChange={() => onChange(o.value)} className="mt-0.5 accent-[var(--danger)]" />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium text-fg">{o.title}</span>
+              <span className="text-[13px] text-muted">{o.body}</span>
+            </span>
+          </label>
+        );
+      })}
+      <p className="text-[13px] text-muted pt-1">Owners and admins get an email either way.</p>
+    </fieldset>
   );
 }

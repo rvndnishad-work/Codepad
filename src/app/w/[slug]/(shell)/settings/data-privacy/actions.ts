@@ -3,8 +3,9 @@
 /**
  * Settings > Data and privacy actions: retention rules, candidate data
  * requests (find, send a copy, erase), export everything, and deleting the
- * workspace with a 30-day undo. Owners and admins can use all of them,
- * except scheduling or cancelling the deletion, which is for owners only.
+ * workspace with a 30-day undo (or straight away while it is still empty).
+ * Owners and admins can use all of them, except scheduling, cancelling or
+ * carrying out the deletion, which is for owners only.
  * Every change writes an audit entry.
  */
 import { after } from "next/server";
@@ -31,7 +32,15 @@ import {
   type DataRequestKind,
   type RetentionPatch,
 } from "@/lib/workspace/data-privacy";
-import { buildCandidateCopy, buildWorkspaceExport, candidateScope, emailManagers, eraseCandidateScope, settingsUrl } from "@/lib/workspace/data-privacy-server";
+import {
+  buildCandidateCopy,
+  buildWorkspaceExport,
+  candidateScope,
+  emailManagers,
+  eraseCandidateScope,
+  eraseEmptyWorkspaceNow,
+  settingsUrl,
+} from "@/lib/workspace/data-privacy-server";
 import { baseUrl } from "@/lib/interview/room-server";
 
 type Fail = { ok: false; error: string };
@@ -394,6 +403,22 @@ export async function scheduleDeletionAction(slug: string, confirmName: string):
 }
 
 /** Undo a scheduled deletion. Owners only. */
+/**
+ * Delete an empty workspace straight away. Same name check as scheduling;
+ * the emptiness check is repeated server side right before the erase. No
+ * audit entry: the log goes with the workspace, and the owners and admins
+ * get the email instead.
+ */
+export async function deleteNowAction(slug: string, confirmName: string): Promise<{ ok: true; name: string } | Fail> {
+  const a = await editor(slug, { ownerOnly: true });
+  if (isFail(a)) return a;
+  if (!deletionConfirmMatches(confirmName, a.ws.name)) return fail("Type the workspace name exactly to confirm.");
+  const res = await eraseEmptyWorkspaceNow(a.ws.id, a.email ?? "An owner");
+  if (!res.ok) return fail(res.error);
+  revalidatePath("/w", "layout");
+  return { ok: true, name: a.ws.name };
+}
+
 export async function cancelDeletionAction(slug: string): Promise<{ ok: true } | Fail> {
   const a = await editor(slug, { ownerOnly: true });
   if (isFail(a)) return a;

@@ -114,6 +114,12 @@ describe("hub rows", () => {
     expect(hubRowState({ role: "VIEWER", candidates: 0, toReview: 0, steps: steps(0) })).toEqual({ kind: "open" });
   });
 
+  it("shows a scheduled deletion before anything else", () => {
+    const finalAt = new Date("2026-11-21T10:00:00Z");
+    expect(hubRowState({ role: "OWNER", candidates: 12, toReview: 7, steps: steps(12), deletionFinalAt: finalAt })).toEqual({ kind: "deleting", finalAt });
+    expect(hubRowState({ role: "OWNER", candidates: 0, toReview: 0, steps: steps(0), deletionFinalAt: null }).kind).toBe("setup");
+  });
+
   it("stops showing setup once the first candidate is in", () => {
     expect(hubRowState({ role: "OWNER", candidates: 3, toReview: 0, steps: steps(3) })).toEqual({ kind: "open" });
   });

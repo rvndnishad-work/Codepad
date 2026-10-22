@@ -372,3 +372,16 @@ export function deletionConfirmMatches(typed: unknown, workspaceName: string): b
   const norm = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
   return norm(typed) !== "" && norm(typed) === norm(workspaceName);
 }
+
+/** What a workspace holds that the 30-day undo window exists to protect. */
+export type WorkspaceContentCounts = { candidates: number; interviews: number; takeHomes: number; screenings: number };
+
+/**
+ * An empty workspace has nothing to restore, so an owner may delete it
+ * straight away instead of waiting out the undo window. Members, settings
+ * and templates do not count: they are the owner's own setup, not the
+ * work of a team.
+ */
+export function workspaceIsEmpty(counts: WorkspaceContentCounts): boolean {
+  return counts.candidates === 0 && counts.interviews === 0 && counts.takeHomes === 0 && counts.screenings === 0;
+}

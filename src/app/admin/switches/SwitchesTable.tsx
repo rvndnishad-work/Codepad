@@ -229,7 +229,7 @@ export default function SwitchesTable({ rows, initialKey }: { rows: SwitchRow[];
               </tr>
             </thead>
             <tbody>
-              {SIDES.map((side) => (
+              {SIDES.filter((side) => rows.some((r) => r.side === side.key)).map((side) => (
                 <Fragment key={side.key}>
                   <tr>
                     <td colSpan={5} className="bg-panel px-4 py-2 text-xs font-semibold text-muted">{side.label}</td>

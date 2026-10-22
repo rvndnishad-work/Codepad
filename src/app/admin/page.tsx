@@ -10,6 +10,9 @@ import { addDays, sumDailyStats, utcDay } from "@/lib/admin/stats/daily-rollup";
 import { jobsSummary, loadEmail24h, loadJobStatuses, loadMaintenance, loadServices, type Tone } from "./jobs/health";
 import { developerUserWhere } from "@/lib/users/user-type";
 import { Pill, btnCls, cardCls, timeAgo } from "./jobs/ui";
+import { currentSite } from "@/lib/current-site";
+import type { SiteKind } from "@/lib/domains";
+import { onSite } from "./admin-nav";
 
 export const metadata = {
   title: "Home — Admin",
@@ -22,6 +25,9 @@ export const dynamic = "force-dynamic";
  * permissions let them act on; platform admins also get health, both sides
  * in brief (from the nightly AdminDailyStat roll-up) and recent admin
  * activity. Every number is a count, aggregate or roll-up read.
+ *
+ * Opened on one domain, the page shows only that side's queues and summary
+ * card (see `site` in admin-nav.ts); health and audit are shared.
  */
 
 type Queue = { key: string; count: number; label: string; href: string };
@@ -36,25 +42,30 @@ async function lowCreditWorkspaces(): Promise<number> {
   return Number(rows[0]?.n ?? 0);
 }
 
-async function loadQueues(can: (p: string) => boolean, isAdmin: boolean): Promise<Queue[]> {
+async function loadQueues(can: (p: string) => boolean, isAdmin: boolean, site: SiteKind | null): Promise<Queue[]> {
   const zero = Promise.resolve(0);
-  const moderate = can("content:moderate") || can("content:curate");
+  const dev = onSite("developer", site);
+  const moderate = dev && (can("content:moderate") || can("content:curate"));
+  const moderateExp = dev && can("content:moderate");
+  const reviewCreators = dev && can("creator:review");
+  const moderateReports = dev && (can("comment:moderate") || can("content:moderate"));
+  const recAdmin = isAdmin && onSite("recruiter", site);
   const [blogs, experiences, creators, reports, lowCredits, pastDue] = await Promise.all([
     moderate ? prisma.blogPost.count({ where: { status: "PENDING" } }) : zero,
-    can("content:moderate") ? prisma.prepExperience.count({ where: { status: "pending" } }) : zero,
-    can("creator:review") ? prisma.creatorApplication.count({ where: { status: "PENDING" } }) : zero,
-    can("comment:moderate") || can("content:moderate") ? prisma.contentReport.count({ where: { status: "open" } }) : zero,
-    isAdmin ? lowCreditWorkspaces() : zero,
-    isAdmin ? prisma.workspace.count({ where: { stripeStatus: "past_due" } }) : zero,
+    moderateExp ? prisma.prepExperience.count({ where: { status: "pending" } }) : zero,
+    reviewCreators ? prisma.creatorApplication.count({ where: { status: "PENDING" } }) : zero,
+    moderateReports ? prisma.contentReport.count({ where: { status: "open" } }) : zero,
+    recAdmin ? lowCreditWorkspaces() : zero,
+    recAdmin ? prisma.workspace.count({ where: { stripeStatus: "past_due" } }) : zero,
   ]);
   const out: Queue[] = [];
   if (moderate) out.push({ key: "blogs", count: blogs, label: "Blogs awaiting review", href: "/admin/blogs?status=PENDING" });
-  if (can("content:moderate"))
+  if (moderateExp)
     out.push({ key: "exp", count: experiences, label: "Experiences to moderate", href: "/admin/interview-questions/experiences?status=pending" });
-  if (can("creator:review")) out.push({ key: "creators", count: creators, label: "Creator applications", href: "/admin/creators?status=PENDING" });
-  if (can("comment:moderate") || can("content:moderate"))
+  if (reviewCreators) out.push({ key: "creators", count: creators, label: "Creator applications", href: "/admin/creators?status=PENDING" });
+  if (moderateReports)
     out.push({ key: "reports", count: reports, label: "Open content reports", href: "/admin/inbox#reports" });
-  if (isAdmin) {
+  if (recAdmin) {
     out.push({ key: "credits", count: lowCredits, label: "Workspaces low on credits", href: "/admin/recruiters#needs-attention" });
     out.push({ key: "pastdue", count: pastDue, label: "Payment past due", href: "/admin/workspaces?status=past_due" });
   }
@@ -162,9 +173,12 @@ export default async function AdminHomePage() {
   const isAdmin = has.has("*") || has.has("platform:admin");
   const now = new Date();
   const today = now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+  const site = await currentSite();
+  const showRecruiters = onSite("recruiter", site);
+  const showDevelopers = onSite("developer", site);
 
   if (!isAdmin) {
-    const queues = await loadQueues(can, false);
+    const queues = await loadQueues(can, false, site);
     const waiting = queues.reduce((a, q) => a + q.count, 0);
     return (
       <div className="flex flex-col gap-6">
@@ -175,15 +189,17 @@ export default async function AdminHomePage() {
           </p>
         </header>
         <QueueChips queues={queues} />
-        <Link href="/admin/inbox" className="text-sm text-secondary-soft hover:underline underline-offset-2 self-start">
-          Open the inbox
-        </Link>
+        {showDevelopers && (
+          <Link href="/admin/inbox" className="text-sm text-secondary-soft hover:underline underline-offset-2 self-start">
+            Open the inbox
+          </Link>
+        )}
       </div>
     );
   }
 
   const [queues, statuses, email, maintenance, services, sides, switches, recent] = await Promise.all([
-    loadQueues(can, true),
+    loadQueues(can, true, site),
     loadJobStatuses(now),
     loadEmail24h(),
     loadMaintenance(now),
@@ -255,53 +271,57 @@ export default async function AdminHomePage() {
 
       <QueueChips queues={queues} />
 
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SideCard
-          icon={Building2}
-          title="Recruiters, last 30 days"
-          href="/admin/recruiters"
-          stats={[
-            {
-              label: "Revenue a month",
-              value: sides.mrrCents == null ? "—" : money.format(sides.mrrCents / 100),
-              sub: sides.mrrCents == null ? "Stripe not synced yet" : `from Stripe, ${nf.format(sides.paid)} paid`,
-            },
-            {
-              label: "AI credits used",
-              value: nf.format(s.ai_credits_used),
-              sub: `${nf.format(s.ai_credits_included)} included, ${nf.format(s.ai_credits_bought)} bought`,
-            },
-            {
-              label: "Live interviews",
-              value: nf.format(s.live_interviews),
-              sub: `${nf.format(Math.round(s.recording_seconds / 3600))} h recorded`,
-            },
-          ]}
-          switches={switchPills(switches, ["ai-screening", "take-home", "live-interviews", "video-addon"], "hiring")}
-        />
-        <SideCard
-          icon={Code2}
-          title="Developers, last 30 days"
-          href="/admin/developers"
-          stats={[
-            {
-              label: "Sign-ups",
-              value: nf.format(s.signups),
-              sub: signupChange == null ? "No earlier month to compare" : `${signupChange >= 0 ? "+" : ""}${signupChange}% on the month before`,
-            },
-            {
-              label: "Playground runs",
-              value: nf.format(s.playground_runs),
-              sub: `${pct(s.playground_errors, s.playground_runs)} failed in Piston`,
-            },
-            {
-              label: "Challenge pass rate",
-              value: pct(s.challenge_passed, s.challenge_attempts),
-              sub: `${nf.format(s.challenge_attempts)} attempts`,
-            },
-          ]}
-          switches={switchPills(switches, ["playground-run", "challenges", "prompt-arena", "creator-checkout"], "developer")}
-        />
+      <section className={`grid grid-cols-1 gap-4 ${showRecruiters && showDevelopers ? "lg:grid-cols-2" : ""}`}>
+        {showRecruiters && (
+          <SideCard
+            icon={Building2}
+            title="Recruiters, last 30 days"
+            href="/admin/recruiters"
+            stats={[
+              {
+                label: "Revenue a month",
+                value: sides.mrrCents == null ? "—" : money.format(sides.mrrCents / 100),
+                sub: sides.mrrCents == null ? "Stripe not synced yet" : `from Stripe, ${nf.format(sides.paid)} paid`,
+              },
+              {
+                label: "AI credits used",
+                value: nf.format(s.ai_credits_used),
+                sub: `${nf.format(s.ai_credits_included)} included, ${nf.format(s.ai_credits_bought)} bought`,
+              },
+              {
+                label: "Live interviews",
+                value: nf.format(s.live_interviews),
+                sub: `${nf.format(Math.round(s.recording_seconds / 3600))} h recorded`,
+              },
+            ]}
+            switches={switchPills(switches, ["ai-screening", "take-home", "live-interviews", "video-addon"], "hiring")}
+          />
+        )}
+        {showDevelopers && (
+          <SideCard
+            icon={Code2}
+            title="Developers, last 30 days"
+            href="/admin/developers"
+            stats={[
+              {
+                label: "Sign-ups",
+                value: nf.format(s.signups),
+                sub: signupChange == null ? "No earlier month to compare" : `${signupChange >= 0 ? "+" : ""}${signupChange}% on the month before`,
+              },
+              {
+                label: "Playground runs",
+                value: nf.format(s.playground_runs),
+                sub: `${pct(s.playground_errors, s.playground_runs)} failed in Piston`,
+              },
+              {
+                label: "Challenge pass rate",
+                value: pct(s.challenge_passed, s.challenge_attempts),
+                sub: `${nf.format(s.challenge_attempts)} attempts`,
+              },
+            ]}
+            switches={switchPills(switches, ["playground-run", "challenges", "prompt-arena", "creator-checkout"], "developer")}
+          />
+        )}
       </section>
       {!sides.fromRollup && (
         <p className="-mt-3 text-[13px] text-subtle">Counted live: the nightly roll-up has not run yet.</p>

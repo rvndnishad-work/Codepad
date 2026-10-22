@@ -9,6 +9,7 @@ import { videoAddonCents } from "@/lib/video/addon";
 import { Empty, Pager, Pill, Section, Table, tdCls, thCls } from "../interviews/_components/list";
 import { hrefWith, one, pageWindow, utcStamp, type SearchParams } from "../interviews/_components/params";
 import PricingCopyForm from "./PricingCopyForm";
+import CatalogPricesForm from "./CatalogPricesForm";
 import { pricingDiff } from "./diff";
 
 export const metadata = {
@@ -93,6 +94,13 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
         initialStarter={settings.starter}
         initialVersion={settings.version}
       />
+
+      <Section
+        title="New plans: Basic, Growth and Teams"
+        description="Flat monthly plans with AI credits included, and the top-up packs sold on top. Saved here ahead of the switch-over; nothing is charged at these prices yet."
+      >
+        <CatalogPricesForm initialCatalog={settings.catalog} initialVersion={settings.version} />
+      </Section>
 
       <Section
         title="Stripe check"

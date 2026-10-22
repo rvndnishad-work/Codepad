@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ExternalLink, Loader2, Lock, RotateCcw, Save } from "lucide-react";
@@ -272,6 +272,9 @@ export default function PricingCopyForm({
   const router = useRouter();
   const [saved, setSaved] = useState(() => toState(initialCopy, initialPrices, initialStarter));
   const [version, setVersion] = useState(initialVersion);
+  // The plan catalogue form below saves to the same row; take its new version
+  // when the page refreshes after that save.
+  useEffect(() => setVersion(initialVersion), [initialVersion]);
   const [note, setNote] = useState("");
   const [state, setState] = useState(saved);
   const [busy, setBusy] = useState<"save" | "reset" | null>(null);

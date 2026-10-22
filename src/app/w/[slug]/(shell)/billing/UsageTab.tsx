@@ -13,6 +13,7 @@ import { LOW_CREDIT_CHOICES } from "@/lib/workspace/settings";
 import type { UsageMonth } from "@/lib/billing/usage";
 import { saveWorkspaceSettingsAction } from "../settings/actions";
 import { buyCreditsAction } from "./actions";
+import { payForCreditPack } from "@/lib/billing/razorpay-client";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 
 export type LedgerRowView = {
@@ -35,6 +36,8 @@ export type UsageData = {
   canEditAlert: boolean;
   aiScreening: boolean;
   purchase: "success" | "cancel" | null;
+  /** Who takes credit pack payments: Razorpay's modal, Stripe's hosted page, or nobody yet. */
+  checkout: "razorpay" | "stripe" | null;
 };
 
 type Notify = (text: string, tone?: "ok" | "error") => void;
@@ -43,13 +46,11 @@ export default function UsageTab({
   slug,
   data,
   canManage,
-  stripeConfigured,
   notify,
 }: {
   slug: string;
   data: UsageData;
   canManage: boolean;
-  stripeConfigured: boolean;
   notify: Notify;
 }) {
   return (
@@ -66,7 +67,7 @@ export default function UsageTab({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-4 items-stretch">
-        <CreditsCard slug={slug} data={data} canManage={canManage} stripeConfigured={stripeConfigured} notify={notify} />
+        <CreditsCard slug={slug} data={data} canManage={canManage} notify={notify} />
         <UsageChart months={data.months} />
       </div>
 
@@ -77,7 +78,7 @@ export default function UsageTab({
 
 /* ── Credits: balance, low-credit alert, buy a pack, low-credit email ──── */
 
-function CreditsCard({ slug, data, canManage, stripeConfigured, notify }: { slug: string; data: UsageData; canManage: boolean; stripeConfigured: boolean; notify: Notify }) {
+function CreditsCard({ slug, data, canManage, notify }: { slug: string; data: UsageData; canManage: boolean; notify: Notify }) {
   const { credits } = data;
   const low = credits.available === 0 || (data.lowCreditThreshold !== null && credits.available < data.lowCreditThreshold);
   return (
@@ -113,7 +114,7 @@ function CreditsCard({ slug, data, canManage, stripeConfigured, notify }: { slug
         </div>
       )}
 
-      <BuyCredits slug={slug} data={data} canManage={canManage} stripeConfigured={stripeConfigured} notify={notify} />
+      <BuyCredits slug={slug} data={data} canManage={canManage} notify={notify} />
 
       <div className="border-t border-border pt-4">
         <LowCreditEmail slug={slug} data={data} notify={notify} />
@@ -139,11 +140,25 @@ function includedLine(included: UsageData["included"]): string {
 
 /* ── Buy credits ────────────────────────────────────────────────────────── */
 
-function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug: string; data: UsageData; canManage: boolean; stripeConfigured: boolean; notify: Notify }) {
+function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: UsageData; canManage: boolean; notify: Notify }) {
+  const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>((data.packs.find((p) => p.badge) ?? data.packs[0])?.id ?? null);
   const buy = async (packId: string) => {
     setBusy(packId);
+    if (data.checkout === "razorpay") {
+      const res = await payForCreditPack({ slug, packId, onAttemptFailed: (m) => notify(m, "error") });
+      setBusy(null);
+      if (res.status === "paid") {
+        notify(`Payment received. ${plural(res.credits, "credit")} added.`);
+        router.refresh();
+      } else if (res.status === "cancelled") {
+        notify("Checkout was closed. Nothing was charged.");
+      } else {
+        notify(res.message, "error");
+      }
+      return;
+    }
     const res = await buyCreditsAction(slug, packId);
     if (res.ok) {
       window.location.href = res.url;
@@ -156,8 +171,8 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
   let note: string | null = null;
   if (!data.aiScreening) note = "AI screening needs Growth or a trial. You can still buy credits now and use them after you upgrade.";
   if (!canManage) note = "Ask an owner or admin with billing access to buy credits.";
-  else if (!stripeConfigured) note = "Online payments are not set up on this server yet, so credits cannot be bought here.";
-  const canBuy = canManage && stripeConfigured;
+  else if (!data.checkout) note = "Online payments are not set up on this server yet, so credits cannot be bought here.";
+  const canBuy = canManage && data.checkout !== null;
   const pack = data.packs.find((p) => p.id === picked) ?? null;
 
   return (
@@ -208,7 +223,7 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
       </div>
       {canBuy && pack && (
         <Btn variant="primary" size="md" className="w-full" disabled={!!busy} onClick={() => buy(pack.id)}>
-          {busy ? "Opening checkout" : `Buy ${pack.credits.toLocaleString("en-GB")} credits`}
+          {busy ? (data.checkout === "razorpay" ? "Waiting for payment" : "Opening checkout") : `Buy ${pack.credits.toLocaleString("en-GB")} credits`}
         </Btn>
       )}
       {note && <p className="text-[13px] text-muted">{note}</p>}

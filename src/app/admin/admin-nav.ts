@@ -44,6 +44,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: "/admin/users/candidates", icon: "UserCheck", label: "Candidate accounts", permission: "user:manage" },
       { href: "/admin/interviews", icon: "Briefcase", label: "Interviews", permission: "platform:admin" },
       { href: "/admin/ai-interviews", icon: "Coins", label: "AI credits", permission: "platform:admin" },
+      { href: "/admin/demo-requests", icon: "CalendarCheck", label: "Demo requests", permission: "platform:admin" },
       { href: "/admin/pricing", icon: "CreditCard", label: "Pricing", permission: "platform:admin" },
     ],
   },

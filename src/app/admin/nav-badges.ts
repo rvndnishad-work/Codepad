@@ -29,6 +29,12 @@ export async function loadNavBadges(perms: ReadonlySet<string>): Promise<Record<
     } catch {
       /* hide */
     }
+    try {
+      const fresh = await prisma.demoRequest.count({ where: { stage: "NEW" } });
+      if (fresh > 0) out["/admin/demo-requests"] = { count: fresh, tone: "warn" };
+    } catch {
+      /* hide */
+    }
   }
   return out;
 }

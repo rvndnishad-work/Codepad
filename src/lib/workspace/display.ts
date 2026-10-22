@@ -5,6 +5,7 @@
  * share them. Nothing here reads the database.
  */
 import { trialActive, type PlanFields } from "@/lib/billing/trial";
+import { pilotDaysLeft } from "@/lib/billing/pilot";
 import { normalizeStage, type PipelineStage } from "@/lib/crm/stages";
 
 const DAY_MS = 86_400_000;
@@ -19,6 +20,8 @@ export type PlanDisplay = {
   trialUsed: number | null;
   /** AI screening, ATS sync and the other Growth-level tools are on. */
   growthFeatures: boolean;
+  /** Whole days left on an active pilot (at least 1), else null. */
+  pilotDaysLeft?: number | null;
 };
 
 const PLAN_LABELS: Record<string, string> = {
@@ -44,6 +47,10 @@ export function planDisplay(
       trialUsed: Math.min(1, Math.max(0, 1 - days / total)),
       growthFeatures: true,
     };
+  }
+  const pilotDays = pilotDaysLeft(ws, now);
+  if (pilotDays !== null) {
+    return { label: "Pilot", onTrial: false, trialDaysLeft: null, trialUsed: null, growthFeatures: true, pilotDaysLeft: pilotDays };
   }
   return {
     label: PLAN_LABELS[ws.planName] ?? humanize(ws.planName),

@@ -1158,11 +1158,6 @@ portal-nextjs-toast,
   transition: max-width 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.sidebar-collapsed .workspace-content {
-  max-width: 80rem;
-  /* expanded layout to show content more freely when sidebar is collapsed */
-}
-
 /* ────────────────────────────────────────────────────────────────────────
    Creator Storefront Themes
    ──────────────────────────────────────────────────────────────────────── */

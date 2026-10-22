@@ -6,7 +6,7 @@
  * ?section= URLs redirect from page.tsx.
  */
 import { useRouter } from "next/navigation";
-import WorkspaceOverview from "./WorkspaceOverview";
+import WorkspaceOverview, { type OverviewCredits } from "./WorkspaceOverview";
 import type { PlanDisplay } from "@/lib/workspace/display";
 import type { OverviewExtras } from "@/lib/workspace/overview";
 
@@ -125,6 +125,8 @@ type Props = {
   pendingInviteCount: number;
   /** Filters and the wider attention list on the Overview. */
   overviewExtras?: OverviewExtras;
+  /** AI credits, or null when the viewer cannot see billing. */
+  credits?: OverviewCredits | null;
   sessions: InterviewSessionItem[];
   candidates: CandidateItem[];
 };
@@ -141,6 +143,7 @@ export default function WorkspaceDashboardClient({
   memberCount,
   pendingInviteCount,
   overviewExtras,
+  credits = null,
   sessions,
   candidates,
 }: Props) {
@@ -164,6 +167,7 @@ export default function WorkspaceDashboardClient({
         takeHomeSessions={takeHomeSessions}
         aiInterviewSessions={aiInterviewSessions}
         extras={overviewExtras}
+        credits={credits}
         onAddCandidate={() => router.push(`/w/${workspace.slug}/candidates?add=1`)}
         onBulkImport={() => router.push(`/w/${workspace.slug}/candidates?import=1`)}
         onSendTakeHome={() => router.push(`/w/${workspace.slug}/take-homes/new`)}

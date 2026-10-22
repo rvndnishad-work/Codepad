@@ -55,7 +55,7 @@ export async function loadCreditSummary(workspaceId: string): Promise<CreditSumm
     }),
   ]);
   const held = heldCredits(pending, now);
-  return { balance, held, available: Math.max(0, balance - held), usedThisMonth: -(used._sum.amount ?? 0) };
+  return { balance, held, available: Math.max(0, balance - held), usedThisMonth: Math.max(0, -(used._sum.amount ?? 0)) };
 }
 
 /* ── Review queue ────────────────────────────────────────────────────────── */

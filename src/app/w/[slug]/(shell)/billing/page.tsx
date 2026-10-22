@@ -17,6 +17,7 @@ import { settingsAccess } from "@/lib/workspace/settings-server";
 import BillingClient, { type BillingTab } from "./BillingClient";
 import type { UsageData } from "./UsageTab";
 import { razorpayConfigured } from "@/lib/razorpay";
+import { getUsdInrRate } from "@/lib/billing/fx";
 import { INCLUDED_CREDITS_PER_SEAT, addOneMonth, planIncludesCredits } from "@/lib/billing/included-credits";
 
 type Props = {
@@ -130,6 +131,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
       // Razorpay takes credit packs when its keys are set; Stripe otherwise.
       checkout: razorpayConfigured() ? "razorpay" : process.env.STRIPE_SECRET_KEY ? "stripe" : null,
+      // Razorpay charges rupees at the day's rate; shown next to the $ price.
+      inrRate: razorpayConfigured() ? ((await getUsdInrRate())?.rate ?? null) : null,
     };
   }
 

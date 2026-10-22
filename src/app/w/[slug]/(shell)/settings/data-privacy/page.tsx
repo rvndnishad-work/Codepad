@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getSettingsPageContext } from "@/lib/workspace/settings-server";
 import { formatWorkspaceDate } from "@/lib/workspace/settings";
-import { planRetentionStep, retentionCutoff, withRetentionDefaults } from "@/lib/workspace/data-privacy";
-import { countForRule } from "@/lib/workspace/data-privacy-server";
+import { planRetentionStep, retentionCutoff, withRetentionDefaults, workspaceIsEmpty } from "@/lib/workspace/data-privacy";
+import { countForRule, workspaceContentCounts } from "@/lib/workspace/data-privacy-server";
 import DataPrivacyClient, { type ExportRow, type RequestRow, type RuleRow } from "./DataPrivacyClient";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -25,7 +25,7 @@ export default async function DataAndPrivacySettingsPage({ params }: Props) {
   const fmt = (d: Date | null, withTime = false) => (d ? formatWorkspaceDate(d, ctx.settings, withTime) : null);
 
   // Requests name candidates and exports hold everything, so only owners and admins see them.
-  const [ruleRows, requests, exports] = await Promise.all([
+  const [ruleRows, requests, exports, contents] = await Promise.all([
     prisma.retentionRule.findMany({ where: { workspaceId: wsId } }),
     !ctx.canEdit
       ? []
@@ -35,6 +35,8 @@ export default async function DataAndPrivacySettingsPage({ params }: Props) {
           take: 50,
         }),
     !ctx.canEdit ? [] : prisma.workspaceExport.findMany({ where: { workspaceId: wsId }, orderBy: { createdAt: "desc" }, take: 5 }),
+    // Owners may delete a workspace that holds no work straight away.
+    ctx.owner ? workspaceContentCounts(wsId) : null,
   ]);
 
   const userIds = [
@@ -93,6 +95,7 @@ export default async function DataAndPrivacySettingsPage({ params }: Props) {
       workspaceName={ctx.workspace.name}
       canEdit={ctx.canEdit}
       owner={ctx.owner}
+      empty={!!contents && workspaceIsEmpty(contents)}
       now={now.toISOString()}
       rules={ruleView}
       requests={requestView}

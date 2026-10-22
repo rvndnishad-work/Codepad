@@ -230,16 +230,26 @@ export function setupStepAction(
 export const SETUP_ROLES = ["OWNER", "ADMIN", "RECRUITER"] as const;
 
 export type HubRowState =
+  | { kind: "deleting"; finalAt: Date }
   | { kind: "review"; count: number }
   | { kind: "setup"; done: number; total: number; next: SetupStep }
   | { kind: "open" };
 
 /**
- * What a workspace row on the hub shows on its right side: finished work
- * waiting for a decision comes first, then setup progress (only for people
+ * What a workspace row on the hub shows on its right side: a scheduled
+ * deletion overrides everything (nobody can use the workspace), then
+ * finished work waiting for a decision, then setup progress (only for people
  * who can act on it, and only before the first candidate), else nothing.
  */
-export function hubRowState(input: { role: string; candidates: number; toReview: number; steps: SetupStep[] }): HubRowState {
+export function hubRowState(input: {
+  role: string;
+  candidates: number;
+  toReview: number;
+  steps: SetupStep[];
+  /** When the 30-day undo window ends, if a deletion is scheduled. */
+  deletionFinalAt?: Date | null;
+}): HubRowState {
+  if (input.deletionFinalAt) return { kind: "deleting", finalAt: input.deletionFinalAt };
   if (input.toReview > 0) return { kind: "review", count: input.toReview };
   const canSetUp = (SETUP_ROLES as readonly string[]).includes(input.role);
   const next = nextSetupStep(input.steps);

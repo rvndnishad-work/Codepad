@@ -27,7 +27,9 @@ import {
   redactMeta,
   toCsv,
   withRetentionDefaults,
+  workspaceIsEmpty,
   type CandidateDataCounts,
+  type WorkspaceContentCounts,
 } from "./data-privacy";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -885,24 +887,59 @@ export async function workspacesDueForErase(now = new Date(), take = 10) {
   });
 }
 
+/** How much the workspace holds, for the "delete now" shortcut on empty ones. */
+export async function workspaceContentCounts(workspaceId: string): Promise<WorkspaceContentCounts> {
+  const [candidates, interviews, takeHomes, screenings] = await Promise.all([
+    prisma.candidate.count({ where: { workspaceId } }),
+    prisma.interviewSession.count({ where: { workspaceId } }),
+    prisma.takeHomeAssignment.count({ where: { workspaceId } }),
+    prisma.aIInterviewSession.count({ where: { workspaceId } }),
+  ]);
+  return { candidates, interviews, takeHomes, screenings };
+}
+
+type EraseResult = { ok: true } | { ok: false; error: string };
+type EraseTarget = { id: string; name: string; stripeSubscriptionId: string | null };
+const ERASE_SELECT = { id: true, name: true, stripeSubscriptionId: true, deletionScheduledAt: true } as const;
+
 /**
- * Erase a workspace for good. Cancels its subscription first (and stops if
- * that fails, so nobody keeps paying for a workspace that is gone), then
- * removes records that are not cleaned up by the database on their own:
- * interviews, take-home attempts, workspace questions and the email log.
- * Everything else goes with the workspace row.
+ * Erase a workspace for good once its 30-day undo window has passed.
+ * Cancels its subscription first (and stops if that fails, so nobody keeps
+ * paying for a workspace that is gone), then removes records that are not
+ * cleaned up by the database on their own: interviews, take-home attempts,
+ * workspace questions and the email log. Everything else goes with the
+ * workspace row.
  */
-export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  const ws = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-    select: { id: true, name: true, stripeSubscriptionId: true, deletionScheduledAt: true },
-  });
+export async function eraseWorkspace(workspaceId: string): Promise<EraseResult> {
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: ERASE_SELECT });
   if (!ws) return { ok: true };
   if (!ws.deletionScheduledAt) return { ok: false, error: "Deletion was cancelled." };
   // Never before the undo window has passed, whoever calls this.
   if (ws.deletionScheduledAt.getTime() + DELETION_GRACE_DAYS * DAY_MS > Date.now())
     return { ok: false, error: "The undo window has not passed yet." };
+  return eraseWorkspaceRows(ws, [
+    `The ${DELETION_GRACE_DAYS}-day window to undo it has passed, so the workspace and its candidates, screenings, interviews and settings are now erased. This cannot be undone.`,
+  ]);
+}
 
+/**
+ * Erase an empty workspace straight away, skipping the undo window: with no
+ * candidates, interviews, take-homes or screenings there is nothing the
+ * window would protect. The emptiness check happens here, right before the
+ * erase, so a stale page cannot delete work that arrived in the meantime.
+ */
+export async function eraseEmptyWorkspaceNow(workspaceId: string, by: string): Promise<EraseResult> {
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: ERASE_SELECT });
+  if (!ws) return { ok: true };
+  if (!workspaceIsEmpty(await workspaceContentCounts(workspaceId)))
+    return { ok: false, error: `This workspace has candidates or interviews, so it is kept for ${DELETION_GRACE_DAYS} days before it is erased.` };
+  return eraseWorkspaceRows(ws, [
+    `${by} deleted the workspace. It had no candidates, interviews or screenings, so there was nothing to keep and it was erased straight away. This cannot be undone.`,
+  ]);
+}
+
+async function eraseWorkspaceRows(ws: EraseTarget, paragraphs: string[]): Promise<EraseResult> {
+  const workspaceId = ws.id;
   if (ws.stripeSubscriptionId) {
     try {
       const { getStripe } = await import("@/lib/stripe");
@@ -942,10 +979,7 @@ export async function eraseWorkspace(workspaceId: string): Promise<{ ok: true } 
         subject: `${ws.name} has been deleted`,
         badge: "Workspace deleted",
         heading: `${ws.name} has been deleted.`,
-        paragraphs: [
-          `The ${DELETION_GRACE_DAYS}-day window to undo it has passed, so the workspace and its candidates, screenings, interviews and settings are now erased. This cannot be undone.`,
-          ...(ws.stripeSubscriptionId ? ["The subscription was cancelled, so there are no further charges."] : []),
-        ],
+        paragraphs: [...paragraphs, ...(ws.stripeSubscriptionId ? ["The subscription was cancelled, so there are no further charges."] : [])],
         cta: null,
         footer: "You get this because you were an owner or admin of this workspace on Intervutree.",
       },

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowRight, Building2, Mail, Plus, UserPlus } from "lucide-react";
+import { ArrowRight, Building2, Mail, Plus, Trash2, UserPlus } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isStaff } from "@/lib/permissions/staff";
@@ -17,9 +17,13 @@ import {
   type PlanDisplay,
 } from "@/lib/workspace/display";
 import { countReviewQueue } from "@/lib/workspace/review-queue";
+import { deletionFinalAt, formatWorkspaceDate, type DateFormat } from "@/lib/workspace/settings";
+import { canMember } from "@/lib/permissions";
 import { effectivePlan } from "@/lib/billing/trial";
 import WorkspaceAppBar, { WorkspaceInitial } from "./_components/WorkspaceAppBar";
 import JoinWorkspaceButton from "./_components/JoinWorkspaceButton";
+import RestoreWorkspaceButton from "./_components/RestoreWorkspaceButton";
+import HubNotice from "./_components/HubNotice";
 import { findJoinableWorkspaces } from "@/lib/workspace/join";
 
 export const metadata: Metadata = {
@@ -53,9 +57,11 @@ type Row = {
   /** "Active 5 min ago" once there is candidate activity, else "Created yesterday". */
   activity: string;
   activityAt: number;
+  /** Set while the workspace waits out its deletion window. */
+  deleting: { finalAt: string; byYou: boolean; since: string; canRestore: boolean } | null;
 };
 
-export default async function WorkspaceHubPage() {
+export default async function WorkspaceHubPage({ searchParams }: { searchParams: Promise<{ deleted?: string; removed?: string }> }) {
   const session = await auth().catch(() => null);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent("/w")}`);
@@ -68,6 +74,7 @@ export default async function WorkspaceHubPage() {
       orderBy: { workspace: { name: "asc" } },
       select: {
         role: true,
+        permissions: true,
         workspace: {
           select: {
             id: true,
@@ -77,6 +84,10 @@ export default async function WorkspaceHubPage() {
             trialEndsAt: true,
             stripeSubscriptionId: true,
             createdAt: true,
+            deletionScheduledAt: true,
+            deletionRequestedById: true,
+            timezone: true,
+            dateFormat: true,
             _count: {
               select: {
                 members: true,
@@ -115,7 +126,7 @@ export default async function WorkspaceHubPage() {
   const memberships = allMemberships.filter((m) => !m.workspace.slug.startsWith("__"));
   const reviewCounts = await Promise.all(memberships.map((m) => countReviewQueue(m.workspace.id)));
 
-  const rows: Row[] = memberships.map(({ role, workspace: ws }, i) => {
+  const rows: Row[] = await Promise.all(memberships.map(async ({ role, permissions, workspace: ws }, i) => {
     const plan = planDisplay(ws);
     const c = ws._count;
     const steps = setupSteps(
@@ -130,29 +141,49 @@ export default async function WorkspaceHubPage() {
     );
     const lastCandidate = ws.candidates[0]?.updatedAt ?? null;
     const activityAt = lastCandidate ?? ws.createdAt;
+    const finalAt = deletionFinalAt(ws);
+    const deleting =
+      finalAt && ws.deletionScheduledAt
+        ? {
+            finalAt: formatWorkspaceDate(finalAt, { timezone: ws.timezone, dateFormat: ws.dateFormat as DateFormat }),
+            byYou: ws.deletionRequestedById === userId,
+            since: lowerFirst(relativeTime(ws.deletionScheduledAt)),
+            canRestore: await canMember({ role, permissions }, "workspace:manage"),
+          }
+        : null;
     return {
       name: ws.name,
       slug: ws.slug,
       role,
       plan,
       candidates: c.candidates,
-      state: hubRowState({ role, candidates: c.candidates, toReview: reviewCounts[i], steps }),
+      state: hubRowState({ role, candidates: c.candidates, toReview: reviewCounts[i], steps, deletionFinalAt: finalAt }),
       activity: `${lastCandidate ? "Active" : "Created"} ${lowerFirst(relativeTime(activityAt))}`,
       activityAt: activityAt.getTime(),
+      deleting,
     };
-  });
+  }));
 
-  // Work waiting for a decision first, then whatever was touched most recently.
+  // Work waiting for a decision first, then whatever was touched most
+  // recently; workspaces on their way out go last.
   rows.sort((a, b) => {
+    const da = a.deleting ? 1 : 0;
+    const db = b.deleting ? 1 : 0;
     const ra = a.state.kind === "review" ? a.state.count : 0;
     const rb = b.state.kind === "review" ? b.state.count : 0;
-    return rb - ra || b.activityAt - a.activityAt;
+    return da - db || rb - ra || b.activityAt - a.activityAt;
   });
 
   const user = { name: session.user.name, email: session.user.email, image: session.user.image };
-  const switcher = rows.map((r) => ({ name: r.name, slug: r.slug, planLabel: r.plan.label }));
+  const switcher = rows.map((r) => ({ name: r.name, slug: r.slug, planLabel: r.deleting ? "Deleting" : r.plan.label }));
   const attention = invites.length + joinable.length;
   const only = rows.length === 1 ? rows[0] : null;
+  // Every workspace this person has is being deleted: creating one is the way forward.
+  const allDeleting = rows.length > 0 && rows.every((r) => r.deleting);
+  const query = await searchParams;
+  const justDeleted = rows.find((r) => r.deleting && r.slug === query.deleted) ?? null;
+  // Only the name, trimmed to a sane length: it came from the URL.
+  const justRemoved = query.removed?.trim().slice(0, 80) || null;
 
   return (
     <div className="min-h-dvh bg-bg text-fg font-sans flex flex-col">
@@ -162,7 +193,7 @@ export default async function WorkspaceHubPage() {
         <div className="flex items-center justify-between gap-4 mb-2">
           <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em]">Workspaces</h1>
           {rows.length > 0 && (
-            <Link href="/w/create" className={BTN_OUTLINE}>
+            <Link href="/w/create" className={allDeleting ? BTN_PRIMARY : BTN_OUTLINE}>
               <Plus className="w-4 h-4" strokeWidth={2.25} aria-hidden />
               New workspace
             </Link>
@@ -242,9 +273,11 @@ export default async function WorkspaceHubPage() {
 
         <footer className="mt-4 pt-5 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[13px] text-subtle">
           <p>
-            {invites.length === 0
-              ? "Invitations from teammates appear on this page when you sign in with the invited email."
-              : "Each workspace keeps its own candidates, assessments, members and billing."}
+            {allDeleting
+              ? "Need a fresh start? Create a new workspace; the trial starts again."
+              : invites.length === 0
+                ? "Invitations from teammates appear on this page when you sign in with the invited email."
+                : "Each workspace keeps its own candidates, assessments, members and billing."}
           </p>
           <Link
             href="/hire"
@@ -254,6 +287,7 @@ export default async function WorkspaceHubPage() {
           </Link>
         </footer>
       </main>
+      {justDeleted ? <HubNotice slug={justDeleted.slug} name={justDeleted.name} /> : justRemoved ? <HubNotice removed={justRemoved} /> : null}
     </div>
   );
 }
@@ -296,6 +330,7 @@ function AttentionRow({
 
 function WorkspaceRow({ row, hideNext }: { row: Row; hideNext?: boolean }) {
   const { state } = row;
+  if (row.deleting) return <DeletingRow row={row} deleting={row.deleting} />;
   const fact =
     state.kind === "setup"
       ? hideNext
@@ -344,6 +379,45 @@ function WorkspaceRow({ row, hideNext }: { row: Row; hideNext?: boolean }) {
           )}
         </div>
       </div>
+    </li>
+  );
+}
+
+/**
+ * A workspace inside its deletion window: nobody can use it, so the row
+ * shows only that and the way back. It still opens the deletion screen, so
+ * links from the email keep working.
+ */
+function DeletingRow({ row, deleting }: { row: Row; deleting: NonNullable<Row["deleting"]> }) {
+  return (
+    <li className="relative border-t border-border first:border-t-0">
+      <div className="grid grid-cols-[40px_minmax(0,1fr)] sm:grid-cols-[44px_minmax(0,1fr)_auto] gap-x-4 gap-y-3 items-center px-4 sm:px-5 py-4">
+        <span className="opacity-50">
+          <WorkspaceInitial name={row.name} size="lg" />
+        </span>
+        <div className="min-w-0">
+          <Link href={`/w/${row.slug}`} className="text-[15px] font-semibold text-muted hover:text-fg transition-colors">
+            {row.name}
+          </Link>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-subtle">
+            <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11.5px] font-medium bg-danger/10 border border-danger/30 text-danger">
+              <Trash2 className="w-3 h-3" aria-hidden />
+              Deleting · erased {deleting.finalAt}
+            </span>
+            <span>{deleting.byYou ? `You scheduled this ${deleting.since}` : `Scheduled by an owner ${deleting.since}`}</span>
+          </p>
+        </div>
+        <div className="col-start-2 sm:col-start-3 flex items-center sm:justify-end">
+          {deleting.canRestore ? (
+            <RestoreWorkspaceButton slug={row.slug} name={row.name} className="flex-1 sm:flex-none" />
+          ) : (
+            <span className="text-[13px] text-subtle">Ask an owner to restore it</span>
+          )}
+        </div>
+      </div>
+      <p className="px-4 sm:px-5 pb-4 -mt-1 text-[13px] text-subtle">
+        Nobody can use {row.name} until it is restored. Its candidates, screenings and settings are kept until {deleting.finalAt}.
+      </p>
     </li>
   );
 }

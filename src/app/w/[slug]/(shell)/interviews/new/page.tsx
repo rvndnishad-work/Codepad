@@ -33,7 +33,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
   });
   if (!workspace) notFound();
   const member = workspace.members[0];
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
   if (!(await canMember(member, "interview:conduct"))) redirect(`/w/${slug}/interviews`);
 
   const [data, settings, canBill] = await Promise.all([loadWizardData(workspace.id, session.user.id), loadWorkspaceSettings(workspace.id), canMember(member, "billing:manage")]);

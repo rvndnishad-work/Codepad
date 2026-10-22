@@ -49,7 +49,7 @@ export default async function QuestionLibraryPage({ params, searchParams }: Prop
   const actor = await resolveLibraryActor(slug).catch((err) => {
     if (err instanceof LibraryError && err.status === 401) redirect(`/login?next=/w/${slug}/library`);
     if (err instanceof LibraryError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
 
   const tab = TABS.includes(sp.tab as LibraryTab) ? (sp.tab as LibraryTab) : "questionnaires";

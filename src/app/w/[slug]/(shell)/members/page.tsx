@@ -57,7 +57,7 @@ export default async function MembersPage({ params, searchParams }: Props) {
   if (!workspace) notFound();
 
   const me = workspace.members.find((m) => m.userId === session.user.id);
-  if (!me) redirect("/dashboard");
+  if (!me) redirect("/w");
   if (!(await canMember(me, "member:read"))) redirect(`/w/${slug}`);
 
   const now = new Date();

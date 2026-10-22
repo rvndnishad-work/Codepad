@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const origin = await appOrigin();
   const state = verifySlackState(sp.get("state"));
-  if (!state) return NextResponse.redirect(`${origin}/dashboard`);
+  if (!state) return NextResponse.redirect(`${origin}/w`);
 
   const page = `${origin}/w/${encodeURIComponent(state.slug)}/alerts`;
   const back = (error: string) => NextResponse.redirect(`${page}?error=${encodeURIComponent(error)}`);

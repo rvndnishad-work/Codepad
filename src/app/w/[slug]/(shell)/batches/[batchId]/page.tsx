@@ -19,7 +19,7 @@ export default async function BatchPage({ params }: Props) {
   const actor = await resolveCandidateActor(slug).catch((err) => {
     if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/batches/${batchId}`);
     if (err instanceof CandidateError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
   const batch = await prisma.candidateBatch.findFirst({
     where: { id: batchId, workspaceId: actor.workspaceId },

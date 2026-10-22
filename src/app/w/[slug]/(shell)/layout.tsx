@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { movedPagePath, movedWorkspaceSlug } from "@/lib/workspace/slug-redirect";
 import { isStaff } from "@/lib/permissions/staff";
 import { ensureTotpEnrolledOrRedirect } from "@/lib/totp-gate";
-import { canJoinWithoutInvite, deletionFinalAt, formatWorkspaceDate, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
+import { deletionFinalAt, formatWorkspaceDate, normalizeWorkspaceSettings, signInExpired, twoFactorRequired } from "@/lib/workspace/settings";
 import { signedOutPath } from "@/lib/workspace/security";
 import { canMember } from "@/lib/permissions";
 import WorkspaceShell from "./WorkspaceShell";
@@ -55,10 +55,10 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   const myMember = activeWorkspace.members.find((m) => m.userId === userId);
   const myRole = myMember?.role;
   if (!myMember || !myRole) {
-    // Settings > Security can let people with a company email join without
-    // an invite; the workspace hub lists the ones they can join.
-    const email = session.user.email ?? "";
-    redirect(email && canJoinWithoutInvite(settings, email) && !slug.startsWith("__") ? "/w" : "/dashboard");
+    // Back to the workspace hub, never the developer site's /dashboard: on
+    // the recruiter domain that path moves to the developer domain. The hub
+    // lists invites and the workspaces a company email can join without one.
+    redirect("/w");
   }
 
   // Locked by an Intervutree admin: members are refused, data is kept.

@@ -45,7 +45,7 @@ export default async function AlertsPage({ params, searchParams }: Props) {
   });
   if (!workspace) notFound();
   const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
 
   if (!growthToolsEnabled(workspace)) {
     return (

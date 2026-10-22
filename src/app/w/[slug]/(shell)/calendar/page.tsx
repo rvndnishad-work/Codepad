@@ -37,7 +37,7 @@ export default async function CalendarPage({ params, searchParams }: Props) {
   });
   if (!workspace) notFound();
   const me = workspace.members.find((m) => m.userId === session.user.id);
-  if (!me) redirect("/dashboard");
+  if (!me) redirect("/w");
 
   const rows: MemberRow[] = workspace.members
     .filter((m) => m.role !== "VIEWER")

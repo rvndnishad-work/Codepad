@@ -38,7 +38,7 @@ export async function loadAiAccess(slug: string, path: string): Promise<AiAccess
   });
   if (!workspace) notFound();
   const member = workspace.members[0];
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
 
   if (!effectivePlanAllowsAiScreening(workspace)) return { gate: <PlanGate slug={slug} /> };
 

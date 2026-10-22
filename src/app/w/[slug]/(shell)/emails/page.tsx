@@ -52,7 +52,7 @@ export default async function WorkspaceEmailsPage({ params, searchParams }: Prop
   if (!workspace) notFound();
 
   const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
   // Same compliance gating as the audit log.
   if (!(await canMember(member, "email:read"))) {
     redirect(`/w/${slug}`);

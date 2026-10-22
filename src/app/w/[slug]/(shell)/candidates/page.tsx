@@ -13,7 +13,7 @@ export default async function CandidatesPage({ params }: Props) {
   const actor = await resolveCandidateActor(slug).catch((err) => {
     if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/candidates`);
     if (err instanceof CandidateError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
 
   const [rows, lookups, perms, workspace] = await Promise.all([

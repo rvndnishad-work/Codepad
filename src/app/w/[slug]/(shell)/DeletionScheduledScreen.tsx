@@ -60,8 +60,8 @@ export default function DeletionScheduledScreen({
               <Btn variant="primary" size="md" onClick={undo} disabled={busy}>
                 {busy ? "Undoing" : "Keep this workspace"}
               </Btn>
-              <Btn size="md" href="/dashboard">
-                Go to your dashboard
+              <Btn size="md" href="/w">
+                Go to your workspaces
               </Btn>
             </div>
             {error && (
@@ -73,8 +73,8 @@ export default function DeletionScheduledScreen({
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-muted">If this is a mistake, ask an owner of the workspace to undo it before that date.</p>
-            <Link href="/dashboard" className="text-sm font-medium text-secondary hover:underline self-start">
-              Go to your dashboard
+            <Link href="/w" className="text-sm font-medium text-secondary hover:underline self-start">
+              Go to your workspaces
             </Link>
           </div>
         )}

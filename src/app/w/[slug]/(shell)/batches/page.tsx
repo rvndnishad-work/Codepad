@@ -14,7 +14,7 @@ export default async function BatchesPage({ params }: Props) {
   const actor = await resolveCandidateActor(slug).catch((err) => {
     if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/batches`);
     if (err instanceof CandidateError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
   const [batches, rows, lookups, perms] = await Promise.all([
     prisma.candidateBatch.findMany({

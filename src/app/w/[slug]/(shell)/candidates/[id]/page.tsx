@@ -27,7 +27,7 @@ export default async function CandidateProfilePage({ params, searchParams }: Pro
   const actor = await resolveCandidateActor(slug).catch((err) => {
     if (err instanceof CandidateError && err.status === 401) redirect(`/login?next=/w/${slug}/candidates/${id}`);
     if (err instanceof CandidateError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
 
   const [rows, lookups, perms, notes, audit, candidate, ats, canSendAi, canSendTakeHome] = await Promise.all([

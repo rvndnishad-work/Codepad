@@ -20,13 +20,13 @@ export default function JoinWorkspaceButton({ slug, name }: { slug: string; name
     });
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-stretch sm:items-end gap-1">
       <button
         type="button"
         onClick={join}
         disabled={pending}
         aria-label={`Join ${name}`}
-        className="h-8 inline-flex items-center px-3 rounded-lg bg-secondary text-bg text-[13px] font-medium hover:brightness-110 transition disabled:opacity-50"
+        className="h-11 sm:h-9 inline-flex items-center justify-center px-3.5 rounded-lg border border-border-strong text-sm sm:text-[13px] font-medium text-fg hover:bg-panel hover:border-fg/40 transition-colors disabled:opacity-50"
       >
         {pending ? "Joining" : "Join"}
       </button>

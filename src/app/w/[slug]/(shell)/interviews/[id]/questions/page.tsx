@@ -29,7 +29,7 @@ export default async function InterviewQuestionsPage({ params }: Props) {
   });
   if (!workspace) notFound();
   const member = workspace.members[0];
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
 
   const s = await prisma.interviewSession.findFirst({
     where: { id, workspaceId: workspace.id, type: "live" },

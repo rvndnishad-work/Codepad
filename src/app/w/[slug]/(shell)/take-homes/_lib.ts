@@ -30,7 +30,7 @@ export async function loadTakeHomeAccess(slug: string, path: string): Promise<Ta
   });
   if (!workspace) notFound();
   const member = workspace.members[0];
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
   const [canCreate, canDecide] = await Promise.all([canMember(member, "takehome:create"), canMember(member, "candidate:write")]);
   return { workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug }, userId: session.user.id, canCreate, canDecide };
 }

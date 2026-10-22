@@ -36,7 +36,7 @@ export default async function AtsIntegrationPage({ params }: Props) {
   if (!workspace) notFound();
 
   const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
 
   const isAdmin = await canMember(member, "integration:manage");
   const planAllowed = growthToolsEnabled(workspace);

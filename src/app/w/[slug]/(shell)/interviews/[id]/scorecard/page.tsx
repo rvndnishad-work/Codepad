@@ -19,7 +19,7 @@ export default async function ScorecardPage({ params }: Props) {
     select: { id: true, members: { where: { userId: session.user.id }, select: { id: true } } },
   });
   if (!workspace) notFound();
-  if (!workspace.members[0]) redirect("/dashboard");
+  if (!workspace.members[0]) redirect("/w");
 
   const s = await prisma.interviewSession.findFirst({ where: { id, workspaceId: workspace.id, type: { not: "take-home" } }, select: { id: true } });
   if (!s) notFound();

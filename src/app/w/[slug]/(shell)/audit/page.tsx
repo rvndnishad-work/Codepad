@@ -52,7 +52,7 @@ export default async function WorkspaceAuditPage({ params, searchParams }: Props
   if (!workspace) notFound();
 
   const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
   // Audit log is a compliance surface, not for everyone.
   if (!(await canMember(member, "audit:read"))) {
     redirect(`/w/${slug}`);

@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ provider
   if (!isCalendarProvider(provider)) return NextResponse.json({ error: "unknown provider" }, { status: 404 });
 
   const state = verifyState(url.searchParams.get("state"));
-  if (!state || state.p !== provider) return NextResponse.redirect(`${origin}/dashboard`);
+  if (!state || state.p !== provider) return NextResponse.redirect(`${origin}/w`);
   // Success returns to where the member came from; problems land on the Calendar page.
   const done = (q: string) => {
     const path = state.r && !q.startsWith("error") ? state.r : `/w/${encodeURIComponent(state.s)}/calendar`;

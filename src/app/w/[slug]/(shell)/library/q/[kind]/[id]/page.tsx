@@ -32,7 +32,7 @@ export default async function QuestionDetailPage({ params }: Props) {
   const actor = await resolveLibraryActor(slug).catch((err) => {
     if (err instanceof LibraryError && err.status === 401) redirect(`/login?next=/w/${slug}/library/q/${kind}/${id}`);
     if (err instanceof LibraryError && err.status === 404) notFound();
-    redirect("/dashboard");
+    redirect("/w");
   });
   const ws = actor.workspaceId;
   const common = { slug, canManage: actor.canManage, aiReady: variantsConfigured() };

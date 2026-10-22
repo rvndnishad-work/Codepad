@@ -21,7 +21,7 @@ export async function connectionsViewer(slug: string, path: string) {
   });
   if (!workspace) notFound();
   const member = workspace.members.find((m) => m.userId === session.user.id);
-  if (!member) redirect("/dashboard");
+  if (!member) redirect("/w");
   const [canManage, canSendAi, canSendTakeHome] = await Promise.all([
     canMember(member, "integration:manage"),
     canMember(member, "interview:conduct"),

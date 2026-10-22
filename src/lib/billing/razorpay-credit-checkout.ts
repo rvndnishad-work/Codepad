@@ -69,6 +69,16 @@ export async function createRazorpayCreditOrder(a: {
     },
   });
 
+  // Prices are in US cents. An order in any other currency would charge the
+  // same number in that currency's units (2900 as INR is Rs 29, not $29).
+  if (order.currency !== RAZORPAY_CREDIT_CURRENCY || Number(order.amount) !== amount) {
+    console.error(`[billing] Razorpay returned order ${order.id} as ${order.amount} ${order.currency}, expected ${amount} ${RAZORPAY_CREDIT_CURRENCY}.`);
+    throw new RazorpayCheckoutError(
+      "Card payments in US dollars are not switched on for this account yet. Nothing was charged.",
+      503,
+    );
+  }
+
   return {
     order_id: order.id,
     amount: Number(order.amount),
@@ -98,6 +108,9 @@ export async function fulfillRazorpayCreditPayment(a: {
   const notes = (order.notes ?? {}) as Record<string, string | number | undefined>;
   if (notes.kind !== KIND || notes.workspaceId !== a.workspaceId) {
     throw new RazorpayCheckoutError("This payment belongs to a different workspace.", 403);
+  }
+  if (order.currency !== RAZORPAY_CREDIT_CURRENCY) {
+    throw new RazorpayCheckoutError(`This order was in ${order.currency}, not ${RAZORPAY_CREDIT_CURRENCY}, so no credits were added.`);
   }
   const credits = Number(notes.credits);
   if (!Number.isInteger(credits) || credits <= 0) {

@@ -59,6 +59,11 @@ describe("createRazorpayCreditOrder", () => {
     expect(res).toMatchObject({ order_id: "order_A", amount: pack.priceCents, currency: "USD", key_id: "rzp_test_x" });
   });
 
+  it("refuses an order Razorpay made in another currency", async () => {
+    rzp.orders.create.mockResolvedValue({ id: "order_B", amount: pack.priceCents, currency: "INR" });
+    await expect(createRazorpayCreditOrder({ workspace: ws, packId: pack.id, keyId: "k" })).rejects.toMatchObject({ status: 503 });
+  });
+
   it("rejects an unknown pack", async () => {
     await expect(createRazorpayCreditOrder({ workspace: ws, packId: "nope", keyId: "k" })).rejects.toThrow("Unknown credit pack");
   });
@@ -85,6 +90,15 @@ describe("fulfillRazorpayCreditPayment", () => {
     await expect(
       fulfillRazorpayCreditPayment({ workspaceId: "ws_other", orderId: "order_A", paymentId: "pay_A", signature: sig }),
     ).rejects.toMatchObject({ status: 403 });
+    expect(recordPurchase).not.toHaveBeenCalled();
+  });
+
+  it("credits nothing for an order that is not in USD", async () => {
+    rzp.orders.fetch.mockResolvedValue({ ...order, currency: "INR" });
+    rzp.payments.fetch.mockResolvedValue({ id: "pay_A", order_id: "order_A", amount: pack.priceCents, currency: "INR", status: "captured" });
+    await expect(
+      fulfillRazorpayCreditPayment({ workspaceId: ws.id, orderId: "order_A", paymentId: "pay_A", signature: sig }),
+    ).rejects.toMatchObject({ status: 400 });
     expect(recordPurchase).not.toHaveBeenCalled();
   });
 

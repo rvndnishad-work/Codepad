@@ -16,6 +16,7 @@ import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
 import { settingsAccess } from "@/lib/workspace/settings-server";
 import BillingClient, { type BillingTab } from "./BillingClient";
 import type { UsageData } from "./UsageTab";
+import { razorpayConfigured } from "@/lib/razorpay";
 import { INCLUDED_CREDITS_PER_SEAT, addOneMonth, planIncludesCredits } from "@/lib/billing/included-credits";
 
 type Props = {
@@ -127,6 +128,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       canEditAlert: access.canEdit,
       aiScreening,
       purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
+      // Razorpay takes credit packs when its keys are set; Stripe otherwise.
+      checkout: razorpayConfigured() ? "razorpay" : process.env.STRIPE_SECRET_KEY ? "stripe" : null,
     };
   }
 

@@ -108,7 +108,7 @@ export default function BillingClient(props: Props) {
       />
 
       {tab === "usage" && props.usage ? (
-        <UsageTab slug={slug} data={props.usage} canManage={canManage} stripeConfigured={stripeConfigured} notify={toast} />
+        <UsageTab slug={slug} data={props.usage} canManage={canManage} notify={toast} />
       ) : tab === "plan" ? (
         <>
           <section className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-wrap items-center gap-5">

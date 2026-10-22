@@ -37,7 +37,7 @@ export default async function MembersPage({ params, searchParams }: Props) {
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       allowedEmailDomains: true,
       require2faForAll: true,

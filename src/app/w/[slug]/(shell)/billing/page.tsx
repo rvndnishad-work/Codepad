@@ -3,7 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
-import { growthToolsEnabled, trialActive } from "@/lib/billing/trial";
+import { growthToolsEnabled, prepaidActive, trialActive } from "@/lib/billing/trial";
+import { minPrepaidSeats, parseCadence } from "@/lib/billing/prepaid";
+import type { GrowthCheckoutData } from "./GrowthCheckout";
 import { videoAddonAvailable } from "@/lib/video/addon";
 import { subscriptionBilling } from "@/lib/video/addon-server";
 import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
@@ -22,7 +24,7 @@ import { INCLUDED_CREDITS_PER_SEAT, addOneMonth, planIncludesCredits } from "@/l
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ tab?: string; page?: string; billing_success?: string; billing_cancel?: string; credits_purchase?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; upgrade?: string; cadence?: string; billing_success?: string; billing_cancel?: string; credits_purchase?: string }>;
 };
 
 export async function generateMetadata({ params }: Props) {
@@ -44,7 +46,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, prepaidCadence: true,
       stripeCustomerId: true,
       stripeSubscriptionId: true,
       lowCreditThreshold: true,
@@ -95,6 +97,27 @@ export default async function BillingPage({ params, searchParams }: Props) {
   const subscribed = Boolean(workspace.stripeCustomerId && workspace.stripeSubscriptionId);
   const aiScreening = growthToolsEnabled(workspace, now);
 
+  // Growth checkout: Razorpay (prepaid seats) when its keys are set, else
+  // Stripe. Not for subscribed or Enterprise workspaces, or viewers without
+  // billing:manage.
+  const rzp = razorpayConfigured();
+  const stripe = Boolean(process.env.STRIPE_SECRET_KEY);
+  const fx = rzp ? await getUsdInrRate() : null;
+  let growthCheckout: GrowthCheckoutData | null = null;
+  if (canManage && !subscribed && workspace.planName !== "ENTERPRISE" && (rzp || stripe)) {
+    growthCheckout = {
+      provider: rzp ? "razorpay" : "stripe",
+      price: { monthlyCents: pricing.growth.monthlyCents, annualMonthlyCents: pricing.growth.annualMonthlyCents },
+      inrRate: fx?.rate ?? null,
+      minSeats: minPrepaidSeats(workspace.members.length + pendingInvites),
+      initialCadence: parseCadence(sp.cadence ?? workspace.prepaidCadence),
+      prepaid:
+        rzp && workspace.prepaidThrough
+          ? { through: workspace.prepaidThrough.toISOString(), seats: workspace.prepaidSeats ?? 0, active: prepaidActive(workspace, now) }
+          : null,
+    };
+  }
+
   let usage: UsageData | null = null;
   if (tab === "usage") {
     const [summary, months, ledger, access] = await Promise.all([
@@ -130,9 +153,9 @@ export default async function BillingPage({ params, searchParams }: Props) {
       aiScreening,
       purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
       // Razorpay takes credit packs when its keys are set; Stripe otherwise.
-      checkout: razorpayConfigured() ? "razorpay" : process.env.STRIPE_SECRET_KEY ? "stripe" : null,
+      checkout: rzp ? "razorpay" : stripe ? "stripe" : null,
       // Razorpay charges rupees at the day's rate; shown next to the $ price.
-      inrRate: razorpayConfigured() ? ((await getUsdInrRate())?.rate ?? null) : null,
+      inrRate: fx?.rate ?? null,
     };
   }
 
@@ -168,7 +191,9 @@ export default async function BillingPage({ params, searchParams }: Props) {
         // A billed add-on keeps the price it was added at; otherwise the current price.
         priceCents: stripeBilling.addonCents ?? (interval === "year" ? pricing.videoAddon.annualCents : pricing.videoAddon.monthlyCents),
       }}
-      stripeConfigured={Boolean(process.env.STRIPE_SECRET_KEY)}
+      stripeConfigured={stripe}
+      growthCheckout={growthCheckout}
+      autoOpenGrowth={sp.upgrade === "growth"}
       compare={{
         plans: PLAN_ORDER.map((k) => ({
           key: k,

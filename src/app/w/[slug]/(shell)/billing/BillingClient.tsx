@@ -7,7 +7,7 @@
  */
 import Link from "next/link";
 import { Receipt } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Btn, useToasts } from "../candidates/_components/ui";
 import { plural } from "@/lib/workspace/display";
 import type { PlanSummary } from "@/lib/billing/summary";
@@ -15,6 +15,8 @@ import { TRIAL_DURATION_DAYS, TRIAL_SEAT_LIMIT } from "@/lib/billing/trial";
 import type { SeatUsage } from "@/lib/workspace/members";
 import UsageTab, { type UsageData } from "./UsageTab";
 import VideoAddonCard, { type VideoAddonData } from "./VideoAddonCard";
+import GrowthCheckout, { type GrowthCheckoutData } from "./GrowthCheckout";
+import type { PrepaidCadence } from "@/lib/billing/prepaid";
 import UnderlineTabs from "../_components/UnderlineTabs";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 import { creditHealth } from "@/lib/billing/credit-glance";
@@ -34,6 +36,10 @@ type Props = {
   canManage: boolean;
   subscribed: boolean;
   stripeConfigured: boolean;
+  /** How this viewer can choose or renew Growth; null when they cannot. */
+  growthCheckout: GrowthCheckoutData | null;
+  /** Arrived from the pricing page with Growth picked: open the checkout. */
+  autoOpenGrowth: boolean;
   video: VideoAddonData;
   compare: {
     plans: { key: string; name: string; price: string; seats: string }[];
@@ -47,16 +53,22 @@ export default function BillingClient(props: Props) {
   const { slug, tab, notice, summary, canManage, subscribed, stripeConfigured, planName } = props;
   const [toastNode, toast] = useToasts();
   const [loading, setLoading] = useState(false);
+  const growthCheckout = props.growthCheckout;
+  const [growthOpen, setGrowthOpen] = useState(Boolean(props.autoOpenGrowth && growthCheckout && tab === "plan"));
+
+  useEffect(() => {
+    if (growthOpen) document.getElementById("choose-growth")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [growthOpen]);
 
   // One endpoint: the Stripe customer portal when subscribed (plan changes,
-  // invoices, card), otherwise a Growth checkout.
-  async function openStripe() {
+  // invoices, card), otherwise a Growth checkout for the chosen period.
+  async function openStripe(cadence: PrepaidCadence = "monthly") {
     setLoading(true);
     try {
       const res = await fetch(`/api/w/${slug}/billing/session`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: "GROWTH", cadence: "monthly" }),
+        body: JSON.stringify({ plan: "GROWTH", cadence }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.url) throw new Error(data?.error ?? "Could not open billing. Try again in a moment.");
@@ -71,10 +83,16 @@ export default function BillingClient(props: Props) {
   let action: React.ReactNode = null;
   if (planName === "ENTERPRISE" && !subscribed) {
     action = <Btn href="/pricing">Talk to us</Btn>;
-  } else if (canManage && stripeConfigured) {
+  } else if (canManage && subscribed && stripeConfigured) {
     action = (
-      <Btn variant={subscribed ? "ghost" : "primary"} size="md" disabled={loading} onClick={openStripe}>
-        {loading ? "Opening" : subscribed ? "Manage billing" : "Choose Growth"}
+      <Btn variant="ghost" size="md" disabled={loading} onClick={() => openStripe()}>
+        {loading ? "Opening" : "Manage billing"}
+      </Btn>
+    );
+  } else if (growthCheckout && !growthOpen) {
+    action = (
+      <Btn variant={growthCheckout.prepaid?.active ? "ghost" : "primary"} size="md" disabled={loading} onClick={() => setGrowthOpen(true)}>
+        {growthCheckout.prepaid?.active ? "Renew or change seats" : growthCheckout.prepaid ? "Renew Growth" : "Choose Growth"}
       </Btn>
     );
   }
@@ -127,7 +145,10 @@ export default function BillingClient(props: Props) {
             {summary.trialUsed !== null && <TrialMeter used={summary.trialUsed} />}
             {action}
           </section>
-          {!stripeConfigured && canManage && planName !== "ENTERPRISE" && (
+          {growthOpen && growthCheckout && (
+            <GrowthCheckout slug={slug} data={growthCheckout} onStripe={openStripe} onClose={() => setGrowthOpen(false)} notify={toast} />
+          )}
+          {!growthCheckout && !subscribed && canManage && planName !== "ENTERPRISE" && (
             <p className="text-[13px] text-muted -mt-2">Online payments are not set up on this server yet, so plans cannot be changed here.</p>
           )}
 
@@ -161,7 +182,7 @@ export default function BillingClient(props: Props) {
                 slug={slug}
                 data={props.video}
                 canManage={canManage}
-                chooseGrowth={canManage && stripeConfigured && !subscribed && planName !== "ENTERPRISE" ? openStripe : null}
+                chooseGrowth={growthCheckout ? () => setGrowthOpen(true) : null}
                 notify={toast}
               />
             </div>
@@ -298,12 +319,15 @@ function InvoicesTab({
   subscribed,
   stripeConfigured,
   canManage,
+  growthCheckout,
   loading,
   openStripe,
 }: Props & { loading: boolean; openStripe: () => void }) {
   let body: React.ReactNode;
-  if (!stripeConfigured) {
+  if (!stripeConfigured && !growthCheckout?.prepaid) {
     body = "Online payments are not set up on this server yet, so there are no invoices to show.";
+  } else if (!subscribed && growthCheckout?.prepaid) {
+    body = "Growth was paid through Razorpay, which emails a receipt for each payment to the address used at checkout.";
   } else if (!subscribed) {
     body = "No invoices yet. They appear here once the workspace is on a paid plan.";
   } else if (!canManage) {
@@ -323,7 +347,7 @@ function InvoicesTab({
         <p className="text-sm text-muted">{body}</p>
       </div>
       {stripeConfigured && subscribed && canManage && (
-        <Btn variant="primary" size="md" disabled={loading} onClick={openStripe}>
+        <Btn variant="primary" size="md" disabled={loading} onClick={() => openStripe()}>
           {loading ? "Opening" : "Open invoices"}
         </Btn>
       )}

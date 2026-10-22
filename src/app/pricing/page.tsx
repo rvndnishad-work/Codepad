@@ -13,7 +13,8 @@ export const metadata = {
   alternates: { canonical: recruiterUrl("/pricing") },
 };
 
-export default async function PricingPage() {
+export default async function PricingPage({ searchParams }: { searchParams: Promise<{ cadence?: string }> }) {
+  const sp = await searchParams;
   const session = await auth().catch(() => null);
   await validatePageAccess("/pricing", session);
   const userId = session?.user?.id;
@@ -39,6 +40,7 @@ export default async function PricingPage() {
       packs={packs}
       annualSavingPercent={annualSavingPercent}
       lowestCreditPrice={lowestCreditPrice}
+      initialCadence={sp.cadence === "monthly" ? "monthly" : "annual"}
     />
   );
 }

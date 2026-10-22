@@ -29,7 +29,7 @@ export default async function WebhooksPage({ params, searchParams }: Props) {
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },

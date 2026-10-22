@@ -98,56 +98,73 @@ export async function createRazorpayCreditOrder(a: {
 
 export type RazorpayFulfillResult = { credits: number; recorded: boolean };
 
-export async function fulfillRazorpayCreditPayment(a: {
+/**
+ * Shared by every Razorpay checkout here: checks the signature, that the order
+ * is ours (kind and workspace in its notes) and in rupees, and that the
+ * payment is captured for the full order. Captures an authorized payment.
+ * Returns the order and its notes. Throws RazorpayCheckoutError otherwise.
+ */
+export async function verifyRazorpayOrderPayment(a: {
+  kind: string;
   workspaceId: string;
   orderId: string;
   paymentId: string;
   signature: string;
-}): Promise<RazorpayFulfillResult> {
+}) {
   const secret = process.env.RAZORPAY_KEY_SECRET ?? "";
   if (!verifyRazorpaySignature({ orderId: a.orderId, paymentId: a.paymentId, signature: a.signature, secret })) {
-    throw new RazorpayCheckoutError("The payment signature did not match. Nothing was credited.");
+    throw new RazorpayCheckoutError("The payment signature did not match. Nothing was applied.");
   }
 
   // The signature proves Razorpay issued this pair. The order notes (written
-  // by us at create time) say which workspace and how many credits.
+  // by us at create time) say which workspace and what was bought.
   const rzp = getRazorpay();
   const order = await rzp.orders.fetch(a.orderId);
   const notes = (order.notes ?? {}) as Record<string, string | number | undefined>;
-  if (notes.kind !== KIND || notes.workspaceId !== a.workspaceId) {
-    throw new RazorpayCheckoutError("This payment belongs to a different workspace.", 403);
+  if (notes.kind !== a.kind || notes.workspaceId !== a.workspaceId) {
+    throw new RazorpayCheckoutError("This payment belongs to a different workspace or purchase.", 403);
   }
   if (order.currency !== RAZORPAY_CREDIT_CURRENCY) {
-    throw new RazorpayCheckoutError(`This order was in ${order.currency}, not ${RAZORPAY_CREDIT_CURRENCY}, so no credits were added.`);
-  }
-  const credits = Number(notes.credits);
-  if (!Number.isInteger(credits) || credits <= 0) {
-    throw new RazorpayCheckoutError("This order has no credit pack on it.");
+    throw new RazorpayCheckoutError(`This order was in ${order.currency}, not ${RAZORPAY_CREDIT_CURRENCY}, so nothing was applied.`);
   }
 
   let payment = await rzp.payments.fetch(a.paymentId);
   if (payment.order_id !== a.orderId) {
-    throw new RazorpayCheckoutError("The payment does not match the order. Nothing was credited.");
+    throw new RazorpayCheckoutError("The payment does not match the order. Nothing was applied.");
   }
   // A foreign card paying in its own currency (Razorpay currency conversion)
   // may report another currency on the payment; then the order's own paid
   // total is the check, read again after capture below.
   const sameCurrency = payment.currency === order.currency;
   if (sameCurrency && Number(payment.amount) !== Number(order.amount)) {
-    throw new RazorpayCheckoutError("The payment does not match the order. Nothing was credited.");
+    throw new RazorpayCheckoutError("The payment does not match the order. Nothing was applied.");
   }
   // Accounts with automatic capture off leave the payment authorized.
   if (payment.status === "authorized") {
     payment = await rzp.payments.capture(a.paymentId, Number(payment.amount), payment.currency);
   }
   if (payment.status !== "captured") {
-    throw new RazorpayCheckoutError(`The payment is ${payment.status}, so no credits were added.`, 402);
+    throw new RazorpayCheckoutError(`The payment is ${payment.status}, so nothing was applied.`, 402);
   }
   if (!sameCurrency) {
     const after = await rzp.orders.fetch(a.orderId);
     if (Number(after.amount_paid) < Number(order.amount)) {
-      throw new RazorpayCheckoutError("The order is not fully paid, so no credits were added.", 402);
+      throw new RazorpayCheckoutError("The order is not fully paid, so nothing was applied.", 402);
     }
+  }
+  return { order, notes };
+}
+
+export async function fulfillRazorpayCreditPayment(a: {
+  workspaceId: string;
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): Promise<RazorpayFulfillResult> {
+  const { order, notes } = await verifyRazorpayOrderPayment({ ...a, kind: KIND });
+  const credits = Number(notes.credits);
+  if (!Number.isInteger(credits) || credits <= 0) {
+    throw new RazorpayCheckoutError("This order has no credit pack on it.");
   }
 
   const res = await recordPurchase({

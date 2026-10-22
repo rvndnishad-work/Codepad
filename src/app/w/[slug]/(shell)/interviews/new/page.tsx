@@ -29,7 +29,7 @@ export default async function NewInterviewPage({ params, searchParams }: Props) 
   if (!session?.user?.id) redirect(`/login?next=${encodeURIComponent(`/w/${slug}/interviews/new`)}`);
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
-    select: { id: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true, members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } } },
+    select: { id: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, videoEnabled: true, members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } } },
   });
   if (!workspace) notFound();
   const member = workspace.members[0];

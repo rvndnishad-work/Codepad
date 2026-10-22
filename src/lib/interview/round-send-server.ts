@@ -108,7 +108,7 @@ export async function sendCandidateRound(workspaceId: string, roundId: string, a
   const source = roundSource(round.kind, parseRoundSettings(round.planRound?.settingsJson));
   if (!source) return { ok: false, error: `Pick what ${round.name} sends on the plan first.` };
 
-  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { id: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true } });
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { id: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true } });
   if (!ws) return { ok: false, error: "Workspace not found." };
   const { sendAiScreening, sendTakeHome } = await import("@/lib/ats/dispatch");
   const person = { id: c.id, name: c.name, email };

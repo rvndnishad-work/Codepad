@@ -25,7 +25,23 @@ export type PlanFields = {
   trialEndsAt?: Date | string | null;
   /** A real paid subscription overrides trial logic — they're a customer. */
   stripeSubscriptionId?: string | null;
+  /** Prepaid Growth (one Razorpay payment): paid until, and seats paid for. */
+  prepaidThrough?: Date | string | null;
+  prepaidSeats?: number | null;
 };
+
+/**
+ * Prepaid Growth that has run out but not yet been moved back to Free by the
+ * prepaid-expiry cron. Gates treat it as Free right away.
+ */
+export function prepaidLapsed(ws: PlanFields, now: Date = new Date()): boolean {
+  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && ws.planName === "GROWTH" && new Date(ws.prepaidThrough).getTime() <= now.getTime());
+}
+
+/** Prepaid Growth that is paid up right now. */
+export function prepaidActive(ws: PlanFields, now: Date = new Date()): boolean {
+  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && ws.planName === "GROWTH" && new Date(ws.prepaidThrough).getTime() > now.getTime());
+}
 
 export type EffectivePlan = {
   /** The plan to gate on: the paid plan, or "GROWTH" while trialing. */
@@ -40,11 +56,20 @@ export type EffectivePlan = {
 export function trialActive(ws: PlanFields, now: Date = new Date()): boolean {
   if (!ws.trialEndsAt) return false;
   if (ws.stripeSubscriptionId) return false; // paid — no need for a trial
+  if (ws.prepaidThrough) return false; // paid once — the trial is over
   if (GROWTH_LEVEL.has(ws.planName)) return false; // already elevated
   return new Date(ws.trialEndsAt).getTime() > now.getTime();
 }
 
 export function effectivePlan(ws: PlanFields, now: Date = new Date()): EffectivePlan {
+  if (prepaidLapsed(ws, now)) {
+    return { plan: "FREE", onTrial: false, trialEndsAt: ws.trialEndsAt ? new Date(ws.trialEndsAt) : null, seatLimit: FREE_SEAT_LIMIT };
+  }
+  if (prepaidActive(ws, now)) {
+    // Prepaid seats are a hard cap: more people means paying for more seats.
+    const seats = typeof ws.prepaidSeats === "number" && ws.prepaidSeats > 0 ? ws.prepaidSeats : null;
+    return { plan: "GROWTH", onTrial: false, trialEndsAt: ws.trialEndsAt ? new Date(ws.trialEndsAt) : null, seatLimit: seats };
+  }
   const onTrial = trialActive(ws, now);
   const plan = onTrial ? "GROWTH" : ws.planName;
   // Paid GROWTH/ENTERPRISE (and any live per-seat subscription) scale seats

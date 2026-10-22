@@ -38,6 +38,7 @@ export default function PricingClient({
   packs,
   annualSavingPercent,
   lowestCreditPrice,
+  initialCadence = "annual",
 }: {
   workspaces: WorkspaceInfo[];
   isSignedIn: boolean;
@@ -45,8 +46,9 @@ export default function PricingClient({
   packs: PublicCreditPack[];
   annualSavingPercent: number;
   lowestCreditPrice: string;
+  initialCadence?: Cadence;
 }) {
-  const [cadence, setCadence] = useState<Cadence>("annual");
+  const [cadence, setCadence] = useState<Cadence>(initialCadence);
   const [workspaceSlug, setWorkspaceSlug] = useState(workspaces[0]?.slug ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,34 +57,21 @@ export default function PricingClient({
   const workspace = workspaces.find((w) => w.slug === workspaceSlug);
   const onPaidPlan = workspace?.planName === "GROWTH" || workspace?.planName === "ENTERPRISE";
 
+  // The chosen plan and cadence travel with the buyer: through sign-in, through
+  // creating a first workspace, to the workspace billing page, which runs the
+  // checkout. A new workspace still starts on the trial until payment lands.
   const checkout = async () => {
     setError(null);
+    setLoading(true);
     if (!isSignedIn) {
-      router.push("/login?next=/pricing");
+      router.push(`/login?next=${encodeURIComponent(`/pricing?cadence=${cadence}`)}`);
       return;
     }
     if (!workspace) {
-      router.push("/w/create");
+      router.push(`/w/create?plan=growth&cadence=${cadence}`);
       return;
     }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/w/${workspace.slug}/billing/session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: "GROWTH", cadence }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      setError(data.error || "Checkout did not start. Try again, or open Billing and usage in your workspace.");
-    } catch {
-      setError("Checkout did not start. Check your connection and try again.");
-    } finally {
-      setLoading(false);
-    }
+    router.push(`/w/${encodeURIComponent(workspace.slug)}/billing?upgrade=growth&cadence=${cadence}`);
   };
 
   return (

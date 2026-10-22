@@ -95,7 +95,7 @@ export const getSettingsPageContext = cache(async (slug: string): Promise<Settin
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       ...SETTINGS_SELECT,
       members: {

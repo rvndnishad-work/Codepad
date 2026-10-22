@@ -55,7 +55,7 @@ async function editorFor(slug: string, opts: { readOnly?: boolean } = {}) {
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       logoUrl: true,
       brandColor: true,

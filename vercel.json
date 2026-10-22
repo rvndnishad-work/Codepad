@@ -40,6 +40,10 @@
       "schedule": "0 1 * * *"
     },
     {
+      "path": "/api/cron/prepaid-expiry",
+      "schedule": "25 * * * *"
+    },
+    {
       "path": "/api/cron/data-retention",
       "schedule": "30 2 * * *"
     },

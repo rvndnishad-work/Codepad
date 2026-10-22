@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   const workspace = await prisma.workspace.findUnique({
     where: { slug },
-    select: { id: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, members: { where: { userId: session.user.id }, select: { userId: true } } },
+    select: { id: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, members: { where: { userId: session.user.id }, select: { userId: true } } },
   });
   if (!workspace || !workspace.members.length || !effectivePlanAllowsAiScreening(workspace)) return NextResponse.json({ error: "Not found" }, { status: 404 });
 

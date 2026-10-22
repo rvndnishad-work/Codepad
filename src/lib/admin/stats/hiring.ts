@@ -441,7 +441,7 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
       where: { trialEndsAt: { gt: now, lte: in3Days }, stripeSubscriptionId: null, planName: { notIn: ["GROWTH", "ENTERPRISE"] } },
       orderBy: { trialEndsAt: "asc" },
       take: LIMIT,
-      select: { id: true, trialEndsAt: true, _count: { select: { aiInterviewSessions: true } } },
+      select: { id: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, _count: { select: { aiInterviewSessions: true } } },
     }),
     prisma.aIScreeningBatch.groupBy({
       by: ["workspaceId"],
@@ -493,7 +493,7 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
   const info = ids.length
     ? await prisma.workspace.findMany({
         where: { id: { in: ids } },
-        select: { id: true, name: true, slug: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, stripeSeatQuantity: true },
+        select: { id: true, name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, stripeSeatQuantity: true },
       })
     : [];
   const byId = new Map(info.map((w) => [w.id, w]));

@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Billing and usage, Usage and credits tab: credit balance, buying credit
- * packs, the low-credit email, six months of usage and the credit history.
+ * Billing and usage, Usage and credits tab: the credit balance and buying
+ * packs side by side, six months of usage next to the low-credit email, and
+ * the credit history.
  */
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,9 @@ import { LOW_CREDIT_CHOICES } from "@/lib/workspace/settings";
 import type { UsageMonth } from "@/lib/billing/usage";
 import { saveWorkspaceSettingsAction } from "../settings/actions";
 import { buyCreditsAction } from "./actions";
+import { payForCreditPack } from "@/lib/billing/razorpay-client";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
+import { DEFAULT_LOW_CREDITS, RUNWAY_WINDOW_DAYS, creditHealth, creditRunway, packSavings, screeningsCovered, type CreditGlance } from "@/lib/billing/credit-glance";
 
 export type LedgerRowView = {
   id: string;
@@ -25,7 +28,7 @@ export type LedgerRowView = {
 };
 
 export type UsageData = {
-  credits: { balance: number; held: number; available: number; usedThisMonth: number };
+  credits: CreditGlance;
   /** Credits that come with paid seats. `left` of the balance can expire; `nextAt` is the next monthly grant. */
   included: { left: number; perMonth: number; nextAt: string | null };
   packs: { id: string; label: string; credits: number; priceCents: number; badge: string | null }[];
@@ -35,6 +38,8 @@ export type UsageData = {
   canEditAlert: boolean;
   aiScreening: boolean;
   purchase: "success" | "cancel" | null;
+  /** Who takes credit pack payments: Razorpay's modal, Stripe's hosted page, or nobody yet. */
+  checkout: "razorpay" | "stripe" | null;
 };
 
 type Notify = (text: string, tone?: "ok" | "error") => void;
@@ -43,13 +48,11 @@ export default function UsageTab({
   slug,
   data,
   canManage,
-  stripeConfigured,
   notify,
 }: {
   slug: string;
   data: UsageData;
   canManage: boolean;
-  stripeConfigured: boolean;
   notify: Notify;
 }) {
   return (
@@ -65,9 +68,20 @@ export default function UsageTab({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-4 items-stretch">
-        <CreditsCard slug={slug} data={data} canManage={canManage} stripeConfigured={stripeConfigured} notify={notify} />
+      {/* Balance and buying sit side by side: see what is left, top up in the same place. */}
+      <section
+        className="rounded-xl border border-border bg-surface grid grid-cols-1 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        aria-label="AI credits"
+      >
+        <CreditBalance data={data} />
+        <div id="buy-credits" className="scroll-mt-6 border-t xl:border-t-0 xl:border-l border-border px-5 py-5 md:px-6">
+          <BuyCredits slug={slug} data={data} canManage={canManage} notify={notify} />
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5 items-start">
         <UsageChart months={data.months} />
+        <CreditSettings slug={slug} data={data} notify={notify} />
       </div>
 
       <CreditHistory slug={slug} ledger={data.ledger} />
@@ -75,50 +89,107 @@ export default function UsageTab({
   );
 }
 
-/* ── Credits: balance, low-credit alert, buy a pack, low-credit email ──── */
+/* ── Balance: how many are left, how fast they go, when more arrive ────── */
 
-function CreditsCard({ slug, data, canManage, stripeConfigured, notify }: { slug: string; data: UsageData; canManage: boolean; stripeConfigured: boolean; notify: Notify }) {
+const HEALTH = {
+  ok: { label: "Healthy", chip: "bg-success/15 text-success", bar: "bg-secondary" },
+  low: { label: "Running low", chip: "bg-warning/15 text-warning", bar: "bg-warning" },
+  empty: { label: "Empty", chip: "bg-danger/15 text-danger", bar: "bg-danger" },
+} as const;
+
+function CreditBalance({ data }: { data: UsageData }) {
   const { credits } = data;
-  const low = credits.available === 0 || (data.lowCreditThreshold !== null && credits.available < data.lowCreditThreshold);
+  const health = creditHealth(credits.available, data.lowCreditThreshold);
+  const tone = HEALTH[health];
+  const runway = creditRunway(credits.available, credits.usedRecent);
+  const total = Math.max(credits.balance, credits.available + credits.held, 1);
+  const availPct = (credits.available / total) * 100;
+  const heldPct = (credits.held / total) * 100;
+  const threshold = data.lowCreditThreshold;
+
   return (
-    <section className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-col gap-4" aria-labelledby="ai-credits">
-      <div className="flex flex-col gap-1.5">
-        <h2 id="ai-credits" className="text-[13px] font-medium text-muted">
-          AI credits
-        </h2>
-        <span className="text-[28px] leading-tight font-semibold tracking-tight tabular-nums text-fg">{credits.available.toLocaleString("en-GB")} left</span>
-        <p className="text-[13px] text-muted">
-          {credits.held ? `${plural(credits.balance, "credit")} in all. ` : ""}1 to 3 credits per screening started.
-        </p>
-        <p className="text-[13px] text-muted">{includedLine(data.included)}</p>
+    <div className="px-5 py-5 md:px-6 flex flex-col gap-5 min-w-0">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[13px] font-medium text-muted">AI credits</h2>
+        <span className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-xs font-medium ${tone.chip}`}>
+          <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-current" />
+          {tone.label}
+        </span>
       </div>
 
-      <dl className="grid grid-cols-2 rounded-lg border border-border divide-x divide-border">
-        <div className="px-3 py-2 flex flex-col gap-0.5">
-          <dt className="text-xs text-muted">Held by open invites</dt>
-          <dd className="text-[15px] font-semibold tabular-nums text-fg">{credits.held.toLocaleString("en-GB")}</dd>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-baseline gap-2.5 flex-wrap">
+          <span className="text-[44px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-fg">
+            {credits.available.toLocaleString("en-GB")}
+          </span>
+          <span className="text-[15px] text-muted">credits left to use</span>
         </div>
-        <div className="px-3 py-2 flex flex-col gap-0.5">
-          <dt className="text-xs text-muted">Used this month</dt>
-          <dd className="text-[15px] font-semibold tabular-nums text-fg">{credits.usedThisMonth.toLocaleString("en-GB")}</dd>
+        <div
+          className="h-2.5 rounded-full bg-panel overflow-hidden flex"
+          role="img"
+          aria-label={`${credits.available} credits available, ${credits.held} held by open invites`}
+        >
+          <span className={`h-full ${tone.bar}`} style={{ width: `${credits.available ? Math.max(availPct, 2) : 0}%` }} />
+          {credits.held > 0 && (
+            <span
+              className="h-full bg-subtle/50"
+              style={{
+                width: `${Math.max(heldPct, 2)}%`,
+                backgroundImage: "repeating-linear-gradient(135deg, transparent 0 4px, rgb(var(--c-surface) / 0.45) 4px 6px)",
+              }}
+            />
+          )}
         </div>
-      </dl>
-      <p className="-mt-2 text-xs text-subtle">Held credits are charged only if the candidate starts.</p>
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" aria-label="Balance">
+          <li className="inline-flex items-center gap-1.5">
+            <span aria-hidden className={`w-2.5 h-2.5 rounded-sm ${tone.bar}`} />
+            {plural(credits.available, "available", "available")}
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <span aria-hidden className="w-2.5 h-2.5 rounded-sm bg-subtle/50" />
+            {credits.held.toLocaleString("en-GB")} held by open invites
+          </li>
+          <li className="text-subtle">{plural(credits.balance, "credit")} in all</li>
+        </ul>
+      </div>
 
-      {low && (
-        <div role="status" className={`rounded-lg border px-3 py-2.5 text-[13px] ${credits.available === 0 ? "border-danger/30 bg-danger/10 text-danger" : "border-warning/30 bg-warning/10 text-warning"}`}>
-          {credits.available === 0
+      <dl className="grid grid-cols-3 rounded-lg border border-border divide-x divide-border">
+        <Stat label="Used this month" value={credits.usedThisMonth.toLocaleString("en-GB")} />
+        <Stat
+          label="Recent pace"
+          value={runway.perWeek === null ? "None" : `${runway.perWeek < 10 ? runway.perWeek.toFixed(1) : Math.round(runway.perWeek)} / week`}
+        />
+        <Stat label="Lasts" value={runway.weeks === null ? "No pace yet" : runway.label} />
+      </dl>
+
+      {health !== "ok" && (
+        <div
+          role="status"
+          className={`rounded-lg border px-3 py-2.5 text-[13px] ${health === "empty" ? "border-danger/30 bg-danger/10 text-danger" : "border-warning/30 bg-warning/10 text-warning"}`}
+        >
+          {health === "empty"
             ? "No credits left. New AI screenings cannot start until you top up."
-            : `Fewer than ${data.lowCreditThreshold} credits left. Top up so screenings keep running.`}
+            : `Fewer than ${threshold ?? DEFAULT_LOW_CREDITS} credits left. Top up so screenings keep running.`}
         </div>
       )}
 
-      <BuyCredits slug={slug} data={data} canManage={canManage} stripeConfigured={stripeConfigured} notify={notify} />
-
-      <div className="border-t border-border pt-4">
-        <LowCreditEmail slug={slug} data={data} notify={notify} />
+      <div className="flex flex-col gap-1.5 text-[13px] text-muted">
+        <p>{includedLine(data.included)}</p>
+        <p className="text-subtle">
+          A screening uses 1 to 3 credits when the candidate starts it. Held credits are charged only if the candidate starts.
+          {runway.perWeek !== null ? ` Pace is measured over the last ${RUNWAY_WINDOW_DAYS} days.` : ""}
+        </p>
       </div>
-    </section>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="px-3 py-2.5 flex flex-col gap-0.5 min-w-0">
+      <dt className="text-xs text-muted leading-snug">{label}</dt>
+      <dd className="text-[15px] leading-snug font-semibold tabular-nums text-fg">{value}</dd>
+    </div>
   );
 }
 
@@ -139,11 +210,27 @@ function includedLine(included: UsageData["included"]): string {
 
 /* ── Buy credits ────────────────────────────────────────────────────────── */
 
-function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug: string; data: UsageData; canManage: boolean; stripeConfigured: boolean; notify: Notify }) {
+const money = (cents: number) => `$${(cents / 100).toLocaleString("en-US")}`;
+
+function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: UsageData; canManage: boolean; notify: Notify }) {
+  const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>((data.packs.find((p) => p.badge) ?? data.packs[0])?.id ?? null);
   const buy = async (packId: string) => {
     setBusy(packId);
+    if (data.checkout === "razorpay") {
+      const res = await payForCreditPack({ slug, packId, onAttemptFailed: (m) => notify(m, "error") });
+      setBusy(null);
+      if (res.status === "paid") {
+        notify(`Payment received. ${plural(res.credits, "credit")} added.`);
+        router.refresh();
+      } else if (res.status === "cancelled") {
+        notify("Checkout was closed. Nothing was charged.");
+      } else {
+        notify(res.message, "error");
+      }
+      return;
+    }
     const res = await buyCreditsAction(slug, packId);
     if (res.ok) {
       window.location.href = res.url;
@@ -156,36 +243,42 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
   let note: string | null = null;
   if (!data.aiScreening) note = "AI screening needs Growth or a trial. You can still buy credits now and use them after you upgrade.";
   if (!canManage) note = "Ask an owner or admin with billing access to buy credits.";
-  else if (!stripeConfigured) note = "Online payments are not set up on this server yet, so credits cannot be bought here.";
-  const canBuy = canManage && stripeConfigured;
+  else if (!data.checkout) note = "Online payments are not set up on this server yet, so credits cannot be bought here.";
+  const canBuy = canManage && data.checkout !== null;
   const pack = data.packs.find((p) => p.id === picked) ?? null;
+  const savings = packSavings(data.packs);
 
   return (
-    <div className="flex flex-col gap-3" role="group" aria-labelledby="buy-credits">
+    <div className="flex flex-col gap-4 h-full" role="group" aria-labelledby="buy-credits-title">
       <div className="flex flex-col gap-0.5">
-        <h3 id="buy-credits" className="text-sm font-semibold text-fg">
+        <h2 id="buy-credits-title" className="text-base font-semibold text-fg">
           Buy credits
-        </h3>
-        <p className="text-[13px] text-muted">One-time packs for more screenings. Bought credits never expire.</p>
+        </h2>
+        <p className="text-[13px] text-muted">One-time packs, paid once. Bought credits never expire and larger packs cost less per credit.</p>
       </div>
-      <div className="grid grid-cols-2 gap-x-2 gap-y-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
         {data.packs.map((p) => {
           const on = canBuy && p.id === picked;
+          const save = savings[p.id];
           const inner = (
             <>
               {p.badge && (
-                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center h-5 px-1.5 rounded-full bg-secondary text-bg text-xs font-medium whitespace-nowrap">
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 inline-flex items-center h-5 px-2 rounded-full bg-secondary text-bg text-xs font-medium whitespace-nowrap">
                   {p.badge}
                 </span>
               )}
-              <span className="text-[15px] font-semibold tabular-nums text-fg">{p.credits.toLocaleString("en-GB")}</span>
-              <span className="text-xs text-muted">{p.label}</span>
-              <span className="text-[13px] tabular-nums text-fg">${(p.priceCents / 100).toLocaleString("en-US")}</span>
-              <span className="text-xs tabular-nums text-subtle">${(p.priceCents / 100 / p.credits).toFixed(2)} each</span>
+              <span className="text-xs font-medium text-muted">{p.label}</span>
+              <span className="mt-1.5 text-[24px] leading-none font-semibold tracking-tight tabular-nums text-fg">{p.credits.toLocaleString("en-GB")}</span>
+              <span className="text-xs text-subtle">credits</span>
+              <span className="mt-3 text-[15px] font-semibold tabular-nums text-fg">{money(p.priceCents)}</span>
+              <span className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums text-subtle">
+                ${(p.priceCents / 100 / p.credits).toFixed(2)} each
+                {save ? <span className="inline-flex items-center h-5 px-1.5 rounded bg-success/15 text-success font-medium">Save {save}%</span> : null}
+              </span>
             </>
           );
-          const cls = `relative flex flex-col items-start gap-0.5 rounded-lg border px-3 pt-3 pb-2.5 text-left transition ${
-            on ? "border-secondary ring-1 ring-secondary bg-secondary/[0.06]" : "border-border bg-surface"
+          const cls = `relative flex flex-col items-start rounded-xl border px-4 pt-4 pb-3.5 text-left transition ${
+            on ? "border-secondary ring-1 ring-secondary bg-secondary/[0.07]" : "border-border bg-bg/40"
           }`;
           return canBuy ? (
             <button
@@ -207,12 +300,59 @@ function BuyCredits({ slug, data, canManage, stripeConfigured, notify }: { slug:
         })}
       </div>
       {canBuy && pack && (
-        <Btn variant="primary" size="md" className="w-full" disabled={!!busy} onClick={() => buy(pack.id)}>
-          {busy ? "Opening checkout" : `Buy ${pack.credits.toLocaleString("en-GB")} credits`}
-        </Btn>
+        <div className="mt-auto flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border bg-panel/60 px-4 py-3">
+          <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+            <span className="text-sm text-fg">
+              <span className="font-semibold tabular-nums">{pack.credits.toLocaleString("en-GB")} credits</span> for{" "}
+              <span className="font-semibold tabular-nums">{money(pack.priceCents)}</span>
+            </span>
+            <span className="text-xs text-muted tabular-nums">
+              Balance after: {(data.credits.available + pack.credits).toLocaleString("en-GB")} available. Covers about{" "}
+              {screeningsCovered(pack.credits).min.toLocaleString("en-GB")} to {screeningsCovered(pack.credits).max.toLocaleString("en-GB")} screenings.
+            </span>
+          </div>
+          <Btn variant="primary" size="md" className="sm:min-w-[180px] h-10 text-sm" disabled={!!busy} onClick={() => buy(pack.id)}>
+            {busy ? (data.checkout === "razorpay" ? "Waiting for payment" : "Opening checkout") : `Buy ${pack.credits.toLocaleString("en-GB")} credits`}
+          </Btn>
+        </div>
       )}
       {note && <p className="text-[13px] text-muted">{note}</p>}
     </div>
+  );
+}
+
+/* ── Alerts and how credits work ────────────────────────────────────────── */
+
+function CreditSettings({ slug, data, notify }: { slug: string; data: UsageData; notify: Notify }) {
+  return (
+    <section className="rounded-xl border border-border bg-surface flex flex-col" aria-labelledby="credit-settings">
+      <header className="px-5 pt-4 pb-3">
+        <h2 id="credit-settings" className="text-base font-semibold text-fg">
+          Alerts
+        </h2>
+        <p className="text-[13px] text-muted mt-0.5">Hear about a low balance before screenings stop.</p>
+      </header>
+      <div className="px-5 pb-5">
+        <LowCreditEmail slug={slug} data={data} notify={notify} />
+      </div>
+      <div className="border-t border-border px-5 py-4 flex flex-col gap-2.5">
+        <h3 className="text-sm font-semibold text-fg">How credits work</h3>
+        <ul className="flex flex-col gap-2 text-[13px] text-muted">
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-[7px] w-1.5 h-1.5 shrink-0 rounded-full bg-secondary" />
+            Only AI screenings use credits. Take homes and live interviews are free.
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-[7px] w-1.5 h-1.5 shrink-0 rounded-full bg-secondary" />
+            A screening uses 1 to 3 credits, set by its engagement level.
+          </li>
+          <li className="flex gap-2">
+            <span aria-hidden className="mt-[7px] w-1.5 h-1.5 shrink-0 rounded-full bg-secondary" />
+            An open invite holds its credits. They are charged only if the candidate starts.
+          </li>
+        </ul>
+      </div>
+    </section>
   );
 }
 
@@ -251,7 +391,7 @@ function LowCreditEmail({ slug, data, notify }: { slug: string; data: UsageData;
           value={value === null ? "off" : String(value)}
           disabled={!data.canEditAlert || saving}
           onChange={(e) => save(e.target.value === "off" ? null : Number(e.target.value))}
-          className="h-9 w-[150px] rounded-lg border border-border bg-bg px-2.5 text-[13px] text-fg focus:outline-none focus:border-secondary/60 focus:ring-2 focus:ring-secondary/20 disabled:opacity-60"
+          className="h-9 w-[160px] rounded-lg border border-border bg-bg px-2.5 text-[13px] text-fg focus:outline-none focus:border-secondary/60 focus:ring-2 focus:ring-secondary/20 disabled:opacity-60"
         >
           {choices.map((c) => (
             <option key={c ?? "off"} value={c === null ? "off" : String(c)}>
@@ -313,7 +453,7 @@ function UsageChart({ months }: { months: UsageMonth[] }) {
         <p className="px-5 pb-5 pt-2 text-sm text-muted">Nothing sent yet. Usage shows up here once you send a take home, a screening or an interview.</p>
       ) : (
         <div className="px-5 pb-4 flex-1 flex flex-col">
-          <div className="flex gap-2 flex-1 min-h-[200px] mt-5">
+          <div className="flex gap-2 flex-1 min-h-[240px] mt-5">
             <div aria-hidden className="relative w-7 shrink-0">
               {ticks.map((t) => (
                 <span key={t} className="absolute right-0 translate-y-1/2 text-xs text-subtle tabular-nums" style={{ bottom: `${(t / top) * 100}%` }}>

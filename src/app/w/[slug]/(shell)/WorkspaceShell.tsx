@@ -49,7 +49,7 @@ export default function WorkspaceShell({ current, workspaces, plan, counts, user
           onNavigate={() => setMobileOpen(false)}
         />
         <main className="flex-1 min-w-0 min-h-0 overflow-y-auto bg-bg">
-          <div className="workspace-content mx-auto w-full max-w-[1200px] px-4 py-6 md:px-10 md:py-8 space-y-6">
+          <div className="workspace-content mx-auto w-full max-w-[1600px] px-4 py-6 md:px-10 md:py-8 space-y-6">
             {children}
           </div>
         </main>

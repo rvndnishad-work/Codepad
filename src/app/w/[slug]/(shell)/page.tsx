@@ -6,6 +6,9 @@ import WorkspaceDashboardClient from "./WorkspaceDashboardClient";
 import { effectivePlan } from "@/lib/billing/trial";
 import { planDisplay } from "@/lib/workspace/display";
 import { loadOverviewExtras } from "@/lib/workspace/overview-server";
+import { canMember } from "@/lib/permissions";
+import { loadCreditGlance } from "@/lib/billing/credit-glance-server";
+import type { OverviewCredits } from "./WorkspaceOverview";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -132,6 +135,25 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
   const pendingInviteCount = await prisma.workspaceInvite.count({
     where: { workspaceId: workspace.id, acceptedAt: null, expiresAt: { gt: new Date() } },
   });
+
+  // AI credits for people who can see billing; buying needs billing:manage.
+  const me = session?.user?.id
+    ? await prisma.workspaceMember.findFirst({
+        where: { workspaceId: workspace.id, userId: session.user.id },
+        select: { role: true, permissions: true },
+      })
+    : null;
+  let credits: OverviewCredits | null = null;
+  if (me && (await canMember(me, "billing:read"))) {
+    const [glance, canBuy] = await Promise.all([
+      loadCreditGlance(workspace.id).catch((err) => {
+        console.error("[overview] credits failed", err);
+        return null;
+      }),
+      canMember(me, "billing:manage"),
+    ]);
+    if (glance) credits = { ...glance, lowCreditThreshold: workspace.lowCreditThreshold, canBuy };
+  }
 
   const [takeHomeSessionRows, aiInterviewRows, overviewExtras] = await Promise.all([
     // Session-backed take-homes (IP-88/89) — the new multi-question model.
@@ -307,6 +329,7 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
         candidates={formattedCandidates}
         pendingInviteCount={pendingInviteCount}
         overviewExtras={overviewExtras}
+        credits={credits}
       />
     </div>
   );

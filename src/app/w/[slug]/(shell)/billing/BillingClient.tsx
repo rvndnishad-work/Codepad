@@ -17,6 +17,7 @@ import UsageTab, { type UsageData } from "./UsageTab";
 import VideoAddonCard, { type VideoAddonData } from "./VideoAddonCard";
 import UnderlineTabs from "../_components/UnderlineTabs";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
+import { creditHealth } from "@/lib/billing/credit-glance";
 
 export type BillingTab = "plan" | "usage" | "invoices";
 
@@ -108,7 +109,7 @@ export default function BillingClient(props: Props) {
       />
 
       {tab === "usage" && props.usage ? (
-        <UsageTab slug={slug} data={props.usage} canManage={canManage} stripeConfigured={stripeConfigured} notify={toast} />
+        <UsageTab slug={slug} data={props.usage} canManage={canManage} notify={toast} />
       ) : tab === "plan" ? (
         <>
           <section className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-wrap items-center gap-5">
@@ -259,23 +260,36 @@ function SeatsCard({ slug, seats, summary }: Props) {
   );
 }
 
-function CreditsCard({ slug, credits, aiScreening }: Props) {
+function CreditsCard({ slug, credits, aiScreening, canManage }: Props) {
+  const health = creditHealth(credits, null);
   return (
     <div className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-col gap-2.5">
-      <span className="text-[13px] font-medium text-muted">AI credits</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[13px] font-medium text-muted">AI credits</span>
+        {health !== "ok" && (
+          <span className={`inline-flex items-center h-6 px-2 rounded-full text-xs font-medium ${health === "empty" ? "bg-danger/15 text-danger" : "bg-warning/15 text-warning"}`}>
+            {health === "empty" ? "Empty" : "Running low"}
+          </span>
+        )}
+      </div>
       <span className="text-[28px] font-semibold tracking-tight tabular-nums text-fg">{credits.toLocaleString("en-GB")} left</span>
       <span className="text-[13px] text-muted">
         {aiScreening ? (
-          <>
-            Growth adds {INCLUDED_CREDITS_PER_SEAT} credits per seat each month. A screening uses 1 to 3 when the candidate starts it.{" "}
-            <Link href={`/w/${slug}/billing?tab=usage`} className="text-secondary-soft hover:underline">
-              Usage and credits
-            </Link>
-          </>
+          <>Growth adds {INCLUDED_CREDITS_PER_SEAT} credits per seat each month. A screening uses 1 to 3 when the candidate starts it.</>
         ) : (
           "AI screening needs Growth or a trial."
         )}
       </span>
+      <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">
+        {canManage && (
+          <Btn variant="primary" size="md" href={`/w/${slug}/billing?tab=usage#buy-credits`}>
+            Buy credits
+          </Btn>
+        )}
+        <Link href={`/w/${slug}/billing?tab=usage`} className="text-[13px] text-secondary-soft hover:underline">
+          Usage and credits
+        </Link>
+      </div>
     </div>
   );
 }

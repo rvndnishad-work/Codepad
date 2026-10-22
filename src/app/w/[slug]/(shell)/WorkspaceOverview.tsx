@@ -13,6 +13,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   Clock,
+  Coins,
   FileCode2,
   Inbox,
   MailWarning,
@@ -47,9 +48,14 @@ import {
   type PlanDisplay,
 } from "@/lib/workspace/display";
 import { STAGE_LABELS } from "@/lib/crm/stages";
+import { creditHealth, creditRunway, type CreditGlance } from "@/lib/billing/credit-glance";
+
+/** AI credits shown in the Overview header. */
+export type OverviewCredits = CreditGlance & { lowCreditThreshold: number | null; canBuy: boolean };
 
 type Props = OverviewInput & {
   firstName: string | null;
+  credits?: OverviewCredits | null;
   plan: PlanDisplay;
   seatLimit: number | null;
   setup: { assessments: number; members: number; pendingInvites: number };
@@ -645,6 +651,57 @@ function FilterBar({
   );
 }
 
+const CREDIT_TONE = {
+  ok: { label: "Healthy", chip: "bg-success/15 text-success", bar: "bg-secondary" },
+  low: { label: "Running low", chip: "bg-warning/15 text-warning", bar: "bg-warning" },
+  empty: { label: "Empty", chip: "bg-danger/15 text-danger", bar: "bg-danger" },
+} as const;
+
+/** Credits left, how long they last, and a one-click way to buy more. */
+function CreditsPanel({ credits, slug }: { credits: OverviewCredits; slug: string }) {
+  const health = creditHealth(credits.available, credits.lowCreditThreshold);
+  const tone = CREDIT_TONE[health];
+  const runway = creditRunway(credits.available, credits.usedRecent);
+  const total = Math.max(credits.balance, credits.available + credits.held, 1);
+  const usage = `/w/${slug}/billing?tab=usage`;
+  return (
+    <div className="w-full lg:w-[380px] shrink-0 rounded-xl border border-border bg-bg/50 backdrop-blur-sm p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <Link href={usage} className="inline-flex items-center gap-2 text-[13px] font-medium text-muted hover:text-fg transition-colors">
+          <Coins className="w-4 h-4" aria-hidden />
+          AI credits
+        </Link>
+        <span className={`inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-xs font-medium ${tone.chip}`}>
+          <span aria-hidden className="w-1.5 h-1.5 rounded-full bg-current" />
+          {tone.label}
+        </span>
+      </div>
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[34px] leading-none font-semibold tracking-[-0.03em] tabular-nums text-fg">{credits.available.toLocaleString("en-GB")}</span>
+          <span className="text-[13px] text-muted">left</span>
+        </div>
+        {credits.canBuy ? (
+          <ButtonLink href={`${usage}#buy-credits`} primary={health !== "ok"} icon={Plus}>
+            Buy credits
+          </ButtonLink>
+        ) : (
+          <ButtonLink href={usage}>View usage</ButtonLink>
+        )}
+      </div>
+      <div className="h-2 rounded-full bg-panel overflow-hidden flex" role="img" aria-label={`${credits.available} credits available, ${credits.held} held by open invites`}>
+        <span className={`h-full ${tone.bar}`} style={{ width: `${credits.available ? Math.max((credits.available / total) * 100, 2) : 0}%` }} />
+        {credits.held > 0 && <span className="h-full bg-subtle/50" style={{ width: `${Math.max((credits.held / total) * 100, 2)}%` }} />}
+      </div>
+      <p className="text-xs text-muted">
+        {credits.usedThisMonth.toLocaleString("en-GB")} used this month
+        {credits.held > 0 ? `, ${credits.held.toLocaleString("en-GB")} held by open invites` : ""}.{" "}
+        {runway.weeks === null ? "" : health === "empty" ? "Screenings cannot start until you top up." : `${runway.label} at your recent pace.`}
+      </p>
+    </div>
+  );
+}
+
 function TrialBanner({ plan, slug }: { plan: PlanDisplay; slug: string }) {
   if (!plan.onTrial) return null;
   return (
@@ -830,8 +887,8 @@ export default function WorkspaceOverview(props: Props) {
             WebkitMaskImage: "linear-gradient(to left, black, transparent 60%)",
           }}
         />
-        <div className="relative flex flex-col lg:flex-row lg:items-end justify-between gap-5">
-          <div>
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="min-w-0 flex flex-col">
             <div className="text-[13px] text-muted min-h-[1.4em]">
               {now ? now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : ""}
             </div>
@@ -841,30 +898,31 @@ export default function WorkspaceOverview(props: Props) {
             {isNew ? (
               <p className="mt-1.5 text-[15px] text-muted">{summary}</p>
             ) : (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <SummaryChip tone="warning" count={byKind.review} label="to review" />
-                <SummaryChip tone="danger" count={byKind.expiring} label={byKind.expiring === 1 ? "link expiring" : "links expiring"} />
-                <SummaryChip tone="secondary" count={byKind.interview} label={byKind.interview === 1 ? "interview today" : "interviews today"} />
-                {byKind.scorecard > 0 && (
-                  <SummaryChip tone="warning" count={byKind.scorecard} label={byKind.scorecard === 1 ? "scorecard missing" : "scorecards missing"} />
-                )}
-                {toFix > 0 && <SummaryChip tone="danger" count={toFix} label="to fix" />}
-              </div>
+              <>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <SummaryChip tone="warning" count={byKind.review} label="to review" />
+                  <SummaryChip tone="danger" count={byKind.expiring} label={byKind.expiring === 1 ? "link expiring" : "links expiring"} />
+                  <SummaryChip tone="secondary" count={byKind.interview} label={byKind.interview === 1 ? "interview today" : "interviews today"} />
+                  {byKind.scorecard > 0 && (
+                    <SummaryChip tone="warning" count={byKind.scorecard} label={byKind.scorecard === 1 ? "scorecard missing" : "scorecards missing"} />
+                  )}
+                  {toFix > 0 && <SummaryChip tone="danger" count={toFix} label="to fix" />}
+                </div>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <ButtonLink icon={Plus} primary onClick={props.onAddCandidate}>
+                    Add candidate
+                  </ButtonLink>
+                  <ButtonLink icon={ClipboardList} onClick={props.onSendTakeHome}>
+                    Send take-home
+                  </ButtonLink>
+                  <ButtonLink icon={Upload} onClick={props.onBulkImport}>
+                    Import
+                  </ButtonLink>
+                </div>
+              </>
             )}
           </div>
-          {!isNew && (
-            <div className="flex flex-wrap gap-2">
-              <ButtonLink icon={Upload} onClick={props.onBulkImport}>
-                Import
-              </ButtonLink>
-              <ButtonLink icon={ClipboardList} onClick={props.onSendTakeHome}>
-                Send take-home
-              </ButtonLink>
-              <ButtonLink icon={Plus} primary onClick={props.onAddCandidate}>
-                Add candidate
-              </ButtonLink>
-            </div>
-          )}
+          {props.credits && <CreditsPanel credits={props.credits} slug={slug} />}
         </div>
       </section>
 

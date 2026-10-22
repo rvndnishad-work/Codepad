@@ -11,11 +11,12 @@ import { planSummary } from "@/lib/billing/summary";
 import { PLAN_ORDER, WORKSPACE_PLANS, planComparison, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
 import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
-import { loadCreditSummary } from "@/lib/ai-interview/console-server";
+import { loadCreditGlance } from "@/lib/billing/credit-glance-server";
 import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
 import { settingsAccess } from "@/lib/workspace/settings-server";
 import BillingClient, { type BillingTab } from "./BillingClient";
 import type { UsageData } from "./UsageTab";
+import { razorpayConfigured } from "@/lib/razorpay";
 import { INCLUDED_CREDITS_PER_SEAT, addOneMonth, planIncludesCredits } from "@/lib/billing/included-credits";
 
 type Props = {
@@ -96,7 +97,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
   let usage: UsageData | null = null;
   if (tab === "usage") {
     const [summary, months, ledger, access] = await Promise.all([
-      loadCreditSummary(workspace.id),
+      loadCreditGlance(workspace.id, now),
       loadUsageMonths(workspace.id, now),
       loadLedgerPage(workspace.id, Number.parseInt(sp.page ?? "1", 10) || 1),
       settingsAccess(me),
@@ -127,6 +128,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       canEditAlert: access.canEdit,
       aiScreening,
       purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
+      // Razorpay takes credit packs when its keys are set; Stripe otherwise.
+      checkout: razorpayConfigured() ? "razorpay" : process.env.STRIPE_SECRET_KEY ? "stripe" : null,
     };
   }
 

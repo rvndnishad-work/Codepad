@@ -195,6 +195,60 @@ export function setupSteps(input: SetupInput, opts: { seatLimit: number | null; 
   ];
 }
 
+/** The first unfinished setup step, or null once the checklist is complete. */
+export function nextSetupStep(steps: SetupStep[]): SetupStep | null {
+  return steps.find((s) => !s.done) ?? null;
+}
+
+/**
+ * Where the hub sends someone to do a setup step. Mirrors the Overview
+ * checklist, minus its modals: "Add a candidate" opens the candidates tab.
+ */
+export function setupStepAction(
+  step: SetupStep["id"],
+  slug: string,
+  opts: { aiIncluded: boolean },
+): { label: string; href: string } {
+  const base = `/w/${slug}`;
+  switch (step) {
+    case "assessment":
+      return { label: "Send a take home", href: `${base}/take-homes/new` };
+    case "candidate":
+      return { label: "Add a candidate", href: `${base}/candidates` };
+    case "ai":
+      return opts.aiIncluded
+        ? { label: "Try AI screening", href: `${base}/ai-interviews` }
+        : { label: "Open workspace", href: base };
+    case "team":
+      return { label: "Invite a teammate", href: `${base}?section=members` };
+    default:
+      return { label: "Open workspace", href: base };
+  }
+}
+
+/** Roles that can do the setup steps, so only they see setup progress on the hub. */
+export const SETUP_ROLES = ["OWNER", "ADMIN", "RECRUITER"] as const;
+
+export type HubRowState =
+  | { kind: "review"; count: number }
+  | { kind: "setup"; done: number; total: number; next: SetupStep }
+  | { kind: "open" };
+
+/**
+ * What a workspace row on the hub shows on its right side: finished work
+ * waiting for a decision comes first, then setup progress (only for people
+ * who can act on it, and only before the first candidate), else nothing.
+ */
+export function hubRowState(input: { role: string; candidates: number; toReview: number; steps: SetupStep[] }): HubRowState {
+  if (input.toReview > 0) return { kind: "review", count: input.toReview };
+  const canSetUp = (SETUP_ROLES as readonly string[]).includes(input.role);
+  const next = nextSetupStep(input.steps);
+  if (canSetUp && input.candidates === 0 && next) {
+    return { kind: "setup", done: input.steps.filter((s) => s.done).length, total: input.steps.length, next };
+  }
+  return { kind: "open" };
+}
+
 /**
  * "Waiting for review": finished work whose candidate has no decision yet.
  * Passing or not passing the candidate is what clears an item, so the queue

@@ -1,11 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowRight, BookOpen, Building2, ChevronRight, ClipboardList, Mail, Plus, Users } from "lucide-react";
+import { ArrowRight, Building2, Mail, Plus, UserPlus } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isStaff } from "@/lib/permissions/staff";
-import { planDisplay, humanize, plural, relativeTime, setupSteps } from "@/lib/workspace/display";
+import {
+  hubRowState,
+  humanize,
+  planDisplay,
+  plural,
+  relativeTime,
+  setupStepAction,
+  setupSteps,
+  type HubRowState,
+  type PlanDisplay,
+} from "@/lib/workspace/display";
 import { countReviewQueue } from "@/lib/workspace/review-queue";
 import { effectivePlan } from "@/lib/billing/trial";
 import WorkspaceAppBar, { WorkspaceInitial } from "./_components/WorkspaceAppBar";
@@ -18,7 +28,32 @@ export const metadata: Metadata = {
     "Pick a recruiting workspace to manage candidates, interviews, take-homes, and your hiring team.",
 };
 
-const GRID = "md:grid-cols-[minmax(0,1fr)_150px_110px_220px_110px_20px]";
+/*
+ * The hub is a router, not a dashboard: one row per workspace, each with its
+ * identity, one state (work to review, setup progress, or nothing) and one
+ * action. The same row works for one workspace or twenty, and the Overview
+ * page keeps the full checklist and numbers.
+ */
+
+// Buttons grow to 44px on phones so they are comfortable to tap.
+const BTN = "inline-flex items-center justify-center gap-1.5 h-11 sm:h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors";
+const BTN_OUTLINE = `${BTN} border border-border-strong text-fg hover:bg-panel hover:border-fg/40`;
+const BTN_PRIMARY = `${BTN} bg-secondary text-bg hover:brightness-110`;
+
+/** "Just now" -> "just now", "22 Oct" stays as is. For mid-sentence relative times. */
+const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+
+type Row = {
+  name: string;
+  slug: string;
+  role: string;
+  plan: PlanDisplay;
+  candidates: number;
+  state: HubRowState;
+  /** "Active 5 min ago" once there is candidate activity, else "Created yesterday". */
+  activity: string;
+  activityAt: number;
+};
 
 export default async function WorkspaceHubPage() {
   const session = await auth().catch(() => null);
@@ -39,7 +74,7 @@ export default async function WorkspaceHubPage() {
             name: true,
             slug: true,
             planName: true,
-            trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
+            trialEndsAt: true,
             stripeSubscriptionId: true,
             createdAt: true,
             _count: {
@@ -65,7 +100,7 @@ export default async function WorkspaceHubPage() {
             acceptedAt: null,
             expiresAt: { gt: new Date() },
           },
-          select: { token: true, role: true, workspace: { select: { name: true } } },
+          select: { token: true, role: true, expiresAt: true, workspace: { select: { name: true } } },
           orderBy: { createdAt: "desc" },
         })
       : Promise.resolve([]),
@@ -80,7 +115,7 @@ export default async function WorkspaceHubPage() {
   const memberships = allMemberships.filter((m) => !m.workspace.slug.startsWith("__"));
   const reviewCounts = await Promise.all(memberships.map((m) => countReviewQueue(m.workspace.id)));
 
-  const rows = memberships.map(({ role, workspace: ws }, i) => {
+  const rows: Row[] = memberships.map(({ role, workspace: ws }, i) => {
     const plan = planDisplay(ws);
     const c = ws._count;
     const steps = setupSteps(
@@ -93,151 +128,99 @@ export default async function WorkspaceHubPage() {
       },
       { seatLimit: effectivePlan(ws).seatLimit, aiIncluded: plan.growthFeatures },
     );
-    const lastActive = ws.candidates[0]?.updatedAt ?? ws.createdAt;
+    const lastCandidate = ws.candidates[0]?.updatedAt ?? null;
+    const activityAt = lastCandidate ?? ws.createdAt;
     return {
       name: ws.name,
       slug: ws.slug,
-      role: humanize(role),
+      role,
       plan,
       candidates: c.candidates,
-      toReview: reviewCounts[i],
-      setupDone: steps.filter((s) => s.done).length,
-      setupTotal: steps.length,
-      lastActive: relativeTime(lastActive),
+      state: hubRowState({ role, candidates: c.candidates, toReview: reviewCounts[i], steps }),
+      activity: `${lastCandidate ? "Active" : "Created"} ${lowerFirst(relativeTime(activityAt))}`,
+      activityAt: activityAt.getTime(),
     };
+  });
+
+  // Work waiting for a decision first, then whatever was touched most recently.
+  rows.sort((a, b) => {
+    const ra = a.state.kind === "review" ? a.state.count : 0;
+    const rb = b.state.kind === "review" ? b.state.count : 0;
+    return rb - ra || b.activityAt - a.activityAt;
   });
 
   const user = { name: session.user.name, email: session.user.email, image: session.user.image };
   const switcher = rows.map((r) => ({ name: r.name, slug: r.slug, planLabel: r.plan.label }));
+  const attention = invites.length + joinable.length;
+  const only = rows.length === 1 ? rows[0] : null;
 
   return (
     <div className="min-h-dvh bg-bg text-fg font-sans flex flex-col">
       <WorkspaceAppBar workspaces={switcher} user={user} isAdmin={isAdmin} />
 
-      <main className="w-full max-w-[1120px] mx-auto px-4 md:px-8 py-8 md:py-12 flex flex-col gap-7">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-[28px] font-semibold tracking-[-0.02em]">Workspaces</h1>
-            <p className="mt-1.5 text-[15px] text-muted max-w-xl">
-              {rows.length > 0
-                ? "Each workspace keeps its own candidates, assessments, members and billing."
-                : "A workspace is your team's private space for candidates, assessments and interviews."}
-            </p>
-          </div>
-          <Link
-            href="/w/create"
-            className="self-start sm:self-auto inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-secondary text-bg text-sm font-medium hover:brightness-110 transition"
-          >
-            <Plus className="w-4 h-4" strokeWidth={2.25} aria-hidden />
-            Create workspace
-          </Link>
+      <main className="w-full max-w-[960px] mx-auto px-4 md:px-6 py-8 md:py-10 flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <h1 className="text-2xl md:text-[26px] font-semibold tracking-[-0.02em]">Workspaces</h1>
+          {rows.length > 0 && (
+            <Link href="/w/create" className={BTN_OUTLINE}>
+              <Plus className="w-4 h-4" strokeWidth={2.25} aria-hidden />
+              New workspace
+            </Link>
+          )}
         </div>
 
-        {invites.length > 0 && (
-          <section aria-labelledby="invites-title" className="rounded-xl border border-secondary/40 bg-surface">
-            <h2 id="invites-title" className="px-5 pt-4 pb-2 text-[15px] font-semibold">
-              {invites.length === 1 ? "You have an invitation" : `You have ${invites.length} invitations`}
-            </h2>
-            <ul>
+        {attention > 0 && (
+          <section aria-labelledby="attention-title" className="flex flex-col gap-2">
+            <SectionTitle id="attention-title">Needs your attention</SectionTitle>
+            <ul className="rounded-xl border border-border bg-surface overflow-hidden">
               {invites.map((inv) => (
-                <li key={inv.token} className="flex items-center gap-3 px-5 py-3 border-t border-border">
-                  <Mail className="w-4 h-4 text-secondary shrink-0" aria-hidden />
-                  <span className="flex-1 text-sm text-muted">
-                    <span className="text-fg font-medium">{inv.workspace.name}</span> invited you as{" "}
-                    {humanize(inv.role).toLowerCase()}
-                  </span>
-                  <Link
-                    href={`/invite/${inv.token}`}
-                    className="h-8 inline-flex items-center px-3 rounded-lg border border-border text-[13px] font-medium hover:bg-panel transition-colors"
-                  >
-                    Review invite
-                  </Link>
-                </li>
+                <AttentionRow
+                  key={inv.token}
+                  icon={<Mail className="w-4 h-4" aria-hidden />}
+                  text={
+                    <>
+                      <span className="text-fg font-semibold">{inv.workspace.name}</span> invited you as{" "}
+                      {humanize(inv.role).toLowerCase()}
+                    </>
+                  }
+                  detail={`Expires ${lowerFirst(relativeTime(inv.expiresAt))}`}
+                  action={
+                    <Link href={`/invite/${inv.token}`} className={BTN_OUTLINE}>
+                      Review invite
+                    </Link>
+                  }
+                />
               ))}
-            </ul>
-          </section>
-        )}
-
-        {joinable.length > 0 && (
-          <section aria-labelledby="joinable-title" className="rounded-xl border border-border bg-surface">
-            <div className="px-5 pt-4 pb-2">
-              <h2 id="joinable-title" className="text-[15px] font-semibold">
-                {joinable.length === 1 ? "A workspace you can join" : "Workspaces you can join"}
-              </h2>
-              <p className="mt-0.5 text-[13px] text-muted">Your email lets you join these without an invite.</p>
-            </div>
-            <ul>
               {joinable.map((w) => (
-                <li key={w.slug} className="flex items-center gap-3 px-5 py-3 border-t border-border">
-                  <WorkspaceInitial name={w.name} />
-                  <span className="flex-1 min-w-0 text-sm text-muted">
-                    <span className="text-fg font-medium">{w.name}</span>
-                    <span className="block text-[13px] text-subtle">
-                      {plural(w.members, "member")} · you join as {humanize(w.role).toLowerCase()}
-                    </span>
-                  </span>
-                  <JoinWorkspaceButton slug={w.slug} name={w.name} />
-                </li>
+                <AttentionRow
+                  key={w.slug}
+                  icon={<UserPlus className="w-4 h-4" aria-hidden />}
+                  text={
+                    <>
+                      <span className="text-fg font-semibold">{w.name}</span> is open to everyone with your email domain
+                    </>
+                  }
+                  detail={`You would join as ${humanize(w.role).toLowerCase()}${w.members > 0 ? ` · ${plural(w.members, "member")}` : ""}`}
+                  action={<JoinWorkspaceButton slug={w.slug} name={w.name} />}
+                />
               ))}
             </ul>
           </section>
         )}
 
         {rows.length > 0 ? (
-          <section aria-label="Your workspaces" className="rounded-xl border border-border bg-surface overflow-hidden">
-            <div className={`hidden md:grid ${GRID} gap-5 px-6 py-3 text-xs font-medium text-subtle`}>
-              <span>Workspace</span>
-              <span>Plan</span>
-              <span>Your role</span>
-              <span>Activity</span>
-              <span>Last active</span>
-              <span />
+          <section aria-labelledby="workspaces-title" className="flex flex-col gap-2">
+            <SectionTitle id="workspaces-title" hidden={attention === 0}>
+              Your workspaces
+            </SectionTitle>
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
+              <ul>
+                {rows.map((r) => (
+                  <WorkspaceRow key={r.slug} row={r} hideNext={r === only && r.state.kind === "setup"} />
+                ))}
+              </ul>
+              {only?.state.kind === "setup" && <NextStepPanel row={only} state={only.state} />}
             </div>
-            <ul>
-              {rows.map((r) => (
-                <li key={r.slug} className="border-t border-border first:border-t-0 md:first:border-t">
-                  <Link
-                    href={`/w/${r.slug}`}
-                    className={`grid grid-cols-[minmax(0,1fr)_20px] ${GRID} items-center gap-x-5 gap-y-2 px-4 md:px-6 py-4 hover:bg-panel transition-colors`}
-                  >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <WorkspaceInitial name={r.name} size="lg" />
-                      <div className="min-w-0">
-                        <div className="text-[15px] font-semibold truncate">{r.name}</div>
-                        <div className="font-mono text-xs text-subtle truncate mt-0.5">/w/{r.slug}</div>
-                      </div>
-                    </div>
-                    <ChevronRight className="md:hidden w-5 h-5 text-subtle row-span-2 self-center" aria-hidden />
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:contents">
-                      <span>
-                        {r.plan.onTrial ? (
-                          <span className="inline-block text-xs text-fg border border-secondary rounded-full px-2.5 py-0.5">
-                            Trial · {plural(r.plan.trialDaysLeft ?? 0, "day")} left
-                          </span>
-                        ) : (
-                          <span className="inline-block text-xs text-muted border border-border-strong rounded-full px-2.5 py-0.5">
-                            {r.plan.label}
-                          </span>
-                        )}
-                      </span>
-                      <span className="text-sm text-muted">{r.role}</span>
-                      <span className="text-sm text-muted">
-                        {r.candidates === 0 ? (
-                          `Setup ${r.setupDone} of ${r.setupTotal} done`
-                        ) : (
-                          <>
-                            {plural(r.candidates, "candidate")}
-                            {r.toReview > 0 && <span className="text-warning"> · {r.toReview} to review</span>}
-                          </>
-                        )}
-                      </span>
-                      <span className="text-[13px] text-subtle">{r.lastActive}</span>
-                    </div>
-                    <ChevronRight className="hidden md:block w-5 h-5 text-subtle" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
           </section>
         ) : (
           <section className="rounded-xl border border-border bg-surface px-6 py-12 flex flex-col items-center text-center gap-4">
@@ -247,52 +230,188 @@ export default async function WorkspaceHubPage() {
             <div>
               <h2 className="text-lg font-semibold">You are not in a workspace yet</h2>
               <p className="mt-1.5 text-sm text-muted max-w-md">
-                Create one for your team to start sending assessments. The first 14 days include every Growth
-                feature, with no card needed.
+                A workspace is your team&apos;s private space for candidates, assessments and interviews. The first 14
+                days include every Growth feature, with no card needed.
               </p>
             </div>
-            <Link
-              href="/w/create"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-secondary text-bg text-sm font-medium hover:brightness-110 transition"
-            >
+            <Link href="/w/create" className={BTN_PRIMARY}>
               Create workspace <ArrowRight className="w-4 h-4" aria-hidden />
             </Link>
           </section>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              icon: Mail,
-              title: "Have an invite?",
-              body: "Invitations from teammates show up here once you sign in with the invited email. Ask an owner to resend one that expired.",
-            },
-            {
-              icon: Users,
-              title: "One workspace per team",
-              body: "Split hiring by department or client. Candidates, members and billing never cross between workspaces.",
-            },
-            {
-              icon: rows.length > 0 ? BookOpen : ClipboardList,
-              title: "New to Intervutree?",
-              body: "See how take-homes, AI screening and live interviews fit together before you invite candidates.",
-              href: "/hire",
-              link: "How hiring works",
-            },
-          ].map((card) => (
-            <div key={card.title} className="rounded-xl border border-border p-5 flex flex-col gap-2">
-              <card.icon className="w-[18px] h-[18px] text-secondary" aria-hidden />
-              <h2 className="text-sm font-semibold">{card.title}</h2>
-              <p className="text-sm leading-relaxed text-muted">{card.body}</p>
-              {card.href && (
-                <Link href={card.href} className="text-sm font-medium text-secondary-soft hover:text-fg transition-colors mt-auto">
-                  {card.link}
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
+        <footer className="mt-4 pt-5 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-[13px] text-subtle">
+          <p>
+            {invites.length === 0
+              ? "Invitations from teammates appear on this page when you sign in with the invited email."
+              : "Each workspace keeps its own candidates, assessments, members and billing."}
+          </p>
+          <Link
+            href="/hire"
+            className="inline-flex items-center gap-1 min-h-11 sm:min-h-0 font-medium text-secondary-soft hover:text-fg transition-colors"
+          >
+            How hiring works <ArrowRight className="w-3.5 h-3.5" aria-hidden />
+          </Link>
+        </footer>
       </main>
+    </div>
+  );
+}
+
+function SectionTitle({ id, hidden, children }: { id: string; hidden?: boolean; children: React.ReactNode }) {
+  return (
+    <h2 id={id} className={`text-xs font-semibold uppercase tracking-[0.06em] text-subtle px-1 ${hidden ? "sr-only" : ""}`}>
+      {children}
+    </h2>
+  );
+}
+
+function AttentionRow({
+  icon,
+  text,
+  detail,
+  action,
+}: {
+  icon: React.ReactNode;
+  text: React.ReactNode;
+  detail: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <li className="grid grid-cols-[32px_minmax(0,1fr)] sm:grid-cols-[32px_minmax(0,1fr)_auto] gap-x-4 gap-y-3 items-center px-4 sm:px-5 py-4 border-t border-border first:border-t-0">
+      <span
+        aria-hidden
+        className="w-8 h-8 rounded-lg bg-panel border border-border flex items-center justify-center text-secondary-soft"
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm text-muted">{text}</p>
+        <p className="mt-0.5 text-[13px] text-subtle">{detail}</p>
+      </div>
+      <div className="col-start-2 sm:col-start-3 flex [&>*]:flex-1 sm:[&>*]:flex-none">{action}</div>
+    </li>
+  );
+}
+
+function WorkspaceRow({ row, hideNext }: { row: Row; hideNext?: boolean }) {
+  const { state } = row;
+  const fact =
+    state.kind === "setup"
+      ? hideNext
+        ? null
+        : `Next: ${lowerFirst(state.next.title)}`
+      : row.candidates > 0
+        ? plural(row.candidates, "candidate")
+        : null;
+  return (
+    <li className="group relative border-t border-border first:border-t-0 hover:bg-panel transition-colors">
+      <div className="grid grid-cols-[40px_minmax(0,1fr)] sm:grid-cols-[44px_minmax(0,1fr)_auto] gap-x-4 gap-y-3 items-center px-4 sm:px-5 py-4">
+        <WorkspaceInitial name={row.name} size="lg" />
+        <div className="min-w-0">
+          {/* The name is the row's one link; the stretched pseudo-element makes the whole row click. */}
+          <Link
+            href={`/w/${row.slug}`}
+            className="text-[15px] font-semibold text-fg group-hover:text-secondary-soft transition-colors after:absolute after:inset-0 after:content-['']"
+          >
+            {row.name}
+          </Link>
+          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-subtle">
+            <PlanChip plan={row.plan} />
+            <span className="text-muted">{humanize(row.role)}</span>
+            {/* The separator travels with its item, so a wrapped line never ends in a lone dot. */}
+            {[fact, row.activity].filter(Boolean).map((item) => (
+              <span key={item}>
+                <span aria-hidden className="mr-2">
+                  ·
+                </span>
+                {item}
+              </span>
+            ))}
+          </p>
+        </div>
+        <div className="relative z-10 col-start-2 sm:col-start-3 flex items-center gap-3 sm:gap-4 sm:justify-end">
+          <RowState state={state} />
+          {/* A lone workspace gets its buttons in the next-step panel below instead. */}
+          {!hideNext && (
+            <Link
+              href={`/w/${row.slug}`}
+              aria-label={`${state.kind === "setup" ? "Continue setup of" : "Open"} ${row.name}`}
+              className={`${state.kind === "review" ? BTN_PRIMARY : BTN_OUTLINE} flex-1 sm:flex-none`}
+            >
+              {state.kind === "setup" ? "Continue setup" : "Open"}
+            </Link>
+          )}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function PlanChip({ plan }: { plan: PlanDisplay }) {
+  return plan.onTrial ? (
+    <span className="inline-flex items-center h-5 px-2 rounded-full text-[11.5px] border border-secondary/60 text-secondary-soft">
+      Trial · {plural(plan.trialDaysLeft ?? 0, "day")} left
+    </span>
+  ) : (
+    <span className="inline-flex items-center h-5 px-2 rounded-full text-[11.5px] border border-border-strong text-muted">
+      {plan.label}
+    </span>
+  );
+}
+
+function RowState({ state }: { state: HubRowState }) {
+  if (state.kind === "review") {
+    return (
+      <span className="inline-flex items-center h-6 px-2.5 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/30 whitespace-nowrap">
+        {state.count} to review
+      </span>
+    );
+  }
+  if (state.kind === "setup") {
+    const pct = Math.round((state.done / state.total) * 100);
+    return (
+      <div className="flex-1 sm:flex-none sm:w-[150px] flex flex-col gap-1.5 min-w-0">
+        <span className="text-xs text-muted sm:text-right whitespace-nowrap">
+          <span className="text-fg font-semibold">
+            {state.done} of {state.total}
+          </span>{" "}
+          setup steps
+        </span>
+        <div
+          role="progressbar"
+          aria-label="Setup progress"
+          aria-valuemin={0}
+          aria-valuemax={state.total}
+          aria-valuenow={state.done}
+          className="h-1.5 w-full rounded-full bg-border overflow-hidden"
+        >
+          <div className="h-full rounded-full bg-success" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
+function NextStepPanel({ row, state }: { row: Row; state: Extract<HubRowState, { kind: "setup" }> }) {
+  const action = setupStepAction(state.next.id, row.slug, { aiIncluded: row.plan.growthFeatures });
+  return (
+    <div className="border-t border-border bg-bg/50 px-4 sm:px-5 py-4 grid sm:grid-cols-[minmax(0,1fr)_auto] gap-4 items-center">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">
+          Next: {lowerFirst(state.next.title)}
+        </p>
+        <p className="mt-0.5 text-[13px] text-muted">{state.next.body}</p>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Link href={`/w/${row.slug}`} className={BTN_OUTLINE}>
+          Open workspace
+        </Link>
+        <Link href={action.href} className={BTN_PRIMARY}>
+          {action.label}
+        </Link>
+      </div>
     </div>
   );
 }

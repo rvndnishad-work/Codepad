@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   awaitsReview,
+  hubRowState,
   humanize,
+  nextSetupStep,
   planDisplay,
+  setupStepAction,
   relativeTime,
   setupSteps,
   sourceLabel,
@@ -81,6 +84,38 @@ describe("setupSteps", () => {
       ["team", true],
     ]);
     expect(steps[4].body).toContain("5 seats");
+  });
+});
+
+describe("hub rows", () => {
+  const steps = (candidates: number) =>
+    setupSteps({ assessments: 0, candidates, aiScreenings: 0, members: 1, pendingInvites: 0 }, { seatLimit: 5, aiIncluded: true });
+
+  it("points at the first unfinished step", () => {
+    expect(nextSetupStep(steps(0))?.id).toBe("assessment");
+    expect(nextSetupStep(steps(0).map((s) => ({ ...s, done: true })))).toBeNull();
+  });
+
+  it("sends each step to the right place", () => {
+    expect(setupStepAction("assessment", "acme", { aiIncluded: true })).toEqual({ label: "Send a take home", href: "/w/acme/take-homes/new" });
+    expect(setupStepAction("candidate", "acme", { aiIncluded: true }).href).toBe("/w/acme/candidates");
+    expect(setupStepAction("ai", "acme", { aiIncluded: false }).href).toBe("/w/acme");
+    expect(setupStepAction("team", "acme", { aiIncluded: true }).href).toBe("/w/acme?section=members");
+  });
+
+  it("puts work waiting for review before everything else", () => {
+    expect(hubRowState({ role: "OWNER", candidates: 12, toReview: 7, steps: steps(12) })).toEqual({ kind: "review", count: 7 });
+  });
+
+  it("shows setup progress only to people who can do the steps", () => {
+    const owner = hubRowState({ role: "OWNER", candidates: 0, toReview: 0, steps: steps(0) });
+    expect(owner).toMatchObject({ kind: "setup", done: 1, total: 5 });
+    expect(hubRowState({ role: "INTERVIEWER", candidates: 0, toReview: 0, steps: steps(0) })).toEqual({ kind: "open" });
+    expect(hubRowState({ role: "VIEWER", candidates: 0, toReview: 0, steps: steps(0) })).toEqual({ kind: "open" });
+  });
+
+  it("stops showing setup once the first candidate is in", () => {
+    expect(hubRowState({ role: "OWNER", candidates: 3, toReview: 0, steps: steps(3) })).toEqual({ kind: "open" });
   });
 });
 

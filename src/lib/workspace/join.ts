@@ -54,7 +54,7 @@ export async function joinWorkspaceWithoutInvite(
       id: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       joinWithoutInvite: true,
       allowedEmailDomains: true,

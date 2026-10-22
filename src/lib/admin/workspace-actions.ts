@@ -236,7 +236,7 @@ async function wsLabel(id: string) {
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       trialEndedAt: true,
       stripeCustomerId: true,
       stripeSubscriptionId: true,

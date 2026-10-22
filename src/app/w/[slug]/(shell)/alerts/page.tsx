@@ -38,7 +38,7 @@ export default async function AlertsPage({ params, searchParams }: Props) {
       id: true,
       name: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },

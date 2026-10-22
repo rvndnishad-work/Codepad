@@ -114,7 +114,7 @@ const propose_extend_trial = def(
     required: ["workspaceId", "days", "note"],
   },
   async (a) => {
-    const ws = await prisma.workspace.findUnique({ where: { id: String(a.workspaceId) }, select: { name: true, trialEndsAt: true } });
+    const ws = await prisma.workspace.findUnique({ where: { id: String(a.workspaceId) }, select: { name: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true } });
     if (!ws) return refused("Workspace not found");
     const base = ws.trialEndsAt && ws.trialEndsAt.getTime() > Date.now() ? ws.trialEndsAt : new Date();
     const after = new Date(base.getTime() + (a.days as number) * 86_400_000);

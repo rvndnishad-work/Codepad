@@ -46,7 +46,7 @@ export async function POST(
 
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId },
-      select: { id: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, atsIntegration: true },
+      select: { id: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, atsIntegration: true },
     });
 
     // Only a workspace that connected this ATS accepts its webhooks. Without

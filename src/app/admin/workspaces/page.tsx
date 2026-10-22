@@ -72,7 +72,7 @@ export default async function AdminWorkspacesPage({ searchParams }: Props) {
       slug: true,
       planName: true,
       createdAt: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       stripeStatus: true,
       stripePastDueSince: true,

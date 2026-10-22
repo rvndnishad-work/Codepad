@@ -128,7 +128,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
       select: {
         role: true,
         lastActiveAt: true,
-        workspace: { select: { id: true, name: true, planName: true, trialEndsAt: true } },
+        workspace: { select: { id: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true } },
       },
     }),
     prisma.challengeAttempt.findMany({

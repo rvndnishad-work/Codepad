@@ -61,7 +61,7 @@ const find_workspace: ToolDef = {
       take: 8,
       orderBy: { createdAt: "desc" },
       select: {
-        id: true, name: true, slug: true, planName: true, trialEndsAt: true, stripeStatus: true,
+        id: true, name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeStatus: true,
         lockedAt: true, _count: { select: { members: true } },
       },
     });
@@ -98,7 +98,7 @@ const get_workspace: ToolDef = {
     const ws = await prisma.workspace.findFirst({
       where: { OR: [{ id }, { slug: id }] },
       select: {
-        id: true, name: true, slug: true, planName: true, createdAt: true, trialEndsAt: true, trialEndedAt: true,
+        id: true, name: true, slug: true, planName: true, createdAt: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, trialEndedAt: true,
         stripeCustomerId: true, stripeStatus: true, stripeSeatQuantity: true, stripeMrrCents: true, stripeInterval: true,
         stripeCurrentPeriodEnd: true, stripePastDueSince: true, stripeSyncedAt: true,
         lockedAt: true, lockedReason: true, deletionScheduledAt: true, videoEnabled: true,
@@ -236,7 +236,7 @@ const list_workspaces_needing_attention: ToolDef = {
         where: { trialEndsAt: { gte: now, lte: new Date(now.getTime() + 7 * DAY) } },
         take: 10,
         orderBy: { trialEndsAt: "asc" },
-        select: { id: true, name: true, trialEndsAt: true },
+        select: { id: true, name: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true },
       }),
       prisma.aIScreeningBatch.findMany({
         where: { status: "ACTIVE" },
@@ -610,7 +610,7 @@ const list_trials_ending: ToolDef = {
       orderBy: { trialEndsAt: "asc" },
       take: 25,
       select: {
-        id: true, name: true, planName: true, trialEndsAt: true, stripeStatus: true, createdAt: true,
+        id: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeStatus: true, createdAt: true,
         _count: { select: { members: true, candidates: true, aiScreeningBatches: true } },
       },
     });

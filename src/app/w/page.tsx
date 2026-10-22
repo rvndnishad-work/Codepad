@@ -39,7 +39,7 @@ export default async function WorkspaceHubPage() {
             name: true,
             slug: true,
             planName: true,
-            trialEndsAt: true,
+            trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
             stripeSubscriptionId: true,
             createdAt: true,
             _count: {

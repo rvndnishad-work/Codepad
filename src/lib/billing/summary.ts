@@ -2,7 +2,7 @@
  * What the Billing page says about the current plan. Pure, so the heading
  * rules are unit-tested instead of living as ternaries in a component.
  */
-import { effectivePlan, trialActive, type PlanFields, TRIAL_SEAT_LIMIT, FREE_SEAT_LIMIT, TRIAL_DURATION_DAYS } from "./trial";
+import { effectivePlan, prepaidActive, prepaidLapsed, trialActive, type PlanFields, TRIAL_SEAT_LIMIT, FREE_SEAT_LIMIT, TRIAL_DURATION_DAYS } from "./trial";
 import { defaultGrowthSeatPrice, formatUsd, planConfig, type SeatPrice } from "./plans";
 
 const DAY_MS = 86_400_000;
@@ -22,6 +22,7 @@ export type PlanSummary = {
 };
 
 const fmtDay = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+const fmtDate = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 /** `growth` is the effective Growth seat price (admin override or default). */
 export function planSummary(
@@ -46,6 +47,29 @@ export function planSummary(
   }
 
   const base = { trialDaysLeft: null, trialUsed: null };
+
+  // Prepaid Growth: paid once through Razorpay, until a date.
+  if (prepaidActive(ws, now) && ws.prepaidThrough) {
+    const seats = ws.prepaidSeats ?? 0;
+    return {
+      ...base,
+      heading: "Growth",
+      body: `Paid until ${fmtDate(new Date(ws.prepaidThrough))} for ${seats} seat${seats === 1 ? "" : "s"}. Renew before then to keep Growth; renewing adds to the end date.`,
+      compareKey: "GROWTH",
+      seatHint: `${seats} seat${seats === 1 ? "" : "s"} paid for. To add more people, renew with more seats.`,
+    };
+  }
+  // Lapsed: either not yet swept (still GROWTH) or already moved back to Free.
+  const lapsed = prepaidLapsed(ws, now) || (ws.planName === "FREE" && !ws.stripeSubscriptionId && Boolean(ws.prepaidThrough) && new Date(ws.prepaidThrough ?? 0).getTime() <= now.getTime());
+  if (lapsed && ws.prepaidThrough) {
+    return {
+      ...base,
+      heading: "Free",
+      body: `Your paid Growth period ended on ${fmtDate(new Date(ws.prepaidThrough))}. Renew to turn AI screening and connections back on.`,
+      compareKey: "FREE",
+      seatHint: `Free allows ${FREE_SEAT_LIMIT} seats.`,
+    };
+  }
   switch (ws.planName) {
     case "ENTERPRISE":
       return {

@@ -30,7 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         ...ROOM_SELECT,
         type: true,
         builtinVideo: true,
-        workspace: { select: { planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true } },
+        workspace: { select: { planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, videoEnabled: true } },
       },
     }),
   ]);

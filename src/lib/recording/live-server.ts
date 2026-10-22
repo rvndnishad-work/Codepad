@@ -58,7 +58,7 @@ const SESSION_SELECT = {
   recordVideo: true,
   candidateConsentAt: true,
   candidateName: true,
-  workspace: { select: { planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true } },
+  workspace: { select: { planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, videoEnabled: true } },
   user: { select: { name: true } },
 } as const;
 

@@ -232,7 +232,7 @@ export async function sendRequestScreening(requestId: string, opts: { actorUserI
       where: { id: requestId },
       include: {
         candidate: { select: { id: true, name: true, email: true } },
-        workspace: { select: { id: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true } },
+        workspace: { select: { id: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true } },
       },
     });
     if (!req) return { ok: false, error: "That request no longer exists." };

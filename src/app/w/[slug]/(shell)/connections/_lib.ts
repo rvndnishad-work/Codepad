@@ -14,7 +14,7 @@ export async function connectionsViewer(slug: string, path: string) {
       id: true,
       name: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       members: { select: { userId: true, role: true, permissions: true } },
     },

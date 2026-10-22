@@ -18,7 +18,7 @@ export const getAdminWorkspace = cache(async (id: string) => {
         planName: true,
         createdAt: true,
         logoUrl: true,
-        trialEndsAt: true,
+        trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
         trialEndedAt: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,

@@ -96,7 +96,7 @@ export async function authenticateRequest(
     where: { keyHash },
     include: {
       workspace: {
-        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, deletionScheduledAt: true },
+        select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, deletionScheduledAt: true },
       },
     },
   });

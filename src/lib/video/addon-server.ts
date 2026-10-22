@@ -102,7 +102,7 @@ export async function setVideoAddon({
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       videoEnabled: true,
       videoEnabledAt: true,

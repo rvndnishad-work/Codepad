@@ -1030,6 +1030,21 @@ model Workspace {
   trialEndsAt          DateTime?
   createdAt            DateTime                  @default(now())
 
+  // ── Prepaid Growth (Razorpay one-time payment) ─────────────────────────
+  /// Growth is paid up to this moment. planName is GROWTH while it is in the
+  /// future; the prepaid-expiry cron moves the workspace back to FREE after.
+  /// Null for Stripe subscriptions, Free and Enterprise.
+  prepaidThrough       DateTime?
+  /// Seats paid for. Caps members + pending invites while prepaid is active.
+  prepaidSeats         Int?
+  /// "monthly" or "annual": the period of the last prepaid payment.
+  prepaidCadence       String?
+  /// Razorpay payment id that last extended prepaidThrough, so a repeated
+  /// verify call never extends twice.
+  prepaidLastPaymentId String?
+  /// When the "renew soon" reminder went out for the current period.
+  prepaidReminderAt    DateTime?
+
   // ── Admin console: Stripe snapshot (synced nightly + by webhook) ───────
   /// Stripe subscription status: active, trialing, past_due, canceled, unpaid…
   stripeStatus         String?

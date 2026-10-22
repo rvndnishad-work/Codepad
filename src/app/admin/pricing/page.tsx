@@ -70,6 +70,13 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
             and <code>src/lib/video/addon.ts</code>. Every save needs a note and is kept in the history below.
           </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+        <Link
+          href="/admin/pricing/razorpay-test"
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-fg hover:bg-panel"
+        >
+          Razorpay test payment
+        </Link>
         <Link
           href="/pricing"
           target="_blank"
@@ -77,6 +84,7 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
         >
           View /pricing <ExternalLink className="h-3.5 w-3.5" />
         </Link>
+        </div>
       </div>
 
       <PricingCopyForm

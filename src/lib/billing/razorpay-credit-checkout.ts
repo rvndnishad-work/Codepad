@@ -4,8 +4,11 @@
  * credit packs whenever RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are set.
  *
  * 1. createRazorpayCreditOrder makes a Razorpay order for the pack's effective
- *    price. The workspace, pack and credit count ride in the order's notes,
- *    so no table of pending orders is needed.
+ *    price, converted from US dollars to rupees at the day's rate (./fx) so
+ *    UPI, netbanking and wallets are offered; foreign cards still pay through
+ *    Razorpay's currency conversion. The workspace, pack, credit count and the
+ *    rate used ride in the order's notes, so no table of pending orders is
+ *    needed.
  * 2. The browser opens the Razorpay modal with that order id.
  * 3. fulfillRazorpayCreditPayment checks the signature, re-reads the order
  *    and payment from Razorpay, and credits the workspace through the same
@@ -21,9 +24,11 @@ import { checkLowCredits } from "./credit-alerts";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { getEffectivePricing } from "./pricing-copy-store";
 import { findCreditPack } from "./prices";
+import { getUsdInrRate } from "./fx";
+import { usdCentsToInrPaise } from "./fx-math";
 
-/** Packs are priced in US cents, so Razorpay charges USD in cents. */
-export const RAZORPAY_CREDIT_CURRENCY = "USD";
+/** Packs are priced in US cents and charged in rupees (paise). */
+export const RAZORPAY_CREDIT_CURRENCY = "INR";
 /** Razorpay rejects orders below 100 of the smallest currency unit. */
 export const RAZORPAY_MIN_AMOUNT = 100;
 const KIND = "AI_CREDIT_PACK";
@@ -50,7 +55,11 @@ export async function createRazorpayCreditOrder(a: {
 }): Promise<RazorpayCreditOrder> {
   const pack = findCreditPack(await getEffectivePricing(), a.packId);
   if (!pack) throw new RazorpayCheckoutError("Unknown credit pack.");
-  const amount = pack.priceCents;
+  const fx = await getUsdInrRate();
+  if (!fx) {
+    throw new RazorpayCheckoutError("Could not get today's exchange rate, so checkout cannot open. Try again in a few minutes.", 503);
+  }
+  const amount = usdCentsToInrPaise(pack.priceCents, fx.rate);
   if (!Number.isInteger(amount) || amount < RAZORPAY_MIN_AMOUNT) {
     throw new RazorpayCheckoutError("This pack is priced below the minimum Razorpay can charge.");
   }
@@ -66,17 +75,16 @@ export async function createRazorpayCreditOrder(a: {
       workspaceSlug: a.workspace.slug,
       packId: pack.id,
       credits: String(pack.credits),
+      usdCents: String(pack.priceCents),
+      usdInrRate: String(fx.rate),
+      rateSource: fx.source,
     },
   });
 
-  // Prices are in US cents. An order in any other currency would charge the
-  // same number in that currency's units (2900 as INR is Rs 29, not $29).
+  // Never open the modal for an order that is not exactly what we priced.
   if (order.currency !== RAZORPAY_CREDIT_CURRENCY || Number(order.amount) !== amount) {
     console.error(`[billing] Razorpay returned order ${order.id} as ${order.amount} ${order.currency}, expected ${amount} ${RAZORPAY_CREDIT_CURRENCY}.`);
-    throw new RazorpayCheckoutError(
-      "Card payments in US dollars are not switched on for this account yet. Nothing was charged.",
-      503,
-    );
+    throw new RazorpayCheckoutError("The payment provider returned an unexpected amount. Nothing was charged.", 502);
   }
 
   return {
@@ -84,7 +92,7 @@ export async function createRazorpayCreditOrder(a: {
     amount: Number(order.amount),
     currency: order.currency,
     key_id: a.keyId,
-    description: `${pack.credits} AI screening credits for "${a.workspace.name}"`,
+    description: `${pack.credits} AI screening credits for "${a.workspace.name}" ($${(pack.priceCents / 100).toLocaleString("en-US")})`,
   };
 }
 
@@ -118,15 +126,28 @@ export async function fulfillRazorpayCreditPayment(a: {
   }
 
   let payment = await rzp.payments.fetch(a.paymentId);
-  if (payment.order_id !== a.orderId || Number(payment.amount) !== Number(order.amount) || payment.currency !== order.currency) {
+  if (payment.order_id !== a.orderId) {
+    throw new RazorpayCheckoutError("The payment does not match the order. Nothing was credited.");
+  }
+  // A foreign card paying in its own currency (Razorpay currency conversion)
+  // may report another currency on the payment; then the order's own paid
+  // total is the check, read again after capture below.
+  const sameCurrency = payment.currency === order.currency;
+  if (sameCurrency && Number(payment.amount) !== Number(order.amount)) {
     throw new RazorpayCheckoutError("The payment does not match the order. Nothing was credited.");
   }
   // Accounts with automatic capture off leave the payment authorized.
   if (payment.status === "authorized") {
-    payment = await rzp.payments.capture(a.paymentId, Number(order.amount), order.currency);
+    payment = await rzp.payments.capture(a.paymentId, Number(payment.amount), payment.currency);
   }
   if (payment.status !== "captured") {
     throw new RazorpayCheckoutError(`The payment is ${payment.status}, so no credits were added.`, 402);
+  }
+  if (!sameCurrency) {
+    const after = await rzp.orders.fetch(a.orderId);
+    if (Number(after.amount_paid) < Number(order.amount)) {
+      throw new RazorpayCheckoutError("The order is not fully paid, so no credits were added.", 402);
+    }
   }
 
   const res = await recordPurchase({

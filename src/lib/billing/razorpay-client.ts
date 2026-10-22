@@ -50,25 +50,35 @@ async function postJson(url: string, body: unknown): Promise<{ ok: boolean; stat
 const errorOf = (data: Record<string, unknown> | null, fallback: string) =>
   typeof data?.error === "string" ? data.error : fallback;
 
-export async function payForCreditPack(a: {
-  slug: string;
-  packId: string;
+export type RazorpayRunResult =
+  | { status: "paid"; data: Record<string, unknown> }
+  | { status: "cancelled" }
+  | { status: "error"; message: string };
+
+/**
+ * The whole Standard Checkout round trip against any pair of routes:
+ * createUrl answers { order_id, amount, currency, key_id, description },
+ * verifyUrl takes Razorpay's three fields and answers 2xx when it accepts them.
+ */
+export async function runRazorpayCheckout(a: {
+  createUrl: string;
+  createBody: unknown;
+  verifyUrl: string;
   /** Fires once the modal is open, so the caller can clear its busy state. */
   onOpen?: () => void;
   /** Fires on a failed attempt; the modal stays open so the buyer can retry. */
   onAttemptFailed?: (message: string) => void;
-}): Promise<RazorpayCheckoutResult> {
-  const base = `/api/w/${encodeURIComponent(a.slug)}/billing/razorpay`;
+}): Promise<RazorpayRunResult> {
   try {
-    const [Razorpay, order] = await Promise.all([loadCheckout(), postJson(`${base}/create-order`, { packId: a.packId })]);
+    const [Razorpay, order] = await Promise.all([loadCheckout(), postJson(a.createUrl, a.createBody)]);
     if (!order.ok || !order.data?.order_id) return { status: "error", message: errorOf(order.data, "Could not start the payment. Try again in a moment.") };
     const o = order.data as { order_id: string; amount: number; currency: string; key_id: string; description: string };
     const keyId = o.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "";
     if (!keyId) return { status: "error", message: "Online payments are not set up on this server yet." };
 
-    return await new Promise<RazorpayCheckoutResult>((resolve) => {
+    return await new Promise<RazorpayRunResult>((resolve) => {
       let settled = false;
-      const done = (r: RazorpayCheckoutResult) => {
+      const done = (r: RazorpayRunResult) => {
         if (!settled) {
           settled = true;
           resolve(r);
@@ -82,11 +92,11 @@ export async function payForCreditPack(a: {
         name: "Intervutree",
         description: o.description,
         handler: async (resp: SuccessResponse) => {
-          // Retry once on a server or network hiccup; the route is idempotent.
+          // Retry once on a server or network hiccup; the routes are idempotent.
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              const v = await postJson(`${base}/verify-payment`, resp);
-              if (v.ok) return done({ status: "paid", credits: Number(v.data?.credits) || 0 });
+              const v = await postJson(a.verifyUrl, resp);
+              if (v.ok) return done({ status: "paid", data: v.data ?? {} });
               if (v.status < 500) return done({ status: "error", message: errorOf(v.data, "The payment could not be confirmed.") });
               if (attempt === 1) return done({ status: "error", message: errorOf(v.data, "The payment could not be confirmed.") });
             } catch {
@@ -107,4 +117,21 @@ export async function payForCreditPack(a: {
   } catch (err) {
     return { status: "error", message: err instanceof Error ? err.message : "Could not start the payment." };
   }
+}
+
+export async function payForCreditPack(a: {
+  slug: string;
+  packId: string;
+  onOpen?: () => void;
+  onAttemptFailed?: (message: string) => void;
+}): Promise<RazorpayCheckoutResult> {
+  const base = `/api/w/${encodeURIComponent(a.slug)}/billing/razorpay`;
+  const res = await runRazorpayCheckout({
+    createUrl: `${base}/create-order`,
+    createBody: { packId: a.packId },
+    verifyUrl: `${base}/verify-payment`,
+    onOpen: a.onOpen,
+    onAttemptFailed: a.onAttemptFailed,
+  });
+  return res.status === "paid" ? { status: "paid", credits: Number(res.data.credits) || 0 } : res;
 }

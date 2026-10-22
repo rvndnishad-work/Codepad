@@ -179,7 +179,7 @@ export async function loadRoom(
       rubric: { select: { ratings: true, notes: true } },
       candidateConsentAt: true,
       user: { select: { name: true, email: true } },
-      workspace: { select: { id: true, slug: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true, ...CANDIDATE_PAGE_SELECT } },
+      workspace: { select: { id: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, videoEnabled: true, ...CANDIDATE_PAGE_SELECT } },
       guests: { select: { email: true }, orderBy: { createdAt: "asc" } },
     },
   });

@@ -4,6 +4,7 @@ import { requireAdminAccess } from "@/lib/permissions/staff";
 import { SWITCHES, type SwitchState } from "@/lib/admin/switches";
 import { OpsHeader, OpsTabs } from "../maintenance/_parts";
 import SwitchesTable, { type SwitchRow } from "./SwitchesTable";
+import { currentSite } from "@/lib/current-site";
 
 export const metadata = {
   title: "Feature switches — Admin",
@@ -18,6 +19,10 @@ function normalise(s: string | null | undefined): SwitchState {
 export default async function SwitchesPage({ searchParams }: { searchParams: Promise<{ key?: string }> }) {
   await requireAdminAccess("platform:admin");
   const { key } = await searchParams;
+  // On one domain, show that side's switches and the shared ones.
+  const site = await currentSite();
+  const hiddenSide = site === "recruiter" ? "developer" : site === "developer" ? "hiring" : null;
+  const defs = SWITCHES.filter((s) => s.side !== hiddenSide);
   const now = new Date();
   const hourAgo = new Date(now.getTime() - 3_600_000);
   const dayAgo = new Date(now.getTime() - 24 * 3_600_000);
@@ -35,7 +40,7 @@ export default async function SwitchesPage({ searchParams }: { searchParams: Pro
     : [];
   const names = new Map(users.map((u) => [u.id, u.name || u.email || "Unknown"]));
 
-  const data: SwitchRow[] = SWITCHES.map((d) => {
+  const data: SwitchRow[] = defs.map((d) => {
     const r = byKey.get(d.key);
     const expired = !!r?.resumeAt && r.resumeAt.getTime() <= now.getTime();
     return {

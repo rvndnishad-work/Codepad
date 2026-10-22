@@ -30,7 +30,7 @@ export async function loadCandidateEmailContext(workspaceId: string): Promise<Ca
       helpEmail: true,
       privacyNoticeUrl: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       candidateEmailTemplates: { select: { key: true, subject: true, body: true } },
     },

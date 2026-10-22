@@ -37,7 +37,7 @@ async function loadContext(slug: string) {
       id: true,
       name: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       allowedEmailDomains: true,
       members: { select: { id: true, userId: true, role: true, permissions: true, user: { select: { name: true, email: true } } } },

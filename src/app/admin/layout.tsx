@@ -7,6 +7,7 @@ import FloatingJarvisAgent from "./FloatingJarvisAgent";
 import { loadUserPermissions } from "@/lib/permissions/access";
 import { visibleNav } from "./admin-nav";
 import { loadNavBadges } from "./nav-badges";
+import { currentSite } from "@/lib/current-site";
 
 export const metadata = {
   title: "Admin",
@@ -25,9 +26,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     await ensureTotpEnrolledOrRedirect(session.user.id, true);
   }
 
-  // The sidebar shows only the pages this person's permissions open.
+  // The sidebar shows only the pages this person's permissions open, and only
+  // the sections of the domain the console is opened on.
   const perms = session?.user?.id ? await loadUserPermissions(session.user.id) : new Set<string>();
-  const nav = visibleNav(perms as ReadonlySet<string>);
+  const nav = visibleNav(perms as ReadonlySet<string>, await currentSite());
   const badges = await loadNavBadges(perms as ReadonlySet<string>);
 
   return (

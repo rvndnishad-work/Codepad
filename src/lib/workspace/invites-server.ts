@@ -56,7 +56,7 @@ export type BulkInviteResult = {
  * used to go past the seat cap or the allowed domains.
  */
 export async function sendBulkInvites(a: {
-  workspace: { id: string; name: string; planName: string; trialEndsAt: Date | null; stripeSubscriptionId: string | null; allowedEmailDomains: string[] };
+  workspace: { id: string; name: string; planName: string; trialEndsAt: Date | null; stripeSubscriptionId: string | null; prepaidThrough?: Date | null; prepaidSeats?: number | null; allowedEmailDomains: string[] };
   actor: { userId: string; email: string | null; name: string };
   rows: InviteRowInput[];
   now?: Date;

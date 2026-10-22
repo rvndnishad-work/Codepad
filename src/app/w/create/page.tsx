@@ -55,6 +55,13 @@ export default function CreateWorkspacePage() {
         description: `Welcome to ${name}. Redirecting...`,
       });
 
+      // Picked a paid plan on /pricing first: go straight on to paying for it.
+      const intent = new URLSearchParams(window.location.search);
+      if (intent.get("plan") === "growth") {
+        const cadence = intent.get("cadence") === "monthly" ? "monthly" : "annual";
+        router.push(`/w/${data.slug}/billing?upgrade=growth&cadence=${cadence}`);
+        return;
+      }
       // Redirect directly to the new multi-tenant workspace dashboard
       router.push(`/w/${data.slug}`);
     } catch (err) {

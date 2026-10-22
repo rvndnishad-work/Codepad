@@ -223,7 +223,7 @@ export async function scheduleInterviewsAction(slug: string, raw: ScheduleInput)
     // the add-on is switched on later.
     const ws = await prisma.workspace.findUnique({
       where: { id: a.workspace.id },
-      select: { planName: true, trialEndsAt: true, stripeSubscriptionId: true, videoEnabled: true },
+      select: { planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, videoEnabled: true },
     });
     const videoOn = !!ws && videoCallsOn(ws);
     const builtinVideo = videoOn ? d.builtinVideo !== false : !meeting.url;

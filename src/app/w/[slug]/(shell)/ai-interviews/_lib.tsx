@@ -31,7 +31,7 @@ export async function loadAiAccess(slug: string, path: string): Promise<AiAccess
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } },
     },

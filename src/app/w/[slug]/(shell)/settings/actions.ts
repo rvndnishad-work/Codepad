@@ -53,7 +53,7 @@ export async function saveWorkspaceSettingsAction(
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       ...SETTINGS_SELECT,
       members: { where: { userId: session.user.id }, select: { role: true, permissions: true } },

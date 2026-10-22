@@ -100,7 +100,7 @@ async function run(p: Proposal, a: Record<string, unknown>, actor: AdminActor): 
 
     case "extend_trial": {
       const workspaceId = String(a.workspaceId);
-      const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true, trialEndsAt: true } });
+      const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true } });
       if (!ws) throw new ProposalError("Workspace not found", 404);
       const base = ws.trialEndsAt && ws.trialEndsAt.getTime() > Date.now() ? ws.trialEndsAt : new Date();
       const trialEndsAt = new Date(base.getTime() + (a.days as number) * DAY);

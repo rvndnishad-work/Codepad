@@ -35,7 +35,7 @@ async function run(req: NextRequest) {
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       members: {
         where: { role: { in: [...MANAGER_ROLES] } },
         select: { userId: true },

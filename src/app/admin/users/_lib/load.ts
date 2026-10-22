@@ -58,7 +58,7 @@ const RECRUITER_SELECT = {
   workspaces: {
     take: 6,
     orderBy: { workspace: { createdAt: "asc" } },
-    select: { role: true, workspace: { select: { id: true, name: true, slug: true, planName: true, trialEndsAt: true } } },
+    select: { role: true, workspace: { select: { id: true, name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true } } },
   },
 } satisfies Prisma.UserSelect;
 

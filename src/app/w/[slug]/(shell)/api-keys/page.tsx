@@ -47,7 +47,7 @@ export default async function WorkspaceApiKeysPage({ params, searchParams }: Pro
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       apiKeyMaxLifetimeDays: true,
       members: { select: { userId: true, role: true, permissions: true } },

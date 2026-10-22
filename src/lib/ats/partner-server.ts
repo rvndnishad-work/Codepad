@@ -39,7 +39,7 @@ async function workspaceForKey(authHeader: string | null) {
     where: { partnerKeyHash: hashPartnerKey(key) },
     select: {
       provider: true,
-      workspace: { select: { id: true, slug: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true } },
+      workspace: { select: { id: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true } },
     },
   });
   if (!integration || integration.provider !== GREENHOUSE) return null;

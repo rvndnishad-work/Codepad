@@ -15,6 +15,7 @@ import type { UsageMonth } from "@/lib/billing/usage";
 import { saveWorkspaceSettingsAction } from "../settings/actions";
 import { buyCreditsAction } from "./actions";
 import { payForCreditPack } from "@/lib/billing/razorpay-client";
+import { formatInr, usdCentsToInrPaise } from "@/lib/billing/fx-math";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
 import { DEFAULT_LOW_CREDITS, RUNWAY_WINDOW_DAYS, creditHealth, creditRunway, packSavings, screeningsCovered, type CreditGlance } from "@/lib/billing/credit-glance";
 
@@ -40,6 +41,8 @@ export type UsageData = {
   purchase: "success" | "cancel" | null;
   /** Who takes credit pack payments: Razorpay's modal, Stripe's hosted page, or nobody yet. */
   checkout: "razorpay" | "stripe" | null;
+  /** USD to INR rate Razorpay checkout converts at, when it charges rupees. */
+  inrRate: number | null;
 };
 
 type Notify = (text: string, tone?: "ok" | "error") => void;
@@ -271,6 +274,7 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
               <span className="mt-1.5 text-[24px] leading-none font-semibold tracking-tight tabular-nums text-fg">{p.credits.toLocaleString("en-GB")}</span>
               <span className="text-xs text-subtle">credits</span>
               <span className="mt-3 text-[15px] font-semibold tabular-nums text-fg">{money(p.priceCents)}</span>
+              {data.inrRate ? <span className="text-xs tabular-nums text-muted">about {formatInr(usdCentsToInrPaise(p.priceCents, data.inrRate))}</span> : null}
               <span className="flex flex-wrap items-center gap-1.5 text-xs tabular-nums text-subtle">
                 ${(p.priceCents / 100 / p.credits).toFixed(2)} each
                 {save ? <span className="inline-flex items-center h-5 px-1.5 rounded bg-success/15 text-success font-medium">Save {save}%</span> : null}
@@ -305,6 +309,9 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
             <span className="text-sm text-fg">
               <span className="font-semibold tabular-nums">{pack.credits.toLocaleString("en-GB")} credits</span> for{" "}
               <span className="font-semibold tabular-nums">{money(pack.priceCents)}</span>
+              {data.inrRate ? (
+                <span className="text-muted tabular-nums">, charged as {formatInr(usdCentsToInrPaise(pack.priceCents, data.inrRate))} today</span>
+              ) : null}
             </span>
             <span className="text-xs text-muted tabular-nums">
               Balance after: {(data.credits.available + pack.credits).toLocaleString("en-GB")} available. Covers about{" "}

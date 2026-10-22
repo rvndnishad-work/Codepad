@@ -30,7 +30,7 @@ export default async function WorkspaceExternalMcpPage({ params }: Props) {
       name: true,
       slug: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       allowExternalMcp: true,
       members: { select: { userId: true, role: true, permissions: true } },

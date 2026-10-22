@@ -120,7 +120,7 @@ export async function emitWorkspaceEvent<E extends WorkspaceEvent>(
   try {
     const ws = await prisma.workspace.findUnique({
       where: { id: workspaceId },
-      select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, stripeSubscriptionId: true },
+      select: { id: true, slug: true, name: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true },
     });
     if (!ws || !growthToolsEnabled(ws)) return;
 

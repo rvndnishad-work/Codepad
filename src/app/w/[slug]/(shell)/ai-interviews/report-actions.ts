@@ -37,7 +37,7 @@ async function assertReportWriter(slug: string) {
     select: {
       id: true,
       planName: true,
-      trialEndsAt: true,
+      trialEndsAt: true, prepaidThrough: true, prepaidSeats: true,
       stripeSubscriptionId: true,
       members: { where: { userId: session.user.id }, select: { userId: true, role: true, permissions: true } },
     },

@@ -190,7 +190,11 @@ export default async function BillingPage({ params, searchParams }: Props) {
               perMonth: planIncludesCredits(workspace.planName) ? workspace.members.length * INCLUDED_CREDITS_PER_SEAT : 0,
               nextAt: workspace.includedCreditsGrantedAt ? addOneMonth(workspace.includedCreditsGrantedAt).toISOString() : null,
             },
-      packs: pricing.packs.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.badge })),
+      // With the new plans on sale, the top-up packs replace the old ones (Razorpay only).
+      packs:
+        plansOn && rzp
+          ? catalog.topups.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.id === "topup-300" ? "Best value" : null }))
+          : pricing.packs.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.badge })),
       months,
       ledger: {
         rows: ledger.rows.map((r) => ({

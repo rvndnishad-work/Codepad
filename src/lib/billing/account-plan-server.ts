@@ -5,7 +5,8 @@
  */
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { findCatalogPlan } from "./catalog";
+import { findCatalogPlan, findTopUp } from "./catalog";
+import { prepaidActive } from "./trial";
 import { getEffectiveCatalog } from "./pricing-copy-store";
 import { accountPlanActive, isSelfServePlan, planCreditsDue, planCreditStep, workspaceMirror } from "./account-plan";
 
@@ -136,4 +137,25 @@ export async function clampPlanCredits(tx: Prisma.TransactionClient, workspaceId
   const acc = ws?.billingAccount;
   const cap = Math.max(0, balance);
   if (acc && acc.planCreditsLeft > cap) await tx.billingAccount.update({ where: { id: acc.id }, data: { planCreditsLeft: cap } });
+}
+
+// ── Top-ups ──────────────────────────────────────────────────────────────
+
+/**
+ * A top-up pack (catalogue id "topup-…") for a workspace, if it may buy one:
+ * the new plans must be on sale and the workspace on a paid-up plan or a
+ * pilot. Throws a plain Error with the reason otherwise; undefined for an
+ * id that is not a top-up.
+ */
+export async function topUpForWorkspace(workspaceId: string, packId: string, now: Date = new Date()) {
+  if (!packId.startsWith("topup-")) return undefined;
+  if (!(await newPlansEnabled())) throw new Error("Top-ups are not on sale yet.");
+  const ws = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { planName: true, stripeSubscriptionId: true, prepaidThrough: true, prepaidSeats: true, prepaidCadence: true },
+  });
+  if (!ws || !prepaidActive(ws, now)) throw new Error("Top-ups are for workspaces on a paid plan or a pilot. Choose a plan first.");
+  const pack = findTopUp(await getEffectiveCatalog(), packId);
+  if (!pack) throw new Error("Unknown credit pack.");
+  return pack;
 }

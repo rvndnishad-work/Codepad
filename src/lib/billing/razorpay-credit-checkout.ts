@@ -24,6 +24,7 @@ import { checkLowCredits } from "./credit-alerts";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { getEffectivePricing } from "./pricing-copy-store";
 import { findCreditPack } from "./prices";
+import { topUpForWorkspace } from "./account-plan-server";
 import { getUsdInrRate } from "./fx";
 import { usdCentsToInrPaise } from "./fx-math";
 
@@ -53,7 +54,15 @@ export async function createRazorpayCreditOrder(a: {
   packId: string;
   keyId: string;
 }): Promise<RazorpayCreditOrder> {
-  const pack = findCreditPack(await getEffectivePricing(), a.packId);
+  let pack: { id: string; credits: number; priceCents: number } | undefined = findCreditPack(await getEffectivePricing(), a.packId);
+  if (!pack) {
+    // The new plans' top-up packs (see ./catalog), on a paid plan or pilot only.
+    try {
+      pack = await topUpForWorkspace(a.workspace.id, a.packId);
+    } catch (err) {
+      throw new RazorpayCheckoutError(err instanceof Error ? err.message : "Unknown credit pack.", 409);
+    }
+  }
   if (!pack) throw new RazorpayCheckoutError("Unknown credit pack.");
   const fx = await getUsdInrRate();
   if (!fx) {

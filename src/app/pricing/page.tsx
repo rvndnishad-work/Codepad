@@ -5,6 +5,10 @@ import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import { applyPricingCopy } from "@/lib/billing/pricing-copy";
 import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
 import PricingClient from "./PricingClient";
+import PlansPricing from "./PlansPricing";
+import { newPlansEnabled } from "@/lib/billing/account-plan-server";
+import { getEffectiveCatalog } from "@/lib/billing/pricing-copy-store";
+import { buildPlansPage } from "@/lib/billing/plans-public";
 import { recruiterUrl } from "@/lib/domains";
 
 export const metadata = {
@@ -20,7 +24,7 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
   const userId = session?.user?.id;
 
   // Workspaces the signed-in user can upgrade (owners and admins).
-  const [workspaces, pricing] = await Promise.all([
+  const [workspaces, pricing, plansOn] = await Promise.all([
     userId
       ? prisma.workspace.findMany({
           where: { members: { some: { userId, role: { in: [...MANAGER_ROLES] } } } },
@@ -28,7 +32,21 @@ export default async function PricingPage({ searchParams }: { searchParams: Prom
         })
       : Promise.resolve([]),
     getPublicPricingInputs(),
+    newPlansEnabled(),
   ]);
+
+  // The new plans, once an admin puts them on sale.
+  if (plansOn) {
+    const page = buildPlansPage(await getEffectiveCatalog());
+    return (
+      <PlansPricing
+        page={page}
+        isSignedIn={!!userId}
+        workspaceSlug={workspaces[0]?.slug ?? null}
+        initialCadence={sp.cadence === "annual" ? "annual" : "monthly"}
+      />
+    );
+  }
   // Effective prices (what checkout charges) with the admin wording laid over.
   const { plans, packs, annualSavingPercent, lowestCreditPrice } = applyPricingCopy(pricing.copy, pricing.prices);
 

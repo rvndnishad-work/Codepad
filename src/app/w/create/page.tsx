@@ -64,13 +64,15 @@ export default function CreateWorkspacePage() {
         description: `Welcome to ${name}. Redirecting...`,
       });
 
-      // No plan yet under the new plans: go and pick one.
-      if (data?.placement === "own" && mode.mode === "own") {
-        router.push(`/w/${data.slug}/billing`);
-        return;
-      }
       // Picked a paid plan on /pricing first: go straight on to paying for it.
       const intent = new URLSearchParams(window.location.search);
+      // No plan yet under the new plans: go and pick one (the one picked on /pricing, if any).
+      if (data?.placement === "own" && mode.mode === "own") {
+        const plan = (intent.get("plan") ?? "").toLowerCase();
+        const cadence = intent.get("cadence") === "annual" ? "annual" : "monthly";
+        router.push(["basic", "growth", "teams"].includes(plan) ? `/w/${data.slug}/billing?upgrade=${plan}&cadence=${cadence}` : `/w/${data.slug}/billing`);
+        return;
+      }
       if (intent.get("plan") === "growth") {
         const cadence = intent.get("cadence") === "monthly" ? "monthly" : "annual";
         router.push(`/w/${data.slug}/billing?upgrade=growth&cadence=${cadence}`);

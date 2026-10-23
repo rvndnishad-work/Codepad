@@ -48,6 +48,10 @@
       "schedule": "35 * * * *"
     },
     {
+      "path": "/api/cron/plans-switchover",
+      "schedule": "45 * * * *"
+    },
+    {
       "path": "/api/cron/data-retention",
       "schedule": "30 2 * * *"
     },

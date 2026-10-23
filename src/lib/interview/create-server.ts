@@ -3,6 +3,7 @@
  * builder) and the workspace interview wizard, so both link candidates,
  * move them to Screening and send the invite the same way. Server-only.
  */
+import { PAUSED_MESSAGE, workspaceIsPaused } from "@/lib/billing/switchover-server";
 import { customAlphabet, nanoid } from "nanoid";
 import { after } from "next/server";
 import { appOrigin, candidateJoinUrl } from "./links";
@@ -168,6 +169,7 @@ export function sourceTypeOf(r: { challengeIds: string[]; playgroundIds: string[
 
 export async function createInterviewSession(input: CreateInterviewInput): Promise<CreateInterviewResult> {
   const workspaceId = input.workspaceId ?? null;
+  if (await workspaceIsPaused(workspaceId)) return { ok: false, status: 402, error: PAUSED_MESSAGE };
   const rounds = await resolveRounds({
     ownerId: input.ownerId,
     actorId: input.actor.id,

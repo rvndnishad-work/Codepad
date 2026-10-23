@@ -11,6 +11,9 @@ import WorkspaceShell from "./WorkspaceShell";
 import DeletionScheduledScreen from "./DeletionScheduledScreen";
 import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
 import { workspaceIsLocked } from "@/lib/workspace/lock";
+import { getSwitchoverAt } from "@/lib/billing/switchover-server";
+import { PAUSED_PLAN, switchoverGroup } from "@/lib/billing/switchover";
+import PlanChangeBanner from "./PlanChangeBanner";
 import { planDisplay, TAKE_HOME_REVIEW_STAGES } from "@/lib/workspace/display";
 import { touchMemberActivity } from "@/lib/workspace/activity";
 
@@ -113,6 +116,14 @@ export default async function WorkspaceLayout({ children, params }: Props) {
   const showAdmin = await isStaff(session);
 
   const plan = planDisplay(activeWorkspace);
+  // The move to the new plans: paused, or Free with the end date coming up.
+  const switchAt = await getSwitchoverAt();
+  const banner =
+    activeWorkspace.planName === PAUSED_PLAN
+      ? ({ kind: "paused", date: null } as const)
+      : switchAt && switchAt.getTime() > Date.now() && switchoverGroup(activeWorkspace) === "free"
+        ? ({ kind: "ending", date: switchAt.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) } as const)
+        : null;
   // System workspaces (double-underscore slugs) are internal tenants and
   // never appear in the switcher.
   const switcher = myMemberships
@@ -143,6 +154,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
       }}
       isAdmin={showAdmin}
     >
+      {banner && <PlanChangeBanner slug={slug} kind={banner.kind} date={banner.date} />}
       {children}
     </WorkspaceShell>
   );

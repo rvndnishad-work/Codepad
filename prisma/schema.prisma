@@ -1049,6 +1049,11 @@ model Workspace {
   prepaidLastPaymentId String?
   /// When the "renew soon" reminder went out for the current period.
   prepaidReminderAt    DateTime?
+  /// Move to the new plans (src/lib/billing/switchover.ts): when the 30-day
+  /// notice went out, and when the Stripe subscription was set to end at its
+  /// period end.
+  switchoverNoticeAt   DateTime?
+  switchoverCancelAt   DateTime?
 
   // ── Admin console: Stripe snapshot (synced nightly + by webhook) ───────
   /// Stripe subscription status: active, trialing, past_due, canceled, unpaid…

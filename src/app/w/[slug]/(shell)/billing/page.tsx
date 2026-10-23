@@ -8,6 +8,7 @@ import { minPrepaidSeats, parseCadence } from "@/lib/billing/prepaid";
 import type { GrowthCheckoutData } from "./GrowthCheckout";
 import type { PlanCheckoutData } from "./PlanPicker";
 import { newPlansEnabled } from "@/lib/billing/account-plan-server";
+import { oldPricingClosed, switchoverStarted } from "@/lib/billing/switchover-server";
 import { accountPlanSummary, isSelfServePlan, parsePlanCadence } from "@/lib/billing/account-plan";
 import { findCatalogPlan, planChargeCents } from "@/lib/billing/catalog";
 import { getEffectiveCatalog } from "@/lib/billing/pricing-copy-store";
@@ -113,7 +114,7 @@ export default async function BillingPage({ params, searchParams }: Props) {
   const [catalog, plansOn] = await Promise.all([getEffectiveCatalog(), newPlansEnabled()]);
   const accountPlan = account && isSelfServePlan(account.planKey) ? findCatalogPlan(catalog, account.planKey) : undefined;
   const summary =
-    (account && accountPlanSummary(account, accountPlan, account._count.workspaces, now)) ??
+    (account && workspace.planName !== "PAUSED" ? accountPlanSummary(account, accountPlan, account._count.workspaces, now) : null) ??
     planSummary(workspace, now, undefined, billedSeatMonthly === null ? pricing.growth : { ...pricing.growth, monthlyCents: billedSeatMonthly });
   const seats = seatUsage(workspace, { members: workspace.members.length, pendingInvites }, now);
   const subscribed = Boolean(workspace.stripeCustomerId && workspace.stripeSubscriptionId);
@@ -126,7 +127,9 @@ export default async function BillingPage({ params, searchParams }: Props) {
   const stripe = Boolean(process.env.STRIPE_SECRET_KEY);
   const fx = rzp ? await getUsdInrRate() : null;
   let growthCheckout: GrowthCheckoutData | null = null;
-  if (canManage && !subscribed && workspace.planName !== "ENTERPRISE" && (rzp || stripe)) {
+  // Closed once the move to the new plans has started (Stripe) or passed its date (Razorpay renewals).
+  const [switchStarted, oldClosed] = await Promise.all([switchoverStarted(), oldPricingClosed(now)]);
+  if (canManage && !subscribed && workspace.planName !== "ENTERPRISE" && (rzp ? !oldClosed : stripe && !switchStarted)) {
     growthCheckout = {
       provider: rzp ? "razorpay" : "stripe",
       price: { monthlyCents: pricing.growth.monthlyCents, annualMonthlyCents: pricing.growth.annualMonthlyCents },

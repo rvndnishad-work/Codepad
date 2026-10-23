@@ -17,6 +17,7 @@ import { prisma } from "@/lib/prisma";
 import { getRazorpay } from "@/lib/razorpay";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { runIncludedCreditsIfDue } from "./included-credits-server";
+import { oldPricingClosed } from "./switchover-server";
 import { getEffectivePricing } from "./pricing-copy-store";
 import { getUsdInrRate } from "./fx";
 import { usdCentsToInrPaise } from "./fx-math";
@@ -69,6 +70,7 @@ export async function createRazorpaySeatOrder(a: {
     throw new RazorpayCheckoutError("This workspace already pays through a Stripe subscription. Manage it from Billing.", 409);
   }
   if (a.workspace.planName === "ENTERPRISE") throw new RazorpayCheckoutError("Enterprise plans are billed by contract.", 409);
+  if (await oldPricingClosed()) throw new RazorpayCheckoutError("Growth by the seat can no longer be bought or renewed. Choose Basic, Growth or Teams on Billing.", 409);
   const q = await quoteSeats({ workspaceId: a.workspace.id, seats: a.seats, cadence: a.cadence });
 
   const order = await getRazorpay().orders.create({

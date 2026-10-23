@@ -86,14 +86,14 @@ async function run() {
     );
   }
 
-  // Paid-until passed and some workspace still shows the plan.
+  // Paid-until passed and some workspace still shows a plan (not Free or Paused).
   const gone: Account[] = await prisma.billingAccount.findMany({
-    where: { planKey: { not: null }, paidThrough: { lte: now }, workspaces: { some: { planName: { not: "FREE" }, stripeSubscriptionId: null } } },
+    where: { planKey: { not: null }, paidThrough: { lte: now }, workspaces: { some: { planName: { in: ["BASIC", "GROWTH", "TEAMS"] }, stripeSubscriptionId: null } } },
     select: { id: true, planKey: true, paidThrough: true },
     take: MAX_BATCH,
   });
   for (const a of gone) {
-    const moved = await prisma.workspace.findMany({ where: { billingAccountId: a.id, stripeSubscriptionId: null, planName: { not: "FREE" } }, select: { id: true, planName: true } });
+    const moved = await prisma.workspace.findMany({ where: { billingAccountId: a.id, stripeSubscriptionId: null, planName: { in: ["BASIC", "GROWTH", "TEAMS"] } }, select: { id: true, planName: true } });
     // The sync reads the account again, so a payment landing mid-sweep wins.
     const changed = await syncAccountWorkspaces(a.id, now);
     const still = await prisma.billingAccount.findUnique({ where: { id: a.id }, select: { paidThrough: true } });

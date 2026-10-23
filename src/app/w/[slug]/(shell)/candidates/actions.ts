@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { assertFeatureOn } from "@/lib/admin/switches";
+import { PAUSED_MESSAGE, workspaceIsPaused } from "@/lib/billing/switchover-server";
 import { revalidatePath } from "next/cache";
 import crypto from "crypto";
 import {
@@ -137,6 +138,7 @@ export async function bulkCreateTakeHomeSessions(
     "takehome:create",
   );
   await assertFeatureOn("take-home");
+  if (await workspaceIsPaused(workspaceId)) throw new Error(PAUSED_MESSAGE);
 
   const challengeIds = [...new Set(input.curation.challengeIds ?? [])];
   const playgroundIds = [...new Set(input.curation.playgroundIds ?? [])];

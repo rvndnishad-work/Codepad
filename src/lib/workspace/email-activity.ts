@@ -99,6 +99,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "otp-verification": "Sign-in code",
   "reply-to-confirm": "Reply-to confirmation",
   "pilot-welcome": "Pilot welcome",
+  "plan-change-notice": "Plan change notice",
 };
 
 export function templateLabel(t: string): string {

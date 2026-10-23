@@ -173,6 +173,10 @@ export async function setNewPlansAction(on: boolean): Promise<{ ok: true; on: bo
   const who = await actor();
   const { newPlansEnabled, setNewPlansEnabled, NEW_PLANS_SETTING } = await import("@/lib/billing/account-plan-server");
   const before = await newPlansEnabled();
+  if (!on) {
+    const { switchoverStarted } = await import("@/lib/billing/switchover-server");
+    if (await switchoverStarted()) return { ok: false, error: "The move to the new plans has started, so they must stay on sale. Call the move off first." };
+  }
   await setNewPlansEnabled(on);
   await logAdminAction({
     actor: who,
@@ -185,4 +189,22 @@ export async function setNewPlansAction(on: boolean): Promise<{ ok: true; on: bo
   });
   revalidatePricing();
   return { ok: true, on };
+}
+
+/** Starts (or, before its date, calls off) the move of existing workspaces to the new plans. */
+export async function setSwitchoverAction(start: boolean): Promise<{ ok: true; at: string | null } | { ok: false; error: string }> {
+  const who = await actor();
+  const { startSwitchover, cancelSwitchover, SWITCHOVER_SETTING } = await import("@/lib/billing/switchover-server");
+  const res = start ? await startSwitchover() : await cancelSwitchover();
+  if (!res.ok) return res;
+  await logAdminAction({
+    actor: who,
+    action: start ? "pricing.switchover.start" : "pricing.switchover.cancel",
+    targetType: "pricing",
+    targetId: SWITCHOVER_SETTING,
+    targetLabel: "Move to the new plans",
+    after: { switchoverAt: res.at.toISOString(), started: start },
+  });
+  revalidatePricing();
+  return { ok: true, at: start ? res.at.toISOString() : null };
 }

@@ -51,7 +51,8 @@ export async function syncAccountWorkspaces(accountId: string, now: Date = new D
   const plan = findCatalogPlan(await getEffectiveCatalog(), account.planKey);
   const mirror = workspaceMirror(account, plan, now);
   const res = await db.workspace.updateMany({
-    where: { billingAccountId: accountId, stripeSubscriptionId: null },
+    // A lapsed plan never wakes a workspace the switch-over has paused.
+    where: { billingAccountId: accountId, stripeSubscriptionId: null, ...(mirror.planName === "FREE" ? { planName: { not: "PAUSED" } } : {}) },
     data: mirror,
   });
   return res.count;

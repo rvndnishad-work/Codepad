@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { grantDue, includedStep, TRIAL_CREDITS } from "./included-credits";
 import { isPilot } from "./pilot";
 
@@ -29,7 +30,8 @@ export async function runIncludedCreditsIfDue(
     });
     if (!ws) return { ran: false, expired: 0, granted: 0 };
 
-    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } });
+    // Expiry never takes the shared pool below zero.
+    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } });
     const state = {
       // Pilots come with their own credits, not the monthly included ones.
       planName: isPilot(ws) ? "PILOT" : ws.planName,

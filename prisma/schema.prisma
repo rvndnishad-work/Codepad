@@ -1019,6 +1019,11 @@ model Workspace {
   stripeCustomerId     String?                   @unique
   stripeSubscriptionId String?                   @unique
   planName             String                    @default("FREE")
+  /// Who pays: the account that holds the plan and the AI credit pool this
+  /// workspace draws from. Filled by a database trigger on insert (one new
+  /// account per workspace) until checkout puts several workspaces on one.
+  billingAccountId     String?
+  billingAccount       BillingAccount?           @relation(fields: [billingAccountId], references: [id], onDelete: Restrict)
   /// Phase 4.1 workspace-level kill-switch for outbound external MCP calls
   /// during AI screenings. Even if individual templates have ExternalMcpServer
   /// bindings, the wire is dead unless this flag is true. Defaults false so
@@ -1210,6 +1215,8 @@ model Workspace {
   atsSyncEvents        AtsSyncEvent[]
   alertChannels        AlertChannel[]
   interviewRecordings InterviewRecording[]
+
+  @@index([billingAccountId])
 }
 
 /// Old workspace web address kept after a slug change, so /w/<oldSlug>
@@ -2238,11 +2245,35 @@ model AIInterviewCreditLedger {
   adminUserId    String?
   note           String?
   createdAt      DateTime            @default(now())
+  /// The credit pool this row counts toward. A database trigger copies it
+  /// from the workspace on insert, so writers only set workspaceId; balances
+  /// sum by account (src/lib/billing/credit-pool.ts), usage reports by workspace.
+  billingAccountId String?
   session        AIInterviewSession? @relation(fields: [sessionId], references: [id])
   workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  billingAccount BillingAccount?     @relation(fields: [billingAccountId], references: [id], onDelete: Restrict)
 
   @@index([workspaceId, createdAt])
   @@index([sessionId])
+  @@index([billingAccountId])
+}
+
+/// Who pays. Holds the AI credit pool that all of its workspaces share and,
+/// with the new plans, the plan itself. Today every workspace has its own
+/// account (backfilled 1:1), so nothing is shared until checkout for the new
+/// plans lets one account own several workspaces.
+model BillingAccount {
+  id           String                    @id @default(cuid())
+  name         String
+  /// The person who pays (the first owner). Plain id, not a relation, so
+  /// deleting a user never touches billing history.
+  ownerUserId  String?
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  workspaces   Workspace[]
+  creditLedger AIInterviewCreditLedger[]
+
+  @@index([ownerUserId])
 }
 
 /// Workspace-scoped MCP API key. The full secret is shown ONCE at creation

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { poolBalances } from "@/lib/billing/credit-pool";
 import type { Prisma } from "@prisma/client";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { pageOf } from "@/lib/admin/workspace-actions";
@@ -86,11 +87,11 @@ export default async function AdminWorkspacesPage({ searchParams }: Props) {
   const ids = workspaces.map((w) => w.id);
   const [balances, activity] = ids.length
     ? await Promise.all([
-        prisma.aIInterviewCreditLedger.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _sum: { amount: true } }),
+        poolBalances(ids),
         prisma.workspaceMember.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _max: { lastActiveAt: true } }),
       ])
-    : [[], []];
-  const balanceOf = new Map(balances.map((b) => [b.workspaceId, b._sum.amount ?? 0]));
+    : [new Map<string, number>(), []];
+  const balanceOf = balances;
   const activeOf = new Map(activity.map((a) => [a.workspaceId, a._max.lastActiveAt]));
 
   const rows: WorkspaceRow[] = workspaces.map((w) => ({

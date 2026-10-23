@@ -4,6 +4,7 @@
  * runs independent queries together.
  */
 import { prisma } from "@/lib/prisma";
+import { poolBalances, poolWhere } from "@/lib/billing/credit-pool";
 import { CRON_JOBS } from "@/lib/admin/cron-run";
 import { getAllSwitches, switchDef } from "@/lib/admin/switches";
 import { actionLabel } from "@/lib/admin/audit";
@@ -15,15 +16,9 @@ const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const num = (v: unknown, dflt: number) => (typeof v === "number" ? v : dflt);
 
-/** Credit balance per workspace (sum of the ledger). */
+/** Credit balance per workspace: its billing account's shared pool. */
 export async function balances(workspaceIds: string[]): Promise<Map<string, number>> {
-  if (!workspaceIds.length) return new Map();
-  const rows = await prisma.aIInterviewCreditLedger.groupBy({
-    by: ["workspaceId"],
-    where: { workspaceId: { in: workspaceIds } },
-    _sum: { amount: true },
-  });
-  return new Map(rows.map((r) => [r.workspaceId, r._sum.amount ?? 0]));
+  return poolBalances(workspaceIds);
 }
 
 /** Screenings invited but not started (each will use a credit) per workspace. */
@@ -114,7 +109,7 @@ const get_workspace: ToolDef = {
         take: 3,
         select: { user: { select: { id: true, name: true, email: true } } },
       }),
-      prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id }, _sum: { amount: true } }),
+      prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(ws.id), _sum: { amount: true } }),
       prisma.aIInterviewCreditLedger.groupBy({
         by: ["kind"],
         where: { workspaceId: ws.id, createdAt: { gte: since } },
@@ -187,7 +182,7 @@ const get_credit_ledger: ToolDef = {
     const since = new Date(Date.now() - days * DAY);
     const [ws, total, byKind, recent] = await Promise.all([
       prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } }),
-      prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } }),
+      prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } }),
       prisma.aIInterviewCreditLedger.groupBy({
         by: ["kind"],
         where: { workspaceId, createdAt: { gte: since } },

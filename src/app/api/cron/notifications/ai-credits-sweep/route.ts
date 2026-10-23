@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { withCronRun } from "@/lib/admin/cron-run";
 import { notifyAiCreditsLowIfNeeded } from "@/lib/notifications/triggers";
 
@@ -32,7 +33,7 @@ async function run(req: NextRequest) {
   let fired = 0;
   for (const w of workspaces) {
     const agg = await prisma.aIInterviewCreditLedger.aggregate({
-      where: { workspaceId: w.id },
+      where: poolWhere(w.id),
       _sum: { amount: true },
     });
     const balance = agg._sum.amount ?? 0;

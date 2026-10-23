@@ -8,6 +8,7 @@
  * with the error on the card, so the admin can edit and try again.
  */
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { logAdminAction, type AdminActor } from "@/lib/admin/audit";
@@ -67,7 +68,7 @@ async function run(p: Proposal, a: Record<string, unknown>, actor: AdminActor): 
       const out = await prisma.$transaction(async (tx) => {
         const ws = await tx.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } });
         if (!ws) throw new ProposalError("Workspace not found", 404);
-        const before = (await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } }))._sum.amount ?? 0;
+        const before = (await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } }))._sum.amount ?? 0;
         await tx.aIInterviewCreditLedger.create({
           data: { workspaceId, kind: "GRANT", amount, adminUserId: actor.id ?? null, note },
         });

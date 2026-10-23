@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { poolSiblings, poolWhere } from "@/lib/billing/credit-pool";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { planLabel } from "@/lib/admin/workspace-actions";
 import { getAdminWorkspace } from "./_data";
@@ -20,8 +21,8 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
 
   const now = new Date();
   const since30 = new Date(now.getTime() - 30 * DAY);
-  const [balance, screenings30, takeHomes30, interviews30, lastActive, ats, lockedBy, deletionBy] = await Promise.all([
-    prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: id }, _sum: { amount: true } }),
+  const [balance, screenings30, takeHomes30, interviews30, lastActive, ats, lockedBy, deletionBy, account, siblings] = await Promise.all([
+    prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(id), _sum: { amount: true } }),
     prisma.aIInterviewSession.count({ where: { workspaceId: id, createdAt: { gte: since30 } } }),
     prisma.interviewSession.count({ where: { workspaceId: id, type: "take-home", createdAt: { gte: since30 } } }),
     prisma.interviewSession.count({ where: { workspaceId: id, type: { not: "take-home" }, createdAt: { gte: since30 } } }),
@@ -29,7 +30,10 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
     prisma.atsIntegration.findUnique({ where: { workspaceId: id }, select: { provider: true } }),
     ws.lockedById ? prisma.user.findUnique({ where: { id: ws.lockedById }, select: { name: true, email: true } }) : null,
     ws.deletionRequestedById ? prisma.user.findUnique({ where: { id: ws.deletionRequestedById }, select: { name: true, email: true } }) : null,
+    prisma.billingAccount.findFirst({ where: { workspaces: { some: { id } } }, select: { id: true, name: true, ownerUserId: true } }),
+    poolSiblings(id),
   ]);
+  const accountOwner = account?.ownerUserId ? await prisma.user.findUnique({ where: { id: account.ownerUserId }, select: { name: true, email: true } }) : null;
   const credits = balance._sum.amount ?? 0;
   const yes = (b: boolean) => <Pill tone={b ? "ok" : "off"}>{b ? "On" : "Off"}</Pill>;
 
@@ -41,12 +45,40 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
         <Kpi label="AI screenings" value={ws.counts.aiScreenings} hint={`${screenings30} in 30 days`} />
         <Kpi label="Take homes" value={ws.counts.takeHomes} hint={`${takeHomes30} in 30 days`} />
         <Kpi label="Interviews" value={ws.counts.interviews} hint={`${interviews30} in 30 days`} />
-        <Kpi label="AI credits" value={credits} hint={`${Math.min(ws.includedCreditsLeft, Math.max(0, credits))} included`} />
+        <Kpi
+          label="AI credits"
+          value={credits}
+          hint={`${Math.min(ws.includedCreditsLeft, Math.max(0, credits))} included${siblings.length ? `, shared with ${siblings.length} more` : ""}`}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         <Card title="Plan and billing">
           <Kv k="Plan">{planLabel(ws.planName)}</Kv>
+          <Kv k="Billing account">
+            {account ? (
+              <span title={account.id}>
+                {account.name}
+                {accountOwner ? <span className="text-muted">, paid by {accountOwner.name ?? accountOwner.email}</span> : null}
+              </span>
+            ) : (
+              <span className="text-muted">None</span>
+            )}
+          </Kv>
+          <Kv k="Shares credits with">
+            {siblings.length ? (
+              siblings.map((s, i) => (
+                <span key={s.id}>
+                  {i ? ", " : ""}
+                  <Link className="underline" href={`/admin/workspaces/${s.id}`}>
+                    {s.name}
+                  </Link>
+                </span>
+              ))
+            ) : (
+              <span className="text-muted">No other workspace</span>
+            )}
+          </Kv>
           <Kv k="Stripe status">{ws.stripeStatus ?? <span className="text-muted">None</span>}</Kv>
           <Kv k="MRR">{ws.stripeMrrCents != null ? fmtUsd(ws.stripeMrrCents) : <span className="text-muted">Not synced</span>}</Kv>
           <Kv k="Seats billed">{ws.stripeSeatQuantity ?? <span className="text-muted">Not synced</span>}</Kv>

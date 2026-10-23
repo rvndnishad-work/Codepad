@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { PILOT_DEFAULTS } from "@/lib/billing/catalog";
 import { PILOT_CREDIT_KIND, isPilot, pilotDaysLeft } from "@/lib/billing/pilot";
@@ -41,7 +42,7 @@ export default async function DemoRequestPage({ params }: { params: Promise<{ id
     : null;
   const [balance, pilotGranted, used] = ws
     ? await Promise.all([
-        prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id }, _sum: { amount: true } }),
+        prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(ws.id), _sum: { amount: true } }),
         prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id, kind: PILOT_CREDIT_KIND }, _sum: { amount: true } }),
         prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id, kind: "CONSUMPTION" }, _sum: { amount: true } }),
       ])

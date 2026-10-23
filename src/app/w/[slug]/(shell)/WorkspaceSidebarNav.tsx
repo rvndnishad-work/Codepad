@@ -34,8 +34,10 @@ export type SidebarCounts = {
 
 type Props = {
   slug: string;
-  /** Growth-level tools (AI screening, ATS sync, MCP) are on: paid or trial. */
+  /** Growth-level tools (ATS sync, MCP) are on: Growth, Teams, Enterprise or trial. */
   growthFeatures: boolean;
+  /** AI screening is on: any paid plan, trial or pilot. */
+  aiScreening: boolean;
   counts: SidebarCounts;
   /** Icon-only rail with tooltips (driven by the sidebar collapse toggle). */
   collapsed?: boolean;
@@ -111,7 +113,7 @@ function Group({ label, items, collapsed }: { label?: string; items: NavItem[]; 
   );
 }
 
-export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, collapsed = false }: Props) {
+export default function WorkspaceSidebarNav({ slug, growthFeatures, aiScreening, counts, collapsed = false }: Props) {
   const pathname = usePathname();
   const params = useSearchParams();
   const activeSection = params.get("section") || "overview";
@@ -126,6 +128,8 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
   // plans page instead of the tool.
   const growth = (item: NavItem): NavItem =>
     growthFeatures ? item : { ...item, href: `/w/${slug}/billing`, isActive: false, locked: true };
+  const screening = (item: NavItem): NavItem =>
+    aiScreening ? item : { ...item, href: `/w/${slug}/billing`, isActive: false, locked: true };
 
   const hiring: NavItem[] = [
     {
@@ -143,7 +147,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, counts, coll
       count: counts.takeHomeReview || undefined,
     },
     { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
-    growth({
+    screening({
       label: "AI screening",
       icon: Bot,
       href: `/w/${slug}/ai-interviews`,

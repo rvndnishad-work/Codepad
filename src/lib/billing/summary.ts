@@ -117,6 +117,14 @@ export function planSummary(
         compareKey: null,
         seatHint: "Billed per seat.",
       };
+    case "PAUSED":
+      return {
+        ...base,
+        heading: "Paused",
+        body: "This workspace is paused until you choose a plan. Your candidates, results and settings are all here. Choose a plan to send take-homes, interviews and AI screenings again.",
+        compareKey: null,
+        seatHint: "Choose a plan to add people.",
+      };
     case "LOCKED":
       return {
         ...base,

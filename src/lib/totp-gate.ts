@@ -16,7 +16,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
 /** Workspace plans that require their owners/admins to carry a second factor. */
-export const PAID_PLANS = ["GROWTH", "ENTERPRISE"] as const;
+export const PAID_PLANS = ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"] as const;
 
 /** Member roles that count as a workspace administrator for the 2FA gate. */
 export const WORKSPACE_ADMIN_ROLES = ["OWNER", "ADMIN"] as const;

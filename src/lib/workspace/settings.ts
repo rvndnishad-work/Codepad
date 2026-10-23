@@ -26,7 +26,7 @@ import { HIRING_TYPE_LABELS, HIRING_TYPES, type HiringType } from "@/lib/intervi
 const DAY_MS = 86_400_000;
 
 /** Same lists as src/lib/totp-gate.ts, which is server-only (it imports Prisma). */
-const PAID_PLANS = ["GROWTH", "ENTERPRISE"];
+const PAID_PLANS = ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"];
 const WORKSPACE_ADMIN_ROLES = ["OWNER", "ADMIN"];
 
 /* ── Tabs ───────────────────────────────────────────────────────────────── */

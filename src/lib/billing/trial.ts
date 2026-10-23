@@ -19,6 +19,21 @@ export const TRIAL_SEAT_LIMIT = 5;
 export const FREE_SEAT_LIMIT = WORKSPACE_PLANS.FREE.seatLimit ?? 3;
 
 const GROWTH_LEVEL = new Set(["GROWTH", "ENTERPRISE"]);
+/** Plans paid ahead with one payment (prepaid Growth, and the new account plans). */
+const PREPAID_PLANS = new Set(["GROWTH", "BASIC", "TEAMS"]);
+/** Plans that can run AI screenings. Basic can; Free and Starter cannot. */
+const AI_SCREENING_PLANS = new Set(["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"]);
+/** Plans with Greenhouse sync, API keys, MCP and chat alerts. Not Basic. */
+const GROWTH_TOOL_PLANS = new Set(["GROWTH", "ENTERPRISE", "TEAMS"]);
+/** Any plan that is paid (or contracted), so a trial means nothing. */
+const PAID_LEVEL = new Set(["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"]);
+
+export function planAllowsAiScreening(plan: string): boolean {
+  return AI_SCREENING_PLANS.has(plan);
+}
+export function planHasGrowthTools(plan: string): boolean {
+  return GROWTH_TOOL_PLANS.has(plan);
+}
 
 export type PlanFields = {
   planName: string;
@@ -33,16 +48,16 @@ export type PlanFields = {
 };
 
 /**
- * Prepaid Growth that has run out but not yet been moved back to Free by the
- * prepaid-expiry cron. Gates treat it as Free right away.
+ * A prepaid plan (Growth, Basic or Teams) that has run out but not yet been
+ * moved back to Free by the expiry sweep. Gates treat it as Free right away.
  */
 export function prepaidLapsed(ws: PlanFields, now: Date = new Date()): boolean {
-  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && ws.planName === "GROWTH" && new Date(ws.prepaidThrough).getTime() <= now.getTime());
+  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && PREPAID_PLANS.has(ws.planName) && new Date(ws.prepaidThrough).getTime() <= now.getTime());
 }
 
-/** Prepaid Growth that is paid up right now. */
+/** A prepaid plan that is paid up right now. */
 export function prepaidActive(ws: PlanFields, now: Date = new Date()): boolean {
-  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && ws.planName === "GROWTH" && new Date(ws.prepaidThrough).getTime() > now.getTime());
+  return Boolean(ws.prepaidThrough && !ws.stripeSubscriptionId && PREPAID_PLANS.has(ws.planName) && new Date(ws.prepaidThrough).getTime() > now.getTime());
 }
 
 export type EffectivePlan = {
@@ -59,7 +74,7 @@ export function trialActive(ws: PlanFields, now: Date = new Date()): boolean {
   if (!ws.trialEndsAt) return false;
   if (ws.stripeSubscriptionId) return false; // paid — no need for a trial
   if (ws.prepaidThrough) return false; // paid once — the trial is over
-  if (GROWTH_LEVEL.has(ws.planName)) return false; // already elevated
+  if (PAID_LEVEL.has(ws.planName)) return false; // already on a plan
   return new Date(ws.trialEndsAt).getTime() > now.getTime();
 }
 
@@ -70,7 +85,7 @@ export function effectivePlan(ws: PlanFields, now: Date = new Date()): Effective
   if (prepaidActive(ws, now)) {
     // Prepaid seats are a hard cap: more people means paying for more seats.
     const seats = typeof ws.prepaidSeats === "number" && ws.prepaidSeats > 0 ? ws.prepaidSeats : null;
-    return { plan: "GROWTH", onTrial: false, trialEndsAt: ws.trialEndsAt ? new Date(ws.trialEndsAt) : null, seatLimit: seats };
+    return { plan: ws.planName, onTrial: false, trialEndsAt: ws.trialEndsAt ? new Date(ws.trialEndsAt) : null, seatLimit: seats };
   }
   const onTrial = trialActive(ws, now);
   const plan = onTrial ? "GROWTH" : ws.planName;
@@ -92,14 +107,14 @@ export function effectivePlan(ws: PlanFields, now: Date = new Date()): Effective
 
 /** Convenience for the many gates that only care about AI-screening access. */
 export function effectivePlanAllowsAiScreening(ws: PlanFields, now: Date = new Date()): boolean {
-  return GROWTH_LEVEL.has(effectivePlan(ws, now).plan);
+  return AI_SCREENING_PLANS.has(effectivePlan(ws, now).plan);
 }
 
 /**
  * Growth-level workspace tools (ATS sync, API keys, External MCP) are on for
- * paid Growth/Enterprise plans and during an unexpired trial, matching what
- * the sidebar shows unlocked.
+ * Growth, Teams and Enterprise and during an unexpired trial, matching what
+ * the sidebar shows unlocked. Basic does not get them.
  */
 export function growthToolsEnabled(ws: PlanFields, now: Date = new Date()): boolean {
-  return GROWTH_LEVEL.has(effectivePlan(ws, now).plan);
+  return GROWTH_TOOL_PLANS.has(effectivePlan(ws, now).plan);
 }

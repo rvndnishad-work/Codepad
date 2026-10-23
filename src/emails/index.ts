@@ -81,6 +81,7 @@ import { ReplyToConfirm, replyToConfirmText, type ReplyToConfirmProps } from "./
 import { DemoRequestReceived, demoRequestReceivedText, type DemoRequestReceivedProps } from "./DemoRequestReceived";
 import { DemoRequestAdmin, demoRequestAdminText, type DemoRequestAdminProps } from "./DemoRequestAdmin";
 import { PilotWelcome, pilotWelcomeText, type PilotWelcomeProps } from "./PilotWelcome";
+import { PlanChangeNotice, planChangeNoticeText, type PlanChangeNoticeProps } from "./PlanChangeNotice";
 import {
   TwoFactorReminder,
   twoFactorReminderText,
@@ -225,6 +226,12 @@ export const TEMPLATES = {
     text: pilotWelcomeText,
   } satisfies TemplateDef<PilotWelcomeProps>,
 
+  "plan-change-notice": {
+    Component: PlanChangeNotice,
+    subject: (p) => p.title,
+    text: planChangeNoticeText,
+  } satisfies TemplateDef<PlanChangeNoticeProps>,
+
   "data-privacy-notice": {
     Component: DataPrivacyNotice,
     subject: (p) => p.subject,
@@ -257,4 +264,5 @@ export type TemplateProps = {
   "demo-request-received": DemoRequestReceivedProps;
   "demo-request-admin": DemoRequestAdminProps;
   "pilot-welcome": PilotWelcomeProps;
+  "plan-change-notice": PlanChangeNoticeProps;
 };

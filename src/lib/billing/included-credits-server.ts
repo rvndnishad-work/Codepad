@@ -20,6 +20,7 @@ export async function runIncludedCreditsIfDue(
       select: {
         planName: true,
         stripeSubscriptionId: true,
+        billingAccount: { select: { planKey: true } },
         prepaidThrough: true,
         prepaidCadence: true,
         includedCreditsLeft: true,
@@ -33,8 +34,9 @@ export async function runIncludedCreditsIfDue(
     // Expiry never takes the shared pool below zero.
     const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } });
     const state = {
-      // Pilots come with their own credits, not the monthly included ones.
-      planName: isPilot(ws) ? "PILOT" : ws.planName,
+      // Pilots come with their own credits, and the new plans with plan
+      // credits on the account (account-plan-server), not the per-seat ones.
+      planName: isPilot(ws) ? "PILOT" : ws.billingAccount?.planKey ? "ACCOUNT_PLAN" : ws.planName,
       seats: ws._count.members,
       includedCreditsLeft: ws.includedCreditsLeft,
       includedCreditsLastGrant: ws.includedCreditsLastGrant,

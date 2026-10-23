@@ -3,9 +3,16 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { canMember } from "@/lib/permissions";
-import { growthToolsEnabled, prepaidActive, trialActive } from "@/lib/billing/trial";
+import { effectivePlanAllowsAiScreening, prepaidActive, trialActive } from "@/lib/billing/trial";
 import { minPrepaidSeats, parseCadence } from "@/lib/billing/prepaid";
 import type { GrowthCheckoutData } from "./GrowthCheckout";
+import type { PlanCheckoutData } from "./PlanPicker";
+import { newPlansEnabled } from "@/lib/billing/account-plan-server";
+import { oldPricingClosed, switchoverStarted } from "@/lib/billing/switchover-server";
+import { accountPlanSummary, isSelfServePlan, parsePlanCadence } from "@/lib/billing/account-plan";
+import { findCatalogPlan, planChargeCents } from "@/lib/billing/catalog";
+import { getEffectiveCatalog } from "@/lib/billing/pricing-copy-store";
+import { isPilot } from "@/lib/billing/pilot";
 import { videoAddonAvailable } from "@/lib/video/addon";
 import { subscriptionBilling } from "@/lib/video/addon-server";
 import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
@@ -56,6 +63,17 @@ export default async function BillingPage({ params, searchParams }: Props) {
       videoEnabledAt: true,
       videoAddonItemId: true,
       members: { select: { userId: true, role: true, permissions: true } },
+      billingAccount: {
+        select: {
+          id: true,
+          planKey: true,
+          planCadence: true,
+          paidThrough: true,
+          planCreditsLeft: true,
+          planCreditsGrantedAt: true,
+          _count: { select: { workspaces: true } },
+        },
+      },
     },
   });
   if (!workspace) notFound();
@@ -92,10 +110,15 @@ export default async function BillingPage({ params, searchParams }: Props) {
   // shows that; otherwise the current Growth price.
   const billedSeatMonthly =
     stripeBilling.seatCents === null ? null : Math.round(stripeBilling.interval === "year" ? stripeBilling.seatCents / 12 : stripeBilling.seatCents);
-  const summary = planSummary(workspace, now, undefined, billedSeatMonthly === null ? pricing.growth : { ...pricing.growth, monthlyCents: billedSeatMonthly });
+  const account = workspace.billingAccount;
+  const [catalog, plansOn] = await Promise.all([getEffectiveCatalog(), newPlansEnabled()]);
+  const accountPlan = account && isSelfServePlan(account.planKey) ? findCatalogPlan(catalog, account.planKey) : undefined;
+  const summary =
+    (account && workspace.planName !== "PAUSED" ? accountPlanSummary(account, accountPlan, account._count.workspaces, now) : null) ??
+    planSummary(workspace, now, undefined, billedSeatMonthly === null ? pricing.growth : { ...pricing.growth, monthlyCents: billedSeatMonthly });
   const seats = seatUsage(workspace, { members: workspace.members.length, pendingInvites }, now);
   const subscribed = Boolean(workspace.stripeCustomerId && workspace.stripeSubscriptionId);
-  const aiScreening = growthToolsEnabled(workspace, now);
+  const aiScreening = effectivePlanAllowsAiScreening(workspace, now);
 
   // Growth checkout: Razorpay (prepaid seats) when its keys are set, else
   // Stripe. Not for subscribed or Enterprise workspaces, or viewers without
@@ -104,7 +127,9 @@ export default async function BillingPage({ params, searchParams }: Props) {
   const stripe = Boolean(process.env.STRIPE_SECRET_KEY);
   const fx = rzp ? await getUsdInrRate() : null;
   let growthCheckout: GrowthCheckoutData | null = null;
-  if (canManage && !subscribed && workspace.planName !== "ENTERPRISE" && (rzp || stripe)) {
+  // Closed once the move to the new plans has started (Stripe) or passed its date (Razorpay renewals).
+  const [switchStarted, oldClosed] = await Promise.all([switchoverStarted(), oldPricingClosed(now)]);
+  if (canManage && !subscribed && workspace.planName !== "ENTERPRISE" && (rzp ? !oldClosed : stripe && !switchStarted)) {
     growthCheckout = {
       provider: rzp ? "razorpay" : "stripe",
       price: { monthlyCents: pricing.growth.monthlyCents, annualMonthlyCents: pricing.growth.annualMonthlyCents },
@@ -118,6 +143,32 @@ export default async function BillingPage({ params, searchParams }: Props) {
     };
   }
 
+  // The new plans, once an admin puts them on sale. Old prepaid Growth runs
+  // to its end first; pilots can move straight onto a plan.
+  let planCheckout: PlanCheckoutData | null = null;
+  const legacyPrepaid = !account?.planKey && prepaidActive(workspace, now) && !isPilot(workspace);
+  if (plansOn && rzp && canManage && account && !subscribed && workspace.planName !== "ENTERPRISE" && !legacyPrepaid) {
+    const siblings = await prisma.workspace.findMany({ where: { billingAccountId: account.id }, select: { id: true } });
+    const ids = siblings.map((w) => w.id);
+    const [m, inv] = await Promise.all([
+      prisma.workspaceMember.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _count: { _all: true } }),
+      prisma.workspaceInvite.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids }, acceptedAt: null, expiresAt: { gt: now } }, _count: { _all: true } }),
+    ]);
+    const used = new Map<string, number>();
+    for (const r of [...m, ...inv]) used.set(r.workspaceId, (used.get(r.workspaceId) ?? 0) + r._count._all);
+    const pick = sp.upgrade?.toUpperCase();
+    planCheckout = {
+      plans: catalog.plans,
+      account: { planKey: account.planKey, planCadence: account.planCadence, paidThrough: account.paidThrough?.toISOString() ?? null },
+      currentPeriodCents: accountPlan ? planChargeCents(accountPlan, parsePlanCadence(account.planCadence)) : null,
+      workspaces: ids.length,
+      mostSeats: Math.max(0, ...used.values()),
+      inrRate: fx?.rate ?? null,
+      initialCadence: parsePlanCadence(sp.cadence ?? account.planCadence ?? "monthly"),
+      initialPlan: isSelfServePlan(pick) ? pick : null,
+    };
+  }
+
   let usage: UsageData | null = null;
   if (tab === "usage") {
     const [summary, months, ledger, access] = await Promise.all([
@@ -128,12 +179,25 @@ export default async function BillingPage({ params, searchParams }: Props) {
     ]);
     usage = {
       credits: summary,
-      included: {
-        left: workspace.includedCreditsLeft,
-        perMonth: planIncludesCredits(workspace.planName) ? workspace.members.length * INCLUDED_CREDITS_PER_SEAT : 0,
-        nextAt: workspace.includedCreditsGrantedAt ? addOneMonth(workspace.includedCreditsGrantedAt).toISOString() : null,
-      },
-      packs: pricing.packs.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.badge })),
+      // On a new plan the monthly credits live on the account; old included credits may still be running out.
+      included:
+        account?.planKey
+          ? {
+              left: workspace.includedCreditsLeft + account.planCreditsLeft,
+              perMonth: accountPlan && account.paidThrough && account.paidThrough > now ? accountPlan.creditsPerMonth : 0,
+              nextAt: account.planCreditsGrantedAt ? addOneMonth(account.planCreditsGrantedAt).toISOString() : null,
+              perSeat: false,
+            }
+          : {
+              left: workspace.includedCreditsLeft,
+              perMonth: planIncludesCredits(workspace.planName) ? workspace.members.length * INCLUDED_CREDITS_PER_SEAT : 0,
+              nextAt: workspace.includedCreditsGrantedAt ? addOneMonth(workspace.includedCreditsGrantedAt).toISOString() : null,
+            },
+      // With the new plans on sale, the top-up packs replace the old ones (Razorpay only).
+      packs:
+        plansOn && rzp
+          ? catalog.topups.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.id === "topup-300" ? "Best value" : null }))
+          : pricing.packs.map((p) => ({ id: p.id, label: p.label, credits: p.credits, priceCents: p.priceCents, badge: p.badge })),
       months,
       ledger: {
         rows: ledger.rows.map((r) => ({
@@ -193,6 +257,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
       }}
       stripeConfigured={stripe}
       growthCheckout={growthCheckout}
+      planCheckout={planCheckout}
+      planCreditsPerMonth={accountPlan && account?.paidThrough && account.paidThrough > now ? accountPlan.creditsPerMonth : null}
       autoOpenGrowth={sp.upgrade === "growth"}
       compare={{
         plans: PLAN_ORDER.map((k) => ({

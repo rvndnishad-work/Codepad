@@ -19,7 +19,7 @@ const PAGE_SIZE = 25;
 const BASE = "/admin/ai-interviews";
 const TABS = ["workspaces", "ledger", "screenings"] as const;
 type Tab = (typeof TABS)[number];
-const PLANS = ["FREE", "STARTER", "GROWTH", "ENTERPRISE"] as const;
+const PLANS = ["FREE", "STARTER", "BASIC", "GROWTH", "TEAMS", "ENTERPRISE"] as const;
 
 const SCREENING_STATUS: Record<string, { label: string; tone: "ok" | "warn" | "bad" | "off" | "info" }> = {
   PENDING: { label: "Invited", tone: "info" },

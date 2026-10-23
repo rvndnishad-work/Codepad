@@ -26,7 +26,7 @@ async function run(req: NextRequest) {
   // per workspace) but workspace count is bounded; if it ever grows we can
   // switch to a single GROUP BY ledger query.
   const workspaces = await prisma.workspace.findMany({
-    where: { planName: { in: ["GROWTH", "ENTERPRISE"] } },
+    where: { planName: { in: ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"] } },
     select: { id: true },
   });
 

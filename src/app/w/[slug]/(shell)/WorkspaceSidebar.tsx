@@ -60,7 +60,7 @@ export default function WorkspaceSidebar({ slug, plan, counts, mobileOpen, onNav
           if ((e.target as HTMLElement | null)?.closest("a")) onNavigate();
         }}
       >
-        <WorkspaceSidebarNav slug={slug} growthFeatures={plan.growthFeatures} counts={counts} collapsed={collapsed} />
+        <WorkspaceSidebarNav slug={slug} growthFeatures={plan.growthFeatures} aiScreening={plan.aiScreening} counts={counts} collapsed={collapsed} />
       </div>
 
     </aside>

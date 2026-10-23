@@ -15,9 +15,10 @@
  * per credit than any plan, so moving up a plan is always the better deal
  * than topping up. ladderIssues() checks that for any admin override.
  *
- * Nothing charges from here yet: the checkout, gates and public page move to
- * this catalogue when the billing account lands. Until then ./plans and
- * ./prices stay the source for what is sold.
+ * The plan checkout on Billing (./razorpay-plan-checkout) charges from here
+ * once an admin turns the new plans on. Until the public page and the
+ * switch-over move too, ./plans and ./prices stay the source for the old
+ * per-seat plans.
  *
  * Pure: no database, no env. Safe to import from client components.
  */

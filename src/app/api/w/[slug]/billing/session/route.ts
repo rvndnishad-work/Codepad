@@ -8,6 +8,7 @@ import { checkoutSeatChargeCents } from "@/lib/billing/plans";
 import { VIDEO_ADDON_KIND, videoAddonCents } from "@/lib/video/addon";
 import { getEffectivePricing, getEffectiveStarterPrice, starterSeatChargeCents } from "@/lib/billing/pricing-copy-store";
 import { NextResponse } from "next/server";
+import { switchoverStarted } from "@/lib/billing/switchover-server";
 
 export async function POST(
   req: Request,
@@ -72,6 +73,11 @@ export async function POST(
         where: { id: workspace.id },
         data: { stripeCustomerId },
       });
+    }
+
+    // Per-seat subscriptions are no longer sold once the move to the new plans has started.
+    if (await switchoverStarted()) {
+      return NextResponse.json({ error: "Per-seat plans are no longer sold. Choose Basic, Growth or Teams on Billing." }, { status: 409 });
     }
 
     // 3. Create Checkout Session for Subscription Upgrade

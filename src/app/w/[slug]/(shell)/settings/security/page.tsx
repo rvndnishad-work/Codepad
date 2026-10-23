@@ -46,7 +46,7 @@ export default async function SecuritySettingsPage({ params }: Props) {
       slug={slug}
       canEdit={canEdit}
       owner={owner}
-      paidPlan={workspace.planName === "GROWTH" || workspace.planName === "ENTERPRISE"}
+      paidPlan={["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"].includes(workspace.planName)}
       myTwoFactorOn={Boolean(meUser?.totpEnabledAt)}
       now={now.toISOString()}
       initial={{

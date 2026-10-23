@@ -11,18 +11,43 @@ import { INCLUDED_CREDITS_PER_SEAT, type PublicPlan } from "@/lib/billing/public
  * because that is the cadence /pricing opens on. `plans` carries the admin
  * wording from /admin/pricing over the effective prices (what checkout charges).
  */
-export default function PricingTeaser({ plans, lowestCreditPrice }: { plans: PublicPlan[]; lowestCreditPrice: string }) {
+/** What a teaser column reads: the old per-seat plans and the new flat plans both fit. */
+export type TeaserPlan = Pick<PublicPlan, "name" | "audience" | "includes" | "recommended"> & {
+  key: string;
+  price: { annual: string };
+  unit: { annual: string };
+  note: { annual: string | null };
+};
+
+/** `flat`: the new plans (Basic, Growth, Teams, Enterprise), once on sale. */
+export default function PricingTeaser({ plans, lowestCreditPrice, flat = false }: { plans: TeaserPlan[]; lowestCreditPrice: string; flat?: boolean }) {
   return (
     <div>
       <WowReveal>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.12em] text-secondary"><Tag className="h-3.5 w-3.5" /> pricing</p>
-            <RevealLines as="h3" className="wow-font-display mt-3 text-4xl md:text-6xl" lines={[<span key="l0">Per-seat plans.</span>, <span key="l1" className="wow-gradient-boss">AI screening included.</span>]} />
+            <RevealLines
+              as="h3"
+              className="wow-font-display mt-3 text-4xl md:text-6xl"
+              lines={
+                flat
+                  ? [<span key="l0">One flat price.</span>, <span key="l1" className="wow-gradient-boss">Credits every month.</span>]
+                  : [<span key="l0">Per-seat plans.</span>, <span key="l1" className="wow-gradient-boss">AI screening included.</span>]
+              }
+            />
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
-              Seats cover the workspace and everyone in it. Each paid seat adds{" "}
-              {INCLUDED_CREDITS_PER_SEAT} AI screening credits a month, and packs from {lowestCreditPrice} a
-              credit top up the pool. Credits are charged only when a candidate starts.
+              {flat ? (
+                <>
+                  Every plan comes with AI screening credits each month, shared by all your workspaces. Top-ups from {lowestCreditPrice} a credit
+                  when you need more. Credits are charged only when a candidate starts.
+                </>
+              ) : (
+                <>
+                  Seats cover the workspace and everyone in it. Each paid seat adds {INCLUDED_CREDITS_PER_SEAT} AI screening credits a month, and
+                  packs from {lowestCreditPrice} a credit top up the pool. Credits are charged only when a candidate starts.
+                </>
+              )}
             </p>
           </div>
           <Link href="/pricing" className="ip-link text-[13px] text-secondary">
@@ -34,7 +59,7 @@ export default function PricingTeaser({ plans, lowestCreditPrice }: { plans: Pub
 
       {/* A price table, not three floating cards. The recommended plan is
           marked by an ink header band — a change of surface, not a badge. */}
-      <WowReveal className="ip-frame mt-10 grid grid-cols-1 gap-px bg-border md:grid-cols-3">
+      <WowReveal className={`ip-frame mt-10 grid grid-cols-1 gap-px bg-border ${flat ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"}`}>
         {plans.map((plan) => {
           const highlight = plan.recommended;
           const price = plan.price.annual;

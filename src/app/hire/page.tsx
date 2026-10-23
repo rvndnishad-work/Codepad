@@ -14,7 +14,9 @@ import HireWowFinal from "@/components/hire-wow/HireWowFinal";
 import ScrollProgressBar from "./ScrollProgressBar";
 import SpotlightScope from "@/components/wow/SpotlightScope";
 import { applyPricingCopy } from "@/lib/billing/pricing-copy";
-import { getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
+import { getEffectiveCatalog, getPublicPricingInputs } from "@/lib/billing/pricing-copy-store";
+import { newPlansEnabled } from "@/lib/billing/account-plan-server";
+import { buildPlansPage } from "@/lib/billing/plans-public";
 import { recruiterUrl } from "@/lib/domains";
 import { currentSite } from "@/lib/current-site";
 
@@ -33,13 +35,20 @@ export const metadata: Metadata = {
 
 export default async function HirePage() {
   const session = await auth().catch(() => null);
-  const [challengeCount, sessionCount, workspaceCount, pricing] = await Promise.all([
+  const [challengeCount, sessionCount, workspaceCount, pricing, plansOn] = await Promise.all([
     prisma.challenge.count({ where: { published: true } }).catch(() => 0),
     prisma.interviewSession.count().catch(() => 0),
     prisma.workspace.count().catch(() => 0),
     getPublicPricingInputs(),
+    newPlansEnabled(),
   ]);
-  const { plans: pricingPlans, lowestCreditPrice } = applyPricingCopy(pricing.copy, pricing.prices);
+  const oldPricing = applyPricingCopy(pricing.copy, pricing.prices);
+  // The new flat plans once an admin puts them on sale.
+  const flatPage = plansOn ? buildPlansPage(await getEffectiveCatalog()) : null;
+  const pricingPlans = flatPage ? flatPage.plans : oldPricing.plans;
+  const lowestCreditPrice = flatPage
+    ? flatPage.topups.reduce((lo, t) => (Number(t.perCredit.slice(1)) < Number(lo.slice(1)) ? t.perCredit : lo), flatPage.topups[0]?.perCredit ?? "$0")
+    : oldPricing.lowestCreditPrice;
 
   const heroStats = buildStats({ sessionCount, challengeCount, workspaceCount });
   const ctaHref = session?.user ? "/dashboard" : "/login?next=/dashboard";
@@ -70,7 +79,7 @@ export default async function HirePage() {
 
       <HireWowEvidence />
 
-      <HireWowTrust pricingPlans={pricingPlans} lowestCreditPrice={lowestCreditPrice} />
+      <HireWowTrust pricingPlans={pricingPlans} lowestCreditPrice={lowestCreditPrice} flat={Boolean(flatPage)} />
 
       <HireWowFinal ctaHref={ctaHref} signedIn={!!session?.user} />
     </div>

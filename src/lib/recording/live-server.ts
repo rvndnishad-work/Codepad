@@ -14,6 +14,7 @@ import { randomUUID } from "crypto";
 import { EgressClient, EncodedFileOutput, EncodedFileType, S3Upload } from "livekit-server-sdk";
 import type { InterviewRecording, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { r2Config, signedGetUrl } from "@/lib/storage/r2";
 import { liveKitApiHost, liveKitConfig, videoRoomName, type LiveKitConfig } from "@/lib/video/livekit-server";
 import { videoCallsOn } from "@/lib/video/addon";
@@ -65,7 +66,7 @@ const SESSION_SELECT = {
 type SessionRow = Prisma.InterviewSessionGetPayload<{ select: typeof SESSION_SELECT }>;
 
 async function creditBalance(tx: Prisma.TransactionClient | typeof prisma, workspaceId: string): Promise<number> {
-  const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } });
+  const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } });
   return agg._sum.amount ?? 0;
 }
 

@@ -5,6 +5,7 @@
  * POST /api/admin/assistant/approve runs it (see ../execute.ts).
  */
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { getSwitch, switchDef } from "@/lib/admin/switches";
 import { checkProposal, CREDIT_GRANT_MAX, TRIAL_EXTEND_MAX_DAYS, BLOG_ACTIONS } from "../guards";
 import { AREA_KEYS, areaLabel } from "../maintenance-areas";
@@ -74,7 +75,7 @@ const propose_grant_credits = def(
     const id = String(a.workspaceId);
     const [ws, bal, owner] = await Promise.all([
       prisma.workspace.findUnique({ where: { id }, select: { name: true, planName: true } }),
-      prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: id }, _sum: { amount: true } }),
+      prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(id), _sum: { amount: true } }),
       ownerOf(id),
     ]);
     if (!ws) return refused("Workspace not found");

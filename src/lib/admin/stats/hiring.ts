@@ -11,6 +11,7 @@
 import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { poolBalances } from "@/lib/billing/credit-pool";
 import { AI_CREDIT_PACKS } from "@/lib/ai-interview/credit-packs";
 import { getEffectivePricing } from "@/lib/billing/pricing-copy-store";
 import { planDisplayName } from "@/lib/billing/usage";
@@ -467,19 +468,15 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
   const batchIds = activeBatches.map((b) => b.workspaceId);
   const [balances, waiting] = batchIds.length
     ? await Promise.all([
-        prisma.aIInterviewCreditLedger.groupBy({
-          by: ["workspaceId"],
-          where: { workspaceId: { in: batchIds } },
-          _sum: { amount: true },
-        }),
+        poolBalances(batchIds),
         prisma.aIInterviewSession.groupBy({
           by: ["workspaceId"],
           where: { workspaceId: { in: batchIds }, status: "PENDING", batch: { status: "ACTIVE" } },
           _count: { _all: true },
         }),
       ])
-    : [[], []];
-  const balanceOf = new Map(balances.map((b) => [b.workspaceId, b._sum.amount ?? 0]));
+    : [new Map<string, number>(), []];
+  const balanceOf = balances;
   const low = batchIds
     .map((id) => ({ id, balance: balanceOf.get(id) ?? 0 }))
     .filter((r) => r.balance < LOW_CREDIT_LIMIT)

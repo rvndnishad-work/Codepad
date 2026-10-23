@@ -9,6 +9,7 @@
  */
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { appOrigin } from "@/lib/interview/links";
 import { logAdminAction } from "@/lib/admin/audit";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
@@ -264,6 +265,7 @@ export async function createPilotFromRequest(actor: Actor, id: string, input: Cr
         prepaidThrough: endsAt,
         prepaidSeats: seats,
         prepaidCadence: PILOT_CADENCE,
+        billingAccount: { create: { name, ownerUserId: owner?.id ?? null } },
         hiringType: req.hiringType === "non_technical" || req.hiringType === "both" ? req.hiringType : "technical",
         ...(owner ? { members: { create: { userId: owner.id, role: "OWNER" } } } : {}),
       },
@@ -397,7 +399,7 @@ export async function finishPilot(
       const [used, refunded, balance] = await Promise.all([
         tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id, kind: "CONSUMPTION", createdAt: { gte: firstGrant } }, _sum: { amount: true } }),
         tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id, kind: "REFUND", createdAt: { gte: firstGrant } }, _sum: { amount: true } }),
-        tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id }, _sum: { amount: true } }),
+        tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(ws.id), _sum: { amount: true } }),
       ]);
       expired = pilotCreditsToExpire({
         granted: grants.reduce((n, g) => n + g.amount, 0) + (already._sum.amount ?? 0),

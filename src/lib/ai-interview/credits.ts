@@ -12,6 +12,7 @@ import { creditCostForLevel, AI_INTERVIEW_COST_PER_SESSION } from "./engagement"
 
 export { AI_CREDIT_PACKS, getAiCreditPack, type AiCreditPack } from "./credit-packs";
 import { includedPart } from "@/lib/billing/included-credits";
+import { poolWhere } from "@/lib/billing/credit-pool";
 
 /**
  * Workspace plans that have access to the AI Screening feature.
@@ -24,12 +25,13 @@ export function workspacePlanAllowsAiScreening(planName: string): boolean {
 }
 
 /**
- * Compute the workspace's current credit balance from the append-only ledger.
- * Balance = SUM(amount). No denormalized counter — single source of truth.
+ * The credits a workspace can spend: the balance of its billing account's
+ * pool, from the append-only ledger. Balance = SUM(amount). No denormalized
+ * counter — single source of truth.
  */
 export async function getWorkspaceCredits(workspaceId: string): Promise<number> {
   const agg = await prisma.aIInterviewCreditLedger.aggregate({
-    where: { workspaceId },
+    where: poolWhere(workspaceId),
     _sum: { amount: true },
   });
   return agg._sum.amount ?? 0;
@@ -197,7 +199,7 @@ async function sumLedger(
   workspaceId: string
 ): Promise<number> {
   const agg = await tx.aIInterviewCreditLedger.aggregate({
-    where: { workspaceId },
+    where: poolWhere(workspaceId),
     _sum: { amount: true },
   });
   return agg._sum.amount ?? 0;

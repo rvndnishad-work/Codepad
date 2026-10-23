@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { logAdminAction } from "@/lib/admin/audit";
 import type { ActionResult } from "../interviews/_components/ConfirmAction";
@@ -32,7 +33,7 @@ export async function grantCreditsAction(workspaceId: string, amount: number, no
   if (!ws) return { ok: false, error: "That workspace no longer exists." };
 
   const { before, after } = await prisma.$transaction(async (tx) => {
-    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } });
+    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } });
     const before = agg._sum.amount ?? 0;
     await tx.aIInterviewCreditLedger.create({ data: { workspaceId, kind: "GRANT", amount, adminUserId: who.id, note: n } });
     return { before, after: before + amount };
@@ -68,7 +69,7 @@ export async function adjustCreditsAction(workspaceId: string, amount: number, n
       const locked = await tx.$queryRaw<{ id: string }[]>(Prisma.sql`SELECT id FROM "Workspace" WHERE id = ${workspaceId} FOR UPDATE`);
       if (!locked.length) throw new UserError("That workspace no longer exists.");
       const ws = await tx.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { name: true, includedCreditsLeft: true } });
-      const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } });
+      const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } });
       const before = agg._sum.amount ?? 0;
       const err = adjustError(amount, before);
       if (err) throw new UserError(err);

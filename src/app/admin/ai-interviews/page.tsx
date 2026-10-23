@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { Download, Search } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { poolBalances } from "@/lib/billing/credit-pool";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import UnderlineTabs from "@/app/w/[slug]/(shell)/_components/UnderlineTabs";
 import { Empty, FilterField, PageHeader, Pager, Pill, Segments, StatTile, Table, buttonCls, inputCls, tdCls, thCls } from "../interviews/_components/list";
@@ -45,7 +46,7 @@ export default async function AdminAiCreditsPage({ searchParams }: { searchParam
   const [allTime, thisMonth, withCredits] = await Promise.all([
     prisma.aIInterviewCreditLedger.groupBy({ by: ["kind"], _sum: { amount: true }, _count: { _all: true } }),
     prisma.aIInterviewCreditLedger.groupBy({ by: ["kind"], where: { createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: { _all: true } }),
-    prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n FROM (SELECT "workspaceId" FROM "AIInterviewCreditLedger" GROUP BY "workspaceId" HAVING sum(amount) > 0) t`,
+    prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n FROM (SELECT "billingAccountId" FROM "AIInterviewCreditLedger" GROUP BY "billingAccountId" HAVING sum(amount) > 0) t`,
   ]);
   const toSums = (rows: typeof allTime) => rows.map((r) => ({ kind: r.kind, sum: r._sum.amount ?? 0, count: r._count._all }));
   const total = creditTotals(toSums(allTime));
@@ -60,7 +61,7 @@ export default async function AdminAiCreditsPage({ searchParams }: { searchParam
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatTile label="Held by workspaces" value={total.balance.toLocaleString("en-US")} sub={`${Number(withCredits[0]?.n ?? 0)} workspaces have credits`} />
+        <StatTile label="Held by workspaces" value={total.balance.toLocaleString("en-US")} sub={`${Number(withCredits[0]?.n ?? 0)} billing accounts have credits`} />
         <StatTile
           label="Lifetime granted"
           value={total.lifetimeGranted.toLocaleString("en-US")}
@@ -116,17 +117,19 @@ async function WorkspacesTab({ sp, monthStart, monthName }: { sp: SearchParams; 
       })
     : [];
   const ids = rows.map((r) => r.id);
-  const [balances, used] = ids.length
+  const [balances, used, pools] = ids.length
     ? await Promise.all([
-        prisma.aIInterviewCreditLedger.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _sum: { amount: true }, _max: { createdAt: true } }),
+        prisma.aIInterviewCreditLedger.groupBy({ by: ["workspaceId"], where: { workspaceId: { in: ids } }, _max: { createdAt: true } }),
         prisma.aIInterviewCreditLedger.groupBy({
           by: ["workspaceId", "kind"],
           where: { workspaceId: { in: ids }, kind: { in: ["CONSUMPTION", "REFUND"] }, createdAt: { gte: monthStart } },
           _sum: { amount: true },
         }),
+        poolBalances(ids),
       ])
-    : [[], []];
-  const bal = new Map(balances.map((b) => [b.workspaceId, { balance: b._sum.amount ?? 0, last: b._max.createdAt }]));
+    : [[], [], new Map<string, number>()];
+  // Balance is the shared pool of the workspace's billing account.
+  const bal = new Map(balances.map((b) => [b.workspaceId, { balance: pools.get(b.workspaceId) ?? 0, last: b._max.createdAt }]));
   const usedBy = new Map<string, number>();
   for (const u of used) usedBy.set(u.workspaceId, (usedBy.get(u.workspaceId) ?? 0) - (u._sum.amount ?? 0));
 

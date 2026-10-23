@@ -59,6 +59,10 @@ export async function acceptWorkspaceInviteAction(token: string): Promise<{ slug
         where: { id: invite.id },
         data: { acceptedAt: new Date() },
       }),
+      // The first owner of a pilot (invited, no account yet) is who pays.
+      ...(role === "OWNER"
+        ? [prisma.billingAccount.updateMany({ where: { workspaces: { some: { id: invite.workspace.id } }, ownerUserId: null }, data: { ownerUserId: session.user.id } })]
+        : []),
     ]);
 
     await writeWorkspaceAuditEntry({

@@ -14,6 +14,7 @@
  * alerts) are imported lazily so the pure part stays importable in tests.
  */
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { getStripe } from "@/lib/stripe";
 import { logAdminAction, type AdminActor } from "@/lib/admin/audit";
 import { seatItem } from "@/lib/video/addon";
@@ -434,7 +435,7 @@ export async function grantWorkspaceCredits(
     await tx.aIInterviewCreditLedger.create({
       data: { workspaceId: ws.id, kind: "GRANT", amount: a.amount, adminUserId: ctx.actor.id ?? null, note: n.note },
     });
-    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id }, _sum: { amount: true } });
+    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(ws.id), _sum: { amount: true } });
     return agg._sum.amount ?? 0;
   });
   await audit(ctx, ws, "workspace.credits.grant", { after: { amount: a.amount, balance, emailOwner: !!input.emailOwner }, note: n.note });
@@ -475,7 +476,7 @@ export async function adjustWorkspaceCredits(ctx: Ctx, workspaceId: string, inpu
     await tx.aIInterviewCreditLedger.create({
       data: { workspaceId: ws.id, kind: "ADJUSTMENT", amount: a.amount, adminUserId: ctx.actor.id ?? null, note: n.note },
     });
-    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: ws.id }, _sum: { amount: true } });
+    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: poolWhere(ws.id), _sum: { amount: true } });
     const balance = agg._sum.amount ?? 0;
     const cur = await tx.workspace.findUnique({ where: { id: ws.id }, select: { includedCreditsLeft: true } });
     const left = includedAfterBalance(cur?.includedCreditsLeft ?? 0, balance);

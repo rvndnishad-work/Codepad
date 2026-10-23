@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { getStripe } from "@/lib/stripe";
 import { seatItem } from "@/lib/video/addon";
@@ -71,7 +72,7 @@ export default async function WorkspaceBillingPage({ params, searchParams }: Pro
 
   const [live, balanceAgg, used30, batch, rec30, stored, expiring, recCredits, ledgerTotal] = await Promise.all([
     stripeLive(ws),
-    prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: id }, _sum: { amount: true } }),
+    prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(id), _sum: { amount: true } }),
     prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId: id, kind: "CONSUMPTION", createdAt: { gte: since30 } }, _sum: { amount: true } }),
     prisma.aIScreeningBatch.findFirst({
       where: { workspaceId: id, status: "ACTIVE" },

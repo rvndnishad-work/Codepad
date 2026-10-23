@@ -4,6 +4,7 @@
  */
 import "server-only";
 import { prisma } from "@/lib/prisma";
+import { poolWhere } from "@/lib/billing/credit-pool";
 import { ledgerViews, usageByMonth, usageMonths, type LedgerView, type UsageMonth } from "./usage";
 
 export const LEDGER_PAGE_SIZE = 25;
@@ -30,8 +31,8 @@ export async function loadLedgerPage(
   size = LEDGER_PAGE_SIZE,
 ): Promise<{ rows: LedgerView[]; total: number; page: number; pages: number; balance: number }> {
   const [total, sum] = await Promise.all([
-    prisma.aIInterviewCreditLedger.count({ where: { workspaceId } }),
-    prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } }),
+    prisma.aIInterviewCreditLedger.count({ where: poolWhere(workspaceId) }),
+    prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } }),
   ]);
   const balance = sum._sum.amount ?? 0;
   const pages = Math.max(1, Math.ceil(total / size));
@@ -39,7 +40,7 @@ export async function loadLedgerPage(
   const skip = (current - 1) * size;
   const [records, newer] = await Promise.all([
     prisma.aIInterviewCreditLedger.findMany({
-      where: { workspaceId },
+      where: poolWhere(workspaceId),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       skip,
       take: size,
@@ -48,7 +49,7 @@ export async function loadLedgerPage(
     // Rows on earlier pages, so the balance column starts from the right number.
     skip > 0
       ? prisma.aIInterviewCreditLedger.findMany({
-          where: { workspaceId },
+          where: poolWhere(workspaceId),
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: skip,
           select: { amount: true },
@@ -63,12 +64,12 @@ export async function loadLedgerPage(
 export async function loadLedgerForExport(workspaceId: string): Promise<LedgerView[]> {
   const [records, sum] = await Promise.all([
     prisma.aIInterviewCreditLedger.findMany({
-      where: { workspaceId },
+      where: poolWhere(workspaceId),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: LEDGER_EXPORT_MAX,
       select: LEDGER_SELECT,
     }),
-    prisma.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } }),
+    prisma.aIInterviewCreditLedger.aggregate({ where: poolWhere(workspaceId), _sum: { amount: true } }),
   ]);
   return ledgerViews(records.map(toRow), sum._sum.amount ?? 0);
 }

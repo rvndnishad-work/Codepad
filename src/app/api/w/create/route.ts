@@ -52,6 +52,9 @@ export async function POST(req: Request) {
         name,
         slug,
         trialEndsAt,
+        // Its own billing account for now; checkout for the new plans lets
+        // one account hold several workspaces.
+        billingAccount: { create: { name, ownerUserId: session.user.id } },
         members: {
           create: {
             userId: session.user.id,

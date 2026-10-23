@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#facc15"/></marker>
+    <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f87171"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#34d399"/></marker>
+  </defs>
+  <rect width="960" height="540" rx="24" fill="#0f1117"/>
+  <text x="48" y="64" fill="#e8eaf0" font-size="26" font-weight="700">A lost response, then a retry</text>
+  <text x="48" y="96" fill="#9aa3b5" font-size="17">The client cannot tell a failed request from a lost response, so it sends again</text>
+
+  <!-- top: no key -->
+  <text x="48" y="146" fill="#f87171" font-size="15" font-weight="700" letter-spacing="1.5">WITHOUT A KEY</text>
+  <text x="48" y="190" fill="#9aa3b5" font-size="15">client</text>
+  <text x="48" y="270" fill="#9aa3b5" font-size="15">server</text>
+  <line x1="120" y1="185" x2="912" y2="185" stroke="#2a2f3d" stroke-width="2"/>
+  <line x1="120" y1="265" x2="912" y2="265" stroke="#2a2f3d" stroke-width="2"/>
+  <path d="M160 185 L 236 259" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="140" y="172" fill="#facc15" font-size="14">POST /charges</text>
+  <rect x="240" y="249" width="120" height="32" rx="8" fill="#2a1414" stroke="#f87171" stroke-width="2"/>
+  <text x="256" y="270" fill="#fca5a5" font-size="14">charge 1</text>
+  <path d="M370 265 L 440 200" stroke="#6b7280" stroke-width="3" stroke-dasharray="6 6"/>
+  <text x="420" y="232" fill="#9aa3b5" font-size="14">response lost</text>
+  <text x="530" y="172" fill="#facc15" font-size="14">retry</text>
+  <path d="M540 185 L 616 259" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="620" y="249" width="120" height="32" rx="8" fill="#2a1414" stroke="#f87171" stroke-width="2"/>
+  <text x="636" y="270" fill="#fca5a5" font-size="14">charge 2</text>
+  <path d="M750 265 L 830 191" stroke="#f87171" stroke-width="3" marker-end="url(#r)"/>
+  <text x="814" y="248" fill="#fca5a5" font-size="14">201</text>
+
+  <!-- bottom: with key -->
+  <text x="48" y="346" fill="#34d399" font-size="15" font-weight="700" letter-spacing="1.5">WITH AN IDEMPOTENCY KEY</text>
+  <text x="48" y="390" fill="#9aa3b5" font-size="15">client</text>
+  <text x="48" y="470" fill="#9aa3b5" font-size="15">server</text>
+  <line x1="120" y1="385" x2="912" y2="385" stroke="#2a2f3d" stroke-width="2"/>
+  <line x1="120" y1="465" x2="912" y2="465" stroke="#2a2f3d" stroke-width="2"/>
+  <path d="M160 385 L 236 459" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <text x="140" y="372" fill="#facc15" font-size="14">key K1</text>
+  <rect x="240" y="449" width="120" height="32" rx="8" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="256" y="470" fill="#6ee7b7" font-size="14">charge 1</text>
+  <path d="M370 465 L 440 400" stroke="#6b7280" stroke-width="3" stroke-dasharray="6 6"/>
+  <text x="420" y="432" fill="#9aa3b5" font-size="14">response lost</text>
+  <text x="510" y="372" fill="#facc15" font-size="14">retry, key K1</text>
+  <path d="M540 385 L 616 459" stroke="#facc15" stroke-width="3" marker-end="url(#y)"/>
+  <rect x="620" y="449" width="140" height="32" rx="8" fill="#171a23" stroke="#4b5563" stroke-width="2"/>
+  <text x="636" y="470" fill="#e8eaf0" font-size="14">saved response</text>
+  <path d="M770 465 L 840 391" stroke="#34d399" stroke-width="3" marker-end="url(#g)"/>
+  <text x="808" y="436" fill="#6ee7b7" font-size="14">same 201</text>
+</svg>

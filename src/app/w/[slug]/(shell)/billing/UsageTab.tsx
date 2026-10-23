@@ -31,7 +31,8 @@ export type LedgerRowView = {
 export type UsageData = {
   credits: CreditGlance;
   /** Credits that come with paid seats. `left` of the balance can expire; `nextAt` is the next monthly grant. */
-  included: { left: number; perMonth: number; nextAt: string | null };
+  /** perSeat: the old per-seat included credits; false for the new plans' monthly credits. */
+  included: { left: number; perMonth: number; nextAt: string | null; perSeat?: boolean };
   packs: { id: string; label: string; credits: number; priceCents: number; badge: string | null }[];
   months: UsageMonth[];
   ledger: { rows: LedgerRowView[]; page: number; pages: number; total: number };
@@ -203,7 +204,7 @@ function includedLine(included: UsageData["included"]): string {
   if (included.perMonth > 0) {
     const when = next ? ` on ${next}` : " once the subscription starts";
     const left = included.left > 0 ? ` ${plural(included.left, "included credit")} left, they roll over one month.` : "";
-    return `Your plan adds ${plural(included.perMonth, "credit")}${when}, ${INCLUDED_CREDITS_PER_SEAT} per seat.${left} Bought credits never expire.`;
+    return `Your plan adds ${plural(included.perMonth, "credit")}${when}${included.perSeat === false ? "" : `, ${INCLUDED_CREDITS_PER_SEAT} per seat`}.${left} Bought credits never expire.`;
   }
   if (included.left > 0) {
     return `${plural(included.left, "included credit")} left from your last paid month${next ? `, they expire on ${next}` : ""}. Bought and trial credits never expire.`;
@@ -244,7 +245,7 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
   };
 
   let note: string | null = null;
-  if (!data.aiScreening) note = "AI screening needs Growth or a trial. You can still buy credits now and use them after you upgrade.";
+  if (!data.aiScreening) note = "AI screening needs a paid plan or a trial. You can still buy credits now and use them after you upgrade.";
   if (!canManage) note = "Ask an owner or admin with billing access to buy credits.";
   else if (!data.checkout) note = "Online payments are not set up on this server yet, so credits cannot be bought here.";
   const canBuy = canManage && data.checkout !== null;

@@ -140,7 +140,7 @@ export default async function WorkspaceHubPage({ searchParams }: { searchParams:
         members: c.members,
         pendingInvites: c.invites,
       },
-      { seatLimit: effectivePlan(ws).seatLimit, aiIncluded: plan.growthFeatures },
+      { seatLimit: effectivePlan(ws).seatLimit, aiIncluded: plan.aiScreening },
     );
     const lastCandidate = ws.candidates[0]?.updatedAt ?? null;
     const activityAt = lastCandidate ?? ws.createdAt;
@@ -472,7 +472,7 @@ function RowState({ state }: { state: HubRowState }) {
 }
 
 function NextStepPanel({ row, state }: { row: Row; state: Extract<HubRowState, { kind: "setup" }> }) {
-  const action = setupStepAction(state.next.id, row.slug, { aiIncluded: row.plan.growthFeatures });
+  const action = setupStepAction(state.next.id, row.slug, { aiIncluded: row.plan.aiScreening });
   return (
     <div className="border-t border-border bg-bg/50 px-4 sm:px-5 py-4 grid sm:grid-cols-[minmax(0,1fr)_auto] gap-4 items-center">
       <div className="min-w-0">

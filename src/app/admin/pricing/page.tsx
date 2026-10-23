@@ -10,6 +10,8 @@ import { Empty, Pager, Pill, Section, Table, tdCls, thCls } from "../interviews/
 import { hrefWith, one, pageWindow, utcStamp, type SearchParams } from "../interviews/_components/params";
 import PricingCopyForm from "./PricingCopyForm";
 import CatalogPricesForm from "./CatalogPricesForm";
+import NewPlansSwitch from "./NewPlansSwitch";
+import { newPlansEnabled } from "@/lib/billing/account-plan-server";
 import { pricingDiff } from "./diff";
 
 export const metadata = {
@@ -31,10 +33,11 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
   const sp = await searchParams;
   const hpage = Number.parseInt(one(sp.hpage), 10) || 1;
 
-  const [settings, historyCount, subs] = await Promise.all([
+  const [settings, historyCount, subs, newPlansOn] = await Promise.all([
     getPricingSettingsVersioned(),
     prisma.pricingChange.count(),
     prisma.workspace.groupBy({ by: ["stripeStatus"], where: { stripeSubscriptionId: { not: null } }, _count: { _all: true } }),
+    newPlansEnabled(),
   ]);
   const win = pageWindow(hpage, historyCount, HISTORY_PAGE);
   const history = historyCount
@@ -97,8 +100,9 @@ export default async function AdminPricingPage({ searchParams }: { searchParams:
 
       <Section
         title="New plans: Basic, Growth and Teams"
-        description="Flat monthly plans with AI credits included, and the top-up packs sold on top. Saved here ahead of the switch-over; nothing is charged at these prices yet."
+        description="Flat monthly plans with AI credits included, and the top-up packs sold on top. Workspaces can buy them from Billing, through Razorpay, while the switch below is on."
       >
+        <NewPlansSwitch initialOn={newPlansOn} />
         <CatalogPricesForm initialCatalog={settings.catalog} initialVersion={settings.version} />
       </Section>
 

@@ -23,7 +23,9 @@ import { finishPilot } from "@/lib/demo-requests/server";
  * at the end their unused pilot credits expire (finishPilot). A demo request
  * whose pilot workspace has since paid is marked Converted.
  *
- * Workspaces with a Stripe subscription are never touched.
+ * Workspaces with a Stripe subscription are never touched, nor are those
+ * on a new plan held by their billing account (Basic, Growth, Teams): the
+ * account-plans sweep handles those.
  */
 const MAX_BATCH = 200;
 const DAY_MS = 86_400_000;
@@ -52,6 +54,8 @@ async function notifyManagers(ws: { id: string; slug: string; members: { userId:
 const managers = { where: { role: { in: [...MANAGER_ROLES] as string[] } }, select: { userId: true as const } };
 /** Prisma's `not` skips NULL rows, so spell out "not a pilot". */
 const notPilot = { OR: [{ prepaidCadence: null }, { prepaidCadence: { not: PILOT_CADENCE } }] };
+/** Old prepaid Growth only: not a workspace mirroring its account's plan. */
+const notAccountPlan = { NOT: { billingAccount: { planKey: { not: null } } } };
 const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 async function run() {
@@ -70,6 +74,7 @@ async function run() {
       prepaidReminderAt: null,
       prepaidThrough: { gt: now, lte: new Date(now.getTime() + PREPAID_REMINDER_DAYS * DAY_MS) },
       ...notPilot,
+      ...notAccountPlan,
     },
     select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
     take: MAX_BATCH,
@@ -87,7 +92,7 @@ async function run() {
   }
 
   const lapsed = await prisma.workspace.findMany({
-    where: { planName: "GROWTH", stripeSubscriptionId: null, prepaidThrough: { not: null, lte: now }, ...notPilot },
+    where: { planName: "GROWTH", stripeSubscriptionId: null, prepaidThrough: { not: null, lte: now }, ...notPilot, ...notAccountPlan },
     select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
     take: MAX_BATCH,
   });
@@ -176,7 +181,7 @@ async function run() {
     const paid = await prisma.workspace.findMany({
       where: {
         id: { in: ids },
-        OR: [{ stripeSubscriptionId: { not: null } }, { planName: "GROWTH", prepaidThrough: { gt: now }, ...notPilot }, { planName: "ENTERPRISE" }],
+        OR: [{ stripeSubscriptionId: { not: null } }, { planName: { in: ["BASIC", "GROWTH", "TEAMS"] }, prepaidThrough: { gt: now }, ...notPilot }, { planName: "ENTERPRISE" }],
       },
       select: { id: true },
     });

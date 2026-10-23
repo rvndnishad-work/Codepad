@@ -2268,12 +2268,31 @@ model BillingAccount {
   /// The person who pays (the first owner). Plain id, not a relation, so
   /// deleting a user never touches billing history.
   ownerUserId  String?
+  /// New plans (src/lib/billing/catalog.ts): "BASIC" | "GROWTH" | "TEAMS".
+  /// Null for accounts still on the old per-workspace plans. While set, the
+  /// account's workspaces mirror it (planName, prepaidThrough, prepaidSeats,
+  /// prepaidCadence) so every existing gate reads it; see account-plan.ts.
+  planKey              String?
+  /// "monthly" | "annual"
+  planCadence          String?
+  /// Paid up to this moment. The plan lapses when it passes.
+  paidThrough          DateTime?
+  /// Last Razorpay payment applied, so a repeated verify never extends twice.
+  lastPaymentId        String?
+  /// When the "renews soon" reminder went out for the current period.
+  reminderAt           DateTime?
+  /// Monthly plan credits: what is left of them (used first, roll over one
+  /// month), the size of the last grant, and when it was made.
+  planCreditsLeft      Int                       @default(0)
+  planCreditsLastGrant Int                       @default(0)
+  planCreditsGrantedAt DateTime?
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
   workspaces   Workspace[]
   creditLedger AIInterviewCreditLedger[]
 
   @@index([ownerUserId])
+  @@index([planKey, paidThrough])
 }
 
 /// Workspace-scoped MCP API key. The full secret is shown ONCE at creation

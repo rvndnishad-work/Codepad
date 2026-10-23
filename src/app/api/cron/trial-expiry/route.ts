@@ -27,7 +27,7 @@ async function run(req: NextRequest) {
       trialEndsAt: { not: null, lt: now },
       trialEndedAt: null,
       // Still on a free-tier plan (paid upgrades don't need a trial notice).
-      planName: { notIn: ["GROWTH", "ENTERPRISE"] },
+      planName: { notIn: ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"] },
       stripeSubscriptionId: null,
     },
     select: {

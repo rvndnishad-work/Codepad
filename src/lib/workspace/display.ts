@@ -4,7 +4,7 @@
  * Pure and synchronous so server pages, client components and unit tests can
  * share them. Nothing here reads the database.
  */
-import { trialActive, type PlanFields } from "@/lib/billing/trial";
+import { planAllowsAiScreening, planHasGrowthTools, trialActive, type PlanFields } from "@/lib/billing/trial";
 import { pilotDaysLeft } from "@/lib/billing/pilot";
 import { normalizeStage, type PipelineStage } from "@/lib/crm/stages";
 
@@ -18,15 +18,19 @@ export type PlanDisplay = {
   trialDaysLeft: number | null;
   /** Share of the trial already used, 0 to 1, for a progress bar. */
   trialUsed: number | null;
-  /** AI screening, ATS sync and the other Growth-level tools are on. */
+  /** ATS sync, API keys, MCP and the other Growth-level tools are on. */
   growthFeatures: boolean;
+  /** AI screening is on: every paid plan (Basic too), trials and pilots. */
+  aiScreening: boolean;
   /** Whole days left on an active pilot (at least 1), else null. */
   pilotDaysLeft?: number | null;
 };
 
 const PLAN_LABELS: Record<string, string> = {
   FREE: "Free",
+  BASIC: "Basic",
   GROWTH: "Growth",
+  TEAMS: "Teams",
   ENTERPRISE: "Enterprise",
   LOCKED: "Locked",
 };
@@ -46,18 +50,20 @@ export function planDisplay(
       trialDaysLeft: days,
       trialUsed: Math.min(1, Math.max(0, 1 - days / total)),
       growthFeatures: true,
+      aiScreening: true,
     };
   }
   const pilotDays = pilotDaysLeft(ws, now);
   if (pilotDays !== null) {
-    return { label: "Pilot", onTrial: false, trialDaysLeft: null, trialUsed: null, growthFeatures: true, pilotDaysLeft: pilotDays };
+    return { label: "Pilot", onTrial: false, trialDaysLeft: null, trialUsed: null, growthFeatures: true, aiScreening: true, pilotDaysLeft: pilotDays };
   }
   return {
     label: PLAN_LABELS[ws.planName] ?? humanize(ws.planName),
     onTrial: false,
     trialDaysLeft: null,
     trialUsed: null,
-    growthFeatures: ws.planName === "GROWTH" || ws.planName === "ENTERPRISE",
+    growthFeatures: planHasGrowthTools(ws.planName),
+    aiScreening: planAllowsAiScreening(ws.planName),
   };
 }
 

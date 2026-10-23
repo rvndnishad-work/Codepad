@@ -22,7 +22,7 @@ export const HIRING_RANGES: HiringRange[] = [7, 30, 90, 365];
 /** Stripe statuses that still bill. */
 export const LIVE_STRIPE_STATUSES = ["active", "trialing", "past_due"];
 /** Plan names that are paid. STARTER is the legacy self-serve tier. */
-export const PAID_PLANS = ["STARTER", "GROWTH", "ENTERPRISE"];
+export const PAID_PLANS = ["STARTER", "GROWTH", "ENTERPRISE", "BASIC", "TEAMS"];
 /** A workspace with fewer credits than this and an active batch needs attention. */
 export const LOW_CREDIT_LIMIT = 10;
 
@@ -255,7 +255,7 @@ async function computeHiringStats(range: HiringRange): Promise<HiringStats> {
   const since = rangeStart(range, now);
   const in7Days = new Date(now.getTime() + 7 * DAY_MS);
   const in48h = new Date(now.getTime() + 2 * DAY_MS);
-  const trialWhere = { trialEndsAt: { gt: now }, stripeSubscriptionId: null, planName: { notIn: ["GROWTH", "ENTERPRISE"] } };
+  const trialWhere = { trialEndsAt: { gt: now }, stripeSubscriptionId: null, planName: { notIn: ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"] } };
   const liveSessions = { workspaceId: { not: null }, type: { not: "take-home" }, createdAt: { gte: since } };
 
   const [
@@ -401,7 +401,7 @@ export type AttentionItem = {
 };
 
 function planLabel(ws: { planName: string; trialEndsAt: Date | null; stripeSubscriptionId: string | null; stripeSeatQuantity: number | null }, now: Date) {
-  const onTrial = ws.trialEndsAt && ws.trialEndsAt > now && !ws.stripeSubscriptionId && !["GROWTH", "ENTERPRISE"].includes(ws.planName);
+  const onTrial = ws.trialEndsAt && ws.trialEndsAt > now && !ws.stripeSubscriptionId && !["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"].includes(ws.planName);
   if (onTrial) return "Trial";
   const name = ws.planName === "STARTER" ? "Starter" : planDisplayName(ws.planName);
   return ws.stripeSeatQuantity ? `${name}, ${ws.stripeSeatQuantity} ${ws.stripeSeatQuantity === 1 ? "seat" : "seats"}` : name;
@@ -439,7 +439,7 @@ async function computeNeedsAttention(): Promise<AttentionItem[]> {
       select: { id: true, stripePastDueSince: true, stripeCustomerId: true, stripeStatus: true },
     }),
     prisma.workspace.findMany({
-      where: { trialEndsAt: { gt: now, lte: in3Days }, stripeSubscriptionId: null, planName: { notIn: ["GROWTH", "ENTERPRISE"] } },
+      where: { trialEndsAt: { gt: now, lte: in3Days }, stripeSubscriptionId: null, planName: { notIn: ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"] } },
       orderBy: { trialEndsAt: "asc" },
       take: LIMIT,
       select: { id: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, _count: { select: { aiInterviewSessions: true } } },

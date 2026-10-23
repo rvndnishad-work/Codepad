@@ -23,7 +23,7 @@ interface WorkspaceInfo {
 }
 
 const planLabel = (planName: string) =>
-  planName === "GROWTH" ? "Growth" : planName === "ENTERPRISE" ? "Enterprise" : planName === "STARTER" ? "Starter" : "Free";
+  ({ BASIC: "Basic", GROWTH: "Growth", TEAMS: "Teams", ENTERPRISE: "Enterprise", STARTER: "Starter" } as Record<string, string>)[planName] ?? "Free";
 
 /**
  * Public pricing. Every number comes from src/lib/billing/public-pricing.ts,
@@ -55,7 +55,7 @@ export default function PricingClient({
   const router = useRouter();
 
   const workspace = workspaces.find((w) => w.slug === workspaceSlug);
-  const onPaidPlan = workspace?.planName === "GROWTH" || workspace?.planName === "ENTERPRISE";
+  const onPaidPlan = ["GROWTH", "ENTERPRISE", "BASIC", "TEAMS"].includes(workspace?.planName ?? "");
 
   // The chosen plan and cadence travel with the buyer: through sign-in, through
   // creating a first workspace, to the workspace billing page, which runs the

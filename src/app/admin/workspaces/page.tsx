@@ -18,7 +18,7 @@ const STATUS_FILTERS = [
   { id: "deleting", label: "Deletion scheduled" },
 ] as const;
 
-const PLAN_FILTERS = ["FREE", "STARTER", "GROWTH", "ENTERPRISE"];
+const PLAN_FILTERS = ["FREE", "STARTER", "BASIC", "GROWTH", "TEAMS", "ENTERPRISE"];
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

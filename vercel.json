@@ -44,6 +44,10 @@
       "schedule": "25 * * * *"
     },
     {
+      "path": "/api/cron/account-plans",
+      "schedule": "35 * * * *"
+    },
+    {
       "path": "/api/cron/data-retention",
       "schedule": "30 2 * * *"
     },

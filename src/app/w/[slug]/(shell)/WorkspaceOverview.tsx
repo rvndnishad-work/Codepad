@@ -741,14 +741,14 @@ function SetupView(props: Props) {
       members: setup.members,
       pendingInvites: setup.pendingInvites,
     },
-    { seatLimit, aiIncluded: plan.growthFeatures },
+    { seatLimit, aiIncluded: plan.aiScreening },
   );
   const done = steps.filter((s) => s.done).length;
   const next = steps.find((s) => !s.done)?.id;
   const actions: Record<string, { label: string; href?: string; onClick?: () => void }> = {
     assessment: { label: "Send a take home", href: `/w/${slug}/take-homes/new` },
     candidate: { label: "Add candidate", onClick: onAddCandidate },
-    ai: plan.growthFeatures
+    ai: plan.aiScreening
       ? { label: "Try AI screening", href: `/w/${slug}/ai-interviews` }
       : { label: "See plans", href: `/w/${slug}?section=billing` },
     team: { label: "Invite", href: `/w/${slug}?section=members` },

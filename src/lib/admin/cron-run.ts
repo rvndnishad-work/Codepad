@@ -68,6 +68,7 @@ export const CRON_JOBS: { job: string; path: string; schedule: string; every: st
   { job: "recordings", path: "/api/cron/recordings", schedule: "20 * * * *", every: "Every hour", expectedMinutes: 60 },
   { job: "trial-expiry", path: "/api/cron/trial-expiry", schedule: "0 1 * * *", every: "Daily 01:00 UTC", expectedMinutes: 1440 },
   { job: "prepaid-expiry", path: "/api/cron/prepaid-expiry", schedule: "25 * * * *", every: "Every hour", expectedMinutes: 60 },
+  { job: "account-plans", path: "/api/cron/account-plans", schedule: "35 * * * *", every: "Every hour", expectedMinutes: 60 },
   { job: "data-retention", path: "/api/cron/data-retention", schedule: "30 2 * * *", every: "Daily 02:30 UTC", expectedMinutes: 1440 },
   { job: "workspace-deletion", path: "/api/cron/workspace-deletion", schedule: "45 2 * * *", every: "Daily 02:45 UTC", expectedMinutes: 1440 },
   { job: "included-credits", path: "/api/cron/included-credits", schedule: "10 3 * * *", every: "Daily 03:10 UTC", expectedMinutes: 1440 },

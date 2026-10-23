@@ -5,6 +5,7 @@
  * tests share one set of rules.
  */
 import { planConfig } from "./plans";
+import { CATALOG_PLANS } from "./catalog";
 
 /* ── Credit history ─────────────────────────────────────────────────────── */
 
@@ -186,7 +187,8 @@ export function lowCreditDecision(s: { threshold: number | null; alertedAt: Date
 
 /* ── Stripe events to audit entries ─────────────────────────────────────── */
 
-export const planDisplayName = (planName: string): string => planConfig(planName).name;
+export const planDisplayName = (planName: string): string =>
+  planName === "BASIC" || planName === "TEAMS" ? CATALOG_PLANS[planName].name : planConfig(planName).name;
 
 export type BillingAudit = { action: "PLAN_CHANGED" | "SUBSCRIPTION_CANCELLED"; meta: Record<string, unknown> };
 

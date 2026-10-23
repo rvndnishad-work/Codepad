@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { poolWhere } from "@/lib/billing/credit-pool";
+import { clampPlanCredits } from "@/lib/billing/account-plan-server";
 import { requireAdminAccess } from "@/lib/permissions/staff";
 import { logAdminAction } from "@/lib/admin/audit";
 import type { ActionResult } from "../interviews/_components/ConfirmAction";
@@ -79,6 +80,7 @@ export async function adjustCreditsAction(workspaceId: string, amount: number, n
       if (includedNow !== ws.includedCreditsLeft) {
         await tx.workspace.update({ where: { id: workspaceId }, data: { includedCreditsLeft: includedNow } });
       }
+      await clampPlanCredits(tx, workspaceId, after);
       return { name: ws.name, before, after, includedBefore: ws.includedCreditsLeft, includedNow };
     });
   } catch (e) {

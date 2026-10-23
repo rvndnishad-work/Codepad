@@ -167,3 +167,22 @@ export async function resetPricingCopy(input: { confirm: boolean; version: strin
   revalidatePricing();
   return { ok: true, version: res.version };
 }
+
+/** Turns buying the new plans (Basic, Growth, Teams) on Billing on or off. */
+export async function setNewPlansAction(on: boolean): Promise<{ ok: true; on: boolean } | { ok: false; error: string }> {
+  const who = await actor();
+  const { newPlansEnabled, setNewPlansEnabled, NEW_PLANS_SETTING } = await import("@/lib/billing/account-plan-server");
+  const before = await newPlansEnabled();
+  await setNewPlansEnabled(on);
+  await logAdminAction({
+    actor: who,
+    action: on ? "pricing.new_plans.on" : "pricing.new_plans.off",
+    targetType: "pricing",
+    targetId: NEW_PLANS_SETTING,
+    targetLabel: "New plans checkout",
+    before: { on: before },
+    after: { on },
+  });
+  revalidatePricing();
+  return { ok: true, on };
+}

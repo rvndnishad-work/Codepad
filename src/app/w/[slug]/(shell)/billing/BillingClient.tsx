@@ -16,6 +16,7 @@ import type { SeatUsage } from "@/lib/workspace/members";
 import UsageTab, { type UsageData } from "./UsageTab";
 import VideoAddonCard, { type VideoAddonData } from "./VideoAddonCard";
 import GrowthCheckout, { type GrowthCheckoutData } from "./GrowthCheckout";
+import PlanPicker, { type PlanCheckoutData } from "./PlanPicker";
 import type { PrepaidCadence } from "@/lib/billing/prepaid";
 import UnderlineTabs from "../_components/UnderlineTabs";
 import { INCLUDED_CREDITS_PER_SEAT } from "@/lib/billing/included-credits";
@@ -38,6 +39,10 @@ type Props = {
   stripeConfigured: boolean;
   /** How this viewer can choose or renew Growth; null when they cannot. */
   growthCheckout: GrowthCheckoutData | null;
+  /** The new plans (Basic, Growth, Teams), when on sale to this viewer. Replaces the Growth checkout. */
+  planCheckout: PlanCheckoutData | null;
+  /** Monthly credits of the account's new plan while it is paid up, else null (old per-seat credits). */
+  planCreditsPerMonth: number | null;
   /** Arrived from the pricing page with Growth picked: open the checkout. */
   autoOpenGrowth: boolean;
   video: VideoAddonData;
@@ -53,7 +58,8 @@ export default function BillingClient(props: Props) {
   const { slug, tab, notice, summary, canManage, subscribed, stripeConfigured, planName } = props;
   const [toastNode, toast] = useToasts();
   const [loading, setLoading] = useState(false);
-  const growthCheckout = props.growthCheckout;
+  const planCheckout = props.planCheckout;
+  const growthCheckout = planCheckout ? null : props.growthCheckout;
   const [growthOpen, setGrowthOpen] = useState(Boolean(props.autoOpenGrowth && growthCheckout && tab === "plan"));
 
   useEffect(() => {
@@ -148,7 +154,8 @@ export default function BillingClient(props: Props) {
           {growthOpen && growthCheckout && (
             <GrowthCheckout slug={slug} data={growthCheckout} onStripe={openStripe} onClose={() => setGrowthOpen(false)} notify={toast} />
           )}
-          {!growthCheckout && !subscribed && canManage && planName !== "ENTERPRISE" && (
+          {planCheckout && <PlanPicker slug={slug} data={planCheckout} notify={toast} />}
+          {!growthCheckout && !planCheckout && !subscribed && canManage && planName !== "ENTERPRISE" && (
             <p className="text-[13px] text-muted -mt-2">Online payments are not set up on this server yet, so plans cannot be changed here.</p>
           )}
 
@@ -281,7 +288,7 @@ function SeatsCard({ slug, seats, summary }: Props) {
   );
 }
 
-function CreditsCard({ slug, credits, aiScreening, canManage }: Props) {
+function CreditsCard({ slug, credits, aiScreening, canManage, planCreditsPerMonth }: Props) {
   const health = creditHealth(credits, null);
   return (
     <div className="rounded-xl border border-border bg-surface px-5 py-4 flex flex-col gap-2.5">
@@ -296,9 +303,14 @@ function CreditsCard({ slug, credits, aiScreening, canManage }: Props) {
       <span className="text-[28px] font-semibold tracking-tight tabular-nums text-fg">{credits.toLocaleString("en-GB")} left</span>
       <span className="text-[13px] text-muted">
         {aiScreening ? (
-          <>Growth adds {INCLUDED_CREDITS_PER_SEAT} credits per seat each month. A screening uses 1 to 3 when the candidate starts it.</>
+          <>
+            {planCreditsPerMonth !== null
+              ? `Your plan adds ${planCreditsPerMonth.toLocaleString("en-GB")} credits each month.`
+              : `Growth adds ${INCLUDED_CREDITS_PER_SEAT} credits per seat each month.`}{" "}
+            A screening uses 1 to 3 when the candidate starts it.
+          </>
         ) : (
-          "AI screening needs Growth or a trial."
+          "AI screening needs a paid plan or a trial."
         )}
       </span>
       <div className="mt-auto flex flex-wrap items-center gap-3 pt-1">

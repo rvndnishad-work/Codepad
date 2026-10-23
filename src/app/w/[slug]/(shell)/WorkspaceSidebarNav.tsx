@@ -53,6 +53,8 @@ type NavItem = {
   locked?: boolean;
   /** Small "New" badge after the label. */
   isNew?: boolean;
+  /** Stop on the workspace tour (src/lib/workspace/tour.ts). */
+  tour?: string;
 };
 
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
@@ -65,6 +67,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
     return (
       <Link
         href={item.href}
+        data-tour={item.tour}
         title={item.locked ? `${item.label} (Growth plan)` : item.label}
         aria-label={item.label}
         aria-current={item.isActive ? "page" : undefined}
@@ -78,6 +81,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   return (
     <Link
       href={item.href}
+      data-tour={item.tour}
       aria-current={item.isActive ? "page" : undefined}
       className={`relative flex items-center gap-2.5 h-[34px] px-2.5 rounded-lg text-sm transition-colors ${tone}`}
     >
@@ -134,6 +138,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, aiScreening,
   const hiring: NavItem[] = [
     {
       label: "Candidates",
+      tour: "candidates",
       icon: Users,
       href: `/w/${slug}/candidates`,
       isActive: pathname.startsWith(`/w/${slug}/candidates`) || pathname.startsWith(`/w/${slug}/batches`),
@@ -141,20 +146,22 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, aiScreening,
     },
     {
       label: "Take home",
+      tour: "take-homes",
       icon: ClipboardList,
       href: `/w/${slug}/take-homes`,
       isActive: pathname.startsWith(`/w/${slug}/take-homes`) || pathname.startsWith(`/w/${slug}/attempts`),
       count: counts.takeHomeReview || undefined,
     },
-    { label: "Interviews", icon: Video, ...route("interviews"), count: counts.interviews },
+    { label: "Interviews", tour: "interviews", icon: Video, ...route("interviews"), count: counts.interviews },
     screening({
       label: "AI screening",
+      tour: "ai-screening",
       icon: Bot,
       href: `/w/${slug}/ai-interviews`,
       // External tools settings live under AI screening question sets.
       isActive: pathname.startsWith(`/w/${slug}/ai-interviews`) || pathname.startsWith(`/w/${slug}/external-mcp`),
     }),
-    { label: "Question library", icon: BookOpen, ...route("library"), count: counts.challenges },
+    { label: "Question library", tour: "library", icon: BookOpen, ...route("library"), count: counts.challenges },
   ];
 
   const connections: NavItem[] = [
@@ -175,7 +182,7 @@ export default function WorkspaceSidebarNav({ slug, growthFeatures, aiScreening,
   ];
 
   const admin: NavItem[] = [
-    { label: "Members", icon: UsersRound, ...route("members"), count: counts.members },
+    { label: "Members", tour: "members", icon: UsersRound, ...route("members"), count: counts.members },
     { label: "Settings", icon: Settings, ...route("settings"), isNew: true },
     { label: "Billing and usage", icon: CreditCard, ...route("billing") },
     { label: "Audit log", icon: ScrollText, ...route("audit") },

@@ -12,6 +12,15 @@ export default function CreateWorkspacePage() {
   const [slug, setSlug] = useState("");
   const [isManualSlug, setIsManualSlug] = useState(false);
   const [loading, setLoading] = useState(false);
+  // What creating does for this person: the trial (old plans), joining their
+  // plan, starting without a plan, or blocked at their plan's workspace limit.
+  const [mode, setMode] = useState<{ mode: "trial" | "join" | "own" | "full"; plan?: string; reason?: string }>({ mode: "trial" });
+  useEffect(() => {
+    fetch("/api/w/create")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.mode && setMode(d))
+      .catch(() => {});
+  }, []);
 
   // Auto-generate slug from name unless manually modified by the user
   useEffect(() => {
@@ -55,6 +64,11 @@ export default function CreateWorkspacePage() {
         description: `Welcome to ${name}. Redirecting...`,
       });
 
+      // No plan yet under the new plans: go and pick one.
+      if (data?.placement === "own" && mode.mode === "own") {
+        router.push(`/w/${data.slug}/billing`);
+        return;
+      }
       // Picked a paid plan on /pricing first: go straight on to paying for it.
       const intent = new URLSearchParams(window.location.search);
       if (intent.get("plan") === "growth") {
@@ -152,17 +166,39 @@ export default function CreateWorkspacePage() {
             <div className="rounded-2xl border border-secondary/20 bg-secondary/5 p-4 flex items-start gap-3.5">
               <Sparkles className="w-5 h-5 text-secondary shrink-0 mt-0.5" />
               <div className="space-y-0.5">
-                <h4 className="text-xs font-semibold text-secondary">Seat-Based Plan: Free Trial</h4>
-                <p className="text-xs text-muted/80 leading-relaxed">
-                  Start with a 14-day free trial. Invite up to 5 teammates and conduct unlimited automated developer take-home assessments.
-                </p>
+                {mode.mode === "join" ? (
+                  <>
+                    <h4 className="text-xs font-semibold text-secondary">On your {mode.plan} plan</h4>
+                    <p className="text-xs text-muted/80 leading-relaxed">This workspace joins your plan and shares its AI credits with your other workspaces.</p>
+                  </>
+                ) : mode.mode === "own" ? (
+                  <>
+                    <h4 className="text-xs font-semibold text-secondary">Choose a plan next</h4>
+                    <p className="text-xs text-muted/80 leading-relaxed">
+                      After creating the workspace you pick Basic, Growth or Teams on Billing. Want to try it first?{" "}
+                      <Link href="/demo" className="text-secondary hover:underline">Book a demo</Link> and we will set up a pilot.
+                    </p>
+                  </>
+                ) : mode.mode === "full" ? (
+                  <>
+                    <h4 className="text-xs font-semibold text-warning">Workspace limit reached</h4>
+                    <p className="text-xs text-muted/80 leading-relaxed">{mode.reason}</p>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="text-xs font-semibold text-secondary">Seat-Based Plan: Free Trial</h4>
+                    <p className="text-xs text-muted/80 leading-relaxed">
+                      Start with a 14-day free trial. Invite up to 5 teammates and conduct unlimited automated developer take-home assessments.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || mode.mode === "full"}
               className="w-full relative overflow-hidden group/btn px-5 py-3.5 rounded-xl bg-secondary hover:brightness-110 text-bg transition-all duration-300 shadow-[0_0_24px_rgba(var(--accent-rgb),0.15)] hover:shadow-[0_0_32px_rgba(var(--accent-rgb),0.35)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold text-center"
             >
               {loading ? "Creating workspace…" : "Create workspace"}

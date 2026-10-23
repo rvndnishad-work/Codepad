@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountPlanActive,
   amountDueCents,
+  placeNewWorkspace,
   nextPaidThrough,
   planChange,
   planCreditsDue,
@@ -117,5 +118,32 @@ describe("monthly plan credits", () => {
   it("tops up the difference on an upgrade", () => {
     expect(upgradeCredits(50, 400)).toBe(350);
     expect(upgradeCredits(400, 50)).toBe(0);
+  });
+});
+
+describe("placing a new workspace", () => {
+  const plans = [
+    { key: "BASIC" as const, name: "Basic", workspaceLimit: 1 },
+    { key: "GROWTH" as const, name: "Growth", workspaceLimit: 3 },
+    { key: "TEAMS" as const, name: "Teams", workspaceLimit: 10 },
+  ];
+  const acct = (id: string, planKey: string | null, paidThrough: string | null, workspaces: number) => ({ id, planKey, planCadence: "monthly", paidThrough, workspaces });
+
+  it("gets its own account when the person has no paid-up plan", () => {
+    expect(placeNewWorkspace([], plans, NOW)).toEqual({ kind: "own" });
+    expect(placeNewWorkspace([acct("a", "GROWTH", "2026-11-01T00:00:00Z", 1)], plans, NOW)).toEqual({ kind: "own" });
+  });
+
+  it("joins the biggest plan with room", () => {
+    const owned = [acct("b", "BASIC", "2026-12-01T00:00:00Z", 0), acct("g", "GROWTH", "2026-12-01T00:00:00Z", 2)];
+    expect(placeNewWorkspace(owned, plans, NOW)).toEqual({ kind: "join", accountId: "g", planKey: "GROWTH" });
+  });
+
+  it("refuses past the limit and names the next plan", () => {
+    const r = placeNewWorkspace([acct("g", "GROWTH", "2026-12-01T00:00:00Z", 3)], plans, NOW);
+    expect(r.kind).toBe("full");
+    expect(r.kind === "full" && r.reason).toBe("Growth covers 3 workspaces, and you have 3. Move up to Teams on Billing for up to 10, or talk to us about Enterprise.");
+    const t = placeNewWorkspace([acct("t", "TEAMS", "2026-12-01T00:00:00Z", 10)], plans, NOW);
+    expect(t.kind === "full" && t.reason).toContain("Talk to us about Enterprise");
   });
 });

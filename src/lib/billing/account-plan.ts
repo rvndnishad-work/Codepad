@@ -199,3 +199,44 @@ export function accountPlanSummary(
     seatHint: `${plan.name} allows ${plan.seatsPerWorkspace} people in each workspace and ${plan.workspaceLimit} ${plan.workspaceLimit === 1 ? "workspace" : "workspaces"}.`,
   };
 }
+
+// ── Where a new workspace goes ───────────────────────────────────────────
+
+export type OwnedAccount = AccountPlanFields & { id: string; workspaces: number };
+
+export type Placement =
+  /** Onto this paid-up account, which has room. */
+  | { kind: "join"; accountId: string; planKey: SelfServePlanKey }
+  /** Its own new account, with no plan: the owner picks one on Billing. */
+  | { kind: "own" }
+  /** Every paid-up account the person owns is at its workspace limit. */
+  | { kind: "full"; reason: string };
+
+/**
+ * A person who owns a paid-up plan puts new workspaces on it, biggest plan
+ * first, up to the plan's workspace limit; past the limit they upgrade (or
+ * talk to us). Without a plan the workspace gets its own account.
+ */
+export function placeNewWorkspace(
+  owned: OwnedAccount[],
+  plans: Pick<EffectiveCatalogPlan, "key" | "name" | "workspaceLimit">[],
+  now: Date = new Date(),
+): Placement {
+  const active = owned
+    .filter((a) => accountPlanActive(a, now))
+    .sort((x, y) => RANK[y.planKey as SelfServePlanKey] - RANK[x.planKey as SelfServePlanKey]);
+  if (!active.length) return { kind: "own" };
+  for (const a of active) {
+    const plan = plans.find((p) => p.key === a.planKey);
+    if (plan && a.workspaces < plan.workspaceLimit) return { kind: "join", accountId: a.id, planKey: a.planKey as SelfServePlanKey };
+  }
+  const top = plans.find((p) => p.key === active[0].planKey);
+  const limit = top?.workspaceLimit ?? active[0].workspaces;
+  const next = top ? plans.find((p) => RANK[p.key as SelfServePlanKey] > RANK[top.key as SelfServePlanKey]) : undefined;
+  return {
+    kind: "full",
+    reason: `${top?.name ?? "Your plan"} covers ${limit} ${limit === 1 ? "workspace" : "workspaces"}, and you have ${active[0].workspaces}. ${
+      next ? `Move up to ${next.name} on Billing for up to ${next.workspaceLimit}, or talk to us about Enterprise.` : "Talk to us about Enterprise for more."
+    }`,
+  };
+}

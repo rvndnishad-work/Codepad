@@ -21,6 +21,7 @@ export function flatten(v: Json, prefix = "", out: Record<string, Json> = {}): R
 
 const WORDS: Record<string, string> = {
   prices: "",
+
   growth: "Growth seat",
   starter: "Starter seat",
   videoAddon: "Video add-on",
@@ -38,9 +39,30 @@ const WORDS: Record<string, string> = {
   recommended: "recommended",
 };
 
+/** Words for the new plan catalogue ("catalog.plans.BASIC.credits" -> "New Basic plan credits"). */
+const CATALOG_WORDS: Record<string, string> = {
+  catalog: "",
+  plans: "",
+  topups: "",
+  BASIC: "New Basic plan",
+  GROWTH: "New Growth plan",
+  TEAMS: "New Teams plan",
+  "topup-25": "Top-up 25 pack",
+  "topup-100": "Top-up 100 pack",
+  "topup-300": "Top-up 300 pack",
+  monthlyCents: "monthly",
+  annualCents: "yearly",
+  priceCents: "price",
+  credits: "credits",
+};
+
 /** "prices.growth.monthlyCents" -> "Growth seat, monthly". */
 export function pathLabel(path: string): string {
   const parts = path.split(".");
+  if (parts[0] === "catalog") {
+    const words = parts.map((p) => (p in CATALOG_WORDS ? CATALOG_WORDS[p] : p)).filter(Boolean);
+    return words.join(" ");
+  }
   const words = parts.map((p) => (p in WORDS ? WORDS[p] : p)).filter(Boolean);
   if (!words.length) return path;
   const [head, ...rest] = words;
@@ -69,6 +91,6 @@ export function pricingDiff(before: Json, after: Json): DiffLine[] {
     if (JSON.stringify(a[path]) === JSON.stringify(b[path])) continue;
     lines.push({ path, label: pathLabel(path), from: showValue(path, a[path]), to: showValue(path, b[path]) });
   }
-  const rank = (p: string) => (p.startsWith("prices.") || p.startsWith("starter.") ? 0 : 1);
+  const rank = (p: string) => (p.startsWith("prices.") || p.startsWith("starter.") || p.startsWith("catalog.") ? 0 : 1);
   return lines.sort((x, y) => rank(x.path) - rank(y.path) || x.path.localeCompare(y.path));
 }

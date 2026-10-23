@@ -7,7 +7,9 @@ import { requireAdminAccess } from "@/lib/permissions/staff";
 import { logAdminAction } from "@/lib/admin/audit";
 import { sanitizePricingCopy, type PricingCopy } from "@/lib/billing/pricing-copy";
 import { sanitizePriceOverrides, type PriceOverrides } from "@/lib/billing/prices";
+import { sanitizeCatalogOverrides, type CatalogOverrides } from "@/lib/billing/catalog";
 import {
+  getPricingSettingsVersioned,
   PRICING_SETTINGS_KEY,
   pricingVersionOf,
   sanitizeStarterOverride,
@@ -76,7 +78,11 @@ export async function savePricingCopy(input: unknown, note: string, version: str
   const { starter, errors: starterErrors } = sanitizeStarterOverride(raw.starter);
   if (errors.length || starterErrors.length) return { ok: false, error: [...errors, ...starterErrors].join(" ") };
 
-  const settings: StoredPricingSettings = { copy, prices, starter };
+  // The plan catalogue is edited in its own form; keep what is stored. A save
+  // made against an older version is refused as stale below, so this read
+  // cannot carry an outdated catalogue over a newer one.
+  const stored = await getPricingSettingsVersioned();
+  const settings: StoredPricingSettings = { copy, prices, starter, catalog: stored.catalog };
   const next = serializePricingSettings(settings);
   const res = await writeSettings(next, version, who, n);
   if ("stale" in res) return { ok: false, error: STALE };
@@ -95,6 +101,44 @@ export async function savePricingCopy(input: unknown, note: string, version: str
   });
   revalidatePricing();
   return { ok: true, copy, prices, starter, version: res.version };
+}
+
+export type SaveCatalogResult = { ok: true; catalog: CatalogOverrides; version: string } | { ok: false; error: string };
+
+/**
+ * Save price, credit and pack overrides for the new plan catalogue (Basic,
+ * Growth, Teams and the top-up packs). Leaves the wording and the current
+ * prices as stored. Any value outside its bounds rejects the whole save; a
+ * broken price ladder is only a warning, shown in the form. Same note,
+ * version check, history row and audit entry as the other pricing saves.
+ */
+export async function saveCatalogPrices(input: unknown, note: string, version: string): Promise<SaveCatalogResult> {
+  const who = await actor();
+  const n = (note ?? "").trim().slice(0, 500);
+  if (!n) return { ok: false, error: "Add a note saying what changed and why." };
+  const { catalog, errors } = sanitizeCatalogOverrides(input);
+  if (errors.length) return { ok: false, error: errors.join(" ") };
+
+  const stored = await getPricingSettingsVersioned();
+  if (stored.version !== version) return { ok: false, error: STALE };
+  const next = serializePricingSettings({ copy: stored.copy, prices: stored.prices, starter: stored.starter, catalog });
+  const res = await writeSettings(next, version, who, n);
+  if ("stale" in res) return { ok: false, error: STALE };
+  if ("unchanged" in res) return { ok: false, error: "Nothing changed." };
+
+  const diff = pricingDiff(asJson(res.before), asJson(next));
+  await logAdminAction({
+    actor: who,
+    action: "pricing.catalog.update",
+    targetType: "pricing",
+    targetId: PRICING_SETTINGS_KEY,
+    targetLabel: "Plan catalogue",
+    before: asJson(res.before),
+    after: { settings: asJson(next), changes: diff.map((d) => `${d.label}: ${d.from} -> ${d.to}`) },
+    note: n,
+  });
+  revalidatePath("/admin/pricing");
+  return { ok: true, catalog, version: res.version };
 }
 
 /**

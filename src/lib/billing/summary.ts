@@ -4,6 +4,7 @@
  */
 import { effectivePlan, prepaidActive, prepaidLapsed, trialActive, type PlanFields, TRIAL_SEAT_LIMIT, FREE_SEAT_LIMIT, TRIAL_DURATION_DAYS } from "./trial";
 import { defaultGrowthSeatPrice, formatUsd, planConfig, type SeatPrice } from "./plans";
+import { isPilot, pilotActive } from "./pilot";
 
 const DAY_MS = 86_400_000;
 
@@ -47,6 +48,27 @@ export function planSummary(
   }
 
   const base = { trialDaysLeft: null, trialUsed: null };
+
+  // Pilot set up by our team after a demo: Growth features until a date.
+  if (pilotActive(ws, now) && ws.prepaidThrough) {
+    const seats = ws.prepaidSeats ?? 0;
+    return {
+      ...base,
+      heading: "Pilot",
+      body: `A pilot set up by our team, with everything in Growth until ${fmtDate(new Date(ws.prepaidThrough))}. Choose a plan before then to keep AI screening and connections; your data stays as it is.`,
+      compareKey: "GROWTH",
+      seatHint: `The pilot allows ${seats} seat${seats === 1 ? "" : "s"}. Paying for Growth lets you pick more.`,
+    };
+  }
+  if (isPilot(ws) && ws.prepaidThrough && new Date(ws.prepaidThrough).getTime() <= now.getTime()) {
+    return {
+      ...base,
+      heading: "Free",
+      body: `Your pilot ended on ${fmtDate(new Date(ws.prepaidThrough))}. Choose a plan to turn AI screening and connections back on. Nothing was deleted.`,
+      compareKey: "FREE",
+      seatHint: `Free allows ${FREE_SEAT_LIMIT} seats.`,
+    };
+  }
 
   // Prepaid Growth: paid once through Razorpay, until a date.
   if (prepaidActive(ws, now) && ws.prepaidThrough) {

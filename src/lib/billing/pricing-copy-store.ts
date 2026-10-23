@@ -3,11 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { sanitizePricingCopy, type PricingCopy } from "./pricing-copy";
 import { DEFAULT_PRICES, PRICE_BOUNDS, resolvePrices, sanitizePriceOverrides, type EffectivePrices, type PriceOverrides } from "./prices";
 import { STARTER_SEAT_PRICE, type SeatPrice } from "./plans";
+import { DEFAULT_CATALOG, resolveCatalog, sanitizeCatalogOverrides, type CatalogOverrides, type EffectiveCatalog } from "./catalog";
 
 /**
  * SiteSetting key holding everything /admin/pricing edits, as one JSON
  * object: the wording (PricingCopy fields), `prices` (PriceOverrides) and
- * `starter` (the legacy Starter seat price, StarterOverride).
+ * `starter` (the legacy Starter seat price, StarterOverride) and `catalog`
+ * (the new flat plans and top-up packs, CatalogOverrides; see ./catalog).
  * One row, so the page and checkout always read the same source.
  */
 export const PRICING_SETTINGS_KEY = "pricing_settings";
@@ -15,7 +17,9 @@ export const PRICING_SETTINGS_KEY = "pricing_settings";
 /** Override for the legacy Starter seat (still sold by the seat checkout). */
 export type StarterOverride = { monthlyCents?: number; annualMonthlyCents?: number };
 
-export type StoredPricingSettings = { copy: PricingCopy; prices: PriceOverrides; starter: StarterOverride };
+export type StoredPricingSettings = { copy: PricingCopy; prices: PriceOverrides; starter: StarterOverride; catalog: CatalogOverrides };
+
+const EMPTY_SETTINGS: StoredPricingSettings = { copy: {}, prices: {}, starter: {}, catalog: {} };
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -67,12 +71,13 @@ function parseStored(value: string): StoredPricingSettings {
     copy: sanitizePricingCopy(raw),
     prices: sanitizePriceOverrides(rec.prices).prices,
     starter: sanitizeStarterOverride(rec.starter).starter,
+    catalog: sanitizeCatalogOverrides(rec.catalog).catalog,
   };
 }
 
 async function readStoredRow(): Promise<{ value: string | null; settings: StoredPricingSettings }> {
   const row = await prisma.siteSetting.findUnique({ where: { key: PRICING_SETTINGS_KEY } });
-  if (!row) return { value: null, settings: { copy: {}, prices: {}, starter: {} } };
+  if (!row) return { value: null, settings: { ...EMPTY_SETTINGS } };
   return { value: row.value, settings: parseStored(row.value) };
 }
 
@@ -101,6 +106,7 @@ export function serializePricingSettings(s: StoredPricingSettings): string | nul
     ...s.copy,
     ...(Object.keys(s.prices).length ? { prices: s.prices } : {}),
     ...(Object.keys(s.starter).length ? { starter: s.starter } : {}),
+    ...(Object.keys(s.catalog).length ? { catalog: s.catalog } : {}),
   };
   return Object.keys(stored).length ? JSON.stringify(stored) : null;
 }
@@ -114,7 +120,7 @@ export async function getPricingSettings(): Promise<StoredPricingSettings> {
     return await readStored();
   } catch (error) {
     console.error("Failed to read pricing settings:", error);
-    return { copy: {}, prices: {}, starter: {} };
+    return { ...EMPTY_SETTINGS };
   }
 }
 
@@ -150,4 +156,17 @@ export async function getEffectiveStarterPrice(): Promise<SeatPrice> {
 export async function getPublicPricingInputs(): Promise<{ copy: PricingCopy; prices: EffectivePrices }> {
   const { copy, prices } = await getPricingSettings();
   return { copy, prices: resolvePrices(prices) };
+}
+
+/**
+ * The new plan catalogue (flat plans and top-up packs) with any admin
+ * overrides. Not charged yet; see ./catalog. Defaults on any read error.
+ */
+export async function getEffectiveCatalog(): Promise<EffectiveCatalog> {
+  try {
+    return resolveCatalog((await readStored()).catalog);
+  } catch (error) {
+    console.error("Failed to read plan catalogue overrides, using defaults:", error);
+    return DEFAULT_CATALOG;
+  }
 }

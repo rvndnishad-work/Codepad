@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { grantDue, includedStep, TRIAL_CREDITS } from "./included-credits";
+import { isPilot } from "./pilot";
 
 /**
  * Runs the monthly included-credit step for one workspace if it is due:
@@ -17,6 +18,9 @@ export async function runIncludedCreditsIfDue(
       where: { id: workspaceId },
       select: {
         planName: true,
+        stripeSubscriptionId: true,
+        prepaidThrough: true,
+        prepaidCadence: true,
         includedCreditsLeft: true,
         includedCreditsLastGrant: true,
         includedCreditsGrantedAt: true,
@@ -27,7 +31,8 @@ export async function runIncludedCreditsIfDue(
 
     const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId }, _sum: { amount: true } });
     const state = {
-      planName: ws.planName,
+      // Pilots come with their own credits, not the monthly included ones.
+      planName: isPilot(ws) ? "PILOT" : ws.planName,
       seats: ws._count.members,
       includedCreditsLeft: ws.includedCreditsLeft,
       includedCreditsLastGrant: ws.includedCreditsLastGrant,

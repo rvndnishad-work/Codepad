@@ -348,9 +348,9 @@ function PlanColumn({
               {signedIn ? `Upgrade to ${plan.name}` : `Start with ${plan.name}`}
             </button>
           ) : plan.cta === "sales" ? (
-            <a href="mailto:sales@interviewpad.dev?subject=Enterprise%20plan" className="ip-btn ip-btn-ghost w-full">
-              Talk to us
-            </a>
+            <Link href="/demo?source=pricing" className="ip-btn ip-btn-ghost w-full">
+              Book a demo
+            </Link>
           ) : (
             <Link href={signedIn ? "/w/create" : "/login?next=/w/create"} className="ip-btn ip-btn-ghost w-full">
               Create a free workspace

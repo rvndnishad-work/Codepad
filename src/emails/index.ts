@@ -78,6 +78,9 @@ import {
   type WorkspaceInviteEmailProps,
 } from "./WorkspaceInviteEmail";
 import { ReplyToConfirm, replyToConfirmText, type ReplyToConfirmProps } from "./ReplyToConfirm";
+import { DemoRequestReceived, demoRequestReceivedText, type DemoRequestReceivedProps } from "./DemoRequestReceived";
+import { DemoRequestAdmin, demoRequestAdminText, type DemoRequestAdminProps } from "./DemoRequestAdmin";
+import { PilotWelcome, pilotWelcomeText, type PilotWelcomeProps } from "./PilotWelcome";
 import {
   TwoFactorReminder,
   twoFactorReminderText,
@@ -204,6 +207,24 @@ export const TEMPLATES = {
     text: twoFactorReminderText,
   } satisfies TemplateDef<TwoFactorReminderProps>,
 
+  "demo-request-received": {
+    Component: DemoRequestReceived,
+    subject: () => "We have your Intervutree demo request",
+    text: demoRequestReceivedText,
+  } satisfies TemplateDef<DemoRequestReceivedProps>,
+
+  "demo-request-admin": {
+    Component: DemoRequestAdmin,
+    subject: (p) => `${p.enterpriseLead ? "Enterprise lead: " : "Demo request: "}${p.company}`,
+    text: demoRequestAdminText,
+  } satisfies TemplateDef<DemoRequestAdminProps>,
+
+  "pilot-welcome": {
+    Component: PilotWelcome,
+    subject: (p) => `Your Intervutree pilot for ${p.workspaceName} is ready`,
+    text: pilotWelcomeText,
+  } satisfies TemplateDef<PilotWelcomeProps>,
+
   "data-privacy-notice": {
     Component: DataPrivacyNotice,
     subject: (p) => p.subject,
@@ -233,4 +254,7 @@ export type TemplateProps = {
   "reply-to-confirm": ReplyToConfirmProps;
   "two-factor-reminder": TwoFactorReminderProps;
   "data-privacy-notice": DataPrivacyNoticeProps;
+  "demo-request-received": DemoRequestReceivedProps;
+  "demo-request-admin": DemoRequestAdminProps;
+  "pilot-welcome": PilotWelcomeProps;
 };

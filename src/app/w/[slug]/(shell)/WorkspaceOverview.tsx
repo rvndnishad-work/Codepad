@@ -716,6 +716,21 @@ function TrialBanner({ plan, slug }: { plan: PlanDisplay; slug: string }) {
   );
 }
 
+/** Shown in the last few days of a pilot our team set up after a demo. */
+function PilotBanner({ plan, slug }: { plan: PlanDisplay; slug: string }) {
+  if (plan.pilotDaysLeft == null || plan.pilotDaysLeft > 3) return null;
+  return (
+    <div role="status" className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl border border-warning/50 bg-warning/10 text-sm">
+      <Sparkles className="w-[18px] h-[18px] text-warning shrink-0" aria-hidden />
+      <p className="flex-1 text-muted">
+        <span className="text-fg font-medium">Your pilot ends in {plural(plan.pilotDaysLeft, "day")}.</span>{" "}
+        Choose a plan to keep AI screening and connections. Your candidates, results and settings stay as they are.
+      </p>
+      <ButtonLink href={`/w/${slug}/billing`}>Choose a plan</ButtonLink>
+    </div>
+  );
+}
+
 function SetupView(props: Props) {
   const { slug, plan, seatLimit, setup, candidates, aiInterviewSessions, onAddCandidate } = props;
   const steps = setupSteps(
@@ -869,6 +884,7 @@ export default function WorkspaceOverview(props: Props) {
   return (
     <div className="flex flex-col gap-6">
       <TrialBanner plan={plan} slug={slug} />
+      <PilotBanner plan={plan} slug={slug} />
 
       <section
         className="relative overflow-hidden rounded-2xl border border-border bg-surface px-5 py-6 md:px-8 md:py-7"

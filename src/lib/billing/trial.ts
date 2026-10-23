@@ -28,6 +28,8 @@ export type PlanFields = {
   /** Prepaid Growth (one Razorpay payment): paid until, and seats paid for. */
   prepaidThrough?: Date | string | null;
   prepaidSeats?: number | null;
+  /** "monthly", "annual", or "pilot" for an admin-made pilot (see ./pilot). */
+  prepaidCadence?: string | null;
 };
 
 /**

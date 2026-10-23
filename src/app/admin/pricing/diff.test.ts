@@ -24,6 +24,8 @@ describe("pricingDiff", () => {
     expect(pathLabel("prices.packs.small.priceCents")).toBe("Pack small, price");
     expect(showValue("plans.FREE.includes", ["a", "b"])).toBe("2 lines");
     expect(showValue("packBadges.small", null)).toBe("none");
+    expect(pathLabel("catalog.plans.GROWTH.credits")).toBe("New Growth plan credits");
+    expect(pathLabel("catalog.topups.topup-100.priceCents")).toBe("Top-up 100 pack price");
   });
 });
 
@@ -47,7 +49,10 @@ describe("Starter price override", () => {
     expect(starterSeatChargeCents("monthly", { monthlyCents: 1900, annualMonthlyCents: 1500 })).toBe(1900);
   });
   it("serializes starter next to the wording and prices, null when all default", () => {
-    expect(serializePricingSettings({ copy: {}, prices: {}, starter: {} })).toBeNull();
-    expect(JSON.parse(serializePricingSettings({ copy: {}, prices: {}, starter: { monthlyCents: 2000 } })!)).toEqual({ starter: { monthlyCents: 2000 } });
+    expect(serializePricingSettings({ copy: {}, prices: {}, starter: {}, catalog: {} })).toBeNull();
+    expect(JSON.parse(serializePricingSettings({ copy: {}, prices: {}, starter: { monthlyCents: 2000 }, catalog: {} })!)).toEqual({ starter: { monthlyCents: 2000 } });
+    expect(JSON.parse(serializePricingSettings({ copy: {}, prices: {}, starter: {}, catalog: { plans: { BASIC: { credits: 60 } } } })!)).toEqual({
+      catalog: { plans: { BASIC: { credits: 60 } } },
+    });
   });
 });

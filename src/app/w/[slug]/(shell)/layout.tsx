@@ -105,7 +105,7 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     where: { userId },
     include: {
       workspace: {
-        select: { name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, stripeSubscriptionId: true, deletionScheduledAt: true },
+        select: { name: true, slug: true, planName: true, trialEndsAt: true, prepaidThrough: true, prepaidSeats: true, prepaidCadence: true, stripeSubscriptionId: true, deletionScheduledAt: true },
       },
     },
   });

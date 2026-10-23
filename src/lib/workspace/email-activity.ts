@@ -98,6 +98,7 @@ export const TEMPLATE_LABELS: Record<string, string> = {
   "workspace-invite": "Workspace invite",
   "otp-verification": "Sign-in code",
   "reply-to-confirm": "Reply-to confirmation",
+  "pilot-welcome": "Pilot welcome",
 };
 
 export function templateLabel(t: string): string {

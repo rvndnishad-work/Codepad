@@ -31,6 +31,7 @@ export type SwitchDef = {
 export const SWITCHES: SwitchDef[] = [
   // Hiring side
   { key: "recruiter-signup", label: "Recruiter sign-up", side: "hiring", appliesTo: "New workspaces", description: "Creating a new workspace", defaultMessage: "New workspaces are paused for a short while. Please try again later." },
+  { key: "demo-requests", label: "Demo requests", side: "hiring", appliesTo: "Everyone", description: "Sending the Book a demo form", defaultMessage: "Demo requests are paused for a short while. Email us instead." },
   { key: "ai-screening", label: "AI screening", side: "hiring", appliesTo: "All plans", description: "Sending invites, starting and grading AI screenings", defaultMessage: "AI screenings are paused for maintenance. Screenings already started will finish." },
   { key: "take-home", label: "Take home", side: "hiring", appliesTo: "All plans", description: "Sending and starting take-home assignments", defaultMessage: "Take-home assignments are paused for maintenance." },
   { key: "live-interviews", label: "Live interviews", side: "hiring", appliesTo: "All plans", description: "Joining the interview lobby and room", defaultMessage: "Interview rooms are paused for maintenance. Use your meeting link for now." },

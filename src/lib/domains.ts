@@ -25,6 +25,7 @@ export const RECRUITER_PATHS = [
   "/hire",
   "/w",
   "/pricing",
+  "/demo",
   "/features",
   "/purchase",
   "/docs",

@@ -40,12 +40,19 @@ export async function acceptWorkspaceInviteAction(token: string): Promise<{ slug
   });
 
   if (!existing) {
+    // Owner invites are only sent for pilots an admin sets up. They make the
+    // person owner only while the workspace has none; otherwise admin.
+    let role = invite.role;
+    if (role === "OWNER") {
+      const owners = await prisma.workspaceMember.count({ where: { workspaceId: invite.workspace.id, role: "OWNER" } });
+      if (owners > 0) role = "ADMIN";
+    }
     await prisma.$transaction([
       prisma.workspaceMember.create({
         data: {
           workspaceId: invite.workspace.id,
           userId: session.user.id,
-          role: invite.role,
+          role,
         },
       }),
       prisma.workspaceInvite.update({
@@ -61,7 +68,7 @@ export async function acceptWorkspaceInviteAction(token: string): Promise<{ slug
       action: WORKSPACE_AUDIT_ACTIONS.MEMBER_JOINED,
       targetType: "workspaceInvite",
       targetId: invite.id,
-      meta: { email, name: session.user.name ?? null, role: ROLE_LABELS[invite.role] ?? invite.role, via: "invite" },
+      meta: { email, name: session.user.name ?? null, role: ROLE_LABELS[role] ?? role, via: "invite" },
     });
 
     // Scale Stripe seats for a paid workspace (best-effort).

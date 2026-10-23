@@ -4,6 +4,8 @@ import { withCronRun } from "@/lib/admin/cron-run";
 import { MANAGER_ROLES } from "@/lib/permissions/role-groups";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { PREPAID_REMINDER_DAYS } from "@/lib/billing/prepaid";
+import { PILOT_CADENCE, PILOT_REMINDER_DAYS } from "@/lib/billing/pilot";
+import { finishPilot } from "@/lib/demo-requests/server";
 
 /**
  * Prepaid Growth sweep (Razorpay one-time payments), hourly.
@@ -15,6 +17,11 @@ import { PREPAID_REMINDER_DAYS } from "@/lib/billing/prepaid";
  *    owners and admins are told. effectivePlan() already treats them as Free
  *    the moment the date passes, so this only makes planName agree. The paid
  *    history (prepaidThrough, prepaidSeats) is kept for Billing to show.
+ *
+ * Pilots (prepaidCadence "pilot", set up by an admin from a demo request)
+ * get their own wording, a reminder PILOT_REMINDER_DAYS before the end, and
+ * at the end their unused pilot credits expire (finishPilot). A demo request
+ * whose pilot workspace has since paid is marked Converted.
  *
  * Workspaces with a Stripe subscription are never touched.
  */
@@ -43,6 +50,8 @@ async function notifyManagers(ws: { id: string; slug: string; members: { userId:
 }
 
 const managers = { where: { role: { in: [...MANAGER_ROLES] as string[] } }, select: { userId: true as const } };
+/** Prisma's `not` skips NULL rows, so spell out "not a pilot". */
+const notPilot = { OR: [{ prepaidCadence: null }, { prepaidCadence: { not: PILOT_CADENCE } }] };
 const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
 async function run() {
@@ -50,6 +59,9 @@ async function run() {
   let reminded = 0;
   let expired = 0;
   let notified = 0;
+  let pilotsReminded = 0;
+  let pilotsEnded = 0;
+  let converted = 0;
 
   const ending = await prisma.workspace.findMany({
     where: {
@@ -57,6 +69,7 @@ async function run() {
       stripeSubscriptionId: null,
       prepaidReminderAt: null,
       prepaidThrough: { gt: now, lte: new Date(now.getTime() + PREPAID_REMINDER_DAYS * DAY_MS) },
+      ...notPilot,
     },
     select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
     take: MAX_BATCH,
@@ -74,7 +87,7 @@ async function run() {
   }
 
   const lapsed = await prisma.workspace.findMany({
-    where: { planName: "GROWTH", stripeSubscriptionId: null, prepaidThrough: { not: null, lte: now } },
+    where: { planName: "GROWTH", stripeSubscriptionId: null, prepaidThrough: { not: null, lte: now }, ...notPilot },
     select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
     take: MAX_BATCH,
   });
@@ -101,7 +114,83 @@ async function run() {
     );
   }
 
-  return NextResponse.json({ ok: true, reminded, expired, notified, ranAt: now.toISOString() });
+  // ── Pilots ──
+  const pilotsEnding = await prisma.workspace.findMany({
+    where: {
+      planName: "GROWTH",
+      stripeSubscriptionId: null,
+      prepaidCadence: PILOT_CADENCE,
+      prepaidReminderAt: null,
+      prepaidThrough: { gt: now, lte: new Date(now.getTime() + PILOT_REMINDER_DAYS * DAY_MS) },
+    },
+    select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
+    take: MAX_BATCH,
+  });
+  for (const ws of pilotsEnding) {
+    const claimed = await prisma.workspace.updateMany({ where: { id: ws.id, prepaidReminderAt: null }, data: { prepaidReminderAt: now } });
+    if (!claimed.count || !ws.prepaidThrough) continue;
+    pilotsReminded++;
+    notified += await notifyManagers(
+      ws,
+      `${ws.name}: your pilot ends on ${fmt(ws.prepaidThrough)}`,
+      "Pick a plan in Billing to keep screening. Your candidates, results and settings stay as they are.",
+      "pilot-ending",
+    );
+  }
+
+  const pilotsLapsed = await prisma.workspace.findMany({
+    where: { planName: "GROWTH", stripeSubscriptionId: null, prepaidCadence: PILOT_CADENCE, prepaidThrough: { not: null, lte: now } },
+    select: { id: true, name: true, slug: true, prepaidThrough: true, members: managers },
+    take: MAX_BATCH,
+  });
+  for (const ws of pilotsLapsed) {
+    const res = await finishPilot(ws, now, { actor: null, reason: "auto:pilot" });
+    if (!res.finished) continue;
+    pilotsEnded++;
+    await prisma.demoRequestEvent.createMany({
+      data: (await prisma.demoRequest.findMany({ where: { workspaceId: ws.id }, select: { id: true } })).map((r) => ({
+        requestId: r.id,
+        kind: "pilot_ended",
+        text: `Pilot ended on its end date${res.expired ? `; ${res.expired} unused pilot credits expired` : ""}`,
+      })),
+    });
+    notified += await notifyManagers(
+      ws,
+      `${ws.name}: your pilot has ended`,
+      "The workspace is on Free now. Nothing is deleted. Pick a plan in Billing to turn AI screening back on.",
+      "pilot-ended",
+    );
+  }
+
+  // Pilot requests whose workspace now pays (Stripe, or a paid prepaid period).
+  const paying = await prisma.demoRequest.findMany({
+    where: {
+      stage: "PILOT",
+      workspaceId: { not: null },
+    },
+    select: { id: true, workspaceId: true },
+    take: MAX_BATCH,
+  });
+  if (paying.length) {
+    const ids = paying.map((r) => r.workspaceId as string);
+    const paid = await prisma.workspace.findMany({
+      where: {
+        id: { in: ids },
+        OR: [{ stripeSubscriptionId: { not: null } }, { planName: "GROWTH", prepaidThrough: { gt: now }, ...notPilot }, { planName: "ENTERPRISE" }],
+      },
+      select: { id: true },
+    });
+    const paidIds = new Set(paid.map((w) => w.id));
+    for (const r of paying) {
+      if (!paidIds.has(r.workspaceId as string)) continue;
+      const moved = await prisma.demoRequest.updateMany({ where: { id: r.id, stage: "PILOT" }, data: { stage: "CONVERTED" } });
+      if (!moved.count) continue;
+      converted++;
+      await prisma.demoRequestEvent.create({ data: { requestId: r.id, kind: "stage", text: "Moved from Pilot to Converted: the workspace is on a paid plan" } });
+    }
+  }
+
+  return NextResponse.json({ ok: true, reminded, expired, notified, pilotsReminded, pilotsEnded, converted, ranAt: now.toISOString() });
 }
 
 // Vercel Cron sends GET; POST stays for manual and scheduler calls.

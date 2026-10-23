@@ -304,6 +304,9 @@ export default async function WorkspaceDashboardPage({ params, searchParams }: P
     planName: workspace.planName,
     trialEndsAt: workspace.trialEndsAt,
     stripeSubscriptionId: workspace.stripeSubscriptionId,
+    prepaidThrough: workspace.prepaidThrough,
+    prepaidSeats: workspace.prepaidSeats,
+    prepaidCadence: workspace.prepaidCadence,
   };
   const firstName = session?.user?.name?.trim().split(/\s+/)[0] ?? null;
 

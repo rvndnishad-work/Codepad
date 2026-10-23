@@ -43,12 +43,12 @@ import {
   greeting,
   plural,
   relativeTime,
-  setupSteps,
   stageFunnel,
   type PlanDisplay,
 } from "@/lib/workspace/display";
 import { STAGE_LABELS } from "@/lib/crm/stages";
 import { creditHealth, creditRunway, type CreditGlance } from "@/lib/billing/credit-glance";
+import { startWorkspaceTour, tourSeen } from "./workspace-tour";
 
 /** AI credits shown in the Overview header. */
 export type OverviewCredits = CreditGlance & { lowCreditThreshold: number | null; canBuy: boolean };
@@ -665,7 +665,7 @@ function CreditsPanel({ credits, slug }: { credits: OverviewCredits; slug: strin
   const total = Math.max(credits.balance, credits.available + credits.held, 1);
   const usage = `/w/${slug}/billing?tab=usage`;
   return (
-    <div className="w-full lg:w-[380px] shrink-0 rounded-xl border border-border bg-bg/50 backdrop-blur-sm p-4 flex flex-col gap-3">
+    <div data-tour="credits" className="w-full lg:w-[380px] shrink-0 rounded-xl border border-border bg-bg/50 backdrop-blur-sm p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <Link href={usage} className="inline-flex items-center gap-2 text-[13px] font-medium text-muted hover:text-fg transition-colors">
           <Coins className="w-4 h-4" aria-hidden />
@@ -731,74 +731,45 @@ function PilotBanner({ plan, slug }: { plan: PlanDisplay; slug: string }) {
   );
 }
 
-function SetupView(props: Props) {
-  const { slug, plan, seatLimit, setup, candidates, aiInterviewSessions, onAddCandidate } = props;
-  const steps = setupSteps(
+/**
+ * A new workspace: places to explore, not a checklist. The guided tour
+ * (./workspace-tour) opens once by itself and can be replayed from here.
+ */
+function SetupView(props: Props & { onTour: () => void }) {
+  const { slug, plan } = props;
+  const places = [
+    { icon: Users, title: "Candidates", body: "Add people one at a time, paste a list, or sync from your ATS.", href: `/w/${slug}/candidates` },
+    { icon: ClipboardList, title: "Take home", body: "Send coding questions that candidates solve in their own time.", href: `/w/${slug}/take-homes` },
     {
-      assessments: setup.assessments,
-      candidates: candidates.length,
-      aiScreenings: aiInterviewSessions.length,
-      members: setup.members,
-      pendingInvites: setup.pendingInvites,
+      icon: Bot,
+      title: "AI screening",
+      body: plan.aiScreening ? "Let the AI interviewer screen candidates and score the answers." : "Not on your current plan. See what each plan includes.",
+      href: plan.aiScreening ? `/w/${slug}/ai-interviews` : `/w/${slug}/billing`,
     },
-    { seatLimit, aiIncluded: plan.aiScreening },
-  );
-  const done = steps.filter((s) => s.done).length;
-  const next = steps.find((s) => !s.done)?.id;
-  const actions: Record<string, { label: string; href?: string; onClick?: () => void }> = {
-    assessment: { label: "Send a take home", href: `/w/${slug}/take-homes/new` },
-    candidate: { label: "Add candidate", onClick: onAddCandidate },
-    ai: plan.aiScreening
-      ? { label: "Try AI screening", href: `/w/${slug}/ai-interviews` }
-      : { label: "See plans", href: `/w/${slug}?section=billing` },
-    team: { label: "Invite", href: `/w/${slug}?section=members` },
-  };
+    { icon: Video, title: "Interviews", body: "Run live interviews in a shared code editor, with scorecards.", href: `/w/${slug}/interviews` },
+  ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
-      <Card>
-        <div className="flex items-center justify-between px-5 pt-4 pb-3">
-          <h2 className="text-[15px] font-semibold">Getting started</h2>
-          <span className="text-[13px] text-muted">
-            {done} of {steps.length} done
-          </span>
-        </div>
-        <div className="h-1 mx-5 mb-4 rounded-full bg-elevated" aria-hidden>
-          <div className="h-1 rounded-full bg-success transition-[width]" style={{ width: `${(done / steps.length) * 100}%` }} />
-        </div>
-        <ol>
-          {steps.map((s, i) => {
-            const a = actions[s.id];
-            return (
-              <li key={s.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-5 py-4 border-t border-border">
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <span
-                    className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[13px] ${
-                      s.done ? "bg-success text-bg" : "border border-border-strong text-muted"
-                    }`}
-                    aria-hidden
-                  >
-                    {s.done ? <Check className="w-4 h-4" strokeWidth={2.5} /> : i + 1}
+      <Card title="Find your way around" subtitle="Open any of these when you are ready. Nothing needs doing first.">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-border">
+          {places.map((p) => (
+            <li key={p.title} className="bg-surface">
+              <Link href={p.href} className="group flex h-full items-start gap-3 px-5 py-4 hover:bg-panel transition-colors">
+                <span className="w-9 h-9 shrink-0 rounded-lg bg-secondary/15 text-secondary-soft flex items-center justify-center" aria-hidden>
+                  <p.icon className="w-[18px] h-[18px]" />
+                </span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1 text-[15px] font-medium text-fg">
+                    {p.title}
+                    <ChevronRight className="w-4 h-4 text-subtle group-hover:text-fg transition-colors" aria-hidden />
                   </span>
-                  <div className="min-w-0">
-                    <div className={`text-[15px] font-medium ${s.done ? "text-subtle line-through" : "text-fg"}`}>
-                      {s.title}
-                      {s.done && <span className="sr-only"> (done)</span>}
-                    </div>
-                    {!s.done && <p className="text-[13px] text-muted mt-0.5">{s.body}</p>}
-                  </div>
-                </div>
-                {!s.done && a && (
-                  <div className="pl-11 sm:pl-0">
-                    <ButtonLink href={a.href} onClick={a.onClick} primary={s.id === next}>
-                      {a.label}
-                    </ButtonLink>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
+                  <span className="block text-[13px] text-muted mt-0.5">{p.body}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <div className="flex flex-col gap-6">
@@ -823,9 +794,13 @@ function SetupView(props: Props) {
               Screen with AI, send a take-home, then run the live interview in a shared editor. Every step lands on
               the candidate page.
             </p>
-            <Link href="/hire" className="inline-flex items-center gap-1.5 text-sm font-medium text-secondary-soft hover:text-fg transition-colors">
-              See the walkthrough <ArrowRight className="w-3.5 h-3.5" aria-hidden />
-            </Link>
+            <button
+              type="button"
+              onClick={props.onTour}
+              className="self-start inline-flex items-center gap-1.5 text-sm font-medium text-secondary-soft hover:text-fg transition-colors"
+            >
+              Take the tour <ArrowRight className="w-3.5 h-3.5" aria-hidden />
+            </button>
           </div>
         </Card>
       </div>
@@ -879,7 +854,16 @@ export default function WorkspaceOverview(props: Props) {
   // Bars and lines grow in once mounted; reduced motion skips the transition.
   const ready = now !== null;
 
-  const summary = "Five steps to your first hiring loop.";
+  // The tour opens by itself once per workspace (per browser), on a new workspace only.
+  const tourOptions = { aiScreening: plan.aiScreening, hasCredits: Boolean(props.credits) };
+  const startTour = () => void startWorkspaceTour(slug, tourOptions);
+  useEffect(() => {
+    if (!isNew || tourSeen(slug)) return;
+    const t = window.setTimeout(() => void startWorkspaceTour(slug, tourOptions), 600);
+    return () => window.clearTimeout(t);
+    // Once per mount: the options only change the copy.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNew, slug]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -909,10 +893,19 @@ export default function WorkspaceOverview(props: Props) {
               {now ? now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" }) : ""}
             </div>
             <h1 className="mt-1 text-2xl md:text-[28px] font-semibold tracking-[-0.02em] text-fg min-h-[1.3em]">
-              {isNew ? "Set up your workspace" : hello ? `${hello}${firstName ? `, ${firstName}` : ""}` : "Overview"}
+              {isNew ? "Welcome to your workspace" : hello ? `${hello}${firstName ? `, ${firstName}` : ""}` : "Overview"}
             </h1>
             {isNew ? (
-              <p className="mt-1.5 text-[15px] text-muted">{summary}</p>
+              <>
+                <p className="mt-1.5 text-[15px] text-muted">Take a one-minute tour, or start wherever suits you.</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span data-tour="tour-start" className="inline-flex rounded-lg">
+                    <ButtonLink icon={Sparkles} primary onClick={startTour}>
+                      Take the tour
+                    </ButtonLink>
+                  </span>
+                </div>
+              </>
             ) : (
               <>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -943,7 +936,7 @@ export default function WorkspaceOverview(props: Props) {
       </section>
 
       {isNew ? (
-        <SetupView {...props} />
+        <SetupView {...props} onTour={startTour} />
       ) : (
         <>
           <FilterBar batches={batches} filter={filter} onChange={setFilter} />

@@ -2406,3 +2406,43 @@ portal-nextjs-toast,
 :root:not(.dark) .space-hero .text-white:is(.bg-white\/\[0\.04\], .bg-white\/\[0\.06\], .bg-white\/\[0\.1\], .bg-white\/10) {
   color: var(--fg);
 }
+
+/* Workspace tour (driver.js): match the app theme in light and dark. */
+.driver-popover.ws-tour {
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-fg));
+  border: 1px solid rgb(var(--c-border-strong));
+  border-radius: 12px;
+  padding: 18px 18px 14px;
+  max-width: 340px;
+  font-family: inherit;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
+}
+.driver-popover.ws-tour .driver-popover-title { font-size: 16px; font-weight: 600; color: rgb(var(--c-fg)); }
+.driver-popover.ws-tour .driver-popover-description { font-size: 14px; line-height: 1.55; color: rgb(var(--c-muted)); }
+.driver-popover.ws-tour .driver-popover-progress-text { font-size: 12px; color: rgb(var(--c-subtle)); }
+.driver-popover.ws-tour .driver-popover-close-btn { color: rgb(var(--c-subtle)); }
+.driver-popover.ws-tour .driver-popover-close-btn:hover,
+.driver-popover.ws-tour .driver-popover-close-btn:focus { color: rgb(var(--c-fg)); }
+.driver-popover.ws-tour .driver-popover-footer-btn {
+  text-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgb(var(--c-border));
+  background-color: rgb(var(--c-surface));
+  color: rgb(var(--c-fg));
+}
+.driver-popover.ws-tour .driver-popover-footer-btn:hover { background-color: rgb(var(--c-panel)); }
+.driver-popover.ws-tour .driver-popover-next-btn {
+  border-color: transparent;
+  background-color: rgb(var(--c-accent-2-fill));
+  color: rgb(var(--c-bg));
+}
+.driver-popover.ws-tour .driver-popover-next-btn:hover { background-color: rgb(var(--c-accent-2-fill)); filter: brightness(1.1); }
+.driver-popover.ws-tour .driver-popover-footer-btn:focus-visible { outline: 2px solid rgb(var(--c-accent-2-fill)); outline-offset: 2px; }
+.driver-popover.ws-tour .driver-popover-arrow-side-left { border-left-color: rgb(var(--c-surface)); }
+.driver-popover.ws-tour .driver-popover-arrow-side-right { border-right-color: rgb(var(--c-surface)); }
+.driver-popover.ws-tour .driver-popover-arrow-side-top { border-top-color: rgb(var(--c-surface)); }
+.driver-popover.ws-tour .driver-popover-arrow-side-bottom { border-bottom-color: rgb(var(--c-surface)); }

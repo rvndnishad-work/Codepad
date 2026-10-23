@@ -106,6 +106,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.4",
     "bcryptjs": "^3.0.3",
+    "driver.js": "1.8.0",
     "emmet": "^2.4.11",
     "framer-motion": "^13.2.0",
     "gsap": "^3.15.0",

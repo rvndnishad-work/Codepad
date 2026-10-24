@@ -1,7 +1,7 @@
 /**
  * Server side of the new plans on the billing account (see ./account-plan for
  * the rules): the launch switch, copying the plan onto the account's
- * workspaces, the monthly plan credits, and spending them before bought ones.
+ * workspaces, and the monthly plan credits (split per workspace, ./credit-split).
  */
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -9,6 +9,8 @@ import { findCatalogPlan, findTopUp } from "./catalog";
 import { prepaidActive } from "./trial";
 import { getEffectiveCatalog } from "./pricing-copy-store";
 import { accountPlanActive, isSelfServePlan, planCreditsDue, planCreditStep, workspaceMirror } from "./account-plan";
+import { splitPlanCredits } from "./credit-split";
+import { unassignedBalance } from "./credit-split-server";
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
@@ -60,17 +62,15 @@ export async function syncAccountWorkspaces(accountId: string, now: Date = new D
 
 // ── Monthly plan credits ─────────────────────────────────────────────────
 
-/** The workspace ledger rows for the account are written under: its oldest. */
-async function anchorWorkspace(accountId: string, db: Db): Promise<string | null> {
-  const ws = await db.workspace.findFirst({ where: { billingAccountId: accountId }, orderBy: { createdAt: "asc" }, select: { id: true } });
-  return ws?.id ?? null;
-}
+type Bucket = { left: number; lastGrant: number; balance: number };
 
 /**
- * The monthly plan-credit step for one account, if due: credits older than a
- * month expire and this month's arrive. A compare-and-set on the grant time
- * means two callers cannot both grant. Rows use the INCLUDED and
- * INCLUDED_EXPIRED kinds, so every usage report and label already reads them.
+ * The monthly plan-credit step for one account, if due. Each workspace gets
+ * its share of the month's credits (./credit-split), the rest stays
+ * unassigned, and in each place plan credits older than a month expire. A
+ * compare-and-set on the account's grant time means two callers cannot both
+ * grant. Workspace rows use the INCLUDED and INCLUDED_EXPIRED kinds, so every
+ * usage report and label already reads them.
  */
 export async function runPlanCreditsIfDue(accountId: string, now: Date = new Date()): Promise<{ ran: boolean; expired: number; granted: number }> {
   const none = { ran: false, expired: 0, granted: 0 };
@@ -78,66 +78,59 @@ export async function runPlanCreditsIfDue(accountId: string, now: Date = new Dat
   return prisma.$transaction(async (tx) => {
     const a = await tx.billingAccount.findUnique({
       where: { id: accountId },
-      select: { planKey: true, planCadence: true, paidThrough: true, planCreditsLeft: true, planCreditsLastGrant: true, planCreditsGrantedAt: true },
+      select: {
+        planKey: true,
+        planCadence: true,
+        paidThrough: true,
+        planCreditsLeft: true,
+        planCreditsLastGrant: true,
+        planCreditsGrantedAt: true,
+        workspaces: {
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          select: { id: true, planCreditShare: true, includedCreditsLeft: true, includedCreditsLastGrant: true },
+        },
+      },
     });
-    if (!a) return none;
+    if (!a || !a.workspaces.length) return none;
     const plan = isSelfServePlan(a.planKey) ? findCatalogPlan(catalog, a.planKey) : undefined;
-    const agg = await tx.aIInterviewCreditLedger.aggregate({ where: { billingAccountId: accountId }, _sum: { amount: true } });
-    const state = {
-      active: accountPlanActive(a, now) && Boolean(plan),
-      creditsPerMonth: plan?.creditsPerMonth ?? 0,
-      planCreditsLeft: a.planCreditsLeft,
-      planCreditsLastGrant: a.planCreditsLastGrant,
-      planCreditsGrantedAt: a.planCreditsGrantedAt,
-      balance: agg._sum.amount ?? 0,
-    };
-    if (!planCreditsDue(state, now)) return none;
-    const workspaceId = await anchorWorkspace(accountId, tx);
-    if (!workspaceId) return none;
+    const active = accountPlanActive(a, now) && Boolean(plan);
+    const anyLeft = a.planCreditsLeft > 0 || a.workspaces.some((w) => w.includedCreditsLeft > 0);
+    if (!planCreditsDue({ active, creditsPerMonth: 0, planCreditsLeft: anyLeft ? 1 : 0, planCreditsLastGrant: 0, planCreditsGrantedAt: a.planCreditsGrantedAt, balance: 0 }, now)) {
+      return none;
+    }
 
-    const step = planCreditStep(state);
-    const claimed = await tx.billingAccount.updateMany({
-      where: { id: accountId, planCreditsGrantedAt: a.planCreditsGrantedAt },
-      data: { planCreditsLeft: step.left, planCreditsLastGrant: step.lastGrant, planCreditsGrantedAt: now },
-    });
+    const claimed = await tx.billingAccount.updateMany({ where: { id: accountId, planCreditsGrantedAt: a.planCreditsGrantedAt }, data: { planCreditsGrantedAt: now } });
     if (!claimed.count) return none;
-    if (step.expire > 0) {
-      await tx.aIInterviewCreditLedger.create({ data: { workspaceId, kind: "INCLUDED_EXPIRED", amount: -step.expire, note: "Plan credits older than one month" } });
+
+    const split = splitPlanCredits(active ? plan?.creditsPerMonth ?? 0 : 0, a.workspaces.map((w) => ({ id: w.id, share: w.planCreditShare })));
+    const stepFor = (b: Bucket, grant: number) =>
+      planCreditStep({ active, creditsPerMonth: grant, planCreditsLeft: b.left, planCreditsLastGrant: b.lastGrant, planCreditsGrantedAt: a.planCreditsGrantedAt, balance: b.balance });
+    const label = `${plan?.name ?? "Plan"} credits for the month`;
+    let expired = 0;
+    let granted = 0;
+
+    for (const w of a.workspaces) {
+      const grant = split.perWorkspace.get(w.id) ?? 0;
+      if (grant <= 0 && w.includedCreditsLeft <= 0) continue;
+      const bal = await tx.aIInterviewCreditLedger.aggregate({ where: { workspaceId: w.id }, _sum: { amount: true } });
+      const step = stepFor({ left: w.includedCreditsLeft, lastGrant: w.includedCreditsLastGrant, balance: bal._sum.amount ?? 0 }, grant);
+      await tx.workspace.update({ where: { id: w.id }, data: { includedCreditsLeft: step.left, includedCreditsLastGrant: step.lastGrant } });
+      if (step.expire > 0) await tx.aIInterviewCreditLedger.create({ data: { workspaceId: w.id, kind: "INCLUDED_EXPIRED", amount: -step.expire, note: "Plan credits older than one month" } });
+      if (step.grant > 0) await tx.aIInterviewCreditLedger.create({ data: { workspaceId: w.id, kind: "INCLUDED", amount: step.grant, note: label } });
+      expired += step.expire;
+      granted += step.grant;
     }
-    if (step.grant > 0) {
-      await tx.aIInterviewCreditLedger.create({ data: { workspaceId, kind: "INCLUDED", amount: step.grant, note: `${plan?.name ?? "Plan"} credits for the month` } });
+
+    if (split.unassigned > 0 || a.planCreditsLeft > 0) {
+      const step = stepFor({ left: a.planCreditsLeft, lastGrant: a.planCreditsLastGrant, balance: await unassignedBalance(accountId, tx) }, split.unassigned);
+      await tx.billingAccount.update({ where: { id: accountId }, data: { planCreditsLeft: step.left, planCreditsLastGrant: step.lastGrant } });
+      if (step.expire > 0) await tx.accountCreditEntry.create({ data: { billingAccountId: accountId, kind: "PLAN_EXPIRED", amount: -step.expire, note: "Plan credits older than one month" } });
+      if (step.grant > 0) await tx.accountCreditEntry.create({ data: { billingAccountId: accountId, kind: "PLAN", amount: step.grant, note: `${label}, not split to a workspace` } });
+      expired += step.expire;
+      granted += step.grant;
     }
-    return { ran: true, expired: step.expire, granted: step.grant };
+    return { ran: true, expired, granted };
   });
-}
-
-// ── Spending ─────────────────────────────────────────────────────────────
-
-/**
- * After a charge of `cost`, of which `fromIncluded` came out of the
- * workspace's old included credits: takes the rest out of the account's plan
- * credits first, since those can expire and bought ones cannot. Pass the
- * workspace's account as read in the charging transaction.
- */
-export async function usePlanCredits(
-  tx: Prisma.TransactionClient,
-  account: { id: string; planCreditsLeft: number } | null | undefined,
-  cost: number,
-  fromIncluded: number,
-): Promise<number> {
-  const rest = cost - Math.max(0, fromIncluded);
-  if (rest <= 0 || !account || account.planCreditsLeft <= 0) return 0;
-  const take = Math.min(rest, account.planCreditsLeft);
-  const res = await tx.billingAccount.updateMany({ where: { id: account.id, planCreditsLeft: { gte: take } }, data: { planCreditsLeft: { decrement: take } } });
-  return res.count ? take : 0;
-}
-
-/** After an admin lowers a balance: plan credits left can never be more than the pool. */
-export async function clampPlanCredits(tx: Prisma.TransactionClient, workspaceId: string, balance: number): Promise<void> {
-  const ws = await tx.workspace.findUnique({ where: { id: workspaceId }, select: { billingAccount: { select: { id: true, planCreditsLeft: true } } } });
-  const acc = ws?.billingAccount;
-  const cap = Math.max(0, balance);
-  if (acc && acc.planCreditsLeft > cap) await tx.billingAccount.update({ where: { id: acc.id }, data: { planCreditsLeft: cap } });
 }
 
 // ── Top-ups ──────────────────────────────────────────────────────────────

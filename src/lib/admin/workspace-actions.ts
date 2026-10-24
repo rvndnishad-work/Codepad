@@ -15,7 +15,6 @@
  */
 import { prisma } from "@/lib/prisma";
 import { poolWhere } from "@/lib/billing/credit-pool";
-import { clampPlanCredits } from "@/lib/billing/account-plan-server";
 import { getStripe } from "@/lib/stripe";
 import { logAdminAction, type AdminActor } from "@/lib/admin/audit";
 import { seatItem } from "@/lib/video/addon";
@@ -482,7 +481,6 @@ export async function adjustWorkspaceCredits(ctx: Ctx, workspaceId: string, inpu
     const cur = await tx.workspace.findUnique({ where: { id: ws.id }, select: { includedCreditsLeft: true } });
     const left = includedAfterBalance(cur?.includedCreditsLeft ?? 0, balance);
     if (cur && left !== cur.includedCreditsLeft) await tx.workspace.update({ where: { id: ws.id }, data: { includedCreditsLeft: left } });
-    await clampPlanCredits(tx, ws.id, balance);
     return { balance };
   });
   await audit(ctx, ws, "workspace.credits.adjust", { after: { amount: a.amount, balance: res.balance }, note: n.note });

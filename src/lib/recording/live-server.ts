@@ -19,7 +19,6 @@ import { r2Config, signedGetUrl } from "@/lib/storage/r2";
 import { liveKitApiHost, liveKitConfig, videoRoomName, type LiveKitConfig } from "@/lib/video/livekit-server";
 import { videoCallsOn } from "@/lib/video/addon";
 import { includedPart } from "@/lib/billing/included-credits";
-import { usePlanCredits } from "@/lib/billing/account-plan-server";
 import { writeWorkspaceAuditEntry, WORKSPACE_AUDIT_ACTIONS } from "@/lib/workspace-audit";
 import { liveRecordingKey, recordingExpiresAt, recordingExpiryLabel } from "./retention";
 import {
@@ -425,7 +424,7 @@ export async function chargeRecordingCredits(recordingId: string): Promise<{ cha
         note: `Interview recording${who ? ` with ${who}` : ""}, ${cost} ${cost === 1 ? "hour" : "hours"}`,
       },
     });
-    const ws = await tx.workspace.findUnique({ where: { id: rec.workspaceId }, select: { includedCreditsLeft: true, billingAccount: { select: { id: true, planCreditsLeft: true } } } });
+    const ws = await tx.workspace.findUnique({ where: { id: rec.workspaceId }, select: { includedCreditsLeft: true } });
     const fromIncluded = includedPart(cost, ws?.includedCreditsLeft ?? 0);
     if (fromIncluded > 0) {
       await tx.workspace.updateMany({
@@ -433,8 +432,6 @@ export async function chargeRecordingCredits(recordingId: string): Promise<{ cha
         data: { includedCreditsLeft: { decrement: fromIncluded } },
       });
     }
-    // Then the account's plan credits, also before bought ones.
-    await usePlanCredits(tx, ws?.billingAccount, cost, fromIncluded);
     return { workspaceId: rec.workspaceId, cost, balance: await creditBalance(tx, rec.workspaceId) };
   });
   if (!result) return { charged: 0 };

@@ -118,7 +118,14 @@ async function run() {
   }
 
   const due = await prisma.billingAccount.findMany({
-    where: { OR: [{ planKey: { not: null }, paidThrough: { gt: now } }, { planCreditsLeft: { gt: 0 } }] },
+    // Paid-up plans, plus lapsed ones still holding plan credits that must expire.
+    where: {
+      OR: [
+        { planKey: { not: null }, paidThrough: { gt: now } },
+        { planCreditsLeft: { gt: 0 } },
+        { planKey: { not: null }, workspaces: { some: { includedCreditsLeft: { gt: 0 } } } },
+      ],
+    },
     select: { id: true },
     take: 1000,
   });

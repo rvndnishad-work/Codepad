@@ -38,7 +38,7 @@ async function lowCreditWorkspaces(): Promise<number> {
   const rows = await prisma.$queryRaw<{ n: bigint }[]>(Prisma.sql`
     SELECT count(*) AS n FROM "Workspace" w
     WHERE EXISTS (SELECT 1 FROM "AIScreeningBatch" b WHERE b."workspaceId" = w.id AND b.status = 'ACTIVE')
-      AND COALESCE((SELECT sum(l.amount) FROM "AIInterviewCreditLedger" l WHERE l."billingAccountId" = w."billingAccountId"), 0) < ${LOW_CREDIT_THRESHOLD}`);
+      AND COALESCE((SELECT sum(l.amount) FROM "AIInterviewCreditLedger" l WHERE l."workspaceId" = w.id), 0) < ${LOW_CREDIT_THRESHOLD}`);
   return Number(rows[0]?.n ?? 0);
 }
 

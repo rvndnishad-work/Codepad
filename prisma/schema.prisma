@@ -1019,9 +1019,10 @@ model Workspace {
   stripeCustomerId     String?                   @unique
   stripeSubscriptionId String?                   @unique
   planName             String                    @default("FREE")
-  /// Who pays: the account that holds the plan and the AI credit pool this
-  /// workspace draws from. Filled by a database trigger on insert (one new
-  /// account per workspace) until checkout puts several workspaces on one.
+  /// Who pays: the account that holds the plan. Each workspace keeps its own
+  /// AI credit balance (src/lib/billing/credit-split.ts). Filled by a database
+  /// trigger on insert (one new account per workspace) until checkout puts
+  /// several workspaces on one.
   billingAccountId     String?
   billingAccount       BillingAccount?           @relation(fields: [billingAccountId], references: [id], onDelete: Restrict)
   /// Phase 4.1 workspace-level kill-switch for outbound external MCP calls
@@ -1085,6 +1086,11 @@ model Workspace {
   includedCreditsLastGrant Int       @default(0)
   /// When the latest monthly grant ran. Null = never.
   includedCreditsGrantedAt DateTime?
+  /// On a new plan: how many of the account's monthly plan credits this
+  /// workspace gets. Null on every workspace of the account = the oldest
+  /// workspace gets them all (see src/lib/billing/credit-split.ts). Plan
+  /// credits a workspace holds use the included* columns above.
+  planCreditShare          Int?
 
   // ── Built-in video add-on ─────────────────────────────────────────────
   /// Admins switch built-in video calls (LiveKit) on in Billing. Off by
@@ -2263,10 +2269,10 @@ model AIInterviewCreditLedger {
   @@index([billingAccountId])
 }
 
-/// Who pays. Holds the AI credit pool that all of its workspaces share and,
-/// with the new plans, the plan itself. Today every workspace has its own
-/// account (backfilled 1:1), so nothing is shared until checkout for the new
-/// plans lets one account own several workspaces.
+/// Who pays. Holds the plan and the credits not given to any workspace yet
+/// ("unassigned", in AccountCreditEntry). Each workspace keeps its own
+/// balance. Today every workspace has its own account (backfilled 1:1)
+/// until checkout for the new plans lets one account own several workspaces.
 model BillingAccount {
   id           String                    @id @default(cuid())
   name         String
@@ -2286,8 +2292,10 @@ model BillingAccount {
   lastPaymentId        String?
   /// When the "renews soon" reminder went out for the current period.
   reminderAt           DateTime?
-  /// Monthly plan credits: what is left of them (used first, roll over one
-  /// month), the size of the last grant, and when it was made.
+  /// Monthly plan credits. GrantedAt is when the account's monthly step last
+  /// ran (for all its workspaces). Left and LastGrant cover only the plan
+  /// credits sitting unassigned on the account; a workspace's own plan
+  /// credits use its included* columns. They roll over one month.
   planCreditsLeft      Int                       @default(0)
   planCreditsLastGrant Int                       @default(0)
   planCreditsGrantedAt DateTime?
@@ -2295,9 +2303,32 @@ model BillingAccount {
   updatedAt    DateTime                  @updatedAt
   workspaces   Workspace[]
   creditLedger AIInterviewCreditLedger[]
+  creditEntries AccountCreditEntry[]
 
   @@index([ownerUserId])
   @@index([planKey, paidThrough])
+}
+
+/// The account's unassigned AI credits: an append-only ledger, balance =
+/// SUM(amount). A move to or from a workspace writes a row here and a
+/// TRANSFER_IN / TRANSFER_OUT row in that workspace's ledger, in one
+/// transaction (src/lib/billing/credit-split-server.ts).
+model AccountCreditEntry {
+  id               String         @id @default(cuid())
+  billingAccountId String
+  /// PLAN | PLAN_EXPIRED | MOVE_IN | MOVE_OUT | RETURNED
+  kind             String
+  amount           Int
+  /// The workspace on the other side of a move or return. Plain id: the
+  /// workspace may since have been deleted.
+  workspaceId      String?
+  workspaceName    String?
+  userId           String?
+  note             String?
+  createdAt        DateTime       @default(now())
+  billingAccount   BillingAccount @relation(fields: [billingAccountId], references: [id], onDelete: Cascade)
+
+  @@index([billingAccountId, createdAt])
 }
 
 /// Workspace-scoped MCP API key. The full secret is shown ONCE at creation

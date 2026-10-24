@@ -178,7 +178,7 @@ export function accountPlanSummary(
 ): { heading: string; body: string; trialDaysLeft: null; trialUsed: null; compareKey: "GROWTH" | null; seatHint: string } | null {
   if (!isSelfServePlan(a.planKey) || !plan || !a.paidThrough) return null;
   const through = fmtLong(new Date(a.paidThrough));
-  const shared = workspaces > 1 ? ` Credits are shared by your ${workspaces} workspaces.` : "";
+  const shared = workspaces > 1 ? ` Each of your ${workspaces} workspaces keeps its own credits; split them on Usage and credits.` : "";
   if (!accountPlanActive(a, now)) {
     return {
       heading: "Free",

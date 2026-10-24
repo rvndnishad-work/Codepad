@@ -20,6 +20,7 @@ import { planSummary } from "@/lib/billing/summary";
 import { PLAN_ORDER, WORKSPACE_PLANS, planComparison, priceLabel } from "@/lib/billing/plans";
 import { seatUsage } from "@/lib/workspace/members";
 import { getWorkspaceCredits } from "@/lib/ai-interview/credits";
+import { creditAccess, loadAccountCredits } from "@/lib/billing/credit-split-server";
 import { loadCreditGlance } from "@/lib/billing/credit-glance-server";
 import { loadLedgerPage, loadUsageMonths } from "@/lib/billing/usage-server";
 import { settingsAccess } from "@/lib/workspace/settings-server";
@@ -171,20 +172,31 @@ export default async function BillingPage({ params, searchParams }: Props) {
 
   let usage: UsageData | null = null;
   if (tab === "usage") {
-    const [summary, months, ledger, access] = await Promise.all([
+    // Each workspace keeps its own credits; with several on the account (or
+    // credits left unassigned), show them all so owners can split and move.
+    const planCredits = accountPlan && account?.paidThrough && account.paidThrough > now ? accountPlan.creditsPerMonth : 0;
+    const accountCredits = account ? await loadAccountCredits(account.id, planCredits) : null;
+    const showSplit = Boolean(accountCredits && (accountCredits.workspaces.length > 1 || accountCredits.unassigned !== 0));
+    const access = account && showSplit ? await creditAccess(account.id, session.user.id) : null;
+    const thisMonthly = accountCredits?.workspaces.find((w) => w.id === workspace.id)?.monthly ?? 0;
+    const [summary, months, ledger, settings] = await Promise.all([
       loadCreditGlance(workspace.id, now),
       loadUsageMonths(workspace.id, now),
       loadLedgerPage(workspace.id, Number.parseInt(sp.page ?? "1", 10) || 1),
       settingsAccess(me),
     ]);
+    const split =
+      accountCredits && showSplit && access
+        ? { ...accountCredits, currentId: workspace.id, canSplit: access.canSplit, canBuyFor: access.canBuyFor }
+        : null;
     usage = {
       credits: summary,
-      // On a new plan the monthly credits live on the account; old included credits may still be running out.
+      // On a new plan this workspace gets its share of the account's monthly credits.
       included:
         account?.planKey
           ? {
-              left: workspace.includedCreditsLeft + account.planCreditsLeft,
-              perMonth: accountPlan && account.paidThrough && account.paidThrough > now ? accountPlan.creditsPerMonth : 0,
+              left: workspace.includedCreditsLeft,
+              perMonth: thisMonthly,
               nextAt: account.planCreditsGrantedAt ? addOneMonth(account.planCreditsGrantedAt).toISOString() : null,
               perSeat: false,
             }
@@ -213,7 +225,8 @@ export default async function BillingPage({ params, searchParams }: Props) {
         total: ledger.total,
       },
       lowCreditThreshold: workspace.lowCreditThreshold,
-      canEditAlert: access.canEdit,
+      canEditAlert: settings.canEdit,
+      split,
       aiScreening,
       purchase: sp.credits_purchase === "success" ? "success" : sp.credits_purchase === "cancel" ? "cancel" : null,
       // Razorpay takes credit packs when its keys are set; Stripe otherwise.

@@ -12,7 +12,6 @@ import { creditCostForLevel, AI_INTERVIEW_COST_PER_SESSION } from "./engagement"
 
 export { AI_CREDIT_PACKS, getAiCreditPack, type AiCreditPack } from "./credit-packs";
 import { includedPart } from "@/lib/billing/included-credits";
-import { usePlanCredits } from "@/lib/billing/account-plan-server";
 import { poolWhere } from "@/lib/billing/credit-pool";
 
 /**
@@ -100,7 +99,7 @@ export async function consumeCreditIfFirstTurn(
         practice: true,
         engagementLevel: true,
         consentAt: true,
-        workspace: { select: { consentRequired: true, includedCreditsLeft: true, billingAccount: { select: { id: true, planCreditsLeft: true } } } },
+        workspace: { select: { consentRequired: true, includedCreditsLeft: true } },
       },
     });
     if (!session) throw new Error("Session not found");
@@ -162,8 +161,6 @@ export async function consumeCreditIfFirstTurn(
         data: { includedCreditsLeft: { decrement: fromIncluded } },
       });
     }
-    // Then the account's plan credits, also before bought ones.
-    await usePlanCredits(tx, session.workspace?.billingAccount, cost, fromIncluded);
 
     // Compute post-consumption balance INSIDE the transaction so we read a
     // consistent snapshot. Pass it out for the IP-44 notification trigger to

@@ -48,7 +48,7 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
         <Kpi
           label="AI credits"
           value={credits}
-          hint={`${Math.min(ws.includedCreditsLeft, Math.max(0, credits))} included${siblings.length ? `, shared with ${siblings.length} more` : ""}`}
+          hint={`${Math.min(ws.includedCreditsLeft, Math.max(0, credits))} included${siblings.length ? `, ${siblings.length} more on the account` : ""}`}
         />
       </div>
 

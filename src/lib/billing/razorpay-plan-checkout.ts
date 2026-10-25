@@ -232,15 +232,19 @@ export async function fulfillRazorpayPlanPayment(a: {
         lastPaymentId: a.paymentId,
         reminderAt: null,
         // A new plan gets its first month now (the step below runs at once);
-        // an upgrade keeps its grant date and gets the difference.
+        // an upgrade keeps its grant date and the paying workspace gets the difference.
         ...(wasActive ? {} : { planCreditsGrantedAt: null }),
-        ...(extra ? { planCreditsLeft: { increment: extra }, planCreditsLastGrant: { increment: extra } } : {}),
       },
     });
     if (!claimed.count) return false;
     if (extra) {
+      // The extra credits go to the workspace that paid; owners can move them from there.
       await tx.aIInterviewCreditLedger.create({
         data: { workspaceId: a.workspaceId, kind: "INCLUDED", amount: extra, note: `Moved up to ${plan.name}: the rest of this month's credits` },
+      });
+      await tx.workspace.update({
+        where: { id: a.workspaceId },
+        data: { includedCreditsLeft: { increment: extra }, includedCreditsLastGrant: { increment: extra } },
       });
     }
     await syncAccountWorkspaces(acc.id, now, tx);

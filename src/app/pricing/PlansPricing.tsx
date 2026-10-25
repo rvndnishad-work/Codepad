@@ -43,7 +43,7 @@ export default function PlansPricing({
           <p className="ip-label">Pricing</p>
           <h1 className="ip-display ip-display-xl mt-4 max-w-3xl">One flat price, with AI screening credits every month.</h1>
           <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-muted">
-            Every plan includes take homes, live interviews and AI screening. Credits arrive each month and are shared by all your workspaces.
+            Every plan includes take homes, live interviews and AI screening. Credits arrive each month, and you decide how many each of your workspaces gets.
             Candidates never take a seat. Want to try it first? Book a demo and we will set up a free pilot for your team.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">

@@ -62,7 +62,7 @@ export function tourStops(o: TourOptions): TourStop[] {
     stops.push({
       target: "credits",
       title: "AI credits",
-      body: "Your balance, shared by every workspace on your plan. Plan credits arrive each month, and you can buy a top-up here when you need more.",
+      body: "This workspace's own balance. Plan credits arrive each month, and you can buy a top-up here, or move credits in from another workspace, when you need more.",
     });
   }
   stops.push(

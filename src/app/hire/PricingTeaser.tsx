@@ -39,7 +39,7 @@ export default function PricingTeaser({ plans, lowestCreditPrice, flat = false }
             <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-muted">
               {flat ? (
                 <>
-                  Every plan comes with AI screening credits each month, shared by all your workspaces. Top-ups from {lowestCreditPrice} a credit
+                  Every plan comes with AI screening credits each month, split between your workspaces as you choose. Top-ups from {lowestCreditPrice} a credit
                   when you need more. Credits are charged only when a candidate starts.
                 </>
               ) : (

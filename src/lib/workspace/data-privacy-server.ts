@@ -968,6 +968,10 @@ async function eraseWorkspaceRows(ws: EraseTarget, paragraphs: string[]): Promis
   await prisma.interviewSession.deleteMany({ where: { workspaceId } });
   await prisma.challenge.deleteMany({ where: { workspaceId } });
   await prisma.emailLog.deleteMany({ where: { workspaceId } });
+  // Leftover AI credits go back to the billing account as unassigned, so the
+  // owner can give them to another workspace.
+  const { returnCreditsOnDelete } = await import("@/lib/billing/credit-split-server");
+  await returnCreditsOnDelete(workspaceId);
   await prisma.workspace.delete({ where: { id: workspaceId } });
   await deleteRecordingKeys(recordingKeys);
 

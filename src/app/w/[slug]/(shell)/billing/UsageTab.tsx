@@ -13,6 +13,7 @@ import { plural } from "@/lib/workspace/display";
 import { LOW_CREDIT_CHOICES } from "@/lib/workspace/settings";
 import type { UsageMonth } from "@/lib/billing/usage";
 import { saveWorkspaceSettingsAction } from "../settings/actions";
+import WorkspaceCredits, { type SplitData } from "./WorkspaceCredits";
 import { buyCreditsAction } from "./actions";
 import { payForCreditPack } from "@/lib/billing/razorpay-client";
 import { formatInr, usdCentsToInrPaise } from "@/lib/billing/fx-math";
@@ -44,6 +45,8 @@ export type UsageData = {
   checkout: "razorpay" | "stripe" | null;
   /** USD to INR rate Razorpay checkout converts at, when it charges rupees. */
   inrRate: number | null;
+  /** Several workspaces on the billing account (or unassigned credits): balances, moves, the split. */
+  split: SplitData | null;
 };
 
 type Notify = (text: string, tone?: "ok" | "error") => void;
@@ -82,6 +85,8 @@ export default function UsageTab({
           <BuyCredits slug={slug} data={data} canManage={canManage} notify={notify} />
         </div>
       </section>
+
+      {data.split && <WorkspaceCredits slug={slug} data={data.split} notify={notify} />}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-5 items-start">
         <UsageChart months={data.months} />
@@ -220,13 +225,17 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>((data.packs.find((p) => p.badge) ?? data.packs[0])?.id ?? null);
+  // With several workspaces, credits can be bought straight into another one the viewer manages.
+  const targets = data.split ? data.split.workspaces.filter((w) => w.id === data.split!.currentId || data.split!.canBuyFor.includes(w.id)) : [];
+  const [target, setTarget] = useState<string>(slug);
+  const targetWs = targets.find((w) => w.slug === target);
   const buy = async (packId: string) => {
     setBusy(packId);
     if (data.checkout === "razorpay") {
-      const res = await payForCreditPack({ slug, packId, onAttemptFailed: (m) => notify(m, "error") });
+      const res = await payForCreditPack({ slug: target, packId, onAttemptFailed: (m) => notify(m, "error") });
       setBusy(null);
       if (res.status === "paid") {
-        notify(`Payment received. ${plural(res.credits, "credit")} added.`);
+        notify(`Payment received. ${plural(res.credits, "credit")} added${targetWs && target !== slug ? ` to ${targetWs.name}` : ""}.`);
         router.refresh();
       } else if (res.status === "cancelled") {
         notify("Checkout was closed. Nothing was charged.");
@@ -235,7 +244,7 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
       }
       return;
     }
-    const res = await buyCreditsAction(slug, packId);
+    const res = await buyCreditsAction(target, packId);
     if (res.ok) {
       window.location.href = res.url;
       return;
@@ -260,6 +269,23 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
         </h2>
         <p className="text-[13px] text-muted">One-time packs, paid once. Bought credits never expire and larger packs cost less per credit.</p>
       </div>
+      {canBuy && targets.length > 1 && (
+        <label className="flex flex-wrap items-center gap-2 text-[13px] text-muted">
+          Add the credits to
+          <select
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            disabled={!!busy}
+            className="h-8 rounded-lg border border-border bg-bg px-2 text-[13px] text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary/60"
+          >
+            {targets.map((w) => (
+              <option key={w.id} value={w.slug}>
+                {w.id === data.split!.currentId ? `${w.name} (this workspace)` : w.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
         {data.packs.map((p) => {
           const on = canBuy && p.id === picked;
@@ -315,7 +341,10 @@ function BuyCredits({ slug, data, canManage, notify }: { slug: string; data: Usa
               ) : null}
             </span>
             <span className="text-xs text-muted tabular-nums">
-              Balance after: {(data.credits.available + pack.credits).toLocaleString("en-GB")} available. Covers about{" "}
+              {target === slug || !targetWs
+                ? `Balance after: ${(data.credits.available + pack.credits).toLocaleString("en-GB")} available.`
+                : `${targetWs.name} will have ${(targetWs.available + pack.credits).toLocaleString("en-GB")} available.`}{" "}
+              Covers about{" "}
               {screeningsCovered(pack.credits).min.toLocaleString("en-GB")} to {screeningsCovered(pack.credits).max.toLocaleString("en-GB")} screenings.
             </span>
           </div>

@@ -109,7 +109,7 @@ export function buildPlansPage(c: EffectiveCatalog): PlansPage {
   const faq = [
     {
       q: "How do AI credits work?",
-      a: "Your plan adds its credits every month, also on yearly plans, to a pool that all your workspaces share. A screening uses credits once, when the candidate starts: 1, 2 or 3 depending on how present the AI interviewer is. Plan credits are used first and roll over for one month.",
+      a: "Your plan adds its credits every month, also on yearly plans. With several workspaces, you choose how many each one gets, and you can move credits between them at any time. A screening uses credits once, when the candidate starts: 1, 2 or 3 depending on how present the AI interviewer is. Plan credits are used first and roll over for one month.",
     },
     {
       q: "What if we run out of credits?",

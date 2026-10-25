@@ -46,7 +46,7 @@ export default async function AdminAiCreditsPage({ searchParams }: { searchParam
   const [allTime, thisMonth, withCredits] = await Promise.all([
     prisma.aIInterviewCreditLedger.groupBy({ by: ["kind"], _sum: { amount: true }, _count: { _all: true } }),
     prisma.aIInterviewCreditLedger.groupBy({ by: ["kind"], where: { createdAt: { gte: monthStart } }, _sum: { amount: true }, _count: { _all: true } }),
-    prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n FROM (SELECT "billingAccountId" FROM "AIInterviewCreditLedger" GROUP BY "billingAccountId" HAVING sum(amount) > 0) t`,
+    prisma.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n FROM (SELECT "workspaceId" FROM "AIInterviewCreditLedger" GROUP BY "workspaceId" HAVING sum(amount) > 0) t`,
   ]);
   const toSums = (rows: typeof allTime) => rows.map((r) => ({ kind: r.kind, sum: r._sum.amount ?? 0, count: r._count._all }));
   const total = creditTotals(toSums(allTime));

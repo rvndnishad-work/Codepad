@@ -47,6 +47,22 @@ const TAKE_HOME_PATHS = ["/take-home", "/api/take-home"];
 const CANDIDATE_PATHS = [...TAKE_HOME_PATHS, ...AI_SCREENING_PATHS, ...ROOM_PATHS, "/invite"];
 const PLAYGROUND_PATHS = ["/play", "/playgrounds", "/api/execute", "/api/playground", "/api/snippets"];
 const CREATOR_PATHS = ["/creators", "/c", "/purchase", "/become-creator"];
+// One list per developer menu item in the header (src/components/Header.tsx).
+const QUESTION_PATHS = ["/interview-questions", "/interview-question", "/api/interview-questions"];
+const CHALLENGE_PATHS = ["/challenges", "/challenge", "/candidate/challenges", "/tracks", "/api/challenges"];
+const MOCK_INTERVIEW_PATHS = ["/candidate/interview", "/interview/new"];
+const PROMPT_ARENA_PATHS = [
+  "/candidate/prompt-practice",
+  "/interview/prompt-practice",
+  "/api/prompt-attempts",
+  "/api/prompt-challenges",
+  "/api/prompt-playground",
+];
+const PREP_PATHS = ["/prep", "/api/prep-journeys"];
+const AI_CODE_REVIEW_PATHS = ["/candidate/ai-code-review", "/interview/ai-code-review", "/api/review-challenges"];
+const BLOG_PATHS = ["/blog", "/api/blogs"];
+// Marketing pages linked from the header that no other area covers.
+const PRODUCT_PAGE_PATHS = ["/features", "/pricing", "/about", "/docs"];
 
 export const AREAS: AreaDef[] = [
   {
@@ -92,23 +108,39 @@ export const AREAS: AreaDef[] = [
     display: "/ai-interview/*",
   },
   {
+    key: "ai-screening-recruiter",
+    label: "AI screening, recruiter side",
+    pausedTitle: "AI screening is paused",
+    parent: "hiring",
+    paths: ["/w/*/ai-interviews"],
+    display: "/w/*/ai-interviews",
+  },
+  {
+    key: "workspaces",
+    label: "Workspaces",
+    pausedTitle: "Workspaces are paused for maintenance",
+    parent: "hiring",
+    paths: ["/w", "/api/w"],
+    display: "/w, /api/w",
+    coversRooms: true,
+  },
+  {
     key: "dev",
     label: "Developer side",
     pausedTitle: "This part of Intervutree is paused",
     parent: "site",
     paths: [
       ...PLAYGROUND_PATHS,
-      "/challenges",
-      "/challenge",
-      "/interview-questions",
-      "/interview-question",
-      "/blog",
-      "/api/challenges",
-      "/api/interview-questions",
-      "/api/blogs",
+      ...QUESTION_PATHS,
+      ...CHALLENGE_PATHS,
+      ...MOCK_INTERVIEW_PATHS,
+      ...PROMPT_ARENA_PATHS,
+      ...PREP_PATHS,
+      ...AI_CODE_REVIEW_PATHS,
+      ...BLOG_PATHS,
       ...CREATOR_PATHS,
     ],
-    display: "/play, /playgrounds, /challenges, /interview-questions, /blog",
+    display: "/play, /interview-questions, /challenges, /candidate/*, /prep, /blog",
   },
   {
     key: "playground",
@@ -129,6 +161,78 @@ export const AREAS: AreaDef[] = [
     parent: "dev",
     paths: CREATOR_PATHS,
     display: "/creators, /c/*",
+  },
+  {
+    key: "interview-questions",
+    label: "Interview questions",
+    pausedTitle: "Interview questions are paused",
+    parent: "dev",
+    paths: QUESTION_PATHS,
+    display: "/interview-questions",
+    elsewhere: [
+      { label: "Challenges", href: "/candidate/challenges" },
+      { label: "Playgrounds", href: "/playgrounds" },
+    ],
+  },
+  {
+    key: "challenges",
+    label: "Challenges",
+    pausedTitle: "Challenges are paused",
+    parent: "dev",
+    paths: CHALLENGE_PATHS,
+    display: "/challenges, /candidate/challenges, /tracks",
+    elsewhere: [
+      { label: "Interview questions", href: "/interview-questions" },
+      { label: "Playgrounds", href: "/playgrounds" },
+    ],
+  },
+  {
+    key: "mock-interviews",
+    label: "Mock interviews",
+    pausedTitle: "Mock interviews are paused",
+    parent: "dev",
+    paths: MOCK_INTERVIEW_PATHS,
+    display: "/candidate/interview, /interview/new",
+  },
+  {
+    key: "prompt-arena",
+    label: "Prompt Arena",
+    pausedTitle: "Prompt Arena is paused",
+    parent: "dev",
+    paths: PROMPT_ARENA_PATHS,
+    display: "/candidate/prompt-practice",
+  },
+  {
+    key: "prep",
+    label: "Prep journeys",
+    pausedTitle: "Prep journeys are paused",
+    parent: "dev",
+    paths: PREP_PATHS,
+    display: "/prep",
+  },
+  {
+    key: "ai-code-review",
+    label: "Review the AI's code",
+    pausedTitle: "AI code review is paused",
+    parent: "dev",
+    paths: AI_CODE_REVIEW_PATHS,
+    display: "/candidate/ai-code-review",
+  },
+  {
+    key: "blog",
+    label: "Blog",
+    pausedTitle: "The blog is paused",
+    parent: "dev",
+    paths: BLOG_PATHS,
+    display: "/blog",
+  },
+  {
+    key: "product-pages",
+    label: "Product pages",
+    pausedTitle: "This page is paused for maintenance",
+    parent: "site",
+    paths: PRODUCT_PAGE_PATHS,
+    display: "/features, /pricing, /about, /docs",
   },
   {
     key: "public-api",

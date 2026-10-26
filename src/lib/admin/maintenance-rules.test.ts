@@ -143,3 +143,42 @@ describe("time window", () => {
     expect(backInAbout(null, NOW)).toBeNull();
   });
 });
+
+describe("header menu coverage", () => {
+  // Every destination in the site header (src/components/Header.tsx) has its
+  // own row on /admin/maintenance. With all areas running, the path lands on
+  // the area named here.
+  const all = AREAS.map((a) => rule(a.key));
+  const cases: [string, string][] = [
+    ["/playgrounds", "playground"],
+    ["/interview-questions", "interview-questions"],
+    ["/interview-questions/react/hooks", "interview-questions"],
+    ["/candidate/challenges", "challenges"],
+    ["/challenges/two-sum", "challenges"],
+    ["/candidate/interview", "mock-interviews"],
+    ["/candidate/prompt-practice", "prompt-arena"],
+    ["/interview/prompt-practice", "prompt-arena"],
+    ["/prep", "prep"],
+    ["/candidate/ai-code-review", "ai-code-review"],
+    ["/creators", "creators"],
+    ["/blog/some-post", "blog"],
+    ["/w", "workspaces"],
+    ["/w/acme/candidates", "workspaces"],
+    ["/w/acme/ai-interviews", "ai-screening-recruiter"],
+    ["/hire", "hiring"],
+    ["/features", "product-pages"],
+    ["/pricing", "product-pages"],
+    ["/about", "product-pages"],
+    ["/docs/mcp", "product-pages"],
+  ];
+  it.each(cases)("%s → %s", (path, area) => {
+    expect(matchRule(path, all)?.area).toBe(area);
+  });
+
+  it("taking the developer side down covers every developer menu item", () => {
+    const dev = [rule("dev")];
+    for (const p of ["/candidate/challenges", "/candidate/interview", "/candidate/prompt-practice", "/prep", "/candidate/ai-code-review"]) {
+      expect(matchRule(p, dev)?.area).toBe("dev");
+    }
+  });
+});

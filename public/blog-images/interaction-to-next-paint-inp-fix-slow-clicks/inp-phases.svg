@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="m" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9aa3b5"/></marker>
+  </defs>
+  <rect width="960" height="460" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">One interaction, three phases</text>
+
+  <line x1="220" y1="84" x2="220" y2="300" stroke="#e8eaf0" stroke-width="2" stroke-dasharray="6 6"/>
+  <line x1="900" y1="84" x2="900" y2="300" stroke="#34d399" stroke-width="2" stroke-dasharray="6 6"/>
+  <!-- main thread lane -->
+  <text x="40" y="138" fill="#9aa3b5" font-size="16">main thread</text>
+  <rect x="160" y="110" width="300" height="48" rx="8" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <text x="340" y="140" fill="#e8eaf0" font-size="16" text-anchor="middle">other task running</text>
+  <rect x="460" y="110" width="200" height="48" rx="8" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="560" y="140" fill="#fde68a" font-size="16" text-anchor="middle">your click handler</text>
+  <rect x="660" y="110" width="140" height="48" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="730" y="140" fill="#bfdbfe" font-size="16" text-anchor="middle">style + layout</text>
+  <rect x="800" y="110" width="100" height="48" rx="8" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="850" y="140" fill="#6ee7b7" font-size="16" text-anchor="middle">paint</text>
+
+  <!-- click marker -->
+  <rect x="170" y="62" width="100" height="30" rx="15" fill="#171a23" stroke="#e8eaf0" stroke-width="2"/>
+  <text x="220" y="82" fill="#e8eaf0" font-size="15" font-weight="700" text-anchor="middle">click</text>
+
+  <!-- next paint marker -->
+  <rect x="830" y="62" width="120" height="30" rx="15" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+  <text x="890" y="82" fill="#6ee7b7" font-size="15" font-weight="700" text-anchor="middle">next paint</text>
+
+  <!-- phase brackets -->
+  <rect x="220" y="220" width="240" height="44" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="340" y="248" fill="#fecaca" font-size="16" font-weight="700" text-anchor="middle">input delay</text>
+  <rect x="460" y="220" width="200" height="44" rx="8" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="560" y="248" fill="#fde68a" font-size="16" font-weight="700" text-anchor="middle">processing</text>
+  <rect x="660" y="220" width="240" height="44" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="780" y="248" fill="#bfdbfe" font-size="16" font-weight="700" text-anchor="middle">presentation delay</text>
+
+  <!-- total -->
+  <line x1="228" y1="330" x2="892" y2="330" stroke="#9aa3b5" stroke-width="2" marker-start="url(#m)" marker-end="url(#m)"/>
+  <rect x="440" y="350" width="240" height="40" rx="20" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="560" y="376" fill="#ddd6fe" font-size="16" font-weight="700" text-anchor="middle">interaction latency</text>
+
+  <text x="340" y="420" fill="#9aa3b5" font-size="14" text-anchor="middle">waiting for the thread</text>
+  <text x="560" y="420" fill="#9aa3b5" font-size="14" text-anchor="middle">running handlers</text>
+  <text x="780" y="420" fill="#9aa3b5" font-size="14" text-anchor="middle">drawing the result</text>
+</svg>

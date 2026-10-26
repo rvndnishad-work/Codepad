@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#facc15" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#facc15" font-size="24" font-weight="700" letter-spacing="5">FRONTEND</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">Click.</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">Wait.</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">Paint.</text>
+
+  <!-- centre: a button being clicked, then the three phases, then the next frame -->
+  <rect x="470" y="250" width="200" height="80" rx="20" fill="#1e2433" stroke="#60a5fa" stroke-width="3"/>
+  <text x="570" y="301" fill="#e8eaf0" font-size="28" font-weight="700" text-anchor="middle">Buy now</text>
+  <path d="M640 312 L640 372 L654 358 L666 384 L678 378 L666 352 L686 352 Z" fill="#f4f5f8" stroke="#0b0d12" stroke-width="3"/>
+
+  <rect x="470" y="440" width="230" height="64" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <rect x="700" y="440" width="150" height="64" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <rect x="850" y="440" width="110" height="64" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="585" y="481" fill="#fecaca" font-size="22" font-weight="700" text-anchor="middle">wait</text>
+  <text x="775" y="481" fill="#fde68a" font-size="22" font-weight="700" text-anchor="middle">run</text>
+  <text x="905" y="481" fill="#bfdbfe" font-size="22" font-weight="700" text-anchor="middle">paint</text>
+
+  <rect x="1000" y="380" width="180" height="180" rx="20" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+  <text x="1090" y="462" fill="#6ee7b7" font-size="34" font-weight="800" text-anchor="middle">INP</text>
+  <text x="1090" y="506" fill="#9aa3b5" font-size="22" text-anchor="middle">200 ms or less</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">input delay</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">processing</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">presentation</text>
+  </g>
+</svg>

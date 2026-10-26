@@ -1,3 +1,4 @@
+import { validatePageAccess } from "@/lib/settings";
 import { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +21,7 @@ export default async function PlaygroundsPage() {
   await pingDb(prisma);
 
   const session = await timed("playgrounds:auth", () => auth().catch(() => null));
+  await validatePageAccess("/playgrounds", session);
   const userId = session?.user?.id;
 
   let welcome: {

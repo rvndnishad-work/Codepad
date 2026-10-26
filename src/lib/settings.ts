@@ -5,6 +5,7 @@ import {
   NavLinkConfig,
   DEFAULT_NAV_LINKS,
   isProtectedRoute,
+  navLinkFor,
 } from "./settings-constants";
 import { getNavLinksCached, NAV_LINKS_TAG } from "./nav-links-cache";
 import { logAdminAction, type AdminActor } from "./admin/audit";
@@ -88,10 +89,8 @@ export async function validatePageAccess(pathname: string, session: any) {
 
   const links = await getNavLinks();
 
-  // Find the matching navigation link
-  const link = links.find(l =>
-    pathname === l.href || (l.href !== "/" && pathname.startsWith(l.href))
-  );
+  // The most specific matching navigation link.
+  const link = navLinkFor(links, pathname);
 
   if (!link) return;
 

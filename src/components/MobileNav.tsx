@@ -71,6 +71,8 @@ type Props = {
   brand?: BrandKey | null;
   /** Show the top-level Pricing link (visitors and users without a workspace). */
   showPricing?: boolean;
+  pricingStatus?: NavStatus;
+  aboutStatus?: NavStatus;
 };
 
 /**
@@ -90,6 +92,8 @@ export default function MobileNav({
   site = null,
   brand = null,
   showPricing = false,
+  pricingStatus = "visible",
+  aboutStatus = "visible",
 }: Props) {
   const recruiterSite = site === "recruiter";
   const [open, setOpen] = useState(false);
@@ -196,11 +200,21 @@ export default function MobileNav({
             )}
 
             {/* Flat items below — audience-neutral */}
-            {showPricing && (
-              <FlatLink href="/pricing" label="Pricing" active={pathname.startsWith("/pricing")} />
+            {showPricing && pricingStatus !== "hidden" && (
+              <FlatLink
+                href={pricingStatus === "coming_soon" ? "/coming-soon?feature=Pricing" : "/pricing"}
+                label="Pricing"
+                active={pathname.startsWith("/pricing")}
+                status={pricingStatus}
+              />
             )}
-            {recruiterSite && (
-              <FlatLink href="/about" label="About us" active={pathname.startsWith("/about")} />
+            {recruiterSite && aboutStatus !== "hidden" && (
+              <FlatLink
+                href={aboutStatus === "coming_soon" ? "/coming-soon?feature=About%20us" : "/about"}
+                label="About us"
+                active={pathname.startsWith("/about")}
+                status={aboutStatus}
+              />
             )}
             {blogStatus !== "hidden" && (
               <FlatLink

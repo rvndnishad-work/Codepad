@@ -1,3 +1,4 @@
+import { validatePageAccess } from "@/lib/settings";
 import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -13,6 +14,7 @@ export const metadata = {
 
 export default async function PrepPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/prep", session);
   if (!session?.user?.id) redirect("/login?next=/prep");
 
   const overview = await getJourneyOverview(session.user.id);

@@ -6,6 +6,7 @@ import { isStaff } from "@/lib/permissions/staff";
 import { userCan } from "@/lib/permissions/access";
 import { getPrimaryWorkspaceSlug } from "@/lib/workspace-nav";
 import { getNavLinks } from "@/lib/settings";
+import { navLinkFor } from "@/lib/settings-constants";
 import type { NavDropdownItem } from "./NavDropdown";
 import HeaderLogo from "./HeaderLogo";
 import HeaderLink from "./HeaderLink";
@@ -170,29 +171,24 @@ export default async function Header() {
   // and coming_soon items get a visual badge + disabled state.
   const navLinks = await getNavLinks();
 
-  /** Map nav-link hrefs → status, supporting candidate prefixes and recruiter routes */
+  /** The admin setting for a header href. Sign-in redirects count as their
+   *  destination, and /candidate/foo falls back to the older /foo setting. */
   const statusForHref = (href: string) => {
-    // Exact match first
-    const exact = navLinks.find((l) => l.href === href);
-    if (exact) return exact.status;
-
-    // Normalize /candidate/foo -> /foo to match legacy admin setting hrefs
-    const normalizedHref = href.replace(/^\/candidate/, "");
-    const normalizedMatch = navLinks.find((l) => l.href === normalizedHref);
-    if (normalizedMatch) return normalizedMatch.status;
-
-    // Prefix match (e.g. workspace links /w/slug → /w setting)
-    const prefix = navLinks.find(
-      (l) => l.href !== "/" && (href.startsWith(l.href) || normalizedHref.startsWith(l.href))
-    );
-    return prefix?.status ?? "visible";
+    const target = href.startsWith("/login?next=") ? decodeURIComponent(href.slice("/login?next=".length)) : href;
+    const link =
+      navLinkFor(navLinks, target) ?? navLinkFor(navLinks, target.replace(/^\/candidate(?=\/)/, ""));
+    return link?.status ?? "visible";
   };
 
-  /** Recruiter-specific prefix map: the admin setting key → the actual
-   *  item label, since recruiter hrefs are dynamic (/w/[slug]/...). */
+  /** Recruiter items are looked up by label, since their hrefs are dynamic
+   *  (/w/[slug]/...) or change per domain. Label → setting href. */
   const RECRUITER_SETTING_MAP: Record<string, string> = {
-    "/w": "Workspaces",
-    "/w/ai-screening": "AI Screening",
+    Workspaces: "/w",
+    "AI Screening": "/w/ai-screening",
+    "Live Interviews": "/hire#sandbox",
+    "Platform Overview": "/hire",
+    Features: "/features",
+    Docs: "/docs",
   };
 
   function applyNavStatus(items: NavDropdownItem[], isRecruiter = false): NavDropdownItem[] {
@@ -201,9 +197,7 @@ export default async function Header() {
         let status: string;
         if (isRecruiter) {
           // For recruiter items, look up by label → setting href
-          const settingKey = Object.entries(RECRUITER_SETTING_MAP).find(
-            ([, label]) => label === item.label
-          )?.[0];
+          const settingKey = RECRUITER_SETTING_MAP[item.label];
           status = settingKey
             ? navLinks.find((l) => l.href === settingKey)?.status ?? "visible"
             : "visible";
@@ -244,6 +238,8 @@ export default async function Header() {
   }
 
   const blogStatus = statusForHref("/blog");
+  const pricingStatus = statusForHref("/pricing");
+  const aboutStatus = statusForHref("/about");
   const devsMenuStatus = statusForHref("menu:developers");
   const recruitersMenuStatus = statusForHref("menu:recruiters");
 
@@ -286,6 +282,8 @@ export default async function Header() {
           site={site}
           brand={brandKey}
           showPricing={showPricing}
+          pricingStatus={showAdmin ? "visible" : pricingStatus}
+          aboutStatus={showAdmin ? "visible" : aboutStatus}
           devsMenuStatus={devsMenuStatus}
           recruitersMenuStatus={recruitersMenuStatus}
         />
@@ -329,8 +327,8 @@ export default async function Header() {
                 <HeaderLink key={item.href} href={item.href} matchPrefix={pillPrefix(item)} label={item.label} />
               ))}
             </span>
-            {showPricing && <HeaderLink href="/pricing" matchPrefix="/pricing" label="Pricing" />}
-            {recruiterSite && <HeaderLink href="/about" matchPrefix="/about" label="About us" />}
+            {showPricing && <GatedLink href="/pricing" label="Pricing" status={pricingStatus} isAdmin={showAdmin} />}
+            {recruiterSite && <GatedLink href="/about" label="About us" status={aboutStatus} isAdmin={showAdmin} />}
             {showDeveloperMenu && (blogStatus !== "hidden" || showAdmin) && (
               <HeaderLink
                 href={blogStatus === "coming_soon" && !showAdmin ? "/coming-soon?feature=Blog" : "/blog"}
@@ -375,5 +373,30 @@ export default async function Header() {
         </div>
       </div>
     </NavChrome>
+  );
+}
+
+/** A top-level link that follows its admin nav setting, like the Blog link. */
+function GatedLink({
+  href,
+  label,
+  status,
+  isAdmin,
+}: {
+  href: string;
+  label: string;
+  status: string;
+  isAdmin: boolean;
+}) {
+  if (status === "hidden" && !isAdmin) return null;
+  const soon = status === "coming_soon";
+  return (
+    <HeaderLink
+      href={soon && !isAdmin ? `/coming-soon?feature=${encodeURIComponent(label)}` : href}
+      matchPrefix={href}
+      label={label}
+      tone={soon ? "warn" : status === "hidden" ? "danger" : "default"}
+      badge={soon ? "Soon" : status === "hidden" ? "Hidden" : undefined}
+    />
   );
 }

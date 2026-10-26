@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="500" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">Same 300 ms of work, two shapes</text>
+
+  <!-- click arrival marker, drawn first so the boxes cover it -->
+  <line x1="224" y1="84" x2="224" y2="420" stroke="#e8eaf0" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="154" y="430" width="140" height="30" rx="15" fill="#171a23" stroke="#e8eaf0" stroke-width="2"/>
+  <text x="224" y="450" fill="#e8eaf0" font-size="14" font-weight="700" text-anchor="middle">click at 20 ms</text>
+
+  <text x="40" y="136" fill="#e8eaf0" font-size="16" font-weight="700">one task</text>
+  <rect x="180" y="108" width="660" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <text x="510" y="136" fill="#e8eaf0" font-size="16" text-anchor="middle">300 ms of work, cannot be interrupted</text>
+  <rect x="840" y="108" width="72" height="44" rx="6" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="876" y="136" fill="#fde68a" font-size="15" text-anchor="middle">click</text>
+  <rect x="224" y="176" width="616" height="34" rx="6" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="532" y="199" fill="#fecaca" font-size="15" font-weight="700" text-anchor="middle">input delay 280 ms</text>
+
+  <text x="40" y="316" fill="#e8eaf0" font-size="16" font-weight="700">six chunks</text>
+  <rect x="180" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <rect x="290" y="288" width="66" height="44" rx="6" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="323" y="316" fill="#fde68a" font-size="15" text-anchor="middle">click</text>
+  <rect x="356" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <rect x="466" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <rect x="576" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <rect x="686" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <rect x="796" y="288" width="110" height="44" rx="6" fill="#2a2f3d" stroke="#4b5266" stroke-width="2"/>
+  <text x="257" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <text x="411" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <text x="521" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <text x="631" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <text x="741" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <text x="851" y="316" fill="#e8eaf0" font-size="15" text-anchor="middle">50 ms</text>
+  <rect x="224" y="356" width="66" height="34" rx="6" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="330" y="379" fill="#fecaca" font-size="15" font-weight="700">input delay 30 ms</text>
+</svg>

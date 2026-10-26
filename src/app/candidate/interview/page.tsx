@@ -2,7 +2,7 @@ import FeaturePaused from "@/components/FeaturePaused";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getInterviewArenaSettings } from "@/lib/settings";
+import { getInterviewArenaSettings, validatePageAccess } from "@/lib/settings";
 import CandidateCockpitClient from "../../interview/CandidateCockpitClient";
 import { loadAiPracticeRuns } from "@/lib/mock-interview/server";
 
@@ -12,6 +12,7 @@ export const metadata = {
 
 export default async function CandidateInterviewPage() {
   const session = await auth().catch(() => null);
+  await validatePageAccess("/interview", session);
   if (!session?.user?.id) {
     redirect(`/login?next=${encodeURIComponent("/candidate/interview")}`);
   }

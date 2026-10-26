@@ -1,3 +1,5 @@
+import { auth } from "@/lib/auth";
+import { validatePageAccess } from "@/lib/settings";
 import FeaturePaused from "@/components/FeaturePaused";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -21,6 +23,8 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function InterviewQuestionsPage() {
+  const session = await auth().catch(() => null);
+  await validatePageAccess("/interview-questions", session);
   const [companies, qGroups, eGroups, techGroups, popular, publishedTotal] = await Promise.all([
     prisma.company.findMany({ orderBy: { name: "asc" } }),
     prisma.prepQuestion.groupBy({

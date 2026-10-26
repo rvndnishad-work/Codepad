@@ -45,6 +45,8 @@ export default async function NewInterviewPage({
     const q = qs.toString();
     redirect(`/w/${encodeURIComponent(sp.workspaceSlug)}/interviews/new${q ? `?${q}` : ""}`);
   }
+  // Developers set up mock interviews in the new two-mode setup (AI or a peer).
+  if (sp.role === "candidate") redirect("/candidate/interview/new");
   const queryRole = sp.role ?? null;
   const dbUserType = (session.user as { userType?: string | null } | undefined)?.userType ?? null;
   const userType = queryRole === "candidate" ? "candidate" : dbUserType;

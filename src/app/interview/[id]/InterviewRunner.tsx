@@ -1035,7 +1035,9 @@ export default function InterviewRunner({
                 <p className="text-muted text-sm max-w-lg mx-auto">
                   {interview.type === "mock" 
                     ? "Welcome to your mock interview session. Review the upcoming rounds and start when you are ready." 
-                    : "The session is currently on standby. Invite the candidate and any co-interviewers, then initiate the clock to begin."}
+                    : isOwner && !interviewerView
+                      ? "Share the link with the developer who will interview you. They start the clock when you are both here."
+                      : "The session is currently on standby. Invite the candidate and any co-interviewers, then initiate the clock to begin."}
                 </p>
               </div>
 
@@ -1088,9 +1090,13 @@ export default function InterviewRunner({
                             <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
                               <Users className="w-4 h-4" />
                             </div>
-                            <span className="text-xs font-black uppercase tracking-[0.2em] text-accent">Candidate Access</span>
+                            <span className="text-xs font-black uppercase tracking-[0.2em] text-accent">{interviewerView ? "Candidate Access" : "Interviewer Access"}</span>
                           </div>
-                          <p className="text-xs text-fg/80 mb-5">Share this code or link with the candidate so they can join the session.</p>
+                          <p className="text-xs text-fg/80 mb-5">
+                            {interviewerView
+                              ? "Share this code or link with the candidate so they can join the session."
+                              : "Share this code or link with the developer interviewing you. They get the question guide; you do not."}
+                          </p>
                           
                           {interview.shortCode ? (
                             <div className="flex items-center gap-3 bg-surface border border-accent/20 rounded-2xl p-3 shadow-inner">

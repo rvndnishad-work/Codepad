@@ -238,9 +238,12 @@ export default async function InterviewRunPage({
 
   // Interviewer-only guide: brief and question guide. Built only for the
   // host and panel, so reference answers never reach the candidate.
+  // Developer mock rooms have no workspace: whoever holds the interviewer
+  // seat (the owner or the peer with the link) gets the guide there.
   let guide: GuideData | null = null;
-  if (interviewerView && isOwner && interview.workspaceId && (interview.format || interview.guideTemplateId || interview.guideJson || interview.interviewerBrief)) {
-    const tpl = interview.guideTemplateId
+  const guideSeat = interview.workspaceId ? isOwner : true;
+  if (interviewerView && guideSeat && (interview.format || interview.guideTemplateId || interview.guideJson || interview.interviewerBrief)) {
+    const tpl = interview.guideTemplateId && interview.workspaceId
       ? await prisma.aIInterviewTemplate.findFirst({
           where: { id: interview.guideTemplateId, workspaceId: interview.workspaceId },
           select: { title: true, testsCode: true },
@@ -253,7 +256,7 @@ export default async function InterviewRunPage({
         roundCount: challengeIds.length + playgroundIds.length + promptScenarioIds.length,
         guideTemplateId: interview.guideTemplateId ?? (interview.guideJson ? "bank" : null),
       }) === "needed";
-    const ws = pending ? await prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }) : null;
+    const ws = pending && interview.workspaceId ? await prisma.workspace.findUnique({ where: { id: interview.workspaceId }, select: { slug: true } }) : null;
     guide = {
       sessionId: interview.id,
       format: interview.format,

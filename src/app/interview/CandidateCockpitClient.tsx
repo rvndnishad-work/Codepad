@@ -20,16 +20,15 @@ import {
   Zap,
   Check,
   History,
-  Layers,
   Snowflake,
   Flame,
   Swords,
+  Bot,
 } from "lucide-react";
 import DeleteSessionButton from "./DeleteSessionButton";
-import StackWizard from "./StackWizard";
-import AIPracticeLauncher from "./AIPracticeLauncher";
 import CountUp from "@/components/scroll/CountUp";
 import WowReveal from "@/components/wow/WowReveal";
+import { SCREENING_PASS_THRESHOLD } from "@/lib/ai-interview/verdict";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -49,6 +48,16 @@ type PracticeSession = {
   } | null;
 };
 
+/** A developer's AI practice run (an AI interview, not an interview room). */
+type AiRun = {
+  token: string;
+  title: string;
+  status: string;
+  score: number | null;
+  createdAt: Date;
+  rounds: number;
+};
+
 type Props = {
   userId: string;
   userName: string | null;
@@ -59,6 +68,20 @@ type Props = {
     showScheduleToRecruiter: boolean;
   };
   myPracticeSessions: PracticeSession[];
+  aiRuns?: AiRun[];
+};
+
+/** One row of the history list: an interview room or an AI practice run. */
+type HistoryRow = {
+  key: string;
+  title: string;
+  createdAt: Date;
+  kind: "ai" | "peer" | "solo";
+  state: "scheduled" | "in_progress" | "completed";
+  verdict: string | null;
+  score: number | null;
+  href: string;
+  roomId: string | null;
 };
 
 function readinessTier(index: number, completed: number): string {
@@ -76,10 +99,10 @@ const MODES = [
     id: "mock",
     n: "01",
     title: "Mock interview",
-    desc: "A realistic interview with a timer and automatic scoring — just like the real thing.",
-    chips: ["Timed", "Auto-scored"],
+    desc: "With the AI interviewer or a fellow developer. Pick the role and the questions you want to practise.",
+    chips: ["AI or peer", "Your questions"],
     icon: Monitor,
-    href: "/interview/new?type=mock&role=candidate",
+    href: "/candidate/interview/new",
     num: "text-purple-500/30 group-hover:text-purple-500",
     tile: "border-purple-500/25 bg-purple-500/10 text-purple-700 dark:text-purple-400",
     wash: "from-purple-500/[0.12]",
@@ -127,10 +150,9 @@ export default function CandidateCockpitClient({
   userName,
   arenaSettings,
   myPracticeSessions,
+  aiRuns = [],
 }: Props) {
   const [visibleCount, setVisibleCount] = useState(5);
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [aiPracticeOpen, setAiPracticeOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
   const [scrolling, setScrolling] = useState(false);
@@ -177,15 +199,17 @@ export default function CandidateCockpitClient({
     return () => ctx.revert();
   }, []);
 
-  // Stats
+  // Stats: interview rooms and AI practice runs together. An AI run passes at
+  // the screening pass mark.
   const stats = useMemo(() => {
     const completed = myPracticeSessions.filter((s) => s.status === "completed");
+    const aiDone = aiRuns.filter((r) => r.status === "COMPLETED");
     return {
-      total: myPracticeSessions.length,
-      completed: completed.length,
-      passed: myPracticeSessions.filter((s) => s.verdict === "success").length,
+      total: myPracticeSessions.length + aiRuns.length,
+      completed: completed.length + aiDone.length,
+      passed: myPracticeSessions.filter((s) => s.verdict === "success").length + aiDone.filter((r) => (r.score ?? 0) >= SCREENING_PASS_THRESHOLD).length,
     };
-  }, [myPracticeSessions]);
+  }, [myPracticeSessions, aiRuns]);
 
   const passRate = stats.completed > 0 ? Math.round((stats.passed / stats.completed) * 100) : 0;
 
@@ -215,7 +239,35 @@ export default function CandidateCockpitClient({
     return Math.round(passRate * 0.5 + ((avg / 5) * 100) * 0.35 + Math.min(100, (stats.completed / 8) * 100) * 0.15);
   }, [stats.completed, passRate, skills]);
 
-  const visibleSessions = myPracticeSessions.slice(0, visibleCount);
+  const history = useMemo<HistoryRow[]>(() => {
+    const rooms: HistoryRow[] = myPracticeSessions.map((s) => ({
+      key: `room:${s.id}`,
+      title: s.title,
+      createdAt: new Date(s.createdAt),
+      kind: s.type === "live" ? "peer" : "solo",
+      state: s.status === "completed" || s.status === "abandoned" ? "completed" : s.status === "in_progress" ? "in_progress" : "scheduled",
+      verdict: s.verdict,
+      score: null,
+      href: `/interview/${s.id}`,
+      roomId: s.id,
+    }));
+    const runs: HistoryRow[] = aiRuns.map((r) => {
+      const done = r.status === "COMPLETED";
+      return {
+        key: `ai:${r.token}`,
+        title: r.title,
+        createdAt: new Date(r.createdAt),
+        kind: "ai",
+        state: done ? "completed" : r.status === "ACTIVE" ? "in_progress" : "scheduled",
+        verdict: null,
+        score: done ? r.score : null,
+        href: done ? `/candidate/interview/ai/${r.token}/results` : `/candidate/interview/ai/${r.token}`,
+        roomId: null,
+      };
+    });
+    return [...rooms, ...runs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }, [myPracticeSessions, aiRuns]);
+  const visibleSessions = history.slice(0, visibleCount);
 
   return (
     <div ref={root} className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
@@ -252,26 +304,26 @@ export default function CandidateCockpitClient({
           </h1>
 
           <p className="ci-fade mx-auto mt-5 max-w-xl text-balance text-[15px] font-medium leading-relaxed text-white/70 md:text-base">
-            {firstName !== "there" ? `${firstName}, pick ` : "Pick "}a workout below — timed mock
-            interviews with automatic scoring, coding challenges, or a blank
-            playground. Your progress is tracked underneath.
+            {firstName !== "there" ? `${firstName}, run ` : "Run "}a mock interview with the AI
+            interviewer or a fellow developer, using the questions you want to
+            practise. Your progress is tracked underneath.
           </p>
 
           <div className="ci-fade mt-8 flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setWizardOpen(true)}
+            <Link
+              href="/candidate/interview/new?mode=ai"
               className="inline-flex items-center gap-2 rounded-full bg-[#0f1730] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-white dark:bg-white dark:text-black dark:shadow-[0_6px_24px_-8px_rgba(255,255,255,0.5)] transition hover:scale-105 active:scale-95"
             >
-              <Layers className="h-4 w-4" />
-              Start practicing
-            </button>
-            <button
-              onClick={() => setAiPracticeOpen(true)}
+              <Sparkles className="h-4 w-4 text-[#ffe600] dark:text-[#b38600]" />
+              Practise with AI
+            </Link>
+            <Link
+              href="/candidate/interview/new?mode=peer"
               className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-7 py-3 text-[13px] font-black uppercase tracking-wider text-fg backdrop-blur-md dark:text-white transition hover:border-white/40 hover:bg-white/[0.1] active:scale-95"
             >
-              <Sparkles className="h-4 w-4 text-[#d9a50a] dark:text-[#ffe600]" />
-              AI mock interview
-            </button>
+              <Users className="h-4 w-4" />
+              Practise with a peer
+            </Link>
           </div>
 
           <div className="ci-fade mt-8 flex flex-wrap items-center justify-center gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55 sm:gap-10">
@@ -422,7 +474,7 @@ export default function CandidateCockpitClient({
                 <span>Total <strong className="tabular-nums text-[var(--wow-fg)]">{stats.total}</strong></span>
                 <span className="ml-auto flex items-center gap-1.5 normal-case tracking-normal">
                   {stats.completed === 0 ? (
-                    <Link href="/interview/new?type=mock&role=candidate" className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 font-sans text-[11px] font-black uppercase tracking-wider text-black transition hover:scale-105">
+                    <Link href="/candidate/interview/new" className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 font-sans text-[11px] font-black uppercase tracking-wider text-black transition hover:scale-105">
                       <Play className="h-3 w-3 fill-current" /> Start your first session
                     </Link>
                   ) : (
@@ -449,14 +501,14 @@ export default function CandidateCockpitClient({
                 </h2>
               </div>
               <span className="rounded-full border border-[var(--wow-card-border)] bg-[var(--wow-card)] px-3 py-1 font-mono text-[11px] font-bold text-muted">
-                {myPracticeSessions.length} total
+                {history.length} total
               </span>
             </div>
           </WowReveal>
 
           <WowReveal delay={0.05}>
             <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-[var(--wow-card)] backdrop-blur-sm dark:border-white/[0.07]">
-              {myPracticeSessions.length === 0 ? (
+              {history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
                   <div className="grid h-14 w-14 place-items-center rounded-2xl border border-black/[0.06] bg-[var(--wow-stage)] text-muted dark:border-white/[0.07]">
                     <Code className="h-6 w-6" />
@@ -468,7 +520,7 @@ export default function CandidateCockpitClient({
                     </p>
                   </div>
                   <Link
-                    href="/interview/new?type=mock&role=candidate"
+                    href="/candidate/interview/new"
                     className="inline-flex items-center gap-1.5 rounded-xl bg-white px-5 py-2.5 text-xs font-black uppercase tracking-widest text-black transition hover:scale-105 active:scale-95"
                   >
                     <Play className="h-3.5 w-3.5 fill-current" /> Start a mock interview
@@ -477,46 +529,60 @@ export default function CandidateCockpitClient({
               ) : (
                 <div className="flex flex-col">
                   <ul className="divide-y divide-black/[0.06] dark:divide-white/[0.06]">
-                    {visibleSessions.map((session) => {
-                      const isScheduled = session.status === "scheduled";
-                      const isInProgress = session.status === "in_progress";
-                      const isCompleted = session.status === "completed";
+                    {visibleSessions.map((row) => {
+                      const isScheduled = row.state === "scheduled";
+                      const isInProgress = row.state === "in_progress";
+                      const isCompleted = row.state === "completed";
                       const statusColor = isScheduled
                         ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                         : isInProgress
                           ? "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400"
                           : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
-                      const statusText = isScheduled ? "Scheduled" : isInProgress ? "In progress" : "Completed";
-                      const href = `/interview/${session.id}`;
+                      const statusText = isScheduled ? (row.kind === "ai" ? "Not started" : "Scheduled") : isInProgress ? "In progress" : "Completed";
+                      const KindIcon = row.kind === "ai" ? Bot : row.kind === "peer" ? Users : Monitor;
+                      const kindText = row.kind === "ai" ? "With AI" : row.kind === "peer" ? "With a peer" : "Solo";
                       return (
                         <li
-                          key={session.id}
+                          key={row.key}
                           className="flex flex-col justify-between gap-4 px-5 py-5 transition-colors hover:bg-[var(--wow-stage)] sm:flex-row sm:items-center"
                         >
                           <div className="min-w-0 flex-1 space-y-2">
-                            <Link href={href} className="block truncate text-base font-extrabold text-[var(--wow-fg)] transition-colors hover:text-[#8b93ff]">
-                              {session.title}
+                            <Link href={row.href} className="block truncate text-base font-extrabold text-[var(--wow-fg)] transition-colors hover:text-[#8b93ff]">
+                              {row.title}
                             </Link>
                             <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs text-muted">
+                              <span className="inline-flex items-center gap-1.5 rounded-md border border-black/[0.06] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider dark:border-white/10">
+                                <KindIcon className="h-3 w-3" />
+                                {kindText}
+                              </span>
                               <span className="flex items-center gap-1.5 font-mono">
                                 <Clock className="h-3.5 w-3.5 text-muted/50" />
-                                {new Date(session.createdAt).toLocaleDateString(undefined, {
+                                {row.createdAt.toLocaleDateString(undefined, {
                                   year: "numeric",
                                   month: "short",
                                   day: "numeric",
                                 })}
                               </span>
-                              {session.verdict && (
+                              {row.score != null && (
+                                <span
+                                  className={`text-xs font-bold uppercase tracking-wider tabular-nums ${
+                                    row.score >= SCREENING_PASS_THRESHOLD ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
+                                  }`}
+                                >
+                                  Scored {row.score}/100
+                                </span>
+                              )}
+                              {row.verdict && (
                                 <span
                                   className={`text-xs font-bold uppercase tracking-wider ${
-                                    session.verdict === "success"
+                                    row.verdict === "success"
                                       ? "text-emerald-600 dark:text-emerald-400"
-                                      : session.verdict === "failed"
+                                      : row.verdict === "failed"
                                         ? "text-rose-600 dark:text-rose-400"
                                         : "text-amber-600 dark:text-amber-400"
                                   }`}
                                 >
-                                  {session.verdict === "success" ? "Passed" : session.verdict === "failed" ? "Failed" : "Needs review"}
+                                  {row.verdict === "success" ? "Passed" : row.verdict === "failed" ? "Failed" : "Needs review"}
                                 </span>
                               )}
                             </div>
@@ -526,23 +592,23 @@ export default function CandidateCockpitClient({
                               {statusText}
                             </span>
                             <Link
-                              href={href}
+                              href={row.href}
                               className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-xl px-4 text-xs font-black uppercase tracking-widest transition-all active:scale-95 ${
                                 isCompleted
                                   ? "border border-black/[0.06] text-[var(--wow-fg)] hover:border-[#8b93ff]/50 hover:text-[#8b93ff] dark:border-white/10"
                                   : "bg-[#8b93ff] text-white hover:brightness-110"
                               }`}
                             >
-                              {isCompleted ? "Review" : isInProgress ? "Continue" : "Start"}
+                              {isCompleted ? (row.kind === "ai" ? "Feedback" : "Review") : isInProgress ? "Continue" : "Start"}
                               <ArrowRight className="h-3 w-3" />
                             </Link>
-                            <DeleteSessionButton sessionId={session.id} size="default" />
+                            {row.roomId ? <DeleteSessionButton sessionId={row.roomId} size="default" /> : <span aria-hidden className="w-9" />}
                           </div>
                         </li>
                       );
                     })}
                   </ul>
-                  {myPracticeSessions.length > visibleCount && (
+                  {history.length > visibleCount && (
                     <div className="flex justify-center border-t border-black/[0.06] bg-[var(--wow-stage)]/50 p-4 dark:border-white/[0.06]">
                       <button
                         onClick={() => setVisibleCount((prev) => prev + 5)}
@@ -560,8 +626,6 @@ export default function CandidateCockpitClient({
         </section>
       </main>
 
-      <StackWizard open={wizardOpen} onClose={() => setWizardOpen(false)} type="mock" creatorRole="candidate" />
-      <AIPracticeLauncher open={aiPracticeOpen} onClose={() => setAiPracticeOpen(false)} />
     </div>
   );
 }

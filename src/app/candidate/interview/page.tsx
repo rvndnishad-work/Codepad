@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getInterviewArenaSettings } from "@/lib/settings";
 import CandidateCockpitClient from "../../interview/CandidateCockpitClient";
+import { loadAiPracticeRuns } from "@/lib/mock-interview/server";
 
 export const metadata = {
   title: "Candidate Prep Arena",
@@ -19,14 +20,18 @@ export default async function CandidateInterviewPage() {
   const arenaSettings = await getInterviewArenaSettings();
 
   // Retrieve all mock and practice interview sessions created by this user
-  const myPracticeSessions = await prisma.interviewSession.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      rubric: true,
-    },
-  });
+  const [myPracticeSessions, aiRuns] = await Promise.all([
+    prisma.interviewSession.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        rubric: true,
+      },
+    }),
+    // AI practice runs are AI interviews, not rooms: listed alongside them.
+    loadAiPracticeRuns(session.user?.email),
+  ]);
 
   return (
     <div className="min-h-screen bg-[var(--wow-bg)] text-[var(--wow-fg)] transition-colors">
@@ -36,6 +41,7 @@ export default async function CandidateInterviewPage() {
         userName={session.user?.name ?? null}
         arenaSettings={arenaSettings}
         myPracticeSessions={myPracticeSessions}
+        aiRuns={aiRuns}
       />
     </div>
   );

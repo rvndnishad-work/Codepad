@@ -8,6 +8,8 @@ function HeaderShellInner({ children }: { children: ReactNode }) {
   const params = useSearchParams();
   if (pathname?.startsWith("/embed")) return null;
   if (pathname?.startsWith("/ai-interview")) return null;
+  // A developer's AI practice run is the same full-screen interview.
+  if (pathname && /^\/candidate\/interview\/ai\/[^/]+$/.test(pathname)) return null;
   if (params?.get("view") === "preview") return null;
   // The recruiter workspace (/w hub and /w/<slug>/...) draws its own app bar
   // with the workspace switcher; /w/create keeps the site header.

@@ -59,6 +59,7 @@ import { useResizableHeight } from "@/hooks/useResizableHeight";
 import { javascript } from "@codemirror/lang-javascript";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import TheoryRound from "./TheoryRound";
+import { DEVELOPER_BRAND } from "@/lib/brand";
 import { transcriptOf } from "@/lib/ai-interview/speech";
 
 import CustomMonacoEditor from "@/components/MonacoEditor";
@@ -113,6 +114,8 @@ type Props = {
     estimatedMinutes: number;
     /** Live interviewer presence: REACTIVE | OBSERVER | COACH. */
     engagementLevel: string;
+    /** A developer's own practice run: the end screen links to their feedback instead of a hiring team. */
+    practice?: boolean;
   };
   rounds: RoundView[];
   initialChat: Message[];
@@ -831,6 +834,36 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
     }
   };
 
+  // ── PRACTICE RUN FINISHED: straight to the developer's own feedback ─────
+  if (completed && session.practice) {
+    return (
+      <div className="min-h-screen bg-bg text-fg flex items-center justify-center px-4 font-sans">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-8 text-center space-y-5">
+          <div className="w-14 h-14 mx-auto rounded-full bg-success/15 text-success flex items-center justify-center">
+            <CheckCircle className="w-7 h-7" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-[22px] font-semibold tracking-tight text-fg">Practice interview done</h2>
+            <p className="text-[14px] text-muted leading-relaxed">
+              Nice work, {session.candidateName.split(" ")[0]}. Your answers across {rounds.length} round{rounds.length === 1 ? "" : "s"} are scored. See what you covered, what you missed and the reference answers.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Link
+              href={`/candidate/interview/ai/${session.inviteToken}/results`}
+              className="inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-accent text-accent-ink text-[14px] font-semibold hover:brightness-105"
+            >
+              See your feedback
+            </Link>
+            <Link href="/candidate/interview" className="inline-flex items-center justify-center h-10 rounded-xl border border-border text-[14px] text-fg hover:bg-panel">
+              Back to the practice arena
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── RENDER COMPLETED SUCCESS SCREEN ─────────────────────────────────────
   if (completed) {
     return (
@@ -963,12 +996,12 @@ export default function AIInterviewWorkspace({ session, rounds, initialChat, ser
               )}
             </span>
           ) : (
-            <Link href="/" className="flex items-center gap-2 shrink-0">
+            <Link href={session.practice ? "/candidate/interview" : "/"} className="flex items-center gap-2 shrink-0">
               <div className="w-7 h-7 rounded-lg bg-accent/20 border border-accent/35 flex items-center justify-center text-accent font-black text-sm">
-                C
+                {session.practice ? "D" : "C"}
               </div>
               <span className="font-extrabold text-xs tracking-widest text-fg uppercase hidden sm:inline">
-                Intervutree
+                {session.practice ? DEVELOPER_BRAND.name : "Intervutree"}
               </span>
             </Link>
           )}

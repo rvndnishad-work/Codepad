@@ -141,7 +141,7 @@ export default function HomeChallenges({ stats }: { stats: Stats }) {
             <ArrowRight className="ip-arrow h-4 w-4" />
           </Link>
           <Link
-            href={isRecruiter ? "/dashboard" : "/interview/new"}
+            href={isRecruiter ? "/dashboard" : "/candidate/interview/new"}
             className="ip-btn ip-btn-ghost"
           >
             {isRecruiter ? "Manage campaigns" : "Build your first interview"}

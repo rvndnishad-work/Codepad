@@ -9,6 +9,8 @@ function FooterShellInner({ children }: { children: ReactNode }) {
   // Hide footer where vertical space matters (playground, embeds, workspace app)
   if (pathname?.startsWith("/embed")) return null;
   if (pathname?.startsWith("/ai-interview")) return null;
+  // A developer's AI practice run is the same full-screen interview.
+  if (pathname && /^\/candidate\/interview\/ai\/[^/]+$/.test(pathname)) return null;
   if (pathname?.startsWith("/play")) return null;
   if (pathname?.startsWith("/admin")) return null;
   if (pathname === "/w" || pathname?.startsWith("/w/")) return null;

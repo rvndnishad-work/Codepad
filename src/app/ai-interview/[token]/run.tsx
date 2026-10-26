@@ -1,0 +1,250 @@
+/**
+ * Server rendering of the candidate AI interview screen, shared by the
+ * screening link (/ai-interview/[token]) and developer practice runs
+ * (/candidate/interview/ai/[token]).
+ */
+import { notFound } from "next/navigation";
+import { isWorkspaceLocked } from "@/lib/workspace/lock";
+import WorkspaceLockedNotice from "@/components/WorkspaceLockedNotice";
+import { headers } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import { featurePausedPage } from "@/components/FeaturePaused";
+import { resolveSessionRounds } from "@/lib/ai-interview/rounds";
+import { resolveRoundsContent } from "@/lib/ai-interview/round-content";
+import { parseTheorySettings } from "@/lib/ai-interview/theory";
+import { isTranscriptionConfigured } from "@/lib/ai-interview/transcribe";
+import AIInterviewWorkspace from "./AIInterviewWorkspace";
+import MobileLobby from "@/components/MobileLobby";
+import { shouldRenderMobileLobby } from "@/lib/device";
+import { loadCandidatePageSettings } from "@/lib/candidate-page-brand";
+import { consentOutstanding } from "@/lib/workspace/candidate-experience";
+import ConsentGate from "@/components/candidate/ConsentGate";
+import { giveScreeningConsentAction } from "./actions";
+
+const DEFAULT_STARTER_FILES = {
+  "/App.js": `import React, { useState } from "react";
+import "./styles.css";
+
+export default function App() {
+  // TODO: Build your paginated Todo List here!
+  // 1. State for todos and current input.
+  // 2. Pagination controls (currentPage, itemsPerPage).
+  // 3. Disabled button boundary checking to prevent overflow.
+
+  return (
+    <div className="todo-app">
+      <h1 className="title">Intervutree Workpad</h1>
+      <p className="subtitle">Build a Paginated Todo List component in React</p>
+      
+      <div className="placeholder-card">
+        Start editing App.js to begin your implementation...
+      </div>
+    </div>
+  );
+}`,
+  "/styles.css": `body {
+  font-family: 'Inter', sans-serif;
+  background: #0B0F19;
+  color: #f3f4f6;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+.todo-app {
+  width: 100%;
+  max-width: 440px;
+  background: #161b2e;
+  padding: 25px;
+  border-radius: 20px;
+  border: 1px solid #2a344a;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+}
+.title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 6px 0;
+  color: #ffe600;
+  text-align: center;
+}
+.subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 20px 0;
+  text-align: center;
+  line-height: 1.5;
+}
+.placeholder-card {
+  padding: 30px;
+  background: #0b0f19;
+  border: 1.5px dashed #374151;
+  border-radius: 12px;
+  color: #64748b;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+}`
+};
+
+/**
+ * The candidate screen for one AI interview. Shared by the screening link and
+ * the developer practice route, which checks the run is the viewer's own.
+ */
+export async function renderAIInterviewRun(token: string, sp: Record<string, string | string[] | undefined>, path: string) {
+
+  // Look up by inviteToken — the internal session id is never exposed to the
+  // candidate's browser. Include rounds so multi-round (batch) screenings load
+  // their per-round surfaces; legacy single-template sessions have none and
+  // resolveSessionRounds synthesizes one.
+  const session = await prisma.aIInterviewSession.findUnique({
+    where: { inviteToken: token },
+    include: { rounds: true },
+  });
+
+  if (!session) notFound();
+  // Admin lock on the workspace: the link shows a notice and no credit is charged.
+  if (await isWorkspaceLocked({ id: session.workspaceId })) return <WorkspaceLockedNotice audience="candidate" />;
+
+  // Feature switches: the candidate link itself, and starting a new screening.
+  const paused =
+    (await featurePausedPage("candidate-pages")) ??
+    (!session.startedAt ? await featurePausedPage("ai-screening", "not_on") : null);
+  if (paused) return paused;
+
+  // IP-38: mobile-handoff lobby, before any state changes, so a mobile
+  // candidate never burns a credit on a screening they cannot finish. Theory
+  // rounds need no editor, so a screening of only theory rounds runs on a phone.
+  const hdrs = await headers();
+  const showLobby = shouldRenderMobileLobby({
+    userAgent: hdrs.get("user-agent"),
+    searchParams: sp,
+    cookieHeader: hdrs.get("cookie"),
+  });
+  const phoneFriendly = session.rounds.length > 0 && session.rounds.every((r) => r.paradigm === "theory");
+  if (showLobby && !phoneFriendly) {
+    const host = hdrs.get("host") ?? "interviewpad.in";
+    const proto = hdrs.get("x-forwarded-proto") ?? "https";
+    const fullUrl = `${proto}://${host}${path}`;
+    return (
+      <MobileLobby
+        url={fullUrl}
+        title="Open your AI screening on desktop"
+        subtitle="AI screenings use a full IDE and chat console — scan to continue on a laptop."
+        tokenLabel="ai-interview"
+        emailEnabled={!!process.env.RESEND_API_KEY}
+      />
+    );
+  }
+
+
+  // Closed before the candidate started: the recruiter cancelled it or it
+  // passed its expiry date.
+  if (
+    session.status === "EXPIRED" ||
+    (!session.startedAt && session.expiresAt && session.expiresAt.getTime() <= Date.now())
+  ) {
+    return (
+      <main className="min-h-[70vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-2xl border border-border bg-surface p-8 text-center">
+          <h1 className="text-xl font-semibold text-fg">This screening link has expired</h1>
+          <p className="mt-3 text-sm text-muted leading-relaxed">
+            The invite for the {session.positionTitle} screening is no longer open. If you still want to take it, reply to
+            the email you received and ask the recruiter to send a new link.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  // Workspace branding, and the consent step when the workspace asks for it
+  // (Settings > Candidate experience). Only before the screening starts:
+  // one already under way keeps going.
+  const page = session.practice ? null : await loadCandidatePageSettings(session.workspaceId);
+  if (page && !session.startedAt && session.status !== "COMPLETED" && consentOutstanding(page, session.consentAt)) {
+    const recordsVoice = session.rounds.some((r) => r.paradigm === "theory" && parseTheorySettings(r.theoryJson).recordAudio);
+    return (
+      <ConsentGate
+        brand={page.brand}
+        title={`Before your ${session.positionTitle} screening`}
+        intro={`${page.brand.name} uses Intervutree for this screening. An AI interviewer asks the questions, and your answers help the team decide on next steps. A person at ${page.brand.name} makes every decision.`}
+        statement={`I agree that ${page.brand.name} can keep my answers, code${recordsVoice ? ", voice recordings" : ""} and chat from this screening and use them to review my application.${recordsVoice ? " Voice recordings are deleted after 7 days." : ""}`}
+        action={giveScreeningConsentAction.bind(null, token)}
+        cta="Agree and continue"
+      />
+    );
+  }
+
+  // Normalize to an ordered round list, then resolve each round's runnable
+  // content (title/surface/starter files) by source kind.
+  const sessionRounds = resolveSessionRounds(session);
+  const roundsContent = await resolveRoundsContent(sessionRounds, session.workspaceId);
+
+  // Defensive fallback — if content resolution produced nothing usable, seed a
+  // single frontend round from the default starter so the page never crashes.
+  const rounds =
+    roundsContent.length > 0
+      ? roundsContent.map((r) => ({
+          roundId: r.roundId,
+          order: r.order,
+          title: r.title,
+          description: r.description,
+          kind: r.kind,
+          language: r.language,
+          estimatedMinutes: r.estimatedMinutes,
+          files: r.kind === "conversation" || r.kind === "theory" || Object.keys(r.files).length > 0 ? r.files : DEFAULT_STARTER_FILES,
+          status: r.status,
+          theory: r.kind === "theory" ? theoryInfo(session.rounds.find((x) => x.id === r.roundId)?.theoryJson) : undefined,
+        }))
+      : [
+          {
+            roundId: `legacy:${session.id}`,
+            order: 0,
+            title: session.positionTitle,
+            description: "",
+            kind: "frontend" as const,
+            language: undefined,
+            estimatedMinutes: 30,
+            files: DEFAULT_STARTER_FILES,
+            status: session.status,
+          },
+        ];
+
+  // Whole-session timer = sum of round budgets (the locked single-timer model).
+  const estimatedMinutes = rounds.reduce((sum, r) => sum + (r.estimatedMinutes || 0), 0) || 30;
+
+  // Parse the shared (continuous) chat history.
+  let chatHistory: { role: "user" | "assistant"; text: string }[] = [];
+  try {
+    chatHistory = JSON.parse(session.chatHistory);
+  } catch {
+    chatHistory = [];
+  }
+
+  return (
+    <AIInterviewWorkspace
+      session={{
+        inviteToken: session.inviteToken,
+        candidateName: session.candidateName,
+        candidateEmail: session.candidateEmail,
+        positionTitle: session.positionTitle,
+        status: session.status,
+        startedAt: session.startedAt?.toISOString() ?? null,
+        estimatedMinutes,
+        engagementLevel: session.engagementLevel,
+        practice: session.practice,
+      }}
+      rounds={rounds}
+      initialChat={chatHistory}
+      serverTranscribe={isTranscriptionConfigured()}
+      brand={page ? { name: page.brand.name, logoUrl: page.brand.logoUrl } : null}
+    />
+  );
+}
+
+/** What the candidate screen needs to know up front: how answers are given and whether they are recorded. */
+function theoryInfo(json: string | null | undefined) {
+  const s = parseTheorySettings(json);
+  return { answerMode: s.answerMode, recordAudio: s.recordAudio, language: s.language };
+}

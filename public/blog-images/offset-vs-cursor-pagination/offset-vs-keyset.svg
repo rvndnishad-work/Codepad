@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><path d="M0 0L10 5L0 10z" fill="#34d399"/></marker>
+  </defs>
+  <rect width="960" height="460" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">Fetching rows 500,001 to 500,020 of an index</text>
+
+  <!-- OFFSET row -->
+  <text x="40" y="118" fill="#fecaca" font-size="16" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">LIMIT 20 OFFSET 500000</text>
+  <rect x="40" y="136" width="880" height="44" rx="8" fill="#171a23" stroke="#2a2f3d" stroke-width="2"/>
+  <rect x="40" y="136" width="440" height="44" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="260" y="164" fill="#fecaca" font-size="15" text-anchor="middle">500,000 entries read and thrown away</text>
+  <rect x="480" y="136" width="24" height="44" rx="4" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="520" y="214" fill="#9aa3b5" font-size="14">20 returned</text>
+  <text x="40" y="214" fill="#9aa3b5" font-size="14">actual rows = 500,020</text>
+
+  <!-- keyset row -->
+  <text x="40" y="288" fill="#6ee7b7" font-size="16" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">WHERE (created_at, id) &lt; (cursor) LIMIT 20</text>
+  <rect x="40" y="306" width="880" height="44" rx="8" fill="#171a23" stroke="#2a2f3d" stroke-width="2"/>
+  <rect x="480" y="306" width="24" height="44" rx="4" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <path d="M60 400 C 200 430, 380 430, 488 362" fill="none" stroke="#34d399" stroke-width="3" marker-end="url(#g)"/>
+  <text x="140" y="440" fill="#6ee7b7" font-size="14">one index lookup jumps straight to the cursor</text>
+  <text x="520" y="384" fill="#9aa3b5" font-size="14">actual rows = 20</text>
+</svg>

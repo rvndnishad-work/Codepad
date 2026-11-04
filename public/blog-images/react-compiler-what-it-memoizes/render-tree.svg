@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="460" fill="#0f1117"/>
+  <rect x="30" y="30" width="430" height="400" rx="16" fill="#171a23"/>
+  <rect x="500" y="30" width="430" height="400" rx="16" fill="#171a23"/>
+  <text x="245" y="72" fill="#fca5a5" font-size="20" font-weight="700" text-anchor="middle">Without the compiler</text>
+  <text x="715" y="72" fill="#6ee7b7" font-size="20" font-weight="700" text-anchor="middle">With the compiler</text>
+
+  <rect x="90" y="110" width="310" height="68" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="245" y="140" fill="#bfdbfe" font-size="18" font-weight="700" text-anchor="middle">Shop</text>
+  <text x="245" y="163" fill="#9aa3b5" font-size="14" text-anchor="middle">clicks changed, re-renders</text>
+  <line x1="245" y1="178" x2="245" y2="230" stroke="#9aa3b5" stroke-width="2"/>
+  <rect x="90" y="230" width="310" height="68" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="245" y="260" fill="#fecaca" font-size="18" font-weight="700" text-anchor="middle">ProductList</text>
+  <text x="245" y="283" fill="#9aa3b5" font-size="14" text-anchor="middle">new props, re-renders</text>
+  <text x="245" y="356" fill="#e8eaf0" font-size="34" font-weight="800" text-anchor="middle">6 renders</text>
+  <text x="245" y="390" fill="#9aa3b5" font-size="14" text-anchor="middle">1 mount plus 5 clicks</text>
+
+  <rect x="560" y="110" width="310" height="68" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="715" y="140" fill="#bfdbfe" font-size="18" font-weight="700" text-anchor="middle">Shop</text>
+  <text x="715" y="163" fill="#9aa3b5" font-size="14" text-anchor="middle">clicks changed, re-renders</text>
+  <line x1="715" y1="178" x2="715" y2="230" stroke="#9aa3b5" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="560" y="230" width="310" height="68" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="715" y="260" fill="#6ee7b7" font-size="18" font-weight="700" text-anchor="middle">ProductList</text>
+  <text x="715" y="283" fill="#9aa3b5" font-size="14" text-anchor="middle">same element, skipped</text>
+  <text x="715" y="356" fill="#e8eaf0" font-size="34" font-weight="800" text-anchor="middle">1 render</text>
+  <text x="715" y="390" fill="#9aa3b5" font-size="14" text-anchor="middle">no React.memo needed</text>
+</svg>

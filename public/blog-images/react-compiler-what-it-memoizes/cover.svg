@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#60a5fa" font-size="24" font-weight="700" letter-spacing="5">FRONTEND</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">React</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">Compiler</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">in practice</text>
+
+  <!-- centre: the memo cache array with hit and miss slots -->
+  <text x="800" y="230" fill="#9aa3b5" font-size="26" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">const $ = _c(7)</text>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="26" font-weight="700" text-anchor="middle">
+    <rect x="450" y="270" width="88" height="88" rx="12" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="494" y="324" fill="#6ee7b7">$0</text>
+    <rect x="552" y="270" width="88" height="88" rx="12" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="596" y="324" fill="#6ee7b7">$1</text>
+    <rect x="654" y="270" width="88" height="88" rx="12" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="698" y="324" fill="#6ee7b7">$2</text>
+    <rect x="756" y="270" width="88" height="88" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="3"/>
+    <text x="800" y="324" fill="#fde68a">$3</text>
+    <rect x="858" y="270" width="88" height="88" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="3"/>
+    <text x="902" y="324" fill="#fde68a">$4</text>
+    <rect x="960" y="270" width="88" height="88" rx="12" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="1004" y="324" fill="#6ee7b7">$5</text>
+    <rect x="1062" y="270" width="88" height="88" rx="12" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="1106" y="324" fill="#6ee7b7">$6</text>
+  </g>
+
+  <!-- render tree: parent re-renders, child skipped -->
+  <rect x="680" y="420" width="240" height="72" rx="14" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+  <text x="800" y="465" fill="#bfdbfe" font-size="28" font-weight="700" text-anchor="middle">Shop</text>
+  <line x1="800" y1="492" x2="800" y2="560" stroke="#9aa3b5" stroke-width="3"/>
+  <rect x="640" y="560" width="320" height="72" rx="14" fill="#171a23" stroke="#34d399" stroke-width="3" stroke-dasharray="10 8"/>
+  <text x="800" y="605" fill="#6ee7b7" font-size="28" font-weight="700" text-anchor="middle">ProductList skipped</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">6 renders to 1</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">use no memo</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">stale mutation</text>
+  </g>
+</svg>

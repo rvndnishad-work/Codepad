@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="480" fill="#0f1117"/>
+
+  <rect x="40" y="40" width="880" height="80" rx="14" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="480" y="74" fill="#fde68a" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">items.push(banana); setTick(t =&gt; t + 1)</text>
+  <text x="480" y="102" fill="#9aa3b5" font-size="15" text-anchor="middle">same array object, now with two entries</text>
+
+  <line x1="300" y1="120" x2="240" y2="176" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="660" y1="120" x2="720" y2="176" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="40" y="180" width="400" height="260" rx="16" fill="#171a23"/>
+  <text x="240" y="218" fill="#e8eaf0" font-size="19" font-weight="700" text-anchor="middle">Plain build</text>
+  <text x="240" y="252" fill="#9aa3b5" font-size="15" text-anchor="middle">Cart re-renders and maps again</text>
+  <rect x="100" y="280" width="280" height="44" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="240" y="308" fill="#6ee7b7" font-size="17" text-anchor="middle">apple</text>
+  <rect x="100" y="338" width="280" height="44" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="240" y="366" fill="#6ee7b7" font-size="17" text-anchor="middle">banana</text>
+  <text x="240" y="416" fill="#6ee7b7" font-size="15" font-weight="700" text-anchor="middle">looks correct</text>
+
+  <rect x="520" y="180" width="400" height="260" rx="16" fill="#171a23"/>
+  <text x="720" y="218" fill="#e8eaf0" font-size="19" font-weight="700" text-anchor="middle">Compiled build</text>
+  <text x="720" y="252" fill="#9aa3b5" font-size="15" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">items === $[0], reuse cache</text>
+  <rect x="580" y="280" width="280" height="44" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="720" y="308" fill="#6ee7b7" font-size="17" text-anchor="middle">apple</text>
+  <rect x="580" y="338" width="280" height="44" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2" stroke-dasharray="8 6"/>
+  <text x="720" y="366" fill="#fca5a5" font-size="17" text-anchor="middle">banana missing</text>
+  <text x="720" y="416" fill="#fca5a5" font-size="15" font-weight="700" text-anchor="middle">stale UI, no warning</text>
+</svg>

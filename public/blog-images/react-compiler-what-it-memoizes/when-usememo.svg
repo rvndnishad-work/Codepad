@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="540" fill="#0f1117"/>
+
+  <rect x="330" y="30" width="300" height="60" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="480" y="67" fill="#bfdbfe" font-size="18" font-weight="700" text-anchor="middle">Write plain code first</text>
+  <line x1="480" y1="90" x2="480" y2="112" stroke="#9aa3b5" stroke-width="2"/>
+  <line x1="175" y1="112" x2="785" y2="112" stroke="#9aa3b5" stroke-width="2"/>
+  <line x1="175" y1="112" x2="175" y2="134" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="480" y1="112" x2="480" y2="134" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="785" y1="112" x2="785" y2="134" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="40" y="140" width="270" height="110" rx="12" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="175" y="180" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle">Effect dependency?</text>
+  <text x="175" y="208" fill="#9aa3b5" font-size="14" text-anchor="middle">must stay stable for</text>
+  <text x="175" y="228" fill="#9aa3b5" font-size="14" text-anchor="middle">correctness</text>
+
+  <rect x="345" y="140" width="270" height="110" rx="12" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="480" y="180" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle">Shared expensive work?</text>
+  <text x="480" y="208" fill="#9aa3b5" font-size="14" text-anchor="middle">same helper called in</text>
+  <text x="480" y="228" fill="#9aa3b5" font-size="14" text-anchor="middle">many components</text>
+
+  <rect x="650" y="140" width="270" height="110" rx="12" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="785" y="180" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle">Existing useMemo?</text>
+  <text x="785" y="208" fill="#9aa3b5" font-size="14" text-anchor="middle">written before the</text>
+  <text x="785" y="228" fill="#9aa3b5" font-size="14" text-anchor="middle">compiler was on</text>
+
+  <line x1="175" y1="250" x2="175" y2="304" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="480" y1="250" x2="480" y2="304" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="785" y1="250" x2="785" y2="304" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="190" y="284" fill="#6ee7b7" font-size="14" font-weight="700">yes</text>
+  <text x="495" y="284" fill="#6ee7b7" font-size="14" font-weight="700">yes</text>
+  <text x="800" y="284" fill="#6ee7b7" font-size="14" font-weight="700">yes</text>
+
+  <rect x="40" y="310" width="270" height="90" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="175" y="346" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">useMemo or</text>
+  <text x="175" y="372" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">useCallback</text>
+
+  <rect x="345" y="310" width="270" height="90" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="480" y="346" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle">Compute once higher up</text>
+  <text x="480" y="372" fill="#9aa3b5" font-size="14" text-anchor="middle">or in a module cache</text>
+
+  <rect x="650" y="310" width="270" height="90" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="785" y="346" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle">Keep it</text>
+  <text x="785" y="372" fill="#9aa3b5" font-size="14" text-anchor="middle">remove only with tests</text>
+
+  <rect x="230" y="450" width="500" height="60" rx="12" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="480" y="477" fill="#ddd6fe" font-size="16" font-weight="700" text-anchor="middle">Everything else</text>
+  <text x="480" y="499" fill="#9aa3b5" font-size="14" text-anchor="middle">let the compiler memoize it</text>
+</svg>

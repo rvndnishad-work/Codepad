@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="480" fill="#0f1117"/>
+  <text x="200" y="50" fill="#9aa3b5" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="2">BEFORE RUNNING</text>
+  <text x="760" y="50" fill="#9aa3b5" font-size="15" font-weight="700" text-anchor="middle" letter-spacing="2">AT RUNTIME</text>
+  <line x1="480" y1="30" x2="480" y2="450" stroke="#2a2f3d" stroke-width="2" stroke-dasharray="6 8"/>
+
+  <rect x="40" y="80" width="320" height="80" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="200" y="114" fill="#bfdbfe" font-size="17" font-weight="700" text-anchor="middle">app.ts</text>
+  <text x="200" y="140" fill="#9aa3b5" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">as User, type User</text>
+
+  <line x1="200" y1="160" x2="200" y2="204" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="40" y="210" width="320" height="80" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="200" y="244" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle">type checker (tsc)</text>
+  <text x="200" y="270" fill="#9aa3b5" font-size="14" text-anchor="middle">reports errors, changes nothing</text>
+
+  <line x1="200" y1="290" x2="200" y2="334" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="40" y="340" width="320" height="80" rx="12" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="200" y="374" fill="#ddd6fe" font-size="17" font-weight="700" text-anchor="middle">erase types</text>
+  <text x="200" y="400" fill="#9aa3b5" font-size="14" text-anchor="middle">tsc emit or Node stripping</text>
+
+  <line x1="360" y1="380" x2="594" y2="380" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="600" y="340" width="320" height="80" rx="12" fill="#171a23" stroke="#e8eaf0" stroke-width="2"/>
+  <text x="760" y="374" fill="#e8eaf0" font-size="17" font-weight="700" text-anchor="middle">plain JavaScript</text>
+  <text x="760" y="400" fill="#9aa3b5" font-size="14" text-anchor="middle">no types left</text>
+
+  <rect x="600" y="80" width="320" height="80" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="760" y="114" fill="#fecaca" font-size="17" font-weight="700" text-anchor="middle">JSON from an API</text>
+  <text x="760" y="140" fill="#9aa3b5" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">id: 7 as a string</text>
+  <line x1="760" y1="160" x2="760" y2="204" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="600" y="210" width="320" height="80" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="760" y="244" fill="#6ee7b7" font-size="17" font-weight="700" text-anchor="middle">guard or schema</text>
+  <text x="760" y="270" fill="#9aa3b5" font-size="14" text-anchor="middle">the only runtime check</text>
+  <line x1="760" y1="290" x2="760" y2="334" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+</svg>

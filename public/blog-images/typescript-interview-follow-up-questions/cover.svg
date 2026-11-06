@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#a78bfa" font-size="24" font-weight="700" letter-spacing="5">INTERVIEW</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">TypeScript</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">follow-up</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">questions</text>
+
+  <!-- centre: TS badge with a compiler error card -->
+  <rect x="560" y="200" width="200" height="200" rx="24" fill="#2563eb"/>
+  <text x="725" y="375" fill="#ffffff" font-size="96" font-weight="800" text-anchor="end">TS</text>
+  <text x="900" y="290" fill="#9aa3b5" font-size="26" font-weight="700" text-anchor="middle">tsc 7</text>
+  <text x="900" y="330" fill="#6ee7b7" font-size="22" text-anchor="middle">native, 10x faster</text>
+
+  <rect x="470" y="460" width="660" height="150" rx="16" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <text x="500" y="508" fill="#fca5a5">error TS2322:</text>
+    <text x="500" y="546" fill="#e8eaf0">Type triangle is not</text>
+    <text x="500" y="584" fill="#e8eaf0">assignable to type never</text>
+  </g>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">unknown</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">satisfies</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">keyof T</text>
+  </g>
+</svg>

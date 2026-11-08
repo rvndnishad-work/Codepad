@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="520" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">Cache array for one TodoList instance</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="15" text-anchor="middle">
+    <rect x="40" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="99" y="124" fill="#9aa3b5">$[0]</text>
+    <text x="99" y="156" fill="#bfdbfe">filter</text>
+    <rect x="168" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="227" y="124" fill="#9aa3b5">$[1]</text>
+    <text x="227" y="156" fill="#bfdbfe">todos</text>
+    <rect x="296" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="355" y="124" fill="#9aa3b5">$[2]</text>
+    <text x="355" y="156" fill="#6ee7b7">list items</text>
+    <rect x="424" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="483" y="124" fill="#9aa3b5">$[3]</text>
+    <text x="483" y="156" fill="#bfdbfe">filter</text>
+    <rect x="552" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="611" y="124" fill="#9aa3b5">$[4]</text>
+    <text x="611" y="156" fill="#6ee7b7">callback</text>
+    <rect x="680" y="90" width="118" height="96" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="739" y="124" fill="#9aa3b5">$[5]</text>
+    <text x="739" y="156" fill="#bfdbfe">list items</text>
+    <rect x="808" y="90" width="112" height="96" rx="10" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="864" y="124" fill="#9aa3b5">$[6]</text>
+    <text x="864" y="156" fill="#6ee7b7">ul element</text>
+  </g>
+
+  <rect x="40" y="214" width="24" height="16" rx="4" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="74" y="227" fill="#9aa3b5" font-size="15">input remembered</text>
+  <rect x="250" y="214" width="24" height="16" rx="4" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+  <text x="284" y="227" fill="#9aa3b5" font-size="15">result remembered</text>
+
+  <rect x="320" y="270" width="320" height="64" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="480" y="300" fill="#fde68a" font-size="17" font-weight="700" text-anchor="middle">next render</text>
+  <text x="480" y="322" fill="#fde68a" font-size="15" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">filter !== $[0] ?</text>
+
+  <line x1="400" y1="334" x2="220" y2="396" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="560" y1="334" x2="740" y2="396" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="250" y="360" fill="#6ee7b7" font-size="15" font-weight="700">same</text>
+  <text x="680" y="360" fill="#fca5a5" font-size="15" font-weight="700">changed</text>
+
+  <rect x="60" y="400" width="320" height="80" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="220" y="434" fill="#6ee7b7" font-size="17" font-weight="700" text-anchor="middle">reuse $[2]</text>
+  <text x="220" y="460" fill="#9aa3b5" font-size="15" text-anchor="middle">no filtering, same array</text>
+
+  <rect x="580" y="400" width="320" height="80" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="740" y="434" fill="#fecaca" font-size="17" font-weight="700" text-anchor="middle">recompute</text>
+  <text x="740" y="460" fill="#9aa3b5" font-size="15" text-anchor="middle">store new inputs and result</text>
+</svg>

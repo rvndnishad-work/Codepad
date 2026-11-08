@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L10 5L0 10z" fill="#9aa3b5"/></marker>
+  </defs>
+  <rect width="960" height="440" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">The order a query is evaluated in</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="17" font-weight="700" text-anchor="middle">
+    <rect x="40" y="110" width="112" height="56" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="96" y="144" fill="#bfdbfe">FROM</text>
+    <rect x="172" y="110" width="112" height="56" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="228" y="144" fill="#bfdbfe">WHERE</text>
+    <rect x="304" y="110" width="112" height="56" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="360" y="144" fill="#bfdbfe">GROUP BY</text>
+    <rect x="436" y="110" width="112" height="56" rx="10" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="492" y="144" fill="#bfdbfe">HAVING</text>
+    <rect x="568" y="110" width="112" height="56" rx="10" fill="#2a1f45" stroke="#a78bfa" stroke-width="2"/>
+    <text x="624" y="144" fill="#ddd6fe">SELECT</text>
+    <rect x="700" y="110" width="112" height="56" rx="10" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="756" y="144" fill="#6ee7b7">ORDER BY</text>
+    <rect x="832" y="110" width="88" height="56" rx="10" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="876" y="144" fill="#6ee7b7">LIMIT</text>
+  </g>
+  <text x="96" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">1</text>
+  <text x="228" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">2</text>
+  <text x="360" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">3</text>
+  <text x="492" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">4</text>
+  <text x="624" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">5</text>
+  <text x="756" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">6</text>
+  <text x="876" y="94" fill="#9aa3b5" font-size="14" text-anchor="middle">7</text>
+
+  <!-- row-level vs group-level -->
+  <rect x="40" y="220" width="244" height="80" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="162" y="254" fill="#bfdbfe" font-size="16" font-weight="700" text-anchor="middle">works on single rows</text>
+  <text x="162" y="280" fill="#9aa3b5" font-size="14" text-anchor="middle">no aggregates, no aliases</text>
+  <rect x="304" y="220" width="244" height="80" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="426" y="254" fill="#bfdbfe" font-size="16" font-weight="700" text-anchor="middle">works on groups</text>
+  <text x="426" y="280" fill="#9aa3b5" font-size="14" text-anchor="middle">aggregates allowed in HAVING</text>
+  <rect x="568" y="220" width="352" height="80" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="744" y="254" fill="#6ee7b7" font-size="16" font-weight="700" text-anchor="middle">aliases exist from here</text>
+  <text x="744" y="280" fill="#9aa3b5" font-size="14" text-anchor="middle">ORDER BY can use them</text>
+
+  <line x1="162" y1="176" x2="162" y2="210" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="426" y1="176" x2="426" y2="210" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="744" y1="176" x2="744" y2="210" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="40" y="344" width="420" height="56" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="250" y="378" fill="#fecaca" font-size="15" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="middle">WHERE yearly &gt; 1000   -- error</text>
+  <rect x="500" y="344" width="420" height="56" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="710" y="378" fill="#6ee7b7" font-size="15" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="middle">ORDER BY yearly   -- fine</text>
+</svg>

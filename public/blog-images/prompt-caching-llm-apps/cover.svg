@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="100%" r="55%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#34d399" font-size="24" font-weight="700" letter-spacing="5">AI ENGINEERING</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">Same prefix.</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">Smaller</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">bill.</text>
+
+  <!-- centre: a prompt made of stacked blocks, the stable part cached -->
+  <rect x="520" y="200" width="380" height="400" rx="26" fill="#10251d" stroke="#34d399" stroke-width="3" stroke-dasharray="14 10"/>
+  <rect x="560" y="236" width="300" height="84" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="710" y="288" fill="#bfdbfe" font-size="30" font-weight="800" text-anchor="middle">tools</text>
+  <rect x="560" y="340" width="300" height="84" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="710" y="392" fill="#bfdbfe" font-size="30" font-weight="800" text-anchor="middle">system</text>
+  <rect x="560" y="444" width="300" height="84" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="710" y="496" fill="#bfdbfe" font-size="30" font-weight="800" text-anchor="middle">documents</text>
+  <text x="710" y="572" fill="#6ee7b7" font-size="22" font-weight="700" text-anchor="middle">cached</text>
+
+  <rect x="930" y="444" width="200" height="84" rx="14" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="1030" y="496" fill="#fde68a" font-size="28" font-weight="800" text-anchor="middle">question</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">cache_control</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">write 1.25x</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">read 0.1x</text>
+  </g>
+</svg>

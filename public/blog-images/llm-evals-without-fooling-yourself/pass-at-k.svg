@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="500" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="20" font-weight="700">n = 10 samples for one problem, c = 2 pass</text>
+
+  <g>
+    <rect x="40" y="80" width="70" height="70" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+    <rect x="130" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="220" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="310" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="400" y="80" width="70" height="70" rx="10" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+    <rect x="490" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="580" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="670" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="760" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <rect x="850" y="80" width="70" height="70" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  </g>
+  <g font-size="22" font-weight="800" text-anchor="middle">
+    <text x="75" y="123" fill="#6ee7b7">ok</text>
+    <text x="435" y="123" fill="#6ee7b7">ok</text>
+  </g>
+
+  <rect x="40" y="200" width="420" height="260" rx="14" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+  <text x="250" y="240" fill="#6ee7b7" font-size="18" font-weight="700" text-anchor="middle">Unbiased (Chen et al.)</text>
+  <text x="250" y="280" fill="#e8eaf0" font-size="15" text-anchor="middle">pick k of the n samples,</text>
+  <text x="250" y="304" fill="#e8eaf0" font-size="15" text-anchor="middle">without replacement</text>
+  <text x="250" y="348" fill="#e8eaf0" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">1 - C(n-c, k) / C(n, k)</text>
+  <text x="250" y="400" fill="#6ee7b7" font-size="15" text-anchor="middle">simulation: 0.6718</text>
+  <text x="250" y="426" fill="#9aa3b5" font-size="14" text-anchor="middle">true pass@5 is 0.6723</text>
+
+  <rect x="500" y="200" width="420" height="260" rx="14" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+  <text x="710" y="240" fill="#fecaca" font-size="18" font-weight="700" text-anchor="middle">Shortcut</text>
+  <text x="710" y="280" fill="#e8eaf0" font-size="15" text-anchor="middle">estimate pass@1 as c / n,</text>
+  <text x="710" y="304" fill="#e8eaf0" font-size="15" text-anchor="middle">assume independent tries</text>
+  <text x="710" y="348" fill="#e8eaf0" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">1 - (1 - c/n)^k</text>
+  <text x="710" y="400" fill="#fca5a5" font-size="15" text-anchor="middle">simulation: 0.5930</text>
+  <text x="710" y="426" fill="#9aa3b5" font-size="14" text-anchor="middle">about 8 points too low</text>
+</svg>

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#a78bfa" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#a78bfa" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#a78bfa" font-size="24" font-weight="700" letter-spacing="5">AI ENGINEERING</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">LLM evals</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">that do not</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">fool you</text>
+
+  <!-- centre: two scores with overlapping error bars -->
+  <line x1="480" y1="560" x2="1140" y2="560" stroke="#3a4152" stroke-width="2"/>
+  <text x="560" y="604" fill="#9aa3b5" font-size="24" text-anchor="middle">prompt v1</text>
+  <text x="820" y="604" fill="#9aa3b5" font-size="24" text-anchor="middle">prompt v2</text>
+
+  <rect x="510" y="300" width="100" height="260" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+  <rect x="770" y="250" width="100" height="310" rx="8" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+
+  <line x1="560" y1="200" x2="560" y2="380" stroke="#facc15" stroke-width="4"/>
+  <line x1="535" y1="200" x2="585" y2="200" stroke="#facc15" stroke-width="4"/>
+  <line x1="535" y1="380" x2="585" y2="380" stroke="#facc15" stroke-width="4"/>
+  <line x1="820" y1="170" x2="820" y2="330" stroke="#facc15" stroke-width="4"/>
+  <line x1="795" y1="170" x2="845" y2="170" stroke="#facc15" stroke-width="4"/>
+  <line x1="795" y1="330" x2="845" y2="330" stroke="#facc15" stroke-width="4"/>
+
+  <text x="560" y="510" fill="#bfdbfe" font-size="30" font-weight="800" text-anchor="middle">84%</text>
+  <text x="820" y="510" fill="#6ee7b7" font-size="30" font-weight="800" text-anchor="middle">90%</text>
+
+  <rect x="930" y="300" width="200" height="110" rx="14" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="1030" y="346" fill="#fde68a" font-size="26" font-weight="800" text-anchor="middle">p = 0.45</text>
+  <text x="1030" y="384" fill="#9aa3b5" font-size="20" text-anchor="middle">n = 50</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">graders</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">pass@k</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">judge bias</text>
+  </g>
+</svg>

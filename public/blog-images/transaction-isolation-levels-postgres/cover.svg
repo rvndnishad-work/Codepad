@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="16" markerHeight="16" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#34d399" font-size="24" font-weight="700" letter-spacing="5">BACKEND</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">Isolation</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">levels, two</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">sessions</text>
+
+  <!-- centre: two session lanes converging on one row -->
+  <rect x="450" y="230" width="150" height="70" rx="14" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+  <text x="525" y="276" fill="#bfdbfe" font-size="30" font-weight="800" text-anchor="middle">A</text>
+  <rect x="450" y="500" width="150" height="70" rx="14" fill="#1f1a33" stroke="#a78bfa" stroke-width="3"/>
+  <text x="525" y="546" fill="#ddd6fe" font-size="30" font-weight="800" text-anchor="middle">B</text>
+
+  <line x1="600" y1="265" x2="790" y2="370" stroke="#9aa3b5" stroke-width="3" marker-end="url(#a)"/>
+  <line x1="600" y1="535" x2="790" y2="430" stroke="#9aa3b5" stroke-width="3" marker-end="url(#a)"/>
+
+  <rect x="800" y="340" width="300" height="120" rx="16" fill="#171a23" stroke="#facc15" stroke-width="3"/>
+  <text x="950" y="390" fill="#fde68a" font-size="26" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">balance</text>
+  <text x="950" y="432" fill="#fca5a5" font-size="24" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">120, not 150</text>
+
+  <rect x="800" y="520" width="300" height="60" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="950" y="558" fill="#fecaca" font-size="22" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">ERROR 40001</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">read committed</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">repeatable read</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">serializable</text>
+  </g>
+</svg>

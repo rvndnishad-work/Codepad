@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="480" fill="#0f1117"/>
+  <!-- time axis -->
+  <line x1="200" y1="430" x2="920" y2="430" stroke="#3a4152" stroke-width="2"/>
+  <text x="920" y="458" fill="#9aa3b5" font-size="14" text-anchor="end">time</text>
+
+  <!-- B commit marker, dashed line drawn first -->
+  <line x1="560" y1="70" x2="560" y2="430" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6 6"/>
+  <rect x="470" y="40" width="180" height="40" rx="10" fill="#1f1a33" stroke="#a78bfa" stroke-width="2"/>
+  <text x="560" y="66" fill="#ddd6fe" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">B commits 50</text>
+
+  <text x="40" y="160" fill="#e8eaf0" font-size="16" font-weight="700">Read Committed</text>
+  <text x="40" y="182" fill="#9aa3b5" font-size="13">snapshot per statement</text>
+  <rect x="260" y="130" width="200" height="56" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="360" y="164" fill="#bfdbfe" font-size="15" text-anchor="middle">SELECT sees 100</text>
+  <rect x="660" y="130" width="200" height="56" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="760" y="164" fill="#fecaca" font-size="15" text-anchor="middle">SELECT sees 50</text>
+
+  <text x="40" y="310" fill="#e8eaf0" font-size="16" font-weight="700">Repeatable Read</text>
+  <text x="40" y="332" fill="#9aa3b5" font-size="13">and Serializable:</text>
+  <text x="40" y="352" fill="#9aa3b5" font-size="13">one snapshot</text>
+  <rect x="260" y="270" width="600" height="96" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2" stroke-dasharray="8 6"/>
+  <rect x="280" y="290" width="160" height="56" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="360" y="324" fill="#bfdbfe" font-size="15" text-anchor="middle">sees 100</text>
+  <rect x="680" y="290" width="160" height="56" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="760" y="324" fill="#bfdbfe" font-size="15" text-anchor="middle">still sees 100</text>
+</svg>

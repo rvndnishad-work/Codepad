@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="440" fill="#0f1117"/>
+  <text x="70" y="60" fill="#e8eaf0" font-size="17" font-weight="700">Without the attribute: LCP 3,256 ms</text>
+  <text x="70" y="250" fill="#e8eaf0" font-size="17" font-weight="700">With fetchpriority high: LCP 1,260 ms</text>
+  <text x="70" y="410" fill="#9aa3b5" font-size="14">sent first</text>
+  <line x1="150" y1="405" x2="880" y2="405" stroke="#9aa3b5" stroke-width="2" marker-end="url(#m)"/>
+  <defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+  <g font-size="15" font-weight="700" text-anchor="middle">
+    <rect x="70" y="90" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="130" y="124" fill="#bfdbfe">card 1</text><text x="130" y="148" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="210" y="90" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="270" y="124" fill="#bfdbfe">card 2</text><text x="270" y="148" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="350" y="90" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="410" y="124" fill="#bfdbfe">card 3</text><text x="410" y="148" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="490" y="90" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="550" y="124" fill="#bfdbfe">card 4</text><text x="550" y="148" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="630" y="90" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="690" y="124" fill="#bfdbfe">card 5</text><text x="690" y="148" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="770" y="90" width="120" height="80" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="3"/>
+    <text x="830" y="124" fill="#fecaca">hero</text><text x="830" y="148" fill="#fecaca" font-size="13" font-weight="400">Low</text>
+
+    <rect x="70" y="280" width="120" height="80" rx="10" fill="#10251d" stroke="#34d399" stroke-width="3"/>
+    <text x="130" y="314" fill="#a7f3d0">hero</text><text x="130" y="338" fill="#a7f3d0" font-size="13" font-weight="400">High</text>
+    <rect x="210" y="280" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="270" y="314" fill="#bfdbfe">card 1</text><text x="270" y="338" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="350" y="280" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="410" y="314" fill="#bfdbfe">card 2</text><text x="410" y="338" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="490" y="280" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="550" y="314" fill="#bfdbfe">card 3</text><text x="550" y="338" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="630" y="280" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="690" y="314" fill="#bfdbfe">card 4</text><text x="690" y="338" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+    <rect x="770" y="280" width="120" height="80" rx="10" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+    <text x="830" y="314" fill="#bfdbfe">card 5</text><text x="830" y="338" fill="#9aa3b5" font-size="13" font-weight="400">Medium</text>
+  </g>
+</svg>

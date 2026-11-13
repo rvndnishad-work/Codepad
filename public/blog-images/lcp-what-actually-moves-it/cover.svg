@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#facc15" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="50%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#facc15" font-size="24" font-weight="700" letter-spacing="5">FRONTEND</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">What moves</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">LCP,</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">measured</text>
+
+  <!-- centre: a browser window with the hero, and the four-part LCP bar -->
+  <rect x="480" y="150" width="640" height="380" rx="18" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+  <circle cx="512" cy="182" r="8" fill="#f87171"/>
+  <circle cx="540" cy="182" r="8" fill="#facc15"/>
+  <circle cx="568" cy="182" r="8" fill="#34d399"/>
+  <rect x="520" y="220" width="560" height="270" rx="12" fill="#1d2a3f" stroke="#facc15" stroke-width="4"/>
+  <path d="M540 470 L680 330 L780 420 L860 350 L1060 470 Z" fill="#2c4a6e"/>
+  <circle cx="960" cy="290" r="30" fill="#facc15" fill-opacity="0.85"/>
+  <text x="800" y="262" fill="#fde68a" font-size="26" font-weight="800" text-anchor="middle">LCP</text>
+
+  <rect x="480" y="580" width="200" height="56" rx="8" fill="#1e3a5f" stroke="#60a5fa" stroke-width="2"/>
+  <rect x="680" y="580" width="120" height="56" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <rect x="800" y="580" width="200" height="56" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <rect x="1000" y="580" width="120" height="56" rx="8" fill="#2a1f45" stroke="#a78bfa" stroke-width="2"/>
+  <text x="580" y="616" fill="#bfdbfe" font-size="22" font-weight="700" text-anchor="middle">TTFB</text>
+  <text x="740" y="616" fill="#fecaca" font-size="22" font-weight="700" text-anchor="middle">delay</text>
+  <text x="900" y="616" fill="#a7f3d0" font-size="22" font-weight="700" text-anchor="middle">download</text>
+  <text x="1060" y="616" fill="#ddd6fe" font-size="22" font-weight="700" text-anchor="middle">render</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">fetchpriority</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">rel=preload</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">no lazy hero</text>
+  </g>
+</svg>

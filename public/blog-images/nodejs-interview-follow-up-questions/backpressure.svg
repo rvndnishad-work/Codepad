@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+  <rect width="960" height="420" fill="#0f1117"/>
+  <rect x="40" y="110" width="180" height="200" rx="12" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="130" y="196" fill="#bfdbfe" font-size="17" font-weight="700" text-anchor="middle">fast source</text>
+  <text x="130" y="222" fill="#9aa3b5" font-size="13" text-anchor="middle">file, socket</text>
+
+  <rect x="380" y="110" width="200" height="200" rx="12" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+  <text x="480" y="140" fill="#fde68a" font-size="16" font-weight="700" text-anchor="middle">write buffer</text>
+  <rect x="430" y="160" width="100" height="130" rx="6" fill="#0f1117" stroke="#4b5263" stroke-width="2"/>
+  <rect x="432" y="200" width="96" height="88" rx="4" fill="#3d3510"/>
+  <line x1="420" y1="200" x2="540" y2="200" stroke="#facc15" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="480" y="190" fill="#fde68a" font-size="12" font-weight="700" text-anchor="middle">limit 64 KiB</text>
+  <text x="480" y="252" fill="#fde68a" font-size="13" text-anchor="middle">buffered</text>
+
+  <rect x="740" y="110" width="180" height="200" rx="12" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+  <text x="830" y="196" fill="#fecaca" font-size="17" font-weight="700" text-anchor="middle">slow destination</text>
+  <text x="830" y="222" fill="#9aa3b5" font-size="13" text-anchor="middle">network client, disk</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="13" text-anchor="middle">
+    <text x="300" y="150" fill="#e8eaf0">write(chunk)</text>
+    <text x="300" y="205" fill="#fecaca">returns false</text>
+    <text x="300" y="260" fill="#a7f3d0">drain event</text>
+  </g>
+  <line x1="220" y1="162" x2="372" y2="162" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="380" y1="217" x2="228" y2="217" stroke="#f87171" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="380" y1="272" x2="228" y2="272" stroke="#34d399" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a)"/>
+  <line x1="580" y1="210" x2="732" y2="210" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="656" y="196" fill="#9aa3b5" font-size="13" text-anchor="middle">at its own pace</text>
+</svg>

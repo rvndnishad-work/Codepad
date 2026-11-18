@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="340" viewBox="0 0 960 340" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+  <rect width="960" height="340" fill="#0f1117"/>
+  <text x="40" y="60" fill="#e8eaf0" font-size="16" font-weight="700">index returns its top 10, all tenants</text>
+  <g font-size="13" font-weight="700" text-anchor="middle">
+    <rect x="40" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="76" y="117" fill="#fecaca">T7</text>
+    <rect x="128" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="164" y="117" fill="#fecaca">T1</text>
+    <rect x="216" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="252" y="117" fill="#fecaca">T9</text>
+    <rect x="304" y="84" width="72" height="56" rx="8" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+    <text x="340" y="117" fill="#a7f3d0">T3</text>
+    <rect x="392" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="428" y="117" fill="#fecaca">T5</text>
+    <rect x="480" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="516" y="117" fill="#fecaca">T2</text>
+    <rect x="568" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="604" y="117" fill="#fecaca">T8</text>
+    <rect x="656" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="692" y="117" fill="#fecaca">T6</text>
+    <rect x="744" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="780" y="117" fill="#fecaca">T4</text>
+    <rect x="832" y="84" width="72" height="56" rx="8" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="868" y="117" fill="#fecaca">T1</text>
+  </g>
+  <line x1="480" y1="160" x2="480" y2="226" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="500" y="198" fill="#9aa3b5" font-size="14">keep only tenant 3</text>
+  <rect x="444" y="244" width="72" height="56" rx="8" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="480" y="277" fill="#a7f3d0" font-size="13" font-weight="700" text-anchor="middle">T3</text>
+</svg>

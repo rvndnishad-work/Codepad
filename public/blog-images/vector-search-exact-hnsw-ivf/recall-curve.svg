@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="520" fill="#0f1117"/>
+  <line x1="110" y1="386" x2="900" y2="386" stroke="#262b38"/>
+  <text x="96" y="391" fill="#9aa3b5" font-size="13" text-anchor="end">0.4</text>
+  <line x1="110" y1="277" x2="900" y2="277" stroke="#262b38"/>
+  <text x="96" y="282" fill="#9aa3b5" font-size="13" text-anchor="end">0.6</text>
+  <line x1="110" y1="169" x2="900" y2="169" stroke="#262b38"/>
+  <text x="96" y="174" fill="#9aa3b5" font-size="13" text-anchor="end">0.8</text>
+  <line x1="110" y1="60" x2="900" y2="60" stroke="#262b38"/>
+  <text x="96" y="65" fill="#9aa3b5" font-size="13" text-anchor="end">1.0</text>
+  <line x1="110" y1="440" x2="110" y2="446" stroke="#4b5263" stroke-width="2"/>
+  <text x="110" y="466" fill="#9aa3b5" font-size="13" text-anchor="middle">0 ms</text>
+  <line x1="275" y1="440" x2="275" y2="446" stroke="#4b5263" stroke-width="2"/>
+  <text x="275" y="466" fill="#9aa3b5" font-size="13" text-anchor="middle">0.5 ms</text>
+  <line x1="439" y1="440" x2="439" y2="446" stroke="#4b5263" stroke-width="2"/>
+  <text x="439" y="466" fill="#9aa3b5" font-size="13" text-anchor="middle">1 ms</text>
+  <line x1="604" y1="440" x2="604" y2="446" stroke="#4b5263" stroke-width="2"/>
+  <text x="604" y="466" fill="#9aa3b5" font-size="13" text-anchor="middle">1.5 ms</text>
+  <line x1="768" y1="440" x2="768" y2="446" stroke="#4b5263" stroke-width="2"/>
+  <text x="768" y="466" fill="#9aa3b5" font-size="13" text-anchor="middle">2 ms</text>
+  <line x1="110" y1="440" x2="900" y2="440" stroke="#4b5263" stroke-width="2"/>
+  <text x="505" y="496" fill="#9aa3b5" font-size="14" text-anchor="middle">query time, one core</text>
+  <text x="40" y="40" fill="#9aa3b5" font-size="14">recall@10</text>
+  <polyline points="144,291 162,212 195,145 270,95 405,70 670,61" fill="none" stroke="#a78bfa" stroke-width="3"/>
+  <circle cx="144" cy="291" r="5" fill="#a78bfa"/>
+  <circle cx="162" cy="212" r="5" fill="#a78bfa"/>
+  <circle cx="195" cy="145" r="5" fill="#a78bfa"/>
+  <circle cx="270" cy="95" r="5" fill="#a78bfa"/>
+  <circle cx="405" cy="70" r="5" fill="#a78bfa"/>
+  <circle cx="670" cy="61" r="5" fill="#a78bfa"/>
+  <polyline points="128,393 146,302 216,209 313,163 488,119 857,84" fill="none" stroke="#60a5fa" stroke-width="3"/>
+  <circle cx="128" cy="393" r="5" fill="#60a5fa"/>
+  <circle cx="146" cy="302" r="5" fill="#60a5fa"/>
+  <circle cx="216" cy="209" r="5" fill="#60a5fa"/>
+  <circle cx="313" cy="163" r="5" fill="#60a5fa"/>
+  <circle cx="488" cy="119" r="5" fill="#60a5fa"/>
+  <circle cx="857" cy="84" r="5" fill="#60a5fa"/>
+  <text x="684" y="81" fill="#c4b5fd" font-size="15" font-weight="700">HNSW</text>
+  <text x="847" y="114" fill="#bfdbfe" font-size="15" font-weight="700" text-anchor="end">IVF</text>
+</svg>

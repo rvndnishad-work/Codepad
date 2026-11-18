@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="500" fill="#0f1117"/>
+  <g fill="#171a23" stroke="#3a4152" stroke-width="2">
+    <polygon points="80,60 360,60 320,250 80,230"/>
+    <polygon points="360,60 640,60 600,240 320,250"/>
+    <polygon points="640,60 880,60 880,250 600,240"/>
+    <polygon points="80,230 320,250 300,440 80,440"/>
+    <polygon points="320,250 600,240 620,440 300,440"/>
+    <polygon points="600,240 880,250 880,440 620,440"/>
+  </g>
+  <polygon points="320,250 600,240 620,440 300,440" fill="#1e3a5f" stroke="#60a5fa" stroke-width="3"/>
+  <polygon points="600,240 880,250 880,440 620,440" fill="#1e3a5f" stroke="#60a5fa" stroke-width="3"/>
+  <g fill="#9aa3b5">
+    <circle cx="160" cy="120" r="6"/><circle cx="240" cy="170" r="6"/><circle cx="440" cy="130" r="6"/><circle cx="520" cy="180" r="6"/>
+    <circle cx="720" cy="120" r="6"/><circle cx="800" cy="190" r="6"/><circle cx="150" cy="320" r="6"/><circle cx="230" cy="380" r="6"/>
+    <circle cx="400" cy="380" r="6"/><circle cx="520" cy="410" r="6"/><circle cx="700" cy="400" r="6"/><circle cx="820" cy="360" r="6"/>
+  </g>
+  <g fill="#e8eaf0" stroke="#0f1117" stroke-width="2">
+    <rect x="194" y="139" width="14" height="14"/><rect x="474" y="139" width="14" height="14"/><rect x="754" y="139" width="14" height="14"/>
+    <rect x="184" y="339" width="14" height="14"/><rect x="454" y="339" width="14" height="14"/><rect x="744" y="339" width="14" height="14"/>
+  </g>
+  <circle cx="560" cy="300" r="9" fill="#34d399"/>
+  <circle cx="560" cy="226" r="9" fill="#f87171"/>
+  <circle cx="610" cy="320" r="12" fill="#facc15"/>
+  <text x="610" y="296" fill="#fde68a" font-size="14" font-weight="700" text-anchor="middle">query</text>
+  <text x="470" y="292" fill="#a7f3d0" font-size="13" text-anchor="middle">found</text>
+  <text x="460" y="214" fill="#fecaca" font-size="13" text-anchor="middle">missed: next cell</text>
+  <text x="890" y="478" fill="#bfdbfe" font-size="13" text-anchor="end">blue cells: the nprobe = 2 nearest centres</text>
+  <text x="80" y="478" fill="#9aa3b5" font-size="13">white squares: k-means centres</text>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="520" fill="#0f1117"/>
+  <text x="240" y="50" fill="#bfdbfe" font-size="20" font-weight="700" text-anchor="middle">Session A</text>
+  <text x="720" y="50" fill="#ddd6fe" font-size="20" font-weight="700" text-anchor="middle">Session B</text>
+  <line x1="240" y1="70" x2="240" y2="440" stroke="#2a2f3d" stroke-width="2"/>
+  <line x1="720" y1="70" x2="720" y2="440" stroke="#2a2f3d" stroke-width="2"/>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="15" text-anchor="middle">
+    <rect x="90" y="86" width="300" height="48" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+    <text x="240" y="116" fill="#e8eaf0">read balance: 100</text>
+    <rect x="570" y="150" width="300" height="48" rx="10" fill="#1f1a33" stroke="#a78bfa" stroke-width="2"/>
+    <text x="720" y="180" fill="#e8eaf0">read balance: 100</text>
+    <rect x="90" y="214" width="300" height="48" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+    <text x="240" y="244" fill="#e8eaf0">write 130, COMMIT</text>
+    <rect x="570" y="278" width="300" height="48" rx="10" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+    <text x="720" y="308" fill="#fecaca">write 120, COMMIT</text>
+  </g>
+
+  <rect x="330" y="370" width="300" height="80" rx="14" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="480" y="404" fill="#fecaca" font-size="20" font-weight="800" text-anchor="middle">final balance 120</text>
+  <text x="480" y="430" fill="#9aa3b5" font-size="14" text-anchor="middle">the deposit of 30 is gone</text>
+
+</svg>

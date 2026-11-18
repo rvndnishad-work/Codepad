@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="560" fill="#0f1117"/>
+  <line x1="330" y1="40" x2="330" y2="482" stroke="#262b38" stroke-width="1"/>
+  <text x="330" y="510" fill="#9aa3b5" font-size="14" text-anchor="middle">0 s</text>
+  <line x1="487" y1="40" x2="487" y2="482" stroke="#262b38" stroke-width="1"/>
+  <text x="487" y="510" fill="#9aa3b5" font-size="14" text-anchor="middle">1 s</text>
+  <line x1="644" y1="40" x2="644" y2="482" stroke="#262b38" stroke-width="1"/>
+  <text x="644" y="510" fill="#9aa3b5" font-size="14" text-anchor="middle">2 s</text>
+  <line x1="801" y1="40" x2="801" y2="482" stroke="#262b38" stroke-width="1"/>
+  <text x="801" y="510" fill="#9aa3b5" font-size="14" text-anchor="middle">3 s</text>
+  <line x1="723" y1="40" x2="723" y2="482" stroke="#facc15" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="723" y="534" fill="#facc15" font-size="14" text-anchor="middle">2.5 s good threshold</text>
+  <text x="40" y="72" fill="#e8eaf0" font-size="15">1  img in HTML</text>
+  <rect x="330" y="54" width="197" height="28" rx="5" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="539" y="73" fill="#a7f3d0" font-size="14" font-weight="700">1,256 ms</text>
+  <text x="40" y="120" fill="#e8eaf0" font-size="15">2  + fetchpriority high</text>
+  <rect x="330" y="102" width="198" height="28" rx="5" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="121" fill="#a7f3d0" font-size="14" font-weight="700">1,260 ms</text>
+  <text x="40" y="168" fill="#e8eaf0" font-size="15">3  loading lazy</text>
+  <rect x="330" y="150" width="424" height="28" rx="5" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="766" y="169" fill="#fecaca" font-size="14" font-weight="700">2,696 ms</text>
+  <text x="40" y="216" fill="#e8eaf0" font-size="15">4  CSS background</text>
+  <rect x="330" y="198" width="424" height="28" rx="5" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="766" y="217" fill="#fecaca" font-size="14" font-weight="700">2,700 ms</text>
+  <text x="40" y="264" fill="#e8eaf0" font-size="15">5  background + preload</text>
+  <rect x="330" y="246" width="197" height="28" rx="5" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="539" y="265" fill="#a7f3d0" font-size="14" font-weight="700">1,256 ms</text>
+  <text x="40" y="312" fill="#e8eaf0" font-size="15">6  img added by JS</text>
+  <rect x="330" y="294" width="437" height="28" rx="5" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="779" y="313" fill="#fecaca" font-size="14" font-weight="700">2,784 ms</text>
+  <text x="40" y="360" fill="#e8eaf0" font-size="15">7  JS img + preload</text>
+  <rect x="330" y="342" width="424" height="28" rx="5" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="766" y="361" fill="#fecaca" font-size="14" font-weight="700">2,700 ms</text>
+  <text x="40" y="408" fill="#e8eaf0" font-size="15">8  sixth large image</text>
+  <rect x="330" y="390" width="512" height="28" rx="5" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="854" y="409" fill="#fecaca" font-size="14" font-weight="700">3,256 ms</text>
+  <text x="40" y="456" fill="#e8eaf0" font-size="15">9  sixth + fetchpriority</text>
+  <rect x="330" y="438" width="198" height="28" rx="5" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="540" y="457" fill="#a7f3d0" font-size="14" font-weight="700">1,260 ms</text>
+</svg>

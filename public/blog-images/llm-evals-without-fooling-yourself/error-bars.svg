@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="440" viewBox="0 0 960 440" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="440" fill="#0f1117"/>
+  <text x="40" y="50" fill="#e8eaf0" font-size="20" font-weight="700">Same 84 percent pass rate, 95 percent Wilson range</text>
+
+  <!-- axis: 70% at x=240, 95% at x=900 ; 26.4 units per percent -->
+  <line x1="240" y1="370" x2="900" y2="370" stroke="#3a4152" stroke-width="2"/>
+  <g font-size="14" fill="#9aa3b5" text-anchor="middle">
+    <line x1="240" y1="364" x2="240" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="240" y="398">70%</text>
+    <line x1="372" y1="364" x2="372" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="372" y="398">75%</text>
+    <line x1="504" y1="364" x2="504" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="504" y="398">80%</text>
+    <line x1="636" y1="364" x2="636" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="636" y="398">85%</text>
+    <line x1="768" y1="364" x2="768" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="768" y="398">90%</text>
+    <line x1="900" y1="364" x2="900" y2="376" stroke="#3a4152" stroke-width="2"/>
+    <text x="900" y="398">95%</text>
+  </g>
+  <line x1="610" y1="80" x2="610" y2="360" stroke="#facc15" stroke-width="2" stroke-dasharray="6 6"/>
+
+  <g font-size="16" fill="#e8eaf0" text-anchor="end">
+    <text x="200" y="125">n = 50</text>
+    <text x="200" y="190">n = 100</text>
+    <text x="200" y="255">n = 500</text>
+    <text x="200" y="320">n = 5000</text>
+  </g>
+  <g stroke-width="10" stroke-linecap="round">
+    <line x1="280" y1="120" x2="813" y2="120" stroke="#f87171"/>
+    <line x1="388" y1="185" x2="765" y2="185" stroke="#facc15"/>
+    <line x1="517" y1="250" x2="689" y2="250" stroke="#60a5fa"/>
+    <line x1="584" y1="315" x2="636" y2="315" stroke="#34d399"/>
+  </g>
+  <g fill="#e8eaf0">
+    <circle cx="610" cy="120" r="9"/>
+    <circle cx="610" cy="185" r="9"/>
+    <circle cx="610" cy="250" r="9"/>
+    <circle cx="610" cy="315" r="9"/>
+  </g>
+</svg>

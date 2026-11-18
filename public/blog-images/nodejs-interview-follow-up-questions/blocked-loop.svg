@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="400" viewBox="0 0 960 400" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="400" fill="#0f1117"/>
+  <text x="40" y="118" fill="#e8eaf0" font-size="16" font-weight="700">main thread</text>
+  <text x="40" y="228" fill="#e8eaf0" font-size="16" font-weight="700">/fast request</text>
+
+  <rect x="140" y="94" width="650" height="40" rx="6" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="465" y="119" fill="#fecaca" font-size="14" font-weight="700" text-anchor="middle">/slow handler: 500 ms busy loop</text>
+  <rect x="800" y="94" width="60" height="40" rx="6" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="830" y="119" fill="#a7f3d0" font-size="13" font-weight="700" text-anchor="middle">/fast</text>
+
+  <circle cx="205" cy="224" r="7" fill="#60a5fa"/>
+  <text x="205" y="262" fill="#bfdbfe" font-size="13" text-anchor="middle">arrives at 50 ms</text>
+  <rect x="220" y="204" width="570" height="40" rx="6" fill="none" stroke="#60a5fa" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="505" y="229" fill="#bfdbfe" font-size="14" font-weight="700" text-anchor="middle">waiting: no JavaScript can run for it</text>
+  <line x1="830" y1="140" x2="830" y2="300" stroke="#34d399" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="830" y="316" fill="#a7f3d0" font-size="13" text-anchor="middle">answered: about 450 ms later</text>
+
+  <line x1="140" y1="350" x2="920" y2="350" stroke="#4b5263" stroke-width="2"/>
+  <g fill="#9aa3b5" font-size="13" text-anchor="middle">
+    <line x1="140" y1="344" x2="140" y2="356" stroke="#4b5263" stroke-width="2"/><text x="140" y="378">0 ms</text>
+    <line x1="400" y1="344" x2="400" y2="356" stroke="#4b5263" stroke-width="2"/><text x="400" y="378">200 ms</text>
+    <line x1="660" y1="344" x2="660" y2="356" stroke="#4b5263" stroke-width="2"/><text x="660" y="378">400 ms</text>
+    <line x1="920" y1="344" x2="920" y2="356" stroke="#4b5263" stroke-width="2"/><text x="920" y="378">600 ms</text>
+  </g>
+</svg>

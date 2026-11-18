@@ -1,0 +1,114 @@
+# Writes one DevPrep blog post and opens it as a PR into develop, using the
+# Anthropic API key in the ANTHROPIC_API_KEY repository secret (billed to API
+# credits, not a Claude subscription).
+#
+# Runs Monday, Wednesday and Friday at 03:27 UTC (8:57am IST), or by hand from
+# the Actions tab ("Run workflow"), optionally with a topic.
+#
+# Setup (once):
+#   1. Settings > Secrets and variables > Actions > New repository secret:
+#      ANTHROPIC_API_KEY = your key from console.anthropic.com
+#   2. Settings > Actions > General > Workflow permissions: tick
+#      "Allow GitHub Actions to create and approve pull requests".
+#
+# Claude only writes files and runs the blog checks. Committing, pushing and
+# opening the PR happen in plain shell steps after it, so Claude never gets git
+# or GitHub write access. No database is used, so nothing is ever seeded.
+name: Blog writer
+
+on:
+  schedule:
+    - cron: "27 3 * * 1,3,5"
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: "Optional topic. Leave empty to let Claude pick one."
+        required: false
+        default: ""
+
+concurrency:
+  group: blog-writer
+  cancel-in-progress: false
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 50
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for rendering covers
+        run: npx playwright install --with-deps chromium
+
+      - name: Write the post
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Write one new DevPrep blog post in this repository by following docs/blog-writer.md.
+
+            ${{ inputs.topic && format('Topic requested by the maintainer: {0}', inputs.topic) || 'Pick the topic yourself, as section 2 of the brief describes.' }}
+
+            Do sections 2 to 6 of the brief: pick a topic, research it, write
+            prisma/data/blog/<slug>.md, draw and render its images into
+            public/blog-images/<slug>/ (render with
+            `npx tsx scripts/render-blog-cover.ts <slug> /tmp/blog-previews` and read every PNG),
+            and run `npm run check:blogs -- <slug>` until it prints a pass.
+
+            Skip sections 1, 7 and 8: do not create branches, commit, push or open a PR.
+            The workflow does that after you finish. Write exactly one new post and
+            change no other files. No database is available, so leave out
+            /interview-question/ links, as the brief says.
+          claude_args: |
+            --model sonnet
+            --max-turns 120
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,Bash(ls:*),Bash(cat:*),Bash(git log:*),Bash(git status:*),Bash(git diff:*),Bash(node:*),Bash(npm run check:blogs:*),Bash(npx tsx scripts/render-blog-cover.ts:*),Bash(mkdir:*)"
+
+      - name: Open the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          new=$(git ls-files --others --exclude-standard prisma/data/blog | grep '\.md$' || true)
+          if [ "$(printf '%s\n' "$new" | grep -c . || true)" -ne 1 ]; then
+            echo "Expected exactly one new post, found: ${new:-none}"; exit 1
+          fi
+          slug=$(basename "$new" .md)
+          title=$(sed -n 's/^title: //p' "$new" | head -1)
+          npm run check:blogs -- "$slug"
+          branch="blog/$slug"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add "$new" "public/blog-images/$slug"
+          git commit -m "Blog: $title"
+          git push -u origin "$branch"
+          gh pr create --base develop --head "$branch" --title "Blog: $title" --assignee "${{ github.repository_owner }}" --body "$(cat <<EOF
+          Before: this post did not exist.
+
+          After: a new post, **$title**, is ready at \`/blog/$slug\` once published.
+
+          Written by the scheduled blog writer (run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})). \`npm run check:blogs -- $slug\` passed: front matter, images, and every runnable example against its quoted output. Please read it and check the sources before merging.
+
+          To publish after merging:
+
+          \`\`\`bash
+          npm run seed:blogs -- $slug
+          \`\`\`
+          EOF
+          )"

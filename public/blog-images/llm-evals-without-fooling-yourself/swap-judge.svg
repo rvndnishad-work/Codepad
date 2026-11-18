@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="480" fill="#0f1117"/>
+
+  <rect x="40" y="40" width="380" height="150" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+  <text x="230" y="78" fill="#bfdbfe" font-size="18" font-weight="700" text-anchor="middle">Call 1: A shown first</text>
+  <rect x="80" y="104" width="130" height="56" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="145" y="138" fill="#e8eaf0" font-size="17" text-anchor="middle">first: A</text>
+  <rect x="250" y="104" width="130" height="56" rx="10" fill="#1f1a33" stroke="#a78bfa" stroke-width="2"/>
+  <text x="315" y="138" fill="#e8eaf0" font-size="17" text-anchor="middle">second: B</text>
+
+  <rect x="540" y="40" width="380" height="150" rx="14" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+  <text x="730" y="78" fill="#ddd6fe" font-size="18" font-weight="700" text-anchor="middle">Call 2: B shown first</text>
+  <rect x="580" y="104" width="130" height="56" rx="10" fill="#1f1a33" stroke="#a78bfa" stroke-width="2"/>
+  <text x="645" y="138" fill="#e8eaf0" font-size="17" text-anchor="middle">first: B</text>
+  <rect x="750" y="104" width="130" height="56" rx="10" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="815" y="138" fill="#e8eaf0" font-size="17" text-anchor="middle">second: A</text>
+
+  <line x1="230" y1="190" x2="400" y2="254" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="730" y1="190" x2="560" y2="254" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="330" y="260" width="300" height="70" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="480" y="302" fill="#fde68a" font-size="18" font-weight="700" text-anchor="middle">Do both calls agree?</text>
+
+  <line x1="400" y1="330" x2="230" y2="374" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="560" y1="330" x2="730" y2="374" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="290" y="342" fill="#6ee7b7" font-size="14" font-weight="700">yes</text>
+  <text x="650" y="342" fill="#fca5a5" font-size="14" font-weight="700">no</text>
+
+  <rect x="80" y="380" width="300" height="70" rx="12" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="230" y="412" fill="#6ee7b7" font-size="17" font-weight="700" text-anchor="middle">Count a win</text>
+  <text x="230" y="434" fill="#9aa3b5" font-size="14" text-anchor="middle">equal answers: 23 vs 22 percent</text>
+
+  <rect x="580" y="380" width="300" height="70" rx="12" fill="#171a23" stroke="#9aa3b5" stroke-width="2"/>
+  <text x="730" y="412" fill="#e8eaf0" font-size="17" font-weight="700" text-anchor="middle">Count a tie</text>
+  <text x="730" y="434" fill="#9aa3b5" font-size="14" text-anchor="middle">judge cannot separate them</text>
+</svg>

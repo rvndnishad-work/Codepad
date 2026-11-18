@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#a78bfa"/></marker></defs>
+  <rect width="960" height="520" fill="#0f1117"/>
+  <g font-size="14" font-weight="700">
+    <text x="40" y="96" fill="#e8eaf0">top layer</text><text x="40" y="116" fill="#9aa3b5" font-weight="400" font-size="12">few vectors, long links</text>
+    <text x="40" y="256" fill="#e8eaf0">middle layer</text>
+    <text x="40" y="416" fill="#e8eaf0">bottom layer</text><text x="40" y="436" fill="#9aa3b5" font-weight="400" font-size="12">every vector, short links</text>
+  </g>
+  <rect x="220" y="60" width="700" height="80" rx="12" fill="#171a23" stroke="#2a3040"/>
+  <rect x="220" y="210" width="700" height="80" rx="12" fill="#171a23" stroke="#2a3040"/>
+  <rect x="220" y="360" width="700" height="100" rx="12" fill="#171a23" stroke="#2a3040"/>
+  <g stroke="#4b5263" stroke-width="2">
+    <line x1="280" y1="100" x2="620" y2="100"/>
+    <line x1="280" y1="250" x2="460" y2="250"/><line x1="460" y1="250" x2="620" y2="250"/><line x1="620" y1="250" x2="840" y2="250"/>
+    <line x1="280" y1="410" x2="360" y2="390"/><line x1="360" y1="390" x2="460" y2="420"/><line x1="460" y1="420" x2="540" y2="395"/>
+    <line x1="540" y1="395" x2="620" y2="425"/><line x1="620" y1="425" x2="700" y2="400"/><line x1="700" y1="400" x2="780" y2="430"/>
+    <line x1="780" y1="430" x2="840" y2="400"/>
+  </g>
+  <g stroke="#2a3040" stroke-width="2" stroke-dasharray="4 4">
+    <line x1="280" y1="100" x2="280" y2="250"/><line x1="620" y1="100" x2="620" y2="250"/>
+    <line x1="620" y1="250" x2="620" y2="425"/><line x1="840" y1="250" x2="840" y2="400"/>
+  </g>
+  <g fill="#9aa3b5">
+    <circle cx="280" cy="100" r="9"/><circle cx="620" cy="100" r="9"/>
+    <circle cx="280" cy="250" r="9"/><circle cx="460" cy="250" r="9"/><circle cx="620" cy="250" r="9"/><circle cx="840" cy="250" r="9"/>
+    <circle cx="280" cy="410" r="8"/><circle cx="360" cy="390" r="8"/><circle cx="460" cy="420" r="8"/><circle cx="540" cy="395" r="8"/>
+    <circle cx="620" cy="425" r="8"/><circle cx="700" cy="400" r="8"/><circle cx="840" cy="400" r="8"/>
+  </g>
+  <circle cx="780" cy="430" r="10" fill="#34d399"/>
+  <path d="M280 100 L612 100" fill="none" stroke="#a78bfa" stroke-width="4" marker-end="url(#a)"/>
+  <path d="M620 108 L620 242" fill="none" stroke="#a78bfa" stroke-width="4" marker-end="url(#a)"/>
+  <path d="M628 250 L700 250 L700 410" fill="none" stroke="#a78bfa" stroke-width="4"/>
+  <path d="M700 410 L772 428" fill="none" stroke="#a78bfa" stroke-width="4" marker-end="url(#a)"/>
+  <text x="280" y="80" fill="#c4b5fd" font-size="13" text-anchor="middle">entry point</text>
+  <text x="780" y="485" fill="#a7f3d0" font-size="13" text-anchor="middle">nearest to the query</text>
+</svg>

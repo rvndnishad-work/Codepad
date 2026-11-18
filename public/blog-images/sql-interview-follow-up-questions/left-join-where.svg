@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="500" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">Same filter, two places</text>
+
+  <!-- left panel: filter in ON -->
+  <rect x="40" y="84" width="420" height="380" rx="14" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+  <text x="250" y="122" fill="#6ee7b7" font-size="17" font-weight="700" text-anchor="middle">filter in ON</text>
+  <text x="250" y="152" fill="#9aa3b5" font-size="14" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="middle">ON ... AND e.salary &gt; 95</text>
+  <g font-size="16">
+    <rect x="70" y="180" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="90" y="206" fill="#e8eaf0">Engineering</text><text x="300" y="206" fill="#e8eaf0">Asha</text>
+    <rect x="70" y="228" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="90" y="254" fill="#e8eaf0">Engineering</text><text x="300" y="254" fill="#e8eaf0">Ben</text>
+    <rect x="70" y="276" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="90" y="302" fill="#e8eaf0">Engineering</text><text x="300" y="302" fill="#e8eaf0">Chen</text>
+    <rect x="70" y="324" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="90" y="350" fill="#e8eaf0">Legal</text><text x="300" y="350" fill="#9aa3b5">NULL</text>
+    <rect x="70" y="372" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="90" y="398" fill="#e8eaf0">Sales</text><text x="300" y="398" fill="#9aa3b5">NULL</text>
+  </g>
+  <text x="250" y="446" fill="#6ee7b7" font-size="15" font-weight="700" text-anchor="middle">5 rows, every department kept</text>
+
+  <!-- right panel: filter in WHERE -->
+  <rect x="500" y="84" width="420" height="380" rx="14" fill="#171a23" stroke="#f87171" stroke-width="2"/>
+  <text x="710" y="122" fill="#fecaca" font-size="17" font-weight="700" text-anchor="middle">filter in WHERE</text>
+  <text x="710" y="152" fill="#9aa3b5" font-size="14" font-family="ui-monospace, Menlo, Consolas, monospace" text-anchor="middle">WHERE e.salary &gt; 95</text>
+  <g font-size="16">
+    <rect x="530" y="180" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="550" y="206" fill="#e8eaf0">Engineering</text><text x="760" y="206" fill="#e8eaf0">Asha</text>
+    <rect x="530" y="228" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="550" y="254" fill="#e8eaf0">Engineering</text><text x="760" y="254" fill="#e8eaf0">Ben</text>
+    <rect x="530" y="276" width="360" height="40" rx="8" fill="#10251d"/>
+    <text x="550" y="302" fill="#e8eaf0">Engineering</text><text x="760" y="302" fill="#e8eaf0">Chen</text>
+    <rect x="530" y="324" width="360" height="40" rx="8" fill="#3a1717" stroke="#f87171" stroke-dasharray="6 5"/>
+    <text x="550" y="350" fill="#fca5a5" text-decoration="line-through">Legal</text><text x="760" y="350" fill="#fca5a5">dropped</text>
+    <rect x="530" y="372" width="360" height="40" rx="8" fill="#3a1717" stroke="#f87171" stroke-dasharray="6 5"/>
+    <text x="550" y="398" fill="#fca5a5" text-decoration="line-through">Sales</text><text x="760" y="398" fill="#fca5a5">dropped</text>
+  </g>
+  <text x="710" y="446" fill="#fecaca" font-size="15" font-weight="700" text-anchor="middle">3 rows, now an inner join</text>
+</svg>

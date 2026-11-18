@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="520" fill="#0f1117"/>
+  <text x="40" y="52" fill="#e8eaf0" font-size="22" font-weight="700">An index on (customer_id, created_at)</text>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="16">
+    <rect x="40" y="84" width="400" height="44" rx="8" fill="#171a23" stroke="#2a2f3d"/>
+    <text x="60" y="112" fill="#9aa3b5">customer_id</text><text x="250" y="112" fill="#9aa3b5">created_at</text>
+
+    <rect x="40" y="136" width="400" height="40" rx="8" fill="#171a23"/>
+    <text x="60" y="162" fill="#e8eaf0">41</text><text x="250" y="162" fill="#e8eaf0">2026-03-02</text>
+    <rect x="40" y="184" width="400" height="40" rx="8" fill="#171a23"/>
+    <text x="60" y="210" fill="#e8eaf0">41</text><text x="250" y="210" fill="#facc15">2026-10-24</text>
+    <rect x="40" y="232" width="400" height="40" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+    <text x="60" y="258" fill="#bfdbfe">42</text><text x="250" y="258" fill="#bfdbfe">2026-01-15</text>
+    <rect x="40" y="280" width="400" height="40" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+    <text x="60" y="306" fill="#bfdbfe">42</text><text x="250" y="306" fill="#bfdbfe">2026-06-09</text>
+    <rect x="40" y="328" width="400" height="40" rx="8" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+    <text x="60" y="354" fill="#bfdbfe">42</text><text x="250" y="354" fill="#facc15">2026-10-21</text>
+    <rect x="40" y="376" width="400" height="40" rx="8" fill="#171a23"/>
+    <text x="60" y="402" fill="#e8eaf0">43</text><text x="250" y="402" fill="#e8eaf0">2026-02-11</text>
+    <rect x="40" y="424" width="400" height="40" rx="8" fill="#171a23"/>
+    <text x="60" y="450" fill="#e8eaf0">43</text><text x="250" y="450" fill="#facc15">2026-10-26</text>
+  </g>
+
+  <rect x="500" y="200" width="420" height="96" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="2"/>
+  <text x="520" y="236" fill="#bfdbfe" font-size="16" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">customer_id = 42</text>
+  <text x="520" y="268" fill="#e8eaf0" font-size="15">one contiguous slice, found fast</text>
+
+  <rect x="500" y="340" width="420" height="96" rx="12" fill="#3a3112" stroke="#facc15" stroke-width="2"/>
+  <text x="520" y="376" fill="#fde68a" font-size="16" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">created_at &gt;= 2026-10-20</text>
+  <text x="520" y="408" fill="#e8eaf0" font-size="15">matches are scattered across every customer</text>
+</svg>

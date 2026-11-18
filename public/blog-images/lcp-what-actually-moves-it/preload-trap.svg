@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <rect width="960" height="420" fill="#0f1117"/>
+  <text x="40" y="128" fill="#e8eaf0" font-size="16" font-weight="700">hero.jpg</text>
+  <text x="40" y="228" fill="#e8eaf0" font-size="16" font-weight="700">app.js</text>
+
+  <rect x="190" y="104" width="250" height="40" rx="6" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="315" y="129" fill="#a7f3d0" font-size="14" font-weight="700" text-anchor="middle">preloaded, done</text>
+  <rect x="450" y="104" width="362" height="40" rx="6" fill="none" stroke="#f87171" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="631" y="129" fill="#fecaca" font-size="14" font-weight="700" text-anchor="middle">loaded, waiting for an img element</text>
+
+  <rect x="190" y="204" width="622" height="40" rx="6" fill="#2a1f45" stroke="#a78bfa" stroke-width="2"/>
+  <text x="501" y="229" fill="#ddd6fe" font-size="14" font-weight="700" text-anchor="middle">app.js downloads, then runs and creates the img</text>
+
+  <line x1="822" y1="70" x2="822" y2="300" stroke="#facc15" stroke-width="3"/>
+  <text x="822" y="56" fill="#facc15" font-size="15" font-weight="700" text-anchor="middle">LCP 2.70 s</text>
+  <line x1="440" y1="160" x2="440" y2="300" stroke="#34d399" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="440" y="320" fill="#a7f3d0" font-size="14" text-anchor="middle">image loaded 1.23 s</text>
+
+  <line x1="120" y1="360" x2="900" y2="360" stroke="#4b5263" stroke-width="2"/>
+  <g fill="#9aa3b5" font-size="14" text-anchor="middle">
+    <line x1="120" y1="354" x2="120" y2="366" stroke="#4b5263" stroke-width="2"/><text x="120" y="388">0 s</text>
+    <line x1="380" y1="354" x2="380" y2="366" stroke="#4b5263" stroke-width="2"/><text x="380" y="388">1 s</text>
+    <line x1="640" y1="354" x2="640" y2="366" stroke="#4b5263" stroke-width="2"/><text x="640" y="388">2 s</text>
+    <line x1="900" y1="354" x2="900" y2="366" stroke="#4b5263" stroke-width="2"/><text x="900" y="388">3 s</text>
+  </g>
+</svg>

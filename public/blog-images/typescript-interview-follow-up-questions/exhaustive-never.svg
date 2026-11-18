@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/>
+    </marker>
+  </defs>
+  <rect width="960" height="460" fill="#0f1117"/>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="16" text-anchor="middle">
+    <rect x="40" y="60" width="230" height="150" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="155" y="100" fill="#bfdbfe" font-weight="700">s: Shape</text>
+    <text x="155" y="136" fill="#e8eaf0">circle</text>
+    <text x="155" y="162" fill="#e8eaf0">square</text>
+    <text x="155" y="188" fill="#e8eaf0">triangle</text>
+
+    <rect x="360" y="60" width="230" height="150" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="475" y="100" fill="#bfdbfe" font-weight="700">after circle</text>
+    <text x="475" y="136" fill="#5b6475">circle</text>
+    <text x="475" y="162" fill="#e8eaf0">square</text>
+    <text x="475" y="188" fill="#e8eaf0">triangle</text>
+
+    <rect x="680" y="60" width="240" height="150" rx="14" fill="#171a23" stroke="#60a5fa" stroke-width="2"/>
+    <text x="800" y="100" fill="#bfdbfe" font-weight="700">after square</text>
+    <text x="800" y="136" fill="#5b6475">circle</text>
+    <text x="800" y="162" fill="#5b6475">square</text>
+    <text x="800" y="188" fill="#e8eaf0">triangle</text>
+  </g>
+  <line x1="270" y1="135" x2="354" y2="135" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="590" y1="135" x2="674" y2="135" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+  <text x="312" y="120" fill="#9aa3b5" font-size="13" text-anchor="middle">case</text>
+  <text x="632" y="120" fill="#9aa3b5" font-size="13" text-anchor="middle">case</text>
+  <line x1="800" y1="210" x2="800" y2="274" stroke="#9aa3b5" stroke-width="2" marker-end="url(#a)"/>
+
+  <rect x="560" y="280" width="360" height="130" rx="14" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+  <text x="740" y="320" fill="#fecaca" font-size="17" font-weight="700" text-anchor="middle">default branch</text>
+  <text x="740" y="352" fill="#e8eaf0" font-size="15" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">const unhandled: never = s</text>
+  <text x="740" y="384" fill="#fca5a5" font-size="15" text-anchor="middle">triangle is not never: error</text>
+
+  <rect x="40" y="280" width="420" height="130" rx="14" fill="#10251d" stroke="#34d399" stroke-width="2"/>
+  <text x="250" y="320" fill="#6ee7b7" font-size="17" font-weight="700" text-anchor="middle">add case triangle</text>
+  <text x="250" y="352" fill="#e8eaf0" font-size="15" text-anchor="middle">nothing reaches default</text>
+  <text x="250" y="384" fill="#6ee7b7" font-size="15" text-anchor="middle">s is never there: compiles</text>
+</svg>

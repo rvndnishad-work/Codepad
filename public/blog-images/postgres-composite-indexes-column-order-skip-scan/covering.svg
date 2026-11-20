@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="500" viewBox="0 0 960 500" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="960" height="500" fill="#0f1117"/>
+<rect x="40" y="60" width="300" height="100" rx="12" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+<text x="190.0" y="104.0" fill="#bfdbfe" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">(4242, Nov 3)</text>
+<text x="190.0" y="130.0" fill="#9aa3b5" font-size="18" text-anchor="middle" >INCLUDE total = 129.50</text>
+<rect x="420" y="60" width="300" height="100" rx="12" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="570.0" y="104.0" fill="#fde68a" font-size="18" text-anchor="middle" >visibility map</text>
+<text x="570.0" y="130.0" fill="#9aa3b5" font-size="18" text-anchor="middle" >is this heap page all visible?</text>
+<line x1="340" y1="110" x2="412" y2="110" stroke="#9aa3b5" stroke-width="3" marker-end="url(#a)"/>
+<rect x="40" y="320" width="300" height="100" rx="12" fill="#10261d" stroke="#34d399" stroke-width="3"/>
+<text x="190.0" y="364.0" fill="#a7f3d0" font-size="18" text-anchor="middle" >answer from the index</text>
+<text x="190.0" y="390.0" fill="#9aa3b5" font-size="18" text-anchor="middle" >no table read</text>
+<rect x="600" y="320" width="320" height="100" rx="12" fill="#3a1717" stroke="#f87171" stroke-width="3"/>
+<text x="760.0" y="364.0" fill="#fecaca" font-size="18" text-anchor="middle" >read the table page</text>
+<text x="760.0" y="390.0" fill="#9aa3b5" font-size="18" text-anchor="middle" >to check the row</text>
+<path d="M 500 160 L 500 240 L 190 240 L 190 312" fill="none" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<text x="210" y="282" fill="#34d399" font-size="16">yes: after VACUUM, 0 heap fetches</text>
+<path d="M 640 160 L 640 240 L 760 240 L 760 312" fill="none" stroke="#f87171" stroke-width="3" marker-end="url(#a)"/>
+<text x="745" y="282" fill="#f87171" font-size="16" text-anchor="end">no: 20 of 20 rows</text>
+<text x="745" y="302" fill="#9aa3b5" font-size="14" text-anchor="end">after updating 10% of rows</text>
+</svg>

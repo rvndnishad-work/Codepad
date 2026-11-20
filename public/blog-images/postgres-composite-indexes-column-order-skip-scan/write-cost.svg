@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="520" viewBox="0 0 960 520" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<rect width="960" height="520" fill="#0f1117"/>
+<line x1="80" y1="420" x2="900" y2="420" stroke="#2a3040" stroke-width="2"/>
+<rect x="110" y="398" width="80" height="22" rx="6" fill="#34d399" fill-opacity="0.85"/>
+<text x="150" y="384" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">666 ms</text>
+<text x="150" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">0</text>
+<text x="150" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">11 MB</text>
+<rect x="240" y="363" width="80" height="57" rx="6" fill="#facc15" fill-opacity="0.85"/>
+<text x="280" y="349" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">1,718 ms</text>
+<text x="280" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">1</text>
+<text x="280" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">30 MB</text>
+<rect x="370" y="341" width="80" height="79" rx="6" fill="#facc15" fill-opacity="0.85"/>
+<text x="410" y="327" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">2,360 ms</text>
+<text x="410" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">2</text>
+<text x="410" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">44 MB</text>
+<rect x="500" y="300" width="80" height="120" rx="6" fill="#facc15" fill-opacity="0.85"/>
+<text x="540" y="286" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">3,595 ms</text>
+<text x="540" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">3</text>
+<text x="540" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">63 MB</text>
+<rect x="630" y="235" width="80" height="185" rx="6" fill="#f87171" fill-opacity="0.85"/>
+<text x="670" y="221" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">5,543 ms</text>
+<text x="670" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">4</text>
+<text x="670" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">70 MB</text>
+<rect x="760" y="137" width="80" height="283" rx="6" fill="#f87171" fill-opacity="0.85"/>
+<text x="800" y="123" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">8,504 ms</text>
+<text x="800" y="450" fill="#e8eaf0" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">5</text>
+<text x="800" y="474" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">90 MB</text>
+<text x="80" y="510" fill="#9aa3b5" font-size="16">secondary indexes, and the total size of all indexes including the primary key</text>
+<text x="80" y="50" fill="#e8eaf0" font-size="20" font-weight="700">Time to insert 500,000 rows</text>
+</svg>

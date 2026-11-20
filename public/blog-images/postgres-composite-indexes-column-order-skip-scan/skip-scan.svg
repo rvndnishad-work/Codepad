@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#a78bfa"/></marker></defs>
+<rect width="960" height="540" fill="#0f1117"/>
+<text x="40" y="56" fill="#e8eaf0" font-size="20" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">index on (region, created_at)</text>
+<text x="920" y="56" fill="#9aa3b5" font-size="16" text-anchor="end">query: WHERE created_at in one 6 hour window</text>
+<rect x="40" y="100" width="210" height="70" rx="10" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="56" y="130" fill="#e8eaf0" font-size="18" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">apac</text>
+<text x="56" y="156" fill="#6b7385" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">2025 to 2026</text>
+<rect x="200" y="104" width="12" height="62" rx="3" fill="#facc15"/>
+<rect x="260" y="100" width="210" height="70" rx="10" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="276" y="130" fill="#e8eaf0" font-size="18" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">eu</text>
+<text x="276" y="156" fill="#6b7385" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">2025 to 2026</text>
+<rect x="420" y="104" width="12" height="62" rx="3" fill="#facc15"/>
+<rect x="480" y="100" width="210" height="70" rx="10" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="496" y="130" fill="#e8eaf0" font-size="18" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">latam</text>
+<text x="496" y="156" fill="#6b7385" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">2025 to 2026</text>
+<rect x="640" y="104" width="12" height="62" rx="3" fill="#facc15"/>
+<rect x="700" y="100" width="210" height="70" rx="10" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="716" y="130" fill="#e8eaf0" font-size="18" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">us</text>
+<text x="716" y="156" fill="#6b7385" font-size="13" font-family="ui-monospace, Menlo, Consolas, monospace">2025 to 2026</text>
+<rect x="860" y="104" width="12" height="62" rx="3" fill="#facc15"/>
+<text x="40" y="236" fill="#f87171" font-size="18" font-weight="700">Postgres 16</text>
+<text x="920" y="236" fill="#f87171" font-size="18" font-weight="700" text-anchor="end">19,992 pages</text>
+<rect x="40" y="256" width="870" height="18" rx="9" fill="#3a1717" stroke="#f87171" stroke-width="2"/>
+<text x="475" y="306" fill="#9aa3b5" font-size="16" text-anchor="middle">no condition on region, so it reads the whole index and checks created_at on every entry</text>
+<text x="40" y="376" fill="#a78bfa" font-size="18" font-weight="700">Postgres 18</text>
+<text x="920" y="376" fill="#a78bfa" font-size="18" font-weight="700" text-anchor="end">905 pages</text>
+<path d="M 40 430 Q 120.0 380 196 424" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<rect x="200" y="420" width="12" height="22" rx="3" fill="#facc15"/>
+<path d="M 212 430 Q 316.0 380 416 424" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<rect x="420" y="420" width="12" height="22" rx="3" fill="#facc15"/>
+<path d="M 432 430 Q 536.0 380 636 424" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<rect x="640" y="420" width="12" height="22" rx="3" fill="#facc15"/>
+<path d="M 652 430 Q 756.0 380 856 424" fill="none" stroke="#a78bfa" stroke-width="3" marker-end="url(#a)"/>
+<rect x="860" y="420" width="12" height="22" rx="3" fill="#facc15"/>
+<text x="475" y="490" fill="#9aa3b5" font-size="16" text-anchor="middle">skip scan: one jump per region value, then read only the matching slice</text>
+</svg>

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="560" viewBox="0 0 960 560" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="960" height="560" fill="#0f1117"/>
+<text x="40" y="60" fill="#e8eaf0" font-size="20" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">(customer_id, created_at)</text>
+<text x="920" y="60" fill="#34d399" font-size="18" font-weight="700" text-anchor="end">23 pages</text>
+<rect x="40" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="80" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">41</text>
+<text x="80" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Mar 2</text>
+<rect x="130" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="170" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">41</text>
+<text x="170" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Oct 7</text>
+<rect x="220" y="84" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="260" y="110" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<text x="260" y="134" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Jan 4</text>
+<rect x="310" y="84" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="350" y="110" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<text x="350" y="134" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Jun 9</text>
+<rect x="400" y="84" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="440" y="110" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<text x="440" y="134" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Sep 1</text>
+<rect x="490" y="84" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="530" y="110" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<text x="530" y="134" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 3</text>
+<rect x="580" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="620" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">43</text>
+<text x="620" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Feb 6</text>
+<rect x="670" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="710" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">43</text>
+<text x="710" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Jul 8</text>
+<rect x="760" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="800" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">44</text>
+<text x="800" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Apr 2</text>
+<rect x="850" y="84" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="890" y="110" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">44</text>
+<text x="890" y="134" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Dec 5</text>
+<line x1="560" y1="200" x2="560" y2="160" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<text x="575" y="218" fill="#34d399" font-size="16">seek to the newest 42</text>
+<line x1="530" y1="246" x2="230" y2="246" stroke="#34d399" stroke-width="3" marker-end="url(#a)"/>
+<text x="380" y="276" fill="#9aa3b5" font-size="16" text-anchor="middle">read backwards, stop after 20</text>
+<text x="40" y="330" fill="#e8eaf0" font-size="20" font-weight="700" font-family="ui-monospace, Menlo, Consolas, monospace">(created_at, customer_id)</text>
+<text x="920" y="330" fill="#f87171" font-size="18" font-weight="700" text-anchor="end">4,668 pages</text>
+<rect x="40" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="80" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 9</text>
+<text x="80" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">913</text>
+<rect x="130" y="354" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="170" y="380" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 9</text>
+<text x="170" y="404" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<rect x="220" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="260" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 10</text>
+<text x="260" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">7</text>
+<rect x="310" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="350" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 11</text>
+<text x="350" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">2051</text>
+<rect x="400" y="354" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="440" y="380" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 12</text>
+<text x="440" y="404" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<rect x="490" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="530" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 13</text>
+<text x="530" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">388</text>
+<rect x="580" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="620" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 14</text>
+<text x="620" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">9120</text>
+<rect x="670" y="354" width="80" height="64" rx="8" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="710" y="380" fill="#fde68a" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 15</text>
+<text x="710" y="404" fill="#fde68a" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">42</text>
+<rect x="760" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="800" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 16</text>
+<text x="800" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">61</text>
+<rect x="850" y="354" width="80" height="64" rx="8" fill="#171a23" stroke="#2a3040" stroke-width="2"/>
+<text x="890" y="380" fill="#9aa3b5" font-size="16" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Nov 17</text>
+<text x="890" y="404" fill="#6b7385" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">5</text>
+<line x1="910" y1="470" x2="60" y2="470" stroke="#f87171" stroke-width="3" marker-end="url(#a)"/>
+<text x="485" y="510" fill="#9aa3b5" font-size="16" text-anchor="middle">start at the newest day and check every entry for customer 42</text>
+</svg>

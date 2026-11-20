@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="45%">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#facc15" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="100%" cy="0%" r="55%">
+      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="800" fill="#0b0d12"/>
+  <rect width="1600" height="800" fill="url(#glow)"/>
+  <rect width="1600" height="800" fill="url(#glow2)"/>
+
+  <text x="72" y="300" fill="#34d399" font-size="24" font-weight="700" letter-spacing="5">BACKEND</text>
+  <text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">Indexes</text>
+  <text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">that get</text>
+  <text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">used</text>
+
+  <!-- centre: a small B-tree with one highlighted path -->
+  <g stroke-width="3">
+    <line x1="800" y1="250" x2="560" y2="390" stroke="#3a4152"/>
+    <line x1="800" y1="250" x2="800" y2="390" stroke="#facc15"/>
+    <line x1="800" y1="250" x2="1040" y2="390" stroke="#3a4152"/>
+    <line x1="800" y1="430" x2="720" y2="550" stroke="#facc15"/>
+    <line x1="800" y1="430" x2="880" y2="550" stroke="#3a4152"/>
+    <line x1="560" y1="430" x2="500" y2="550" stroke="#3a4152"/>
+    <line x1="1040" y1="430" x2="1100" y2="550" stroke="#3a4152"/>
+  </g>
+  <rect x="720" y="200" width="160" height="56" rx="12" fill="#171a23" stroke="#facc15" stroke-width="3"/>
+  <rect x="490" y="384" width="140" height="50" rx="12" fill="#171a23" stroke="#3a4152" stroke-width="3"/>
+  <rect x="730" y="384" width="140" height="50" rx="12" fill="#171a23" stroke="#facc15" stroke-width="3"/>
+  <rect x="970" y="384" width="140" height="50" rx="12" fill="#171a23" stroke="#3a4152" stroke-width="3"/>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="20" text-anchor="middle">
+    <rect x="440" y="550" width="120" height="44" rx="10" fill="#171a23" stroke="#3a4152" stroke-width="2"/>
+    <text x="500" y="579" fill="#9aa3b5">41</text>
+    <rect x="660" y="550" width="120" height="44" rx="10" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+    <text x="720" y="579" fill="#fde68a">42</text>
+    <rect x="820" y="550" width="120" height="44" rx="10" fill="#171a23" stroke="#3a4152" stroke-width="2"/>
+    <text x="880" y="579" fill="#9aa3b5">43</text>
+    <rect x="1040" y="550" width="120" height="44" rx="10" fill="#171a23" stroke="#3a4152" stroke-width="2"/>
+    <text x="1100" y="579" fill="#9aa3b5">44</text>
+  </g>
+
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+    <rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/>
+    <text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">column order</text>
+    <rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/>
+    <text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">INCLUDE</text>
+    <rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#a78bfa" stroke-width="2"/>
+    <text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">skip scan</text>
+  </g>
+</svg>

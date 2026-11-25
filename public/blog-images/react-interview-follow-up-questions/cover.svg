@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="1600" height="800" fill="#0b0d12"/>
+<defs><radialGradient id="g" cx="50%" cy="50%" r="45%"><stop offset="0" stop-color="#60a5fa" stop-opacity="0.2"/><stop offset="1" stop-color="#60a5fa" stop-opacity="0"/></radialGradient><radialGradient id="g2" cx="100%" cy="0%" r="55%"><stop offset="0" stop-color="#a78bfa" stop-opacity="0.16"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></radialGradient></defs>
+<rect width="1600" height="800" fill="url(#g)"/><rect width="1600" height="800" fill="url(#g2)"/>
+<text x="72" y="300" fill="#facc15" font-size="24" font-weight="700" letter-spacing="5">INTERVIEW</text>
+<text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">React</text>
+<text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">follow-up</text>
+<text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">questions</text>
+<g stroke-width="3">
+<line x1="800" y1="270" x2="640" y2="400" stroke="#3a4152"/><line x1="800" y1="270" x2="960" y2="400" stroke="#60a5fa"/>
+<line x1="960" y1="430" x2="880" y2="540" stroke="#60a5fa"/><line x1="960" y1="430" x2="1040" y2="540" stroke="#3a4152"/>
+</g>
+<rect x="720" y="230" width="160" height="60" rx="14" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+<text x="800" y="268" fill="#bfdbfe" font-size="22" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">App</text>
+<rect x="560" y="400" width="160" height="56" rx="14" fill="#171a23" stroke="#3a4152" stroke-width="3"/>
+<text x="640" y="436" fill="#9aa3b5" font-size="20" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">Header</text>
+<rect x="880" y="400" width="160" height="56" rx="14" fill="#14243d" stroke="#60a5fa" stroke-width="3"/>
+<text x="960" y="436" fill="#bfdbfe" font-size="20" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">List</text>
+<rect x="810" y="540" width="140" height="50" rx="12" fill="#2b2410" stroke="#facc15" stroke-width="3"/>
+<text x="880" y="572" fill="#fde68a" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">key b</text>
+<rect x="980" y="540" width="140" height="50" rx="12" fill="#171a23" stroke="#3a4152" stroke-width="3"/>
+<text x="1050" y="572" fill="#9aa3b5" font-size="18" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">key c</text>
+<g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+<rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/><text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">batching</text>
+<rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#34d399" stroke-width="2"/><text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">effects</text>
+<rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#a78bfa" stroke-width="2"/><text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">keys</text>
+</g>
+</svg>

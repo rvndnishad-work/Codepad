@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="960" height="460" fill="#0f1117"/>
+<text x="40" y="44" fill="#e8eaf0" font-size="19" font-weight="700">probability of the next word after "event"</text>
+<text x="170" y="434" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">t = 0.5</text>
+<rect x="60" y="92" width="56" height="278" rx="5" fill="#facc15" fill-opacity="0.85"/>
+<text x="88" y="82" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">92.8%</text>
+<text x="88" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">loop</text>
+<rect x="136" y="358" width="56" height="12" rx="5" fill="#60a5fa" fill-opacity="0.85"/>
+<text x="164" y="348" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">4.0%</text>
+<text x="164" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">handler</text>
+<rect x="212" y="368" width="56" height="2" rx="5" fill="#a78bfa" fill-opacity="0.85"/>
+<text x="240" y="358" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">0.6%</text>
+<text x="240" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">,</text>
+<text x="470" y="434" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">t = 1.0</text>
+<rect x="360" y="203" width="56" height="167" rx="5" fill="#facc15" fill-opacity="0.85"/>
+<text x="388" y="193" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">55.8%</text>
+<text x="388" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">loop</text>
+<rect x="436" y="335" width="56" height="35" rx="5" fill="#60a5fa" fill-opacity="0.85"/>
+<text x="464" y="325" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">11.6%</text>
+<text x="464" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">handler</text>
+<rect x="512" y="356" width="56" height="14" rx="5" fill="#a78bfa" fill-opacity="0.85"/>
+<text x="540" y="346" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">4.7%</text>
+<text x="540" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">,</text>
+<text x="770" y="434" fill="#e8eaf0" font-size="18" font-weight="700" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">t = 1.5</text>
+<rect x="660" y="266" width="56" height="104" rx="5" fill="#facc15" fill-opacity="0.85"/>
+<text x="688" y="256" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">34.7%</text>
+<text x="688" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">loop</text>
+<rect x="736" y="333" width="56" height="37" rx="5" fill="#60a5fa" fill-opacity="0.85"/>
+<text x="764" y="323" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">12.2%</text>
+<text x="764" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">handler</text>
+<rect x="812" y="350" width="56" height="20" rx="5" fill="#a78bfa" fill-opacity="0.85"/>
+<text x="840" y="340" fill="#e8eaf0" font-size="14" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">6.6%</text>
+<text x="840" y="388" fill="#9aa3b5" font-size="13" text-anchor="middle" font-family="ui-monospace, Menlo, Consolas, monospace">,</text>
+</svg>

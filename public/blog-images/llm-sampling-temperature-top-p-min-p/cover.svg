@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="800" viewBox="0 0 1600 800" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="1600" height="800" fill="#0b0d12"/>
+<defs><radialGradient id="g" cx="50%" cy="50%" r="45%"><stop offset="0" stop-color="#a78bfa" stop-opacity="0.2"/><stop offset="1" stop-color="#a78bfa" stop-opacity="0"/></radialGradient><radialGradient id="g2" cx="100%" cy="0%" r="55%"><stop offset="0" stop-color="#facc15" stop-opacity="0.14"/><stop offset="1" stop-color="#facc15" stop-opacity="0"/></radialGradient></defs>
+<rect width="1600" height="800" fill="url(#g)"/><rect width="1600" height="800" fill="url(#g2)"/>
+<text x="72" y="300" fill="#a78bfa" font-size="24" font-weight="700" letter-spacing="5">AI ENGINEERING</text>
+<text x="72" y="372" fill="#f4f5f8" font-size="56" font-weight="800">Sampling</text>
+<text x="72" y="436" fill="#f4f5f8" font-size="56" font-weight="800">knobs,</text>
+<text x="72" y="500" fill="#f4f5f8" font-size="56" font-weight="800">measured</text>
+<rect x="470" y="286" width="58" height="314" rx="8" fill="#facc15" fill-opacity="1"/>
+<rect x="554" y="533" width="58" height="67" rx="8" fill="#facc15" fill-opacity="1"/>
+<rect x="638" y="572" width="58" height="28" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<rect x="722" y="572" width="58" height="28" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<rect x="806" y="572" width="58" height="28" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<rect x="890" y="586" width="58" height="14" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<rect x="974" y="586" width="58" height="14" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<rect x="1058" y="586" width="58" height="14" rx="8" fill="#a78bfa" fill-opacity="0.55"/>
+<line x1="450" y1="600" x2="1150" y2="600" stroke="#3a4152" stroke-width="3"/>
+<line x1="450" y1="572" x2="1150" y2="572" stroke="#f87171" stroke-width="3" stroke-dasharray="10 8"/>
+<g font-family="ui-monospace, Menlo, Consolas, monospace" font-size="22">
+<rect x="1250" y="276" width="280" height="56" rx="28" fill="#171a23" stroke="#facc15" stroke-width="2"/><text x="1390" y="312" fill="#e8eaf0" text-anchor="middle">temperature</text>
+<rect x="1250" y="372" width="280" height="56" rx="28" fill="#171a23" stroke="#60a5fa" stroke-width="2"/><text x="1390" y="408" fill="#e8eaf0" text-anchor="middle">top-p</text>
+<rect x="1250" y="468" width="280" height="56" rx="28" fill="#171a23" stroke="#f87171" stroke-width="2"/><text x="1390" y="504" fill="#e8eaf0" text-anchor="middle">min-p</text>
+</g>
+</svg>

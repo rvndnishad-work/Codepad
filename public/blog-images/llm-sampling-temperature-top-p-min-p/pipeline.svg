@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="300" viewBox="0 0 960 300" font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="14" markerHeight="14" markerUnits="userSpaceOnUse" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#9aa3b5"/></marker></defs>
+<rect width="960" height="300" fill="#0f1117"/>
+<rect x="20" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#9aa3b5" stroke-width="2.5"/>
+<text x="78" y="146" fill="#e8eaf0" font-size="16" font-weight="700" text-anchor="middle">logits</text>
+<text x="78" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">one per token</text>
+<line x1="136" y1="150" x2="154" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="154" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#facc15" stroke-width="2.5"/>
+<text x="212" y="146" fill="#facc15" font-size="16" font-weight="700" text-anchor="middle">divide by t</text>
+<text x="212" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">temperature</text>
+<line x1="270" y1="150" x2="288" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="288" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#9aa3b5" stroke-width="2.5"/>
+<text x="346" y="146" fill="#e8eaf0" font-size="16" font-weight="700" text-anchor="middle">softmax</text>
+<text x="346" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">probabilities</text>
+<line x1="404" y1="150" x2="422" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="422" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#60a5fa" stroke-width="2.5"/>
+<text x="480" y="146" fill="#60a5fa" font-size="16" font-weight="700" text-anchor="middle">top-k</text>
+<text x="480" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">keep k best</text>
+<line x1="538" y1="150" x2="556" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="556" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#60a5fa" stroke-width="2.5"/>
+<text x="614" y="146" fill="#60a5fa" font-size="16" font-weight="700" text-anchor="middle">top-p</text>
+<text x="614" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">keep mass p</text>
+<line x1="672" y1="150" x2="690" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="690" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#f87171" stroke-width="2.5"/>
+<text x="748" y="146" fill="#f87171" font-size="16" font-weight="700" text-anchor="middle">min-p</text>
+<text x="748" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">drop the weak</text>
+<line x1="806" y1="150" x2="824" y2="150" stroke="#9aa3b5" stroke-width="2.5" marker-end="url(#a)"/>
+<rect x="824" y="110" width="116" height="80" rx="12" fill="#171a23" stroke="#34d399" stroke-width="2.5"/>
+<text x="882" y="146" fill="#34d399" font-size="16" font-weight="700" text-anchor="middle">sample</text>
+<text x="882" y="170" fill="#9aa3b5" font-size="13" text-anchor="middle">pick one</text>
+<text x="20" y="60" fill="#e8eaf0" font-size="18" font-weight="700">order used by Hugging Face transformers and by the code in this post</text>
+</svg>
